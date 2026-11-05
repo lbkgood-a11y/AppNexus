@@ -1,0 +1,23 @@
+{
+  "name": "@appnexus/admin",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "vite build",
+    "typecheck": "vue-tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@appnexus/organization": "workspace:*",
+    "@appnexus/security": "workspace:*",
+    "pinia": "^4.0.3",
+    "vue": "^3.5.24"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^6.0.1",
+    "typescript": "^6.0.0",
+    "vite": "^8.0.0",
+    "vitest": "^4.0.0",
+    "vue-tsc": "^3.1.4"
+  }
+}
