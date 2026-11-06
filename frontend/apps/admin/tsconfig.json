@@ -1,11 +1,50 @@
 {
   "compilerOptions": {
-    "target": "ES2022",
+    "target": "ESNext",
     "module": "ESNext",
-    "moduleResolution": "Bundler",
-    "strict": true,
+    "moduleResolution": "bundler",
+    "strict": false,
+    "strictFunctionTypes": false,
+    "noImplicitThis": true,
+    "jsx": "preserve",
+    "jsxImportSource": "vue",
     "skipLibCheck": true,
-    "types": ["vite/client"]
+    "esModuleInterop": true,
+    "isolatedModules": true,
+    "allowSyntheticDefaultImports": true,
+    "forceConsistentCasingInFileNames": true,
+    "sourceMap": true,
+    "allowJs": false,
+    "resolveJsonModule": true,
+    "lib": [
+      "ESNext",
+      "DOM"
+    ],
+    "paths": {
+      "@/*": [
+        "./src/*"
+      ],
+      "@build/*": [
+        "./build/*"
+      ]
+    },
+    "types": [
+      "node",
+      "vite/client",
+      "element-plus/global",
+      "unplugin-icons/types/vue"
+    ]
   },
-  "include": ["src/**/*.ts", "src/**/*.vue"]
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "src/**/*.vue",
+    "types/*.d.ts",
+    "vite.config.ts"
+  ],
+  "exclude": [
+    "dist",
+    "**/*.js",
+    "node_modules"
+  ]
 }

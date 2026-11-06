@@ -1,0 +1,12 @@
+{
+  "name": "@appnexus/ui",
+  "private": true,
+  "type": "module",
+  "exports": { ".": "./src/index.ts" },
+  "dependencies": { "@appnexus/icons": "workspace:*" },
+  "peerDependencies": {
+    "element-plus": "^2.13.6",
+    "vue": "^3.5.31",
+    "vue-i18n": "^11.3.0"
+  }
+}

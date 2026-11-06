@@ -1,0 +1,473 @@
+buttons:
+  pureAccountSettings: Account
+  pureLoginOut: LoginOut
+  pureLogin: Login
+  pureOpenSystemSet: Open System Configs
+  pureReload: Reload
+  pureCloseCurrentTab: Close CurrentTab
+  pureCloseLeftTabs: Close LeftTabs
+  pureCloseRightTabs: Close RightTabs
+  pureCloseOtherTabs: Close OtherTabs
+  pureCloseAllTabs: Close AllTabs
+  pureContentFullScreen: Content FullScreen
+  pureContentExitFullScreen: Content ExitFullScreen
+  pureClickCollapse: Collapse
+  pureClickExpand: Expand
+  pureConfirm: Confirm
+  pureSwitch: Switch
+  pureClose: Close
+  pureBackTop: BackTop
+  pureOpenText: Open
+  pureCloseText: Close
+  pureWatchMore: Watch More
+  pureMarkAsRead: Mark As Read
+search:
+  pureTotal: Total
+  pureHistory: History
+  pureCollect: Collect
+  pureDragSort: （Drag Sort）
+  pureEmpty: Empty
+  purePlaceholder: Search Menu
+panel:
+  pureSystemSet: System Configs
+  pureCloseSystemSet: Close System Configs
+  pureClearCacheAndToLogin: Clear cache and return to login page
+  pureClearCache: Clear Cache
+  pureThemeMode: Theme Mode
+  pureThemeModeLight: Light
+  pureThemeModeLightTip: Set sail freshly and light up the comfortable work interface
+  pureThemeModeDark: Dark
+  pureThemeModeDarkTip: Moonlight Overture, indulge in the tranquility and elegance of the night
+  pureThemeModeSystem: Auto
+  pureThemeModeSystemTip: Synchronize time, the interface naturally responds to morning and dusk
+  pureThemeColor: Theme Color
+  pureMenuLayout: Menu Layout
+  pureVerticalTip: The menu on the left is familiar and friendly
+  pureHorizontalTip: Top menu, concise overview
+  pureMixTip: Mixed menu, flexible
+  pureStretch: Stretch Page
+  pureStretchFixed: Fixed
+  pureStretchFixedTip: Compact pages make it easy to find the information you need
+  pureStretchCustom: Custom
+  pureStretchCustomTip: Minimum 1280, maximum 1600
+  pureTagsStyle: Tags Style
+  pureTagsStyleSmart: Smart
+  pureTagsStyleSmartTip: Smart tags add fun and brilliance
+  pureTagsStyleCard: Card
+  pureTagsStyleCardTip: Card tags for efficient browsing
+  pureTagsStyleChrome: Chrome
+  pureTagsStyleChromeTip: Chrome style is classic and elegant
+  pureFullScreenWatermark: FullScreen Watermark
+  pureEnableWatermark: Watermark
+  pureWatermarkText: Text
+  pureWatermarkTextPlaceholder: Please enter text
+  pureInterfaceDisplay: Interface Display
+  pureGreyModel: Grey Model
+  pureWeakModel: Weak Model
+  pureHiddenTags: Hidden Tags
+  pureHiddenFooter: Hidden Footer
+  pureMultiTagsCache: MultiTags Cache
+menus:
+  pureHome: Home
+  pureLogin: Login
+  pureEmpty: Empty Page
+  pureTable: Table
+  pureSysManagement: System Manage
+  pureUser: User Manage
+  pureRole: Role Manage
+  pureSystemMenu: Menu Manage
+  pureDept: Dept Manage
+  pureSysMonitor: System Monitor
+  pureOnlineUser: Online User
+  pureLoginLog: Login Log
+  pureOperationLog: Operation Log
+  pureSystemLog: System Log
+  pureCodeMirror: CodeMirror
+  pureMarkdown: Markdown
+  pureEditor: Editor
+  pureAbnormal: Abnormal Page
+  purePageNotFound: "404"
+  pureAccessDenied: "403"
+  pureServerError: "500"
+  pureComponents: Components
+  pureDialog: Dialog
+  pureDrawer: Drawer
+  pureMessage: Message Tips
+  pureVideo: Video
+  pureSegmented: Segmented
+  pureWaterfall: Waterfall
+  pureMap: Map
+  pureDraggable: Draggable
+  pureSplitPane: Split Pane
+  pureText: Text Ellipsis
+  pureSlider: Slider
+  pureElButton: Button
+  pureButton: Button Animation
+  pureCheckButton: Check Button
+  pureCropping: Picture Cropping
+  pureAnimatecss: AnimateCss Selector
+  pureCountTo: Digital Animation
+  pureSelector: Scope Selector
+  pureFlowChart: Flow Chart
+  pureSeamless: Seamless Scroll
+  pureContextmenu: Context Menu
+  pureTypeit: Typeit
+  pureJsonEditor: JSON Editor
+  pureColorPicker: Color Picker
+  pureColorPickerPanel: Color PickerPanel
+  pureDatePicker: Date Picker
+  pureDateTimePicker: DateTimePicker
+  pureTimePicker: TimePicker
+  pureTag: Tag
+  pureStatistic: Statistic
+  pureCollapse: Collapse
+  pureGanttastic: Gantt Chart
+  pureProgress: Progress
+  pureUpload: File Upload
+  pureCheckCard: CheckCard
+  pureMenus: MultiLevel Menu
+  pureMenu1: Menu1
+  pureMenu1-1: Menu1-1
+  pureMenu1-2: Menu1-2
+  pureMenu1-2-1: Menu1-2-1
+  pureMenu1-2-2: Menu1-2-2
+  pureMenu1-3: Menu1-3
+  pureMenu2: Menu2
+  purePermission: Permission Manage
+  purePermissionPage: Page Permission
+  purePermissionButton: Button Permission
+  purePermissionButtonRouter: Route return button permission
+  purePermissionButtonLogin: Login interface return button permission
+  pureTabs: Tabs Operate
+  pureGuide: Guide
+  pureAble: Able
+  pureMenuTree: Menu Tree
+  pureVideoFrame: Video Frame Capture
+  pureWavesurfer: Audio Visualization
+  pureRipple: Ripple
+  pureMqtt: Mqtt Client
+  pureOptimize: Debounce、Throttle、Copy、Longpress Directives
+  pureVerify: Captcha
+  pureWatermark: Water Mark
+  purePrint: Print
+  pureDownload: Download
+  pureExternalPage: External Page
+  pureExternalDoc: Docs External
+  pureEmbeddedDoc: Docs Embedded
+  pureExternalLink: Vue-Pure-Admin
+  pureUtilsLink: Pure-Admin-Utils
+  pureColorHuntDoc: ColorHunt
+  pureUiGradients: UiGradients
+  pureEpDoc: Element-Plus
+  pureTailwindcssDoc: Tailwindcss
+  pureVueDoc: Vue3
+  pureViteDoc: Vite
+  purePiniaDoc: Pinia
+  pureRouterDoc: Vue-Router
+  pureAbout: About
+  pureResult: Result Page
+  pureSuccess: Success Page
+  pureFail: Fail Page
+  pureIconSelect: Icon Select
+  pureTimeline: Time Line
+  pureLineTree: LineTree
+  pureList: List Page
+  pureCardList: Card List Page
+  pureDebounce: Debounce & Throttle
+  pureFormDesign: Form Design
+  pureBarcode: Barcode
+  pureQrcode: Qrcode
+  pureCascader: Area Cascader
+  pureSwiper: Swiper Plugin
+  pureVirtualList: Virtual List
+  purePdf: PDF Preview
+  pureExcel: Export Excel
+  pureInfiniteScroll: Table Infinite Scroll
+  pureSensitive: Sensitive Filter
+  purePinyin: PinYin
+  pureDanmaku: Danmaku
+  pureSchemaForm: Form
+  pureTableBase: Base Usage
+  pureTableHigh: High Usage
+  pureTableEdit: Edit Usage
+  pureVxeTable: Virtual Usage
+  pureBoard: Paint Board
+  pureMindMap: Mind Map
+  pureMenuOverflow: Menu Overflow Show Tooltip Text
+  pureChildMenuOverflow: Child Menu Overflow Show Tooltip Text
+status:
+  pureLoad: Loading...
+  pureMessage: Message
+  pureNotify: Notify
+  pureTodo: Todo
+  pureNoMessage: No Message
+  pureNoNotify: No Notify
+  pureNoTodo: No Todo
+login:
+  pureUsername: Username
+  purePassword: Password
+  pureVerifyCode: VerifyCode
+  pureRemember: days no need to login
+  pureRememberInfo: After checking and logging in, will automatically log in to the system without entering your username and password within the specified number of days.
+  pureSure: Sure Password
+  pureForget: Forget Password?
+  pureLogin: Login
+  pureThirdLogin: Third Login
+  purePhoneLogin: Phone Login
+  pureQRCodeLogin: QRCode Login
+  pureRegister: Register
+  pureWeChatLogin: WeChat Login
+  pureAlipayLogin: Alipay Login
+  pureQQLogin: QQ Login
+  pureWeiBoLogin: Weibo Login
+  purePhone: Phone
+  pureSmsVerifyCode: SMS VerifyCode
+  pureBack: Back
+  pureTest: Mock Test
+  pureTip: After scanning the code, click "Confirm" to complete the login
+  pureDefinite: Definite
+  pureLoginSuccess: Login Success
+  pureLoginFail: Login Fail
+  pureRegisterSuccess: Regist Success
+  pureTickPrivacy: Please tick Privacy Policy
+  pureReadAccept: I have read it carefully and accept
+  purePrivacyPolicy: Privacy Policy
+  pureGetVerifyCode: Get VerifyCode
+  pureInfo: Seconds
+  pureUsernameReg: Please enter username
+  purePassWordReg: Please enter password
+  pureVerifyCodeReg: Please enter verify code
+  pureVerifyCodeCorrectReg: Please enter correct verify code
+  pureVerifyCodeSixReg: Please enter a 6-digit verify code
+  purePhoneReg: Please enter the phone
+  purePhoneCorrectReg: Please enter the correct phone number format
+  purePassWordRuleReg: The password format should be any combination of 8-18 digits
+  purePassWordSureReg: Please enter confirm password
+  purePassWordDifferentReg: The two passwords do not match!
+  purePassWordUpdateReg: Password has been updated
+  pureLoginExpired: Login expired, please login again
+tableBar:
+  pureList: List
+  pureLarge: Large
+  pureDefault: Default
+  pureSmall: Small
+  pureColumnSettings: ColumnSettings
+  pureCollapse: Collapse
+  pureExpand: Expand
+  pureRefresh: Refresh
+  pureDensity: Density
+  pureColumnDisplay: ColumnDisplay
+  pureReset: Reset
+  pureExitFullScreen: ExitFullScreen
+  pureFullScreen: FullScreen
+  purePinLeft: Pin Left
+  purePinRight: Pin Right
+  pureUnpin: Unpin
+# 平台共享界面文案；键名供登录页与主题入口复用。
+platform:
+  theme: "Theme mode"
+  themeLight: "Light theme"
+  themeDark: "Dark theme"
+  themeSystem: "Use system theme"
+  account: "Account"
+  password: "Password"
+  login: "Sign in"
+  welcome: "Welcome back"
+  subtitle: "Sign in to AppNexus and get to work"
+  accountPlaceholder: "Enter your account"
+  passwordPlaceholder: "Enter your password"
+  loginError: "Invalid credentials or account unavailable"
+  serviceError: "Sign-in is unavailable. Please refresh and try again."
+  language: "Change language"
+  secure: "Secure access · Unified identity"
+  taglineLead: "Connected work."
+  tagline: "Better together."
+  description: "One workspace for everything you do."
+  continue: "Open management console"
+
+# 个人中心与会话错误提示。
+account:
+  title: "Personal center"
+  subtitle: "Manage your profile and account security"
+  profile: "Profile"
+  security: "Change password"
+  id: "Account ID"
+  displayName: "Display name"
+  save: "Save profile"
+  saved: "Profile updated"
+  retry: "Reload"
+  passwordHint: "Use 12–128 characters. All existing sessions expire after a password change; sign in again."
+  currentPassword: "Current password"
+  newPassword: "New password"
+  confirmPassword: "Confirm new password"
+  changePassword: "Change password"
+  mismatch: "The new passwords do not match"
+  passwordSaved: "Password changed. Please sign in with your new password."
+  sessionExpired: "Your session expired or account status changed. Please sign in again."
+  forbidden: "Operation denied or security credentials expired. Refresh and try again."
+  rateLimited: "Too many attempts. Please try again later."
+  unavailable: "Service is temporarily unavailable. Please try again later."
+  requestFailed: "Request failed. Please try again."
+  back: "Back to home"
+  personalInfo: "Personal information"
+  preferences: "Preferences"
+  accountSecurity: "Account security"
+  personalIntro: "Manage how your information appears to your colleagues."
+  avatarHint: "Using the platform default avatar"
+  usernameHint: "The login account cannot be changed here"
+  preferencesIntro: "Adjust your workspace. Changes apply immediately."
+  themeHint: "Choose light, dark, or follow your operating system."
+  language: "Interface language"
+  languageHint: "Change the language for menus, forms and messages."
+  preferenceScope: "Preferences are stored in this browser and shared by sign-in and workspace pages."
+  securityIntro: "Manage your credentials and protect your sessions."
+  modify: "Edit"
+  cancel: "Cancel"
+  sessionProtection: "Session protection"
+  sessionHint: "After a password change, old sessions on other devices are rejected on their next request."
+  enabled: "Enabled"
+  loginExpired: "The sign-in page expired. Please enter your password and try again."
+  securityLogs: "Security logs"
+  logsIntro: "Review recorded security activity for this account."
+  refresh: "Refresh"
+  event: "Activity"
+  result: "Result"
+  success: "Success"
+  eventTime: "Time"
+  noLogs: "No security activity yet"
+  logsRetry: "Unable to load. Select Refresh to retry."
+  logsScope: "Only successful actions recorded since this feature was enabled are shown. Times use this browser's time zone. Failed attempts, location and device information are not included."
+  sessions: "Sign-in sessions"
+  sessionsIntro: "Review active sessions and revoke sign-ins you no longer use."
+  currentSession: "Current session"
+  otherSession: "Other session"
+  sessionType: "Session"
+  sessionCreated: "Created"
+  sessionAccess: "Last accessed"
+  sessionOperation: "Action"
+  revokeSession: "Revoke session"
+  revokeConfirm: "This session will need to sign in again on its next request. Revoke it?"
+  sessionRevoked: "Session revoked"
+  noSessions: "No active sessions"
+  sessionsNote: "Tabs in the same browser usually share one session. Last access includes background session checks. No device or location is inferred. Use Sign out to end this session."
+  revokeOthers: "Sign out other sessions"
+  revokeOthersConfirm: "Sign out other sessions for this account and keep this session. Continue?"
+  othersRevoked: "Revoked {count} other sessions"
+  events:
+    LOGIN: "Signed in"
+    LOGOUT: "Signed out"
+    PROFILE_UPDATED: "Profile updated"
+    PASSWORD_CHANGED: "Password changed"
+    OTHER_SESSIONS_REVOKED: "Other sessions revoked"
+
+management:
+  refresh: "Refresh"
+  reset: "Reset"
+  density: "Density"
+  small: "Compact"
+  default: "Default"
+  large: "Comfortable"
+  columns: "Column settings"
+  moveUp: "Move {name} up"
+  moveDown: "Move {name} down"
+  pinColumn: "Pin {name}"
+  left: "Pin left"
+  right: "Pin right"
+  unfixed: "Unpin"
+  fullscreen: "Fullscreen"
+  exitFullscreen: "Exit fullscreen"
+  fullscreenFailed: "Fullscreen is unavailable. Check browser permissions and retry."
+  empty: "No data"
+  noResults: "No matching records. Adjust your filters."
+  keyword: "Enter a keyword"
+  accountQuery: "Username or display name"
+  backTenants: "Back to tenants"
+  units: "Organization units"
+  membersAndGrants: "Members and permissions"
+  organizationScope: "Organization scope"
+  allOrganizations: "All organizations"
+  searchOrganization: "Search organizations"
+  manageGrants: "Assignment and permissions"
+  memberSettings: "{name} · Assignment and permissions"
+  currentGrants: "Current permissions"
+
+tenant:
+  switch: "Switch tenant"
+  switchConfirm: "Switching closes this page and discards unsaved changes. Continue?"
+  select: "Select tenant"
+  noMembership: "No accessible tenant. Contact your administrator to grant membership."
+  name: "Tenant name"
+  operation: "Action"
+  enter: "Enter"
+
+organization:
+  primaryOrganization: "Primary organization"
+  unassigned: "Unassigned"
+  saveAssignment: "Save organization assignment"
+  title: "Organization management"
+  name: "Organization name"
+  create: "Create organization"
+  rename: "Rename"
+  delete: "Delete"
+  cancel: "Cancel"
+  save: "Save"
+  saved: "Changes saved"
+  empty: "No organization units"
+  invalidName: "Enter a non-blank name of 1–100 characters"
+  confirmDelete: 'Delete organization "{name}"? This cannot be undone.'
+  authorization: "Member permissions"
+  grantHint: "Grants apply only to this tenant. Management authority is configured by operations and cannot be delegated here."
+  member: "Tenant member"
+  selectMember: "Select an active member"
+  capability: "Permission"
+  expiresAt: "Expires at (local time)"
+  permanent: "No expiry"
+  grant: "Grant / update permission"
+  revoke: "Revoke"
+  confirmRevoke: "Revoke this permission? Subsequent operations will be denied immediately."
+  noGrants: "This member has no active grants"
+  READ: "Read organizations"
+  CREATE: "Create organizations"
+  UPDATE: "Update organizations"
+  DELETE: "Delete organizations"
+  GRANT: "Manage grants (operations only)"
+  invalidExpiry: "Expiry must be in the future"
+
+administration:
+  title: "Platform administration"
+  flow: "Create users → Create a tenant with its first administrator → Add members → Enter organization management to set organizations, assignments and permissions."
+  tenants: "Tenants"
+  users: "Users"
+  members: "Manage members"
+  membersOf: "{name} · Members"
+  createUser: "Create user"
+  createTenant: "Create tenant"
+  addMember: "Add member"
+  enterOrganization: "Manage organizations"
+  memberHint: "Membership permits tenant access but grants no organization permissions. The tenant administrator assigns organizations and permissions. Disabling a member revokes permissions; enabling requires new grants."
+  username: "Login account"
+  displayName: "Display name"
+  password: "Initial password"
+  invalidName: "Enter a non-blank name of 1–100 characters"
+  invalidUsername: "Use 1–100 letters, digits or . _ {'@'} -, starting with a letter or digit"
+  invalidPassword: "Use 12–128 characters"
+  firstAdministrator: "First tenant administrator"
+  firstAdministratorHint: "This account becomes a tenant member with organization and grant management permissions. The platform operator is not automatically added."
+  account: "Existing user"
+  chooseAccount: "Search active users by login or display name"
+  search: "Search"
+  status: "Status"
+  enabled: "Enabled"
+  disabled: "Disabled"
+  enable: "Enable"
+  disable: "Disable"
+  empty: "No records. Adjust the search or create one."
+  confirmDisable: "Disable access? Disabling a member also revokes permissions; enabling requires new grants. Administrator accounts and memberships are protected."
+  confirmEnable: "Enable? Historical member permissions will not be restored."
+  errors:
+    PLATFORM_DENIED: "Platform administration permission is required"
+    DIRECTORY_CONFLICT: "The account, membership or request already exists. Reload and retry."
+    INVALID_DIRECTORY_INPUT: "Invalid input or target state. Administrator accounts and memberships are protected."
+    TENANT_CONTEXT_CHANGED: "Tenant context changed. Reload and retry."
+    TENANT_UNAVAILABLE: "You are not an active member of this tenant. Ask a platform administrator to add membership."
+    TENANT_REQUIRED: "Select an accessible tenant"

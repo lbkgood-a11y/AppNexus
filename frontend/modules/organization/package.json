@@ -1,1 +1,24 @@
-{"name":"@appnexus/organization","private":true,"type":"module","exports":{".":"./src/index.ts"},"scripts":{"build":"tsc --noEmit","typecheck":"tsc --noEmit","test":"vitest run"},"devDependencies":{"typescript":"^6.0.0","vitest":"^4.0.0"}}
+{
+  "name": "@appnexus/organization",
+  "private": true,
+  "dependencies": { "@appnexus/ui": "workspace:*", "@appnexus/icons": "workspace:*" },
+  "type": "module",
+  "exports": {
+    "./management": "./src/Management.vue",
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "build": "tsc --noEmit",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "typescript": "^6.0.0",
+    "vitest": "^4.0.0"
+  },
+  "peerDependencies": {
+    "element-plus": "^2.13.6",
+    "vue-i18n": "^11.3.0",
+    "vue": "^3.5.31"
+  }
+}

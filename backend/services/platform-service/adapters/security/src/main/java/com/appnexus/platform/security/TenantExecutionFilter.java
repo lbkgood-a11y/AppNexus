@@ -1,0 +1,79 @@
+package com.appnexus.platform.security;
+import com.appnexus.platform.tenant.*;
+import com.appnexus.platform.authorization.*;
+import jakarta.servlet.*;
+import jakarta.servlet.http.*;
+import java.io.IOException;
+import java.util.UUID;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.web.filter.OncePerRequestFilter;
+
+/** 为第一方业务 API 建立请求级上下文；账号自助与租户选择接口不要求预先选择租户。 */
+public final class TenantExecutionFilter extends OncePerRequestFilter {
+    static final String ATTRIBUTE = VerifiedTenantContext.class.getName();
+    private final TenantAccess access;
+    private final OrganizationAuthorization organizationAuthorization;
+    public TenantExecutionFilter(TenantAccess access, OrganizationAuthorization organizationAuthorization) {
+        this.access = access; this.organizationAuthorization=organizationAuthorization;
+    }
+    @Override protected boolean shouldNotFilter(HttpServletRequest request) {
+        return !request.getRequestURI().substring(request.getContextPath().length()).startsWith("/api/");
+    }
+    /** 不使用 ThreadLocal 或客户端 tenantId，避免线程复用与伪造请求污染边界。 */
+    @Override protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
+            FilterChain chain) throws ServletException, IOException {
+        request.removeAttribute(ATTRIBUTE);
+        try {
+            var auth = SecurityContextHolder.getContext().getAuthentication();
+            if (auth == null || !auth.isAuthenticated() || auth instanceof AnonymousAuthenticationToken) {
+                reject(response,401,"AUTHENTICATION_REQUIRED"); return;
+            }
+            var session = request.getSession(false);
+            if (session == null || !(session.getAttribute(TenantContextController.VERSION) instanceof Long version) || version < 1) {
+                reject(response,409,"TENANT_REQUIRED"); return;
+            }
+            var accountId = UUID.fromString(auth.getName());
+            var member = access.available(accountId).stream().filter(m ->
+                m.tenantId().toString().equals(session.getAttribute(TenantContextController.TENANT)) &&
+                m.memberId().toString().equals(session.getAttribute(TenantContextController.MEMBER))).findFirst();
+            if (member.isEmpty()) { reject(response,409,"TENANT_REQUIRED"); return; }
+            var m = member.get();
+            // 版本头只作为陈旧请求保护，不作为租户来源；租户仍由服务端会话及成员目录决定。
+            String expected=request.getHeader("X-Tenant-Context-Version");
+            boolean writing=!java.util.Set.of("GET","HEAD","OPTIONS").contains(request.getMethod());
+            if((expected!=null && !expected.equals(Long.toString(version))) || (version>1 && writing && expected==null)) {
+                reject(response,409,"TENANT_CONTEXT_CHANGED"); return;
+            }
+            var context=new VerifiedTenantContext(accountId,m.tenantId(),m.memberId(),version);
+            request.setAttribute(ATTRIBUTE,context);
+            response.setHeader("X-Tenant-Context-Version",Long.toString(version));
+            if(request.getRequestURI().startsWith(request.getContextPath()+"/api/organization/units")) {
+                var action=request.getMethod();
+                var capability=switch(action) {
+                    case "GET","HEAD" -> OrganizationCapability.READ;
+                    case "POST" -> OrganizationCapability.CREATE;
+                    case "PATCH","PUT" -> OrganizationCapability.UPDATE;
+                    case "DELETE" -> OrganizationCapability.DELETE;
+                    default -> null;
+                };
+                if(capability==null) { reject(response,405,"METHOD_NOT_ALLOWED"); return; }
+                if(!organizationAuthorization.allows(context.tenantId(),context.memberId(),capability)) {
+                    reject(response,403,"OPERATION_NOT_AUTHORIZED"); return;
+                }
+            }
+            chain.doFilter(request,response);
+        } catch (org.springframework.dao.DataAccessException unavailable) {
+            if (response.isCommitted()) throw unavailable;
+            reject(response,503,"CONTEXT_UNAVAILABLE");
+        } finally {
+            request.removeAttribute(ATTRIBUTE);
+        }
+    }
+    /** 过滤器错误使用标准错误媒体类型和稳定码，不泄露账号、成员或租户存在性。 */
+    private void reject(HttpServletResponse response,int status,String code) throws IOException {
+        response.setStatus(status); response.setContentType("application/problem+json");
+        response.setHeader("Cache-Control","no-store");
+        response.getWriter().write("{\"status\":"+status+",\"code\":\""+code+"\"}");
+    }
+}

@@ -2,4 +2,9 @@ packages:
   - apps/*
   - modules/*
   - infra/*
-  - components
+allowBuilds:
+  '@parcel/watcher': true
+  core-js: true
+  es5-ext: true
+  esbuild: true
+  vue-demi: true
