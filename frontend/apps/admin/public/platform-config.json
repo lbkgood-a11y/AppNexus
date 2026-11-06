@@ -9,7 +9,7 @@
   "Layout": "vertical",
   "Theme": "light",
   "DarkMode": false,
-  "ThemeMode": "light",
+  "ThemeMode": "system",
   "Grey": false,
   "Weak": false,
   "HideTabs": false,

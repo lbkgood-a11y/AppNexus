@@ -6,6 +6,21 @@
 
 /* 自定义全局 CssVar */
 :root {
+  /* AppNexus 语义设计 Token：业务页面只使用语义，不绑定具体主题颜色。 */
+  --color-primary: var(--el-color-primary);
+  --color-bg: #f4f7fb;
+  --color-surface: var(--el-bg-color);
+  --color-surface-secondary: var(--el-fill-color-light);
+  --color-text-primary: var(--el-text-color-primary);
+  --color-text-secondary: var(--el-text-color-secondary);
+  --color-border: var(--el-border-color);
+  --color-success: var(--el-color-success);
+  --color-warning: var(--el-color-warning);
+  --color-danger: var(--el-color-danger);
+  /* 内容卡片、业务工作区与模板表面统一跟随 Element Plus 基础圆角，主题调整时同步生效。 */
+  --app-card-radius: var(--el-border-radius-base);
+  --app-control-radius: 6px;
+
   /* 左侧菜单展开、收起动画时长 */
   --pure-transition-duration: 0.3s;
 
@@ -25,6 +40,27 @@
   --pure-theme-menu-title-hover: initial;
   --pure-theme-menu-active-before: transparent;
 }
+
+html.dark {
+  --color-bg: #0f1724;
+  --color-surface: #172131;
+  --color-surface-secondary: #1d2939;
+  --color-text-primary: #e5eaf2;
+  --color-text-secondary: #98a2b3;
+  --color-border: #2b3a4f;
+  --el-bg-color: var(--color-surface);
+  --el-bg-color-page: var(--color-bg);
+  --el-fill-color-blank: var(--color-surface);
+  --el-border-color: var(--color-border);
+  --el-border-color-light: #34445a;
+  --el-border-color-lighter: #29384b;
+  --el-text-color-primary: var(--color-text-primary);
+  --el-text-color-regular: #c3cad5;
+  --el-text-color-secondary: var(--color-text-secondary);
+}
+
+.el-card { --el-card-border-radius: var(--app-card-radius); }
+.el-button, .el-input__wrapper, .el-select__wrapper { border-radius: var(--app-control-radius); }
 
 /* 灰色模式 */
 .html-grey {

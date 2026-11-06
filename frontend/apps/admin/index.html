@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
@@ -8,8 +8,26 @@
       name="viewport"
       content="width=device-width,initial-scale=1.0,minimum-scale=1.0,maximum-scale=1.0,user-scalable=0"
     />
-    <title>vue-pure-admin</title>
+    <title>AppNexus</title>
     <link rel="icon" href="/favicon.ico" />
+    <script>
+      /**
+       * 在 Vue 与样式资源加载前恢复主题，避免深色用户刷新时先出现浅色页面。
+       * 存储异常或首次访问均回退到 system；只读取展示偏好，不接触身份或业务数据。
+       */
+      (() => {
+        let mode = "system";
+        try {
+          const layout = JSON.parse(localStorage.getItem("responsive-layout") || "null");
+          if (["light", "dark", "system"].includes(layout?.themeMode)) mode = layout.themeMode;
+        } catch (_) {
+          // 损坏的本地展示偏好不应阻断应用启动。
+        }
+        const dark = mode === "dark" || (mode === "system" && matchMedia("(prefers-color-scheme: dark)").matches);
+        document.documentElement.classList.toggle("dark", dark);
+        document.documentElement.style.colorScheme = dark ? "dark" : "light";
+      })();
+    </script>
   </head>
 
   <body>

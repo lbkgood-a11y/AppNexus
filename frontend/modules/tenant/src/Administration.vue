@@ -3,7 +3,7 @@ import { computed, onMounted, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { ElMessage } from "element-plus";
 import { AppIcon } from "@appnexus/icons";
-import { ManagementTable, type ManagementColumn } from "@appnexus/ui";
+import { BusinessWorkspace, ManagedDialog, ManagementTable, type ManagementColumn } from "@appnexus/ui";
 import type { AdministrationApi, DirectoryUser, DirectoryTenant, DirectoryMember } from "./administration";
 
 /** 平台开通流程组合 Element Plus，不构建新的表格、表单或弹层系统。 */
@@ -11,10 +11,14 @@ const props=defineProps<{ api: AdministrationApi; errorText: (error: unknown) =>
 const emit=defineEmits<{ enter: [tenantId: string] }>();
 const {t}=useI18n();
 const allowed=ref(false),loading=ref(false),saving=ref(false),error=ref("");
+const filterExpanded=ref(true);
 const tab=ref("tenants"),tenant=ref<DirectoryTenant>(),users=ref<DirectoryUser[]>([]),tenants=ref<DirectoryTenant[]>([]),members=ref<DirectoryMember[]>([]);
 const page=ref(1),total=ref(0),query=ref("");
 const submittedQuery=ref("");
-const tableTitle=computed(()=>tab.value==='members'?t('administration.membersOf',{name:tenant.value?.name}):t('administration.'+tab.value));
+const pageTitle=computed(()=>t(tab.value==='users'?'administration.userTitle':'administration.tenantTitle'));
+const pageDescription=computed(()=>t(tab.value==='users'?'administration.userDescription':'administration.tenantDescription'));
+const searchTitle=computed(()=>t(tab.value==='users'?'administration.userSearch':'administration.tenantSearch'));
+const tableTitle=computed(()=>tab.value==='members'?t('administration.membersOf',{name:tenant.value?.name}):t(tab.value==='users'?'administration.userList':'administration.tenantList'));
 const columns=computed<ManagementColumn[]>(()=>[
  ...(tab.value!=='tenants'?[{key:'username',prop:'username',label:t('administration.username'),minWidth:150}]:[]),
  {key:'name',prop:tab.value==='tenants'?'name':'displayName',label:t(tab.value==='tenants'?'tenant.name':'administration.displayName'),minWidth:160},
@@ -89,19 +93,28 @@ onMounted(load);
 </script>
 <template>
  <div class="management-page platform-administration">
-  <el-alert v-if="error && !dialog" type="error" :title="error" :closable="false" show-icon><el-button link type="primary" :disabled="loading||saving" @click="load">{{t('account.retry')}}</el-button></el-alert>
   <el-card v-if="!allowed" shadow="never" v-loading="loading"><el-empty v-if="!loading&&!error" :description="t('account.forbidden')" /><el-button :disabled="loading" @click="load">{{t('account.retry')}}</el-button></el-card>
   <template v-if="allowed">
-   <el-card v-if="tab!=='members'" class="management-tabs" shadow="never"><el-tabs :model-value="tab" @tab-change="value=>changeTab(String(value))">
-    <el-tab-pane :label="t('administration.tenants')" name="tenants" :disabled="saving" />
-    <el-tab-pane :label="t('administration.users')" name="users" :disabled="saving" />
-   </el-tabs></el-card>
-   <el-card v-else shadow="never"><div class="management-context"><el-button link type="primary" :disabled="saving" @click="changeTab('tenants')">{{t('management.backTenants')}}</el-button><h2>{{tenant?.name}}</h2><el-tag :type="tenant?.enabled?'success':'info'">{{t(tenant?.enabled?'administration.enabled':'administration.disabled')}}</el-tag></div></el-card>
-   <el-card class="management-filter" shadow="never"><el-form inline @submit.prevent="search()">
-    <el-form-item :label="t(tab==='tenants'?'tenant.name':'management.accountQuery')"><el-input v-model="query" clearable :maxlength="100" :placeholder="t('management.keyword')" /></el-form-item>
-    <div class="management-filter-actions"><el-button type="primary" native-type="submit" :disabled="loading||saving"><AppIcon name="search" :size="16" class="mr-1" />{{t('administration.search')}}</el-button><el-button :disabled="loading||saving" @click="search(true)"><AppIcon name="refresh" :size="16" class="mr-1" />{{t('management.reset')}}</el-button></div>
-   </el-form></el-card>
-   <ManagementTable :key="tab" :title="tableTitle" :columns="columns" :rows="rows" :loading="loading" :busy="saving" :empty-text="t('administration.empty')" @refresh="load">
+   <BusinessWorkspace :title="pageTitle" :description="pageDescription">
+    <template v-if="tab!=='members'" #navigation><el-tabs :model-value="tab" @tab-change="value=>changeTab(String(value))">
+     <el-tab-pane :label="t('administration.tenants')" name="tenants" :disabled="saving" />
+     <el-tab-pane :label="t('administration.users')" name="users" :disabled="saving" />
+    </el-tabs></template>
+    <template v-else #context><div class="management-context"><el-button link type="primary" :disabled="saving" @click="changeTab('tenants')">{{t('management.backTenants')}}</el-button><strong>{{tenant?.name}}</strong><el-tag :type="tenant?.enabled?'success':'info'">{{t(tenant?.enabled?'administration.enabled':'administration.disabled')}}</el-tag></div></template>
+    <template v-if="error && !dialog" #feedback><el-alert type="error" :title="error" :closable="false" show-icon><el-button link type="primary" :disabled="loading||saving" @click="load">{{t('account.retry')}}</el-button></el-alert></template>
+    <template #search><div class="management-filter">
+    <div class="management-filter-header">
+     <h2 class="management-filter-title">{{searchTitle}}</h2>
+     <el-button text class="management-filter-toggle" :aria-expanded="filterExpanded" :aria-label="t(filterExpanded?'administration.collapseFilter':'administration.expandFilter')" @click="filterExpanded=!filterExpanded">
+      <AppIcon name="arrowDown" :size="18" :class="{ 'filter-toggle-icon--collapsed': !filterExpanded }" />
+     </el-button>
+    </div>
+    <el-collapse-transition><el-form v-show="filterExpanded" inline @submit.prevent="search()">
+     <el-form-item :label="t(tab==='tenants'?'tenant.name':'management.accountQuery')"><el-input v-model="query" clearable :maxlength="100" :placeholder="t('management.keyword')" /></el-form-item>
+     <div class="management-filter-actions"><el-button type="primary" native-type="submit" :disabled="loading||saving"><AppIcon name="search" :size="16" class="mr-1" />{{t('administration.search')}}</el-button><el-button :disabled="loading||saving" @click="search(true)"><AppIcon name="refresh" :size="16" class="mr-1" />{{t('management.reset')}}</el-button></div>
+    </el-form></el-collapse-transition>
+    </div></template>
+    <template #data><ManagementTable :key="tab" embedded :title="tableTitle" :total="total" :columns="columns" :rows="rows" :loading="loading" :busy="saving" :empty-text="t('administration.empty')" @refresh="load">
     <template #actions>
     <el-button type="primary" :disabled="loading||saving||(tab==='members'&&!tenant?.enabled)" @click="open(tab==='users'?'user':tab==='members'?'member':'tenant')">{{t(tab==='users'?'administration.createUser':tab==='members'?'administration.addMember':'administration.createTenant')}}</el-button>
     </template>
@@ -115,9 +128,10 @@ onMounted(load);
      </el-popconfirm>
     </template>
     <template #pagination><el-pagination layout="total, prev, pager, next" :page-size="20" :current-page="page" :total="total" :disabled="loading||saving" @current-change="value=>{page=value;load()}" /></template>
-   </ManagementTable>
+    </ManagementTable></template>
+   </BusinessWorkspace>
   </template>
-  <el-dialog :model-value="Boolean(dialog)" :title="t(dialog==='user'?'administration.createUser':dialog==='member'?'administration.addMember':'administration.createTenant')" width="min(520px, calc(100vw - 32px))" :close-on-click-modal="!saving" :close-on-press-escape="!saving" :show-close="!saving" destroy-on-close @update:model-value="value=>{if(!value)dialog=''}" @closed="clearPassword">
+  <ManagedDialog :model-value="Boolean(dialog)" :title="t(dialog==='user'?'administration.createUser':dialog==='member'?'administration.addMember':'administration.createTenant')" width="min(520px, calc(100vw - 32px))" :busy="saving" @update:model-value="value=>{if(!value)dialog=''}" @closed="clearPassword">
    <el-alert v-if="error" :title="error" type="error" :closable="false" class="mb-4" />
    <el-form ref="formRef" :model="form" label-position="top" @submit.prevent="save">
     <template v-if="dialog==='user'">
@@ -133,10 +147,12 @@ onMounted(load);
     <p v-if="dialog==='tenant'" class="mb-4">{{t('administration.firstAdministratorHint')}}</p>
     <div class="flex justify-end gap-2"><el-button :disabled="saving" @click="dialog=''">{{t('organization.cancel')}}</el-button><el-button type="primary" native-type="submit" :loading="saving">{{t('organization.save')}}</el-button></div>
    </el-form>
-  </el-dialog>
+  </ManagedDialog>
  </div>
 </template>
 <style scoped>
+.filter-toggle-icon--collapsed { transform: rotate(-90deg); }
+.management-filter-toggle :deep(svg) { transition: transform var(--el-transition-duration); }
 /* 小屏保留完整管理动作，表格在自身容器滚动，按钮命中区域不小于 44px。 */
 @media(max-width:600px){.platform-administration :deep(.el-button){min-height:44px;}}
 </style>

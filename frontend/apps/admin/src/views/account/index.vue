@@ -8,6 +8,7 @@ import { useTranslationLang } from "@/layout/hooks/useTranslationLang";
 import { useUserStoreHook } from "@/store/modules/user";
 import { useI18n } from "vue-i18n";
 import { AppIcon } from "@appnexus/icons";
+import { SplitDetailTemplate } from "@appnexus/ui";
 import { ElMessage } from "element-plus";
 import { getProfile, saveProfile, changePassword, type AccountProfile } from "@/api/account";
 import { restoreSession } from "@/api/session";
@@ -85,8 +86,8 @@ onMounted(load);
 </script>
 
 <template>
-  <el-card class="account-shell" shadow="never">
-    <aside class="account-sidebar">
+  <SplitDetailTemplate unified class="account-shell">
+    <template #summary><aside class="account-sidebar">
       <el-button class="back-button" text @click="router.push('/welcome')">‹ <span>{{ t("account.back") }}</span></el-button>
       <div class="sidebar-identity">
         <div class="identity-avatar"><AppIcon name="user" :size="26" /></div>
@@ -98,9 +99,9 @@ onMounted(load);
           <AppIcon :name="item.icon" :size="18" /><span>{{ t(item.title) }}</span>
         </el-menu-item>
       </el-menu>
-    </aside>
+    </aside></template>
 
-    <main class="account-content" v-loading="loading">
+    <div class="account-content" v-loading="loading">
       <el-alert v-if="error" :title="error" type="error" :closable="false" show-icon class="mb-4" />
       <el-button v-if="!profile && !loading" @click="load">{{ t("account.retry") }}</el-button>
 
@@ -155,14 +156,13 @@ onMounted(load);
         <div class="setting-row"><div><h2>{{ t("account.sessionProtection") }}</h2><p>{{ t("account.sessionHint") }}</p></div>
           <el-tag type="success" effect="plain">{{ t("account.enabled") }}</el-tag></div>
       </section>
-    </main>
-  </el-card>
+    </div>
+  </SplitDetailTemplate>
 </template>
 <style scoped>
 /* 个人中心采用独立内容导航，保留平台外层布局；所有颜色复用全局主题变量。 */
 /* 外层直接复用首页 el-card：外边距交给模板 main-content，边框和圆角由组件统一提供。 */
-.account-shell :deep(.el-card__body) { display: grid; grid-template-columns: 224px minmax(0, 1fr); min-height: calc(100dvh - 160px); padding: 0; }
-.account-sidebar { border-right: 1px solid var(--el-border-color-lighter); padding: 18px 14px; }
+.account-sidebar { padding: 18px 14px; }
 .back-button { display: flex; align-items: center; gap: 9px; padding: 4px 12px; color: var(--el-text-color-secondary); background: transparent; border: 0; cursor: pointer; font-size: 20px; }
 .back-button span { font-size: 13px; }
 .sidebar-identity { display: flex; align-items: center; gap: 12px; margin: 28px 12px; }
@@ -193,5 +193,5 @@ h1 { margin: 0 0 10px; font-size: 23px; font-weight: 600; }
 .language-select { width: 150px; flex-shrink: 0; }
 .preference-note { display: flex; align-items: center; gap: 9px; color: var(--el-text-color-secondary); font-size: 12px; margin-top: 25px; line-height: 1.8; }
 .password-form { max-width: 520px; padding: 28px 0; }
-@media (max-width: 800px) { .account-shell :deep(.el-card__body) { grid-template-columns: 1fr; } .account-sidebar { border-right: 0; border-bottom: 1px solid var(--el-border-color-lighter); } .sidebar-identity { margin: 15px 12px; } .account-navigation { display: flex; flex-wrap: wrap; gap: 6px; } .account-navigation :deep(.el-menu-item) { padding: 0 12px; margin-bottom: 0; } .account-content { padding: 28px 20px; } .setting-row { flex-wrap: wrap; gap: 14px; } }
+@media (max-width: 800px) { .account-sidebar { border-right: 0; border-bottom: 1px solid var(--el-border-color-lighter); } .sidebar-identity { margin: 15px 12px; } .account-navigation { display: flex; flex-wrap: wrap; gap: 6px; } .account-navigation :deep(.el-menu-item) { padding: 0 12px; margin-bottom: 0; } .account-content { padding: 28px 20px; } .setting-row { flex-wrap: wrap; gap: 14px; } }
 </style>

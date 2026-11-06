@@ -3,7 +3,7 @@ import { computed, onMounted, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { ElMessage } from "element-plus";
 import { AppIcon } from "@appnexus/icons";
-import { ManagementTable, type ManagementColumn } from "@appnexus/ui";
+import { BusinessWorkspace, ManagedDialog, ManagementTable, TreeListTemplate, type ManagementColumn } from "@appnexus/ui";
 import type { OrganizationApi, OrganizationCapability, OrganizationGrant, OrganizationMember, OrganizationUnit } from "./index";
 
 /** 组合 Element Plus 表格、表单与确认组件；请求和错误映射由应用壳公开端口注入。 */
@@ -16,10 +16,11 @@ const error = ref(""), memberId = ref("");
 const dialog = ref(false), editingId = ref(""), name = ref("");
 const capability = ref<OrganizationCapability>("READ"), expiresAt = ref<Date | null>(null);
 const organizationId=ref<string|null>(null);
+const treeCollapsed=ref(false);
 const operations: OrganizationCapability[] = ["READ", "CREATE", "UPDATE", "DELETE"];
 const can = (action: OrganizationCapability) => capabilities.value.includes(action);
 const tab=ref("units"),query=ref(""),submittedQuery=ref(""),scope=ref("all"),scopeQuery=ref("");
-const memberDrawer=ref(false);
+const memberDialog=ref(false);
 const treeRef=ref<{filter:(value:string)=>void}>();
 const selectedMember=computed(()=>members.value.find(member=>member.memberId===memberId.value));
 const filteredUnits=computed(()=>units.value.filter(unit=>unit.name.toLocaleLowerCase().includes(submittedQuery.value.toLocaleLowerCase())));
@@ -45,8 +46,8 @@ function filterScope(value:string,node:{label:string}){return node.label.toLocal
 /** 查询只过滤服务端已授权返回的完整集合，不伪造分页或新接口。 */
 function search(reset=false){if(reset)query.value='';submittedQuery.value=query.value;}
 function changeTab(value:string){if(saving.value)return;tab.value=value;query.value='';submittedQuery.value='';}
-/** 授权抽屉固定当前成员；保存期间禁止切换和关闭，防止请求作用对象变化。 */
-function manageMember(member:OrganizationMember){memberId.value=member.memberId;capability.value='READ';expiresAt.value=null;memberDrawer.value=true;void loadGrants();}
+/** 授权弹出框固定当前成员；保存期间禁止切换和关闭，防止请求作用对象变化。 */
+function manageMember(member:OrganizationMember){memberId.value=member.memberId;capability.value='READ';expiresAt.value=null;memberDialog.value=true;void loadGrants();}
 function clearMember(){memberId.value='';grants.value=[];expiresAt.value=null;grantRequest++;}
 
 /** 每次刷新重验权限；权限移除时清理旧数据，失败保留错误和重试入口。 */
@@ -56,12 +57,12 @@ async function load() {
     capabilities.value = await props.api.capabilities();
     if(!can('READ')&&can('GRANT'))tab.value='members';
     if (!can("READ")) units.value = [];
-    if (!can("GRANT")) { members.value = []; grants.value = []; memberId.value = ""; memberDrawer.value=false;tab.value='units';grantRequest++; }
+    if (!can("GRANT")) { members.value = []; grants.value = []; memberId.value = ""; memberDialog.value=false;tab.value='units';grantRequest++; }
     if (can("READ")) units.value = await props.api.units();
     if(scope.value!=='all'&&scope.value!=='unassigned'&&!units.value.some(unit=>unit.id===scope.value))scope.value='all';
     if (can("GRANT")) {
       members.value = await props.api.members();
-      if (!members.value.some(member => member.memberId === memberId.value)) {memberId.value = "";memberDrawer.value=false;}
+      if (!members.value.some(member => member.memberId === memberId.value)) {memberId.value = "";memberDialog.value=false;}
       await loadGrants();
     }
   } catch (cause) { error.value = props.errorText(cause); }
@@ -114,44 +115,43 @@ onMounted(load);
 
 <template>
   <div class="management-page organization-management">
-    <el-alert v-if="error && !dialog && !memberDrawer" :title="error" type="error" show-icon :closable="false"><el-button link type="primary" :disabled="loading || saving" @click="load">{{t('account.retry')}}</el-button></el-alert>
     <el-card v-if="loading && !capabilities.length" v-loading="loading" shadow="never"><el-skeleton :rows="4" /></el-card>
     <el-card v-if="!loading && !capabilities.length" shadow="never"><el-empty :description="t('account.forbidden')" /><el-button @click="load">{{t('account.retry')}}</el-button></el-card>
-    <template v-if="capabilities.length">
-      <el-card class="management-tabs" shadow="never"><el-tabs :model-value="tab" @tab-change="value=>changeTab(String(value))"><el-tab-pane :label="t('management.units')" name="units" :disabled="saving || !can('READ') && !can('CREATE')" /><el-tab-pane v-if="can('GRANT')" :label="t('management.membersAndGrants')" name="members" :disabled="saving" /></el-tabs></el-card>
-      <div :class="tab==='members' ? 'management-split' : ''">
-        <el-card v-if="tab==='members'" shadow="never">
-          <h2 class="scope-title">{{t('management.organizationScope')}}</h2>
+    <BusinessWorkspace v-if="capabilities.length" :title="t('organization.title')" :description="t('organization.description')">
+      <template #navigation><el-tabs :model-value="tab" @tab-change="value=>changeTab(String(value))"><el-tab-pane :label="t('management.units')" name="units" :disabled="saving || !can('READ') && !can('CREATE')" /><el-tab-pane v-if="can('GRANT')" :label="t('management.membersAndGrants')" name="members" :disabled="saving" /></el-tabs></template>
+      <template v-if="error && !dialog && !memberDialog" #feedback><el-alert :title="error" type="error" show-icon :closable="false"><el-button link type="primary" :disabled="loading || saving" @click="load">{{t('account.retry')}}</el-button></el-alert></template>
+      <template v-if="tab==='units'" #search><div class="management-filter"><div class="management-filter-header"><h2 class="management-filter-title">{{t('organization.unitSearch')}}</h2></div><el-form inline @submit.prevent="search()">
+        <el-form-item :label="t('organization.name')"><el-input v-model="query" clearable :placeholder="t('management.keyword')" :maxlength="100" /></el-form-item>
+        <div class="management-filter-actions"><el-button type="primary" native-type="submit" :disabled="loading"><AppIcon name="search" :size="16" class="mr-1" />{{t('administration.search')}}</el-button><el-button :disabled="loading" @click="search(true)"><AppIcon name="refresh" :size="16" class="mr-1" />{{t('management.reset')}}</el-button></div>
+      </el-form></div></template>
+      <template #data><TreeListTemplate v-if="tab==='members'" v-model:collapsed="treeCollapsed" embedded :tree-width="240">
+        <template #treeHeader><h2 class="scope-title">{{t('management.organizationScope')}}</h2></template>
+        <template #tree>
           <el-input v-model="scopeQuery" class="management-scope-search" clearable :placeholder="t('management.searchOrganization')" :aria-label="t('management.searchOrganization')" :maxlength="100" />
           <el-tree ref="treeRef" :data="scopeNodes" node-key="id" :current-node-key="scope" :filter-node-method="filterScope" highlight-current default-expand-all :expand-on-click-node="false" @node-click="node=>scope=node.id" />
-        </el-card>
-        <div class="management-page">
-          <el-card class="management-filter" shadow="never"><el-form inline @submit.prevent="search()">
-            <el-form-item :label="t(tab==='units'?'organization.name':'administration.displayName')"><el-input v-model="query" clearable :placeholder="t('management.keyword')" :maxlength="100" /></el-form-item>
-            <div class="management-filter-actions"><el-button type="primary" native-type="submit" :disabled="loading"><AppIcon name="search" :size="16" class="mr-1" />{{t('administration.search')}}</el-button><el-button :disabled="loading" @click="search(true)"><AppIcon name="refresh" :size="16" class="mr-1" />{{t('management.reset')}}</el-button></div>
-          </el-form></el-card>
-          <ManagementTable v-if="tab==='units'" :title="t('management.units')" :columns="unitColumns" :rows="filteredUnits" :loading="loading" :busy="saving" :empty-text="t(submittedQuery?'management.noResults':'organization.empty')" @refresh="load">
-            <template #actions><el-button v-if="can('CREATE')" type="primary" :disabled="loading || saving" @click="edit()"><AppIcon name="add" :size="16" class="mr-1" />{{t('organization.create')}}</el-button></template>
-            <template #operations="{row}">
-              <el-button v-if="can('UPDATE')" link type="primary" :disabled="loading || saving" @click="edit(row)">{{t('organization.rename')}}</el-button>
-              <el-popconfirm v-if="can('DELETE')" :title="t('organization.confirmDelete',{name:row.name})" :confirm-button-text="t('organization.delete')" :cancel-button-text="t('organization.cancel')" @confirm="write(()=>api.remove(row.id),load)"><template #reference><el-button link type="danger" :disabled="loading || saving">{{t('organization.delete')}}</el-button></template></el-popconfirm>
-            </template>
-          </ManagementTable>
-          <ManagementTable v-else :title="t('management.membersAndGrants')" :columns="memberColumns" :rows="filteredMembers" :loading="loading" :busy="saving" :empty-text="t('management.noResults')" @refresh="load">
+        </template>
+        <template #search><div class="management-filter"><div class="management-filter-header"><h2 class="management-filter-title">{{t('organization.memberSearch')}}</h2></div><el-form inline @submit.prevent="search()"><el-form-item :label="t('administration.displayName')"><el-input v-model="query" clearable :placeholder="t('management.keyword')" :maxlength="100" /></el-form-item><div class="management-filter-actions"><el-button type="primary" native-type="submit" :disabled="loading"><AppIcon name="search" :size="16" class="mr-1" />{{t('administration.search')}}</el-button><el-button :disabled="loading" @click="search(true)"><AppIcon name="refresh" :size="16" class="mr-1" />{{t('management.reset')}}</el-button></div></el-form></div></template>
+          <template #table><ManagementTable embedded :title="t('management.membersAndGrants')" :columns="memberColumns" :rows="filteredMembers" :loading="loading" :busy="saving" :empty-text="t('management.noResults')" @refresh="load">
             <template #organization="{row}">{{row.organizationName || t('organization.unassigned')}}</template>
             <template #operations="{row}"><el-button link type="primary" :disabled="loading || saving" @click="manageMember(row)">{{t('management.manageGrants')}}</el-button></template>
-          </ManagementTable>
-        </div>
+          </ManagementTable></template>
+      </TreeListTemplate>
+      <div v-else>
+        <ManagementTable embedded :title="t('management.units')" :columns="unitColumns" :rows="filteredUnits" :loading="loading" :busy="saving" :empty-text="t(submittedQuery?'management.noResults':'organization.empty')" @refresh="load">
+          <template #actions><el-button v-if="can('CREATE')" type="primary" :disabled="loading || saving" @click="edit()"><AppIcon name="add" :size="16" class="mr-1" />{{t('organization.create')}}</el-button></template>
+          <template #operations="{row}"><el-button v-if="can('UPDATE')" link type="primary" :disabled="loading || saving" @click="edit(row)">{{t('organization.rename')}}</el-button><el-popconfirm v-if="can('DELETE')" :title="t('organization.confirmDelete',{name:row.name})" :confirm-button-text="t('organization.delete')" :cancel-button-text="t('organization.cancel')" @confirm="write(()=>api.remove(row.id),load)"><template #reference><el-button link type="danger" :disabled="loading || saving">{{t('organization.delete')}}</el-button></template></el-popconfirm></template>
+        </ManagementTable>
       </div>
-    </template>
-    <el-dialog v-model="dialog" :title="t(editingId?'organization.rename':'organization.create')" width="min(480px, calc(100vw - 32px))" :close-on-click-modal="!saving" :close-on-press-escape="!saving" :show-close="!saving" destroy-on-close>
+      </template>
+    </BusinessWorkspace>
+    <ManagedDialog v-model="dialog" :title="t(editingId?'organization.rename':'organization.create')" width="min(480px, calc(100vw - 32px))" :busy="saving">
       <el-alert v-if="error" :title="error" type="error" :closable="false" show-icon class="mb-4" />
       <el-form ref="formRef" :model="{name}" label-position="top" @submit.prevent="save(formRef)">
         <el-form-item prop="name" :label="t('organization.name')" :rules="[{required:true,whitespace:true,max:100,message:t('organization.invalidName'),trigger:'blur'}]"><el-input v-model="name" :maxlength="100" :disabled="saving" /></el-form-item>
         <div class="management-form-actions"><el-button :disabled="saving" @click="dialog=false">{{t('organization.cancel')}}</el-button><el-button native-type="submit" type="primary" :loading="saving">{{t('organization.save')}}</el-button></div>
       </el-form>
-    </el-dialog>
-    <el-drawer v-model="memberDrawer" class="organization-member-drawer" :title="t('management.memberSettings',{name:selectedMember?.displayName || ''})" size="min(760px, 100vw)" :close-on-click-modal="!saving" :close-on-press-escape="!saving" :show-close="!saving" destroy-on-close @closed="clearMember">
+    </ManagedDialog>
+    <ManagedDialog v-model="memberDialog" class="organization-member-dialog" :title="t('management.memberSettings',{name:selectedMember?.displayName || ''})" width="min(960px, calc(100vw - 48px))" height="min(760px, calc(100dvh - 48px))" :busy="saving" @closed="clearMember">
       <template v-if="memberId && can('GRANT')">
         <el-alert v-if="error" :title="error" type="error" :closable="false" show-icon class="mb-4"><el-button link type="primary" :disabled="loading || saving" @click="loadGrants">{{t('account.retry')}}</el-button></el-alert>
         <p class="management-note">{{t('organization.grantHint')}}</p>
@@ -166,18 +166,18 @@ onMounted(load);
             <div class="management-form-actions"><el-button type="primary" native-type="submit" :loading="saving" :disabled="loading || grantLoading || Boolean(expiresAt && expiresAt.getTime()<=Date.now())">{{t('organization.grant')}}</el-button></div>
           </el-form>
         </section>
-        <ManagementTable heading-level="h2" :title="t('management.currentGrants')" :columns="grantColumns" :rows="grants" :loading="grantLoading || loading" :busy="saving" :empty-text="t('organization.noGrants')" @refresh="loadGrants">
+        <ManagementTable embedded heading-level="h2" :title="t('management.currentGrants')" :columns="grantColumns" :rows="grants" :loading="grantLoading || loading" :busy="saving" :empty-text="t('organization.noGrants')" @refresh="loadGrants">
           <template #capability="{row}">{{t('organization.'+row.capability)}}</template>
           <template #expiry="{row}">{{expiry(row.expiresAt)}}</template>
           <template #operations="{row}"><el-popconfirm v-if="operations.includes(row.capability)" :title="t('organization.confirmRevoke')" :confirm-button-text="t('organization.revoke')" :cancel-button-text="t('organization.cancel')" @confirm="write(()=>api.revoke(memberId,row.capability),load)"><template #reference><el-button link type="danger" :disabled="saving || loading || grantLoading">{{t('organization.revoke')}}</el-button></template></el-popconfirm><span v-else>—</span></template>
         </ManagementTable>
       </template>
-    </el-drawer>
+    </ManagedDialog>
   </div>
 </template>
 
 <style scoped>
-.scope-title { margin: 0 0 16px; font-size: var(--el-font-size-base); font-weight: 600; }
+.scope-title { margin: 0; font-size: var(--el-font-size-medium); font-weight: 600; }
 .assignment-section { border-bottom: 1px solid var(--el-border-color-lighter); margin-bottom: 24px; padding-bottom: 24px; }
 .assignment-section h2 { font-size: var(--el-font-size-medium); margin: 0 0 16px; }
 .grant-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }

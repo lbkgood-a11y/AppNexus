@@ -1,5 +1,5 @@
 import { http } from "@/utils/http";
-import { currentTenant, availableTenants, beginTenantSwitch, endTenantSwitch, notifyTenantChange, reloadTenant, type TenantContext } from "@/utils/tenantContext";
+import { currentTenant, availableTenants, beginTenantSwitch, endTenantSwitch, notifyTenantChange, refreshTenantWorkspace, type TenantContext } from "@/utils/tenantContext";
 /** 有效成员身份来自服务端，前端不能自行构建租户身份。 */
 export interface TenantMembership { tenantId: string; memberId: string; name: string }
 /** 返回本人有效租户，空列表表示尚无有效成员资格。 */
@@ -24,12 +24,14 @@ export async function ensureTenantContext(){
  if(!currentTenant.value&&availableTenants.value.length===1){currentTenant.value=await selectTenant(availableTenants.value[0].tenantId);notifyTenantChange();}
  return currentTenant.value;
 }
-/** 切换时等待本标签写入，成功后通知其他标签并重建页面。 */
+/** 切换时等待本标签写入，成功后通知其他标签并只重建目标内容区。 */
 export async function enterTenant(id:string,path="/welcome"){
  beginTenantSwitch();
  try{
   let previous:TenantContext|undefined;
   previous=(await probeCurrentTenant())||undefined;
-  await selectTenant(id,previous?.version);notifyTenantChange();reloadTenant(path);
+  currentTenant.value=await selectTenant(id,previous?.version);
+  notifyTenantChange();
+  await refreshTenantWorkspace(path);
  }finally{endTenantSwitch();}
 }

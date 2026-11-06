@@ -1,9 +1,9 @@
 /* 内容区沿用模板 main-content 外边距；这里只定义筛选、数据、范围选择三类内部排布。 */
 .management-page { display: grid; gap: 16px; min-width: 0; }
 .management-page .management-filter .el-card__body { padding: 16px 24px; }
-.management-filter .el-form { display: flex; flex-wrap: wrap; align-items: center; gap: 16px 24px; }
+.management-filter .el-form { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; }
 .management-filter .el-form-item { margin: 0; }
-.management-filter .management-filter-actions { margin-left: auto; display: flex; justify-content: flex-end; gap: 8px; }
+.management-filter .management-filter-actions { margin-left: auto; display: flex; justify-content: flex-end; gap: 6px; }
 .management-filter .management-filter-actions .el-button + .el-button { margin-left: 0; }
 .management-filter .el-input { width: 240px; max-width: 100%; }
 .management-context { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
@@ -14,6 +14,15 @@
 .management-split .management-scope-search { margin-bottom: 16px; }
 .management-tabs .el-tabs__header { margin: 0; }
 .management-tabs .el-tabs__content { display: none; }
+.management-tabs .el-card__body { padding: 0 20px; }
+.management-tabs .el-tabs__item { height: 48px; }
+.management-page-header { padding: 4px 0; }
+.management-breadcrumb { margin-bottom: 12px; }
+.management-page-title { margin: 0; color: var(--el-text-color-primary); font-size: 22px; line-height: 1.4; font-weight: 600; }
+.management-page-description { margin: 6px 0 0; color: var(--el-text-color-secondary); font-size: var(--el-font-size-base); line-height: 1.6; }
+.management-filter-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+.management-filter-title { margin: 0; color: var(--el-text-color-primary); font-size: var(--el-font-size-base); font-weight: 600; }
+.management-filter-toggle { margin-left: auto; }
 .management-form-actions { display: flex; gap: 8px; justify-content: flex-end; }
 .management-form-actions .el-button + .el-button { margin-left: 0; }
 /* 列设置会传送到 body；限制弹层宽度，兼容 390px 及更窄视口。 */
@@ -28,7 +37,8 @@
   .management-filter .el-form-item { width: 100%; }
   .management-filter .el-form-item__content, .management-filter .el-input { width: 100%; }
   .management-filter .management-filter-actions { width: 100%; }
+  .management-page-title { font-size: 20px; }
   .management-page .el-button { min-height: 44px; }
-  .organization-member-drawer .el-button { min-height: 44px; }
+  .app-managed-dialog .el-button { min-height: 44px; }
   .management-filter .el-form-item { flex-wrap: wrap; }
 }

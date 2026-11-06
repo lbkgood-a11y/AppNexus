@@ -33,7 +33,7 @@ export function useDataThemeChange() {
 
   const { $storage } = useGlobal<GlobalPropertiesApi>();
   const dataTheme = ref<boolean>($storage?.layout?.darkMode);
-  const themeMode = ref<string>($storage?.layout?.themeMode);
+  const themeMode = ref<string>($storage?.layout?.themeMode ?? "system");
   const body = document.documentElement as HTMLElement;
   // 多个导航/设置组件持有各自的 ref，随公共偏好同步，避免切换入口之间显示旧状态。
   watch(() => $storage?.layout?.darkMode, value => { dataTheme.value = Boolean(value); });
@@ -94,7 +94,13 @@ export function useDataThemeChange() {
 
   /** 浅色、深色主题模式切换 */
   function dataThemeChange(mode?: string) {
-    themeMode.value = mode;
+    const selectedMode = mode === "light" || mode === "dark" || mode === "system" ? mode : "system";
+    themeMode.value = selectedMode;
+    if (selectedMode === "system") {
+      dataTheme.value = window.matchMedia("(prefers-color-scheme: dark)").matches;
+    } else {
+      dataTheme.value = selectedMode === "dark";
+    }
     if (useEpThemeStoreHook().epTheme === "light" && dataTheme.value) {
       setLayoutThemeColor("default", false);
     } else {
@@ -109,6 +115,7 @@ export function useDataThemeChange() {
       }
       document.documentElement.classList.remove("dark");
     }
+    document.documentElement.style.colorScheme = dataTheme.value ? "dark" : "light";
   }
 
   /** 清空缓存并返回登录页 */

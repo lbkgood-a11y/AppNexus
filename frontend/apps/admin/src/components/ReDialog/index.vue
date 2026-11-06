@@ -7,9 +7,9 @@ import {
   dialogStore
 } from "./index";
 import { ref, computed } from "vue";
+import { useI18n } from "vue-i18n";
 import { isFunction } from "@pureadmin/utils";
-import Fullscreen from "~icons/ri/fullscreen-fill";
-import ExitFullscreen from "~icons/ri/fullscreen-exit-fill";
+import { AppIcon } from "@appnexus/icons";
 
 defineOptions({
   name: "ReDialog"
@@ -17,6 +17,7 @@ defineOptions({
 
 const sureBtnMap = ref({});
 const fullscreen = ref(false);
+const { t } = useI18n();
 
 const footerButtons = computed(() => {
   return (options: DialogOptions) => {
@@ -73,16 +74,6 @@ const footerButtons = computed(() => {
   };
 });
 
-const fullscreenClass = computed(() => {
-  return [
-    "el-icon",
-    "el-dialog__close",
-    "-translate-x-2",
-    "cursor-pointer",
-    "hover:text-[red]!"
-  ];
-});
-
 function eventsCallBack(
   event: EventType,
   options: DialogOptions,
@@ -111,7 +102,8 @@ function handleClose(
     :key="index"
     v-bind="options"
     v-model="options.visible"
-    class="pure-dialog"
+    :class="['pure-dialog', 'app-managed-dialog', { 'is-dialog-maximized': fullscreen || options?.fullscreen, 'is-dialog-resizable': !options?.fullscreen }]"
+    :show-close="false"
     :fullscreen="fullscreen ? true : options?.fullscreen ? true : false"
     @closed="handleClose(options, index)"
     @opened="eventsCallBack('open', options, index)"
@@ -119,43 +111,22 @@ function handleClose(
     @closeAutoFocus="eventsCallBack('closeAutoFocus', options, index)"
   >
     <!-- header -->
-    <template
-      v-if="options?.fullscreenIcon || options?.headerRenderer"
-      #header="{ close, titleId, titleClass }"
-    >
-      <div v-if="options?.fullscreenIcon" class="flex-bc">
-        <span :id="titleId" :class="titleClass">{{ options?.title }}</span>
-        <i
-          v-if="!options?.fullscreen"
-          :class="fullscreenClass"
-          @click="
-            () => {
-              fullscreen = !fullscreen;
-              eventsCallBack(
-                'fullscreenCallBack',
-                { ...options, fullscreen },
-                index,
-                true
-              );
-            }
-          "
-        >
-          <IconifyIconOffline
-            class="pure-dialog-svg"
-            :icon="
-              options?.fullscreen
-                ? ExitFullscreen
-                : fullscreen
-                  ? ExitFullscreen
-                  : Fullscreen
-            "
-          />
-        </i>
+    <template #header="{ close, titleId, titleClass }">
+      <div class="app-dialog-header">
+        <component :is="options?.headerRenderer({ close, titleId, titleClass })" v-if="options?.headerRenderer" />
+        <span v-else :id="titleId" :class="['app-dialog-title', titleClass]">{{ options?.title }}</span>
+        <div class="app-dialog-actions">
+          <el-tooltip v-if="!options?.fullscreen" :content="t(fullscreen ? 'management.restoreDialog' : 'management.maximizeDialog')">
+            <el-button text :aria-label="t(fullscreen ? 'management.restoreDialog' : 'management.maximizeDialog')" @click="
+              () => {
+                fullscreen = !fullscreen;
+                eventsCallBack('fullscreenCallBack', { ...options, fullscreen }, index, true);
+              }
+            "><AppIcon :name="fullscreen ? 'fullscreenExit' : 'fullscreen'" :size="18" /></el-button>
+          </el-tooltip>
+          <el-tooltip :content="t('management.closeDialog')"><el-button text :aria-label="t('management.closeDialog')" @click="close"><AppIcon name="close" :size="20" /></el-button></el-tooltip>
+        </div>
       </div>
-      <component
-        :is="options?.headerRenderer({ close, titleId, titleClass })"
-        v-else
-      />
     </template>
     <component
       v-bind="options?.props"

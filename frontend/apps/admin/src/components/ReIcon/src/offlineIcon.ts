@@ -32,6 +32,7 @@ import RiBankCardLine from "~icons/ri/bank-card-line?raw";
 import RiFilePpt2Line from "~icons/ri/file-ppt-2-line?raw";
 import RiGitBranchLine from "~icons/ri/git-branch-line?raw";
 import RiSettings3Line from "~icons/ri/settings-3-line?raw";
+import RiOrganizationChart from "~icons/ri/organization-chart?raw";
 import RiUserVoiceLine from "~icons/ri/user-voice-line?raw";
 import RiBookmark2Line from "~icons/ri/bookmark-2-line?raw";
 import RiFileSearchLine from "~icons/ri/file-search-line?raw";
@@ -71,6 +72,7 @@ const icons = [
   ["ri/file-ppt-2-line", RiFilePpt2Line],
   ["ri/git-branch-line", RiGitBranchLine],
   ["ri/settings-3-line", RiSettings3Line],
+  ["ri/organization-chart", RiOrganizationChart],
   ["ri/user-voice-line", RiUserVoiceLine],
   ["ri/bookmark-2-line", RiBookmark2Line],
   ["ri/file-search-line", RiFileSearchLine],

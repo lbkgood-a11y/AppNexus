@@ -7,13 +7,16 @@ import {enterTenant} from "@/api/tenant";
 import {requestErrorMessage} from "@/utils/http";
 import {message} from "@/utils/message";
 import {AppIcon} from "@appnexus/icons";
+import {useRoute} from "vue-router";
 const {t}=useI18n();const switching=ref(false);
-/** 多租户复用模板下拉；切换前提示未保存内容丢失，成功后重建页面。 */
+const route=useRoute();
+/** 多租户复用模板下拉；切换前提示未保存内容丢失，成功后仅重建租户相关内容区。 */
 async function select(id:string){
  if(id===currentTenant.value?.tenantId)return;
  try{await ElMessageBox.confirm(t('tenant.switchConfirm'),t('tenant.switch'),{confirmButtonText:t('tenant.switch'),cancelButtonText:t('organization.cancel'),type:'warning'});}catch{return;}
  switching.value=true;
- try{await enterTenant(id);}catch(cause){message(requestErrorMessage(cause),{type:'error'});}finally{switching.value=false;}
+ const target=route.path.startsWith('/organization')?route.path:'/welcome';
+ try{await enterTenant(id,target);}catch(cause){message(requestErrorMessage(cause),{type:'error'});}finally{switching.value=false;}
 }
 </script>
 <template>

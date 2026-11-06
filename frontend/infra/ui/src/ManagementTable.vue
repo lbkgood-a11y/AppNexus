@@ -21,9 +21,13 @@ const props = withDefaults(defineProps<{
   busy?: boolean;
   /** 无数据文案；缺省使用统一空态，错误必须在调用页单独呈现。 */
   emptyText?: string;
-  /** 标题层级，默认 h1；在成员抽屉等已有标题的区域使用 h2。 */
+  /** 服务端返回的记录总数；省略时标题区不展示数量，禁止用当前页行数替代。 */
+  total?: number;
+  /** 标题层级，默认 h1；在成员弹出框等已有标题的区域使用 h2。 */
   headingLevel?: "h1" | "h2";
-}>(), { loading: false, busy: false, headingLevel: "h1" });
+  /** 嵌入业务工作区时移除重复卡片边界；全屏模式仍生成独立表面。 */
+  embedded?: boolean;
+}>(), { loading: false, busy: false, headingLevel: "h1", embedded: false });
 const emit = defineEmits<{ refresh: [] }>();
 defineSlots<{
   actions?: () => unknown;
@@ -92,9 +96,12 @@ onBeforeUnmount(() => observer?.disconnect());
   <el-dialog v-model="fullscreen" :title="title" fullscreen append-to-body :show-close="false" class="management-fullscreen-dialog" @opened="measure"><div ref="fullscreenHost" class="management-fullscreen-host" /></el-dialog>
   <Teleport :to="fullscreenHost || 'body'" :disabled="!fullscreen || !fullscreenHost">
   <section class="management-table" :class="{ 'is-fullscreen': fullscreen }" :aria-label="title">
-    <el-card shadow="never">
+    <component :is="embedded && !fullscreen ? 'div' : 'el-card'" class="management-table-surface" shadow="never">
       <div class="management-toolbar">
-        <component :is="headingLevel" class="management-table-title">{{ title }}</component>
+        <div class="management-table-heading">
+          <component :is="headingLevel" class="management-table-title">{{ title }}</component>
+          <span v-if="total !== undefined" class="management-table-total">{{ t('management.totalRecords', { total }) }}</span>
+        </div>
         <div class="management-toolbar-actions">
           <slot name="actions" />
           <div class="management-table-tools">
@@ -130,21 +137,25 @@ onBeforeUnmount(() => observer?.disconnect());
         </el-table>
       </div>
       <div v-if="$slots.pagination" class="management-pagination"><slot name="pagination" /></div>
-    </el-card>
+    </component>
   </section>
   </Teleport>
 </template>
 
 <style scoped>
 .management-table { min-width: 0; }
-.management-table :deep(.el-card__body) { display: flex; flex-direction: column; min-height: min(540px, calc(100dvh - 300px)); }
-.management-toolbar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; margin-bottom: 16px; }
+.management-table-surface { display: flex; flex-direction: column; min-width: 0; }
+.management-table :deep(.el-card__body) { display: flex; flex-direction: column; }
+.management-toolbar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 12px; }
+.management-table-heading { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
 .management-table-title { margin: 0; font-size: var(--el-font-size-large); font-weight: 600; }
-.management-toolbar-actions, .management-table-tools { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.management-table-tools { gap: 0; }
+.management-table-total { color: var(--el-text-color-secondary); font-size: var(--el-font-size-small); white-space: nowrap; }
+.management-toolbar-actions, .management-table-tools { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.management-table-tools { gap: 2px; }
+.management-table-tools :deep(.el-button) { width: 34px; height: 32px; padding: 0; }
 .management-toolbar-actions :deep(.el-button + .el-button) { margin-left: 0; }
-.management-table-region { min-width: 0; flex: 1; }
-.management-pagination { display: flex; justify-content: flex-end; margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--el-border-color-lighter); overflow-x: auto; }
+.management-table-region { min-width: 0; }
+.management-pagination { display: flex; justify-content: flex-end; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--el-border-color-lighter); overflow-x: auto; }
 .management-column-heading { display: flex; justify-content: space-between; margin-bottom: 8px; }
 .management-column-row { display: flex; align-items: center; gap: 4px; }
 .management-column-row .el-checkbox { flex: 1; min-width: 0; margin-right: 0; }
@@ -155,7 +166,6 @@ onBeforeUnmount(() => observer?.disconnect());
 .is-fullscreen :deep(.el-card__body) { height: 100%; min-height: 0; }
 .is-fullscreen .management-table-region { min-height: 0; }
 @media (max-width: 600px) {
-  .management-table :deep(.el-card__body) { min-height: 0; }
   .management-table-tools :deep(.el-button) { min-width: 44px; min-height: 44px; }
   .management-toolbar-actions { width: 100%; justify-content: flex-end; }
 }

@@ -33,9 +33,13 @@ foreach ($name in @("APP_DATABASE_PASSWORD", "APP_DATABASE_ROOT_PASSWORD", "APP_
     }
     $secrets[$name] = [Environment]::GetEnvironmentVariable($name, "Process")
 }
-# 首次管理员登录名默认 admin；仅在数据库尚未初始化时生效，不作为重置入口。
-if (-not $env:APP_BOOTSTRAP_USERNAME) { $env:APP_BOOTSTRAP_USERNAME = "admin" }
+# 首次平台管理员登录名默认 platform-admin；仅在数据库尚未初始化时创建账号，不作为重置入口。
+if (-not $env:APP_BOOTSTRAP_USERNAME) { $env:APP_BOOTSTRAP_USERNAME = "platform-admin" }
 $secrets["APP_BOOTSTRAP_USERNAME"] = $env:APP_BOOTSTRAP_USERNAME
+# 首次平台身份默认授予同批创建的账号；账号创建先执行，平台身份初始化后执行。
+# 单独覆盖时也必须指向已有有效账号，不能借平台身份引导隐式创建第二个账号。
+if (-not $env:APP_PLATFORM_BOOTSTRAP_USERNAME) { $env:APP_PLATFORM_BOOTSTRAP_USERNAME = $env:APP_BOOTSTRAP_USERNAME }
+$secrets["APP_PLATFORM_BOOTSTRAP_USERNAME"] = $env:APP_PLATFORM_BOOTSTRAP_USERNAME
 $secrets | ConvertTo-Json | Set-Content -LiteralPath $environmentFile
 # MySQL 使用本机 3307 端口和 UTC 时间语义，与 Compose 的端口映射保持一致。
 $env:APP_DATABASE_URL = "jdbc:mysql://localhost:3307/appnexus?preserveInstants=true&connectionTimeZone=UTC&forceConnectionTimeZoneToSession=true"

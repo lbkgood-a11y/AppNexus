@@ -16,6 +16,7 @@ export function requestErrorMessage(error: unknown): string {
     if (status === 429) return t("account.rateLimited");
     const code=error.response?.data?.code;
     if(typeof code==='string'&&["PLATFORM_DENIED","DIRECTORY_CONFLICT","INVALID_DIRECTORY_INPUT","TENANT_CONTEXT_CHANGED","TENANT_UNAVAILABLE","TENANT_REQUIRED"].includes(code))return t("administration.errors."+code);
+    if(typeof code==='string'&&["MENU_CHANGED","MENU_CODE_CONFLICT","MENU_CONFLICT","INVALID_MENU_INPUT"].includes(code))return t("menuManagement.errors."+code);
     if (!error.response || (status && status >= 500)) return t("account.unavailable");
     const detail = error.response?.data?.detail;
     if (typeof detail === "string" && detail.length <= 300) return detail;

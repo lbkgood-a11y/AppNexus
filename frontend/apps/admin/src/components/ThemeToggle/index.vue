@@ -12,7 +12,7 @@ const { $storage } = useGlobal<GlobalPropertiesApi>();
 const { dataTheme, dataThemeChange } = useDataThemeChange();
 /** 系统深色偏好由媒体查询提供；仅在选择 system 时影响当前主题。 */
 const prefersDark = useMediaQuery("(prefers-color-scheme: dark)");
-const mode = computed<ThemeMode>(() => ($storage.layout?.themeMode as ThemeMode) ?? "light");
+const mode = computed<ThemeMode>(() => ($storage.layout?.themeMode as ThemeMode) ?? "system");
 const options: { mode: ThemeMode; icon: PlatformIconName; key: string }[] = [
   { mode: "light", icon: "sun", key: "platform.themeLight" },
   { mode: "dark", icon: "moon", key: "platform.themeDark" },
@@ -37,10 +37,17 @@ watch([mode, prefersDark], ([value]) => setMode(value), { immediate: true });
     </el-button>
     <template #dropdown>
       <el-dropdown-menu>
-        <el-dropdown-item v-for="option in options" :key="option.mode" :command="option.mode" :disabled="mode === option.mode">
-          <AppIcon :name="option.icon" :size="16" class="mr-2" />{{ t(option.key) }}
+        <el-dropdown-item v-for="option in options" :key="option.mode" :command="option.mode" :class="{ 'is-selected': mode === option.mode }">
+          <AppIcon :name="option.icon" :size="16" class="mr-2" />
+          <span>{{ t(option.key) }}</span>
+          <AppIcon v-if="mode === option.mode" name="check" :size="16" class="theme-option-check" />
         </el-dropdown-item>
       </el-dropdown-menu>
     </template>
   </el-dropdown>
 </template>
+
+<style scoped>
+.theme-option-check { margin-left: auto; color: var(--el-color-primary); }
+:deep(.is-selected) { color: var(--el-color-primary); font-weight: 500; }
+</style>

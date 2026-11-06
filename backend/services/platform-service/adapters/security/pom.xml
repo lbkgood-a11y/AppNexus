@@ -8,6 +8,7 @@
   </parent>
   <artifactId>platform-security-adapter</artifactId>
   <dependencies>
+    <dependency><groupId>com.appnexus</groupId><artifactId>platform-configuration</artifactId><version>${project.version}</version></dependency>
     <dependency>
       <groupId>com.appnexus</groupId>
       <artifactId>platform-organization</artifactId>

@@ -21,6 +21,8 @@ import ArrowDown from "~icons/ri/arrow-down-s-line";
 import Pin from "~icons/ri/pushpin-line";
 import Drag from "~icons/ri/draggable";
 import Add from "~icons/ri/add-line";
+import Check from "~icons/ri/check-line";
+import Close from "~icons/ri/close-line";
 
 /** 平台语义图标映射；统一采用 Remix Icon 线性图标，由构建插件按需生成本地 SVG，不请求外部图标服务。 */
 export const platformIcons = {
@@ -28,7 +30,8 @@ export const platformIcons = {
   globe: Globe, arrowRight: ArrowRight, shield: Shield, home: Home,
   settings: Settings, search: Search, logout: Logout, organization: Organization,
   refresh: Refresh, density: Density, fullscreen: Fullscreen, fullscreenExit: FullscreenExit,
-  arrowUp: ArrowUp, arrowDown: ArrowDown, pin: Pin, drag: Drag, add: Add
+  arrowUp: ArrowUp, arrowDown: ArrowDown, pin: Pin, drag: Drag, add: Add, check: Check,
+  close: Close
 } as const;
 
 /** 平台图标名称；业务模块使用语义名称，不依赖后台模板内部的 ReIcon 实现。 */
