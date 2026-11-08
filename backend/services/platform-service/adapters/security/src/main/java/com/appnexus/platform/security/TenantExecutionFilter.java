@@ -48,7 +48,8 @@ public final class TenantExecutionFilter extends OncePerRequestFilter {
             var context=new VerifiedTenantContext(accountId,m.tenantId(),m.memberId(),version);
             request.setAttribute(ATTRIBUTE,context);
             response.setHeader("X-Tenant-Context-Version",Long.toString(version));
-            if(request.getRequestURI().startsWith(request.getContextPath()+"/api/organization/units")) {
+            if(request.getRequestURI().startsWith(request.getContextPath()+"/api/organization/units") ||
+               request.getRequestURI().startsWith(request.getContextPath()+"/api/organization/domain")) {
                 var action=request.getMethod();
                 var capability=switch(action) {
                     case "GET","HEAD" -> OrganizationCapability.READ;

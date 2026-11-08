@@ -40,8 +40,35 @@ public final class TenantSqlInterceptor implements Interceptor {
         String namespace=statement.getId().substring(0,statement.getId().lastIndexOf('.'));
         Class<?> mapper=Class.forName(namespace);
         var declaration=mapper.getAnnotation(TenantScoped.class);
+        var aggregate=mapper.getAnnotation(TenantAggregateScoped.class);
         var sql=handler.getBoundSql().getSql();
         String normalized=sql.trim().replaceAll("\s+"," ").toLowerCase(Locale.ROOT);
+        if(declaration==null && aggregate!=null) {
+            String statementName=statement.getId().substring(statement.getId().lastIndexOf('.')+1);
+            if(!Set.of(aggregate.statements()).contains(statementName))
+                throw new IllegalStateException("Tenant aggregate statement outside reviewed allowlist");
+            var allowed=Arrays.stream(aggregate.tables()).map(value->value.toLowerCase(Locale.ROOT)).collect(java.util.stream.Collectors.toSet());
+            if(allowed.isEmpty() || allowed.stream().anyMatch(value->!value.matches("[a-z][a-z0-9_]*")))
+                throw new IllegalStateException("Invalid tenant aggregate table allowlist");
+            Set<String> referenced;
+            try { referenced=net.sf.jsqlparser.util.TablesNamesFinder.findTables(normalized).stream()
+                .map(value->value.toLowerCase(Locale.ROOT)).collect(java.util.stream.Collectors.toSet()); }
+            catch(net.sf.jsqlparser.JSQLParserException unsupported) {
+                throw new IllegalStateException("Tenant aggregate SQL cannot be safely parsed",unsupported);
+            }
+            if(referenced.isEmpty() || !allowed.containsAll(referenced))
+                throw new IllegalStateException("Tenant aggregate SQL table outside allowlist");
+            var attributes=RequestContextHolder.getRequestAttributes();
+            if(!(attributes instanceof ServletRequestAttributes request) ||
+                !(request.getRequest().getAttribute(VerifiedTenantContext.class.getName()) instanceof VerifiedTenantContext context))
+                throw new IllegalStateException("Verified tenant context required");
+            BoundSql boundSql=handler.getBoundSql();
+            if(boundSql.getParameterMappings().stream().noneMatch(mapping->mapping.getProperty().equals("__verifiedTenant")))
+                throw new IllegalStateException("Tenant aggregate binding missing");
+            boundSql.setAdditionalParameter("__verifiedTenant",java.nio.ByteBuffer.allocate(16)
+                .putLong(context.tenantId().getMostSignificantBits()).putLong(context.tenantId().getLeastSignificantBits()).array());
+            return invocation.proceed();
+        }
         if(declaration==null) {
             var platform = mapper.getAnnotation(PlatformScoped.class);
             if(platform != null) {

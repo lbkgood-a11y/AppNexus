@@ -79,6 +79,17 @@ class TenantSqlIsolationTest extends DatabaseTestSupport {
   } finally {RequestContextHolder.resetRequestAttributes();}
  }
  @org.springframework.beans.factory.annotation.Autowired com.appnexus.platform.organization.OrganizationUnitRepository units;
+ @org.springframework.beans.factory.annotation.Autowired com.appnexus.platform.organization.OrganizationStructure structure;
+ /** 类型树拒绝循环移动和使用中类型停用，证明核心生命周期约束在正式 MySQL 上生效。 */
+ @Test void organizationTreePreservesTypeAndCycleInvariants() {
+  context(UUID.randomUUID());
+  var type=structure.createType("TEST_"+UUID.randomUUID().toString().substring(0,8),"测试类型");
+  var root=structure.createUnit("ROOT_"+UUID.randomUUID().toString().substring(0,8),type.id(),null,"根组织");
+  var child=structure.createUnit("CHILD_"+UUID.randomUUID().toString().substring(0,8),type.id(),root.id(),"子组织");
+  assertThatThrownBy(()->structure.moveUnit(root.id(),child.id(),root.version())).isInstanceOf(IllegalArgumentException.class).hasMessage("ORGANIZATION_CYCLE");
+  assertThatThrownBy(()->structure.updateType(type.id(),type.name(),false,type.version())).isInstanceOf(IllegalStateException.class).hasMessage("TYPE_IN_USE");
+  RequestContextHolder.resetRequestAttributes();
+ }
  /** 正式仓储端口在 A/B 租户相同 ID 下执行 CRUD，验证注入上下文覆盖业务参数。 */
  @Test void organizationRepositoryUsesVerifiedTenantForEveryOperation() {
   jdbc.execute("CREATE TABLE IF NOT EXISTS tenant_organization_unit(tenant_id BINARY(16) NOT NULL,id BINARY(16) NOT NULL,name VARCHAR(100) NOT NULL,created_at TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),PRIMARY KEY(tenant_id,id))");

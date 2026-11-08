@@ -26,12 +26,17 @@ public interface AdministrationMapper {
     @Insert("INSERT INTO platform_administrator(account_id) VALUES(UUID_TO_BIN(#{account}))")
     void initialAdministrator(String account);
     /** 查询词作为 LIKE 参数绑定，前端不提供 SQL、排序列或表名。 */
-    @Select("SELECT BIN_TO_UUID(id) id,username,display_name,enabled FROM identity_account WHERE username LIKE CONCAT('%',#{query},'%') OR display_name LIKE CONCAT('%',#{query},'%') ORDER BY username,id LIMIT #{size} OFFSET #{offset}")
+    @Select("SELECT BIN_TO_UUID(id) id,username,display_name,email,email_verified,phone_number,phone_verified,enabled FROM identity_account WHERE username LIKE CONCAT('%',#{query},'%') OR display_name LIKE CONCAT('%',#{query},'%') OR COALESCE(email,'') LIKE CONCAT('%',#{query},'%') OR COALESCE(phone_number,'') LIKE CONCAT('%',#{query},'%') ORDER BY username,id LIMIT #{size} OFFSET #{offset}")
     List<Map<String,Object>> users(@Param("query") String query,@Param("size") int size,@Param("offset") long offset);
-    @Select("SELECT COUNT(*) FROM identity_account WHERE username LIKE CONCAT('%',#{query},'%') OR display_name LIKE CONCAT('%',#{query},'%')")
+    @Select("SELECT COUNT(*) FROM identity_account WHERE username LIKE CONCAT('%',#{query},'%') OR display_name LIKE CONCAT('%',#{query},'%') OR COALESCE(email,'') LIKE CONCAT('%',#{query},'%') OR COALESCE(phone_number,'') LIKE CONCAT('%',#{query},'%')")
     long userCount(String query);
-    @Insert("INSERT INTO identity_account(id,username,display_name,password_hash) VALUES(UUID_TO_BIN(#{id}),#{username},#{name},#{hash})")
-    void createUser(@Param("id") String id,@Param("username") String username,@Param("name") String name,@Param("hash") String hash);
+    @Insert("INSERT INTO identity_account(id,username,display_name,email,phone_number,password_hash) VALUES(UUID_TO_BIN(#{id}),#{username},#{name},#{email},#{phone},#{hash})")
+    void createUser(@Param("id") String id,@Param("username") String username,@Param("name") String name,@Param("email") String email,@Param("phone") String phone,@Param("hash") String hash);
+    /** 修改联系方式必须重置验证状态，避免新值继承旧值的信任。 */
+    @Update("UPDATE identity_account SET display_name=#{name},email_verified=IF(email<=>#{email},email_verified,FALSE),email=#{email},phone_verified=IF(phone_number<=>#{phone},phone_verified,FALSE),phone_number=#{phone} WHERE id=UUID_TO_BIN(#{id})")
+    int updateUser(@Param("id") String id,@Param("name") String name,@Param("email") String email,@Param("phone") String phone);
+    @Select("SELECT BIN_TO_UUID(id) id,username,display_name,email,email_verified,phone_number,phone_verified,enabled FROM identity_account WHERE id=UUID_TO_BIN(#{id})")
+    Map<String,Object> user(String id);
     /** 状态变化增加凭据版本，恢复账号也不能重用停用前的会话。 */
     @Update("UPDATE identity_account SET enabled=#{enabled},version=version+1 WHERE id=UUID_TO_BIN(#{id}) AND enabled<>#{enabled}")
     int userState(@Param("id") String id,@Param("enabled") boolean enabled);

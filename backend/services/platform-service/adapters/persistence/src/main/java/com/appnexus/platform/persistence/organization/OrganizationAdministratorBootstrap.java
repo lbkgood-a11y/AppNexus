@@ -34,6 +34,7 @@ public class OrganizationAdministratorBootstrap {
         mapper.claimBootstrap(tenantId, memberId);
         for (var capability : OrganizationCapability.values()) {
             mapper.grant(tenantId, memberId, capability.name(), memberId, null);
+            mapper.grantAccess(tenantId, memberId, capability.name(), memberId, null);
             mapper.audit(tenantId, memberId, memberId, capability.name(), "GRANTED");
         }
     }

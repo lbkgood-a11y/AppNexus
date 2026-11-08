@@ -35,7 +35,7 @@ mvn -pl services/platform-service/application spring-boot:run "-Dspring-boot.run
 
 The initializer creates persistent local credentials and signing material in ignored .local/.
 The generated bootstrap username/password are in .local/environment.json. They are not logged.
-For a fresh local database the username defaults to `platform-admin`; the same initialization run
+For a fresh local database the username defaults to `admin`; the same initialization run
 creates the login account first and then grants its initial platform-administrator identity.
 This file is a local development convenience; deployment secrets must be supplied by the deployment secret store.
 Keep .local/ when restarting: the database and signing key must retain matching credentials.
@@ -60,8 +60,8 @@ APP_VALKEY_HOST, APP_VALKEY_PORT, APP_VALKEY_PASSWORD, APP_BFF_SECRET, APP_PUBLI
 APP_FRONTEND_URL, APP_SIGNING_KEY_STORE, APP_SIGNING_KEY_PASSWORD.
 APP_SIGNING_KEY_ALIAS defaults to appnexus. APP_BOOTSTRAP_USERNAME and APP_BOOTSTRAP_PASSWORD
 are optional and must be supplied together for first provisioning. A production first deployment
-sets APP_BOOTSTRAP_USERNAME and APP_PLATFORM_BOOTSTRAP_USERNAME to `platform-admin`, with the
-random initial password supplied by the deployment secret store. Remove bootstrap usernames after
+sets APP_BOOTSTRAP_USERNAME to `admin`, with the random initial password supplied by the deployment
+secret store. The same account receives the initial platform-administrator identity. Remove the bootstrap username after
 successful initialization; they are not account-recovery controls.
 The JDBC URL must include preserveInstants=true, connectionTimeZone=UTC and
 forceConnectionTimeZoneToSession=true. The key store must contain an RSA private key and certificate.
@@ -166,4 +166,4 @@ Organization permissions are deny-by-default. The authorization module defines R
 
 组织管理员初始化与授权页面的部署流程见 [组织管理员初始化与授权验收](../docs/design/组织管理员初始化与授权验收.md)。默认不开启组织初始化；部署时通过 APP_ORGANIZATION_BOOTSTRAP_TENANT_ID 与 APP_ORGANIZATION_BOOTSTRAP_MEMBER_ID 显式指定已有有效租户和成员，成功后移除配置。认证账号初始化不会自动获得业务权限。
 
-平台用户、租户开通与成员管理现已接通。全新部署同步设置 `APP_BOOTSTRAP_USERNAME=platform-admin`、随机 `APP_BOOTSTRAP_PASSWORD` 与 `APP_PLATFORM_BOOTSTRAP_USERNAME=platform-admin`，先创建登录账号再授予首位平台身份；成功后移除用户名引导参数。配置默认空且不按固定用户名自动赋权。运行 V11/V12 迁移后使用“平台管理”完成用户→租户→成员→组织归属/授权。详见[操作流程](../docs/design/租户用户成员组织操作流程.md)。
+平台用户、租户开通与成员管理现已接通。全新部署设置 `APP_BOOTSTRAP_USERNAME=admin` 与随机 `APP_BOOTSTRAP_PASSWORD`，先创建登录账号再为同一账号授予首位平台身份；成功后移除用户名引导参数。配置默认空且不按固定用户名对存量账号自动赋权。运行 V11/V12 迁移后使用“平台管理”完成用户→租户→成员→组织归属/授权。详见[操作流程](../docs/design/租户用户成员组织操作流程.md)。

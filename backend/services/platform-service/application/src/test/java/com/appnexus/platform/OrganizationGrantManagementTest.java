@@ -24,9 +24,10 @@ class OrganizationGrantManagementTest extends DatabaseTestSupport {
  /** 主要组织归属与能力独立，同租户关联成功、跨租户组织拒绝。 */
  @Test void primaryOrganizationIsTenantScopedAndAudited() {
   UUID tenant=tenant(),actor=member(tenant),target=member(tenant),organization=UUID.randomUUID(),foreign=UUID.randomUUID();
-  jdbc.update("INSERT INTO organization_capability_grant(tenant_id,member_id,capability,granted_by) VALUES(UUID_TO_BIN(?),UUID_TO_BIN(?),'GRANT',UUID_TO_BIN(?))",tenant.toString(),actor.toString(),actor.toString());
-  jdbc.update("INSERT INTO tenant_organization_unit(tenant_id,id,name) VALUES(UUID_TO_BIN(?),UUID_TO_BIN(?),'Primary')",tenant.toString(),organization.toString());
-  jdbc.update("INSERT INTO tenant_organization_unit(tenant_id,id,name) VALUES(UUID_TO_BIN(?),UUID_TO_BIN(?),'Foreign')",tenant().toString(),foreign.toString());
+  authority(tenant,actor);
+  UUID type=type(tenant),foreignTenant=tenant(),foreignType=type(foreignTenant);
+  jdbc.update("INSERT INTO tenant_organization_unit(tenant_id,id,code,type_id,name) VALUES(UUID_TO_BIN(?),UUID_TO_BIN(?),?,UUID_TO_BIN(?),'Primary')",tenant.toString(),organization.toString(),"ORG-"+organization,type.toString());
+  jdbc.update("INSERT INTO tenant_organization_unit(tenant_id,id,code,type_id,name) VALUES(UUID_TO_BIN(?),UUID_TO_BIN(?),?,UUID_TO_BIN(?),'Foreign')",foreignTenant.toString(),foreign.toString(),"ORG-"+foreign,foreignType.toString());
   grants.assignOrganization(tenant,target,actor,organization);
   assertThat(jdbc.queryForObject("SELECT BIN_TO_UUID(organization_id) FROM tenant_member_primary_organization WHERE tenant_id=UUID_TO_BIN(?) AND member_id=UUID_TO_BIN(?)",String.class,tenant.toString(),target.toString())).isEqualTo(organization.toString());
   assertThatThrownBy(()->grants.assignOrganization(tenant,target,actor,foreign)).isInstanceOf(IllegalArgumentException.class);
@@ -45,11 +46,12 @@ class OrganizationGrantManagementTest extends DatabaseTestSupport {
     id.toString(),tenant.toString(),UUID.randomUUID().toString());
   return id;
  }
+ private UUID type(UUID tenant){UUID id=UUID.randomUUID();jdbc.update("INSERT INTO tenant_organization_type(tenant_id,id,code,name) VALUES(UUID_TO_BIN(?),UUID_TO_BIN(?),'BUSINESS','业务组织')",tenant.toString(),id.toString());return id;}
+ private void authority(UUID tenant,UUID member){jdbc.update("INSERT INTO organization_capability_grant(tenant_id,member_id,capability,granted_by) VALUES(UUID_TO_BIN(?),UUID_TO_BIN(?),'GRANT',UUID_TO_BIN(?))",tenant.toString(),member.toString(),member.toString());jdbc.update("INSERT INTO access_member_permission(tenant_id,member_id,permission_code,granted_by) VALUES(UUID_TO_BIN(?),UUID_TO_BIN(?),'organization.grant',UUID_TO_BIN(?))",tenant.toString(),member.toString(),member.toString());}
  @Test void grantLifecycleChecksAuthorityAndTenantAndAppendsAudit() {
   UUID tenant=tenant(),actor=member(tenant),target=member(tenant),foreign=member(tenant());
   assertThatThrownBy(()->grants.grant(tenant,target,actor,OrganizationCapability.READ,null)).isInstanceOf(SecurityException.class);
-  jdbc.update("INSERT INTO organization_capability_grant(tenant_id,member_id,capability,granted_by) VALUES(UUID_TO_BIN(?),UUID_TO_BIN(?),'GRANT',UUID_TO_BIN(?))",
-    tenant.toString(),actor.toString(),actor.toString());
+  authority(tenant,actor);
   assertThatThrownBy(()->grants.grant(tenant,foreign,actor,OrganizationCapability.READ,null)).isInstanceOf(IllegalArgumentException.class);
   assertThatThrownBy(()->grants.grant(tenant,target,actor,OrganizationCapability.GRANT,null)).isInstanceOf(IllegalArgumentException.class);
   assertThatThrownBy(()->grants.grant(tenant,target,actor,OrganizationCapability.READ,Instant.now().minusSeconds(1))).isInstanceOf(IllegalArgumentException.class);
@@ -68,8 +70,7 @@ class OrganizationGrantManagementTest extends DatabaseTestSupport {
  /** 日志写入失败必须回滚授权本身，不能产生无审计的成功授权。 */
  @Test void auditFailureRollsBackGrant() {
   UUID tenant=tenant(),actor=member(tenant),target=member(tenant);
-  jdbc.update("INSERT INTO organization_capability_grant(tenant_id,member_id,capability,granted_by) VALUES(UUID_TO_BIN(?),UUID_TO_BIN(?),'GRANT',UUID_TO_BIN(?))",
-    tenant.toString(),actor.toString(),actor.toString());
+  authority(tenant,actor);
   jdbc.execute("ALTER TABLE organization_grant_audit ADD CONSTRAINT test_reject_audit CHECK (actor_member_id <> X'"+actor.toString().replace("-","")+"')");
   try {
     assertThatThrownBy(()->grants.grant(tenant,target,actor,OrganizationCapability.READ,null)).isInstanceOf(RuntimeException.class);

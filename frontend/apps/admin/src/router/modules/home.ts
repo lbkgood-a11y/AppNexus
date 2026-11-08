@@ -20,6 +20,7 @@ export default {
       name: "Welcome",
       component: () => import("@/views/welcome/index.vue"),
       meta: {
+        icon: "ri/home-smile-line",
         title: $t("menus.pureHome"),
         showLink: VITE_HIDE_HOME === "true" ? false : true
       }

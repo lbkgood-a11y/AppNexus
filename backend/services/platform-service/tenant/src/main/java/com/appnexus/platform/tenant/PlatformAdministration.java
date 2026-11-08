@@ -4,8 +4,9 @@ import java.util.*;
 
 /** 平台用户与租户开通端口；每个操作独立验证平台管理员，不允许平台身份绕过租户业务隔离。 */
 public interface PlatformAdministration {
-    /** 平台账号摘要，不含认证凭据。 */
-    record User(UUID id, String username, String displayName, boolean enabled) {}
+    /** 平台账号摘要；联系方式与登录识别符分离，不含认证凭据。 */
+    record User(UUID id, String username, String displayName, String email, boolean emailVerified,
+                String phoneNumber, boolean phoneVerified, boolean enabled) {}
     /** 租户目录，不包含租户业务内容。 */
     record Tenant(UUID id, String name, boolean enabled) {}
     /** 成员是账号与租户的关联，不等价于组织归属或业务授权。 */
@@ -16,8 +17,19 @@ public interface PlatformAdministration {
     boolean isAdministrator(UUID actor);
     /** @param page 从 1 开始；size 范围 1–100，query 最长 100 字符 */
     Page<User> users(UUID actor, int page, int size, String query);
-    /** @param passwordHash 已校验至少 12 字符密码的 Argon2id 哈希，不接收明文 */
-    User createUser(UUID actor, UUID id, String username, String displayName, String passwordHash);
+    /**
+     * 创建全局账号，联系方式初始为未验证，不自动开放邮箱或手机号登录。
+     * @param email 可选邮箱，最长 254 字符，按小写归一化后全局唯一
+     * @param phoneNumber 可选 E.164 手机号，包含前导加号且全局唯一
+     * @param passwordHash 已校验至少 12 字符密码的 Argon2id 哈希，不接收明文
+     */
+    User createUser(UUID actor, UUID id, String username, String displayName, String email, String phoneNumber, String passwordHash);
+    /** 内部初始化与现有调用的兼容入口，缺省不设置联系方式。 */
+    default User createUser(UUID actor, UUID id, String username, String displayName, String passwordHash) {
+        return createUser(actor,id,username,displayName,null,null,passwordHash);
+    }
+    /** 维护显示名和联系方式；联系方式变化会重置对应验证状态。 */
+    User updateUser(UUID actor, UUID target, String displayName, String email, String phoneNumber);
     /** 停用立即阻止后续认证请求；不能停用自己或任何平台管理员。 */
     void setUserEnabled(UUID actor, UUID target, boolean enabled);
     /** @param page 从 1 开始；size 范围 1–100，query 最长 100 字符 */

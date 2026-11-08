@@ -149,12 +149,37 @@
 
     .el-menu-item,
     .el-sub-menu__title {
+      position: relative;
       height: 50px;
       color: var(--pure-theme-menu-text);
       background-color: transparent !important;
 
-      &:hover {
+      /* 内缩悬停表面与选中态保持同一轮廓，避免仅改变文字颜色而难以感知。 */
+      &::before {
+        position: absolute;
+        inset: 4px 8px;
+        content: "";
+        background: transparent;
+        border-radius: var(--el-border-radius-base);
+        transition:
+          background-color 0.18s ease,
+          box-shadow 0.18s ease;
+      }
+
+      &:hover,
+      &:focus-visible {
         color: var(--pure-theme-menu-title-hover) !important;
+
+        &::before {
+          background: var(--pure-theme-menu-hover);
+          box-shadow: inset 3px 0 0 var(--el-color-primary);
+        }
+      }
+
+      /* 菜单内容位于状态表面上方，保证图标、文字和展开箭头清晰可见。 */
+      > * {
+        position: relative;
+        z-index: 1;
       }
 
       div,
@@ -193,7 +218,8 @@
       margin: 4px 0;
       content: "";
       background: var(--el-color-primary) !important;
-      border-radius: 3px;
+      border-radius: var(--el-border-radius-base);
+      box-shadow: none;
     }
 
     .el-menu .el-menu--inline .el-sub-menu__title,
@@ -242,7 +268,8 @@
       margin: 4px 0;
       content: "";
       background: var(--el-color-primary) !important;
-      border-radius: 3px;
+      border-radius: var(--el-border-radius-base);
+      box-shadow: none;
     }
   }
 
@@ -279,13 +306,36 @@
 
     .el-menu-item,
     .el-sub-menu__title {
+      position: relative;
       height: 50px;
       line-height: 50px;
       color: var(--pure-theme-menu-text);
       background-color: var(--pure-theme-sub-menu-bg);
 
-      &:hover {
+      &::before {
+        position: absolute;
+        inset: 4px 8px;
+        content: "";
+        background: transparent;
+        border-radius: var(--el-border-radius-base);
+        transition:
+          background-color 0.18s ease,
+          box-shadow 0.18s ease;
+      }
+
+      &:hover,
+      &:focus-visible {
         color: var(--pure-theme-menu-title-hover) !important;
+
+        &::before {
+          background: var(--pure-theme-menu-hover);
+          box-shadow: inset 3px 0 0 var(--el-color-primary);
+        }
+      }
+
+      > * {
+        position: relative;
+        z-index: 1;
       }
     }
 
@@ -305,7 +355,8 @@
       clear: both;
       content: "";
       background: var(--el-color-primary) !important;
-      border-radius: 3px;
+      border-radius: var(--el-border-radius-base);
+      box-shadow: none;
     }
 
     .el-menu-item,

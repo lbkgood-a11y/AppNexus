@@ -18,9 +18,11 @@ public class PlatformAdministrationController {
     /** 展示能力不代表授权，后续操作仍复核权威源。 */
     public record Access(boolean administrator) {}
     /** 初始密码仅在请求内处理，响应和审计不包含明文或哈希。 */
-    public record NewUser(String username,String displayName,String password) {
+    public record NewUser(String username,String displayName,String email,String phoneNumber,String password) {
         @Override public String toString() { return "NewUser[redacted]"; }
     }
+    /** 账号登录名不在资料编辑中变更，避免影响审计识别和现有登录流程。 */
+    public record UpdateUser(String displayName,String email,String phoneNumber) {}
     /** 请求 UUID 用于重复提交幂等；首位管理员必须是已有有效账号。 */
     public record NewTenant(UUID requestId,String name,UUID administratorAccountId) {}
     /** 状态显式提交，停用与恢复需用户确认。 */
@@ -40,8 +42,13 @@ public class PlatformAdministrationController {
         return ok(() -> {
             if(!service.isAdministrator(actor(auth))) throw new SecurityException();
             if(input.password()==null || input.password().length()<12 || input.password().length()>128) throw new IllegalArgumentException();
-            return service.createUser(actor(auth),com.fasterxml.uuid.Generators.timeBasedEpochGenerator().generate(),input.username(),input.displayName(),encoder.encode(input.password()));
+            return service.createUser(actor(auth),com.fasterxml.uuid.Generators.timeBasedEpochGenerator().generate(),input.username(),input.displayName(),input.email(),input.phoneNumber(),encoder.encode(input.password()));
         });
+    }
+    /** 联系方式修改后为未验证；验证流程与登录识别符开通不属于此管理接口。 */
+    @PutMapping("/users/{id}")
+    ResponseEntity<PlatformAdministration.User> updateUser(Authentication auth,@PathVariable UUID id,@RequestBody UpdateUser input) {
+        return ok(() -> service.updateUser(actor(auth),id,input.displayName(),input.email(),input.phoneNumber()));
     }
     @PutMapping("/users/{id}/state")
     ResponseEntity<Void> userState(Authentication auth,@PathVariable UUID id,@RequestBody State state) {

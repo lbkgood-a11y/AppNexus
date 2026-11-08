@@ -46,6 +46,7 @@ public class MyBatisOrganizationGrantManagement implements OrganizationGrantMana
         if(capability==OrganizationCapability.GRANT) throw new IllegalArgumentException("Grant-management capability is not delegable");
         if(expires!=null && !expires.isAfter(Instant.now())) throw new IllegalArgumentException("Grant expiry must be in the future");
         mapper.grant(tenant.toString(),target.toString(),capability.name(),actor.toString(),expires==null?null:Timestamp.from(expires));
+        mapper.grantAccess(tenant.toString(),target.toString(),capability.name(),actor.toString(),expires==null?null:Timestamp.from(expires));
         mapper.audit(tenant.toString(),target.toString(),actor.toString(),capability.name(),"GRANTED");
         return list(tenant,target).stream().filter(g->g.capability()==capability).findFirst().orElseThrow();
     }
@@ -54,6 +55,7 @@ public class MyBatisOrganizationGrantManagement implements OrganizationGrantMana
         lockAndAuthorize(tenant,target,actor);
         if(capability==OrganizationCapability.GRANT) throw new IllegalArgumentException("Grant-management capability is not delegable");
         if(mapper.revoke(tenant.toString(),target.toString(),capability.name(),actor.toString())!=1)return false;
+        mapper.revokeAccess(tenant.toString(),target.toString(),capability.name());
         mapper.audit(tenant.toString(),target.toString(),actor.toString(),capability.name(),"REVOKED");
         return true;
     }

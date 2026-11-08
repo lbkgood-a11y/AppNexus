@@ -7,6 +7,6 @@ export default {
   children: [{
     path: "/organization/manage", name: "OrganizationManagement",
     component: () => import("@/views/organization/index.vue"),
-    meta: { title: "organization.title" }
+    meta: { title: "organization.title", icon: "ri/organization-chart" }
   }]
 } satisfies RouteConfigsTable;

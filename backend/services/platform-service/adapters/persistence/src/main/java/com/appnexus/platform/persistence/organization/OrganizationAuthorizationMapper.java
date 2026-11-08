@@ -2,7 +2,7 @@ package com.appnexus.platform.persistence.organization;
 import org.apache.ibatis.annotations.*;
 import com.appnexus.platform.persistence.PlatformScoped;
 /** 仅查询授权存在性，不读取授权人或其他租户的授权详情。 */
-@PlatformScoped(tables={"organization_capability_grant","organization_grant_audit","tenant_member","platform_tenant","organization_administrator_bootstrap","identity_account","tenant_member_primary_organization","tenant_organization_unit","platform_administration_audit"})
+@PlatformScoped(tables={"organization_capability_grant","organization_grant_audit","tenant_member","platform_tenant","organization_administrator_bootstrap","identity_account","tenant_member_primary_organization","tenant_organization_unit","platform_administration_audit","access_member_permission","access_permission"})
 @Mapper
 public interface OrganizationAuthorizationMapper {
     /** 初始化必须同时锁定有效账号和成员，禁止为已停用账号建立首个管理授权。 */
@@ -34,8 +34,13 @@ public interface OrganizationAuthorizationMapper {
     @Select("SELECT EXISTS(SELECT 1 FROM organization_capability_grant WHERE tenant_id=UUID_TO_BIN(#{tenant}) AND capability='GRANT')")
     boolean hasManagementHistory(String tenant);
     /** 租户与成员参数均由服务端已验证上下文生成，权限码来自枚举。 */
-    @Select("SELECT EXISTS(SELECT 1 FROM organization_capability_grant WHERE tenant_id=UUID_TO_BIN(#{tenantId}) AND member_id=UUID_TO_BIN(#{memberId}) AND capability=#{capability} AND revoked_at IS NULL AND (expires_at IS NULL OR expires_at>CURRENT_TIMESTAMP(6)))")
+    @Select("SELECT EXISTS(SELECT 1 FROM access_member_permission WHERE tenant_id=UUID_TO_BIN(#{tenantId}) AND member_id=UUID_TO_BIN(#{memberId}) AND permission_code=CONCAT('organization.',LOWER(#{capability})) AND (expires_at IS NULL OR expires_at>CURRENT_TIMESTAMP(6)))")
     boolean exists(@Param("tenantId") String tenantId,@Param("memberId") String memberId,@Param("capability") String capability);
+    /** 迁移期间所有授权写入同步权限中心，旧表仅保留历史兼容与原有审计。 */
+    @Insert("INSERT INTO access_member_permission(tenant_id,member_id,permission_code,expires_at,granted_by) VALUES(UUID_TO_BIN(#{tenant}),UUID_TO_BIN(#{member}),CONCAT('organization.',LOWER(#{capability})),#{expires},UUID_TO_BIN(#{actor})) ON DUPLICATE KEY UPDATE expires_at=VALUES(expires_at),granted_by=VALUES(granted_by),granted_at=CURRENT_TIMESTAMP(6)")
+    int grantAccess(@Param("tenant") String tenant,@Param("member") String member,@Param("capability") String capability,@Param("actor") String actor,@Param("expires") java.sql.Timestamp expires);
+    @Delete("DELETE FROM access_member_permission WHERE tenant_id=UUID_TO_BIN(#{tenant}) AND member_id=UUID_TO_BIN(#{member}) AND permission_code=CONCAT('organization.',LOWER(#{capability}))")
+    int revokeAccess(@Param("tenant") String tenant,@Param("member") String member,@Param("capability") String capability);
 
     /** 列表仅用于相同租户；调用层验证调用者具备 GRANT。 */
     @Select("SELECT BIN_TO_UUID(member_id) member_id,capability,BIN_TO_UUID(granted_by) granted_by,granted_at,expires_at FROM organization_capability_grant WHERE tenant_id=UUID_TO_BIN(#{tenant}) AND member_id=UUID_TO_BIN(#{member}) AND revoked_at IS NULL AND (expires_at IS NULL OR expires_at>CURRENT_TIMESTAMP(6)) ORDER BY capability")
@@ -57,6 +62,6 @@ public interface OrganizationAuthorizationMapper {
     @Select("SELECT BIN_TO_UUID(id) FROM tenant_member WHERE tenant_id=UUID_TO_BIN(#{tenant}) AND id IN(UUID_TO_BIN(#{actor}),UUID_TO_BIN(#{target})) AND enabled=TRUE ORDER BY id FOR UPDATE")
     java.util.List<String> lockMembers(@Param("tenant") String tenant,@Param("actor") String actor,@Param("target") String target);
     /** FOR UPDATE 使并发撤销管理能力与正在授权串行化，不使用事务外授权快照。 */
-    @Select("SELECT capability FROM organization_capability_grant WHERE tenant_id=UUID_TO_BIN(#{tenant}) AND member_id=UUID_TO_BIN(#{actor}) AND capability='GRANT' AND revoked_at IS NULL AND (expires_at IS NULL OR expires_at>CURRENT_TIMESTAMP(6)) FOR UPDATE")
+    @Select("SELECT permission_code FROM access_member_permission WHERE tenant_id=UUID_TO_BIN(#{tenant}) AND member_id=UUID_TO_BIN(#{actor}) AND permission_code='organization.grant' AND (expires_at IS NULL OR expires_at>CURRENT_TIMESTAMP(6)) FOR UPDATE")
     String lockAuthority(@Param("tenant") String tenant,@Param("actor") String actor);
 }

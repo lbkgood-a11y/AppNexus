@@ -38,7 +38,7 @@ import { getSessionProfile, removeToken } from "@/utils/auth";
  * 如何排除文件请看：https://cn.vitejs.dev/guide/features.html#negative-patterns
  */
 const modules: Record<string, any> = import.meta.glob(
-  ["./modules/home.ts", "./modules/error.ts", "./modules/account.ts", "./modules/organization.ts", "./modules/platform.ts"],
+  ["./modules/home.ts", "./modules/error.ts", "./modules/account.ts", "./modules/organization.ts", "./modules/platform.ts", "./modules/access.ts", "./modules/configuration.ts"],
   {
     eager: true
   }
@@ -146,7 +146,7 @@ router.beforeEach(async (to: ToRouteType, _from) => {
     try {
       const context=await(await import("@/api/tenant")).ensureTenantContext();
       if(!context){
-        if(to.path==="/welcome"&&userInfo.roles?.includes("PLATFORM_ADMIN"))return {path:"/platform/manage"};
+        if(to.path==="/welcome"&&userInfo.roles?.includes("PLATFORM_ADMIN"))return {path:"/platform/tenants"};
         if(to.path!=="/tenant/select"&&!to.path.startsWith("/platform"))return {path:"/tenant/select"};
       } else if(to.path==="/tenant/select")return {path:"/welcome"};
     }

@@ -12,6 +12,7 @@
   "dependencies": {
     "@appnexus/ui": "workspace:*",
     "@appnexus/configuration": "workspace:*",
+    "@appnexus/authorization": "workspace:*",
     "tippy.js": "^6.3.7",
     "@appnexus/organization": "workspace:*",
     "@appnexus/security": "workspace:*",

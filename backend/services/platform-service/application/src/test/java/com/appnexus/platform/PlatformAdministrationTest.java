@@ -49,6 +49,24 @@ class PlatformAdministrationTest extends DatabaseTestSupport {
   mvc.perform(post("/bff/platform/users").with(authenticated(actor.toString(),0)).contentType("application/json").content("{}")).andExpect(status().isForbidden());
   mvc.perform(post("/bff/platform/users").with(authenticated(actor.toString(),0)).with(csrf()).contentType("application/json").content("{\"username\":\"invalid\",\"displayName\":\"Test\",\"password\":\"short\"}")).andExpect(status().isBadRequest());
  }
+ @Test void accountContactsAreNormalizedUniqueAndResetVerificationWhenChanged() throws Exception {
+  UUID id=UUID.randomUUID();
+  var created=service.createUser(actor,id,"contact-"+id,"Contact User"," User@Example.COM "," +8613800138000 ",encoder.encode("test-password-2026"));
+  assertThat(created.email()).isEqualTo("user@example.com");
+  assertThat(created.phoneNumber()).isEqualTo("+8613800138000");
+  assertThat(created.emailVerified()).isFalse();
+  jdbc.update("UPDATE identity_account SET email_verified=TRUE,phone_verified=TRUE WHERE id=UUID_TO_BIN(?)",id.toString());
+  var unchanged=service.updateUser(actor,id,"Contact Renamed","user@example.com","+8613800138000");
+  assertThat(unchanged.emailVerified()).isTrue();
+  assertThat(unchanged.phoneVerified()).isTrue();
+  var changed=service.updateUser(actor,id,"Contact Renamed","next@example.com","+14155552671");
+  assertThat(changed.emailVerified()).isFalse();
+  assertThat(changed.phoneVerified()).isFalse();
+  assertThat(service.users(actor,1,20,"next@example.com").items()).extracting(PlatformAdministration.User::id).contains(id);
+  assertThatThrownBy(()->service.createUser(actor,UUID.randomUUID(),"duplicate-"+id,"Duplicate","NEXT@example.com",null,encoder.encode("test-password-2026"))).isInstanceOf(org.springframework.dao.DuplicateKeyException.class);
+  mvc.perform(put("/bff/platform/users/"+id).with(authenticated(actor.toString(),0)).with(csrf()).contentType("application/json").content("{\"displayName\":\"HTTP User\",\"email\":\"http@example.com\",\"phoneNumber\":\"+442079460018\"}"))
+   .andExpect(status().isOk()).andExpect(jsonPath("$.email").value("http@example.com")).andExpect(jsonPath("$.phoneVerified").value(false));
+ }
  @Test void membershipHasNoImplicitGrantsAndReenableDoesNotRestoreRevokedGrants(){
   var tenant=service.createTenant(actor,UUID.randomUUID(),"Members Tenant",user());UUID target=user();
   service.addMember(actor,tenant.id(),target);

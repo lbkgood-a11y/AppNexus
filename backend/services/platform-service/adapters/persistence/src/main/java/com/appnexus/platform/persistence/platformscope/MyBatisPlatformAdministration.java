@@ -33,17 +33,25 @@ public class MyBatisPlatformAdministration implements PlatformAdministration {
     }
     public Page<User> users(UUID actor,int page,int size,String query) {
         require(actor); validatePage(page,size,query);
-        return new Page<>(mapper.users(query,size,(long)(page-1)*size).stream().map(r -> new User(id(r,"id"),(String)r.get("username"),(String)r.get("display_name"),enabled(r))).toList(),mapper.userCount(query));
+        return new Page<>(mapper.users(query,size,(long)(page-1)*size).stream().map(this::user).toList(),mapper.userCount(query));
     }
     @Transactional
-    public User createUser(UUID actor,UUID id,String username,String name,String hash) {
+    public User createUser(UUID actor,UUID id,String username,String name,String email,String phone,String hash) {
         lock(actor);
         if(username==null || !username.matches("[A-Za-z0-9][A-Za-z0-9._@-]{0,99}")) throw new IllegalArgumentException("Invalid username");
         validateName(name);
         if(hash==null || !hash.startsWith("$argon2")) throw new IllegalArgumentException("Argon2 hash required");
-        mapper.createUser(id.toString(),username,name,hash);
+        email=normalizeEmail(email);phone=normalizePhone(phone);
+        mapper.createUser(id.toString(),username,name,email,phone,hash);
         mapper.audit(actor.toString(),"USER_CREATED",id.toString(),null);
-        return new User(id,username,name,true);
+        return new User(id,username,name,email,false,phone,false,true);
+    }
+    @Transactional
+    public User updateUser(UUID actor,UUID target,String name,String email,String phone) {
+        lock(actor);validateName(name);email=normalizeEmail(email);phone=normalizePhone(phone);
+        if(mapper.updateUser(target.toString(),name,email,phone)==0) throw new IllegalArgumentException("Account unavailable");
+        mapper.audit(actor.toString(),"USER_PROFILE_UPDATED",target.toString(),null);
+        return user(mapper.user(target.toString()));
     }
     @Transactional
     public void setUserEnabled(UUID actor,UUID target,boolean enabled) {
@@ -112,7 +120,26 @@ public class MyBatisPlatformAdministration implements PlatformAdministration {
     private void lock(UUID actor) { if(mapper.lockAdministrator(actor.toString())==null) throw new SecurityException("Platform authority required"); }
     private void activeTenant(UUID tenant) { if(!Boolean.TRUE.equals(mapper.lockTenant(tenant.toString()))) throw new IllegalArgumentException("Active tenant required"); }
     private void validateName(String name) { if(name==null || name.isBlank() || name.length()>100) throw new IllegalArgumentException("Name must contain 1–100 characters"); }
+    /** 邮箱归一化为小写并限制基本结构；完整可达性由后续验证流程确认。 */
+    private String normalizeEmail(String value) {
+        if(value==null || value.isBlank()) return null;
+        String email=value.trim().toLowerCase(Locale.ROOT);
+        if(email.length()>254 || !email.matches("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$")) throw new IllegalArgumentException("Invalid email");
+        return email;
+    }
+    /** 手机号统一使用 E.164，不在服务端猜测国家码或删除本地号码前缀。 */
+    private String normalizePhone(String value) {
+        if(value==null || value.isBlank()) return null;
+        String phone=value.trim();
+        if(!phone.matches("^\\+[1-9][0-9]{7,14}$")) throw new IllegalArgumentException("Invalid E.164 phone number");
+        return phone;
+    }
     private void validatePage(int page,int size,String query) { if(page<1 || size<1 || size>100 || query==null || query.length()>100) throw new IllegalArgumentException("Invalid page or query"); }
     private UUID id(Map<String,Object> row,String key) { return UUID.fromString((String)row.get(key)); }
     private boolean enabled(Map<String,Object> row) { return Boolean.TRUE.equals(row.get("enabled")) || row.get("enabled") instanceof Number n && n.intValue()!=0; }
+    private boolean flag(Map<String,Object> row,String key) { return Boolean.TRUE.equals(row.get(key)) || row.get(key) instanceof Number n && n.intValue()!=0; }
+    private User user(Map<String,Object> row) {
+        if(row==null) throw new IllegalArgumentException("Account unavailable");
+        return new User(id(row,"id"),(String)row.get("username"),(String)row.get("display_name"),(String)row.get("email"),flag(row,"email_verified"),(String)row.get("phone_number"),flag(row,"phone_verified"),enabled(row));
+    }
 }

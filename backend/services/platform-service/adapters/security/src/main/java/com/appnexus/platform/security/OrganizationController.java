@@ -14,9 +14,10 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/organization")
 public class OrganizationController {
     private final OrganizationUnitRepository units;
+    private final OrganizationStructure structure;
     private final OrganizationAuthorization authorization;
-    public OrganizationController(OrganizationUnitRepository units, OrganizationAuthorization authorization) {
-        this.units=units; this.authorization=authorization;
+    public OrganizationController(OrganizationUnitRepository units, OrganizationAuthorization authorization, OrganizationStructure structure) {
+        this.units=units; this.authorization=authorization;this.structure=structure;
     }
     /** 名称必填，1–100 个 Java UTF-16 字符；不接受客户端指定 ID 或租户。 */
     public record Name(String name) {}
@@ -37,8 +38,10 @@ public class OrganizationController {
     /** 创建 ID 由服务端生成；重名允许，提交期间客户端须防重复点击。 */
     @PostMapping("/units")
     ResponseEntity<OrganizationUnit> create(@RequestBody Name input) {
-        var unit=new OrganizationUnit(Generators.timeBasedEpochGenerator().generate(), validName(input));
-        units.create(unit);
+        var type=structure.types().stream().filter(value->value.code().equals("BUSINESS")).findFirst()
+            .orElseGet(()->structure.createType("BUSINESS","业务组织"));
+        var created=structure.createUnit("ORG-"+UUID.randomUUID().toString().replace("-","").substring(0,12).toUpperCase(Locale.ROOT),type.id(),null,validName(input));
+        var unit=new OrganizationUnit(created.id(),created.name());
         return ResponseEntity.status(HttpStatus.CREATED).cacheControl(CacheControl.noStore()).body(unit);
     }
     /** 仅重命名当前租户目标；找不到时不暴露其他租户是否存在相同 ID。 */
