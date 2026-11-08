@@ -41,6 +41,17 @@ import RiInformationLine from "~icons/ri/information-line?raw";
 import RiTerminalWindowLine from "~icons/ri/terminal-window-line?raw";
 import RiCheckboxCircleLine from "~icons/ri/checkbox-circle-line?raw";
 import RiBarChartHorizontalLine from "~icons/ri/bar-chart-horizontal-line?raw";
+import RiBook2Line from "~icons/ri/book-2-line?raw";
+import RiBuildingLine from "~icons/ri/building-line?raw";
+import RiGroupLine from "~icons/ri/group-line?raw";
+import RiHomeSmileLine from "~icons/ri/home-smile-line?raw";
+import RiMenuLine from "~icons/ri/menu-line?raw";
+import RiQuestionLine from "~icons/ri/question-line?raw";
+import RiServerLine from "~icons/ri/server-line?raw";
+import RiSettings4Line from "~icons/ri/settings-4-line?raw";
+import RiShieldKeyholeLine from "~icons/ri/shield-keyhole-line?raw";
+import RiShieldUserLine from "~icons/ri/shield-user-line?raw";
+import RiUserSettingsLine from "~icons/ri/user-settings-line?raw";
 
 const icons = [
   // Element Plus Icon: https://github.com/element-plus/element-plus-icons
@@ -80,7 +91,18 @@ const icons = [
   ["ri/information-line", RiInformationLine],
   ["ri/terminal-window-line", RiTerminalWindowLine],
   ["ri/checkbox-circle-line", RiCheckboxCircleLine],
-  ["ri/bar-chart-horizontal-line", RiBarChartHorizontalLine]
+  ["ri/bar-chart-horizontal-line", RiBarChartHorizontalLine],
+  ["ri/book-2-line", RiBook2Line],
+  ["ri/building-line", RiBuildingLine],
+  ["ri/group-line", RiGroupLine],
+  ["ri/home-smile-line", RiHomeSmileLine],
+  ["ri/menu-line", RiMenuLine],
+  ["ri/question-line", RiQuestionLine],
+  ["ri/server-line", RiServerLine],
+  ["ri/settings-4-line", RiSettings4Line],
+  ["ri/shield-keyhole-line", RiShieldKeyholeLine],
+  ["ri/shield-user-line", RiShieldUserLine],
+  ["ri/user-settings-line", RiUserSettingsLine]
 ];
 
 // 本地菜单图标，后端在路由的 icon 中返回对应的图标字符串并且前端在此处使用 addIcon 添加即可渲染菜单图标
