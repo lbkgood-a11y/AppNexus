@@ -21,6 +21,9 @@ export async function refreshTenantWorkspace(path?:string){
  const [{router},{useMultiTagsStoreHook},{routerArrays},{usePermissionStoreHook}]=await Promise.all([
   import("@/router"),import("@/store/modules/multiTags"),import("@/layout/types"),import("@/store/modules/permission")
  ]);
+ const navigation=await import("@/router/navigation");
+ navigation.resetNavigation();
+ await navigation.loadNavigation();
  useMultiTagsStoreHook().handleTags("equal",[...routerArrays]);
  usePermissionStoreHook().cachePageList=[];
  const target=path||router.currentRoute.value.path||"/welcome";

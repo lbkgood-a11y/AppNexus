@@ -39,7 +39,7 @@ export function monitorSession(): () => void {
     const { router } = await import("@/router");
     if (["/login", "/server-error"].includes(router.currentRoute.value.path)) return;
     running = true;
-    try { await (await import("@/api/session")).restoreSession(); }
+    try { await (await import("@/api/session")).restoreSession(); await (await import("@/router/navigation")).refreshNavigation(); }
     catch (error) {
       const { isAxiosError } = await import("axios");
       if (isAxiosError(error) && error.response?.status === 401) await clearSession("expired");

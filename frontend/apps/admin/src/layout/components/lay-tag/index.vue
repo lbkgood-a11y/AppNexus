@@ -185,24 +185,11 @@ function dynamicRouteTag(value: string): void {
     return item.path === value;
   });
 
-  function concatPath(arr: object[], value: string) {
-    if (!hasValue) {
-      arr.forEach((arrItem: any) => {
-        if (arrItem.path === value) {
-          useMultiTagsStoreHook().handleTags("push", {
-            path: value,
-            meta: arrItem.meta,
-            name: arrItem.name
-          });
-        } else {
-          if (arrItem.children && arrItem.children.length > 0) {
-            concatPath(arrItem.children, value);
-          }
-        }
-      });
-    }
+  // 动态注册不会更新 router.options.routes；直接读取当前实际匹配的受控路由。
+  const current=router.resolve(value);
+  if(!hasValue&&current.name&&current.name!=="PageNotFound") {
+    useMultiTagsStoreHook().handleTags("push",{path:current.path,meta:current.meta,name:current.name});
   }
-  concatPath(router.options.routes as any, value);
 }
 
 /** 刷新路由 */

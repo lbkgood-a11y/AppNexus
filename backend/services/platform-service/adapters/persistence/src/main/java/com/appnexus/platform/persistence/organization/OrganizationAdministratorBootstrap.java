@@ -9,7 +9,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class OrganizationAdministratorBootstrap {
     private final OrganizationAuthorizationMapper mapper;
-    public OrganizationAdministratorBootstrap(OrganizationAuthorizationMapper mapper) { this.mapper = mapper; }
+    private final com.appnexus.platform.persistence.platformscope.MemberAuthorizationMapper snapshots;
+    public OrganizationAdministratorBootstrap(OrganizationAuthorizationMapper mapper,com.appnexus.platform.persistence.platformscope.MemberAuthorizationMapper snapshots) { this.mapper = mapper;this.snapshots=snapshots; }
 
     /**
      * 在租户锁内一次性授予管理及组织 CRUD 能力，授权、审计和标记原子提交。
@@ -42,5 +43,6 @@ public class OrganizationAdministratorBootstrap {
         mapper.grantTenantAdministratorPermissions(role,memberId);
         mapper.grantTenantAdministratorDataPolicies(role,memberId);
         mapper.assignTenantAdministratorRole(tenantId,memberId,role);
+        if(snapshots.create(tenantId,memberId,role)==1){snapshots.copyPermissions(tenantId,memberId,role);snapshots.copyOrganizations(tenantId,memberId,role);}
     }
 }

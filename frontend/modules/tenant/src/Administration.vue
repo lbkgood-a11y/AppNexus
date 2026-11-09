@@ -77,7 +77,7 @@ function open(kind: "user"|"tenant"|"member") {
 /** 编辑只维护资料，登录名作为现有审计识别符不在此处变更。 */
 function editUser(user: DirectoryUser) {
  editingUser.value=user;
- Object.assign(form,{username:user.username,displayName:user.displayName,email:user.email??"",phoneNumber:user.phoneNumber??"",password:"",name:"",accountId:""});
+ Object.assign(form,{username:user.username,displayName:user.displayName,email:user.restrictedFields?.includes("email")?"":user.email??"",phoneNumber:user.restrictedFields?.includes("phoneNumber")?"":user.phoneNumber??"",password:"",name:"",accountId:""});
  dialog.value="userEdit";
 }
 function clearPassword(){form.password="";}
@@ -150,8 +150,8 @@ onMounted(load);
     <template v-if="dialog==='user'||dialog==='userEdit'">
      <el-form-item prop="username" :label="t('administration.username')" :rules="dialog==='user'?[{required:true,pattern:/^[A-Za-z0-9][A-Za-z0-9._@-]{0,99}$/,message:t('administration.invalidUsername'),trigger:'blur'}]:[]"><el-input v-model="form.username" :disabled="saving||dialog==='userEdit'" :maxlength="100" autocomplete="off" /></el-form-item>
      <el-form-item prop="displayName" :label="t('administration.displayName')" :rules="nameRules"><el-input v-model="form.displayName" :disabled="saving" :maxlength="100" /></el-form-item>
-     <el-form-item prop="email" :label="t('administration.email')" :rules="[{type:'email',message:t('administration.invalidEmail'),trigger:'blur'}]"><el-input v-model="form.email" type="email" :disabled="saving" :maxlength="254" autocomplete="off" /></el-form-item>
-     <el-form-item prop="phoneNumber" :label="t('administration.phoneNumber')" :rules="[{pattern:/^(?:\+[1-9][0-9]{7,14})?$/,message:t('administration.invalidPhoneNumber'),trigger:'blur'}]"><el-input v-model="form.phoneNumber" :disabled="saving" :maxlength="16" autocomplete="off" :placeholder="t('administration.phonePlaceholder')" /></el-form-item>
+     <el-form-item prop="email" :label="t('administration.email')" :rules="[{type:'email',message:t('administration.invalidEmail'),trigger:'blur'}]"><el-input v-model="form.email" type="email" :disabled="saving || !!editingUser?.restrictedFields?.includes('email')" :maxlength="254" autocomplete="off" /></el-form-item>
+     <el-form-item prop="phoneNumber" :label="t('administration.phoneNumber')" :rules="[{pattern:/^(?:\+[1-9][0-9]{7,14})?$/,message:t('administration.invalidPhoneNumber'),trigger:'blur'}]"><el-input v-model="form.phoneNumber" :disabled="saving || !!editingUser?.restrictedFields?.includes('phoneNumber')" :maxlength="16" autocomplete="off" :placeholder="t('administration.phonePlaceholder')" /></el-form-item>
      <el-alert v-if="dialog==='userEdit'" :title="t('administration.contactVerificationHint')" type="info" :closable="false" class="mb-4" />
      <el-form-item v-if="dialog==='user'" prop="password" :label="t('administration.password')" :rules="[{required:true,min:12,max:128,message:t('administration.invalidPassword'),trigger:'blur'}]"><el-input v-model="form.password" type="password" show-password autocomplete="new-password" :disabled="saving" :maxlength="128" /></el-form-item>
     </template>

@@ -16,7 +16,8 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/configuration/dictionaries")
 public class DictionaryManagementController {
  private final DictionaryManagement dictionaries;
- public DictionaryManagementController(DictionaryManagement dictionaries){this.dictionaries=dictionaries;}
+ private final com.appnexus.platform.authorization.AccessAuthorization authorization;
+ public DictionaryManagementController(DictionaryManagement dictionaries,com.appnexus.platform.authorization.AccessAuthorization authorization){this.dictionaries=dictionaries;this.authorization=authorization;}
  /** 创建字典请求；编码在创建后不可修改。 */
  public record DictionaryCreate(String code,String name,String description,int sortOrder){DictionaryManagement.CreateDictionary command(){return new DictionaryManagement.CreateDictionary(code,name,description,sortOrder);}}
  /** 编辑字典请求，version 用于拒绝静默覆盖。 */
@@ -26,6 +27,8 @@ public class DictionaryManagementController {
  /** 编辑字典项请求；编码和值不接受修改。 */
  public record ItemUpdate(UUID parentId,String name,String description,DictionaryManagement.Status status,int sortOrder,long version){DictionaryManagement.UpdateItem command(){return new DictionaryManagement.UpdateItem(parentId,name,description,status,sortOrder,version);}}
 
+ /** 本人按钮能力每次按可信租户重新判定，不向普通成员暴露他人授权或管理目录。 */
+ @GetMapping("/capabilities") ResponseEntity<List<String>> capabilities(Authentication a,HttpServletRequest r){var c=context(a,r);var subject=com.appnexus.platform.authorization.AccessAuthorization.Subject.tenant(c.actorAccountId(),c.tenantId(),c.actorMemberId());return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(List.of("read","create","update","delete","item_create","item_update","item_delete").stream().filter(action->authorization.hasPermission(subject,"configuration.dictionary:"+action)).toList());}
  @GetMapping ResponseEntity<List<DictionaryManagement.Dictionary>> list(Authentication a,HttpServletRequest r){return ok(()->dictionaries.dictionaries(context(a,r)));}
  @PostMapping ResponseEntity<DictionaryManagement.Dictionary> create(Authentication a,HttpServletRequest r,@RequestBody DictionaryCreate input){return ok(()->dictionaries.createDictionary(context(a,r),Objects.requireNonNull(input).command()));}
  @PutMapping("/{dictionaryId}") ResponseEntity<DictionaryManagement.Dictionary> update(Authentication a,HttpServletRequest r,@PathVariable UUID dictionaryId,@RequestBody DictionaryUpdate input){return ok(()->dictionaries.updateDictionary(context(a,r),dictionaryId,Objects.requireNonNull(input).command()));}

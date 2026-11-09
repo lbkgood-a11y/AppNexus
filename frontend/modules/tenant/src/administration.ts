@@ -4,6 +4,8 @@ export interface DirectoryUser {
  id: string;
  username: string;
  displayName: string;
+ /** 后端已隐藏或脱敏的字段名；编辑不得提交这些字段的展示占位值。 */
+ restrictedFields?: string[];
  email: string|null;
  emailVerified: boolean;
  phoneNumber: string|null;

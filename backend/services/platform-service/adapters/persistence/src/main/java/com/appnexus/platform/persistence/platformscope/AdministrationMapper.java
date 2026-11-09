@@ -6,7 +6,7 @@ import org.apache.ibatis.annotations.*;
 
 /** 专用平台目录仓储；仅由平台管理用例调用，所有列表限制摘要字段和分页，不读取租户业务内容。 */
 @Mapper
-@PlatformScoped(tables={"identity_account","platform_tenant","tenant_member","platform_administrator","platform_administrator_bootstrap","platform_administration_audit","platform_tenant_creation","organization_capability_grant","organization_grant_audit","access_role","access_permission","access_role_permission","access_account_role"})
+@PlatformScoped(tables={"identity_account","platform_tenant","tenant_member","platform_administrator","platform_administrator_bootstrap","platform_administration_audit","platform_tenant_creation","organization_capability_grant","organization_grant_audit","access_role","access_permission","access_role_permission","access_account_role","access_role_field_security","access_member_role","access_member_permission"})
 public interface AdministrationMapper {
     /** 每次操作从权威源复核有效平台管理员，不能信任会话中的角色展示缓存。 */
     @Select("SELECT EXISTS(SELECT 1 FROM platform_administrator p JOIN identity_account a ON a.id=p.account_id WHERE p.account_id=UUID_TO_BIN(#{actor}) AND p.enabled=TRUE AND a.enabled=TRUE)")
@@ -33,9 +33,9 @@ public interface AdministrationMapper {
     @Insert("INSERT IGNORE INTO access_account_role(account_id,role_id,scope_type,assigned_by) VALUES(UUID_TO_BIN(#{account}),UUID_TO_BIN('019a65d0-0000-7000-9000-000000000001'),'PLATFORM',UUID_TO_BIN(#{account}))")
     int ensurePlatformSystemAssignment(String account);
     /** 查询词作为 LIKE 参数绑定，前端不提供 SQL、排序列或表名。 */
-    @Select("SELECT BIN_TO_UUID(id) id,username,display_name,email,email_verified,phone_number,phone_verified,enabled FROM identity_account WHERE username LIKE CONCAT('%',#{query},'%') OR display_name LIKE CONCAT('%',#{query},'%') OR COALESCE(email,'') LIKE CONCAT('%',#{query},'%') OR COALESCE(phone_number,'') LIKE CONCAT('%',#{query},'%') ORDER BY username,id LIMIT #{size} OFFSET #{offset}")
+    @Select("SELECT BIN_TO_UUID(id) id,username,display_name,email,email_verified,phone_number,phone_verified,enabled FROM identity_account WHERE username LIKE CONCAT('%',#{query},'%') OR display_name LIKE CONCAT('%',#{query},'%') ORDER BY username,id LIMIT #{size} OFFSET #{offset}")
     List<Map<String,Object>> users(@Param("query") String query,@Param("size") int size,@Param("offset") long offset);
-    @Select("SELECT COUNT(*) FROM identity_account WHERE username LIKE CONCAT('%',#{query},'%') OR display_name LIKE CONCAT('%',#{query},'%') OR COALESCE(email,'') LIKE CONCAT('%',#{query},'%') OR COALESCE(phone_number,'') LIKE CONCAT('%',#{query},'%')")
+    @Select("SELECT COUNT(*) FROM identity_account WHERE username LIKE CONCAT('%',#{query},'%') OR display_name LIKE CONCAT('%',#{query},'%')")
     long userCount(String query);
     @Insert("INSERT INTO identity_account(id,username,display_name,email,phone_number,password_hash) VALUES(UUID_TO_BIN(#{id}),#{username},#{name},#{email},#{phone},#{hash})")
     void createUser(@Param("id") String id,@Param("username") String username,@Param("name") String name,@Param("email") String email,@Param("phone") String phone,@Param("hash") String hash);
@@ -82,6 +82,15 @@ public interface AdministrationMapper {
     /** 成员停用审计不伪造租户内操作者；平台停用动作记录在独立平台审计中。 */
     @Update("UPDATE organization_capability_grant SET revoked_at=CURRENT_TIMESTAMP(6) WHERE tenant_id=UUID_TO_BIN(#{tenant}) AND member_id=UUID_TO_BIN(#{member}) AND revoked_at IS NULL")
     void revokeMember(@Param("tenant") String tenant,@Param("member") String member);
+    /** 停用时删除角色关系并级联当前授权快照；恢复成员不能恢复已撤销授权，历史仍由审计保留。 */
+    @Delete("DELETE FROM access_member_role WHERE tenant_id=UUID_TO_BIN(#{tenant}) AND member_id=UUID_TO_BIN(#{member})")
+    void revokeMemberRoles(@Param("tenant") String tenant,@Param("member") String member);
+    /** 旧成员直授权同事务撤销，防止恢复成员后从兼容分支重新放行。 */
+    @Delete("DELETE FROM access_member_permission WHERE tenant_id=UUID_TO_BIN(#{tenant}) AND member_id=UUID_TO_BIN(#{member})")
+    void revokeMemberPermissions(@Param("tenant") String tenant,@Param("member") String member);
+    /** 停用撤权推进授权版本，旧工作台草稿不能覆盖停用后的授权状态。 */
+    @Update("UPDATE tenant_member SET authority_version=authority_version+1 WHERE tenant_id=UUID_TO_BIN(#{tenant}) AND id=UUID_TO_BIN(#{member})")
+    void bumpMemberAuthority(@Param("tenant") String tenant,@Param("member") String member);
     @Insert("INSERT INTO platform_administration_audit(actor_account_id,action,target_id,tenant_id) VALUES(UUID_TO_BIN(#{actor}),#{action},UUID_TO_BIN(#{target}),UUID_TO_BIN(#{tenant}))")
     void audit(@Param("actor") String actor,@Param("action") String action,@Param("target") String target,@Param("tenant") String tenant);
 }

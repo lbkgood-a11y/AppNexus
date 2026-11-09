@@ -11,7 +11,11 @@ public final class MyBatisDataPolicyMetadataCatalog implements DataPolicyMetadat
     public MyBatisDataPolicyMetadataCatalog(PermissionMapper mapper){this.mapper=mapper;}
     @Override public List<ScopeSupport> list(PermissionCatalog.ScopeType scopeType){
         Objects.requireNonNull(scopeType,"scopeType");
-        return mapper.dataPolicyMetadata(scopeType.name()).stream().map(row->new ScopeSupport(
+        return mapper.dataPolicyMetadata(scopeType.name()).stream().filter(row ->
+            !"organization.unit".equals(row.get("resource_type")) ||
+            (!"SELF".equals(row.get("scope_type")) &&
+             (!"organization.unit:create".equals(row.get("code")) || "ALL".equals(row.get("scope_type")))))
+            .map(row->new ScopeSupport(
             UUID.fromString((String)row.get("permission_id")),(String)row.get("code"),
             DataScopeAuthorization.ScopeType.valueOf((String)row.get("scope_type")),
             (String)row.get("resource_type"))).toList();

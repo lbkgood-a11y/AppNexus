@@ -1,16 +1,24 @@
 package com.appnexus.platform.tenant;
 
 import java.util.*;
+import com.appnexus.platform.authorization.*;
 
 /** 平台用户与租户开通端口；每个操作独立验证平台管理员，不允许平台身份绕过租户业务隔离。 */
 public interface PlatformAdministration {
     /** 平台账号摘要；联系方式与登录识别符分离，不含认证凭据。 */
-    record User(UUID id, String username, String displayName, String email, boolean emailVerified,
-                String phoneNumber, boolean phoneVerified, boolean enabled) {}
+    @ProtectedResource(value="identity.account",scope=PermissionCatalog.ScopeType.PLATFORM)
+    record User(UUID id, String username, String displayName,
+                @ProtectedField(nameZh="邮箱",nameEn="Email",kind=FieldSecurity.Kind.EMAIL) String email, boolean emailVerified,
+                @ProtectedField(nameZh="手机号",nameEn="Phone number",kind=FieldSecurity.Kind.PHONE) String phoneNumber, boolean phoneVerified, boolean enabled, Set<String> restrictedFields) {
+        /** 兼容不携带字段限制的内部构造；受保护响应必须由服务层明确填入限制字段。 */
+        public User(UUID id,String username,String displayName,String email,boolean emailVerified,String phoneNumber,boolean phoneVerified,boolean enabled){this(id,username,displayName,email,emailVerified,phoneNumber,phoneVerified,enabled,Set.of());}
+    }
     /** 租户目录，不包含租户业务内容。 */
     record Tenant(UUID id, String name, boolean enabled) {}
     /** 成员是账号与租户的关联，不等价于组织归属或业务授权。 */
-    record Member(UUID memberId, UUID accountId, String username, String displayName, boolean enabled) {}
+    @ProtectedResource(value="identity.member",scope=PermissionCatalog.ScopeType.PLATFORM)
+    record Member(UUID memberId, UUID accountId, String username,
+                  @ProtectedField(nameZh="成员姓名",nameEn="Member name",kind=FieldSecurity.Kind.PERSON_NAME) String displayName, boolean enabled) {}
     /** 带总数的目录页，页码从 1 开始，每页最多 100 条。 */
     record Page<T>(List<T> items, long total) {}
     /** @param actor 经过认证的全局账号 UUID，禁止使用客户端操作者字段 */

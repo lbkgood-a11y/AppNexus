@@ -7,6 +7,8 @@ import java.util.UUID;
 /**
  * 租户业务字典管理边界；系统枚举和业务参数不属于本接口。
  * 调用方必须提供服务端已验证的租户与成员上下文，编码创建后保持不变。
+ * 管理操作分别要求 configuration.dictionary 的 read/create/update/delete/item_create/item_update/item_delete 权限；
+ * 业务下拉选项查询沿用租户公共读取，不产生字典维护权限。
  */
 public interface DictionaryManagement {
     /** 字典及字典项状态；停用项保留历史含义，但不应进入新的业务选择。 */

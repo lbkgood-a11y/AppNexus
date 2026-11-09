@@ -15,7 +15,7 @@ declare global {
     /** 为 true 时 query 变化复用同一路径页面；默认按 fullPath 区分，保持模板其他页面及 iframe 行为。 */
     reuseOnQueryChange?: boolean;
     /** 菜单名称（兼容国际化、非国际化，如何用国际化的写法就必须在根目录的`locales`文件夹下对应添加） `必填` */
-    title: string;
+    title: string | Record<string, string>;
     /** 菜单图标 `可选` */
     icon?: string | FunctionalComponent;
     /** 菜单名称右侧的额外图标 */

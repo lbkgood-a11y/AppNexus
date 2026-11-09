@@ -2,6 +2,8 @@ import { $t } from "@/plugins/i18n";
 const Layout = () => import("@/layout/index.vue");
 
 export default [
+  /** 旧平台管理收藏入口保留跳转，目标页面仍由本人动态导航检查权限。 */
+  {path:"/platform/manage",redirect:"/platform/tenants",meta:{title:"administration.tenantTitle",showLink:false}},
   {
     path: "/login",
     name: "Login",

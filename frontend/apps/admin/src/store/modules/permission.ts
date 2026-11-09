@@ -15,6 +15,7 @@ export const usePermissionStore = defineStore("pure-permission", {
   state: () => ({
     // 静态路由生成的菜单
     constantMenus,
+    navigationReady: false,
     // 整体路由生成的菜单（静态、动态）
     wholeMenus: [],
     // 整体路由（一维数组格式）
@@ -25,9 +26,8 @@ export const usePermissionStore = defineStore("pure-permission", {
   actions: {
     /** 组装整体路由生成的菜单 */
     handleWholeMenus(routes: any[]) {
-      this.wholeMenus = filterNoPermissionTree(
-        filterTree(ascending(this.constantMenus.concat(routes)))
-      );
+      // 后端已完成权限过滤；动态目录保留服务端顺序，不按模板角色字符串再次过滤。
+      this.wholeMenus = filterTree(this.constantMenus.concat(routes));
       this.flatteningRoutes = formatFlatteningRoutes(
         this.constantMenus.concat(routes) as any
       );
@@ -64,6 +64,7 @@ export const usePermissionStore = defineStore("pure-permission", {
     },
     /** 清空缓存页面 */
     clearAllCachePage() {
+      this.navigationReady = false;
       this.wholeMenus = [];
       this.cachePageList = [];
     }

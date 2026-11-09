@@ -2,6 +2,7 @@ package com.appnexus.platform.organization;
 
 import java.time.Instant;
 import java.util.*;
+import com.appnexus.platform.authorization.*;
 
 /** 组织领域应用端口；租户身份由适配器获取，版本号用于拒绝并发覆盖。 */
 public interface OrganizationStructure {
@@ -11,7 +12,8 @@ public interface OrganizationStructure {
     record Position(UUID id,UUID organizationId,String code,String name,boolean enabled,long version) {}
     record Assignment(UUID id,UUID memberId,UUID positionId,Instant startsAt,Instant endsAt,boolean enabled,long version) {}
     record Leader(UUID organizationId,UUID assignmentId) {}
-    record Member(UUID id,String displayName) {}
+    @ProtectedResource(value="organization.member",scope=PermissionCatalog.ScopeType.TENANT)
+    record Member(UUID id,@ProtectedField(nameZh="成员姓名",nameEn="Member name",kind=FieldSecurity.Kind.PERSON_NAME) String displayName) {}
     record Impact(int children,int relations,int positions,int activeAssignments,int leaders) {}
     List<Type> types(); Type createType(String code,String name); Type updateType(UUID id,String name,boolean enabled,long version);
     List<Unit> units(); Unit createUnit(String code,UUID typeId,UUID parentId,String name); Unit updateUnit(UUID id,String name,boolean enabled,long version); Unit moveUnit(UUID id,UUID parentId,long version); Impact impact(UUID id);

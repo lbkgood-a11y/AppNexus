@@ -25,8 +25,11 @@ public interface RolePermissionManagement {
     record DataPolicy(UUID permissionId, DataScopeAuthorization.ScopeType scopeType,
                       String resourceType, Set<UUID> organizationIds) {}
 
-    /** @param permissionIds 完整功能权限集合 @param dataPolicies 完整数据策略集合 @param roleVersion 角色乐观锁版本 */
-    record AuthorizationAssignment(Set<UUID> permissionIds, Set<DataPolicy> dataPolicies, long roleVersion) {}
+    /** @param permissionIds 完整功能权限集合 @param dataPolicies 完整数据策略集合 @param roleVersion 角色乐观锁版本 @param fieldPolicies 强制字段展示限制，与普通授权合并后收口 */
+    record AuthorizationAssignment(Set<UUID> permissionIds, Set<DataPolicy> dataPolicies, long roleVersion, Set<FieldSecurity.Policy> fieldPolicies) {
+        /** 兼容旧调用，未配置额外字段限制。 */
+        public AuthorizationAssignment(Set<UUID> permissionIds,Set<DataPolicy> dataPolicies,long roleVersion){this(permissionIds,dataPolicies,roleVersion,Set.of());}
+    }
 
     /**
      * 查询角色权限。
@@ -64,4 +67,8 @@ public interface RolePermissionManagement {
      */
     AuthorizationAssignment replaceAuthorization(RoleManagement.Context context, UUID roleId,
         long expectedRoleVersion, Set<UUID> permissionIds, Set<DataPolicy> dataPolicies, String reason);
+
+    /** 原子保存功能、默认数据范围与强制字段限制；字段列表为 NULL 时保留旧限制以兼容旧客户端。 */
+    AuthorizationAssignment replaceAuthorization(RoleManagement.Context context,UUID roleId,long expectedRoleVersion,
+        Set<UUID> permissionIds,Set<DataPolicy> dataPolicies,Set<FieldSecurity.Policy> fieldPolicies,String reason);
 }

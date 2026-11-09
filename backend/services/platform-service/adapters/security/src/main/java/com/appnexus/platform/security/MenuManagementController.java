@@ -1,6 +1,7 @@
 package com.appnexus.platform.security;
 
 import com.appnexus.platform.configuration.MenuManagement;
+import com.appnexus.platform.configuration.NavigationPages;
 import java.util.*;
 import java.util.function.Supplier;
 import org.springframework.http.*;
@@ -15,13 +16,16 @@ public class MenuManagementController {
     public MenuManagementController(MenuManagement service){this.service=service;}
 
     /** 更新请求显式携带乐观锁版本，禁止静默覆盖其他管理员的修改。 */
-    public record Update(long version,UUID parentId,MenuManagement.Type type,String code,String titleZh,String titleEn,String path,String component,String icon,String permission,int sortOrder,boolean visible,boolean enabled){
-        MenuManagement.Command command(){return new MenuManagement.Command(parentId,type,code,titleZh,titleEn,path,component,icon,permission,sortOrder,visible,enabled);}
+    public record Update(long version,UUID parentId,MenuManagement.Type type,String code,String titleZh,String titleEn,String path,String component,String icon,String permission,int sortOrder,boolean visible,boolean enabled,MenuManagement.Scope scope,String externalUrl){
+        MenuManagement.Command command(){return new MenuManagement.Command(parentId,type,code,titleZh,titleEn,path,component,icon,permission,sortOrder,visible,enabled,scope,externalUrl);}
     }
     /** 创建请求不接受客户端节点 ID 或版本，标识由服务端生成。 */
-    public record Create(UUID parentId,MenuManagement.Type type,String code,String titleZh,String titleEn,String path,String component,String icon,String permission,int sortOrder,boolean visible,boolean enabled){
-        MenuManagement.Command command(){return new MenuManagement.Command(parentId,type,code,titleZh,titleEn,path,component,icon,permission,sortOrder,visible,enabled);}
+    public record Create(UUID parentId,MenuManagement.Type type,String code,String titleZh,String titleEn,String path,String component,String icon,String permission,int sortOrder,boolean visible,boolean enabled,MenuManagement.Scope scope,String externalUrl){
+        MenuManagement.Command command(){return new MenuManagement.Command(parentId,type,code,titleZh,titleEn,path,component,icon,permission,sortOrder,visible,enabled,scope,externalUrl);}
     }
+    /** 页面选择目录复用菜单管理授权，不允许通过输入路径注册任意组件。 */
+    @GetMapping("/pages")
+    ResponseEntity<List<NavigationPages.Page>> pages(Authentication authentication){return result(()->{service.list(actor(authentication));return NavigationPages.all();});}
     @GetMapping
     ResponseEntity<List<MenuManagement.Menu>> list(Authentication authentication){return result(()->service.list(actor(authentication)));}
     @PostMapping

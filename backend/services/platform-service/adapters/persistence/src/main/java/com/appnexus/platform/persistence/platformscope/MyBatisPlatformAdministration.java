@@ -1,6 +1,9 @@
 package com.appnexus.platform.persistence.platformscope;
 
 import com.appnexus.platform.tenant.PlatformAdministration;
+import com.appnexus.platform.authorization.FieldSecurity;
+import com.appnexus.platform.authorization.FieldProtection;
+import com.appnexus.platform.authorization.AccessAuthorization;
 import com.appnexus.platform.persistence.organization.OrganizationAdministratorBootstrap;
 import java.util.*;
 import org.springframework.stereotype.Service;
@@ -11,8 +14,9 @@ import org.springframework.transaction.annotation.Transactional;
 public class MyBatisPlatformAdministration implements PlatformAdministration {
     private final AdministrationMapper mapper;
     private final OrganizationAdministratorBootstrap bootstrap;
-    public MyBatisPlatformAdministration(AdministrationMapper mapper,OrganizationAdministratorBootstrap bootstrap) {
-        this.mapper=mapper; this.bootstrap=bootstrap;
+    private final FieldProtection protection;
+    public MyBatisPlatformAdministration(AdministrationMapper mapper,OrganizationAdministratorBootstrap bootstrap,FieldProtection protection) {
+        this.mapper=mapper; this.bootstrap=bootstrap;this.protection=protection;
     }
     public boolean isAdministrator(UUID actor) { return mapper.administrator(actor.toString()); }
     /**
@@ -34,7 +38,7 @@ public class MyBatisPlatformAdministration implements PlatformAdministration {
     }
     public Page<User> users(UUID actor,int page,int size,String query) {
         require(actor); validatePage(page,size,query);
-        return new Page<>(mapper.users(query,size,(long)(page-1)*size).stream().map(this::user).toList(),mapper.userCount(query));
+        return protection.protect(AccessAuthorization.Subject.platform(actor),new Page<>(mapper.users(query,size,(long)(page-1)*size).stream().map(this::user).toList(),mapper.userCount(query)));
     }
     @Transactional
     public User createUser(UUID actor,UUID id,String username,String name,String email,String phone,String hash) {
@@ -45,14 +49,18 @@ public class MyBatisPlatformAdministration implements PlatformAdministration {
         email=normalizeEmail(email);phone=normalizePhone(phone);
         mapper.createUser(id.toString(),username,name,email,phone,hash);
         mapper.audit(actor.toString(),"USER_CREATED",id.toString(),null);
-        return new User(id,username,name,email,false,phone,false,true);
+        return user(actor,mapper.user(id.toString()));
     }
     @Transactional
     public User updateUser(UUID actor,UUID target,String name,String email,String phone) {
-        lock(actor);validateName(name);email=normalizeEmail(email);phone=normalizePhone(phone);
+        lock(actor);validateName(name);
+        var restrictions=restrictions(actor);var previous=mapper.user(target.toString());if(previous==null)throw new IllegalArgumentException("Account unavailable");
+        // 无原文查看权的联系方式只读，忽略回传展示占位值，禁止把脱敏值写回数据库。
+        email=restrictions.containsKey("email")?(String)previous.get("email"):normalizeEmail(email);
+        phone=restrictions.containsKey("phoneNumber")?(String)previous.get("phone_number"):normalizePhone(phone);
         if(mapper.updateUser(target.toString(),name,email,phone)==0) throw new IllegalArgumentException("Account unavailable");
         mapper.audit(actor.toString(),"USER_PROFILE_UPDATED",target.toString(),null);
-        return user(mapper.user(target.toString()));
+        return user(actor,mapper.user(target.toString()));
     }
     @Transactional
     public void setUserEnabled(UUID actor,UUID target,boolean enabled) {
@@ -113,7 +121,12 @@ public class MyBatisPlatformAdministration implements PlatformAdministration {
             throw new IllegalArgumentException("Administrator membership requires operations governance");
         if(previous==enabled) return;
         mapper.memberState(tenant.toString(),member.toString(),enabled);
-        if(!enabled) mapper.revokeMember(tenant.toString(),member.toString());
+        if(!enabled) {
+            mapper.revokeMember(tenant.toString(),member.toString());
+            mapper.revokeMemberRoles(tenant.toString(),member.toString());
+            mapper.revokeMemberPermissions(tenant.toString(),member.toString());
+            mapper.bumpMemberAuthority(tenant.toString(),member.toString());
+        }
         mapper.audit(actor.toString(),enabled?"MEMBER_ENABLED":"MEMBER_DISABLED",member.toString(),tenant.toString());
     }
     /** 读请求逐次校验；异常默认拒绝，不用用户名硬编码平台角色。 */
@@ -139,8 +152,12 @@ public class MyBatisPlatformAdministration implements PlatformAdministration {
     private UUID id(Map<String,Object> row,String key) { return UUID.fromString((String)row.get(key)); }
     private boolean enabled(Map<String,Object> row) { return Boolean.TRUE.equals(row.get("enabled")) || row.get("enabled") instanceof Number n && n.intValue()!=0; }
     private boolean flag(Map<String,Object> row,String key) { return Boolean.TRUE.equals(row.get(key)) || row.get(key) instanceof Number n && n.intValue()!=0; }
+    /** 单项返回复用集中字段投影，业务层不包含字段脱敏算法。 */
+    private User user(UUID actor,Map<String,Object> row){return protection.protect(AccessAuthorization.Subject.platform(actor),user(row));}
     private User user(Map<String,Object> row) {
-        if(row==null) throw new IllegalArgumentException("Account unavailable");
-        return new User(id(row,"id"),(String)row.get("username"),(String)row.get("display_name"),(String)row.get("email"),flag(row,"email_verified"),(String)row.get("phone_number"),flag(row,"phone_verified"),enabled(row));
+        if(row==null)throw new IllegalArgumentException("Account unavailable");
+        return new User(id(row,"id"),(String)row.get("username"),(String)row.get("display_name"),
+            (String)row.get("email"),flag(row,"email_verified"),(String)row.get("phone_number"),flag(row,"phone_verified"),enabled(row));
     }
+    private Map<String,FieldSecurity.Mode> restrictions(UUID actor){return protection.restrictions(AccessAuthorization.Subject.platform(actor),"identity.account");}
 }

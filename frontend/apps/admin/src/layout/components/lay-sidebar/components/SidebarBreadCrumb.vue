@@ -4,15 +4,17 @@ import { transformI18n } from "@/plugins/i18n";
 import { useRoute, useRouter } from "vue-router";
 import { ref, watch, onMounted, toRaw } from "vue";
 import { getParentPaths, findRouteByPath } from "@/router/utils";
+import { usePermissionStoreHook } from "@/store/modules/permission";
 import { useMultiTagsStoreHook } from "@/store/modules/multiTags";
 
 const route = useRoute();
 const levelList = ref([]);
 const router = useRouter();
-const routes: any = router.options.routes;
-const multiTags: any = useMultiTagsStoreHook().multiTags;
 
+/** 面包屑使用当前动态导航层级；隐藏路由回退实际匹配结果，不读取旧静态路由副本。 */
 const getBreadcrumb = (): void => {
+  const routes: any = usePermissionStoreHook().wholeMenus;
+  const multiTags: any = useMultiTagsStoreHook().multiTags;
   // 当前路由信息
   let currentRoute;
 
@@ -31,6 +33,8 @@ const getBreadcrumb = (): void => {
   } else {
     currentRoute = findRouteByPath(router.currentRoute.value.path, routes);
   }
+
+  currentRoute ??= router.resolve(route.fullPath);
 
   // 当前路由的父级路径组成的数组
   const parentRoutes = getParentPaths(
@@ -94,7 +98,7 @@ onMounted(() => {
 });
 
 watch(
-  () => route.path,
+  () => [route.fullPath,usePermissionStoreHook().wholeMenus],
   () => {
     getBreadcrumb();
   },

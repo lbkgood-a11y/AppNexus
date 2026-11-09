@@ -7,8 +7,16 @@ import org.apache.ibatis.annotations.*;
 
 /** 角色权限覆盖写 Mapper；调用服务负责固定加锁顺序、管理域复核和同事务审计。 */
 @Mapper
-@PlatformScoped(tables={"access_role","access_permission","access_role_permission","access_permission_scope_type","access_role_data_policy","access_role_data_policy_organization","tenant_organization_unit","access_authorization_audit","platform_administrator","identity_account","tenant_member","organization_capability_grant","platform_tenant"})
+@PlatformScoped(tables={"access_role","access_permission","access_role_permission","access_permission_scope_type","access_role_data_policy","access_role_data_policy_organization","tenant_organization_unit","access_authorization_audit","platform_administrator","identity_account","tenant_member","organization_capability_grant","platform_tenant","access_role_field_security"})
 public interface RolePermissionMapper {
+ /** 字段限制与角色版本使用同一事务，目录和模式由领域用例校验。 */
+ @Select("SELECT resource_type,field_code,display_mode FROM access_role_field_security WHERE role_id=UUID_TO_BIN(#{role}) ORDER BY resource_type,field_code")
+ List<Map<String,Object>> fields(String role);
+ @Delete("DELETE FROM access_role_field_security WHERE role_id=UUID_TO_BIN(#{role})")
+ void clearFields(String role);
+ @Insert("INSERT INTO access_role_field_security(role_id,resource_type,field_code,display_mode) VALUES(UUID_TO_BIN(#{role}),#{resource},#{field},#{mode})")
+ void field(@Param("role") String role,@Param("resource") String resource,@Param("field") String field,@Param("mode") String mode);
+
     @Select("SELECT EXISTS(SELECT 1 FROM platform_administrator p JOIN identity_account a ON a.id=p.account_id WHERE p.account_id=UUID_TO_BIN(#{actor}) AND p.enabled=TRUE AND a.enabled=TRUE)")
     boolean platformAdministrator(String actor);
     @Select("SELECT EXISTS(SELECT 1 FROM tenant_member m JOIN identity_account a ON a.id=m.account_id JOIN platform_tenant t ON t.id=m.tenant_id JOIN organization_capability_grant g ON g.tenant_id=m.tenant_id AND g.member_id=m.id AND g.capability='GRANT' WHERE m.tenant_id=UUID_TO_BIN(#{tenant}) AND m.id=UUID_TO_BIN(#{member}) AND m.account_id=UUID_TO_BIN(#{actor}) AND m.enabled=TRUE AND a.enabled=TRUE AND t.enabled=TRUE AND g.revoked_at IS NULL AND (g.expires_at IS NULL OR g.expires_at>CURRENT_TIMESTAMP(6)))")
@@ -23,7 +31,7 @@ public interface RolePermissionMapper {
     List<String> scopedPermissions(@Param("ids") List<String> ids);
     @Select("SELECT BIN_TO_UUID(dp.permission_id) permission_id,dp.scope_type,dp.resource_type,BIN_TO_UUID(o.organization_id) organization_id FROM access_role_data_policy dp LEFT JOIN access_role_data_policy_organization o ON o.role_id=dp.role_id AND o.permission_id=dp.permission_id WHERE dp.role_id=UUID_TO_BIN(#{role}) ORDER BY dp.permission_id,o.organization_id")
     List<Map<String,Object>> policies(String role);
-    @Select("SELECT EXISTS(SELECT 1 FROM access_permission_scope_type WHERE permission_id=UUID_TO_BIN(#{permission}) AND scope_type=#{scopeType} AND resource_type=#{resource})")
+    @Select("SELECT EXISTS(SELECT 1 FROM access_permission_scope_type WHERE permission_id=UUID_TO_BIN(#{permission}) AND scope_type=#{scopeType} AND resource_type=#{resource} AND NOT(resource_type='organization.unit' AND scope_type='SELF') AND NOT(resource_type='organization.unit' AND scope_type<>'ALL' AND permission_id IN(SELECT id FROM access_permission WHERE code='organization.unit:create')))")
     boolean supportsPolicy(@Param("permission") String permission,@Param("scopeType") String scopeType,@Param("resource") String resource);
     @Select({"<script>","SELECT COUNT(*) FROM tenant_organization_unit WHERE tenant_id=UUID_TO_BIN(#{tenant}) AND enabled=TRUE AND id IN","<foreach collection='ids' item='id' open='(' separator=',' close=')'>UUID_TO_BIN(#{id})</foreach>","FOR UPDATE","</script>"})
     int validOrganizations(@Param("tenant") String tenant,@Param("ids") List<String> ids);
