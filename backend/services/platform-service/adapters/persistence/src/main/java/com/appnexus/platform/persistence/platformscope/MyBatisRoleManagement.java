@@ -81,7 +81,8 @@ public class MyBatisRoleManagement implements RoleManagement {
     private void common(String name,String description,int sort){if(name==null||name.isBlank()||name.length()>100||description!=null&&description.trim().length()>500||sort<0||sort>9999)throw new IllegalArgumentException("角色字段无效");}
     private void validVersion(long version){if(version<0)throw new IllegalArgumentException("版本无效");}
     private void requiredReason(String value){if(value==null||value.isBlank()||value.trim().length()>500)throw new IllegalArgumentException("原因须为 1–500 字符");}
-    private boolean protectedSystem(Role role){return role.roleType()==RoleType.SYSTEM&&("PLATFORM_SUPER_ADMIN".equals(role.systemKey())||"TENANT_ADMIN".equals(role.systemKey()));}
+    /** 租户管理员 system_key 包含租户 UUID 后缀；按受控前缀识别，不能只比较旧的固定文本。 */
+    private boolean protectedSystem(Role role){return role.roleType()==RoleType.SYSTEM&&("PLATFORM_SUPER_ADMIN".equals(role.systemKey())||role.systemKey()!=null&&role.systemKey().startsWith("TENANT_ADMIN:"));}
     private ScopeType scope(Context c){return c.tenantId()==null?ScopeType.PLATFORM:ScopeType.TENANT;}
     private String owner(Context c){return c.tenantId()==null?PLATFORM_OWNER:c.tenantId().toString();}
     private String blank(String v){return v==null||v.isBlank()?null:v.trim();}

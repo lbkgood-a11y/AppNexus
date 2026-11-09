@@ -18,7 +18,8 @@ public interface PlatformAdministration {
     /** 成员是账号与租户的关联，不等价于组织归属或业务授权。 */
     @ProtectedResource(value="identity.member",scope=PermissionCatalog.ScopeType.PLATFORM)
     record Member(UUID memberId, UUID accountId, String username,
-                  @ProtectedField(nameZh="成员姓名",nameEn="Member name",kind=FieldSecurity.Kind.PERSON_NAME) String displayName, boolean enabled) {}
+                  @ProtectedField(nameZh="成员姓名",nameEn="Member name",kind=FieldSecurity.Kind.PERSON_NAME) String displayName,
+                  boolean enabled, boolean removed) {}
     /** 带总数的目录页，页码从 1 开始，每页最多 100 条。 */
     record Page<T>(List<T> items, long total) {}
     /** @param actor 经过认证的全局账号 UUID，禁止使用客户端操作者字段 */
@@ -44,12 +45,22 @@ public interface PlatformAdministration {
     Page<Tenant> tenants(UUID actor, int page, int size, String query);
     /** 原子创建租户、首个管理员成员与组织能力；重试必须使用相同 requestId 和参数。 */
     Tenant createTenant(UUID actor, UUID requestId, String name, UUID administratorAccountId);
+    /**
+     * 修改租户展示名称，不改变租户标识、成员、开通状态或授权。
+     * @param actor 已认证的平台管理员账号 UUID
+     * @param tenant 不可变租户 UUID
+     * @param name 新名称，去除首尾空白后长度为 1 至 100 个字符
+     * @return 更新后的租户目录摘要
+     */
+    Tenant updateTenant(UUID actor, UUID tenant, String name);
     /** 停用租户不删除成员或业务数据，恢复后原有授权仍按有效期判定。 */
     void setTenantEnabled(UUID actor, UUID tenant, boolean enabled);
     /** 分页读取指定租户成员，平台管理只暴露账号关联摘要。 */
     Page<Member> members(UUID actor, UUID tenant, int page, int size, String query);
-    /** 新成员默认无组织能力；重复添加、已停用成员重新添加均拒绝，必须显式变更状态。 */
+    /** 新成员默认无组织能力；已移除成员重新加入时复用原成员 ID，且不恢复历史授权。 */
     void addMember(UUID actor, UUID tenant, UUID account);
     /** 停用时原子撤销该成员全部组织权限；恢复成员不会恢复历史授权。 */
     void setMemberEnabled(UUID actor, UUID tenant, UUID member, boolean enabled);
+    /** 移除成员但保留历史标识；最后一个有效租户管理员禁止移除。 */
+    void removeMember(UUID actor, UUID tenant, UUID member);
 }

@@ -2,7 +2,7 @@ package com.appnexus.platform.persistence.organization;
 import org.apache.ibatis.annotations.*;
 import com.appnexus.platform.persistence.PlatformScoped;
 /** 仅查询授权存在性，不读取授权人或其他租户的授权详情。 */
-@PlatformScoped(tables={"organization_capability_grant","organization_grant_audit","tenant_member","platform_tenant","organization_administrator_bootstrap","identity_account","tenant_member_primary_organization","tenant_organization_unit","platform_administration_audit","access_member_permission","access_permission","access_role","access_role_permission","access_role_data_policy","access_permission_scope_type","access_member_role","access_member_authorization","access_member_authorization_permission"})
+@PlatformScoped(tables={"organization_capability_grant","organization_grant_audit","tenant_member","platform_tenant","organization_administrator_bootstrap","identity_account","tenant_member_primary_organization","tenant_organization_unit","platform_administration_audit","access_member_permission","access_permission","access_role","access_role_permission","access_role_data_policy","access_permission_scope_type","access_member_role","access_member_authorization","access_member_authorization_permission","access_effective_tenant_permission"})
 @Mapper
 public interface OrganizationAuthorizationMapper {
     /** 初始化必须同时锁定有效账号和成员，禁止为已停用账号建立首个管理授权。 */
@@ -41,33 +41,33 @@ public interface OrganizationAuthorizationMapper {
     @Insert("INSERT IGNORE INTO access_member_role(tenant_id,member_id,role_id,assigned_by) VALUES(UUID_TO_BIN(#{tenant}),UUID_TO_BIN(#{member}),UUID_TO_BIN(#{role}),UUID_TO_BIN(#{member}))")
     int assignTenantAdministratorRole(@Param("tenant") String tenant,@Param("member") String member,@Param("role") String role);
     /** 初始化前要求该租户从未存在管理授权，避免覆盖人工运维治理的管理者。 */
-    @Select("SELECT EXISTS(SELECT 1 FROM organization_capability_grant WHERE tenant_id=UUID_TO_BIN(#{tenant}) AND capability='GRANT')")
+    @Select("SELECT EXISTS(SELECT 1 FROM access_effective_tenant_permission WHERE tenant_id=UUID_TO_BIN(#{tenant}) AND permission_code='organization.permission:grant')")
     boolean hasManagementHistory(String tenant);
-    /** 租户与成员参数均由服务端已验证上下文生成，权限码来自枚举。 */
-    @Select("SELECT EXISTS(SELECT 1 FROM access_member_permission WHERE tenant_id=UUID_TO_BIN(#{tenantId}) AND member_id=UUID_TO_BIN(#{memberId}) AND permission_code=CASE WHEN #{capability}='GRANT' THEN 'organization.permission:grant' ELSE CONCAT('organization.unit:',LOWER(#{capability})) END AND (expires_at IS NULL OR expires_at>CURRENT_TIMESTAMP(6)))")
-    boolean exists(@Param("tenantId") String tenantId,@Param("memberId") String memberId,@Param("capability") String capability);
-    /** 最早期组织授权表在迁移对账完成前继续参与双读，撤销或过期记录不生效。 */
-    @Select("SELECT EXISTS(SELECT 1 FROM organization_capability_grant WHERE tenant_id=UUID_TO_BIN(#{tenantId}) AND member_id=UUID_TO_BIN(#{memberId}) AND capability=#{capability} AND revoked_at IS NULL AND (expires_at IS NULL OR expires_at>CURRENT_TIMESTAMP(6)))")
-    boolean legacyCapabilityExists(@Param("tenantId") String tenantId,@Param("memberId") String memberId,@Param("capability") String capability);
     /** 统一 RBAC 双读分支；所有连接固定 tenant_id，停用主体、角色或权限均不生效。 */
     @Select("SELECT EXISTS(SELECT 1 FROM tenant_member m JOIN identity_account a ON a.id=m.account_id JOIN platform_tenant t ON t.id=m.tenant_id JOIN access_member_role mr ON mr.tenant_id=m.tenant_id AND mr.member_id=m.id JOIN access_role r ON r.id=mr.role_id AND r.tenant_id=m.tenant_id JOIN access_role_permission rp ON rp.role_id=r.id JOIN access_permission p ON p.id=rp.permission_id JOIN access_member_authorization g ON g.tenant_id=mr.tenant_id AND g.member_id=mr.member_id AND g.role_id=mr.role_id JOIN access_member_authorization_permission ap ON ap.tenant_id=g.tenant_id AND ap.member_id=g.member_id AND ap.role_id=g.role_id AND ap.permission_id=p.id WHERE (g.expires_at IS NULL OR g.expires_at>CURRENT_TIMESTAMP(6)) AND m.tenant_id=UUID_TO_BIN(#{tenantId}) AND m.id=UUID_TO_BIN(#{memberId}) AND m.enabled=TRUE AND a.enabled=TRUE AND t.enabled=TRUE AND r.status='ENABLED' AND r.deleted_at IS NULL AND p.enabled=TRUE AND p.code=CASE WHEN #{capability}='GRANT' THEN 'organization.permission:grant' ELSE CONCAT('organization.unit:',LOWER(#{capability})) END)")
     boolean rbacExists(@Param("tenantId") String tenantId,@Param("memberId") String memberId,@Param("capability") String capability);
-    /** 迁移期间所有授权写入同步权限中心，旧表仅保留历史兼容与原有审计。 */
-    @Insert("INSERT INTO access_member_permission(tenant_id,member_id,permission_code,expires_at,granted_by) VALUES(UUID_TO_BIN(#{tenant}),UUID_TO_BIN(#{member}),CASE WHEN #{capability}='GRANT' THEN 'organization.permission:grant' ELSE CONCAT('organization.unit:',LOWER(#{capability})) END,#{expires},UUID_TO_BIN(#{actor})) ON DUPLICATE KEY UPDATE expires_at=VALUES(expires_at),granted_by=VALUES(granted_by),granted_at=CURRENT_TIMESTAMP(6)")
-    int grantAccess(@Param("tenant") String tenant,@Param("member") String member,@Param("capability") String capability,@Param("actor") String actor,@Param("expires") java.sql.Timestamp expires);
-    @Delete("DELETE FROM access_member_permission WHERE tenant_id=UUID_TO_BIN(#{tenant}) AND member_id=UUID_TO_BIN(#{member}) AND permission_code=CASE WHEN #{capability}='GRANT' THEN 'organization.permission:grant' ELSE CONCAT('organization.unit:',LOWER(#{capability})) END")
-    int revokeAccess(@Param("tenant") String tenant,@Param("member") String member,@Param("capability") String capability);
 
-    /** 列表仅用于相同租户；调用层验证调用者具备 GRANT。 */
-    @Select("SELECT BIN_TO_UUID(member_id) member_id,capability,BIN_TO_UUID(granted_by) granted_by,granted_at,expires_at FROM organization_capability_grant WHERE tenant_id=UUID_TO_BIN(#{tenant}) AND member_id=UUID_TO_BIN(#{member}) AND revoked_at IS NULL AND (expires_at IS NULL OR expires_at>CURRENT_TIMESTAMP(6)) ORDER BY capability")
-    java.util.List<java.util.Map<String,Object>> list(@Param("tenant") String tenant,@Param("member") String member);
-    /** 授权 upsert 只作用于已验证租户和成员，操作者由服务端上下文传入。 */
-    @Insert("INSERT INTO organization_capability_grant(tenant_id,member_id,capability,granted_by,expires_at,revoked_at,revoked_by) VALUES(UUID_TO_BIN(#{tenant}),UUID_TO_BIN(#{member}),#{capability},UUID_TO_BIN(#{actor}),#{expires},NULL,NULL) ON DUPLICATE KEY UPDATE granted_by=VALUES(granted_by),granted_at=CURRENT_TIMESTAMP(6),expires_at=VALUES(expires_at),revoked_at=NULL,revoked_by=NULL")
-    int grant(@Param("tenant") String tenant,@Param("member") String member,@Param("capability") String capability,@Param("actor") String actor,@Param("expires") java.sql.Timestamp expires);
-    /** 撤权必须与租户和成员同时匹配，重复撤权不改写历史。 */
-    @Update("UPDATE organization_capability_grant SET revoked_at=CURRENT_TIMESTAMP(6),revoked_by=UUID_TO_BIN(#{actor}) WHERE tenant_id=UUID_TO_BIN(#{tenant}) AND member_id=UUID_TO_BIN(#{member}) AND capability=#{capability} AND revoked_at IS NULL")
-    int revoke(@Param("tenant") String tenant,@Param("member") String member,@Param("capability") String capability,@Param("actor") String actor);
+    /** 为兼容组织授权入口建立一条独立统一授权分支，不写旧授权表。 */
+    @Insert("INSERT IGNORE INTO access_role(id,scope_type,tenant_id,role_type,system_key,code,name,description,status,sort_order,created_by) SELECT UUID_TO_BIN(UUID()),'TENANT',UUID_TO_BIN(#{tenant}),'SYSTEM',CONCAT('LEGACY:',LEFT(SHA2(CONCAT(UPPER(REPLACE(#{tenant},'-','')),UPPER(REPLACE(#{member},'-','')),p.code),256),56)),CONCAT('sys_legacy_',LEFT(SHA2(CONCAT(UPPER(REPLACE(#{member},'-','')),p.code),256),32)),'旧组织授权迁移','由兼容组织授权入口建立；不得手工分配或扩权。','ENABLED',9999,UUID_TO_BIN(#{actor}) FROM access_permission p WHERE p.code=CASE WHEN #{capability}='GRANT' THEN 'organization.permission:grant' ELSE CONCAT('organization.unit:',LOWER(#{capability})) END")
+    int ensureCompatibilityRole(@Param("tenant") String tenant,@Param("member") String member,@Param("capability") String capability,@Param("actor") String actor);
+    @Select("SELECT BIN_TO_UUID(r.id) FROM access_role r JOIN access_permission p ON p.code=CASE WHEN #{capability}='GRANT' THEN 'organization.permission:grant' ELSE CONCAT('organization.unit:',LOWER(#{capability})) END WHERE r.system_key=CONCAT('LEGACY:',LEFT(SHA2(CONCAT(UPPER(REPLACE(#{tenant},'-','')),UPPER(REPLACE(#{member},'-','')),p.code),256),56)) FOR UPDATE")
+    String compatibilityRole(@Param("tenant") String tenant,@Param("member") String member,@Param("capability") String capability);
+    @Insert("INSERT IGNORE INTO access_role_permission(role_id,permission_id,scope_type,granted_by) SELECT UUID_TO_BIN(#{role}),id,'TENANT',UUID_TO_BIN(#{actor}) FROM access_permission WHERE code=CASE WHEN #{capability}='GRANT' THEN 'organization.permission:grant' ELSE CONCAT('organization.unit:',LOWER(#{capability})) END")
+    int ensureCompatibilityPermission(@Param("role") String role,@Param("capability") String capability,@Param("actor") String actor);
+    @Insert("INSERT IGNORE INTO access_role_data_policy(role_id,permission_id,scope_type,resource_type,configured_by) SELECT UUID_TO_BIN(#{role}),id,'ALL','organization.unit',UUID_TO_BIN(#{actor}) FROM access_permission WHERE resource='organization.unit' AND code=CONCAT('organization.unit:',LOWER(#{capability}))")
+    int ensureCompatibilityPolicy(@Param("role") String role,@Param("capability") String capability,@Param("actor") String actor);
+    @Insert("INSERT IGNORE INTO access_member_role(tenant_id,member_id,role_id,assigned_by) VALUES(UUID_TO_BIN(#{tenant}),UUID_TO_BIN(#{member}),UUID_TO_BIN(#{role}),UUID_TO_BIN(#{actor}))")
+    int ensureCompatibilityAssignment(@Param("tenant") String tenant,@Param("member") String member,@Param("role") String role,@Param("actor") String actor);
+    @Insert("INSERT INTO access_member_authorization(tenant_id,member_id,role_id,role_version,expires_at) SELECT UUID_TO_BIN(#{tenant}),UUID_TO_BIN(#{member}),UUID_TO_BIN(#{role}),version,#{expires} FROM access_role WHERE id=UUID_TO_BIN(#{role}) ON DUPLICATE KEY UPDATE expires_at=VALUES(expires_at),role_version=VALUES(role_version)")
+    int upsertCompatibilityAuthorization(@Param("tenant") String tenant,@Param("member") String member,@Param("role") String role,@Param("expires") java.sql.Timestamp expires);
+    @Insert("INSERT IGNORE INTO access_member_authorization_permission(tenant_id,member_id,role_id,permission_id,scope_type,resource_type) SELECT UUID_TO_BIN(#{tenant}),UUID_TO_BIN(#{member}),UUID_TO_BIN(#{role}),id,CASE WHEN resource='organization.unit' THEN 'ALL' ELSE NULL END,CASE WHEN resource='organization.unit' THEN 'organization.unit' ELSE NULL END FROM access_permission WHERE code=CASE WHEN #{capability}='GRANT' THEN 'organization.permission:grant' ELSE CONCAT('organization.unit:',LOWER(#{capability})) END")
+    int ensureCompatibilitySnapshot(@Param("tenant") String tenant,@Param("member") String member,@Param("role") String role,@Param("capability") String capability);
+    @Delete("DELETE FROM access_member_role WHERE tenant_id=UUID_TO_BIN(#{tenant}) AND member_id=UUID_TO_BIN(#{member}) AND role_id=UUID_TO_BIN(#{role})")
+    int revokeCompatibilityAssignment(@Param("tenant") String tenant,@Param("member") String member,@Param("role") String role);
 
+    /** 管理页面从统一授权快照读取组织能力；同一能力多来源时只展示一条有效结果。 */
+    @Select("SELECT BIN_TO_UUID(mr.member_id) member_id,UPPER(CASE WHEN p.code='organization.permission:grant' THEN 'GRANT' ELSE p.action END) capability,BIN_TO_UUID(MIN(mr.assigned_by)) granted_by,MIN(mr.assigned_at) granted_at,MAX(g.expires_at) expires_at FROM access_member_role mr JOIN access_role r ON r.id=mr.role_id AND r.tenant_id=mr.tenant_id JOIN access_role_permission rp ON rp.role_id=r.id JOIN access_permission p ON p.id=rp.permission_id JOIN access_member_authorization g ON g.tenant_id=mr.tenant_id AND g.member_id=mr.member_id AND g.role_id=mr.role_id JOIN access_member_authorization_permission ap ON ap.tenant_id=g.tenant_id AND ap.member_id=g.member_id AND ap.role_id=g.role_id AND ap.permission_id=p.id WHERE mr.tenant_id=UUID_TO_BIN(#{tenant}) AND mr.member_id=UUID_TO_BIN(#{member}) AND (p.code LIKE 'organization.unit:%' OR p.code='organization.permission:grant') AND r.status='ENABLED' AND r.deleted_at IS NULL AND p.enabled=TRUE AND (g.expires_at IS NULL OR g.expires_at>CURRENT_TIMESTAMP(6)) GROUP BY mr.member_id,capability ORDER BY capability")
+    java.util.List<java.util.Map<String,Object>> unifiedList(@Param("tenant") String tenant,@Param("member") String member);
     /** 授权审计只追加，不向页面返回操作者以外的敏感信息。 */
     @Insert("INSERT INTO organization_grant_audit(tenant_id,target_member_id,actor_member_id,capability,action) VALUES(UUID_TO_BIN(#{tenant}),UUID_TO_BIN(#{target}),UUID_TO_BIN(#{actor}),#{capability},#{action})")
     int audit(@Param("tenant") String tenant,@Param("target") String target,@Param("actor") String actor,@Param("capability") String capability,@Param("action") String action);
@@ -78,6 +78,6 @@ public interface OrganizationAuthorizationMapper {
     @Select("SELECT BIN_TO_UUID(id) FROM tenant_member WHERE tenant_id=UUID_TO_BIN(#{tenant}) AND id IN(UUID_TO_BIN(#{actor}),UUID_TO_BIN(#{target})) AND enabled=TRUE ORDER BY id FOR UPDATE")
     java.util.List<String> lockMembers(@Param("tenant") String tenant,@Param("actor") String actor,@Param("target") String target);
     /** FOR UPDATE 使并发撤销管理能力与正在授权串行化，不使用事务外授权快照。 */
-    @Select("SELECT permission_code FROM access_member_permission WHERE tenant_id=UUID_TO_BIN(#{tenant}) AND member_id=UUID_TO_BIN(#{actor}) AND permission_code='organization.permission:grant' AND (expires_at IS NULL OR expires_at>CURRENT_TIMESTAMP(6)) FOR UPDATE")
+    @Select("SELECT e.permission_code FROM tenant_member m JOIN access_effective_tenant_permission e ON e.tenant_id=m.tenant_id AND e.member_id=m.id WHERE m.tenant_id=UUID_TO_BIN(#{tenant}) AND m.id=UUID_TO_BIN(#{actor}) AND e.permission_code='organization.permission:grant' FOR UPDATE")
     String lockAuthority(@Param("tenant") String tenant,@Param("actor") String actor);
 }

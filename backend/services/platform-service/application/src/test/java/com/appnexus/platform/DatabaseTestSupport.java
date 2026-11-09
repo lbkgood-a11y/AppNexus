@@ -40,6 +40,9 @@ abstract class DatabaseTestSupport {
         properties.add("app.bootstrap.username", () -> "admin-test");
         properties.add("app.bootstrap.password", () -> "integration-test-password");
         properties.add("app.bff-secret", () -> "integration-test-client-secret");
+        // 所有共享容器测试使用同一 OAuth 注册地址，避免不同测试上下文误触生产式配置漂移保护。
+        properties.add("app.public-url", () -> "http://localhost:18080");
+        properties.add("app.frontend-url", () -> "http://localhost:8848");
     }
 
     @org.springframework.beans.factory.annotation.Autowired

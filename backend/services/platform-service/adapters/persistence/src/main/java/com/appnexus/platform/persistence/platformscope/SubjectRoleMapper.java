@@ -6,13 +6,13 @@ import org.apache.ibatis.annotations.*;
 
 /** 主体角色分配 Mapper；服务层按主体、角色、关系、审计的固定顺序持锁。 */
 @Mapper
-@PlatformScoped(tables={"identity_account","tenant_member","platform_tenant","access_role","access_account_role","access_member_role","access_authorization_audit","platform_administrator","organization_capability_grant"})
+@PlatformScoped(tables={"identity_account","tenant_member","platform_tenant","access_role","access_account_role","access_member_role","access_authorization_audit","platform_administrator","access_effective_tenant_permission"})
 public interface SubjectRoleMapper {
  /** 只移除明确撤销的角色，避免全量重建覆盖保留角色的成员范围。 */
  @Delete("DELETE FROM access_member_role WHERE tenant_id=UUID_TO_BIN(#{tenant}) AND member_id=UUID_TO_BIN(#{member}) AND role_id=UUID_TO_BIN(#{role})")
  int deleteMemberRole(@Param("tenant") String tenant,@Param("member") String member,@Param("role") String role);
  @Select("SELECT EXISTS(SELECT 1 FROM platform_administrator p JOIN identity_account a ON a.id=p.account_id WHERE p.account_id=UUID_TO_BIN(#{actor}) AND p.enabled=TRUE AND a.enabled=TRUE)") boolean platformAdministrator(String actor);
- @Select("SELECT EXISTS(SELECT 1 FROM tenant_member m JOIN identity_account a ON a.id=m.account_id JOIN platform_tenant t ON t.id=m.tenant_id JOIN organization_capability_grant g ON g.tenant_id=m.tenant_id AND g.member_id=m.id AND g.capability='GRANT' WHERE m.tenant_id=UUID_TO_BIN(#{tenant}) AND m.id=UUID_TO_BIN(#{member}) AND m.account_id=UUID_TO_BIN(#{actor}) AND m.enabled=TRUE AND a.enabled=TRUE AND t.enabled=TRUE AND g.revoked_at IS NULL AND (g.expires_at IS NULL OR g.expires_at>CURRENT_TIMESTAMP(6)))") boolean tenantAdministrator(@Param("actor") String actor,@Param("tenant") String tenant,@Param("member") String member);
+ @Select("SELECT EXISTS(SELECT 1 FROM access_effective_tenant_permission e WHERE e.tenant_id=UUID_TO_BIN(#{tenant}) AND e.member_id=UUID_TO_BIN(#{member}) AND e.account_id=UUID_TO_BIN(#{actor}) AND e.permission_code='organization.permission:grant')") boolean tenantAdministrator(@Param("actor") String actor,@Param("tenant") String tenant,@Param("member") String member);
  @Select("SELECT authority_version FROM identity_account WHERE id=UUID_TO_BIN(#{id}) AND enabled=TRUE FOR UPDATE") Long lockAccount(String id);
  @Select("SELECT authority_version FROM tenant_member WHERE id=UUID_TO_BIN(#{member}) AND tenant_id=UUID_TO_BIN(#{tenant}) AND enabled=TRUE FOR UPDATE") Long lockMember(@Param("tenant") String tenant,@Param("member") String member);
  @Select("SELECT BIN_TO_UUID(role_id) FROM access_account_role WHERE account_id=UUID_TO_BIN(#{id}) ORDER BY role_id") List<String> accountRoles(String id);

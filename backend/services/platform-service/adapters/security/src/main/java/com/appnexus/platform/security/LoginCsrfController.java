@@ -3,6 +3,7 @@ import org.springframework.http.*;
 import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.web.bind.annotation.*;
 @RestController
+@EndpointPolicy(EndpointPolicy.Domain.PUBLIC_LOGIN)
 public class LoginCsrfController {
     public record LoginCsrf(String token, String parameterName) {}
     @GetMapping("/login/csrf")

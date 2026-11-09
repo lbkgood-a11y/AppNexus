@@ -6,6 +6,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 /** 当前账号安全记录查询；主体始终来自认证上下文，不接受 accountId 查询参数。 */
 @RestController
+@EndpointPolicy(EndpointPolicy.Domain.ACCOUNT_SELF_SERVICE)
 @RequestMapping("/bff/account/security-logs")
 public class SecurityLogController {
     private final SecurityLogRepository logs;

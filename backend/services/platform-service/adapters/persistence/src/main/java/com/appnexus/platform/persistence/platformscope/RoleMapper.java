@@ -7,7 +7,7 @@ import org.apache.ibatis.annotations.*;
 
 /** 角色持久化 Mapper；每条角色 SQL 都以归一化管理域标识限定范围。 */
 @Mapper
-@PlatformScoped(tables={"access_role","access_role_audit","platform_administrator","identity_account","tenant_member","organization_capability_grant","platform_tenant"})
+@PlatformScoped(tables={"access_role","access_role_audit","platform_administrator","identity_account","tenant_member","platform_tenant","access_effective_tenant_permission"})
 public interface RoleMapper {
     /** 平台入口每次复核账号权威状态，前端路由角色不作为授权依据。 */
     @Select("SELECT EXISTS(SELECT 1 FROM platform_administrator p JOIN identity_account a ON a.id=p.account_id WHERE p.account_id=UUID_TO_BIN(#{actor}) AND p.enabled=TRUE AND a.enabled=TRUE)")
@@ -16,10 +16,10 @@ public interface RoleMapper {
     @Select("SELECT BIN_TO_UUID(p.account_id) FROM platform_administrator p JOIN identity_account a ON a.id=p.account_id WHERE p.account_id=UUID_TO_BIN(#{actor}) AND p.enabled=TRUE AND a.enabled=TRUE FOR UPDATE")
     String lockPlatformAdministrator(String actor);
     /** 租户自助入口要求账号、成员、租户均有效且成员具有不可委派的现有 GRANT 管理能力。 */
-    @Select("SELECT EXISTS(SELECT 1 FROM tenant_member m JOIN identity_account a ON a.id=m.account_id JOIN platform_tenant t ON t.id=m.tenant_id JOIN organization_capability_grant g ON g.tenant_id=m.tenant_id AND g.member_id=m.id AND g.capability='GRANT' WHERE m.tenant_id=UUID_TO_BIN(#{tenant}) AND m.id=UUID_TO_BIN(#{member}) AND m.account_id=UUID_TO_BIN(#{actor}) AND m.enabled=TRUE AND a.enabled=TRUE AND t.enabled=TRUE AND g.revoked_at IS NULL AND (g.expires_at IS NULL OR g.expires_at>CURRENT_TIMESTAMP(6)))")
+    @Select("SELECT EXISTS(SELECT 1 FROM access_effective_tenant_permission e WHERE e.tenant_id=UUID_TO_BIN(#{tenant}) AND e.member_id=UUID_TO_BIN(#{member}) AND e.account_id=UUID_TO_BIN(#{actor}) AND e.permission_code='organization.permission:grant')")
     boolean tenantAdministrator(@Param("actor") String actor,@Param("tenant") String tenant,@Param("member") String member);
     /** 写事务锁定成员及其管理授权，和撤权流程串行化。 */
-    @Select("SELECT BIN_TO_UUID(m.id) FROM tenant_member m JOIN identity_account a ON a.id=m.account_id JOIN platform_tenant t ON t.id=m.tenant_id JOIN organization_capability_grant g ON g.tenant_id=m.tenant_id AND g.member_id=m.id AND g.capability='GRANT' WHERE m.tenant_id=UUID_TO_BIN(#{tenant}) AND m.id=UUID_TO_BIN(#{member}) AND m.account_id=UUID_TO_BIN(#{actor}) AND m.enabled=TRUE AND a.enabled=TRUE AND t.enabled=TRUE AND g.revoked_at IS NULL AND (g.expires_at IS NULL OR g.expires_at>CURRENT_TIMESTAMP(6)) FOR UPDATE")
+    @Select("SELECT BIN_TO_UUID(m.id) FROM tenant_member m WHERE m.tenant_id=UUID_TO_BIN(#{tenant}) AND m.id=UUID_TO_BIN(#{member}) AND m.account_id=UUID_TO_BIN(#{actor}) AND EXISTS(SELECT 1 FROM access_effective_tenant_permission e WHERE e.tenant_id=m.tenant_id AND e.member_id=m.id AND e.permission_code='organization.permission:grant') FOR UPDATE")
     String lockTenantAdministrator(@Param("actor") String actor,@Param("tenant") String tenant,@Param("member") String member);
     /** 平台代管前锁定有效目标租户，禁止为不存在或停用租户修改角色。 */
     @Select("SELECT BIN_TO_UUID(id) FROM platform_tenant WHERE id=UUID_TO_BIN(#{tenant}) AND enabled=TRUE FOR UPDATE")

@@ -12,7 +12,7 @@ public final class MyBatisDataScopeAuthorization implements DataScopeAuthorizati
   String account=subject.accountId().toString(),tenant=subject.tenantId().toString(),member=subject.memberId().toString();
   var rows=mapper.policies(account,tenant,member,code,resource);
   // 兼容来源只在没有角色数据分支时回退，不能把已配置的窄范围静默扩大为 ALL。
-  if(rows.isEmpty())return LegacyOrganizationPermissions.supportsData(code,resource)&&mapper.legacyAll(account,tenant,member,code)?new DataScope(ScopeType.ALL,Set.of()):DataScope.deny();
+  if(rows.isEmpty())return DataScope.deny();
   var exact=new HashSet<UUID>();var roots=new HashSet<UUID>();
   for(var row:rows){
    String type=(String)row.get("scope_type");

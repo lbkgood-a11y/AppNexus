@@ -40,8 +40,11 @@ class TenantSqlIsolationTest extends DatabaseTestSupport {
  }
  /** 仅测试显式建立请求上下文，正式应用只有安全过滤器可创建该属性。 */
  private void context(UUID tenant) {
+  context(UUID.randomUUID(),tenant,UUID.randomUUID());
+ }
+ private void context(UUID account,UUID tenant,UUID member) {
   var request=new MockHttpServletRequest();
-  request.setAttribute(VerifiedTenantContext.class.getName(),new VerifiedTenantContext(UUID.randomUUID(),tenant,UUID.randomUUID(),1));
+  request.setAttribute(VerifiedTenantContext.class.getName(),new VerifiedTenantContext(account,tenant,member,1));
   RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
  }
  @Test void undeclaredMappersFailClosed() {
@@ -80,6 +83,7 @@ class TenantSqlIsolationTest extends DatabaseTestSupport {
  }
  @org.springframework.beans.factory.annotation.Autowired com.appnexus.platform.organization.OrganizationUnitRepository units;
  @org.springframework.beans.factory.annotation.Autowired com.appnexus.platform.organization.OrganizationStructure structure;
+ @org.springframework.beans.factory.annotation.Autowired com.appnexus.platform.persistence.organization.OrganizationAdministratorBootstrap organizationBootstrap;
  /** 类型树拒绝循环移动和使用中类型停用，证明核心生命周期约束在正式 MySQL 上生效。 */
  @Test void organizationTreePreservesTypeAndCycleInvariants() {
   context(UUID.randomUUID());
@@ -94,14 +98,22 @@ class TenantSqlIsolationTest extends DatabaseTestSupport {
  @Test void organizationRepositoryUsesVerifiedTenantForEveryOperation() {
   jdbc.execute("CREATE TABLE IF NOT EXISTS tenant_organization_unit(tenant_id BINARY(16) NOT NULL,id BINARY(16) NOT NULL,name VARCHAR(100) NOT NULL,created_at TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),PRIMARY KEY(tenant_id,id))");
   UUID a=UUID.randomUUID(),b=UUID.randomUUID(),id=UUID.randomUUID();
-  context(a); units.create(new com.appnexus.platform.organization.OrganizationUnit(id,"部门甲"));
-  context(b); units.create(new com.appnexus.platform.organization.OrganizationUnit(id,"部门乙"));
-  context(a); assertThat(units.findAll()).containsExactly(new com.appnexus.platform.organization.OrganizationUnit(id,"部门甲"));
+  var adminA=authorizedMember(a);var adminB=authorizedMember(b);
+  context(adminA[0],a,adminA[1]); units.create(new com.appnexus.platform.organization.OrganizationUnit(id,"部门甲"));
+  context(adminB[0],b,adminB[1]); units.create(new com.appnexus.platform.organization.OrganizationUnit(id,"部门乙"));
+  context(adminA[0],a,adminA[1]); assertThat(units.findAll()).containsExactly(new com.appnexus.platform.organization.OrganizationUnit(id,"部门甲"));
   assertThat(units.rename(id,"部门甲-改名")).isTrue();
-  context(b); assertThat(units.findAll()).containsExactly(new com.appnexus.platform.organization.OrganizationUnit(id,"部门乙"));
+  context(adminB[0],b,adminB[1]); assertThat(units.findAll()).containsExactly(new com.appnexus.platform.organization.OrganizationUnit(id,"部门乙"));
   assertThat(units.delete(id)).isTrue();
-  context(a); assertThat(units.findAll()).containsExactly(new com.appnexus.platform.organization.OrganizationUnit(id,"部门甲-改名"));
+  context(adminA[0],a,adminA[1]); assertThat(units.findAll()).containsExactly(new com.appnexus.platform.organization.OrganizationUnit(id,"部门甲-改名"));
   RequestContextHolder.resetRequestAttributes();
+ }
+ private UUID[] authorizedMember(UUID tenant){
+  UUID account=UUID.randomUUID(),member=UUID.randomUUID();
+  jdbc.update("INSERT INTO platform_tenant(id,name) VALUES(UUID_TO_BIN(?),?)",tenant.toString(),"隔离租户-"+tenant);
+  jdbc.update("INSERT INTO identity_account(id,username,display_name,password_hash) VALUES(UUID_TO_BIN(?),?,?,?)",account.toString(),"isolation-"+account,"隔离管理员","unused");
+  jdbc.update("INSERT INTO tenant_member(id,tenant_id,account_id) VALUES(UUID_TO_BIN(?),UUID_TO_BIN(?),UUID_TO_BIN(?))",member.toString(),tenant.toString(),account.toString());
+  organizationBootstrap.initialize(tenant,member);return new UUID[]{account,member};
  }
 
 }

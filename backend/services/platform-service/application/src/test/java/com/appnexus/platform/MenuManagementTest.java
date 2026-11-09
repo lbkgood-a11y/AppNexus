@@ -28,6 +28,7 @@ class MenuManagementTest extends DatabaseTestSupport {
  @Autowired JdbcTemplate jdbc;
  @Autowired MockMvc mvc;
  @Autowired NavigationQuery navigation;
+ @Autowired com.appnexus.platform.authorization.OrganizationGrantManagement organizationGrants;
  UUID actor;
  @BeforeEach void initialize(){actor=UUID.fromString(jdbc.queryForObject("SELECT BIN_TO_UUID(id) FROM identity_account WHERE username='admin-test'",String.class));administration.initializeAdministrator("admin-test");}
  private MenuManagement.Command command(UUID parent,MenuManagement.Type type,String code){return new MenuManagement.Command(parent,type,code,"菜单","Menu",null,null,"ri/menu-line",null,10,true,true,MenuManagement.Scope.PLATFORM,type==MenuManagement.Type.EXTERNAL?"https://example.com/track":null);}
@@ -106,10 +107,11 @@ class MenuManagementTest extends DatabaseTestSupport {
   var tenant=administration.createTenant(actor,UUID.randomUUID(),"Navigation tenant",owner);
   administration.addMember(actor,tenant.id(),account);
   UUID member=UUID.fromString(jdbc.queryForObject("SELECT BIN_TO_UUID(id) FROM tenant_member WHERE tenant_id=UUID_TO_BIN(?) AND account_id=UUID_TO_BIN(?)",String.class,tenant.id().toString(),account.toString()));
+  UUID ownerMember=UUID.fromString(jdbc.queryForObject("SELECT BIN_TO_UUID(id) FROM tenant_member WHERE tenant_id=UUID_TO_BIN(?) AND account_id=UUID_TO_BIN(?)",String.class,tenant.id().toString(),owner.toString()));
   assertThat(navigation.current(account,tenant.id(),member,1).items()).isEmpty();
-  jdbc.update("INSERT INTO access_member_permission(tenant_id,member_id,permission_code,granted_by) VALUES(UUID_TO_BIN(?),UUID_TO_BIN(?),'organization.unit:read',UUID_TO_BIN(?))",tenant.id().toString(),member.toString(),actor.toString());
+  organizationGrants.grant(tenant.id(),member,ownerMember,com.appnexus.platform.authorization.OrganizationCapability.READ,null);
   assertThat(navigation.current(account,tenant.id(),member,1).items()).extracting(MenuManagement.Menu::component).contains("organization/index").doesNotContain("roles/index");
-  jdbc.update("DELETE FROM access_member_permission WHERE tenant_id=UUID_TO_BIN(?) AND member_id=UUID_TO_BIN(?)",tenant.id().toString(),member.toString());
+  organizationGrants.revoke(tenant.id(),member,ownerMember,com.appnexus.platform.authorization.OrganizationCapability.READ);
   assertThat(navigation.current(account,tenant.id(),member,1).items()).isEmpty();
  }
 

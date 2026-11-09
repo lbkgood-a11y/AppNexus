@@ -18,7 +18,7 @@ public final class MyBatisAccessAuthorization implements AccessAuthorization {
         if (!mapper.enabled(scope, permissionCode)) return false;
         if (subject.tenantId() == null) return mapper.hasPlatformPermission(subject.accountId().toString(), permissionCode);
         String account=subject.accountId().toString(),tenant=subject.tenantId().toString(),member=subject.memberId().toString();
-        return mapper.hasTenantPermission(account,tenant,member,permissionCode)||(com.appnexus.platform.authorization.LegacyOrganizationPermissions.capability(permissionCode)!=null&&mapper.hasLegacyTenantPermission(account,tenant,member,permissionCode));
+        return mapper.hasTenantPermission(account,tenant,member,permissionCode);
     }
 
     private boolean valid(Subject subject) {

@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 
 /** 组织单元入口；过滤器逐请求检查操作权限，仓储强制租户条件，客户端不能指定租户。 */
 @RestController
+@EndpointPolicy(EndpointPolicy.Domain.TENANT_BUSINESS)
 @RequestMapping("/api/organization")
 public class OrganizationController {
     private final OrganizationUnitRepository units;
@@ -23,7 +24,7 @@ public class OrganizationController {
     public record Name(String name) {}
 
     /** 当前成员能力仅用于菜单、按钮展示，不代替每个写接口的服务端权限校验。 */
-    @GetMapping("/capabilities")
+    @EndpointOperation("organization.unit:read") @GetMapping("/capabilities")
     ResponseEntity<List<OrganizationCapability>> capabilities(HttpServletRequest request) {
         if (!(request.getAttribute(TenantExecutionFilter.ATTRIBUTE) instanceof VerifiedTenantContext c))
             throw AccountSettingsController.problem(HttpStatus.CONFLICT,"TENANT_REQUIRED","请选择有效租户");
@@ -31,12 +32,12 @@ public class OrganizationController {
             Arrays.stream(OrganizationCapability.values()).filter(cap -> authorization.allows(c.tenantId(),c.memberId(),cap)).toList());
     }
     /** @return 当前租户的组织单元，不返回其他租户的数据 */
-    @GetMapping("/units")
+    @EndpointOperation("organization.unit:read") @GetMapping("/units")
     ResponseEntity<List<OrganizationUnit>> list() {
         return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(units.findAll());
     }
     /** 创建 ID 由服务端生成；重名允许，提交期间客户端须防重复点击。 */
-    @PostMapping("/units")
+    @EndpointOperation("organization.unit:create") @PostMapping("/units")
     ResponseEntity<OrganizationUnit> create(@RequestBody Name input) {
         var type=structure.types().stream().filter(value->value.code().equals("BUSINESS")).findFirst()
             .orElseGet(()->structure.createType("BUSINESS","业务组织"));
@@ -45,13 +46,13 @@ public class OrganizationController {
         return ResponseEntity.status(HttpStatus.CREATED).cacheControl(CacheControl.noStore()).body(unit);
     }
     /** 仅重命名当前租户目标；找不到时不暴露其他租户是否存在相同 ID。 */
-    @PutMapping("/units/{id}")
+    @EndpointOperation("organization.unit:update") @PutMapping("/units/{id}")
     ResponseEntity<Void> rename(@PathVariable UUID id,@RequestBody Name input) {
         if (!units.rename(id,validName(input))) throw missing();
         return ResponseEntity.noContent().build();
     }
     /** 删除仅影响当前租户；重复删除返回 404。 */
-    @DeleteMapping("/units/{id}")
+    @EndpointOperation("organization.unit:delete") @DeleteMapping("/units/{id}")
     ResponseEntity<Void> delete(@PathVariable UUID id) {
         try { if (!units.delete(id)) throw missing(); }
         catch(IllegalStateException assigned) { throw AccountSettingsController.problem(HttpStatus.CONFLICT,"ORGANIZATION_HAS_MEMBERS","请先解除成员组织归属再删除"); }

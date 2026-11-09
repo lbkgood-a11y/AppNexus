@@ -9,6 +9,6 @@ public class MyBatisOrganizationAuthorization implements OrganizationAuthorizati
     public MyBatisOrganizationAuthorization(OrganizationAuthorizationMapper mapper){this.mapper=mapper;}
     public boolean allows(UUID tenantId,UUID memberId,OrganizationCapability capability){
         String tenant=tenantId.toString(),member=memberId.toString(),action=capability.name();
-        return mapper.rbacExists(tenant,member,action)||mapper.exists(tenant,member,action)||mapper.legacyCapabilityExists(tenant,member,action);
+        return mapper.rbacExists(tenant,member,action);
     }
 }

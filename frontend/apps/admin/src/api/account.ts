@@ -1,6 +1,9 @@
 import { http } from "@/utils/http";
 /** 个人展示资料；不包含密码、Token 或可由客户端修改的权限。 */
-export interface AccountProfile { id: string; username: string; displayName: string }
+export interface AccountProfile {
+  id: string; username: string; displayName: string;
+  email?: string; emailVerified: boolean; phoneNumber?: string; phoneVerified: boolean;
+}
 /** 查询当前账号的资料。 */
 export const getProfile = () => http.request<AccountProfile>("get", "/bff/account");
 /**
@@ -14,7 +17,8 @@ async function mutate(method: "patch" | "post", path: string, data: object) {
   await http.request(method, path, { data, headers: { [csrf.headerName]: csrf.token } });
 }
 /** 显示名称允许 1 至 100 个字符；服务端进行最终校验。 */
-export const saveProfile = (displayName: string) => mutate("patch", "/bff/account", { displayName });
+export const saveProfile = (displayName: string, email?: string, phoneNumber?: string) =>
+  mutate("patch", "/bff/account", { displayName, email: email || null, phoneNumber: phoneNumber || null });
 /** 当前密码重新认证后改密；成功会注销所有旧会话，密码不落入持久存储。 */
 export const changePassword = (currentPassword: string, newPassword: string) =>
   mutate("post", "/bff/account/password", { currentPassword, newPassword });

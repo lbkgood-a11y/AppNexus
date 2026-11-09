@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.*;
 
 /** 平台菜单管理 BFF；前端角色仅控制入口可见性，每个请求仍由用例复核平台管理员权威源。 */
 @RestController
+@EndpointPolicy(EndpointPolicy.Domain.PLATFORM_ADMINISTRATION)
 @RequestMapping("/bff/platform/menus")
 public class MenuManagementController {
     private final MenuManagement service;
@@ -24,15 +25,15 @@ public class MenuManagementController {
         MenuManagement.Command command(){return new MenuManagement.Command(parentId,type,code,titleZh,titleEn,path,component,icon,permission,sortOrder,visible,enabled,scope,externalUrl);}
     }
     /** 页面选择目录复用菜单管理授权，不允许通过输入路径注册任意组件。 */
-    @GetMapping("/pages")
+    @EndpointOperation("configuration.menu:read") @GetMapping("/pages")
     ResponseEntity<List<NavigationPages.Page>> pages(Authentication authentication){return result(()->{service.list(actor(authentication));return NavigationPages.all();});}
-    @GetMapping
+    @EndpointOperation("configuration.menu:read") @GetMapping
     ResponseEntity<List<MenuManagement.Menu>> list(Authentication authentication){return result(()->service.list(actor(authentication)));}
-    @PostMapping
+    @EndpointOperation("configuration.menu:create") @PostMapping
     ResponseEntity<MenuManagement.Menu> create(Authentication authentication,@RequestBody Create input){return result(()->service.create(actor(authentication),Objects.requireNonNull(input).command()));}
-    @PutMapping("/{id}")
+    @EndpointOperation("configuration.menu:update") @PutMapping("/{id}")
     ResponseEntity<MenuManagement.Menu> update(Authentication authentication,@PathVariable UUID id,@RequestBody Update input){return result(()->service.update(actor(authentication),id,input.version(),input.command()));}
-    @DeleteMapping("/{id}")
+    @EndpointOperation("configuration.menu:delete") @DeleteMapping("/{id}")
     ResponseEntity<Void> delete(Authentication authentication,@PathVariable UUID id,@RequestParam long version){return result(()->{service.delete(actor(authentication),id,version);return null;});}
     private UUID actor(Authentication authentication){return UUID.fromString(authentication.getName());}
     /** 错误使用稳定业务码；冲突不返回数据库约束名、SQL 或完整请求正文。 */

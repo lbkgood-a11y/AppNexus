@@ -30,8 +30,8 @@ public final class NavigationPages {
             platform("platform/roles","/platform/roles","平台角色","Platform roles","access.role:read"),
             platform("platform/authorization","/platform/authorization","授权中心","Authorization", "access.role:grant"),
             new Page("organization/index","/organization/manage","组织管理","Organizations",MenuManagement.Scope.TENANT,"organization.unit:read",Gate.PERMISSION),
-            tenant("roles/index","/access/roles","租户角色","Tenant roles"),
-            tenant("roles/authorization","/access/authorization","授权中心","Authorization"),
+            tenant("roles/index","/access/roles","租户角色","Tenant roles","access.tenant.role:read"),
+            tenant("roles/authorization","/access/authorization","授权中心","Authorization","access.tenant.role:grant"),
             new Page("configuration/dictionaries","/configuration/dictionaries","业务字典","Dictionaries",MenuManagement.Scope.TENANT,"configuration.dictionary:read",Gate.PERMISSION)
         );
     }
@@ -41,7 +41,7 @@ public final class NavigationPages {
     private static Page platform(String key,String path,String zh,String en,String permission) {
         return new Page(key,path,zh,en,MenuManagement.Scope.PLATFORM,permission,Gate.PLATFORM_ADMIN);
     }
-    private static Page tenant(String key,String path,String zh,String en) {
-        return new Page(key,path,zh,en,MenuManagement.Scope.TENANT,null,Gate.TENANT_ADMIN);
+    private static Page tenant(String key,String path,String zh,String en,String permission) {
+        return new Page(key,path,zh,en,MenuManagement.Scope.TENANT,permission,Gate.TENANT_ADMIN);
     }
 }

@@ -78,7 +78,7 @@ public class MyBatisPlatformAdministration implements PlatformAdministration {
     }
     @Transactional
     public Tenant createTenant(UUID actor,UUID request,String name,UUID administrator) {
-        lock(actor); validateName(name);
+        lock(actor); name=normalizedName(name);
         var prior=mapper.creation(request.toString());
         if(prior!=null) {
             if(!actor.toString().equals(prior.get("actor")) || !administrator.toString().equals(prior.get("administrator")) || !name.equals(prior.get("tenant_name")))
@@ -95,33 +95,70 @@ public class MyBatisPlatformAdministration implements PlatformAdministration {
         return new Tenant(tenant,name,true);
     }
     @Transactional
+    public Tenant updateTenant(UUID actor,UUID tenant,String name) {
+        lock(actor); name=normalizedName(name);
+        if(mapper.lockTenant(tenant.toString())==null) throw new IllegalArgumentException("Tenant unavailable");
+        if(mapper.updateTenant(tenant.toString(),name)>0)
+            mapper.audit(actor.toString(),"TENANT_UPDATED",tenant.toString(),tenant.toString());
+        var updated=mapper.tenant(tenant.toString());
+        return new Tenant(id(updated,"id"),(String)updated.get("name"),enabled(updated));
+    }
+    @Transactional
     public void setTenantEnabled(UUID actor,UUID tenant,boolean enabled) {
-        lock(actor);if(mapper.lockTenant(tenant.toString())==null) throw new IllegalArgumentException("Tenant unavailable");
+        lock(actor);Boolean previous=mapper.lockTenant(tenant.toString());
+        if(previous==null) throw new IllegalArgumentException("Tenant unavailable");
+        if(previous==enabled)return;
         mapper.tenantState(tenant.toString(),enabled);
         mapper.audit(actor.toString(),enabled?"TENANT_ENABLED":"TENANT_DISABLED",tenant.toString(),tenant.toString());
     }
     public Page<Member> members(UUID actor,UUID tenant,int page,int size,String query) {
         require(actor);validatePage(page,size,query);
-        return new Page<>(mapper.members(tenant.toString(),query,size,(long)(page-1)*size).stream().map(r -> new Member(id(r,"member_id"),id(r,"account_id"),(String)r.get("username"),(String)r.get("display_name"),enabled(r))).toList(),mapper.memberCount(tenant.toString(),query));
+        return new Page<>(mapper.members(tenant.toString(),query,size,(long)(page-1)*size).stream().map(r -> new Member(id(r,"member_id"),id(r,"account_id"),(String)r.get("username"),(String)r.get("display_name"),enabled(r),r.get("removed_at")!=null)).toList(),mapper.memberCount(tenant.toString(),query));
     }
     @Transactional
     public void addMember(UUID actor,UUID tenant,UUID account) {
         lock(actor); activeTenant(tenant);
         if(mapper.lockAccount(account.toString())==null) throw new IllegalArgumentException("Active account required");
+        var existing=mapper.lockMemberByAccount(tenant.toString(),account.toString());
+        if(existing!=null) {
+            if(existing.get("removed_at")==null)throw new IllegalArgumentException("Membership already exists");
+            String member=(String)existing.get("member_id");
+            if(mapper.rejoinMember(tenant.toString(),member)!=1)throw new IllegalArgumentException("Membership changed");
+            mapper.audit(actor.toString(),"MEMBER_REJOINED",member,tenant.toString());return;
+        }
         UUID member=com.fasterxml.uuid.Generators.timeBasedEpochGenerator().generate();
         mapper.addMember(member.toString(),tenant.toString(),account.toString());
         mapper.audit(actor.toString(),"MEMBER_ADDED",member.toString(),tenant.toString());
+    }
+    @Transactional
+    public void removeMember(UUID actor,UUID tenant,UUID member) {
+        lock(actor);activeTenant(tenant);
+        var previous=mapper.lockMember(tenant.toString(),member.toString());
+        if(previous==null)throw new IllegalArgumentException("Member unavailable");
+        if(mapper.manages(tenant.toString(),member.toString())&&mapper.activeManagerCount(tenant.toString())<=1)
+            throw new IllegalArgumentException("Last active administrator cannot be removed");
+        mapper.removeMemberLeaders(tenant.toString(),member.toString());
+        mapper.endMemberAssignments(tenant.toString(),member.toString());
+        mapper.revokeMember(tenant.toString(),member.toString());
+        mapper.revokeMemberRoles(tenant.toString(),member.toString());
+        mapper.revokeMemberPermissions(tenant.toString(),member.toString());
+        if(mapper.removeMember(tenant.toString(),member.toString())!=1)throw new IllegalArgumentException("Member already removed");
+        mapper.audit(actor.toString(),"MEMBER_REMOVED",member.toString(),tenant.toString());
     }
     @Transactional
     public void setMemberEnabled(UUID actor,UUID tenant,UUID member,boolean enabled) {
         lock(actor); activeTenant(tenant);
         var previous=mapper.lockMember(tenant.toString(),member.toString());
         if(previous==null) throw new IllegalArgumentException("Member unavailable");
+        if(Boolean.TRUE.equals(mapper.memberRemoved(tenant.toString(),member.toString())))
+            throw new IllegalArgumentException("Removed member must rejoin through membership creation");
         if(!enabled && mapper.manages(tenant.toString(),member.toString()))
             throw new IllegalArgumentException("Administrator membership requires operations governance");
         if(previous==enabled) return;
         mapper.memberState(tenant.toString(),member.toString(),enabled);
         if(!enabled) {
+            mapper.removeMemberLeaders(tenant.toString(),member.toString());
+            mapper.endMemberAssignments(tenant.toString(),member.toString());
             mapper.revokeMember(tenant.toString(),member.toString());
             mapper.revokeMemberRoles(tenant.toString(),member.toString());
             mapper.revokeMemberPermissions(tenant.toString(),member.toString());
@@ -134,6 +171,10 @@ public class MyBatisPlatformAdministration implements PlatformAdministration {
     private void lock(UUID actor) { if(mapper.lockAdministrator(actor.toString())==null) throw new SecurityException("Platform authority required"); }
     private void activeTenant(UUID tenant) { if(!Boolean.TRUE.equals(mapper.lockTenant(tenant.toString()))) throw new IllegalArgumentException("Active tenant required"); }
     private void validateName(String name) { if(name==null || name.isBlank() || name.length()>100) throw new IllegalArgumentException("Name must contain 1–100 characters"); }
+    private String normalizedName(String name) {
+        if(name==null)throw new IllegalArgumentException("Name required");
+        String normalized=name.strip();validateName(normalized);return normalized;
+    }
     /** 邮箱归一化为小写并限制基本结构；完整可达性由后续验证流程确认。 */
     private String normalizeEmail(String value) {
         if(value==null || value.isBlank()) return null;

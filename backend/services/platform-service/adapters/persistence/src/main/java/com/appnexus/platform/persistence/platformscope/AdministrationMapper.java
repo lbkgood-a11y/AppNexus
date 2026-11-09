@@ -6,7 +6,7 @@ import org.apache.ibatis.annotations.*;
 
 /** 专用平台目录仓储；仅由平台管理用例调用，所有列表限制摘要字段和分页，不读取租户业务内容。 */
 @Mapper
-@PlatformScoped(tables={"identity_account","platform_tenant","tenant_member","platform_administrator","platform_administrator_bootstrap","platform_administration_audit","platform_tenant_creation","organization_capability_grant","organization_grant_audit","access_role","access_permission","access_role_permission","access_account_role","access_role_field_security","access_member_role","access_member_permission"})
+@PlatformScoped(tables={"identity_account","platform_tenant","tenant_member","platform_administrator","platform_administrator_bootstrap","platform_administration_audit","platform_tenant_creation","organization_capability_grant","organization_grant_audit","access_role","access_permission","access_role_permission","access_account_role","access_role_field_security","access_member_role","access_member_permission","tenant_organization_assignment","tenant_organization_leader","access_effective_tenant_permission"})
 public interface AdministrationMapper {
     /** 每次操作从权威源复核有效平台管理员，不能信任会话中的角色展示缓存。 */
     @Select("SELECT EXISTS(SELECT 1 FROM platform_administrator p JOIN identity_account a ON a.id=p.account_id WHERE p.account_id=UUID_TO_BIN(#{actor}) AND p.enabled=TRUE AND a.enabled=TRUE)")
@@ -50,7 +50,7 @@ public interface AdministrationMapper {
     @Select("SELECT EXISTS(SELECT 1 FROM platform_administrator WHERE account_id=UUID_TO_BIN(#{id}))")
     boolean protectedAccount(String id);
     /** 组织管理者账号必须走专门运维治理，防止从全局账号停用入口绕过管理权限保护。 */
-    @Select("SELECT EXISTS(SELECT 1 FROM tenant_member m JOIN organization_capability_grant g ON g.tenant_id=m.tenant_id AND g.member_id=m.id WHERE m.account_id=UUID_TO_BIN(#{id}) AND g.capability='GRANT' AND g.revoked_at IS NULL AND (g.expires_at IS NULL OR g.expires_at>CURRENT_TIMESTAMP(6)))")
+    @Select("SELECT EXISTS(SELECT 1 FROM access_effective_tenant_permission e WHERE e.account_id=UUID_TO_BIN(#{id}) AND e.permission_code='organization.permission:grant')")
     boolean organizationAdministrator(String id);
     @Select("SELECT BIN_TO_UUID(id) id,name,enabled FROM platform_tenant WHERE name LIKE CONCAT('%',#{query},'%') ORDER BY name,id LIMIT #{size} OFFSET #{offset}")
     List<Map<String,Object>> tenants(@Param("query") String query,@Param("size") int size,@Param("offset") long offset);
@@ -58,27 +58,48 @@ public interface AdministrationMapper {
     long tenantCount(String query);
     @Insert("INSERT INTO platform_tenant(id,name) VALUES(UUID_TO_BIN(#{id}),#{name})")
     void createTenant(@Param("id") String id,@Param("name") String name);
+    @Select("SELECT BIN_TO_UUID(id) id,name,enabled FROM platform_tenant WHERE id=UUID_TO_BIN(#{tenant})")
+    Map<String,Object> tenant(String tenant);
     @Select("SELECT enabled FROM platform_tenant WHERE id=UUID_TO_BIN(#{tenant}) FOR UPDATE")
     Boolean lockTenant(String tenant);
+    @Update("UPDATE platform_tenant SET name=#{name} WHERE id=UUID_TO_BIN(#{tenant}) AND name<>#{name}")
+    int updateTenant(@Param("tenant") String tenant,@Param("name") String name);
     @Update("UPDATE platform_tenant SET enabled=#{enabled} WHERE id=UUID_TO_BIN(#{tenant})")
     int tenantState(@Param("tenant") String tenant,@Param("enabled") boolean enabled);
     @Select("SELECT BIN_TO_UUID(tenant_id) tenant_id,BIN_TO_UUID(actor_account_id) actor,BIN_TO_UUID(administrator_account_id) administrator,tenant_name FROM platform_tenant_creation WHERE request_id=UUID_TO_BIN(#{request})")
     Map<String,Object> creation(String request);
     @Insert("INSERT INTO platform_tenant_creation(request_id,tenant_id,actor_account_id,administrator_account_id,tenant_name) VALUES(UUID_TO_BIN(#{request}),UUID_TO_BIN(#{tenant}),UUID_TO_BIN(#{actor}),UUID_TO_BIN(#{administrator}),#{name})")
     void rememberCreation(@Param("request") String request,@Param("tenant") String tenant,@Param("actor") String actor,@Param("administrator") String administrator,@Param("name") String name);
-    @Select("SELECT BIN_TO_UUID(m.id) member_id,BIN_TO_UUID(a.id) account_id,a.username,a.display_name,m.enabled FROM tenant_member m JOIN identity_account a ON a.id=m.account_id WHERE m.tenant_id=UUID_TO_BIN(#{tenant}) AND (a.username LIKE CONCAT('%',#{query},'%') OR a.display_name LIKE CONCAT('%',#{query},'%')) ORDER BY a.username,m.id LIMIT #{size} OFFSET #{offset}")
+    @Select("SELECT BIN_TO_UUID(m.id) member_id,BIN_TO_UUID(a.id) account_id,a.username,a.display_name,m.enabled,m.removed_at FROM tenant_member m JOIN identity_account a ON a.id=m.account_id WHERE m.tenant_id=UUID_TO_BIN(#{tenant}) AND (a.username LIKE CONCAT('%',#{query},'%') OR a.display_name LIKE CONCAT('%',#{query},'%')) ORDER BY a.username,m.id LIMIT #{size} OFFSET #{offset}")
     List<Map<String,Object>> members(@Param("tenant") String tenant,@Param("query") String query,@Param("size") int size,@Param("offset") long offset);
     @Select("SELECT COUNT(*) FROM tenant_member m JOIN identity_account a ON a.id=m.account_id WHERE m.tenant_id=UUID_TO_BIN(#{tenant}) AND (a.username LIKE CONCAT('%',#{query},'%') OR a.display_name LIKE CONCAT('%',#{query},'%'))")
     long memberCount(@Param("tenant") String tenant,@Param("query") String query);
     @Insert("INSERT INTO tenant_member(id,tenant_id,account_id) VALUES(UUID_TO_BIN(#{id}),UUID_TO_BIN(#{tenant}),UUID_TO_BIN(#{account}))")
     void addMember(@Param("id") String id,@Param("tenant") String tenant,@Param("account") String account);
+    @Select("SELECT BIN_TO_UUID(id) member_id,enabled,removed_at FROM tenant_member WHERE tenant_id=UUID_TO_BIN(#{tenant}) AND account_id=UUID_TO_BIN(#{account}) FOR UPDATE")
+    Map<String,Object> lockMemberByAccount(@Param("tenant") String tenant,@Param("account") String account);
+    /** 重新加入仅恢复成员身份；历史角色、直授权和组织能力已在移除事务中撤销。 */
+    @Update("UPDATE tenant_member SET enabled=TRUE,removed_at=NULL,authority_version=authority_version+1 WHERE tenant_id=UUID_TO_BIN(#{tenant}) AND id=UUID_TO_BIN(#{member}) AND removed_at IS NOT NULL")
+    int rejoinMember(@Param("tenant") String tenant,@Param("member") String member);
     @Select("SELECT enabled FROM tenant_member WHERE tenant_id=UUID_TO_BIN(#{tenant}) AND id=UUID_TO_BIN(#{member}) FOR UPDATE")
     Boolean lockMember(@Param("tenant") String tenant,@Param("member") String member);
+    @Select("SELECT removed_at IS NOT NULL FROM tenant_member WHERE tenant_id=UUID_TO_BIN(#{tenant}) AND id=UUID_TO_BIN(#{member})")
+    Boolean memberRemoved(@Param("tenant") String tenant,@Param("member") String member);
     @Update("UPDATE tenant_member SET enabled=#{enabled} WHERE tenant_id=UUID_TO_BIN(#{tenant}) AND id=UUID_TO_BIN(#{member})")
     int memberState(@Param("tenant") String tenant,@Param("member") String member,@Param("enabled") boolean enabled);
     /** 管理者成员禁止从普通停用入口变更，避免绕过 GRANT 运维治理。 */
-    @Select("SELECT EXISTS(SELECT 1 FROM organization_capability_grant WHERE tenant_id=UUID_TO_BIN(#{tenant}) AND member_id=UUID_TO_BIN(#{member}) AND capability='GRANT' AND revoked_at IS NULL AND (expires_at IS NULL OR expires_at>CURRENT_TIMESTAMP(6)))")
+    @Select("SELECT EXISTS(SELECT 1 FROM access_effective_tenant_permission e WHERE e.tenant_id=UUID_TO_BIN(#{tenant}) AND e.member_id=UUID_TO_BIN(#{member}) AND e.permission_code='organization.permission:grant')")
     boolean manages(@Param("tenant") String tenant,@Param("member") String member);
+    @Select("SELECT COUNT(DISTINCT e.member_id) FROM access_effective_tenant_permission e WHERE e.tenant_id=UUID_TO_BIN(#{tenant}) AND e.permission_code='organization.permission:grant'")
+    int activeManagerCount(String tenant);
+    @Update("UPDATE tenant_member SET enabled=FALSE,removed_at=CURRENT_TIMESTAMP(6),authority_version=authority_version+1 WHERE tenant_id=UUID_TO_BIN(#{tenant}) AND id=UUID_TO_BIN(#{member}) AND removed_at IS NULL")
+    int removeMember(@Param("tenant") String tenant,@Param("member") String member);
+    /** 成员失效时移除负责人引用，避免选人继续命中已离岗成员。 */
+    @Delete("DELETE l FROM tenant_organization_leader l JOIN tenant_organization_assignment a ON a.tenant_id=l.tenant_id AND a.id=l.assignment_id WHERE a.tenant_id=UUID_TO_BIN(#{tenant}) AND a.member_id=UUID_TO_BIN(#{member})")
+    int removeMemberLeaders(@Param("tenant") String tenant,@Param("member") String member);
+    /** 结束当前及未来任职并推进版本；历史任职保留，不物理删除。 */
+    @Update("UPDATE tenant_organization_assignment SET enabled=FALSE,ends_at=CASE WHEN starts_at<CURRENT_TIMESTAMP(6) THEN CURRENT_TIMESTAMP(6) ELSE starts_at END,version=version+1 WHERE tenant_id=UUID_TO_BIN(#{tenant}) AND member_id=UUID_TO_BIN(#{member}) AND enabled=TRUE AND (ends_at IS NULL OR ends_at>CURRENT_TIMESTAMP(6))")
+    int endMemberAssignments(@Param("tenant") String tenant,@Param("member") String member);
     /** 成员停用审计不伪造租户内操作者；平台停用动作记录在独立平台审计中。 */
     @Update("UPDATE organization_capability_grant SET revoked_at=CURRENT_TIMESTAMP(6) WHERE tenant_id=UUID_TO_BIN(#{tenant}) AND member_id=UUID_TO_BIN(#{member}) AND revoked_at IS NULL")
     void revokeMember(@Param("tenant") String tenant,@Param("member") String member);

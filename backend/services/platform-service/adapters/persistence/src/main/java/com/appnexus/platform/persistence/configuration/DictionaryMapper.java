@@ -8,15 +8,15 @@ import org.apache.ibatis.annotations.*;
 /** 字典受控 SQL；所有数据语句均显式绑定拦截器注入的已验证租户。 */
 @Mapper
 @TenantAggregateScoped(
- tables={"tenant_dictionary","tenant_dictionary_item","tenant_dictionary_item_reference","tenant_dictionary_audit","tenant_member","identity_account","platform_tenant","organization_capability_grant"},
+ tables={"tenant_dictionary","tenant_dictionary_item","tenant_dictionary_item_reference","tenant_dictionary_audit","tenant_member","identity_account","platform_tenant","access_effective_tenant_permission"},
  statements={"lockMember","administrator","lockAdministrator","dictionaries","dictionary","lockDictionary","createDictionary","updateDictionary","deleteDictionary","dictionaryItemCount","items","item","lockItem","createItem","updateItem","deleteItem","childCount","referenceCount","audit","enabledItems"})
 public interface DictionaryMapper {
  /** 锁定可信租户内有效成员，和成员角色授权替换串行；操作权限由统一判定器校验。 */
  @Select("SELECT BIN_TO_UUID(m.id) FROM tenant_member m JOIN identity_account a ON a.id=m.account_id JOIN platform_tenant t ON t.id=m.tenant_id WHERE m.tenant_id=#{__verifiedTenant} AND m.id=UUID_TO_BIN(#{member}) AND m.account_id=UUID_TO_BIN(#{actor}) AND m.enabled=TRUE AND a.enabled=TRUE AND t.enabled=TRUE FOR UPDATE")
  String lockMember(@Param("__verifiedTenant") byte[] tenant,@Param("actor") String actor,@Param("member") String member);
- @Select("SELECT EXISTS(SELECT 1 FROM tenant_member m JOIN identity_account a ON a.id=m.account_id JOIN platform_tenant t ON t.id=m.tenant_id JOIN organization_capability_grant g ON g.tenant_id=m.tenant_id AND g.member_id=m.id AND g.capability='GRANT' WHERE m.tenant_id=#{__verifiedTenant} AND m.id=UUID_TO_BIN(#{member}) AND m.account_id=UUID_TO_BIN(#{actor}) AND m.enabled=TRUE AND a.enabled=TRUE AND t.enabled=TRUE AND g.revoked_at IS NULL AND (g.expires_at IS NULL OR g.expires_at>CURRENT_TIMESTAMP(6)))")
+ @Select("SELECT EXISTS(SELECT 1 FROM access_effective_tenant_permission e WHERE e.tenant_id=#{__verifiedTenant} AND e.member_id=UUID_TO_BIN(#{member}) AND e.account_id=UUID_TO_BIN(#{actor}) AND e.permission_code='organization.permission:grant')")
  boolean administrator(@Param("__verifiedTenant") byte[] tenant,@Param("actor") String actor,@Param("member") String member);
- @Select("SELECT BIN_TO_UUID(m.id) FROM tenant_member m JOIN identity_account a ON a.id=m.account_id JOIN platform_tenant t ON t.id=m.tenant_id JOIN organization_capability_grant g ON g.tenant_id=m.tenant_id AND g.member_id=m.id AND g.capability='GRANT' WHERE m.tenant_id=#{__verifiedTenant} AND m.id=UUID_TO_BIN(#{member}) AND m.account_id=UUID_TO_BIN(#{actor}) AND m.enabled=TRUE AND a.enabled=TRUE AND t.enabled=TRUE AND g.revoked_at IS NULL AND (g.expires_at IS NULL OR g.expires_at>CURRENT_TIMESTAMP(6)) FOR UPDATE")
+ @Select("SELECT BIN_TO_UUID(m.id) FROM tenant_member m WHERE m.tenant_id=#{__verifiedTenant} AND m.id=UUID_TO_BIN(#{member}) AND m.account_id=UUID_TO_BIN(#{actor}) AND EXISTS(SELECT 1 FROM access_effective_tenant_permission e WHERE e.tenant_id=m.tenant_id AND e.member_id=m.id AND e.permission_code='organization.permission:grant') FOR UPDATE")
  String lockAdministrator(@Param("__verifiedTenant") byte[] tenant,@Param("actor") String actor,@Param("member") String member);
  @Select("SELECT BIN_TO_UUID(id) id,code,name,description,status,sort_order,version,updated_at FROM tenant_dictionary WHERE tenant_id=#{__verifiedTenant} AND deleted_at IS NULL ORDER BY sort_order,name,id")
  List<Map<String,Object>> dictionaries(@Param("__verifiedTenant") byte[] tenant);

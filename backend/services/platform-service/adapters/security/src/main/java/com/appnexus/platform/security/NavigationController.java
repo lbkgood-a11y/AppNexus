@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.*;
 
 /** 本人导航 BFF；租户及成员由会话与成员目录复核，不接受客户端 tenantId 或权限列表。 */
 @RestController
+@EndpointPolicy(EndpointPolicy.Domain.TENANT_CONTEXT)
 public class NavigationController {
     private final NavigationQuery navigation;
     private final TenantAccess tenants;

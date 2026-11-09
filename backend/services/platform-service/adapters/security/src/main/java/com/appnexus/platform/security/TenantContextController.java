@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.*;
 
 /** 账号身份与租户访问分离；客户端只提交选择意图，成员身份由数据库验证。 */
 @RestController
+@EndpointPolicy(EndpointPolicy.Domain.TENANT_CONTEXT)
 @RequestMapping("/bff/tenants")
 public class TenantContextController {
     static final String TENANT="appnexus.tenant";

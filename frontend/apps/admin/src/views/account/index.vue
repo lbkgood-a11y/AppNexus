@@ -45,6 +45,8 @@ function selectSection(value: Section) {
 }
 const profile = ref<AccountProfile>();
 const displayName = ref("");
+const email = ref("");
+const phoneNumber = ref("");
 const loading = ref(false);
 const saving = ref(false);
 const changing = ref(false);
@@ -56,7 +58,10 @@ const passwords = reactive({ current: "", next: "", confirm: "" });
 /** 加载个人资料；网络故障保留重试入口，不将故障解释成退出登录。 */
 async function load() {
   loading.value = true; error.value = "";
-  try { profile.value = await getProfile(); displayName.value = profile.value.displayName; }
+  try {
+    profile.value = await getProfile(); displayName.value = profile.value.displayName;
+    email.value = profile.value.email || ""; phoneNumber.value = profile.value.phoneNumber || "";
+  }
   catch (cause) { error.value = requestErrorMessage(cause); }
   finally { loading.value = false; }
 }
@@ -65,7 +70,8 @@ async function save() {
   if (!displayName.value.trim()) return;
   saving.value = true; error.value = "";
   try {
-    await saveProfile(displayName.value.trim()); await restoreSession(); await load();
+    await saveProfile(displayName.value.trim(), email.value.trim(), phoneNumber.value.trim());
+    await restoreSession(); await load();
     ElMessage.success(t("account.saved"));
   } catch (cause) { error.value = requestErrorMessage(cause); }
   finally { saving.value = false; }
@@ -117,6 +123,12 @@ onMounted(load);
             <p class="field-hint">{{ t("account.usernameHint") }}</p></div>
           <div class="account-field"><label for="display-name"><span class="required">*</span> {{ t("account.displayName") }}</label>
             <el-input id="display-name" v-model="displayName" :aria-label="t('account.displayName')" maxlength="100" show-word-limit required size="large" /></div>
+          <div class="account-field"><label for="account-email">{{ t("account.email") }}</label>
+            <el-input id="account-email" v-model="email" type="email" maxlength="254" autocomplete="email" size="large" />
+            <p class="field-hint"><el-tag size="small" :type="profile.emailVerified ? 'success' : 'info'">{{ t(profile.emailVerified ? "account.verified" : "account.unverified") }}</el-tag> {{ t("account.contactChangeHint") }}</p></div>
+          <div class="account-field"><label for="account-phone">{{ t("account.phoneNumber") }}</label>
+            <el-input id="account-phone" v-model="phoneNumber" maxlength="16" autocomplete="tel" placeholder="+8613800000000" size="large" />
+            <p class="field-hint"><el-tag size="small" :type="profile.phoneVerified ? 'success' : 'info'">{{ t(profile.phoneVerified ? "account.verified" : "account.unverified") }}</el-tag> {{ t("account.phoneHint") }}</p></div>
           <div class="account-field"><label>{{ t("account.id") }}</label><code>{{ profile.id }}</code></div>
           <el-button type="primary" native-type="submit" :loading="saving" :disabled="loading || !displayName.trim()">{{ t("account.save") }}</el-button>
         </form>

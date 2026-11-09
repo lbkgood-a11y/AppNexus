@@ -23,11 +23,11 @@ class OrganizationBootstrapTest extends DatabaseTestSupport {
         jdbc.update("INSERT INTO tenant_member(id,tenant_id,account_id) VALUES(UUID_TO_BIN(?),UUID_TO_BIN(?),UUID_TO_BIN(?))",member.toString(),tenant.toString(),account.toString());
         bootstrap.initialize(tenant,member);
         bootstrap.initialize(tenant,member);
-        assertThat(count("organization_capability_grant",tenant)).isEqualTo(5);
-        assertThat(count("organization_grant_audit",tenant)).isEqualTo(5);
-        jdbc.update("UPDATE organization_capability_grant SET revoked_at=CURRENT_TIMESTAMP(6) WHERE tenant_id=UUID_TO_BIN(?)",tenant.toString());
+        assertThat(count("organization_capability_grant",tenant)).isZero();
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM access_effective_tenant_permission WHERE tenant_id=UUID_TO_BIN(?) AND member_id=UUID_TO_BIN(?)",Integer.class,tenant.toString(),member.toString())).isGreaterThan(0);
+        jdbc.update("DELETE FROM access_member_role WHERE tenant_id=UUID_TO_BIN(?) AND member_id=UUID_TO_BIN(?)",tenant.toString(),member.toString());
         bootstrap.initialize(tenant,member);
-        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM organization_capability_grant WHERE tenant_id=UUID_TO_BIN(?) AND revoked_at IS NULL",Integer.class,tenant.toString())).isZero();
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM access_member_role WHERE tenant_id=UUID_TO_BIN(?) AND member_id=UUID_TO_BIN(?)",Integer.class,tenant.toString(),member.toString())).isZero();
         assertThatThrownBy(() -> bootstrap.initialize(tenant,UUID.randomUUID())).isInstanceOf(IllegalStateException.class);
     }
 
@@ -39,24 +39,23 @@ class OrganizationBootstrapTest extends DatabaseTestSupport {
         assertThat(count("organization_capability_grant",tenant)).isZero();
     }
 
-    /** 审计失败必须连初始化标记一同回滚，修复故障后仍可重新初始化。 */
-    @Test void failedAuditRollsBackClaimAndAllCapabilities() {
+    /** 系统角色写入失败必须连初始化标记一同回滚，修复故障后仍可重新初始化。 */
+    @Test void failedRoleWriteRollsBackBootstrapClaim() {
         UUID tenant=UUID.randomUUID(),member=activeMember(tenant);
-        jdbc.execute("ALTER TABLE organization_grant_audit ADD CONSTRAINT test_bootstrap_audit CHECK (actor_member_id <> X'"+member.toString().replace("-","")+"')");
+        jdbc.execute("ALTER TABLE access_role ADD CONSTRAINT test_bootstrap_role CHECK (tenant_id <> X'"+tenant.toString().replace("-","")+"')");
         try {
             assertThatThrownBy(() -> bootstrap.initialize(tenant,member)).isInstanceOf(RuntimeException.class);
             assertThat(count("organization_administrator_bootstrap",tenant)).isZero();
-            assertThat(count("organization_capability_grant",tenant)).isZero();
-            assertThat(count("organization_grant_audit",tenant)).isZero();
-        } finally { jdbc.execute("ALTER TABLE organization_grant_audit DROP CHECK test_bootstrap_audit"); }
+        } finally { jdbc.execute("ALTER TABLE access_role DROP CHECK test_bootstrap_role"); }
         bootstrap.initialize(tenant,member);
-        assertThat(count("organization_capability_grant",tenant)).isEqualTo(5);
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM access_effective_tenant_permission WHERE tenant_id=UUID_TO_BIN(?)",Integer.class,tenant.toString())).isGreaterThan(0);
     }
 
-    /** 已有人工管理权限即使已撤销，也不得通过初始化入口恢复或替换。 */
-    @Test void rejectsExistingManagementHistory() {
+    /** 已有统一管理权限不得通过初始化入口覆盖既有治理关系。 */
+    @Test void rejectsExistingUnifiedManagementHistory() {
         UUID tenant=UUID.randomUUID(),member=activeMember(tenant);
-        jdbc.update("INSERT INTO organization_capability_grant(tenant_id,member_id,capability,granted_by,revoked_at) VALUES(UUID_TO_BIN(?),UUID_TO_BIN(?),'GRANT',UUID_TO_BIN(?),CURRENT_TIMESTAMP(6))",tenant.toString(),member.toString(),member.toString());
+        bootstrap.initialize(tenant,member);
+        jdbc.update("DELETE FROM organization_administrator_bootstrap WHERE tenant_id=UUID_TO_BIN(?)",tenant.toString());
         assertThatThrownBy(() -> bootstrap.initialize(tenant,member)).isInstanceOf(IllegalStateException.class);
         assertThat(count("organization_administrator_bootstrap",tenant)).isZero();
     }

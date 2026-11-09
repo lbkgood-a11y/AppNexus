@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.*;
 
 /** 本人在线会话管理；原始 Cookie 会话 ID 永不返回浏览器 JavaScript。 */
 @RestController
+@EndpointPolicy(EndpointPolicy.Domain.ACCOUNT_SELF_SERVICE)
 @RequestMapping("/bff/account/sessions")
 public class AccountSessionsController {
     private final FindByIndexNameSessionRepository<? extends Session> sessions;

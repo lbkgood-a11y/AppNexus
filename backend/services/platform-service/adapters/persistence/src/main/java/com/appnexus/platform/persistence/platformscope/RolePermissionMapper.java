@@ -7,7 +7,7 @@ import org.apache.ibatis.annotations.*;
 
 /** 角色权限覆盖写 Mapper；调用服务负责固定加锁顺序、管理域复核和同事务审计。 */
 @Mapper
-@PlatformScoped(tables={"access_role","access_permission","access_role_permission","access_permission_scope_type","access_role_data_policy","access_role_data_policy_organization","tenant_organization_unit","access_authorization_audit","platform_administrator","identity_account","tenant_member","organization_capability_grant","platform_tenant","access_role_field_security"})
+@PlatformScoped(tables={"access_role","access_permission","access_role_permission","access_permission_scope_type","access_role_data_policy","access_role_data_policy_organization","tenant_organization_unit","access_authorization_audit","platform_administrator","identity_account","tenant_member","platform_tenant","access_role_field_security","access_effective_tenant_permission"})
 public interface RolePermissionMapper {
  /** 字段限制与角色版本使用同一事务，目录和模式由领域用例校验。 */
  @Select("SELECT resource_type,field_code,display_mode FROM access_role_field_security WHERE role_id=UUID_TO_BIN(#{role}) ORDER BY resource_type,field_code")
@@ -19,7 +19,7 @@ public interface RolePermissionMapper {
 
     @Select("SELECT EXISTS(SELECT 1 FROM platform_administrator p JOIN identity_account a ON a.id=p.account_id WHERE p.account_id=UUID_TO_BIN(#{actor}) AND p.enabled=TRUE AND a.enabled=TRUE)")
     boolean platformAdministrator(String actor);
-    @Select("SELECT EXISTS(SELECT 1 FROM tenant_member m JOIN identity_account a ON a.id=m.account_id JOIN platform_tenant t ON t.id=m.tenant_id JOIN organization_capability_grant g ON g.tenant_id=m.tenant_id AND g.member_id=m.id AND g.capability='GRANT' WHERE m.tenant_id=UUID_TO_BIN(#{tenant}) AND m.id=UUID_TO_BIN(#{member}) AND m.account_id=UUID_TO_BIN(#{actor}) AND m.enabled=TRUE AND a.enabled=TRUE AND t.enabled=TRUE AND g.revoked_at IS NULL AND (g.expires_at IS NULL OR g.expires_at>CURRENT_TIMESTAMP(6)))")
+    @Select("SELECT EXISTS(SELECT 1 FROM access_effective_tenant_permission e WHERE e.tenant_id=UUID_TO_BIN(#{tenant}) AND e.member_id=UUID_TO_BIN(#{member}) AND e.account_id=UUID_TO_BIN(#{actor}) AND e.permission_code='organization.permission:grant')")
     boolean tenantAdministrator(@Param("actor") String actor,@Param("tenant") String tenant,@Param("member") String member);
     @Select("SELECT BIN_TO_UUID(id) id,scope_type,BIN_TO_UUID(tenant_id) tenant_id,version FROM access_role WHERE id=UUID_TO_BIN(#{role}) AND scope_owner_id=UUID_TO_BIN(#{owner}) AND deleted_at IS NULL FOR UPDATE")
     Map<String,Object> lockRole(@Param("owner") String owner,@Param("role") String role);

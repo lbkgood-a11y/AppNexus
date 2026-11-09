@@ -22,20 +22,13 @@ public class MyBatisNavigationQuery implements NavigationQuery {
     /** 受控映射用于授权编辑视图，未关联菜单的权限由前端保留在独立资源分组。 */
     @Override @Transactional(readOnly=true)
     public List<AuthorizationNode> authorizationCatalog(MenuManagement.Scope scope) {
-        var resources=Map.ofEntries(
-            Map.entry("platform/tenants",List.of("tenant","tenant.member")),
-            Map.entry("platform/users",List.of("identity.account")),
-            Map.entry("platform/menus",List.of("configuration.menu")),
-            Map.entry("platform/roles",List.of("access.role")),
-            Map.entry("platform/authorization",List.of("access.role")),
-            Map.entry("roles/index",List.of("access.tenant.role")),
-            Map.entry("roles/authorization",List.of("access.tenant.role","organization.permission")),
-            Map.entry("organization/index",List.of("organization.unit")),
-            Map.entry("configuration/dictionaries",List.of("configuration.dictionary")));
+        var resources=new HashMap<UUID,List<String>>();
+        for(var row:menus.resources())resources.compute(UUID.fromString((String)row.get("menu_id")),(id,current)->{
+            var values=current==null?new ArrayList<String>():new ArrayList<>(current);values.add((String)row.get("resource_code"));return List.copyOf(values);});
         return menus.list().stream().map(MyBatisMenuManagement::menu)
             .filter(item -> item.scope()==scope&&item.type()!=MenuManagement.Type.BUTTON)
             .map(item -> new AuthorizationNode(item.id(),item.parentId(),item.titleZh(),item.titleEn(),item.sortOrder(),
-                item.component()==null?List.of():resources.getOrDefault(item.component(),List.of()),item.permission())).toList();
+                resources.getOrDefault(item.id(),List.of()),item.permission())).toList();
     }
 
     @Override @Transactional(readOnly=true)

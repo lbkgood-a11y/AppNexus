@@ -31,8 +31,9 @@ const columns=computed<ManagementColumn[]>(()=>[
  {key:'status',label:t('administration.status'),width:100},
  {key:'operations',label:t('tenant.operation'),minWidth:tab.value==='tenants'?320:tab.value==='users'?180:140,fixed:'right'}
 ]);
-const dialog=ref<"user"|"userEdit"|"tenant"|"member"|"">("");
+const dialog=ref<"user"|"userEdit"|"tenant"|"tenantEdit"|"member"|"">("");
 const editingUser=ref<DirectoryUser>();
+const editingTenant=ref<DirectoryTenant>();
 const form=reactive({username:"",displayName:"",email:"",phoneNumber:"",password:"",name:"",accountId:""});
 const formRef=ref<{validate:()=>Promise<boolean>;clearValidate:()=>void}>();
 const options=ref<DirectoryUser[]>([]),searching=ref(false),searchError=ref("");
@@ -70,7 +71,7 @@ async function searchUsers(value="") {
 }
 /** 密码只存在表单内存，关闭弹窗或提交成功即清除。 */
 function open(kind: "user"|"tenant"|"member") {
- editingUser.value=undefined;Object.assign(form,{username:"",displayName:"",email:"",phoneNumber:"",password:"",name:"",accountId:""});
+ editingUser.value=undefined;editingTenant.value=undefined;Object.assign(form,{username:"",displayName:"",email:"",phoneNumber:"",password:"",name:"",accountId:""});
  creationId=crypto.randomUUID();dialog.value=kind;searchError.value="";
  if(kind!=="user")void searchUsers();
 }
@@ -79,6 +80,11 @@ function editUser(user: DirectoryUser) {
  editingUser.value=user;
  Object.assign(form,{username:user.username,displayName:user.displayName,email:user.restrictedFields?.includes("email")?"":user.email??"",phoneNumber:user.restrictedFields?.includes("phoneNumber")?"":user.phoneNumber??"",password:"",name:"",accountId:""});
  dialog.value="userEdit";
+}
+/** 租户编辑只维护展示名称，不混入状态、成员或授权变更。 */
+function editTenant(row: DirectoryTenant) {
+ editingTenant.value=row;Object.assign(form,{username:"",displayName:"",email:"",phoneNumber:"",password:"",name:row.name,accountId:""});
+ dialog.value="tenantEdit";
 }
 function clearPassword(){form.password="";}
 async function write(action:()=>Promise<unknown>) {
@@ -94,6 +100,7 @@ async function save() {
   if(dialog.value==="user")await props.api.createUser(form.username,form.displayName,form.email,form.phoneNumber,form.password);
   else if(dialog.value==="userEdit"&&editingUser.value)await props.api.updateUser(editingUser.value.id,form.displayName,form.email,form.phoneNumber);
   else if(dialog.value==="tenant")await props.api.createTenant(creationId,form.name,form.accountId);
+  else if(dialog.value==="tenantEdit"&&editingTenant.value)await props.api.updateTenant(editingTenant.value.id,form.name);
   else if(tenant.value)await props.api.addMember(tenant.value.id,form.accountId);
   dialog.value="";clearPassword();
  });
@@ -101,6 +108,10 @@ async function save() {
 /** 停用使用明确状态提交，失败不乐观篡改列表；恢复成员不恢复旧授权。 */
 async function state(row: DirectoryUser|DirectoryTenant|DirectoryMember) {
  await write(()=>tab.value==="users"?props.api.userState((row as DirectoryUser).id,!row.enabled):tab.value==="tenants"?props.api.tenantState((row as DirectoryTenant).id,!row.enabled):props.api.memberState(tenant.value!.id,(row as DirectoryMember).memberId,!row.enabled));
+}
+async function removeMember(row: DirectoryMember) {
+ if(!tenant.value)return;
+ await write(()=>props.api.removeMember(tenant.value!.id,row.memberId));
 }
 const nameRules=[{required:true,whitespace:true,max:100,message:t("administration.invalidName"),trigger:"blur"}];
 onMounted(load);
@@ -134,17 +145,22 @@ onMounted(load);
     <template #phone="{row}"><div class="contact-cell"><span>{{(row as DirectoryUser).phoneNumber||'—'}}</span><el-tag v-if="(row as DirectoryUser).phoneNumber" size="small" :type="(row as DirectoryUser).phoneVerified?'success':'info'">{{t((row as DirectoryUser).phoneVerified?'administration.verified':'administration.unverified')}}</el-tag></div></template>
     <template #operations="{row}">
      <el-button v-if="tab==='tenants'" link type="primary" :disabled="loading||saving" @click="manageMembers(row as DirectoryTenant)">{{t('administration.members')}}</el-button>
+     <el-button v-if="tab==='tenants'" link type="primary" :disabled="loading||saving" @click="editTenant(row as DirectoryTenant)">{{t('administration.editTenant')}}</el-button>
      <el-button v-if="tab==='tenants'&&row.enabled" link type="primary" :disabled="loading||saving" @click="emit('enter',(row as DirectoryTenant).id)">{{t('administration.enterOrganization')}}</el-button>
      <el-button v-if="tab==='users'" link type="primary" :disabled="loading||saving" @click="editUser(row as DirectoryUser)">{{t('administration.editUser')}}</el-button>
+     <el-popconfirm v-if="tab==='members'&&!(row as DirectoryMember).removed" :title="t('administration.confirmRemoveMember')" :confirm-button-text="t('administration.removeMember')" :cancel-button-text="t('organization.cancel')" @confirm="removeMember(row as DirectoryMember)">
+      <template #reference><el-button link type="danger" :disabled="loading||saving">{{t('administration.removeMember')}}</el-button></template>
+     </el-popconfirm>
+     <el-tag v-if="tab==='members'&&(row as DirectoryMember).removed" type="info">{{t('administration.removed')}}</el-tag>
      <el-popconfirm :title="t(row.enabled?'administration.confirmDisable':'administration.confirmEnable')" :confirm-button-text="t(row.enabled?'administration.disable':'administration.enable')" :cancel-button-text="t('organization.cancel')" @confirm="state(row as DirectoryUser)">
-      <template #reference><el-button link :type="row.enabled?'danger':'primary'" :disabled="loading||saving">{{t(row.enabled?'administration.disable':'administration.enable')}}</el-button></template>
+      <template #reference><el-button v-if="tab!=='members'||!(row as DirectoryMember).removed" link :type="row.enabled?'danger':'primary'" :disabled="loading||saving">{{t(row.enabled?'administration.disable':'administration.enable')}}</el-button></template>
      </el-popconfirm>
     </template>
     <template #pagination><el-pagination layout="total, prev, pager, next" :page-size="20" :current-page="page" :total="total" :disabled="loading||saving" @current-change="value=>{page=value;load()}" /></template>
     </ManagementTable></template>
    </BusinessWorkspace>
   </template>
-  <ManagedDialog :model-value="Boolean(dialog)" :title="t(dialog==='user'?'administration.createUser':dialog==='userEdit'?'administration.editUser':dialog==='member'?'administration.addMember':'administration.createTenant')" width="min(560px, calc(100vw - 32px))" :busy="saving" @update:model-value="value=>{if(!value)dialog=''}" @closed="clearPassword">
+  <ManagedDialog :model-value="Boolean(dialog)" :title="t(dialog==='user'?'administration.createUser':dialog==='userEdit'?'administration.editUser':dialog==='tenantEdit'?'administration.editTenant':dialog==='member'?'administration.addMember':'administration.createTenant')" width="min(560px, calc(100vw - 32px))" :busy="saving" @update:model-value="value=>{if(!value)dialog=''}" @closed="clearPassword">
    <el-alert v-if="error" :title="error" type="error" :closable="false" class="mb-4" />
    <el-form ref="formRef" :model="form" label-position="top" @submit.prevent="save">
     <template v-if="dialog==='user'||dialog==='userEdit'">
@@ -155,8 +171,8 @@ onMounted(load);
      <el-alert v-if="dialog==='userEdit'" :title="t('administration.contactVerificationHint')" type="info" :closable="false" class="mb-4" />
      <el-form-item v-if="dialog==='user'" prop="password" :label="t('administration.password')" :rules="[{required:true,min:12,max:128,message:t('administration.invalidPassword'),trigger:'blur'}]"><el-input v-model="form.password" type="password" show-password autocomplete="new-password" :disabled="saving" :maxlength="128" /></el-form-item>
     </template>
-    <el-form-item v-if="dialog==='tenant'" prop="name" :label="t('tenant.name')" :rules="nameRules"><el-input v-model="form.name" :disabled="saving" :maxlength="100" /></el-form-item>
-    <el-form-item v-if="dialog!=='user'" prop="accountId" :label="t(dialog==='tenant'?'administration.firstAdministrator':'administration.account')" :rules="[{required:true,message:t('administration.chooseAccount'),trigger:'change'}]">
+    <el-form-item v-if="dialog==='tenant'||dialog==='tenantEdit'" prop="name" :label="t('tenant.name')" :rules="nameRules"><el-input v-model="form.name" :disabled="saving" :maxlength="100" /></el-form-item>
+    <el-form-item v-if="dialog==='tenant'||dialog==='member'" prop="accountId" :label="t(dialog==='tenant'?'administration.firstAdministrator':'administration.account')" :rules="[{required:true,message:t('administration.chooseAccount'),trigger:'change'}]">
      <el-select v-model="form.accountId" filterable remote :remote-method="searchUsers" :loading="searching" :disabled="saving" :placeholder="t('administration.chooseAccount')"><el-option v-for="user in options" :key="user.id" :value="user.id" :label="user.displayName+' ('+user.username+')'" /></el-select>
     </el-form-item>
     <el-alert v-if="searchError" :title="searchError" type="error" :closable="false" />

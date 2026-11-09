@@ -56,7 +56,7 @@ class TenantSelectionTest extends DatabaseTestSupport {
   mvc.perform(get("/api/organization/units").cookie(cookie)).andExpect(jsonPath("$[0].name").value("renamed"));
   mvc.perform(put("/api/organization/units/"+UUID.randomUUID()).cookie(cookie).with(csrf()).contentType("application/json").content("{\"name\":\"foreign\"}")).andExpect(status().isNotFound());
   mvc.perform(delete("/api/organization/units/"+id).cookie(cookie).with(csrf())).andExpect(status().isNoContent());
-  jdbc.update("UPDATE organization_capability_grant SET revoked_at=CURRENT_TIMESTAMP(6) WHERE tenant_id=UUID_TO_BIN(?) AND capability='CREATE'",tenant);
+  jdbc.update("DELETE ap FROM access_member_authorization_permission ap JOIN access_permission p ON p.id=ap.permission_id WHERE ap.tenant_id=UUID_TO_BIN(?) AND ap.member_id=UUID_TO_BIN(?) AND p.code='organization.unit:create'",tenant,member);
   mvc.perform(post("/api/organization/units").cookie(cookie).with(csrf()).contentType("application/json").content("{\"name\":\"denied\"}")).andExpect(status().isForbidden());
  }
  @Test void membershipAndTenantMustBothBeActive() throws Exception {

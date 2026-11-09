@@ -32,7 +32,7 @@ public class MyBatisOrganizationGrantManagement implements OrganizationGrantMana
     }
     public List<Grant> list(UUID tenant,UUID target) {
         requireMember(tenant,target);
-        return mapper.list(tenant.toString(),target.toString()).stream().map(row -> new Grant(
+        return mapper.unifiedList(tenant.toString(),target.toString()).stream().map(row -> new Grant(
             UUID.fromString((String)row.get("member_id")),
             OrganizationCapability.valueOf((String)row.get("capability")),
             UUID.fromString((String)row.get("granted_by")),
@@ -45,8 +45,14 @@ public class MyBatisOrganizationGrantManagement implements OrganizationGrantMana
         lockAndAuthorize(tenant,target,actor);
         if(capability==OrganizationCapability.GRANT) throw new IllegalArgumentException("Grant-management capability is not delegable");
         if(expires!=null && !expires.isAfter(Instant.now())) throw new IllegalArgumentException("Grant expiry must be in the future");
-        mapper.grant(tenant.toString(),target.toString(),capability.name(),actor.toString(),expires==null?null:Timestamp.from(expires));
-        mapper.grantAccess(tenant.toString(),target.toString(),capability.name(),actor.toString(),expires==null?null:Timestamp.from(expires));
+        mapper.ensureCompatibilityRole(tenant.toString(),target.toString(),capability.name(),actor.toString());
+        String role=mapper.compatibilityRole(tenant.toString(),target.toString(),capability.name());
+        if(role==null)throw new IllegalStateException("Compatibility role unavailable");
+        mapper.ensureCompatibilityPermission(role,capability.name(),actor.toString());
+        mapper.ensureCompatibilityPolicy(role,capability.name(),actor.toString());
+        mapper.ensureCompatibilityAssignment(tenant.toString(),target.toString(),role,actor.toString());
+        mapper.upsertCompatibilityAuthorization(tenant.toString(),target.toString(),role,expires==null?null:Timestamp.from(expires));
+        mapper.ensureCompatibilitySnapshot(tenant.toString(),target.toString(),role,capability.name());
         mapper.audit(tenant.toString(),target.toString(),actor.toString(),capability.name(),"GRANTED");
         return list(tenant,target).stream().filter(g->g.capability()==capability).findFirst().orElseThrow();
     }
@@ -54,8 +60,8 @@ public class MyBatisOrganizationGrantManagement implements OrganizationGrantMana
     public boolean revoke(UUID tenant,UUID target,UUID actor,OrganizationCapability capability) {
         lockAndAuthorize(tenant,target,actor);
         if(capability==OrganizationCapability.GRANT) throw new IllegalArgumentException("Grant-management capability is not delegable");
-        if(mapper.revoke(tenant.toString(),target.toString(),capability.name(),actor.toString())!=1)return false;
-        mapper.revokeAccess(tenant.toString(),target.toString(),capability.name());
+        String role=mapper.compatibilityRole(tenant.toString(),target.toString(),capability.name());
+        if(role==null||mapper.revokeCompatibilityAssignment(tenant.toString(),target.toString(),role)!=1)return false;
         mapper.audit(tenant.toString(),target.toString(),actor.toString(),capability.name(),"REVOKED");
         return true;
     }

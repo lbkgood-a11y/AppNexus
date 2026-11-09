@@ -13,11 +13,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 class OrganizationAuthorizationTest extends DatabaseTestSupport {
  @Autowired JdbcTemplate jdbc;
  @Autowired OrganizationAuthorization authorization;
- @Test void organizationCapabilitiesDefaultDenyAndAreScoped() {
+ @Test void organizationCapabilitiesDefaultDenyAndIgnorePostMigrationLegacyWrites() {
   UUID a=UUID.randomUUID(),b=UUID.randomUUID(),m=UUID.randomUUID(),other=UUID.randomUUID();
   assertThat(authorization.allows(a,m,OrganizationCapability.READ)).isFalse();
   jdbc.update("INSERT INTO organization_capability_grant(tenant_id,member_id,capability,granted_by) VALUES(UUID_TO_BIN(?),UUID_TO_BIN(?),'READ',UUID_TO_BIN(?))",a.toString(),m.toString(),UUID.randomUUID().toString());
-  assertThat(authorization.allows(a,m,OrganizationCapability.READ)).isTrue();
+  // V30 后旧表只用于历史对账，运行时不得因新增旧记录重新放行。
+  assertThat(authorization.allows(a,m,OrganizationCapability.READ)).isFalse();
   assertThat(authorization.allows(a,m,OrganizationCapability.DELETE)).isFalse();
   assertThat(authorization.allows(b,m,OrganizationCapability.READ)).isFalse();
   assertThat(authorization.allows(a,other,OrganizationCapability.READ)).isFalse();

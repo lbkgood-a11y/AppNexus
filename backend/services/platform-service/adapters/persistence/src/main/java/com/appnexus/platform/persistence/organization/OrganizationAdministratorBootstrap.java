@@ -26,17 +26,15 @@ public class OrganizationAdministratorBootstrap {
         String initialized = mapper.bootstrapMember(tenantId);
         if (initialized != null) {
             if (!initialized.equals(memberId)) throw new IllegalStateException("Tenant administrator already initialized for another member");
+            // 初始化标记永久有效；撤权后禁止借重启或重复调用恢复任何角色、权限或快照。
+            return;
         } else {
             if (!memberId.equals(mapper.lockBootstrapMember(tenantId, memberId)))
                 throw new IllegalStateException("Bootstrap requires an existing active tenant member");
             if (mapper.hasManagementHistory(tenantId))
                 throw new IllegalStateException("Existing management history requires manual governance");
             mapper.claimBootstrap(tenantId, memberId);
-            for (var capability : OrganizationCapability.values()) {
-                mapper.grant(tenantId, memberId, capability.name(), memberId, null);
-                mapper.grantAccess(tenantId, memberId, capability.name(), memberId, null);
-                mapper.audit(tenantId, memberId, memberId, capability.name(), "GRANTED");
-            }
+            // 新租户只建立统一系统角色与授权快照；旧表保留为 V30 前历史，不再写入兼容镜像。
         }
         String role=mapper.tenantAdministratorRole(tenantId);
         if(role==null){role=com.fasterxml.uuid.Generators.timeBasedEpochGenerator().generate().toString();mapper.createTenantAdministratorRole(tenantId,role);}

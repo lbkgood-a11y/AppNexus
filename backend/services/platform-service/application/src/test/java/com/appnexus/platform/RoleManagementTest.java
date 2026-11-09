@@ -36,6 +36,7 @@ class RoleManagementTest extends DatabaseTestSupport {
  @Autowired DataScopeAuthorization dataScopes;
  @Autowired EffectiveAuthorizationQuery effectiveAuthorizations;
  @Autowired com.appnexus.platform.authorization.MemberAuthorizationManagement memberAuthorizations;
+ @Autowired com.appnexus.platform.authorization.LegacyAuthorizationReconciliation reconciliation;
  @Autowired MyBatisPlatformAdministration administration;
  @Autowired JdbcTemplate jdbc;
  @Autowired PasswordEncoder encoder;
@@ -94,6 +95,28 @@ class RoleManagementTest extends DatabaseTestSupport {
   assertThat(roleA.id()).isNotEqualTo(roleB.id());
   assertThat(roles.list(contextA,new RoleManagement.Query(shared,null,null,1,20)).items()).extracting(RoleManagement.Role::id).containsExactly(roleA.id());
   assertThatThrownBy(()->roles.update(contextA,roleB.id(),new RoleManagement.Update("越权",null,100,roleB.version()))).isInstanceOf(RoleManagementException.class).extracting("code").isEqualTo("ROLE_SCOPE_NOT_FOUND");
+ }
+ @Test void tenantAdministratorSystemRoleCannotBeDisabled(){
+  UUID owner=user();var tenant=administration.createTenant(actor,UUID.randomUUID(),"Protected role tenant",owner);
+  var context=new RoleManagement.Context(actor,tenant.id(),null);
+  var system=roles.list(context,new RoleManagement.Query("sys_tenant_admin",null,RoleManagement.RoleType.SYSTEM,1,20)).items().getFirst();
+  assertThat(system.systemKey()).startsWith("TENANT_ADMIN:");
+  assertThatThrownBy(()->roles.changeStatus(context,system.id(),system.version(),RoleManagement.Status.DISABLED,"安全验证"))
+      .isInstanceOf(RoleManagementException.class).extracting("code").isEqualTo("ROLE_SYSTEM_DISABLE_FORBIDDEN");
+ }
+ @Test void legacyAuthorizationReconciliationReportsOnlyUncoveredEffectiveRows(){
+  UUID owner=user(),account=user();var tenant=administration.createTenant(actor,UUID.randomUUID(),"Reconciliation tenant",owner);
+  administration.addMember(actor,tenant.id(),account);UUID member=member(tenant.id(),account);
+  jdbc.update("INSERT INTO access_member_permission(tenant_id,member_id,permission_code,granted_by) VALUES(UUID_TO_BIN(?),UUID_TO_BIN(?),'organization.unit:read',UUID_TO_BIN(?))",tenant.id().toString(),member.toString(),member.toString());
+  var before=reconciliation.report(actor,1,100);
+  assertThat(before.items()).anySatisfy(item->{assertThat(item.tenantId()).isEqualTo(tenant.id());assertThat(item.memberId()).isEqualTo(member);assertThat(item.permissionCode()).isEqualTo("organization.unit:read");assertThat(item.coveredByUnified()).isFalse();});
+  assertThat(before.uncovered()).isGreaterThanOrEqualTo(1);
+  var context=new RoleManagement.Context(actor,tenant.id(),null);var role=roles.create(context,new RoleManagement.Create(code(),"对账角色",null,100));UUID read=permission("organization.unit:read");
+  rolePermissions.replaceAuthorization(context,role.id(),role.version(),java.util.Set.of(read),java.util.Set.of(new RolePermissionManagement.DataPolicy(read,DataScopeAuthorization.ScopeType.ALL,"organization.unit",java.util.Set.of())),"对账覆盖");
+  var assignment=subjectRoles.memberRoles(context,member);subjectRoles.replaceMemberRoles(context,member,assignment.authorityVersion(),java.util.Set.of(role.id()),"建立统一覆盖");
+  var after=reconciliation.report(actor,1,100);
+  assertThat(after.items()).anySatisfy(item->{if(item.tenantId().equals(tenant.id())&&item.memberId().equals(member)&&item.permissionCode().equals("organization.unit:read"))assertThat(item.coveredByUnified()).isTrue();});
+  assertThatThrownBy(()->reconciliation.report(account,1,100)).isInstanceOf(SecurityException.class);
  }
 
  @Test void ordinaryAccountIsDeniedAndHttpWritesRequireCsrf() throws Exception {

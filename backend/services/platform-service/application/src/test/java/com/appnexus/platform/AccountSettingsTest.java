@@ -52,6 +52,34 @@ class AccountSettingsTest extends DatabaseTestSupport {
         assertThat(account.version()).isZero();
         assertThat(encoder.matches(OLD, account.passwordHash())).isTrue();
     }
+    @Test void profileUpdatesContactsAndClearsOnlyChangedVerificationState() throws Exception {
+        String id = account();
+        jdbc.update("UPDATE identity_account SET email='old@example.com',email_verified=TRUE,phone_number='+8613800000000',phone_verified=TRUE WHERE id=UUID_TO_BIN(?)",id);
+        mvc.perform(patch("/bff/account").with(authenticated(id,0L)).with(csrf())
+            .contentType("application/json").content("{\"displayName\":\"联系人\",\"email\":\"New@Example.COM\",\"phoneNumber\":\"+8613800000000\"}"))
+            .andExpect(status().isNoContent());
+        mvc.perform(get("/bff/account").with(authenticated(id,0L)))
+            .andExpect(status().isOk()).andExpect(jsonPath("$.email").value("new@example.com"))
+            .andExpect(jsonPath("$.emailVerified").value(false))
+            .andExpect(jsonPath("$.phoneVerified").value(true));
+    }
+    @Test void profileRejectsInvalidContacts() throws Exception {
+        String id = account();
+        mvc.perform(patch("/bff/account").with(authenticated(id,0L)).with(csrf())
+            .contentType("application/json").content("{\"displayName\":\"名称\",\"email\":\"invalid\"}"))
+            .andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value("INVALID_EMAIL"));
+        mvc.perform(patch("/bff/account").with(authenticated(id,0L)).with(csrf())
+            .contentType("application/json").content("{\"displayName\":\"名称\",\"phoneNumber\":\"13800000000\"}"))
+            .andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value("INVALID_PHONE"));
+    }
+    @Test void profileRejectsDuplicateContactWithoutIdentifyingOwner() throws Exception {
+        String id = account(); String other = account();
+        jdbc.update("UPDATE identity_account SET email='used@example.com' WHERE id=UUID_TO_BIN(?)",other);
+        mvc.perform(patch("/bff/account").with(authenticated(id,0L)).with(csrf())
+            .contentType("application/json").content("{\"displayName\":\"名称\",\"email\":\"used@example.com\"}"))
+            .andExpect(status().isConflict()).andExpect(jsonPath("$.code").value("CONTACT_ALREADY_USED"))
+            .andExpect(jsonPath("$.detail").value("邮箱或手机号已被其他账号使用"));
+    }
     @Test void wrongPasswordAndWeakPasswordDoNotChangeCredentials() throws Exception {
         String id = account();
         mvc.perform(post("/bff/account/password").with(authenticated(id, 0L)).with(csrf())

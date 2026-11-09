@@ -8,6 +8,8 @@ public interface AccountMapper {
     Map<String,Object> findByUsername(String username);
     @Select("SELECT BIN_TO_UUID(id) AS id, username, display_name, password_hash, enabled, version FROM identity_account WHERE id = UUID_TO_BIN(#{id})")
     Map<String,Object> findById(String id);
+    @Select("SELECT BIN_TO_UUID(id) AS id, username, display_name, email, email_verified, phone_number, phone_verified FROM identity_account WHERE id = UUID_TO_BIN(#{id})")
+    Map<String,Object> findProfileById(String id);
     @Insert("INSERT IGNORE INTO identity_bootstrap (slot, account_id) VALUES (1, UUID_TO_BIN(#{id}))")
     int claimBootstrap(String id);
     @Insert("INSERT INTO identity_account (id, username, display_name, password_hash, enabled, version) VALUES (UUID_TO_BIN(#{id}), #{username}, #{displayName}, #{passwordHash}, TRUE, 0)")
@@ -23,4 +25,8 @@ public interface AccountMapper {
     /** 显示名称不属于认证凭据，修改时不递增凭据版本。 */
     @Update("UPDATE identity_account SET display_name=#{name} WHERE id=UUID_TO_BIN(#{id}) AND enabled=TRUE")
     int updateDisplayName(@Param("id") String id, @Param("name") String name);
+    /** 联系方式变化时先比较旧值并清除验证状态，禁止新联系方式继承旧验证结果。 */
+    @Update("UPDATE identity_account SET email_verified=IF(email <=> #{email},email_verified,FALSE), phone_verified=IF(phone_number <=> #{phone},phone_verified,FALSE), display_name=#{name}, email=#{email}, phone_number=#{phone} WHERE id=UUID_TO_BIN(#{id}) AND enabled=TRUE")
+    int updateProfile(@Param("id") String id, @Param("name") String name,
+        @Param("email") String email, @Param("phone") String phone);
 }
