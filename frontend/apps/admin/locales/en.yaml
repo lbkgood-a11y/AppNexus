@@ -737,3 +737,18 @@ roleManagement:
     ROLE_SCOPE_NOT_FOUND: "The role does not exist in the current management scope."
     ROLE_DATA_CONFLICT: "The role constraints changed."
     INVALID_ROLE_INPUT: "The role fields are invalid."
+authorizationCenter:
+  title: "Authorization Center"
+  description: "Configure role permissions and structured data scopes. The server enforces every request."
+  roles: "Roles"
+  permissions: "Permissions"
+  summary: "Authorization summary"
+  noRoles: "No configurable roles"
+  noPermissions: "No published permissions"
+  selectedCount: "Selected permissions"
+  selectScope: "Select data scope"
+  selectOrganizations: "Select organizations"
+  reason: "Change reason"
+  incomplete: "Complete the data scope for every scoped permission."
+  saved: "Authorization saved"
+  scopes: { SELF: "Self", ORGANIZATION: "Organizations", ORGANIZATION_SUBTREE: "Organizations and descendants", ALL: "All in current tenant" }

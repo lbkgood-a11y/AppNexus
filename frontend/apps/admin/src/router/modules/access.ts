@@ -18,6 +18,12 @@ export default {
         title: "roleManagement.tenantTitle",
         icon: "ri/group-line"
       }
+    },
+    {
+      path: "/access/authorization",
+      name: "TenantAuthorizationCenter",
+      component: () => import("@/views/roles/authorization.vue"),
+      meta: { title: "authorizationCenter.title", icon: "ri/shield-keyhole-line" }
     }
   ]
 } satisfies RouteConfigsTable;

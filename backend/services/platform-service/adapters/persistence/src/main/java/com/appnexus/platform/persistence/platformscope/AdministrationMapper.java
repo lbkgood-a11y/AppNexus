@@ -6,7 +6,7 @@ import org.apache.ibatis.annotations.*;
 
 /** 专用平台目录仓储；仅由平台管理用例调用，所有列表限制摘要字段和分页，不读取租户业务内容。 */
 @Mapper
-@PlatformScoped(tables={"identity_account","platform_tenant","tenant_member","platform_administrator","platform_administrator_bootstrap","platform_administration_audit","platform_tenant_creation","organization_capability_grant","organization_grant_audit"})
+@PlatformScoped(tables={"identity_account","platform_tenant","tenant_member","platform_administrator","platform_administrator_bootstrap","platform_administration_audit","platform_tenant_creation","organization_capability_grant","organization_grant_audit","access_role","access_permission","access_role_permission","access_account_role"})
 public interface AdministrationMapper {
     /** 每次操作从权威源复核有效平台管理员，不能信任会话中的角色展示缓存。 */
     @Select("SELECT EXISTS(SELECT 1 FROM platform_administrator p JOIN identity_account a ON a.id=p.account_id WHERE p.account_id=UUID_TO_BIN(#{actor}) AND p.enabled=TRUE AND a.enabled=TRUE)")
@@ -25,6 +25,13 @@ public interface AdministrationMapper {
     String lockAccount(String account);
     @Insert("INSERT INTO platform_administrator(account_id) VALUES(UUID_TO_BIN(#{account}))")
     void initialAdministrator(String account);
+    /** 幂等建立平台超级管理员系统角色，运行时初始化与 V24 使用同一固定标识。 */
+    @Insert("INSERT IGNORE INTO access_role(id,scope_type,role_type,system_key,code,name,description,status,sort_order) VALUES(UUID_TO_BIN('019a65d0-0000-7000-9000-000000000001'),'PLATFORM','SYSTEM','PLATFORM_SUPER_ADMIN','sys_platform_super_admin','平台超级管理员','平台受控初始化角色；拥有全部已发布平台权限。','ENABLED',0)")
+    int ensurePlatformSystemRole();
+    @Insert("INSERT IGNORE INTO access_role_permission(role_id,permission_id,scope_type,granted_by) SELECT UUID_TO_BIN('019a65d0-0000-7000-9000-000000000001'),id,'PLATFORM',UUID_TO_BIN(#{account}) FROM access_permission WHERE scope_type='PLATFORM' AND enabled=TRUE")
+    int ensurePlatformSystemPermissions(String account);
+    @Insert("INSERT IGNORE INTO access_account_role(account_id,role_id,scope_type,assigned_by) VALUES(UUID_TO_BIN(#{account}),UUID_TO_BIN('019a65d0-0000-7000-9000-000000000001'),'PLATFORM',UUID_TO_BIN(#{account}))")
+    int ensurePlatformSystemAssignment(String account);
     /** 查询词作为 LIKE 参数绑定，前端不提供 SQL、排序列或表名。 */
     @Select("SELECT BIN_TO_UUID(id) id,username,display_name,email,email_verified,phone_number,phone_verified,enabled FROM identity_account WHERE username LIKE CONCAT('%',#{query},'%') OR display_name LIKE CONCAT('%',#{query},'%') OR COALESCE(email,'') LIKE CONCAT('%',#{query},'%') OR COALESCE(phone_number,'') LIKE CONCAT('%',#{query},'%') ORDER BY username,id LIMIT #{size} OFFSET #{offset}")
     List<Map<String,Object>> users(@Param("query") String query,@Param("size") int size,@Param("offset") long offset);

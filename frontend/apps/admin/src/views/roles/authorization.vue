@@ -1,0 +1,2 @@
+<script setup lang="ts">import AuthorizationCenter from "@appnexus/authorization/authorization-center";import {tenantRoleApi} from "@/api/roleManagement";import {tenantAuthorizationApi} from "@/api/authorizationCenter";import {requestErrorMessage} from "@/utils/http";</script>
+<template><AuthorizationCenter :role-api="tenantRoleApi" :api="tenantAuthorizationApi" :error-text="requestErrorMessage" /></template>

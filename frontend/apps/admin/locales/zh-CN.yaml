@@ -737,3 +737,18 @@ roleManagement:
     ROLE_SCOPE_NOT_FOUND: "角色不存在或不属于当前管理范围"
     ROLE_DATA_CONFLICT: "角色数据约束已变化"
     INVALID_ROLE_INPUT: "角色参数不符合要求"
+authorizationCenter:
+  title: "授权中心"
+  description: "配置角色功能权限和结构化数据范围，服务端逐请求执行真实鉴权。"
+  roles: "角色"
+  permissions: "功能权限"
+  summary: "授权摘要"
+  noRoles: "暂无可配置角色"
+  noPermissions: "暂无已发布权限"
+  selectedCount: "已选权限"
+  selectScope: "选择数据范围"
+  selectOrganizations: "选择组织"
+  reason: "变更原因"
+  incomplete: "请为所有范围权限完成数据范围配置。"
+  saved: "授权配置已保存"
+  scopes: { SELF: "本人", ORGANIZATION: "指定组织", ORGANIZATION_SUBTREE: "组织及下级", ALL: "当前租户全部" }

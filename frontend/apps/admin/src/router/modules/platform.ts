@@ -10,6 +10,7 @@ export default {
   {path:"/platform/menus",name:"PlatformMenuManagement",component:()=>import("@/views/platform/menus.vue"),meta:{title:"menuManagement.title",icon:"ri/menu-line",roles:["PLATFORM_ADMIN"]}},
   // 平台角色使用管理员图标，与当前租户的成员角色入口区分管理域。
   {path:"/platform/roles",name:"PlatformRoleManagement",component:()=>import("@/views/platform/roles.vue"),meta:{title:"roleManagement.platformTitle",icon:"ri/admin-line",roles:["PLATFORM_ADMIN"]}},
+  {path:"/platform/authorization",name:"PlatformAuthorizationCenter",component:()=>import("@/views/platform/authorization.vue"),meta:{title:"authorizationCenter.title",icon:"ri/shield-keyhole-line",roles:["PLATFORM_ADMIN"]}},
   // 隐藏验收路由仅供开发验证模板主题与响应式，不展示生产菜单或模拟业务入口。
   {path:"/platform/template-lab",name:"PlatformTemplateLab",component:()=>import("@/views/template-lab/index.vue"),meta:{title:"templateLab.title",roles:["PLATFORM_ADMIN"],showLink:false}}
  ]

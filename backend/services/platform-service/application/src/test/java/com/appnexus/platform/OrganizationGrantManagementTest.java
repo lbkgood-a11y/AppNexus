@@ -47,7 +47,7 @@ class OrganizationGrantManagementTest extends DatabaseTestSupport {
   return id;
  }
  private UUID type(UUID tenant){UUID id=UUID.randomUUID();jdbc.update("INSERT INTO tenant_organization_type(tenant_id,id,code,name) VALUES(UUID_TO_BIN(?),UUID_TO_BIN(?),'BUSINESS','业务组织')",tenant.toString(),id.toString());return id;}
- private void authority(UUID tenant,UUID member){jdbc.update("INSERT INTO organization_capability_grant(tenant_id,member_id,capability,granted_by) VALUES(UUID_TO_BIN(?),UUID_TO_BIN(?),'GRANT',UUID_TO_BIN(?))",tenant.toString(),member.toString(),member.toString());jdbc.update("INSERT INTO access_member_permission(tenant_id,member_id,permission_code,granted_by) VALUES(UUID_TO_BIN(?),UUID_TO_BIN(?),'organization.grant',UUID_TO_BIN(?))",tenant.toString(),member.toString(),member.toString());}
+ private void authority(UUID tenant,UUID member){jdbc.update("INSERT INTO organization_capability_grant(tenant_id,member_id,capability,granted_by) VALUES(UUID_TO_BIN(?),UUID_TO_BIN(?),'GRANT',UUID_TO_BIN(?))",tenant.toString(),member.toString(),member.toString());jdbc.update("INSERT INTO access_member_permission(tenant_id,member_id,permission_code,granted_by) VALUES(UUID_TO_BIN(?),UUID_TO_BIN(?),'organization.permission:grant',UUID_TO_BIN(?))",tenant.toString(),member.toString(),member.toString());}
  @Test void grantLifecycleChecksAuthorityAndTenantAndAppendsAudit() {
   UUID tenant=tenant(),actor=member(tenant),target=member(tenant),foreign=member(tenant());
   assertThatThrownBy(()->grants.grant(tenant,target,actor,OrganizationCapability.READ,null)).isInstanceOf(SecurityException.class);

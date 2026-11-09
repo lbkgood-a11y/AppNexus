@@ -26,10 +26,11 @@ public class MyBatisPlatformAdministration implements PlatformAdministration {
         if(account==null) throw new IllegalStateException("Existing active platform administrator account required");
         if(mapper.claim(account)==0) {
             if(!account.equals(mapper.initializedAccount())) throw new IllegalStateException("Platform administrator already initialized for another account");
-            return;
+        } else {
+            mapper.initialAdministrator(account);
+            mapper.audit(account,"PLATFORM_INITIALIZED",account,null);
         }
-        mapper.initialAdministrator(account);
-        mapper.audit(account,"PLATFORM_INITIALIZED",account,null);
+        mapper.ensurePlatformSystemRole();mapper.ensurePlatformSystemPermissions(account);mapper.ensurePlatformSystemAssignment(account);
     }
     public Page<User> users(UUID actor,int page,int size,String query) {
         require(actor); validatePage(page,size,query);

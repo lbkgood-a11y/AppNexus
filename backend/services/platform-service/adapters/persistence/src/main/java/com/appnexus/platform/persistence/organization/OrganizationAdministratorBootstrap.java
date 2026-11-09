@@ -25,17 +25,22 @@ public class OrganizationAdministratorBootstrap {
         String initialized = mapper.bootstrapMember(tenantId);
         if (initialized != null) {
             if (!initialized.equals(memberId)) throw new IllegalStateException("Tenant administrator already initialized for another member");
-            return;
+        } else {
+            if (!memberId.equals(mapper.lockBootstrapMember(tenantId, memberId)))
+                throw new IllegalStateException("Bootstrap requires an existing active tenant member");
+            if (mapper.hasManagementHistory(tenantId))
+                throw new IllegalStateException("Existing management history requires manual governance");
+            mapper.claimBootstrap(tenantId, memberId);
+            for (var capability : OrganizationCapability.values()) {
+                mapper.grant(tenantId, memberId, capability.name(), memberId, null);
+                mapper.grantAccess(tenantId, memberId, capability.name(), memberId, null);
+                mapper.audit(tenantId, memberId, memberId, capability.name(), "GRANTED");
+            }
         }
-        if (!memberId.equals(mapper.lockBootstrapMember(tenantId, memberId)))
-            throw new IllegalStateException("Bootstrap requires an existing active tenant member");
-        if (mapper.hasManagementHistory(tenantId))
-            throw new IllegalStateException("Existing management history requires manual governance");
-        mapper.claimBootstrap(tenantId, memberId);
-        for (var capability : OrganizationCapability.values()) {
-            mapper.grant(tenantId, memberId, capability.name(), memberId, null);
-            mapper.grantAccess(tenantId, memberId, capability.name(), memberId, null);
-            mapper.audit(tenantId, memberId, memberId, capability.name(), "GRANTED");
-        }
+        String role=mapper.tenantAdministratorRole(tenantId);
+        if(role==null){role=com.fasterxml.uuid.Generators.timeBasedEpochGenerator().generate().toString();mapper.createTenantAdministratorRole(tenantId,role);}
+        mapper.grantTenantAdministratorPermissions(role,memberId);
+        mapper.grantTenantAdministratorDataPolicies(role,memberId);
+        mapper.assignTenantAdministratorRole(tenantId,memberId,role);
     }
 }

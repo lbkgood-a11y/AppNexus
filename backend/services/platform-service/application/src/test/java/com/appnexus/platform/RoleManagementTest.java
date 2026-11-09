@@ -2,6 +2,11 @@ package com.appnexus.platform;
 
 import com.appnexus.platform.authorization.RoleManagement;
 import com.appnexus.platform.authorization.RoleManagementException;
+import com.appnexus.platform.authorization.AccessAuthorization;
+import com.appnexus.platform.authorization.RolePermissionManagement;
+import com.appnexus.platform.authorization.SubjectRoleManagement;
+import com.appnexus.platform.authorization.DataScopeAuthorization;
+import com.appnexus.platform.authorization.EffectiveAuthorizationQuery;
 import com.appnexus.platform.persistence.platformscope.MyBatisPlatformAdministration;
 import com.appnexus.platform.persistence.platformscope.MyBatisRoleManagement;
 import java.util.UUID;
@@ -25,6 +30,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 class RoleManagementTest extends DatabaseTestSupport {
  @Autowired MyBatisRoleManagement roles;
+ @Autowired RolePermissionManagement rolePermissions;
+ @Autowired AccessAuthorization authorization;
+ @Autowired SubjectRoleManagement subjectRoles;
+ @Autowired DataScopeAuthorization dataScopes;
+ @Autowired EffectiveAuthorizationQuery effectiveAuthorizations;
  @Autowired MyBatisPlatformAdministration administration;
  @Autowired JdbcTemplate jdbc;
  @Autowired PasswordEncoder encoder;
@@ -74,5 +84,41 @@ class RoleManagementTest extends DatabaseTestSupport {
       .content("{\"code\":\""+code+"\",\"name\":\"HTTP 角色\",\"description\":\"接口创建验证\",\"sortOrder\":100}"))
       .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(code))
       .andExpect(jsonPath("$.roleType").value("CUSTOM")).andExpect(jsonPath("$.status").value("ENABLED"));
+ }
+
+ @Test void rolePermissionReplacementDrivesUnifiedAuthorizationAndRejectsCrossScopePermission(){
+  var role=roles.create(platform(),new RoleManagement.Create(code(),"授权测试角色",null,100));
+  UUID platformPermission=UUID.fromString(jdbc.queryForObject("SELECT BIN_TO_UUID(id) FROM access_permission WHERE code='identity.account:read'",String.class));
+  UUID tenantPermission=UUID.fromString(jdbc.queryForObject("SELECT BIN_TO_UUID(id) FROM access_permission WHERE code='organization.unit:read'",String.class));
+
+  var assigned=rolePermissions.replace(platform(),role.id(),role.version(),java.util.Set.of(platformPermission),"验证角色权限闭环");
+  var subjectAssignment=subjectRoles.accountRoles(actor,actor);
+  subjectRoles.replaceAccountRoles(actor,actor,subjectAssignment.authorityVersion(),java.util.Set.of(role.id()),"验证账号角色闭环");
+
+  assertThat(assigned.permissionIds()).containsExactly(platformPermission);
+  assertThat(authorization.hasPermission(AccessAuthorization.Subject.platform(actor),"identity.account:read")).isTrue();
+  assertThat(authorization.hasPermission(AccessAuthorization.Subject.platform(actor),"organization.unit:read")).isFalse();
+  assertThatThrownBy(()->rolePermissions.replace(platform(),role.id(),assigned.roleVersion(),java.util.Set.of(tenantPermission),"尝试跨域授权"))
+      .isInstanceOf(RoleManagementException.class).extracting("code").isEqualTo("PERMISSION_SCOPE_MISMATCH");
+  assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM access_authorization_audit WHERE target_id=UUID_TO_BIN(?)",Integer.class,role.id().toString())).isEqualTo(1);
+  assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM access_authorization_audit WHERE target_id=UUID_TO_BIN(?)",Integer.class,actor.toString())).isEqualTo(1);
+ }
+
+ @Test void tenantRoleAtomicallyRequiresAndResolvesDataPolicy(){
+  UUID account=user();var tenant=administration.createTenant(actor,UUID.randomUUID(),"Policy Tenant",account);
+  UUID member=UUID.fromString(jdbc.queryForObject("SELECT BIN_TO_UUID(id) FROM tenant_member WHERE tenant_id=UUID_TO_BIN(?) AND account_id=UUID_TO_BIN(?)",String.class,tenant.id().toString(),account.toString()));
+  var managed=new RoleManagement.Context(actor,tenant.id(),null);var role=roles.create(managed,new RoleManagement.Create(code(),"数据范围角色",null,100));
+  UUID permission=UUID.fromString(jdbc.queryForObject("SELECT BIN_TO_UUID(id) FROM access_permission WHERE code='organization.unit:read'",String.class));
+  assertThatThrownBy(()->rolePermissions.replace(managed,role.id(),role.version(),java.util.Set.of(permission),"缺少范围"))
+      .isInstanceOf(RoleManagementException.class).extracting("code").isEqualTo("DATA_SCOPE_REQUIRED");
+  var saved=rolePermissions.replaceAuthorization(managed,role.id(),role.version(),java.util.Set.of(permission),java.util.Set.of(
+      new RolePermissionManagement.DataPolicy(permission,DataScopeAuthorization.ScopeType.ALL,"organization.unit",java.util.Set.of())),"配置租户全部组织范围");
+  var memberAssignment=subjectRoles.memberRoles(managed,member);subjectRoles.replaceMemberRoles(managed,member,memberAssignment.authorityVersion(),java.util.Set.of(role.id()),"分配数据范围角色");
+  var subject=AccessAuthorization.Subject.tenant(account,tenant.id(),member);
+  assertThat(authorization.hasPermission(subject,"organization.unit:read")).isTrue();
+  assertThat(dataScopes.resolveDataScope(subject,"organization.unit:read","organization.unit").type()).isEqualTo(DataScopeAuthorization.ScopeType.ALL);
+  assertThat(rolePermissions.getAuthorization(managed,role.id()).dataPolicies()).isEqualTo(saved.dataPolicies());
+  var explanation=effectiveAuthorizations.tenantMember(tenant.id(),member);
+  assertThat(explanation).singleElement().satisfies(item->{assertThat(item.permissionCode()).isEqualTo("organization.unit:read");assertThat(item.effective()).isTrue();assertThat(item.sources()).singleElement().satisfies(source->{assertThat(source.roleId()).isEqualTo(role.id());assertThat(source.scopeType()).isEqualTo(DataScopeAuthorization.ScopeType.ALL);assertThat(source.inactiveReason()).isNull();});});
  }
 }
