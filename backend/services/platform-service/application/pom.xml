@@ -8,6 +8,12 @@
   </parent>
   <artifactId>platform-application</artifactId>
   <dependencies>
+    <!-- 组合启动专用依赖；平台领域模块不得引用审批实现。Flowable 版本在审批适配器锁定。 -->
+    <dependency>
+      <groupId>com.appnexus</groupId>
+      <artifactId>approval-flowable-adapter</artifactId>
+      <version>${project.version}</version>
+    </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter</artifactId>
