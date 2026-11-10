@@ -1,0 +1,15 @@
+{
+  "name": "@appnexus/print-agent",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=24 <27" },
+  "scripts": { "build": "tsc --noEmit", "start": "tsx src/main.ts" },
+  "dependencies": {
+    "bwip-js": "4.11.1",
+    "jquery": "3.7.1",
+    "jsbarcode": "3.12.3",
+    "playwright-core": "1.56.1",
+    "vue-plugin-hiprint": "0.0.62"
+  },
+  "devDependencies": { "@types/node": "^24.10.0", "tsx": "4.20.6", "typescript": "^6.0.2" }
+}

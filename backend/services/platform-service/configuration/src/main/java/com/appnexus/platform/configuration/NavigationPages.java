@@ -26,6 +26,7 @@ public final class NavigationPages {
         return List.of(
             new Page("workflow/designer","/workflow/designer","流程设计器","Workflow designer",MenuManagement.Scope.TENANT,"workflow:read",Gate.PERMISSION),
             new Page("workflow/index","/workflow/center","工作流中心","Workflow center",MenuManagement.Scope.TENANT,null,Gate.PERMISSION),
+            new Page("print/index","/print/management","打印管理","Print management",MenuManagement.Scope.TENANT,"print.template:read",Gate.PERMISSION),
             platform("platform/tenants","/platform/tenants","租户管理","Tenants","tenant:read"),
             platform("platform/users","/platform/users","账号管理","Accounts","identity.account:read"),
             platform("platform/menus","/platform/menus","菜单管理","Menus","configuration.menu:read"),
@@ -50,6 +51,7 @@ public final class NavigationPages {
         return switch(key){
             case "workflow/index" -> List.of("workflow:operate");
             case "workflow/designer" -> List.of("workflow:read","workflow:edit","workflow:publish");
+            case "print/index" -> List.of("print.template:read","print.template:design","print.template:publish","print.device:manage","print.job:read","print.job:submit","print.job:reprint");
             case "platform/roles" -> List.of("access.role:read","access.role:create","access.role:update","access.role:enable","access.role:delete");
             case "platform/authorization" -> List.of("access.role:read","access.role:grant","identity.account:read");
             case "roles/index" -> List.of("access.tenant.role:read","access.tenant.role:create","access.tenant.role:update","access.tenant.role:delete");

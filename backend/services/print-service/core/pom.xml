@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- 打印核心模型不依赖 Spring、JDBC、浏览器引擎或具体设备。 -->
+<project xmlns="http://maven.apache.org/POM/4.0.0">
+  <modelVersion>4.0.0</modelVersion>
+  <parent><groupId>com.appnexus</groupId><artifactId>print-service</artifactId><version>0.1.0-SNAPSHOT</version><relativePath>../pom.xml</relativePath></parent>
+  <artifactId>print-core</artifactId>
+</project>

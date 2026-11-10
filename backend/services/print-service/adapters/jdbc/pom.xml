@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- 打印 JDBC 与 HTTP 适配器；数据库迁移由组合应用统一执行。 -->
+<project xmlns="http://maven.apache.org/POM/4.0.0">
+  <modelVersion>4.0.0</modelVersion>
+  <parent><groupId>com.appnexus</groupId><artifactId>print-adapters</artifactId><version>0.1.0-SNAPSHOT</version><relativePath>../pom.xml</relativePath></parent>
+  <artifactId>print-jdbc-adapter</artifactId>
+  <dependencies>
+    <dependency><groupId>com.appnexus</groupId><artifactId>print-core</artifactId><version>${project.version}</version></dependency>
+    <dependency><groupId>com.appnexus</groupId><artifactId>print-contracts</artifactId><version>${project.version}</version></dependency>
+    <dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-web</artifactId></dependency>
+    <dependency><groupId>org.springframework</groupId><artifactId>spring-jdbc</artifactId></dependency>
+    <!-- Spring Boot 4 的 HTTP 转换器使用 Jackson 3；请求 DTO 不得混入 Jackson 2 JsonNode。 -->
+    <dependency><groupId>tools.jackson.core</groupId><artifactId>jackson-databind</artifactId></dependency>
+    <dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-autoconfigure</artifactId></dependency>
+    <dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-sql</artifactId></dependency>
+  </dependencies>
+</project>

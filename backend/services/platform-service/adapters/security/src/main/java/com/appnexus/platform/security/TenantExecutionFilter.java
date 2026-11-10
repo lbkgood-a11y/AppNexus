@@ -30,6 +30,20 @@ public final class TenantExecutionFilter extends OncePerRequestFilter {
             if (auth == null || !auth.isAuthenticated() || auth instanceof AnonymousAuthenticationToken) {
                 reject(response,401,"AUTHENTICATION_REQUIRED"); return;
             }
+            if (auth instanceof org.springframework.security.oauth2.server.resource.authentication.BearerTokenAuthentication service &&
+                    auth.getAuthorities().stream().anyMatch(value->value.getAuthority().equals("PARTNER_CLIENT"))) {
+                String path=request.getRequestURI().substring(request.getContextPath().length());
+                boolean printingAgent=path.startsWith("/api/printing/agent/")&&auth.getAuthorities().stream()
+                    .anyMatch(value->value.getAuthority().equals("SCOPE_print-agent:operate"));
+                Object tenant=service.getTokenAttributes().get("tenantId"),client=service.getTokenAttributes().get("clientId");
+                if(!printingAgent||!(tenant instanceof String tenantId)||!(client instanceof String clientId)) {
+                    reject(response,403,"SERVICE_OPERATION_NOT_AUTHORIZED"); return;
+                }
+                request.setAttribute(com.appnexus.contracts.printing.PrintContext.class.getName(),
+                    new com.appnexus.contracts.printing.PrintContext(tenantId,clientId,java.util.UUID.randomUUID().toString()));
+                chain.doFilter(request,response);
+                return;
+            }
             var session = request.getSession(false);
             Object verifiedVersion,verifiedTenant,verifiedMember;
             if(auth instanceof org.springframework.security.oauth2.server.resource.authentication.BearerTokenAuthentication bearer){
@@ -62,6 +76,8 @@ public final class TenantExecutionFilter extends OncePerRequestFilter {
             request.setAttribute(ATTRIBUTE,context);
             // 工作流只接收公开契约，租户与操作者均来自上述可信会话，浏览器无权覆盖。
             request.setAttribute(com.appnexus.contracts.workflow.WorkflowContext.class.getName(),new com.appnexus.contracts.workflow.WorkflowContext(m.tenantId().toString(),accountId.toString(),java.util.UUID.randomUUID().toString()));
+            // 打印服务使用独立公开契约；请求结束清理，避免容器线程复用泄漏租户。
+            request.setAttribute(com.appnexus.contracts.printing.PrintContext.class.getName(),new com.appnexus.contracts.printing.PrintContext(m.tenantId().toString(),accountId.toString(),java.util.UUID.randomUUID().toString()));
             response.setHeader("X-Tenant-Context-Version",Long.toString(version));
             if(request.getRequestURI().startsWith(request.getContextPath()+"/api/organization/units") ||
                request.getRequestURI().startsWith(request.getContextPath()+"/api/organization/domain")) {
@@ -86,6 +102,7 @@ public final class TenantExecutionFilter extends OncePerRequestFilter {
         } finally {
             request.removeAttribute(ATTRIBUTE);
             request.removeAttribute(com.appnexus.contracts.workflow.WorkflowContext.class.getName());
+            request.removeAttribute(com.appnexus.contracts.printing.PrintContext.class.getName());
         }
     }
     /** 过滤器错误使用标准错误媒体类型和稳定码，不泄露账号、成员或租户存在性。 */

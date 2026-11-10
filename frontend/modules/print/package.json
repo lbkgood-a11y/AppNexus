@@ -3,13 +3,14 @@
   "private": true,
   "type": "module",
   "description": "HiPrint 隔离设计适配；包参数与安全边界见 README.md",
-  "exports": { ".": "./src/index.ts" },
+  "exports": { ".": "./src/index.ts", "./management": "./src/PrintManagement.vue" },
   "scripts": {
-    "build": "tsc --noEmit --skipLibCheck",
-    "typecheck": "tsc --noEmit --skipLibCheck",
+    "build": "vue-tsc --noEmit --skipLibCheck",
+    "typecheck": "vue-tsc --noEmit --skipLibCheck",
     "test": "vitest run"
   },
   "dependencies": {
+    "@appnexus/ui": "workspace:*",
     "vue-plugin-hiprint": "0.0.62",
     "jquery": "3.7.1",
     "jsbarcode": "3.12.3",
@@ -17,7 +18,13 @@
   },
   "devDependencies": {
     "typescript": "^6.0.0",
+    "vue-tsc": "^3.1.4",
     "vitest": "^4.0.0",
     "vite": "^8.0.3"
+  },
+  "peerDependencies": {
+    "element-plus": "^2.13.6",
+    "vue": "^3.5.31",
+    "vue-i18n": "^11.3.0"
   }
 }

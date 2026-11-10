@@ -10,6 +10,8 @@
   <dependencies>
     <!-- 公开工作流能力桥接；禁止引用工作流实现或引擎。 -->
     <dependency><groupId>com.appnexus</groupId><artifactId>workflow-contracts</artifactId><version>${project.version}</version></dependency>
+    <!-- 打印服务只通过公开契约复核权限，不引用打印实现。 -->
+    <dependency><groupId>com.appnexus</groupId><artifactId>print-contracts</artifactId><version>${project.version}</version></dependency>
     <dependency><groupId>com.appnexus</groupId><artifactId>platform-configuration</artifactId><version>${project.version}</version></dependency>
     <dependency>
       <groupId>com.appnexus</groupId>

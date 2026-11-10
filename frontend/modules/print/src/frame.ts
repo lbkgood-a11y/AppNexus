@@ -30,11 +30,23 @@ export function frameBootstrap(): void {
       if (action === "initialize") {
         library.disAutoConnect();
         library.hiprint.init({ providers: [new library.defaultElementTypeProvider()], lang: payload.language });
-        template = new library.hiprint.PrintTemplate({ template: payload.template, history: true });
+        library.hiprint.PrintElementTypeManager.build("#elements");
+        template = new library.hiprint.PrintTemplate({ template: payload.template, history: true,
+          settingContainer: "#settings", paginationContainer: "#pagination" });
         template.design("#designer");
       } else if (action === "snapshot") {
         send({ id, value: JSON.parse(JSON.stringify(template.getJson())) });
         return;
+      } else if (action === "replace") {
+        scope.$("#designer").empty();
+        scope.$("#settings").empty();
+        template = new library.hiprint.PrintTemplate({ template: payload, history: true,
+          settingContainer: "#settings", paginationContainer: "#pagination" });
+        template.design("#designer");
+      } else if (action === "undo") {
+        template.undo();
+      } else if (action === "redo") {
+        template.redo();
       } else if (action === "preview") {
         const target = document.getElementById("preview")!;
         scope.$(target).empty().append(template.getHtml(payload));

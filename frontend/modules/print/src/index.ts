@@ -3,6 +3,19 @@ import { copyTemplate, type PrintTemplate } from "./template";
 
 export { createBlankTemplate, copyTemplate, type PrintTemplate } from "./template";
 
+/** 打印管理 API 数据行；JSON 字段由服务端校验，领域页面不推断业务字段权限。 */
+export interface PrintRow { id: string; [key: string]: unknown }
+/** 模板草稿写入参数；revision=-1 表示新建。 */
+export interface TemplateDraft { code:string; name:string; category:string; dataContract:string; scope:Record<string,unknown>; template:PrintTemplate; revision:number }
+/** 设备写入参数；系统队列名称不等于客户端可提交的任意命令。 */
+export interface DeviceDraft { code:string; name:string; siteCode:string; systemName:string; capabilities:Record<string,unknown>; enabled:boolean }
+/** 应用层 HTTP 适配接口；租户、身份、CSRF 和幂等键由应用统一注入。 */
+export interface PrintApi {
+  capabilities():Promise<string[]>; templates():Promise<PrintRow[]>; template(id:string):Promise<PrintRow>;
+  saveTemplate(id:string|undefined,draft:TemplateDraft):Promise<PrintRow>; publish(id:string,revision:number):Promise<PrintRow>; versions(id:string):Promise<PrintRow[]>;
+  devices():Promise<PrintRow[]>; saveDevice(id:string|undefined,draft:DeviceDraft):Promise<PrintRow>; jobs():Promise<PrintRow[]>; reprint(id:string,reason:string):Promise<PrintRow>;
+}
+
 /** 接入期仅支持中文与英文；缺省中文，其他语言需先完成平台文案和上游翻译验证。 */
 export interface DesignerOptions {
   /** 应用内受信任的原生 JSON 模板；不接受终端用户上传的任意模板。 */
@@ -15,6 +28,12 @@ export interface DesignerOptions {
 export interface PrintDesigner {
   /** 获取经过基础检查的模板副本；本方法不负责服务端保存和发布。 */
   snapshot(): Promise<PrintTemplate>;
+  /** 使用经过基础检查的模板副本重建画布；用于平台属性面板，不暴露上游内部对象。 */
+  replace(template: PrintTemplate): Promise<void>;
+  /** 调用 HiPrint 原生历史记录，不在平台重复实现画布状态。 */
+  undo(): Promise<void>;
+  /** 重做 HiPrint 原生历史记录。 */
+  redo(): Promise<void>;
   /** 使用已授权数据在隔离文档预览；不是打印完成回执或 PDF 导出。 */
   preview(data: Record<string, unknown>): Promise<void>;
   /** 从预览返回设计画布。 */
@@ -104,7 +123,7 @@ export async function createPrintDesigner(container: HTMLElement, options: Desig
   const escape = (value: string) => value.replaceAll("&", "&amp;").replaceAll('"', "&quot;").replaceAll("<", "&lt;");
   // 上游依赖 eval，暂仅允许此隔离文档执行；不放宽主应用 CSP。网络连接与外部图片默认禁止。
   const policy = `default-src 'none'; script-src ${engine.startsWith("data:") ? "data:" : new URL(engine).origin} 'unsafe-inline' 'unsafe-eval'; style-src ${css.startsWith("data:") ? "data:" : new URL(css).origin} 'unsafe-inline'; img-src data: blob:; connect-src 'none'; font-src 'none'; base-uri 'none'; form-action 'none'`;
-  frame.srcdoc = `<!doctype html><html data-channel="${channel}" data-engine="${escape(engine)}"><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="${escape(policy)}"><link rel="stylesheet" href="${escape(css)}"><style>body{margin:0;overflow:auto}#designer,#preview{min-height:100vh}</style></head><body><main id="designer"></main><main id="preview" hidden></main><script src="${jquery}"></script><script src="${barcode}"></script><script src="${bwip}"></script><script>(${frameBootstrap.toString()})();</script></body></html>`;
+  frame.srcdoc = `<!doctype html><html data-channel="${channel}" data-engine="${escape(engine)}"><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="${escape(policy)}"><link rel="stylesheet" href="${escape(css)}"><style>:root{color-scheme:light;font:14px Arial,'Microsoft YaHei',sans-serif}*{box-sizing:border-box}body{margin:0;color:#303133;background:#f5f7fa}.workspace{display:grid;min-height:100vh;grid-template-columns:220px minmax(600px,1fr) 300px}.side{min-width:0;padding:14px;background:#fff}.left{border-right:1px solid #e4e7ed}.right{border-left:1px solid #e4e7ed}.side h2{margin:0 0 12px;font-size:15px}.stage{overflow:auto;padding:24px}.hiprint-printTemplate{margin:auto}#designer,#preview{min-height:calc(100vh - 48px)}#pagination{margin-top:12px}.hiprint-printElement-type{margin:0;padding:0;list-style:none}.hiprint-printElement-type>li{margin-bottom:14px}.hiprint-printElement-type .title{display:block;margin-bottom:6px;color:#606266;font-weight:600}.hiprint-printElement-type ul{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:0;padding:0;list-style:none}.ep-draggable-item{display:block;padding:8px;border:1px solid #dcdfe6;border-radius:4px;color:#303133;text-align:center;background:#fff;cursor:grab}.ep-draggable-item:hover{border-color:#409eff;color:#409eff}.hiprint-option-items{padding-bottom:12px}.hiprint-option-item-row{margin-bottom:10px}.hiprint-option-item-label{margin-bottom:4px;color:#606266}.hiprint-option-item input,.hiprint-option-item select,.hiprint-option-item textarea{max-width:100%;border:1px solid #dcdfe6;border-radius:4px;padding:6px}.prop-tab-items{display:flex;gap:4px;margin:0 0 12px;padding:0;border-bottom:1px solid #e4e7ed;list-style:none}.prop-tab-item{padding:8px 4px;cursor:pointer}@media(max-width:900px){.workspace{grid-template-columns:180px minmax(520px,1fr)}.right{grid-column:1/-1;border-top:1px solid #e4e7ed;border-left:0}}</style></head><body><div class="workspace"><aside class="side left"><h2>${options.language === "en" ? "Elements" : "打印元素"}</h2><div id="elements"></div></aside><main class="stage"><div id="designer"></div><div id="preview" hidden></div><div id="pagination"></div></main><aside class="side right"><h2>${options.language === "en" ? "Properties" : "元素属性"}</h2><div id="settings"></div></aside></div><script src="${jquery}"></script><script src="${barcode}"></script><script src="${bwip}"></script><script>(${frameBootstrap.toString()})();</script></body></html>`;
   container.append(frame);
   try {
     await ready;
@@ -113,6 +132,9 @@ export async function createPrintDesigner(container: HTMLElement, options: Desig
   } catch (error) { destroy(); throw error; }
   return {
     snapshot: async () => copyTemplate(await command("snapshot")),
+    replace: async value => { await command("replace", copyTemplate(value)); },
+    undo: async () => { await command("undo"); },
+    redo: async () => { await command("redo"); },
     preview: async data => { await command("preview", data); },
     design: async () => { await command("design"); },
     destroy,

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- 打印适配器聚合；当前 JDBC/HTTP 组合部署，代理通过同一受控 API 通信。 -->
+<project xmlns="http://maven.apache.org/POM/4.0.0">
+  <modelVersion>4.0.0</modelVersion>
+  <parent><groupId>com.appnexus</groupId><artifactId>print-service</artifactId><version>0.1.0-SNAPSHOT</version><relativePath>../pom.xml</relativePath></parent>
+  <artifactId>print-adapters</artifactId><packaging>pom</packaging>
+  <modules><module>jdbc</module></modules>
+</project>

@@ -28,6 +28,13 @@ public final class AccountStatusFilter extends OncePerRequestFilter {
             FilterChain chain) throws ServletException, IOException {
         var auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth != null && auth.isAuthenticated() && !(auth instanceof AnonymousAuthenticationToken)) {
+            // 机密集成客户端由不透明 Token 内省逐次复核租户、启停和权限版本，不映射为人员账号。
+            if (auth.getAuthorities().stream().anyMatch(value -> value.getAuthority().equals("PARTNER_CLIENT"))) {
+                String path=request.getRequestURI().substring(request.getContextPath().length());
+                if(path.startsWith("/api/printing/agent/"))chain.doFilter(request, response);
+                else response.setStatus(401);
+                return;
+            }
             // OIDC 签发要求真实认证因子的时间。旧会话或 BFF 身份没有该证据时重新认证，
             // 不能以当前请求时间伪造 auth_time，也不能让异常扩散为授权码换取失败。
             if(request.getRequestURI().equals(request.getContextPath()+"/oauth2/authorize") &&

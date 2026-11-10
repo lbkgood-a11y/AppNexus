@@ -20,6 +20,12 @@
       <artifactId>workflow-flowable-adapter</artifactId>
       <version>${project.version}</version>
     </dependency>
+    <!-- 组合部署打印服务；服务通过公开平台桥接复核租户与功能权限。 -->
+    <dependency>
+      <groupId>com.appnexus</groupId>
+      <artifactId>print-jdbc-adapter</artifactId>
+      <version>${project.version}</version>
+    </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter</artifactId>

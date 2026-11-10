@@ -58,6 +58,23 @@ class IntegrationClientTest extends DatabaseTestSupport {
         jdbc.update("UPDATE platform_tenant SET enabled=FALSE WHERE id=UUID_TO_BIN(?)",tenant.toString());
         mvc.perform(get("/v1/dictionaries/sample/items").header("Authorization","Bearer "+current)).andExpect(status().isUnauthorized());
     }
+    /** 打印代理只可访问专用领取/回执路径；固定租户来自 Token 策略，不能借 scope 进入人员管理 API。 */
+    @Test void printAgentClientUsesOnlyDedicatedTenantBoundSurface()throws Exception{
+        UUID tenant=tenant();
+        var agent=clients.create(actor,tenant,"Print agent",Set.of("print-agent:operate"));
+        String bearer=token(agent);
+        mvc.perform(post("/api/printing/agent/claim").queryParam("site","default").queryParam("agent","test-agent")
+                .header("Authorization","Bearer "+bearer).header("Idempotency-Key",UUID.randomUUID().toString()))
+            .andExpect(status().isNoContent());
+        mvc.perform(get("/api/printing/templates").header("Authorization","Bearer "+bearer))
+            .andExpect(status().isUnauthorized());
+        mvc.perform(get("/api/tenants").header("Authorization","Bearer "+bearer))
+            .andExpect(status().isUnauthorized());
+        var dictionary=clients.create(actor,tenant,"Dictionary client",Set.of("dictionaries:read"));
+        mvc.perform(post("/api/printing/agent/claim").queryParam("site","default").queryParam("agent","test-agent")
+                .header("Authorization","Bearer "+token(dictionary)).header("Idempotency-Key",UUID.randomUUID().toString()))
+            .andExpect(status().isForbidden());
+    }
     @Test void secretRotationAndAuthorityAreEnforced()throws Exception{
         UUID tenant=tenant();var client=clients.create(actor,tenant,"Partner",Set.of("dictionaries:read"));String old=token(client);
         var rotated=clients.rotate(actor,client.client().id(),0);
