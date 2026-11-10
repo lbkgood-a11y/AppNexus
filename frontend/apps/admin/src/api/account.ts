@@ -26,7 +26,7 @@ export const changePassword = (currentPassword: string, newPassword: string) =>
 /** 本人可见的最小安全事件，不包含凭据、IP 原文或请求正文。 */
 export interface SecurityLogEntry {
   id: number;
-  action: "LOGIN" | "LOGOUT" | "PROFILE_UPDATED" | "PASSWORD_CHANGED" | "OTHER_SESSIONS_REVOKED";
+  action: "LOGIN" | "LOGOUT" | "PROFILE_UPDATED" | "PASSWORD_CHANGED" | "SESSION_REVOKED" | "OTHER_SESSIONS_REVOKED" | "MFA_ENABLED" | "MFA_DISABLED" | "MFA_RECOVERY_USED" | "MFA_STEP_UP" | "PASSWORD_RECOVERY_ISSUED" | "PASSWORD_RECOVERED" | "LOGIN_FAILED" | "MFA_FAILED" | "REFRESH_TOKEN_REPLAY";
   occurredAt: string;
 }
 /**

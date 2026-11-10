@@ -40,6 +40,12 @@ abstract class DatabaseTestSupport {
         properties.add("app.bootstrap.username", () -> "admin-test");
         properties.add("app.bootstrap.password", () -> "integration-test-password");
         properties.add("app.bff-secret", () -> "integration-test-client-secret");
+        // 仅容器测试使用的 32 字节加密密钥，不是部署示例或真实环境密钥。
+        properties.add("app.mfa.encryption-key", () -> java.util.Base64.getEncoder().encodeToString(new byte[32]));
+        // 旧功能回归不修改共享管理员因子；平台强制策略由独立过滤器测试覆盖。
+        properties.add("app.mfa.require-platform", () -> false);
+        // 任务租约测试显式领取，防止后台 Worker 消费测试事件；生产默认仍开启。
+        properties.add("app.events.worker.enabled", () -> false);
         // 所有共享容器测试使用同一 OAuth 注册地址，避免不同测试上下文误触生产式配置漂移保护。
         properties.add("app.public-url", () -> "http://localhost:18080");
         properties.add("app.frontend-url", () -> "http://localhost:8848");

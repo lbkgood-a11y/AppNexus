@@ -1,5 +1,13 @@
 # 技术 PoC 执行记录
 
+## 2026-11-10 企业 OIDC 身份源 PoC
+
+新增 `EnterpriseOidcPocTest`，使用回环随机端口临时 IdP、临时 RSA 密钥和真实 Spring Security OIDC 客户端完成标准授权码交换、PKCE S256、JWKS 验签、userinfo 查询及稳定身份绑定样例。IdP 端原子消费授权码，校验固定回调和 PKCE verifier；客户端校验 issuer、audience、nonce、state 和 userinfo subject。5 项测试通过，包含正确握手与邮箱改变不影响 `(issuer, subject)` 绑定，以及错误 issuer、audience、nonce/state、userinfo subject 拒绝。
+
+执行：`mvn -pl poc-app -am test -Dtest=EnterpriseOidcPocTest -Dsurefire.failIfNoSpecifiedTests=false`。不需要真实企业凭据或外网 IdP，不写入平台运行库。绑定样例仅在 PoC 内存中显式预置，未知身份不自动建账、不加入租户、不授予业务权限；这证明标准身份源接入可行性，不等同于生产企业 SSO 管理、持久绑定、自动开户或外部 MFA 信任策略已交付。
+
+以下 2026-11-06 记录保留历史范围，其统计不包含本次增量。
+
 更新日期：2026-11-06；状态：当前阶段已完成，剩余项需真实浏览器、CI 或目标容量环境。
 
 当前自动化结果：后端 37 项测试通过（0 失败/0 错误）；前端 Node 24/26 下类型检查、3 项单测和生产构建通过。

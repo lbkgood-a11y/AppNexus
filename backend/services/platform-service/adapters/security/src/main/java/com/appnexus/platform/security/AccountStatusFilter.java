@@ -8,9 +8,18 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.web.authentication.logout.SecurityContextLogoutHandler;
 import org.springframework.web.filter.OncePerRequestFilter;
+/** 每次受保护请求复核账号与凭据版本、绝对期限；权威状态无法确认时拒绝放行。 */
 public final class AccountStatusFilter extends OncePerRequestFilter {
     private final AccountRepository accounts;
-    public AccountStatusFilter(AccountRepository accounts) { this.accounts = accounts; }
+    private final SessionLifetime lifetime;
+    /**
+     * @param accounts 账号权威仓储，查询故障时拒绝请求
+     * @param lifetime Web 绝对期限策略；不用于替代 Bearer Token 有效期校验
+     */
+    public AccountStatusFilter(AccountRepository accounts, SessionLifetime lifetime) {
+        this.accounts = accounts;
+        this.lifetime = lifetime;
+    }
     @Override protected boolean shouldNotFilter(HttpServletRequest request) {
         String path = request.getRequestURI().substring(request.getContextPath().length());
         return !(path.startsWith("/bff/") || path.startsWith("/api/") || path.equals("/oauth2/authorize") || path.equals("/userinfo"));
@@ -43,7 +52,8 @@ public final class AccountStatusFilter extends OncePerRequestFilter {
                 // Bearer 调用的凭据由授权记录校验；Cookie 会话必须带认证时的版本，缺失时默认拒绝。
                 boolean bearer = auth instanceof org.springframework.security.oauth2.server.resource.authentication.BearerTokenAuthentication;
                 active = account != null && account.enabled() && (bearer ||
-                    (session != null && Long.valueOf(account.version()).equals(session.getAttribute(CredentialSession.VERSION))));
+                    (session != null && !lifetime.expired(session, java.time.Instant.now()) &&
+                        Long.valueOf(account.version()).equals(session.getAttribute(CredentialSession.VERSION))));
             }
             catch (IllegalArgumentException invalid) { active = false; }
             catch (org.springframework.dao.DataAccessException unavailable) { response.setStatus(503); return; }

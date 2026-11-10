@@ -26,7 +26,8 @@ class WebLoginTest extends DatabaseTestSupport {
         org.springframework.security.core.context.SecurityContextHolder.setContext(context);
         var continued=new java.util.concurrent.atomic.AtomicBoolean();
         try {
-            new com.appnexus.platform.security.AccountStatusFilter(accounts).doFilter(request,response,(req,res)->{
+            new com.appnexus.platform.security.AccountStatusFilter(accounts,
+                new com.appnexus.platform.security.SessionLifetime(java.time.Duration.ofHours(8))).doFilter(request,response,(req,res)->{
                 continued.set(true);
                 org.assertj.core.api.Assertions.assertThat(org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication()).isNull();
             });

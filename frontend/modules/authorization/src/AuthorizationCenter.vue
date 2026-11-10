@@ -9,6 +9,7 @@ import type {AuthorizationMenu} from "./index";
 import MemberGrantEditor from "./MemberGrantEditor.vue";
 import {applyFieldPolicyBatch} from "./fieldPolicyDraft";
 import SubjectAuthorization from "./SubjectAuthorization.vue";
+import PolicyTemplateActions from "./PolicyTemplateActions.vue";
 import type { SubjectAuthorizationApi,FieldDescriptor,FieldPolicy } from "./index";
 import type {AuthorizationCenterApi,DataPolicy,DataScopeType,PermissionItem,RoleItem,RoleManagementApi,ScopeSupport,AuthorizationOption} from "./index";
 const props=defineProps<{roleApi:RoleManagementApi;api:AuthorizationCenterApi;subjectApi:SubjectAuthorizationApi;errorText:(error:unknown)=>string}>();
@@ -163,6 +164,7 @@ onMounted(load);
         </section>
         <section class="authorization-pane summary-pane">
           <div class="save-summary"><h2>{{ t('authorizationCenter.summary') }}</h2><span>{{ selectedRole?.name || '—' }}</span><el-tag effect="plain">{{ t('authorizationCenter.selectedCount') }} · {{ selected.length }}</el-tag></div>
+          <PolicyTemplateActions :api="props.api" :role-id="roleId" :version="version" :busy="saving || loading || !ready" :dirty="changed" :reason="reason" :error-text="props.errorText" @applied="loadAssignment" />
           <el-button v-if="incompleteCount" link type="warning" @click="activeTab='data';query='';onlySelected=true">{{ t('authorizationCenter.pendingScopes', { count: incompleteCount }) }}</el-button>
           <el-form class="save-form" label-position="top" @submit.prevent="save">
             <el-form-item :label="t('authorizationCenter.reason')" required><el-input v-model="reason" type="textarea" :rows="2" :maxlength="500" show-word-limit :disabled="!ready || saving" /></el-form-item>

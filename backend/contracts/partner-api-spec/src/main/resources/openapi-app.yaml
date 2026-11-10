@@ -1,0 +1,2482 @@
+# 从正式 Controller 生成，禁止手工修改；权限说明见专项设计。
+openapi: 3.1.0
+info:
+  title: AppNexus App API
+  version: 1.0.0
+security:
+- firstParty: []
+- webSession: []
+paths:
+  /api/organization/units/{id}:
+    put:
+      tags:
+      - organization-controller
+      operationId: rename
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Name'
+        required: true
+      responses:
+        '200':
+          description: OK
+    delete:
+      tags:
+      - organization-controller
+      operationId: delete
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: OK
+  /api/organization/grants/members/{memberId}/organization:
+    put:
+      tags:
+      - organization-grant-controller
+      operationId: assign
+      parameters:
+      - name: memberId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Organization'
+        required: true
+      responses:
+        '200':
+          description: OK
+  /api/organization/domain/units/{id}:
+    put:
+      tags:
+      - organization-domain-controller
+      operationId: updateUnit
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UnitInput'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: object
+  /api/organization/domain/types/{id}:
+    put:
+      tags:
+      - organization-domain-controller
+      operationId: updateType
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TypeInput'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: object
+  /api/organization/domain/positions/{id}:
+    put:
+      tags:
+      - organization-domain-controller
+      operationId: updatePosition
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PositionInput'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: object
+  /api/organization/domain/leaders:
+    get:
+      tags:
+      - organization-domain-controller
+      operationId: leaders
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items: {}
+    put:
+      tags:
+      - organization-domain-controller
+      operationId: leader
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LeaderInput'
+        required: true
+      responses:
+        '200':
+          description: OK
+  /api/organization/domain/assignments/{id}:
+    put:
+      tags:
+      - organization-domain-controller
+      operationId: updateAssignment
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssignmentInput'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: object
+  /api/configuration/parameters/{key}:
+    put:
+      tags:
+      - tenant-parameter-controller
+      operationId: save
+      parameters:
+      - name: key
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Change'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/Parameter'
+  /api/configuration/dictionaries/{dictionaryId}:
+    put:
+      tags:
+      - dictionary-management-controller
+      operationId: update
+      parameters:
+      - name: dictionaryId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DictionaryUpdate'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/Dictionary'
+    delete:
+      tags:
+      - dictionary-management-controller
+      operationId: delete_1
+      parameters:
+      - name: dictionaryId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: version
+        in: query
+        required: true
+        schema:
+          type: integer
+          format: int64
+      responses:
+        '200':
+          description: OK
+  /api/configuration/dictionaries/{dictionaryId}/items/{itemId}:
+    put:
+      tags:
+      - dictionary-management-controller
+      operationId: updateItem
+      parameters:
+      - name: dictionaryId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: itemId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ItemUpdate'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/Item'
+    delete:
+      tags:
+      - dictionary-management-controller
+      operationId: deleteItem
+      parameters:
+      - name: dictionaryId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: itemId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: version
+        in: query
+        required: true
+        schema:
+          type: integer
+          format: int64
+      responses:
+        '200':
+          description: OK
+  /api/access/roles/{role}/permissions:
+    get:
+      tags:
+      - authorization-management-controller
+      operationId: tenantPermissions
+      parameters:
+      - name: role
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/AuthorizationAssignment'
+    put:
+      tags:
+      - authorization-management-controller
+      operationId: replaceTenantPermissions
+      parameters:
+      - name: role
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthorizationReplace'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/AuthorizationAssignment'
+  /api/access/roles/{id}:
+    put:
+      tags:
+      - role-management-controller
+      operationId: tenantUpdate
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Update'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/Role'
+  /api/access/members/{member}/roles:
+    get:
+      tags:
+      - authorization-management-controller
+      operationId: memberRoles
+      parameters:
+      - name: member
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/Assignment'
+    put:
+      tags:
+      - authorization-management-controller
+      operationId: replaceMemberRoles
+      parameters:
+      - name: member
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Replace'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/Assignment'
+  /api/access/members/{member}/authorizations:
+    get:
+      tags:
+      - authorization-management-controller
+      operationId: memberAuthorizations
+      parameters:
+      - name: member
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/Assignment'
+    put:
+      tags:
+      - authorization-management-controller
+      operationId: replaceMemberAuthorizations
+      parameters:
+      - name: member
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MemberAuthorizationReplace'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/Assignment'
+  /bff/tenants/current:
+    get:
+      tags:
+      - tenant-context-controller
+      operationId: current
+      parameters:
+      - name: optional
+        in: query
+        required: false
+        schema:
+          type: boolean
+          default: false
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/Context'
+    post:
+      tags:
+      - tenant-context-controller
+      operationId: select
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Selection'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/Context'
+  /bff/account/tenant-invitations/acceptance:
+    post:
+      tags:
+      - tenant-invitation-controller
+      operationId: accept
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Acceptance'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/Accepted'
+  /bff/account/sessions/revoke-others:
+    post:
+      tags:
+      - account-sessions-controller
+      operationId: revokeOthers
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/RevocationResult'
+  /bff/account/password:
+    post:
+      tags:
+      - account-settings-controller
+      operationId: password
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordChange'
+        required: true
+      responses:
+        '200':
+          description: OK
+  /bff/account/mfa/step-up:
+    post:
+      tags:
+      - mfa-controller
+      operationId: stepUp
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Challenge'
+        required: true
+      responses:
+        '200':
+          description: OK
+  /bff/account/mfa/enrollment:
+    post:
+      tags:
+      - mfa-controller
+      operationId: enroll
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Challenge'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/Enrollment'
+  /bff/account/mfa/disable:
+    post:
+      tags:
+      - mfa-controller
+      operationId: disable
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Challenge'
+        required: true
+      responses:
+        '200':
+          description: OK
+  /bff/account/mfa/activation:
+    post:
+      tags:
+      - mfa-controller
+      operationId: activate
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Challenge'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/Recovery'
+  /api/tenant-context:
+    post:
+      tags:
+      - native-tenant-context-controller
+      operationId: select_1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Selection'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/Context'
+  /api/organization/units:
+    get:
+      tags:
+      - organization-controller
+      operationId: list
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/OrganizationUnit'
+    post:
+      tags:
+      - organization-controller
+      operationId: create
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Name'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/OrganizationUnit'
+  /api/organization/grants:
+    post:
+      tags:
+      - organization-grant-controller
+      operationId: grant
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Change'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/Grant'
+  /api/organization/domain/units:
+    get:
+      tags:
+      - organization-domain-controller
+      operationId: units
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items: {}
+    post:
+      tags:
+      - organization-domain-controller
+      operationId: createUnit
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UnitInput'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: object
+  /api/organization/domain/units/{id}/move:
+    post:
+      tags:
+      - organization-domain-controller
+      operationId: move
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MoveInput'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: object
+  /api/organization/domain/types:
+    get:
+      tags:
+      - organization-domain-controller
+      operationId: types
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items: {}
+    post:
+      tags:
+      - organization-domain-controller
+      operationId: createType
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TypeInput'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: object
+  /api/organization/domain/relations:
+    get:
+      tags:
+      - organization-domain-controller
+      operationId: relations
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items: {}
+    post:
+      tags:
+      - organization-domain-controller
+      operationId: createRelation
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RelationInput'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: object
+  /api/organization/domain/positions:
+    get:
+      tags:
+      - organization-domain-controller
+      operationId: positions
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items: {}
+    post:
+      tags:
+      - organization-domain-controller
+      operationId: createPosition
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PositionInput'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: object
+  /api/organization/domain/assignments:
+    get:
+      tags:
+      - organization-domain-controller
+      operationId: assignments
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items: {}
+    post:
+      tags:
+      - organization-domain-controller
+      operationId: createAssignment
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssignmentInput'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: object
+  /api/configuration/dictionaries:
+    get:
+      tags:
+      - dictionary-management-controller
+      operationId: list_1
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Dictionary'
+    post:
+      tags:
+      - dictionary-management-controller
+      operationId: create_1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DictionaryCreate'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/Dictionary'
+  /api/configuration/dictionaries/{dictionaryId}/items:
+    get:
+      tags:
+      - dictionary-management-controller
+      operationId: items
+      parameters:
+      - name: dictionaryId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Item'
+    post:
+      tags:
+      - dictionary-management-controller
+      operationId: createItem
+      parameters:
+      - name: dictionaryId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ItemCreate'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/Item'
+  /api/access/roles:
+    get:
+      tags:
+      - role-management-controller
+      operationId: tenantList
+      parameters:
+      - name: query
+        in: query
+        required: false
+        schema:
+          type: string
+          default: ''
+      - name: status
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - ENABLED
+          - DISABLED
+      - name: roleType
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - SYSTEM
+          - CUSTOM
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 1
+      - name: pageSize
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 20
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/Page'
+    post:
+      tags:
+      - role-management-controller
+      operationId: tenantCreate
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Create'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/Role'
+  /api/access/roles/{role}/policy-templates:
+    get:
+      tags:
+      - policy-template-controller
+      operationId: tenantList_1
+      parameters:
+      - name: role
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/View'
+    post:
+      tags:
+      - policy-template-controller
+      operationId: tenantSave
+      parameters:
+      - name: role
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Save'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/View'
+  /api/access/roles/{role}/policy-template-application:
+    post:
+      tags:
+      - policy-template-controller
+      operationId: tenantApply
+      parameters:
+      - name: role
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Apply'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/AuthorizationAssignment'
+  /api/access/roles/{id}/delete:
+    post:
+      tags:
+      - role-management-controller
+      operationId: tenantDelete
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Delete'
+        required: true
+      responses:
+        '200':
+          description: OK
+  /bff/account:
+    get:
+      tags:
+      - account-settings-controller
+      operationId: profile
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/Profile'
+    patch:
+      tags:
+      - account-settings-controller
+      operationId: update_1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProfileChange'
+        required: true
+      responses:
+        '200':
+          description: OK
+  /api/access/roles/{id}/status:
+    patch:
+      tags:
+      - role-management-controller
+      operationId: tenantStatus
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StatusChange'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/Role'
+  /bff/tenants:
+    get:
+      tags:
+      - tenant-context-controller
+      operationId: list_2
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Membership'
+  /bff/session:
+    get:
+      tags:
+      - session-controller
+      operationId: session
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/SessionView'
+  /bff/csrf:
+    get:
+      tags:
+      - session-controller
+      operationId: csrf
+      parameters:
+      - name: token
+        in: query
+        required: true
+        schema:
+          $ref: '#/components/schemas/CsrfToken'
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/CsrfView'
+  /bff/account/sessions:
+    get:
+      tags:
+      - account-sessions-controller
+      operationId: list_3
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SessionView'
+  /bff/account/security-logs:
+    get:
+      tags:
+      - security-log-controller
+      operationId: find
+      parameters:
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 1
+      - name: size
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 10
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/Page'
+  /bff/account/mfa:
+    get:
+      tags:
+      - mfa-controller
+      operationId: status
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/Status'
+  /api/workspace/context:
+    get:
+      tags:
+      - workspace-context-controller
+      operationId: current_1
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/VerifiedTenantContext'
+  /api/tenants:
+    get:
+      tags:
+      - native-tenant-context-controller
+      operationId: list_4
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Membership'
+  /api/organization/summaries:
+    get:
+      tags:
+      - organization-summary-controller
+      operationId: get
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Group'
+  /api/organization/grants/{memberId}:
+    get:
+      tags:
+      - organization-grant-controller
+      operationId: list_5
+      parameters:
+      - name: memberId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Grant'
+  /api/organization/grants/members:
+    get:
+      tags:
+      - organization-grant-controller
+      operationId: members
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Member'
+  /api/organization/domain/units/{id}/impact:
+    get:
+      tags:
+      - organization-domain-controller
+      operationId: impact
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: object
+  /api/organization/domain/members:
+    get:
+      tags:
+      - organization-domain-controller
+      operationId: members_1
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items: {}
+  /api/organization/capabilities:
+    get:
+      tags:
+      - organization-controller
+      operationId: capabilities
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  type: string
+                  enum:
+                  - READ
+                  - CREATE
+                  - UPDATE
+                  - DELETE
+                  - GRANT
+  /api/configuration/parameters:
+    get:
+      tags:
+      - tenant-parameter-controller
+      operationId: list_6
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Parameter'
+  /api/configuration/dictionaries/lookup/{code}:
+    get:
+      tags:
+      - dictionary-management-controller
+      operationId: lookup
+      parameters:
+      - name: code
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Item'
+  /api/configuration/dictionaries/capabilities:
+    get:
+      tags:
+      - dictionary-management-controller
+      operationId: capabilities_1
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  type: string
+  /api/audits:
+    get:
+      tags:
+      - audit-query-controller
+      operationId: tenant
+      parameters:
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 1
+      - name: pageSize
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 20
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/Page'
+  /api/access/permissions:
+    get:
+      tags:
+      - authorization-management-controller
+      operationId: tenantPermissionCatalog
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Permission'
+  /api/access/members/{member}/effective-permissions:
+    get:
+      tags:
+      - authorization-management-controller
+      operationId: memberEffectivePermissions
+      parameters:
+      - name: member
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Explanation'
+  /api/access/field-policy-metadata:
+    get:
+      tags:
+      - authorization-management-controller
+      operationId: tenantFields
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Descriptor'
+  /api/access/effective-permissions:
+    get:
+      tags:
+      - authorization-management-controller
+      operationId: tenantEffectivePermissions
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Explanation'
+  /api/access/data-policy-metadata:
+    get:
+      tags:
+      - authorization-management-controller
+      operationId: tenantDataPolicyMetadata
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ScopeSupport'
+  /api/access/authorization-navigation:
+    get:
+      tags:
+      - authorization-management-controller
+      operationId: tenantNavigation
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AuthorizationNode'
+  /bff/account/sessions/{handle}:
+    delete:
+      tags:
+      - account-sessions-controller
+      operationId: revoke
+      parameters:
+      - name: handle
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+  /api/organization/grants/{memberId}/{capability}:
+    delete:
+      tags:
+      - organization-grant-controller
+      operationId: revoke_1
+      parameters:
+      - name: memberId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: capability
+        in: path
+        required: true
+        schema:
+          type: string
+          enum:
+          - READ
+          - CREATE
+          - UPDATE
+          - DELETE
+          - GRANT
+      responses:
+        '200':
+          description: OK
+  /api/organization/domain/relations/{id}:
+    delete:
+      tags:
+      - organization-domain-controller
+      operationId: deleteRelation
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: version
+        in: query
+        required: true
+        schema:
+          type: integer
+          format: int64
+      responses:
+        '200':
+          description: OK
+components:
+  schemas:
+    Name:
+      type: object
+      properties:
+        name:
+          type: string
+    Organization:
+      type: object
+      properties:
+        organizationId:
+          type: string
+          format: uuid
+    UnitInput:
+      type: object
+      properties:
+        code:
+          type: string
+        typeId:
+          type: string
+          format: uuid
+        parentId:
+          type: string
+          format: uuid
+        name:
+          type: string
+        enabled:
+          type: boolean
+        version:
+          type: integer
+          format: int64
+    TypeInput:
+      type: object
+      properties:
+        code:
+          type: string
+        name:
+          type: string
+        enabled:
+          type: boolean
+        version:
+          type: integer
+          format: int64
+    PositionInput:
+      type: object
+      properties:
+        organizationId:
+          type: string
+          format: uuid
+        code:
+          type: string
+        name:
+          type: string
+        enabled:
+          type: boolean
+        version:
+          type: integer
+          format: int64
+    LeaderInput:
+      type: object
+      properties:
+        organizationId:
+          type: string
+          format: uuid
+        assignmentId:
+          type: string
+          format: uuid
+        selected:
+          type: boolean
+    AssignmentInput:
+      type: object
+      properties:
+        memberId:
+          type: string
+          format: uuid
+        positionId:
+          type: string
+          format: uuid
+        startsAt:
+          type: string
+          format: date-time
+        endsAt:
+          type: string
+          format: date-time
+        enabled:
+          type: boolean
+        version:
+          type: integer
+          format: int64
+    Change:
+      type: object
+      properties:
+        value:
+          type: string
+        version:
+          type: integer
+          format: int32
+    Parameter:
+      type: object
+      properties:
+        key:
+          type: string
+        value:
+          type: string
+        defaultValue:
+          type: string
+        description:
+          type: string
+        version:
+          type: integer
+          format: int32
+    DictionaryUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        status:
+          type: string
+          enum:
+          - ENABLED
+          - DISABLED
+        sortOrder:
+          type: integer
+          format: int32
+        version:
+          type: integer
+          format: int64
+    Dictionary:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        code:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        status:
+          type: string
+          enum:
+          - ENABLED
+          - DISABLED
+        sortOrder:
+          type: integer
+          format: int32
+        version:
+          type: integer
+          format: int64
+        updatedAt:
+          type: string
+          format: date-time
+    ItemUpdate:
+      type: object
+      properties:
+        parentId:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+        status:
+          type: string
+          enum:
+          - ENABLED
+          - DISABLED
+        sortOrder:
+          type: integer
+          format: int32
+        version:
+          type: integer
+          format: int64
+    Item:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        dictionaryId:
+          type: string
+          format: uuid
+        parentId:
+          type: string
+          format: uuid
+        code:
+          type: string
+        value:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        status:
+          type: string
+          enum:
+          - ENABLED
+          - DISABLED
+        sortOrder:
+          type: integer
+          format: int32
+        referenced:
+          type: boolean
+        version:
+          type: integer
+          format: int64
+        updatedAt:
+          type: string
+          format: date-time
+    AuthorizationReplace:
+      type: object
+      properties:
+        ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+          uniqueItems: true
+        dataPolicies:
+          type: array
+          items:
+            $ref: '#/components/schemas/DataPolicy'
+          uniqueItems: true
+        version:
+          type: integer
+          format: int64
+        reason:
+          type: string
+        fieldPolicies:
+          type: array
+          items:
+            $ref: '#/components/schemas/Policy'
+          uniqueItems: true
+    DataPolicy:
+      type: object
+      properties:
+        permissionId:
+          type: string
+          format: uuid
+        scopeType:
+          type: string
+          enum:
+          - DENY
+          - SELF
+          - ORGANIZATION
+          - ORGANIZATION_SUBTREE
+          - ALL
+        resourceType:
+          type: string
+        organizationIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+          uniqueItems: true
+    Policy:
+      type: object
+      properties:
+        resource:
+          type: string
+        field:
+          type: string
+        mode:
+          type: string
+          enum:
+          - HIDDEN
+          - MASKED
+    AuthorizationAssignment:
+      type: object
+      properties:
+        permissionIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+          uniqueItems: true
+        dataPolicies:
+          type: array
+          items:
+            $ref: '#/components/schemas/DataPolicy'
+          uniqueItems: true
+        roleVersion:
+          type: integer
+          format: int64
+        fieldPolicies:
+          type: array
+          items:
+            $ref: '#/components/schemas/Policy'
+          uniqueItems: true
+    Update:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        sortOrder:
+          type: integer
+          format: int32
+        version:
+          type: integer
+          format: int64
+    Role:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        scopeType:
+          type: string
+          enum:
+          - PLATFORM
+          - TENANT
+        tenantId:
+          type: string
+          format: uuid
+        roleType:
+          type: string
+          enum:
+          - SYSTEM
+          - CUSTOM
+        systemKey:
+          type: string
+        code:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        status:
+          type: string
+          enum:
+          - ENABLED
+          - DISABLED
+        sortOrder:
+          type: integer
+          format: int32
+        version:
+          type: integer
+          format: int64
+        updatedAt:
+          type: string
+          format: date-time
+    Replace:
+      type: object
+      properties:
+        ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+          uniqueItems: true
+        version:
+          type: integer
+          format: int64
+        reason:
+          type: string
+    Assignment:
+      type: object
+      properties:
+        roleIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+          uniqueItems: true
+        authorityVersion:
+          type: integer
+          format: int64
+    Grant:
+      type: object
+      properties:
+        roleId:
+          type: string
+          format: uuid
+        permissionIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+          uniqueItems: true
+        dataPolicies:
+          type: array
+          items:
+            $ref: '#/components/schemas/DataPolicy'
+          uniqueItems: true
+        expiresAt:
+          type: string
+          format: date-time
+        roleVersion:
+          type: integer
+          format: int64
+    MemberAuthorizationReplace:
+      type: object
+      properties:
+        grant:
+          $ref: '#/components/schemas/Grant'
+        version:
+          type: integer
+          format: int64
+        reason:
+          type: string
+    Selection:
+      type: object
+      properties:
+        tenantId:
+          type: string
+          format: uuid
+        expectedVersion:
+          type: integer
+          format: int64
+    Context:
+      type: object
+      properties:
+        tenantId:
+          type: string
+          format: uuid
+        memberId:
+          type: string
+          format: uuid
+        name:
+          type: string
+        version:
+          type: integer
+          format: int64
+    Acceptance:
+      type: object
+      properties:
+        invitationId:
+          type: string
+          format: uuid
+        token:
+          type: string
+    Accepted:
+      type: object
+      properties:
+        tenantId:
+          type: string
+          format: uuid
+        memberId:
+          type: string
+          format: uuid
+    RevocationResult:
+      type: object
+      properties:
+        revoked:
+          type: integer
+          format: int32
+    PasswordChange:
+      type: object
+      properties:
+        currentPassword:
+          type: string
+        newPassword:
+          type: string
+    Challenge:
+      type: object
+      properties:
+        password:
+          type: string
+        code:
+          type: string
+    Enrollment:
+      type: object
+      properties:
+        secret:
+          type: string
+    Recovery:
+      type: object
+      properties:
+        codes:
+          type: array
+          items:
+            type: string
+    OrganizationUnit:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+    MoveInput:
+      type: object
+      properties:
+        parentId:
+          type: string
+          format: uuid
+        version:
+          type: integer
+          format: int64
+    RelationInput:
+      type: object
+      properties:
+        relationType:
+          type: string
+        sourceId:
+          type: string
+          format: uuid
+        targetId:
+          type: string
+          format: uuid
+    DictionaryCreate:
+      type: object
+      properties:
+        code:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        sortOrder:
+          type: integer
+          format: int32
+    ItemCreate:
+      type: object
+      properties:
+        parentId:
+          type: string
+          format: uuid
+        code:
+          type: string
+        value:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        sortOrder:
+          type: integer
+          format: int32
+    Create:
+      type: object
+      properties:
+        code:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        sortOrder:
+          type: integer
+          format: int32
+    Save:
+      type: object
+      properties:
+        name:
+          type: string
+    View:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+    Apply:
+      type: object
+      properties:
+        templateId:
+          type: string
+          format: uuid
+        version:
+          type: integer
+          format: int64
+        reason:
+          type: string
+    Delete:
+      type: object
+      properties:
+        confirmationCode:
+          type: string
+        reason:
+          type: string
+        version:
+          type: integer
+          format: int64
+    ProfileChange:
+      type: object
+      properties:
+        displayName:
+          type: string
+        email:
+          type: string
+        phoneNumber:
+          type: string
+    StatusChange:
+      type: object
+      properties:
+        status:
+          type: string
+          enum:
+          - ENABLED
+          - DISABLED
+        reason:
+          type: string
+        version:
+          type: integer
+          format: int64
+    Membership:
+      type: object
+      properties:
+        tenantId:
+          type: string
+          format: uuid
+        memberId:
+          type: string
+          format: uuid
+        name:
+          type: string
+    SessionView:
+      type: object
+      properties:
+        username:
+          type: string
+        nickname:
+          type: string
+        avatar:
+          type: string
+        roles:
+          type: array
+          items:
+            type: string
+        permissions:
+          type: array
+          items:
+            type: string
+    CsrfToken:
+      type: object
+      properties:
+        token:
+          type: string
+        headerName:
+          type: string
+        parameterName:
+          type: string
+    CsrfView:
+      type: object
+      properties:
+        token:
+          type: string
+        headerName:
+          type: string
+    Profile:
+      type: object
+      properties:
+        id:
+          type: string
+        username:
+          type: string
+        displayName:
+          type: string
+        email:
+          type: string
+        emailVerified:
+          type: boolean
+        phoneNumber:
+          type: string
+        phoneVerified:
+          type: boolean
+    Page:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/SecurityLog'
+        total:
+          type: integer
+          format: int64
+    SecurityLog:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        action:
+          type: string
+          enum:
+          - LOGIN
+          - LOGOUT
+          - PROFILE_UPDATED
+          - PASSWORD_CHANGED
+          - SESSION_REVOKED
+          - OTHER_SESSIONS_REVOKED
+          - MFA_ENABLED
+          - MFA_DISABLED
+          - MFA_RECOVERY_USED
+          - MFA_STEP_UP
+          - PASSWORD_RECOVERY_ISSUED
+          - PASSWORD_RECOVERED
+          - LOGIN_FAILED
+          - MFA_FAILED
+          - REFRESH_TOKEN_REPLAY
+        occurredAt:
+          type: string
+          format: date-time
+    Status:
+      type: object
+      properties:
+        available:
+          type: boolean
+        enabled:
+          type: boolean
+        steppedUp:
+          type: boolean
+    VerifiedTenantContext:
+      type: object
+      properties:
+        accountId:
+          type: string
+          format: uuid
+        tenantId:
+          type: string
+          format: uuid
+        memberId:
+          type: string
+          format: uuid
+        version:
+          type: integer
+          format: int64
+    Group:
+      type: object
+      properties:
+        typeCode:
+          type: string
+        typeName:
+          type: string
+        enabled:
+          type: boolean
+        count:
+          type: integer
+          format: int64
+    Member:
+      type: object
+      properties:
+        memberId:
+          type: string
+          format: uuid
+        displayName:
+          type: string
+        organizationId:
+          type: string
+          format: uuid
+        organizationName:
+          type: string
+    Permission:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        scopeType:
+          type: string
+          enum:
+          - PLATFORM
+          - TENANT
+        code:
+          type: string
+        resource:
+          type: string
+        action:
+          type: string
+        nameZh:
+          type: string
+        nameEn:
+          type: string
+        description:
+          type: string
+        enabled:
+          type: boolean
+        systemManaged:
+          type: boolean
+        version:
+          type: integer
+          format: int64
+    Explanation:
+      type: object
+      properties:
+        permissionCode:
+          type: string
+        effective:
+          type: boolean
+        sources:
+          type: array
+          items:
+            $ref: '#/components/schemas/Source'
+    Source:
+      type: object
+      properties:
+        roleId:
+          type: string
+          format: uuid
+        roleName:
+          type: string
+        effective:
+          type: boolean
+        inactiveReason:
+          type: string
+        scopeType:
+          type: string
+          enum:
+          - DENY
+          - SELF
+          - ORGANIZATION
+          - ORGANIZATION_SUBTREE
+          - ALL
+        organizationIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+          uniqueItems: true
+    Descriptor:
+      type: object
+      properties:
+        resource:
+          type: string
+        field:
+          type: string
+        nameZh:
+          type: string
+        nameEn:
+          type: string
+        kind:
+          type: string
+          enum:
+          - EMAIL
+          - PHONE
+          - PERSON_NAME
+          - IDENTIFIER
+          - BANK_ACCOUNT
+          - TEXT
+        modes:
+          type: array
+          items:
+            type: string
+            enum:
+            - HIDDEN
+            - MASKED
+    ScopeSupport:
+      type: object
+      properties:
+        permissionId:
+          type: string
+          format: uuid
+        permissionCode:
+          type: string
+        scopeType:
+          type: string
+          enum:
+          - DENY
+          - SELF
+          - ORGANIZATION
+          - ORGANIZATION_SUBTREE
+          - ALL
+        resourceType:
+          type: string
+    AuthorizationNode:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        parentId:
+          type: string
+          format: uuid
+        titleZh:
+          type: string
+        titleEn:
+          type: string
+        sortOrder:
+          type: integer
+          format: int32
+        resources:
+          type: array
+          items:
+            type: string
+        permission:
+          type: string
+  securitySchemes:
+    firstParty:
+      type: http
+      scheme: bearer
+    webSession:
+      type: apiKey
+      name: JSESSIONID
+      in: cookie

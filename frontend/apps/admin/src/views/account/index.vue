@@ -3,6 +3,10 @@ import { computed, onMounted, reactive, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import AccountSessions from "./components/AccountSessions.vue";
 import SecurityLogs from "./components/SecurityLogs.vue";
+import MultiFactorSettings from "./components/MultiFactorSettings.vue";
+import TenantParameters from "./components/TenantParameters.vue";
+import AuditQuery from "./components/AuditQuery.vue";
+import TenantInvitationAcceptance from "./components/TenantInvitationAcceptance.vue";
 import ThemeToggle from "@/components/ThemeToggle/index.vue";
 import { useTranslationLang } from "@/layout/hooks/useTranslationLang";
 import { useUserStoreHook } from "@/store/modules/user";
@@ -21,15 +25,16 @@ const router = useRouter();
 const user = useUserStoreHook();
 const { locale, translationCh, translationEn } = useTranslationLang();
 /** 分区写入路由查询参数，刷新与浏览器前进后退保持当前分区；只接受已实现的固定值。 */
-type Section = "profile" | "preferences" | "security" | "logs" | "sessions";
+type Section = "profile" | "preferences" | "security" | "logs" | "sessions" | "audits";
 const section = computed<Section>(() =>
-  ["profile", "preferences", "security", "logs", "sessions"].includes(String(route.query.section))
+  ["profile", "preferences", "security", "logs", "sessions", "audits"].includes(String(route.query.section))
     ? route.query.section as Section : "profile");
 const navigation = [
   { key: "profile", icon: "user", title: "account.personalInfo" },
   { key: "preferences", icon: "settings", title: "account.preferences" },
   { key: "sessions", icon: "monitor", title: "account.sessions" },
   { key: "logs", icon: "shield", title: "account.securityLogs" },
+  { key: "audits", icon: "shield", title: "account.auditQuery" },
   { key: "security", icon: "shield", title: "account.accountSecurity" }
 ] as const;
 const editingPassword = ref(false);
@@ -132,6 +137,7 @@ onMounted(load);
           <div class="account-field"><label>{{ t("account.id") }}</label><code>{{ profile.id }}</code></div>
           <el-button type="primary" native-type="submit" :loading="saving" :disabled="loading || !displayName.trim()">{{ t("account.save") }}</el-button>
         </form>
+        <TenantInvitationAcceptance />
       </section>
 
       <section v-else-if="section === 'preferences'" class="content-section">
@@ -145,10 +151,12 @@ onMounted(load);
           </el-select>
         </div>
         <div class="preference-note"><AppIcon name="monitor" :size="17" /><span>{{ t("account.preferenceScope") }}</span></div>
+        <TenantParameters />
       </section>
 
       <AccountSessions v-else-if="section === 'sessions'" class="content-section" />
       <SecurityLogs v-else-if="section === 'logs'" class="content-section" />
+      <AuditQuery v-else-if="section === 'audits'" class="content-section" />
       <section v-else class="content-section">
         <h1>{{ t("account.accountSecurity") }}</h1>
         <p class="section-intro">{{ t("account.securityIntro") }}</p>
@@ -167,6 +175,7 @@ onMounted(load);
         </form>
         <div class="setting-row"><div><h2>{{ t("account.sessionProtection") }}</h2><p>{{ t("account.sessionHint") }}</p></div>
           <el-tag type="success" effect="plain">{{ t("account.enabled") }}</el-tag></div>
+        <MultiFactorSettings />
       </section>
     </div>
   </SplitDetailTemplate>

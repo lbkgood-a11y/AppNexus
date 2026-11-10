@@ -3,6 +3,7 @@ import { onMounted, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { getSecurityLogs, type SecurityLogEntry } from "@/api/account";
 import { requestErrorMessage } from "@/utils/http";
+import { displayInstant, refreshDisplayFormat } from "@/utils/displayFormat";
 const { t, locale } = useI18n();
 const rows = ref<SecurityLogEntry[]>([]);
 const total = ref(0);
@@ -24,13 +25,11 @@ async function load() {
     if (current === generation) error.value = requestErrorMessage(cause);
   } finally { if (current === generation) loading.value = false; }
 }
-/** 时间点按当前语言及浏览器时区展示，完整时区作为提示，禁止虚构地理位置或设备信息。 */
+/** 时间点按当前语言及租户展示时区格式化，原 UTC 证据保留，禁止推断地理位置或设备。 */
 function time(value: string) {
-  return new Intl.DateTimeFormat(locale.value === "zh" ? "zh-CN" : "en", {
-    dateStyle: "medium", timeStyle: "medium"
-  }).format(new Date(value));
+  return displayInstant(value,locale.value);
 }
-onMounted(load);
+onMounted(()=>{void refreshDisplayFormat();void load();});
 </script>
 <template>
   <section>
@@ -43,7 +42,7 @@ onMounted(load);
         <template #default="{ row }">{{ t("account.events." + row.action) }}</template>
       </el-table-column>
       <el-table-column :label="t('account.result')" width="120">
-        <template #default><el-tag type="success" effect="plain">{{ t("account.success") }}</el-tag></template>
+        <template #default="{ row }"><el-tag :type="['LOGIN_FAILED','MFA_FAILED','REFRESH_TOKEN_REPLAY'].includes(row.action) ? 'danger' : 'success'" effect="plain">{{ t(['LOGIN_FAILED','MFA_FAILED','REFRESH_TOKEN_REPLAY'].includes(row.action) ? 'account.failed' : 'account.success') }}</el-tag></template>
       </el-table-column>
       <el-table-column :label="t('account.eventTime')" min-width="220">
         <template #default="{ row }"><time :datetime="row.occurredAt" :title="row.occurredAt">{{ time(row.occurredAt) }}</time></template>

@@ -10,6 +10,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@appnexus/localization": "workspace:*",
     "@appnexus/ui": "workspace:*",
     "@appnexus/configuration": "workspace:*",
     "@appnexus/authorization": "workspace:*",

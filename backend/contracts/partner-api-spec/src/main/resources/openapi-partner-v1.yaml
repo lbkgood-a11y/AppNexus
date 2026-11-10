@@ -1,0 +1,161 @@
+# 外部合作 API 正式 v1 子集；只包含已实现资源，不发布内部账号、授权或审计字段。
+openapi: 3.1.0
+info:
+  title: AppNexus Partner API
+  version: 1.0.0
+  description: 固定租户机密客户端；Client Credentials，不接受用户会话或原生用户 Token。
+# 实际部署入口由反向代理与环境域名配置，契约不硬编码本机端口。
+security:
+  - partnerOAuth: []
+paths:
+  /v1/dictionaries/{code}/items:
+    get:
+      operationId: listDictionaryItems
+      summary: 读取客户端固定租户的启用字典项
+      security:
+        - partnerOAuth: [dictionaries:read]
+      parameters:
+        - name: code
+          in: path
+          required: true
+          description: 租户内稳定字典编码，2–64 位小写字母、数字或下划线。
+          schema: {type: string, pattern: '^[a-z][a-z0-9_]{1,63}$'}
+        - name: page
+          in: query
+          description: 页码，单位为页，默认 1，范围 1–100000。
+          schema: {type: integer, minimum: 1, maximum: 100000, default: 1}
+        - name: pageSize
+          in: query
+          description: 每页条数，默认 20，范围 1–100 条。
+          schema: {type: integer, minimum: 1, maximum: 100, default: 20}
+      responses:
+        '200':
+          description: 仅含公开业务字段；计数与列表受同一租户边界限制。
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items, total, page, pageSize]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      required: [code, value, name]
+                      properties:
+                        code: {type: string}
+                        value: {type: string}
+                        name: {type: string}
+                  total: {type: integer, minimum: 0}
+                  page: {type: integer, minimum: 1}
+                  pageSize: {type: integer, minimum: 1, maximum: 100}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '429': {$ref: '#/components/responses/RateLimited'}
+        '503': {$ref: '#/components/responses/Unavailable'}
+  /v1/dictionary-item-references:
+    post:
+      operationId: createDictionaryItemReference
+      summary: 幂等登记外部业务对字典项的引用
+      security:
+        - partnerOAuth: [dictionary-references:write]
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: true
+          description: 当前客户端与本操作范围的单次业务意图标识，16–128 字符；同键同参数返回相同登记，同键不同参数返回 409。当前保留至显式迁移，不自动过期。
+          schema: {type: string, pattern: '^[A-Za-z0-9._:-]{16,128}$'}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [dictionaryCode, itemValue, referenceKey]
+              properties:
+                dictionaryCode: {type: string, pattern: '^[a-z][a-z0-9_]{1,63}$'}
+                itemValue: {type: string, minLength: 1, maxLength: 100}
+                referenceKey:
+                  type: string
+                  minLength: 1
+                  maxLength: 200
+                  description: 调用方稳定业务引用键，不得填入密码、Token 或敏感原值。
+      responses:
+        '201':
+          description: 登记完成；重复同键返回相同标识和 Location，无重复业务副作用。
+          headers:
+            Location:
+              description: 当前客户端可查询的引用资源地址。
+              schema: {type: string}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Reference'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+        '429': {$ref: '#/components/responses/RateLimited'}
+        '503': {$ref: '#/components/responses/Unavailable'}
+  /v1/dictionary-item-references/{id}:
+    get:
+      operationId: getDictionaryItemReference
+      summary: 查询本客户端登记的引用
+      security:
+        - partnerOAuth: [dictionary-references:write]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: 对外登记 UUID，不能使用内部字典项主键。
+          schema: {type: string, format: uuid}
+      responses:
+        '200':
+          description: 本客户端固定租户下的引用登记。
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Reference'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '429': {$ref: '#/components/responses/RateLimited'}
+        '503': {$ref: '#/components/responses/Unavailable'}
+components:
+  securitySchemes:
+    partnerOAuth:
+      type: oauth2
+      flows:
+        clientCredentials:
+          # 标准授权端点相对同一部署入口；客户端标识和密钥经 HTTP Basic 发送，生产必须 HTTPS。
+          tokenUrl: /oauth2/token
+          scopes:
+            dictionaries:read: 读取固定租户启用字典项
+            dictionary-references:write: 登记及查询本客户端字典业务引用
+  schemas:
+    Reference:
+      type: object
+      required: [id, referenceKey]
+      properties:
+        id: {type: string, format: uuid}
+        referenceKey: {type: string, maxLength: 200}
+    Problem:
+      type: object
+      properties:
+        status: {type: integer}
+        code: {type: string}
+        title: {type: string}
+        detail: {type: string}
+  responses:
+    BadRequest: {description: 参数不符合契约或凭据授权类型不支持。}
+    Unauthorized: {description: Token 无效、客户端/租户停用或授权版本已变化。}
+    Forbidden: {description: 客户端未获得该操作 scope 或使用了错误接口面身份。}
+    NotFound: {description: 目标不存在、不可用或不属于当前客户端与租户。}
+    Conflict: {description: 幂等键已用于不同请求，不能自动重试覆盖。}
+    RateLimited:
+      description: 同客户端每 60 秒最多 60 次调用，所有实例共享计数。
+      headers:
+        Retry-After:
+          description: 允许重试前等待秒数，当前固定窗口返回 60 秒。
+          schema: {type: integer, minimum: 1}
+    Unavailable: {description: 权威数据库、共享限流或审计不可用，默认拒绝。}

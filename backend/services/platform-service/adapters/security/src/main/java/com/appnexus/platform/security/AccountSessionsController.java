@@ -18,10 +18,12 @@ public class AccountSessionsController {
     private final FindByIndexNameSessionRepository<? extends Session> sessions;
 
     private final com.appnexus.platform.audit.SecurityLogRepository logs;
+    private final SessionLifetime lifetime;
     public AccountSessionsController(FindByIndexNameSessionRepository<? extends Session> sessions,
-            com.appnexus.platform.audit.SecurityLogRepository logs) {
+            com.appnexus.platform.audit.SecurityLogRepository logs,SessionLifetime lifetime) {
         this.logs = logs;
         this.sessions = sessions;
+        this.lifetime=lifetime;
     }
     /**
      * 不透明管理标识仅用于本人会话撤销，不可用作登录凭据。
@@ -38,7 +40,7 @@ public class AccountSessionsController {
         String currentId = request.getSession().getId();
         Long version = (Long) request.getSession().getAttribute(CredentialSession.VERSION);
         var result = sessions.findByPrincipalName(auth.getName()).values().stream()
-            .filter(session -> !session.isExpired() &&
+            .filter(session -> !session.isExpired() && !lifetime.expired(session,Instant.now()) &&
                 Objects.equals(version, session.getAttribute(CredentialSession.VERSION)))
             .map(session -> new SessionView(handle(session.getId()), session.getCreationTime(),
                 session.getLastAccessedTime(), currentId.equals(session.getId())))
@@ -50,6 +52,7 @@ public class AccountSessionsController {
 
     /**
      * 撤销本人指定的其他会话；目标不存在或属于其他账号时均返回 404，避免泄露存在性。
+     * Valkey 删除与 MySQL 审计不构成原子事务；审计故障返回错误，但不会恢复已撤销会话。
      * @param handle 不透明管理标识，固定 64 位十六进制字符串
      * @param auth 当前认证主体
      * @param request 用于保护当前会话；退出当前会话应使用已有注销入口
@@ -59,11 +62,12 @@ public class AccountSessionsController {
         if (!handle.matches("[a-f0-9]{64}")) throw AccountSettingsController.problem(
             HttpStatus.NOT_FOUND, "SESSION_NOT_FOUND", "会话不存在或已失效");
         var target = sessions.findByPrincipalName(auth.getName()).values().stream()
-            .filter(session -> !session.isExpired() && handle(session.getId()).equals(handle)).findFirst()
+            .filter(session -> !session.isExpired() && !lifetime.expired(session,Instant.now()) && handle(session.getId()).equals(handle)).findFirst()
             .orElseThrow(() -> AccountSettingsController.problem(HttpStatus.NOT_FOUND, "SESSION_NOT_FOUND", "会话不存在或已失效"));
         if (target.getId().equals(request.getSession().getId()))
             throw AccountSettingsController.problem(HttpStatus.CONFLICT, "CURRENT_SESSION", "请使用退出登录结束当前会话");
         sessions.deleteById(target.getId());
+        logs.append(UUID.fromString(auth.getName()), com.appnexus.platform.audit.SecurityLog.Action.SESSION_REVOKED);
         return ResponseEntity.noContent().build();
     }
     /**
@@ -77,7 +81,7 @@ public class AccountSessionsController {
     ResponseEntity<RevocationResult> revokeOthers(Authentication auth, HttpServletRequest request) {
         String current = request.getSession().getId();
         var targets = sessions.findByPrincipalName(auth.getName()).values().stream()
-            .filter(session -> !session.isExpired() && !session.getId().equals(current))
+            .filter(session -> !session.isExpired() && !lifetime.expired(session,Instant.now()) && !session.getId().equals(current))
             .map(Session::getId).toList();
         for (String id : targets) sessions.deleteById(id);
         if (!targets.isEmpty()) logs.append(UUID.fromString(auth.getName()),

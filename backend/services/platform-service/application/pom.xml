@@ -8,6 +8,12 @@
   </parent>
   <artifactId>platform-application</artifactId>
   <dependencies>
+    <!-- 正式契约生成；分组和访问控制在应用装配，不能把所有 Controller 直接发布给外部合作方。 -->
+    <dependency>
+      <groupId>org.springdoc</groupId>
+      <artifactId>springdoc-openapi-starter-webmvc-api</artifactId>
+      <version>3.2.0</version>
+    </dependency>
     <!-- 组合启动专用依赖；平台领域模块不得引用审批实现。Flowable 版本在审批适配器锁定。 -->
     <dependency>
       <groupId>com.appnexus</groupId>

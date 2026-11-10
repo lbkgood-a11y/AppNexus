@@ -13,6 +13,12 @@
   <artifactId>poc-app</artifactId>
 
   <dependencies>
+    <!-- 企业 OIDC 仅用于隔离 PoC 的真实标准客户端握手，不作为平台运行时依赖。 -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-oauth2-client</artifactId>
+      <scope>test</scope>
+    </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-web</artifactId>

@@ -54,7 +54,12 @@ class ArchitectureRulesTest {
                 type.getSimpleName().equals("DictionaryManagementController") ||
                 type.getSimpleName().equals("OrganizationDomainController") ||
                 type.getSimpleName().equals("OrganizationController") ||
-                type.getSimpleName().equals("OrganizationGrantController"))
+                type.getSimpleName().equals("OrganizationGrantController") ||
+                type.getSimpleName().equals("IntegrationClientController") ||
+                type.getSimpleName().equals("TaskManagementController") ||
+                type.getSimpleName().equals("OrganizationSummaryController") ||
+                type.getSimpleName().equals("PolicyTemplateController") ||
+                type.getSimpleName().equals("AuditQueryController"))
             .flatMap(type -> type.getMethods().stream())
             .filter(method -> method.getAnnotations().stream().anyMatch(annotation ->
                 annotation.getRawType().getPackageName().equals("org.springframework.web.bind.annotation") &&

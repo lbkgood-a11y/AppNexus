@@ -7,6 +7,7 @@
 该文件仅用于本机开发，不代替生产密钥管理，也不会重置已经初始化的数据库账号。
 .NOTES
 应在后续启动后端的同一终端执行；依赖 Java keytool，随机密钥均不打印。
+新增 MFA 参数及严格 JSON 凭据项中文说明见 docs/design/第一期收尾执行记录.md 的“配置与部署”。
 #>
 $ErrorActionPreference = "Stop"
 $workspaceRoot = Split-Path $PSScriptRoot -Parent
@@ -24,7 +25,9 @@ if (Test-Path -LiteralPath $environmentFile) {
 }
 $secrets = @{}
 foreach ($name in @("APP_DATABASE_PASSWORD", "APP_DATABASE_ROOT_PASSWORD", "APP_VALKEY_PASSWORD",
-                    "APP_BFF_SECRET", "APP_BOOTSTRAP_PASSWORD", "APP_SIGNING_KEY_PASSWORD")) {
+                    "APP_BFF_SECRET", "APP_BOOTSTRAP_PASSWORD", "APP_SIGNING_KEY_PASSWORD",
+                    # MFA 专用 AES-256 密钥：缺省生成 32 随机字节并以 Base64 持久保留，仅本机开发；重启不得轮换，生产使用部署密钥存储。
+                    "APP_MFA_ENCRYPTION_KEY")) {
     if (-not [Environment]::GetEnvironmentVariable($name, "Process")) {
         # 每个凭据使用 32 字节密码学随机数，Base64 编码后保存；单位为字节。
         $randomBytes = [byte[]]::new(32)

@@ -17,8 +17,9 @@ import org.springframework.web.bind.annotation.*;
 public class AccountSettingsController {
     private final AccountRepository accounts;
     private final PasswordEncoder encoder;
-    public AccountSettingsController(AccountRepository accounts, PasswordEncoder encoder) {
-        this.accounts = accounts; this.encoder = encoder;
+    private final MultiFactorAuthentication mfa;
+    public AccountSettingsController(AccountRepository accounts, PasswordEncoder encoder,MultiFactorAuthentication mfa) {
+        this.accounts = accounts; this.encoder = encoder;this.mfa=mfa;
     }
     /** 公开展示资料，不返回密码哈希、Token 或内部授权记录。 */
     public record Profile(String id, String username, String displayName, String email,
@@ -73,6 +74,7 @@ public class AccountSettingsController {
     ResponseEntity<Void> password(@RequestBody PasswordChange input, Authentication auth,
             HttpServletRequest request, HttpServletResponse response) {
         var account = current(auth);
+        MfaController.requireRecent(mfa,account.id(),request);
         if (input.currentPassword() == null || input.currentPassword().length() > 128 ||
                 !encoder.matches(input.currentPassword(), account.passwordHash()))
             throw problem(HttpStatus.BAD_REQUEST, "CURRENT_PASSWORD_INVALID", "当前密码不正确");

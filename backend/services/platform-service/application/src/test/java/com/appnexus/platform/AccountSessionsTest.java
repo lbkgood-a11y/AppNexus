@@ -65,8 +65,27 @@ class AccountSessionsTest extends DatabaseTestSupport {
         mvc.perform(delete("/bff/account/sessions/"+handle(target)).cookie(cookie(current)).with(csrf()))
             .andExpect(status().isNoContent());
         assertThat(sessionRepository.findById(target)).isNull();
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM account_security_log WHERE account_id=UUID_TO_BIN(?) AND action='SESSION_REVOKED'",Integer.class,id)).isEqualTo(1);
         mvc.perform(get("/bff/session").cookie(cookie(target))).andExpect(status().isUnauthorized());
         mvc.perform(get("/bff/account/sessions")).andExpect(status().isUnauthorized());
+    }
+    /** 即使空闲超时未到，绝对期限已到的会话也必须在过滤器中拒绝并注销。 */
+    @Test void absoluteDeadlineRejectsActiveSession() throws Exception {
+        String id = account(), current = session(id);
+        var stored = sessionRepository.findById(current);
+        stored.setAttribute("appnexus.authenticatedAt", java.time.Instant.now().minus(java.time.Duration.ofHours(9)));
+        sessionRepository.save(stored);
+        mvc.perform(get("/bff/session").cookie(cookie(current))).andExpect(status().isUnauthorized());
+        assertThat(sessionRepository.findById(current)).isNull();
+    }
+    /** 目录与请求使用同一期限，已达绝对期限的其他会话不再显示为在线。 */
+    @Test void directoryExcludesAbsolutelyExpiredSessions() throws Exception {
+        String id=account(),current=session(id),expired=session(id);
+        var stored=sessionRepository.findById(expired);
+        stored.setAttribute("appnexus.authenticatedAt",java.time.Instant.now().minus(java.time.Duration.ofHours(9)));
+        sessionRepository.save(stored);
+        mvc.perform(get("/bff/account/sessions").cookie(cookie(current))).andExpect(status().isOk())
+            .andExpect(jsonPath("$.length()").value(1));
     }
     /** 批量撤销不触及当前会话或其他账号；重复执行为零条，CSRF 仍不可省略。 */
     @Test void batchRevocationKeepsCurrentAndForeignSessions() throws Exception {

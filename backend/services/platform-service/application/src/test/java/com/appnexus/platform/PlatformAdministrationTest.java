@@ -32,6 +32,19 @@ class PlatformAdministrationTest extends DatabaseTestSupport {
  }
  private UUID user(){UUID id=UUID.randomUUID();service.createUser(actor,id,"user-"+id,"Test User",encoder.encode("test-password-2026"));return id;}
 
+ /** 强制下线使旧 Cookie 版本失效，且操作者授权、CSRF、本人保护不能绕过。 */
+ @Test void administratorRevocationInvalidatesOldSessionAndIsAudited() throws Exception {
+  UUID target=user(),ordinary=user();
+  var old=authenticated(target.toString(),0);
+  mvc.perform(get("/bff/session").with(old)).andExpect(status().isOk());
+  mvc.perform(post("/bff/platform/users/"+target+"/revoke-sessions").with(authenticated(actor.toString(),0))).andExpect(status().isForbidden());
+  mvc.perform(post("/bff/platform/users/"+target+"/revoke-sessions").with(authenticated(ordinary.toString(),0)).with(csrf())).andExpect(status().isForbidden());
+  mvc.perform(post("/bff/platform/users/"+target+"/revoke-sessions").with(authenticated(actor.toString(),0)).with(csrf())).andExpect(status().isOk());
+  mvc.perform(get("/bff/session").with(old)).andExpect(status().isUnauthorized());
+  assertThat(jdbc.queryForObject("SELECT version FROM identity_account WHERE id=UUID_TO_BIN(?)",Long.class,target.toString())).isEqualTo(1);
+  assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM platform_administration_audit WHERE target_id=UUID_TO_BIN(?) AND action='USER_SESSIONS_REVOKED'",Integer.class,target.toString())).isEqualTo(1);
+  assertThatThrownBy(()->service.revokeUserSessions(actor,actor)).isInstanceOf(IllegalArgumentException.class);
+ }
  @Test void tenantCreationIsAtomicIdempotentAndDoesNotAddPlatformOperator(){
   UUID administrator=user(),request=UUID.randomUUID();
   var tenant=service.createTenant(actor,request,"Managed Tenant",administrator);

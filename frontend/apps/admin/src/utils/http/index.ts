@@ -11,6 +11,8 @@ export function requestErrorMessage(error: unknown): string {
   const t = i18n.global.t as (key: string) => string;
   if (Axios.isAxiosError(error)) {
     const status = error.response?.status;
+    const securityCode=error.response?.data?.code;
+    if(typeof securityCode==='string'&&["MFA_STEP_UP_REQUIRED","MFA_ENROLLMENT_REQUIRED","MFA_CHALLENGE_INVALID","MFA_UNAVAILABLE","PASSWORD_RECOVERY_INVALID"].includes(securityCode))return t("account.errors."+securityCode);
     if (status === 401) return t("account.sessionExpired");
     if (status === 403) return t("account.forbidden");
     if (status === 429) return t("account.rateLimited");

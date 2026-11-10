@@ -15,8 +15,10 @@ public class MyBatisPlatformAdministration implements PlatformAdministration {
     private final AdministrationMapper mapper;
     private final OrganizationAdministratorBootstrap bootstrap;
     private final FieldProtection protection;
-    public MyBatisPlatformAdministration(AdministrationMapper mapper,OrganizationAdministratorBootstrap bootstrap,FieldProtection protection) {
-        this.mapper=mapper; this.bootstrap=bootstrap;this.protection=protection;
+    private final AccountSessionRevocationMapper revocations;
+    public MyBatisPlatformAdministration(AdministrationMapper mapper,OrganizationAdministratorBootstrap bootstrap,FieldProtection protection,
+            AccountSessionRevocationMapper revocations) {
+        this.mapper=mapper; this.bootstrap=bootstrap;this.protection=protection;this.revocations=revocations;
     }
     public boolean isAdministrator(UUID actor) { return mapper.administrator(actor.toString()); }
     /**
@@ -71,6 +73,16 @@ public class MyBatisPlatformAdministration implements PlatformAdministration {
         if(!enabled && mapper.lockAccount(target.toString())==null) return;
         if(mapper.userState(target.toString(),enabled)==0) throw new IllegalArgumentException("Account unavailable or unchanged");
         mapper.audit(actor.toString(),enabled?"USER_ENABLED":"USER_DISABLED",target.toString(),null);
+    }
+    /** 管理事务先锁定操作者再锁定目标，撤销与审计一并提交；不扫描或全清 Valkey。 */
+    @Transactional
+    public void revokeUserSessions(UUID actor,UUID target) {
+        lock(actor);
+        if(actor.equals(target)) throw new IllegalArgumentException("Use self-service logout");
+        if(mapper.lockAccount(target.toString())==null) throw new IllegalArgumentException("Active account required");
+        if(revocations.advanceVersion(target.toString())!=1) throw new IllegalArgumentException("Account changed");
+        revocations.revokeAuthorizations(target.toString());
+        mapper.audit(actor.toString(),"USER_SESSIONS_REVOKED",target.toString(),null);
     }
     public Page<Tenant> tenants(UUID actor,int page,int size,String query) {
         require(actor);validatePage(page,size,query);

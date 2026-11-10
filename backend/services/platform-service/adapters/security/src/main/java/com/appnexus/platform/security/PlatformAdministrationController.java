@@ -15,7 +15,12 @@ import org.springframework.web.bind.annotation.*;
 public class PlatformAdministrationController {
     private final PlatformAdministration service;
     private final PasswordEncoder encoder;
-    public PlatformAdministrationController(PlatformAdministration service,PasswordEncoder encoder) { this.service=service;this.encoder=encoder; }
+    private final com.appnexus.platform.identity.MultiFactorAuthentication mfa;
+    private final com.appnexus.platform.identity.PasswordRecovery recovery;
+    public PlatformAdministrationController(PlatformAdministration service,PasswordEncoder encoder,
+            com.appnexus.platform.identity.MultiFactorAuthentication mfa,com.appnexus.platform.identity.PasswordRecovery recovery) {
+        this.service=service;this.encoder=encoder;this.mfa=mfa;this.recovery=recovery;
+    }
     /** 展示能力不代表授权，后续操作仍复核权威源。 */
     public record Access(boolean administrator) {}
     /** 初始密码仅在请求内处理，响应和审计不包含明文或哈希。 */
@@ -56,6 +61,18 @@ public class PlatformAdministrationController {
     @EndpointOperation("identity.account:update") @PutMapping("/users/{id}/state")
     ResponseEntity<Void> userState(Authentication auth,@PathVariable UUID id,@RequestBody State state) {
         return ok(() -> { service.setUserEnabled(actor(auth),id,enabled(state)); return null; });
+    }
+    /** 平台管理员强制下线目标账号；保留 CSRF，凭据版本与 OAuth 撤销在用例内原子完成。 */
+    @EndpointOperation("identity.account:update") @PostMapping("/users/{id}/revoke-sessions")
+    ResponseEntity<Void> revokeSessions(Authentication auth,@PathVariable UUID id,jakarta.servlet.http.HttpServletRequest request) {
+        MfaController.requireRecent(mfa,actor(auth),request);
+        return ok(() -> { service.revokeUserSessions(actor(auth),id);return null; });
+    }
+    /** 管理员受权签发单次重置凭证，禁止重置平台管理员或本人；交付渠道由运维核实本人身份。 */
+    @EndpointOperation("identity.account:update") @PostMapping("/users/{id}/password-recovery")
+    ResponseEntity<PasswordRecoveryController.Ticket> passwordRecovery(Authentication auth,@PathVariable UUID id,jakarta.servlet.http.HttpServletRequest request){
+        MfaController.requireRecent(mfa,actor(auth),request);
+        return ok(()->new PasswordRecoveryController.Ticket(recovery.issue(actor(auth),id)));
     }
     /** 平台租户目录分页，不读取租户内业务数据。 */
     @EndpointOperation("tenant:read") @GetMapping("/tenants")

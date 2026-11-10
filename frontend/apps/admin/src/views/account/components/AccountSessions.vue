@@ -4,6 +4,7 @@ import { useI18n } from "vue-i18n";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { getAccountSessions, revokeOtherSessions, revokeAccountSession, type AccountSession } from "@/api/account";
 import { requestErrorMessage } from "@/utils/http";
+import { displayInstant, refreshDisplayFormat } from "@/utils/displayFormat";
 const { t, locale } = useI18n();
 const rows = ref<AccountSession[]>([]);
 const loading = ref(false);
@@ -45,12 +46,11 @@ async function revokeOthers() {
   } catch (cause) { error.value = requestErrorMessage(cause); }
   finally { revoking.value = ""; }
 }
-/** 会话时间使用当前界面语言及浏览器时区，原始 UTC 时间保留在提示中。 */
+/** 会话时间使用当前界面语言及租户展示时区，原始 UTC 时间保留在提示中。 */
 function time(value: string) {
-  return new Intl.DateTimeFormat(locale.value === "zh" ? "zh-CN" : "en",
-    { dateStyle: "medium", timeStyle: "medium" }).format(new Date(value));
+  return displayInstant(value,locale.value);
 }
-onMounted(load);
+onMounted(()=>{void refreshDisplayFormat();void load();});
 </script>
 <template>
   <section>

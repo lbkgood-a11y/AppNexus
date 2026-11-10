@@ -1,1 +1,10 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0"><modelVersion>4.0.0</modelVersion><parent><groupId>com.appnexus</groupId><artifactId>contracts</artifactId><version>0.1.0-SNAPSHOT</version></parent><artifactId>partner-api-spec</artifactId></project>
+<project xmlns="http://maven.apache.org/POM/4.0.0">
+  <modelVersion>4.0.0</modelVersion>
+  <parent><groupId>com.appnexus</groupId><artifactId>contracts</artifactId><version>0.1.0-SNAPSHOT</version></parent>
+  <artifactId>partner-api-spec</artifactId>
+  <dependencies>
+    <!-- 契约只作为资源交付；YAML 安全解析和 JUnit 仅用于构建检查，不进入平台运行时。 -->
+    <dependency><groupId>org.yaml</groupId><artifactId>snakeyaml</artifactId><scope>test</scope></dependency>
+    <dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-test</artifactId><scope>test</scope></dependency>
+  </dependencies>
+</project>

@@ -11,6 +11,12 @@ Flowable 8.0.0 内嵌在审批适配器，默认关闭，不自动建表或升�
 
 ## Implemented login foundation
 
+2026-11-10 authentication increment: absolute Web session lifetime, administrator session revocation,
+TOTP/recovery codes, step-up, platform write MFA enforcement and one-time password reset tickets
+are now implemented. See [一期收尾执行记录](../docs/design/第一期收尾执行记录.md)
+for deployment parameters, migration V33/V34, verification and remaining scope. Historical
+"remaining work" paragraphs below are superseded for those capabilities only.
+
 - MySQL 8.4 account/password persistence through MyBatis; Flyway migrations.
 - UUIDv7 immutable account identifiers, unique case-insensitive usernames, Argon2id hashes.
 - One-time administrator bootstrap, atomically claimed in the database; restarting does not reset credentials.

@@ -18,7 +18,8 @@ public final class TenantExecutionFilter extends OncePerRequestFilter {
         this.access = access; this.organizationAuthorization=organizationAuthorization;
     }
     @Override protected boolean shouldNotFilter(HttpServletRequest request) {
-        return !request.getRequestURI().substring(request.getContextPath().length()).startsWith("/api/");
+        String path=request.getRequestURI().substring(request.getContextPath().length());
+        return !path.startsWith("/api/")||path.equals("/api/tenants")||path.equals("/api/tenant-context");
     }
     /** 不使用 ThreadLocal 或客户端 tenantId，避免线程复用与伪造请求污染边界。 */
     @Override protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
@@ -30,13 +31,25 @@ public final class TenantExecutionFilter extends OncePerRequestFilter {
                 reject(response,401,"AUTHENTICATION_REQUIRED"); return;
             }
             var session = request.getSession(false);
-            if (session == null || !(session.getAttribute(TenantContextController.VERSION) instanceof Long version) || version < 1) {
+            Object verifiedVersion,verifiedTenant,verifiedMember;
+            if(auth instanceof org.springframework.security.oauth2.server.resource.authentication.BearerTokenAuthentication bearer){
+                // Bearer 上下文仅来自已验证授权及 Token 版本；Cookie 和任意 tenantId 请求头均不参与。
+                verifiedVersion=bearer.getTokenAttributes().get(RotatingAuthorizationService.VERSION);
+                verifiedTenant=bearer.getTokenAttributes().get(RotatingAuthorizationService.TENANT);
+                verifiedMember=bearer.getTokenAttributes().get(RotatingAuthorizationService.MEMBER);
+            }else{
+                verifiedVersion=session==null?null:session.getAttribute(TenantContextController.VERSION);
+                verifiedTenant=session==null?null:session.getAttribute(TenantContextController.TENANT);
+                verifiedMember=session==null?null:session.getAttribute(TenantContextController.MEMBER);
+            }
+            if (!(verifiedVersion instanceof Number numericVersion) || numericVersion.longValue() < 1) {
                 reject(response,409,"TENANT_REQUIRED"); return;
             }
+            long version=numericVersion.longValue();
             var accountId = UUID.fromString(auth.getName());
             var member = access.available(accountId).stream().filter(m ->
-                m.tenantId().toString().equals(session.getAttribute(TenantContextController.TENANT)) &&
-                m.memberId().toString().equals(session.getAttribute(TenantContextController.MEMBER))).findFirst();
+                m.tenantId().toString().equals(verifiedTenant) &&
+                m.memberId().toString().equals(verifiedMember)).findFirst();
             if (member.isEmpty()) { reject(response,409,"TENANT_REQUIRED"); return; }
             var m = member.get();
             // 版本头只作为陈旧请求保护，不作为租户来源；租户仍由服务端会话及成员目录决定。

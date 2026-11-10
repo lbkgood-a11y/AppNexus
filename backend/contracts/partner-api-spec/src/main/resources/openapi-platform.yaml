@@ -1,0 +1,2156 @@
+# 从正式 Controller 生成，禁止手工修改；权限说明见专项设计。
+openapi: 3.1.0
+info:
+  title: AppNexus Platform API
+  version: 1.0.0
+security:
+- platformSession: []
+paths:
+  /bff/platform/users/{id}:
+    put:
+      tags:
+      - platform-administration-controller
+      operationId: updateUser
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUser'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/User'
+  /bff/platform/users/{id}/state:
+    put:
+      tags:
+      - platform-administration-controller
+      operationId: userState
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/State'
+        required: true
+      responses:
+        '200':
+          description: OK
+  /bff/platform/users/{account}/roles:
+    get:
+      tags:
+      - authorization-management-controller
+      operationId: accountRoles
+      parameters:
+      - name: account
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/Assignment'
+    put:
+      tags:
+      - authorization-management-controller
+      operationId: replaceAccountRoles
+      parameters:
+      - name: account
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Replace'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/Assignment'
+  /bff/platform/tenants/{tenant}/roles/{role}/permissions:
+    get:
+      tags:
+      - authorization-management-controller
+      operationId: managedPermissions
+      parameters:
+      - name: tenant
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: role
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/AuthorizationAssignment'
+    put:
+      tags:
+      - authorization-management-controller
+      operationId: replaceManagedPermissions
+      parameters:
+      - name: tenant
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: role
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthorizationReplace'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/AuthorizationAssignment'
+  /bff/platform/tenants/{tenant}/roles/{id}:
+    put:
+      tags:
+      - role-management-controller
+      operationId: managedUpdate
+      parameters:
+      - name: tenant
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Update'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/Role'
+  /bff/platform/tenants/{tenant}/members/{member}/state:
+    put:
+      tags:
+      - platform-administration-controller
+      operationId: memberState
+      parameters:
+      - name: tenant
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: member
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/State'
+        required: true
+      responses:
+        '200':
+          description: OK
+  /bff/platform/tenants/{tenant}/members/{member}/roles:
+    get:
+      tags:
+      - authorization-management-controller
+      operationId: managedMemberRoles
+      parameters:
+      - name: tenant
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: member
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/Assignment'
+    put:
+      tags:
+      - authorization-management-controller
+      operationId: replaceManagedMemberRoles
+      parameters:
+      - name: tenant
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: member
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Replace'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/Assignment'
+  /bff/platform/tenants/{tenant}/members/{member}/authorizations:
+    get:
+      tags:
+      - authorization-management-controller
+      operationId: managedAuthorizations
+      parameters:
+      - name: tenant
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: member
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/Assignment'
+    put:
+      tags:
+      - authorization-management-controller
+      operationId: replaceManagedAuthorizations
+      parameters:
+      - name: tenant
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: member
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MemberAuthorizationReplace'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/Assignment'
+  /bff/platform/tenants/{id}:
+    put:
+      tags:
+      - platform-administration-controller
+      operationId: updateTenant
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateTenant'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/Tenant'
+  /bff/platform/tenants/{id}/state:
+    put:
+      tags:
+      - platform-administration-controller
+      operationId: tenantState
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/State'
+        required: true
+      responses:
+        '200':
+          description: OK
+  /bff/platform/roles/{role}/permissions:
+    get:
+      tags:
+      - authorization-management-controller
+      operationId: platformPermissions
+      parameters:
+      - name: role
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/AuthorizationAssignment'
+    put:
+      tags:
+      - authorization-management-controller
+      operationId: replacePlatformPermissions
+      parameters:
+      - name: role
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthorizationReplace'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/AuthorizationAssignment'
+  /bff/platform/roles/{id}:
+    put:
+      tags:
+      - role-management-controller
+      operationId: platformUpdate
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Update'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/Role'
+  /bff/platform/menus/{id}:
+    put:
+      tags:
+      - menu-management-controller
+      operationId: update
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Update'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/Menu'
+    delete:
+      tags:
+      - menu-management-controller
+      operationId: delete
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: version
+        in: query
+        required: true
+        schema:
+          type: integer
+          format: int64
+      responses:
+        '200':
+          description: OK
+  /bff/platform/clients/{id}:
+    put:
+      tags:
+      - integration-client-controller
+      operationId: update_1
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Change'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/View'
+  /bff/platform/users:
+    get:
+      tags:
+      - platform-administration-controller
+      operationId: users
+      parameters:
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 1
+      - name: size
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 20
+      - name: query
+        in: query
+        required: false
+        schema:
+          type: string
+          default: ''
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/PageUser'
+    post:
+      tags:
+      - platform-administration-controller
+      operationId: user
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewUser'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/User'
+  /bff/platform/users/{id}/revoke-sessions:
+    post:
+      tags:
+      - platform-administration-controller
+      operationId: revokeSessions
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: OK
+  /bff/platform/users/{id}/password-recovery:
+    post:
+      tags:
+      - platform-administration-controller
+      operationId: passwordRecovery
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/Ticket'
+  /bff/platform/tenants:
+    get:
+      tags:
+      - platform-administration-controller
+      operationId: tenants
+      parameters:
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 1
+      - name: size
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 20
+      - name: query
+        in: query
+        required: false
+        schema:
+          type: string
+          default: ''
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/PageTenant'
+    post:
+      tags:
+      - platform-administration-controller
+      operationId: tenant
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewTenant'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/Tenant'
+  /bff/platform/tenants/{tenant}/roles:
+    get:
+      tags:
+      - role-management-controller
+      operationId: managedList
+      parameters:
+      - name: tenant
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: query
+        in: query
+        required: false
+        schema:
+          type: string
+          default: ''
+      - name: status
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - ENABLED
+          - DISABLED
+      - name: roleType
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - SYSTEM
+          - CUSTOM
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 1
+      - name: pageSize
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 20
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/Page'
+    post:
+      tags:
+      - role-management-controller
+      operationId: managedCreate
+      parameters:
+      - name: tenant
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Create'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/Role'
+  /bff/platform/tenants/{tenant}/roles/{id}/delete:
+    post:
+      tags:
+      - role-management-controller
+      operationId: managedDelete
+      parameters:
+      - name: tenant
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Delete'
+        required: true
+      responses:
+        '200':
+          description: OK
+  /bff/platform/tenants/{tenant}/members:
+    get:
+      tags:
+      - platform-administration-controller
+      operationId: members
+      parameters:
+      - name: tenant
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 1
+      - name: size
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 20
+      - name: query
+        in: query
+        required: false
+        schema:
+          type: string
+          default: ''
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/PageMember'
+    post:
+      tags:
+      - platform-administration-controller
+      operationId: addMember
+      parameters:
+      - name: tenant
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewMember'
+        required: true
+      responses:
+        '200':
+          description: OK
+  /bff/platform/tenants/{tenant}/invitations:
+    get:
+      tags:
+      - tenant-invitation-controller
+      operationId: list
+      parameters:
+      - name: tenant
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/View'
+    post:
+      tags:
+      - tenant-invitation-controller
+      operationId: invite
+      parameters:
+      - name: tenant
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Invite'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/Created'
+  /bff/platform/tenants/{tenant}/clients:
+    get:
+      tags:
+      - integration-client-controller
+      operationId: list_1
+      parameters:
+      - name: tenant
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/View'
+    post:
+      tags:
+      - integration-client-controller
+      operationId: create
+      parameters:
+      - name: tenant
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Creation'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/Created'
+  /bff/platform/tasks/{id}/retry:
+    post:
+      tags:
+      - task-management-controller
+      operationId: retry
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: OK
+  /bff/platform/roles:
+    get:
+      tags:
+      - role-management-controller
+      operationId: platformList
+      parameters:
+      - name: query
+        in: query
+        required: false
+        schema:
+          type: string
+          default: ''
+      - name: status
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - ENABLED
+          - DISABLED
+      - name: roleType
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - SYSTEM
+          - CUSTOM
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 1
+      - name: pageSize
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 20
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/Page'
+    post:
+      tags:
+      - role-management-controller
+      operationId: platformCreate
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Create'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/Role'
+  /bff/platform/roles/{role}/policy-templates:
+    get:
+      tags:
+      - policy-template-controller
+      operationId: platformList_1
+      parameters:
+      - name: role
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/View'
+    post:
+      tags:
+      - policy-template-controller
+      operationId: platformSave
+      parameters:
+      - name: role
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Save'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/View'
+  /bff/platform/roles/{role}/policy-template-application:
+    post:
+      tags:
+      - policy-template-controller
+      operationId: platformApply
+      parameters:
+      - name: role
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Apply'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/AuthorizationAssignment'
+  /bff/platform/roles/{id}/delete:
+    post:
+      tags:
+      - role-management-controller
+      operationId: platformDelete
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Delete'
+        required: true
+      responses:
+        '200':
+          description: OK
+  /bff/platform/menus:
+    get:
+      tags:
+      - menu-management-controller
+      operationId: list_2
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Menu'
+    post:
+      tags:
+      - menu-management-controller
+      operationId: create_1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Create'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/Menu'
+  /bff/platform/clients/{id}/secret-rotation:
+    post:
+      tags:
+      - integration-client-controller
+      operationId: rotate
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Rotation'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/Created'
+  /bff/platform/tenants/{tenant}/roles/{id}/status:
+    patch:
+      tags:
+      - role-management-controller
+      operationId: managedStatus
+      parameters:
+      - name: tenant
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StatusChange'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/Role'
+  /bff/platform/roles/{id}/status:
+    patch:
+      tags:
+      - role-management-controller
+      operationId: platformStatus
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StatusChange'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/Role'
+  /bff/platform/users/{account}/effective-permissions:
+    get:
+      tags:
+      - authorization-management-controller
+      operationId: platformEffectivePermissions
+      parameters:
+      - name: account
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Explanation'
+  /bff/platform/tenants/{tenant}/members/{member}/effective-permissions:
+    get:
+      tags:
+      - authorization-management-controller
+      operationId: managedEffectivePermissions
+      parameters:
+      - name: tenant
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: member
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Explanation'
+  /bff/platform/tasks:
+    get:
+      tags:
+      - task-management-controller
+      operationId: list_3
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Task'
+  /bff/platform/permissions:
+    get:
+      tags:
+      - authorization-management-controller
+      operationId: platformPermissionCatalog
+      parameters:
+      - name: scopeType
+        in: query
+        required: false
+        schema:
+          type: string
+          default: PLATFORM
+          enum:
+          - PLATFORM
+          - TENANT
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Permission'
+  /bff/platform/menus/pages:
+    get:
+      tags:
+      - menu-management-controller
+      operationId: pages
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Page'
+  /bff/platform/field-policy-metadata:
+    get:
+      tags:
+      - authorization-management-controller
+      operationId: platformFields
+      parameters:
+      - name: scopeType
+        in: query
+        required: false
+        schema:
+          type: string
+          default: PLATFORM
+          enum:
+          - PLATFORM
+          - TENANT
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Descriptor'
+  /bff/platform/data-policy-metadata:
+    get:
+      tags:
+      - authorization-management-controller
+      operationId: platformDataPolicyMetadata
+      parameters:
+      - name: scopeType
+        in: query
+        required: false
+        schema:
+          type: string
+          default: PLATFORM
+          enum:
+          - PLATFORM
+          - TENANT
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ScopeSupport'
+  /bff/platform/authorization-reconciliation:
+    get:
+      tags:
+      - authorization-management-controller
+      operationId: reconciliation
+      parameters:
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 1
+      - name: size
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 50
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/Report'
+  /bff/platform/authorization-navigation:
+    get:
+      tags:
+      - authorization-management-controller
+      operationId: platformNavigation
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AuthorizationNode'
+  /bff/platform/audits:
+    get:
+      tags:
+      - audit-query-controller
+      operationId: platform
+      parameters:
+      - name: tenantId
+        in: query
+        required: false
+        schema:
+          type: string
+          format: uuid
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 1
+      - name: pageSize
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 20
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/Page'
+  /bff/platform/access:
+    get:
+      tags:
+      - platform-administration-controller
+      operationId: access
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/Access'
+  /bff/platform/tenants/{tenant}/members/{member}:
+    delete:
+      tags:
+      - platform-administration-controller
+      operationId: removeMember
+      parameters:
+      - name: tenant
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: member
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: OK
+  /bff/platform/tenants/{tenant}/invitations/{id}:
+    delete:
+      tags:
+      - tenant-invitation-controller
+      operationId: revoke
+      parameters:
+      - name: tenant
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: OK
+components:
+  schemas:
+    UpdateUser:
+      type: object
+      properties:
+        displayName:
+          type: string
+        email:
+          type: string
+        phoneNumber:
+          type: string
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        username:
+          type: string
+        displayName:
+          type: string
+        email:
+          type: string
+        emailVerified:
+          type: boolean
+        phoneNumber:
+          type: string
+        phoneVerified:
+          type: boolean
+        enabled:
+          type: boolean
+        restrictedFields:
+          type: array
+          items:
+            type: string
+          uniqueItems: true
+    State:
+      type: object
+      properties:
+        enabled:
+          type: boolean
+    Replace:
+      type: object
+      properties:
+        ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+          uniqueItems: true
+        version:
+          type: integer
+          format: int64
+        reason:
+          type: string
+    Assignment:
+      type: object
+      properties:
+        roleIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+          uniqueItems: true
+        authorityVersion:
+          type: integer
+          format: int64
+    AuthorizationReplace:
+      type: object
+      properties:
+        ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+          uniqueItems: true
+        dataPolicies:
+          type: array
+          items:
+            $ref: '#/components/schemas/DataPolicy'
+          uniqueItems: true
+        version:
+          type: integer
+          format: int64
+        reason:
+          type: string
+        fieldPolicies:
+          type: array
+          items:
+            $ref: '#/components/schemas/Policy'
+          uniqueItems: true
+    DataPolicy:
+      type: object
+      properties:
+        permissionId:
+          type: string
+          format: uuid
+        scopeType:
+          type: string
+          enum:
+          - DENY
+          - SELF
+          - ORGANIZATION
+          - ORGANIZATION_SUBTREE
+          - ALL
+        resourceType:
+          type: string
+        organizationIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+          uniqueItems: true
+    Policy:
+      type: object
+      properties:
+        resource:
+          type: string
+        field:
+          type: string
+        mode:
+          type: string
+          enum:
+          - HIDDEN
+          - MASKED
+    AuthorizationAssignment:
+      type: object
+      properties:
+        permissionIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+          uniqueItems: true
+        dataPolicies:
+          type: array
+          items:
+            $ref: '#/components/schemas/DataPolicy'
+          uniqueItems: true
+        roleVersion:
+          type: integer
+          format: int64
+        fieldPolicies:
+          type: array
+          items:
+            $ref: '#/components/schemas/Policy'
+          uniqueItems: true
+    Update:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        sortOrder:
+          type: integer
+          format: int32
+        version:
+          type: integer
+          format: int64
+    Role:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        scopeType:
+          type: string
+          enum:
+          - PLATFORM
+          - TENANT
+        tenantId:
+          type: string
+          format: uuid
+        roleType:
+          type: string
+          enum:
+          - SYSTEM
+          - CUSTOM
+        systemKey:
+          type: string
+        code:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        status:
+          type: string
+          enum:
+          - ENABLED
+          - DISABLED
+        sortOrder:
+          type: integer
+          format: int32
+        version:
+          type: integer
+          format: int64
+        updatedAt:
+          type: string
+          format: date-time
+    Grant:
+      type: object
+      properties:
+        roleId:
+          type: string
+          format: uuid
+        permissionIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+          uniqueItems: true
+        dataPolicies:
+          type: array
+          items:
+            $ref: '#/components/schemas/DataPolicy'
+          uniqueItems: true
+        expiresAt:
+          type: string
+          format: date-time
+        roleVersion:
+          type: integer
+          format: int64
+    MemberAuthorizationReplace:
+      type: object
+      properties:
+        grant:
+          $ref: '#/components/schemas/Grant'
+        version:
+          type: integer
+          format: int64
+        reason:
+          type: string
+    UpdateTenant:
+      type: object
+      properties:
+        name:
+          type: string
+    Tenant:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        enabled:
+          type: boolean
+    Menu:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        parentId:
+          type: string
+          format: uuid
+        type:
+          type: string
+          enum:
+          - DIRECTORY
+          - MENU
+          - BUTTON
+          - EXTERNAL
+        code:
+          type: string
+        titleZh:
+          type: string
+        titleEn:
+          type: string
+        path:
+          type: string
+        component:
+          type: string
+        icon:
+          type: string
+        permission:
+          type: string
+        sortOrder:
+          type: integer
+          format: int32
+        visible:
+          type: boolean
+        enabled:
+          type: boolean
+        version:
+          type: integer
+          format: int64
+        scope:
+          type: string
+          enum:
+          - PLATFORM
+          - TENANT
+          - AUTHENTICATED
+        externalUrl:
+          type: string
+    Change:
+      type: object
+      properties:
+        version:
+          type: integer
+          format: int32
+        enabled:
+          type: boolean
+        scopes:
+          type: array
+          items:
+            type: string
+          uniqueItems: true
+    View:
+      type: object
+      properties:
+        id:
+          type: string
+        tenantId:
+          type: string
+          format: uuid
+        name:
+          type: string
+        enabled:
+          type: boolean
+        version:
+          type: integer
+          format: int32
+        scopes:
+          type: array
+          items:
+            type: string
+          uniqueItems: true
+    NewUser:
+      type: object
+      properties:
+        username:
+          type: string
+        displayName:
+          type: string
+        email:
+          type: string
+        phoneNumber:
+          type: string
+        password:
+          type: string
+    Ticket:
+      type: object
+      properties:
+        token:
+          type: string
+    NewTenant:
+      type: object
+      properties:
+        requestId:
+          type: string
+          format: uuid
+        name:
+          type: string
+        administratorAccountId:
+          type: string
+          format: uuid
+    Create:
+      type: object
+      properties:
+        code:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        sortOrder:
+          type: integer
+          format: int32
+    Delete:
+      type: object
+      properties:
+        confirmationCode:
+          type: string
+        reason:
+          type: string
+        version:
+          type: integer
+          format: int64
+    NewMember:
+      type: object
+      properties:
+        accountId:
+          type: string
+          format: uuid
+    Invite:
+      type: object
+      properties:
+        accountId:
+          type: string
+          format: uuid
+    Created:
+      type: object
+      properties:
+        invitation:
+          $ref: '#/components/schemas/View'
+        token:
+          type: string
+    Creation:
+      type: object
+      properties:
+        name:
+          type: string
+        scopes:
+          type: array
+          items:
+            type: string
+          uniqueItems: true
+    Save:
+      type: object
+      properties:
+        name:
+          type: string
+    Apply:
+      type: object
+      properties:
+        templateId:
+          type: string
+          format: uuid
+        version:
+          type: integer
+          format: int64
+        reason:
+          type: string
+    Rotation:
+      type: object
+      properties:
+        version:
+          type: integer
+          format: int32
+    StatusChange:
+      type: object
+      properties:
+        status:
+          type: string
+          enum:
+          - ENABLED
+          - DISABLED
+        reason:
+          type: string
+        version:
+          type: integer
+          format: int64
+    PageUser:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/User'
+        total:
+          type: integer
+          format: int64
+    Explanation:
+      type: object
+      properties:
+        permissionCode:
+          type: string
+        effective:
+          type: boolean
+        sources:
+          type: array
+          items:
+            $ref: '#/components/schemas/Source'
+    Source:
+      type: object
+      properties:
+        roleId:
+          type: string
+          format: uuid
+        roleName:
+          type: string
+        effective:
+          type: boolean
+        inactiveReason:
+          type: string
+        scopeType:
+          type: string
+          enum:
+          - DENY
+          - SELF
+          - ORGANIZATION
+          - ORGANIZATION_SUBTREE
+          - ALL
+        organizationIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+          uniqueItems: true
+    PageTenant:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Tenant'
+        total:
+          type: integer
+          format: int64
+    Page:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Role'
+        total:
+          type: integer
+          format: int64
+        page:
+          type: integer
+          format: int32
+        pageSize:
+          type: integer
+          format: int32
+    Member:
+      type: object
+      properties:
+        memberId:
+          type: string
+          format: uuid
+        accountId:
+          type: string
+          format: uuid
+        username:
+          type: string
+        displayName:
+          type: string
+        enabled:
+          type: boolean
+        removed:
+          type: boolean
+    PageMember:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Member'
+        total:
+          type: integer
+          format: int64
+    Task:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        tenant:
+          type: string
+          format: uuid
+        type:
+          type: string
+        status:
+          type: string
+        attempts:
+          type: integer
+          format: int32
+        failureCode:
+          type: string
+    Permission:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        scopeType:
+          type: string
+          enum:
+          - PLATFORM
+          - TENANT
+        code:
+          type: string
+        resource:
+          type: string
+        action:
+          type: string
+        nameZh:
+          type: string
+        nameEn:
+          type: string
+        description:
+          type: string
+        enabled:
+          type: boolean
+        systemManaged:
+          type: boolean
+        version:
+          type: integer
+          format: int64
+    Descriptor:
+      type: object
+      properties:
+        resource:
+          type: string
+        field:
+          type: string
+        nameZh:
+          type: string
+        nameEn:
+          type: string
+        kind:
+          type: string
+          enum:
+          - EMAIL
+          - PHONE
+          - PERSON_NAME
+          - IDENTIFIER
+          - BANK_ACCOUNT
+          - TEXT
+        modes:
+          type: array
+          items:
+            type: string
+            enum:
+            - HIDDEN
+            - MASKED
+    ScopeSupport:
+      type: object
+      properties:
+        permissionId:
+          type: string
+          format: uuid
+        permissionCode:
+          type: string
+        scopeType:
+          type: string
+          enum:
+          - DENY
+          - SELF
+          - ORGANIZATION
+          - ORGANIZATION_SUBTREE
+          - ALL
+        resourceType:
+          type: string
+    Difference:
+      type: object
+      properties:
+        tenantId:
+          type: string
+          format: uuid
+        memberId:
+          type: string
+          format: uuid
+        permissionCode:
+          type: string
+        expiresAt:
+          type: string
+          format: date-time
+        coveredByUnified:
+          type: boolean
+    Report:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Difference'
+        total:
+          type: integer
+          format: int64
+        uncovered:
+          type: integer
+          format: int64
+        page:
+          type: integer
+          format: int32
+        size:
+          type: integer
+          format: int32
+    AuthorizationNode:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        parentId:
+          type: string
+          format: uuid
+        titleZh:
+          type: string
+        titleEn:
+          type: string
+        sortOrder:
+          type: integer
+          format: int32
+        resources:
+          type: array
+          items:
+            type: string
+        permission:
+          type: string
+    Access:
+      type: object
+      properties:
+        administrator:
+          type: boolean
+  securitySchemes:
+    platformSession:
+      type: apiKey
+      name: JSESSIONID
+      in: cookie

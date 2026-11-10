@@ -14,9 +14,8 @@ public class MyBatisOrganizationUnitRepository implements OrganizationUnitReposi
     private final OrganizationUnitMapper mapper;
     private final OrganizationAuthorizationMapper grants;
     private final OrganizationStructure structure;
-    private final AccessAuthorization authorization;
-    private final DataScopeAuthorization dataScopes;
-    public MyBatisOrganizationUnitRepository(OrganizationUnitMapper mapper,OrganizationAuthorizationMapper grants,OrganizationStructure structure,AccessAuthorization authorization,DataScopeAuthorization dataScopes){this.mapper=mapper;this.grants=grants;this.structure=structure;this.authorization=authorization;this.dataScopes=dataScopes;}
+    private final AccessPlanning planning;
+    public MyBatisOrganizationUnitRepository(OrganizationUnitMapper mapper,OrganizationAuthorizationMapper grants,OrganizationStructure structure,AccessPlanning planning){this.mapper=mapper;this.grants=grants;this.structure=structure;this.planning=planning;}
     public List<OrganizationUnit> findAll(){
         var context=context();byte[] tenant=tenantBytes(context);var scope=scope(context,"organization.unit:read");
         var rows=switch(scope.type()){
@@ -46,7 +45,8 @@ public class MyBatisOrganizationUnitRepository implements OrganizationUnitReposi
             throw new IllegalStateException("Verified tenant context required");
         return context;
     }
-    private DataScopeAuthorization.DataScope scope(VerifiedTenantContext context,String code){var subject=AccessAuthorization.Subject.tenant(context.accountId(),context.tenantId(),context.memberId());if(!authorization.hasPermission(subject,code))throw new SecurityException("Organization permission required");return dataScopes.resolveDataScope(subject,code,"organization.unit");}
+    /** 每个 CRUD 操作生成新的权威计划；SQL 只消费该计划行范围，不复用前一次读取权限。 */
+    private DataScopeAuthorization.DataScope scope(VerifiedTenantContext context,String code){var subject=AccessAuthorization.Subject.tenant(context.accountId(),context.tenantId(),context.memberId());return planning.plan(subject,code,"organization.unit").rows();}
     private java.util.List<String> ids(DataScopeAuthorization.DataScope scope){return scope.organizationIds().stream().map(UUID::toString).sorted().toList();}
     private byte[] tenantBytes(VerifiedTenantContext context){
         return java.nio.ByteBuffer.allocate(16).putLong(context.tenantId().getMostSignificantBits())

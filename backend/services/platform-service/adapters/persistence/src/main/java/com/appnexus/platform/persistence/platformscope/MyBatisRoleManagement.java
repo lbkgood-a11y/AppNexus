@@ -18,7 +18,8 @@ import org.springframework.transaction.annotation.Transactional;
 public class MyBatisRoleManagement implements RoleManagement {
     private static final String PLATFORM_OWNER="00000000-0000-0000-0000-000000000000";
     private final RoleMapper mapper;
-    public MyBatisRoleManagement(RoleMapper mapper){this.mapper=mapper;}
+    private final com.appnexus.platform.authorization.AuthorityEvents events;
+    public MyBatisRoleManagement(RoleMapper mapper,com.appnexus.platform.authorization.AuthorityEvents events){this.mapper=mapper;this.events=events;}
 
     @Override public Page list(Context context,Query input){
         var c=context(context);var q=query(input);requireRead(c);
@@ -49,6 +50,7 @@ public class MyBatisRoleManagement implements RoleManagement {
         if(current.status()==status)return current;
         if(status==Status.DISABLED){requiredReason(reason);if(protectedSystem(current))throw error("ROLE_SYSTEM_DISABLE_FORBIDDEN","受保护系统角色不能禁用");}
         if(mapper.status(owner(c),roleId.toString(),version,status.name(),c.actorAccountId().toString())!=1)conflict();
+        events.invalidated(c.tenantId(),roleId);
         mapper.audit(roleId.toString(),scope(c).name(),text(c.tenantId()),c.actorAccountId().toString(),status==Status.ENABLED?"ROLE_ENABLED":"ROLE_DISABLED",blank(reason));
         return role(Objects.requireNonNull(mapper.find(owner(c),roleId.toString())));
     }
@@ -60,6 +62,7 @@ public class MyBatisRoleManagement implements RoleManagement {
         if(current.status()!=Status.DISABLED)throw error("ROLE_NOT_DISABLED","请先禁用角色");
         if(!current.code().equals(confirmationCode))throw error("ROLE_CONFIRMATION_MISMATCH","确认编码不匹配");
         if(mapper.delete(owner(c),roleId.toString(),version,reason.trim(),c.actorAccountId().toString())!=1)conflict();
+        events.invalidated(c.tenantId(),roleId);
         mapper.audit(roleId.toString(),scope(c).name(),text(c.tenantId()),c.actorAccountId().toString(),"ROLE_DELETED",reason.trim());
     }
 

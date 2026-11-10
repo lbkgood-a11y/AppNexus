@@ -41,6 +41,12 @@ public interface PlatformAdministration {
     User updateUser(UUID actor, UUID target, String displayName, String email, String phoneNumber);
     /** 停用立即阻止后续认证请求；不能停用自己或任何平台管理员。 */
     void setUserEnabled(UUID actor, UUID target, boolean enabled);
+    /**
+     * 管理员强制结束目标账号的全部认证，不修改密码或账号启停状态。
+     * @param actor 已认证的平台管理员；不能通过该入口撤销本人
+     * @param target 目标有效账号 UUID；凭据版本推进和 OAuth 撤销、审计同事务提交
+     */
+    void revokeUserSessions(UUID actor, UUID target);
     /** @param page 从 1 开始；size 范围 1–100，query 最长 100 字符 */
     Page<Tenant> tenants(UUID actor, int page, int size, String query);
     /** 原子创建租户、首个管理员成员与组织能力；重试必须使用相同 requestId 和参数。 */

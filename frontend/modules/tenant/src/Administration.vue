@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from "vue";
+import { computed, onMounted, onBeforeUnmount, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { ElMessage } from "element-plus";
 import { AppIcon } from "@appnexus/icons";
 import { BusinessWorkspace, ManagedDialog, ManagementTable, type ManagementColumn } from "@appnexus/ui";
 import type { AdministrationApi, DirectoryUser, DirectoryTenant, DirectoryMember } from "./administration";
+import IntegrationClients from "./IntegrationClients.vue";
 
 /** 平台开通流程组合 Element Plus，不构建新的表格、表单或弹层系统。 */
 const props=defineProps<{
@@ -17,6 +18,11 @@ const emit=defineEmits<{ enter: [tenantId: string] }>();
 const {t}=useI18n();
 const allowed=ref(false),loading=ref(false),saving=ref(false),error=ref("");
 const filterExpanded=ref(true);
+/** 重置凭证仅保留到弹窗关闭，不进入日志、URL、列表或浏览器持久存储。 */
+const recoveryTicket=ref("");
+const clientTenant=ref<DirectoryTenant>();
+const invitation=ref<{id:string;token:string}>();
+const inviteInstead=ref(false);
 const tab=ref<"users"|"tenants"|"members">(props.section),tenant=ref<DirectoryTenant>(),users=ref<DirectoryUser[]>([]),tenants=ref<DirectoryTenant[]>([]),members=ref<DirectoryMember[]>([]);
 const page=ref(1),total=ref(0),query=ref("");
 const submittedQuery=ref("");
@@ -29,7 +35,7 @@ const columns=computed<ManagementColumn[]>(()=>[
  {key:'name',prop:tab.value==='tenants'?'name':'displayName',label:t(tab.value==='tenants'?'tenant.name':'administration.displayName'),minWidth:160},
  ...(tab.value==='users'?[{key:'email',label:t('administration.email'),minWidth:220},{key:'phone',label:t('administration.phoneNumber'),minWidth:170}]:[]),
  {key:'status',label:t('administration.status'),width:100},
- {key:'operations',label:t('tenant.operation'),minWidth:tab.value==='tenants'?320:tab.value==='users'?180:140,fixed:'right'}
+ {key:'operations',label:t('tenant.operation'),minWidth:tab.value==='tenants'?400:tab.value==='users'?340:140,fixed:'right'}
 ]);
 const dialog=ref<"user"|"userEdit"|"tenant"|"tenantEdit"|"member"|"">("");
 const editingUser=ref<DirectoryUser>();
@@ -71,6 +77,7 @@ async function searchUsers(value="") {
 }
 /** 密码只存在表单内存，关闭弹窗或提交成功即清除。 */
 function open(kind: "user"|"tenant"|"member") {
+ inviteInstead.value=false;
  editingUser.value=undefined;editingTenant.value=undefined;Object.assign(form,{username:"",displayName:"",email:"",phoneNumber:"",password:"",name:"",accountId:""});
  creationId=crypto.randomUUID();dialog.value=kind;searchError.value="";
  if(kind!=="user")void searchUsers();
@@ -101,7 +108,7 @@ async function save() {
   else if(dialog.value==="userEdit"&&editingUser.value)await props.api.updateUser(editingUser.value.id,form.displayName,form.email,form.phoneNumber);
   else if(dialog.value==="tenant")await props.api.createTenant(creationId,form.name,form.accountId);
   else if(dialog.value==="tenantEdit"&&editingTenant.value)await props.api.updateTenant(editingTenant.value.id,form.name);
-  else if(tenant.value)await props.api.addMember(tenant.value.id,form.accountId);
+  else if(tenant.value){if(inviteInstead.value){const value=await props.api.inviteMember(tenant.value.id,form.accountId);invitation.value={id:value.invitation.id,token:value.token};}else await props.api.addMember(tenant.value.id,form.accountId);}
   dialog.value="";clearPassword();
  });
 }
@@ -114,7 +121,15 @@ async function removeMember(row: DirectoryMember) {
  await write(()=>props.api.removeMember(tenant.value!.id,row.memberId));
 }
 const nameRules=[{required:true,whitespace:true,max:100,message:t("administration.invalidName"),trigger:"blur"}];
+/** 管理员先确认核实本人身份；服务端仍拒绝本人、平台管理员及无权目标。 */
+async function issueRecovery(row:DirectoryUser){
+ saving.value=true;error.value="";
+ try{recoveryTicket.value=(await props.api.issuePasswordRecovery(row.id)).token;}
+ catch(cause){error.value=props.errorText(cause);}
+ finally{saving.value=false;}
+}
 onMounted(load);
+onBeforeUnmount(()=>{recoveryTicket.value="";form.password="";invitation.value=undefined;});
 </script>
 <template>
  <div class="management-page platform-administration">
@@ -145,9 +160,16 @@ onMounted(load);
     <template #phone="{row}"><div class="contact-cell"><span>{{(row as DirectoryUser).phoneNumber||'—'}}</span><el-tag v-if="(row as DirectoryUser).phoneNumber" size="small" :type="(row as DirectoryUser).phoneVerified?'success':'info'">{{t((row as DirectoryUser).phoneVerified?'administration.verified':'administration.unverified')}}</el-tag></div></template>
     <template #operations="{row}">
      <el-button v-if="tab==='tenants'" link type="primary" :disabled="loading||saving" @click="manageMembers(row as DirectoryTenant)">{{t('administration.members')}}</el-button>
+     <el-button v-if="tab==='tenants'" link type="primary" :disabled="loading||saving" @click="clientTenant=row as DirectoryTenant">{{t('administration.clients')}}</el-button>
      <el-button v-if="tab==='tenants'" link type="primary" :disabled="loading||saving" @click="editTenant(row as DirectoryTenant)">{{t('administration.editTenant')}}</el-button>
      <el-button v-if="tab==='tenants'&&row.enabled" link type="primary" :disabled="loading||saving" @click="emit('enter',(row as DirectoryTenant).id)">{{t('administration.enterOrganization')}}</el-button>
      <el-button v-if="tab==='users'" link type="primary" :disabled="loading||saving" @click="editUser(row as DirectoryUser)">{{t('administration.editUser')}}</el-button>
+     <el-popconfirm v-if="tab==='users'&&row.enabled" :title="t('administration.confirmRecovery')" :confirm-button-text="t('administration.issueRecovery')" :cancel-button-text="t('organization.cancel')" @confirm="issueRecovery(row as DirectoryUser)">
+      <template #reference><el-button link type="danger" :disabled="loading||saving">{{t('administration.issueRecovery')}}</el-button></template>
+     </el-popconfirm>
+     <el-popconfirm v-if="tab==='users'&&row.enabled" :title="t('administration.confirmRevokeSessions')" :confirm-button-text="t('administration.revokeSessions')" :cancel-button-text="t('organization.cancel')" @confirm="write(()=>props.api.revokeUserSessions((row as DirectoryUser).id))">
+      <template #reference><el-button link type="danger" :disabled="loading||saving">{{t('administration.revokeSessions')}}</el-button></template>
+     </el-popconfirm>
      <el-popconfirm v-if="tab==='members'&&!(row as DirectoryMember).removed" :title="t('administration.confirmRemoveMember')" :confirm-button-text="t('administration.removeMember')" :cancel-button-text="t('organization.cancel')" @confirm="removeMember(row as DirectoryMember)">
       <template #reference><el-button link type="danger" :disabled="loading||saving">{{t('administration.removeMember')}}</el-button></template>
      </el-popconfirm>
@@ -177,8 +199,22 @@ onMounted(load);
     </el-form-item>
     <el-alert v-if="searchError" :title="searchError" type="error" :closable="false" />
     <p v-if="dialog==='tenant'" class="mb-4">{{t('administration.firstAdministratorHint')}}</p>
+    <el-checkbox v-if="dialog==='member'" v-model="inviteInstead" :disabled="saving">{{t('administration.inviteInstead')}}</el-checkbox>
     <div class="flex justify-end gap-2"><el-button :disabled="saving" @click="dialog=''">{{t('organization.cancel')}}</el-button><el-button type="primary" native-type="submit" :loading="saving">{{t('organization.save')}}</el-button></div>
    </el-form>
+  </ManagedDialog>
+  <ManagedDialog :model-value="Boolean(recoveryTicket)" :title="t('administration.issueRecovery')" width="min(560px, calc(100vw - 32px))" @update:model-value="value=>{if(!value)recoveryTicket=''}" @closed="recoveryTicket=''">
+   <el-alert :title="t('administration.recoveryTicketHint')" type="warning" :closable="false" class="mb-4" />
+   <code style="overflow-wrap:anywhere">{{recoveryTicket}}</code>
+   <div class="flex justify-end mt-4"><el-button @click="recoveryTicket=''">{{t('account.mfaRecoverySaved')}}</el-button></div>
+  </ManagedDialog>
+  <ManagedDialog :model-value="Boolean(clientTenant)" :title="t('administration.clients')" width="min(1000px, calc(100vw - 32px))" @update:model-value="value=>{if(!value)clientTenant=undefined}">
+   <IntegrationClients v-if="clientTenant" :key="clientTenant.id" :tenant-id="clientTenant.id" :api="props.api" :error-text="props.errorText" />
+  </ManagedDialog>
+  <ManagedDialog :model-value="Boolean(invitation)" :title="t('administration.invitationCreated')" width="min(560px, calc(100vw - 32px))" @update:model-value="value=>{if(!value)invitation=undefined}">
+   <el-alert :title="t('administration.invitationDeliveryHint')" type="warning" :closable="false" class="mb-4" />
+   <p>{{t('account.invitationId')}}</p><code>{{invitation?.id}}</code>
+   <p class="mt-4">{{t('account.invitationToken')}}</p><code style="overflow-wrap:anywhere">{{invitation?.token}}</code>
   </ManagedDialog>
  </div>
 </template>

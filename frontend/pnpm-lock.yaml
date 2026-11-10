@@ -19,6 +19,9 @@ importers:
       '@appnexus/icons':
         specifier: workspace:*
         version: link:../../infra/icons
+      '@appnexus/localization':
+        specifier: workspace:*
+        version: link:../../modules/localization
       '@appnexus/organization':
         specifier: workspace:*
         version: link:../../modules/organization

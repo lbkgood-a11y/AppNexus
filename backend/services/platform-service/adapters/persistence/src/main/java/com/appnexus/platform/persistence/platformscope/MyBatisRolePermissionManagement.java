@@ -16,7 +16,8 @@ public class MyBatisRolePermissionManagement implements RolePermissionManagement
     private static final String PLATFORM_OWNER="00000000-0000-0000-0000-000000000000";
     private final RolePermissionMapper mapper;
     private final FieldCatalog fieldCatalog;
-    public MyBatisRolePermissionManagement(RolePermissionMapper mapper,FieldCatalog fieldCatalog){this.mapper=mapper;this.fieldCatalog=fieldCatalog;}
+    private final com.appnexus.platform.authorization.AuthorityEvents events;
+    public MyBatisRolePermissionManagement(RolePermissionMapper mapper,FieldCatalog fieldCatalog,com.appnexus.platform.authorization.AuthorityEvents events){this.mapper=mapper;this.fieldCatalog=fieldCatalog;this.events=events;}
 
     @Override @Transactional public Assignment get(RoleManagement.Context context,UUID roleId){
         var c=context(context);requireAuthority(c);var role=role(c,roleId);return assignment(roleId,version(role));
@@ -37,6 +38,7 @@ public class MyBatisRolePermissionManagement implements RolePermissionManagement
         mapper.deletePermissions(roleId.toString());
         if(!requested.isEmpty())mapper.insertPermissions(roleId.toString(),scope(c),c.actorAccountId().toString(),requested.stream().map(UUID::toString).toList());
         if(mapper.bumpVersion(roleId.toString(),current,c.actorAccountId().toString())!=1)conflict();
+        events.invalidated(c.tenantId(),roleId);
         mapper.audit(scope(c),text(c.tenantId()),c.actorAccountId().toString(),roleId.toString(),reason.trim(),json(before),json(requested));
         return new Assignment(Set.copyOf(requested),current+1);
     }
@@ -62,6 +64,7 @@ public class MyBatisRolePermissionManagement implements RolePermissionManagement
         for(var policy:policies){mapper.insertPolicy(roleId.toString(),policy.permissionId().toString(),policy.scopeType().name(),policy.resourceType(),c.actorAccountId().toString());if(!policy.organizationIds().isEmpty())mapper.insertPolicyOrganizations(roleId.toString(),policy.permissionId().toString(),c.tenantId().toString(),strings(policy.organizationIds()));}
         mapper.clearFields(roleId.toString());for(var field:fields)mapper.field(roleId.toString(),field.resource(),field.field(),field.mode().name());
         if(mapper.bumpVersion(roleId.toString(),current,c.actorAccountId().toString())!=1)conflict();
+        events.invalidated(c.tenantId(),roleId);
         mapper.audit(scope(c),text(c.tenantId()),c.actorAccountId().toString(),roleId.toString(),reason.trim(),authorizationJson(before,readPoliciesForAudit,fieldsBefore),authorizationJson(requested,policies,fields));
         return new AuthorizationAssignment(Set.copyOf(requested),Set.copyOf(policies),current+1,Set.copyOf(fields));
     }

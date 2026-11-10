@@ -19,10 +19,13 @@ export interface FieldPolicy {resource:string;field:string;mode:"HIDDEN"|"MASKED
 export interface FieldDescriptor {resource:string;field:string;nameZh:string;nameEn:string;kind:"EMAIL"|"PHONE"|"PERSON_NAME"|"IDENTIFIER"|"BANK_ACCOUNT"|"TEXT";modes:FieldPolicy["mode"][]}
 export interface AuthorizationAssignment{permissionIds:string[];dataPolicies:DataPolicy[];roleVersion:number;fieldPolicies?:FieldPolicy[]}
 export interface AuthorizationOption{id:string;name:string}
+/** 当前管理域的角色策略模板摘要，不携带业务原值。 */
+export interface PolicyTemplate { id: string; name: string }
 /** 授权工作台请求端口；完整快照保存由应用适配器附加 CSRF，不在领域组件读取会话。 */
 /** 授权菜单元数据仅用于定位功能，resources 来自服务端受控页面映射。 */
 export interface AuthorizationMenu{id:string;parentId:string|null;titleZh:string;titleEn:string;sortOrder:number;resources:string[];permission:string|null}
-export interface AuthorizationCenterApi{menus:()=>Promise<AuthorizationMenu[]>;permissions:()=>Promise<PermissionItem[]>;metadata:()=>Promise<ScopeSupport[]>;fields:()=>Promise<FieldDescriptor[]>;assignment:(roleId:string)=>Promise<AuthorizationAssignment>;replace:(roleId:string,input:{ids:string[];dataPolicies:DataPolicy[];fieldPolicies:FieldPolicy[];version:number;reason:string})=>Promise<AuthorizationAssignment>;organizationOptions?:()=>Promise<AuthorizationOption[]>}
+/** 模板能力仅在真实后端已接入的管理域提供；应用使用当前角色版本与原因。 */
+export interface AuthorizationCenterApi{templates?:{list:(role:string)=>Promise<PolicyTemplate[]>;save:(role:string,name:string)=>Promise<PolicyTemplate>;apply:(role:string,template:string,version:number,reason:string)=>Promise<AuthorizationAssignment>};menus:()=>Promise<AuthorizationMenu[]>;permissions:()=>Promise<PermissionItem[]>;metadata:()=>Promise<ScopeSupport[]>;fields:()=>Promise<FieldDescriptor[]>;assignment:(roleId:string)=>Promise<AuthorizationAssignment>;replace:(roleId:string,input:{ids:string[];dataPolicies:DataPolicy[];fieldPolicies:FieldPolicy[];version:number;reason:string})=>Promise<AuthorizationAssignment>;organizationOptions?:()=>Promise<AuthorizationOption[]>}
 
 /** 成员独立授权分支；expiresAt 为 UTC ISO 时间或 null（长期），角色增权不自动改变此快照。 */
 export interface MemberGrant {roleId:string;permissionIds:string[];dataPolicies:DataPolicy[];expiresAt:string|null;roleVersion:number}

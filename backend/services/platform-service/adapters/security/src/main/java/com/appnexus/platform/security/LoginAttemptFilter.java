@@ -30,13 +30,15 @@ public final class LoginAttemptFilter extends OncePerRequestFilter {
     }
     @Override protected boolean shouldNotFilter(HttpServletRequest request) {
         return !request.getMethod().equals("POST") || !(request.getRequestURI().equals(request.getContextPath() + "/login") ||
-            request.getRequestURI().equals(request.getContextPath() + "/bff/account/password"));
+            request.getRequestURI().equals(request.getContextPath() + "/bff/account/password") ||
+            request.getRequestURI().startsWith(request.getContextPath() + "/login/recovery") ||
+            request.getRequestURI().startsWith(request.getContextPath() + "/bff/account/mfa/"));
     }
     @Override protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
             FilterChain chain) throws ServletException, IOException {
         try {
             String ip = request.getRemoteAddr();
-            String username = request.getRequestURI().endsWith("/bff/account/password") && request.getUserPrincipal() != null
+            String username = request.getRequestURI().startsWith(request.getContextPath()+"/bff/account/") && request.getUserPrincipal() != null
                 ? request.getUserPrincipal().getName()
                 : Objects.toString(request.getParameter("username"), "").toLowerCase(Locale.ROOT);
             long address = redis.execute(COUNT, List.of("appnexus:login:ip:" + hash(ip)), "60");
