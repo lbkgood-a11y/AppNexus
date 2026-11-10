@@ -46,11 +46,11 @@ watch(() => props.roleId, load, { immediate: true });
     <p>{{ t("authorizationCenter.templateHint") }}</p>
     <el-form inline @submit.prevent="save">
       <el-form-item :label="t('authorizationCenter.templateName')"><el-input v-model="name" :maxlength="100" :disabled="busy || loading || saving || dirty" /></el-form-item>
-      <el-form-item><el-button :loading="saving" :disabled="busy || loading || dirty || !name.trim() || !!error" native-type="submit">{{ t("authorizationCenter.saveTemplate") }}</el-button></el-form-item>
+      <el-form-item><el-button v-operation="'@role:grant'" :loading="saving" :disabled="busy || loading || dirty || !name.trim() || !!error" native-type="submit">{{ t("authorizationCenter.saveTemplate") }}</el-button></el-form-item>
     </el-form>
     <el-form inline @submit.prevent="apply">
       <el-form-item :label="t('authorizationCenter.templates')"><el-select v-model="selected" filterable :disabled="busy || loading || saving || dirty" class="template-select"><el-option v-for="item in templates" :key="item.id" :label="item.name" :value="item.id" /></el-select></el-form-item>
-      <el-form-item><el-button type="warning" :loading="saving" :disabled="busy || loading || dirty || !selected || !reason.trim() || !!error" native-type="submit">{{ t("authorizationCenter.applyTemplate") }}</el-button></el-form-item>
+      <el-form-item><el-button v-operation="'@role:grant'" type="warning" :loading="saving" :disabled="busy || loading || dirty || !selected || !reason.trim() || !!error" native-type="submit">{{ t("authorizationCenter.applyTemplate") }}</el-button></el-form-item>
     </el-form>
   </section>
 </template>

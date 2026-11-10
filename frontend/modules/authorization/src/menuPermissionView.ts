@@ -1,6 +1,6 @@
 import type {AuthorizationMenu,PermissionItem} from './index';
 
-/** 组合节点只组织现有权限，同一权限可以出现在多个页面，草稿仍以权限 ID 去重。 */
+/** 组合节点仅组织页面明确登记的操作；资源元数据不展开权限，共享操作仍按权限 ID 去重。 */
 export interface MenuPermissionNode {id:string;label:string;items:PermissionItem[];children:MenuPermissionNode[]}
 
 /**
@@ -16,7 +16,8 @@ export function menuPermissionTree(menus:AuthorizationMenu[],permissions:Permiss
  const ordered=[...menus].sort((a,b)=>a.sortOrder-b.sortOrder||(a.id<b.id?-1:1));
  const visit=(parentId:string|null,path:Set<string>):MenuPermissionNode[]=>ordered.filter(menu=>(menu.parentId??null)===parentId).flatMap(menu=>{
   if(path.has(menu.id))return [];
-  const items=permissions.filter(item=>menu.resources.includes(item.resource)||item.code===menu.permission);
+  // 页面只展示构建契约登记的真实操作，资源关联不再隐式授予或展示整个资源。
+  const items=permissions.filter(item=>menu.operations?.includes(item.code)||item.code===menu.permission);
   items.forEach(item=>linked.add(item.id));
   const children=visit(menu.id,new Set([...path,menu.id]));
   return items.length||children.length?[{id:menu.id,label:chinese?menu.titleZh:menu.titleEn,items,children}]:[];

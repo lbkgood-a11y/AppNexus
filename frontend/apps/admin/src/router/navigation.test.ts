@@ -46,4 +46,12 @@ describe("navigation lifecycle",()=>{
     state.get.mockResolvedValueOnce({tenantId:"other",contextVersion:1,items:[]});
     await expect(loadNavigation()).rejects.toThrow("context");
   });
+  it("keeps task workspace and designer as independent authorized routes",async()=>{
+    const task={...page,id:"workflow",component:"workflow/index",path:"/workflow/center"};
+    const designer={...page,id:"designer",component:"workflow/designer",path:"/workflow/designer",permission:"workflow:read"};
+    state.get.mockResolvedValueOnce({tenantId:null,contextVersion:0,items:[task,designer]});await loadNavigation();
+    expect(canVisitBusinessPath(task.path)).toBe(true);expect(canVisitBusinessPath(designer.path)).toBe(true);
+    state.get.mockResolvedValueOnce({tenantId:null,contextVersion:0,items:[task]});await loadNavigation(true);
+    expect(canVisitBusinessPath(task.path)).toBe(true);expect(canVisitBusinessPath(designer.path)).toBe(false);
+  });
 });

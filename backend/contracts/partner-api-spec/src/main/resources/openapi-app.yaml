@@ -1362,6 +1362,20 @@ paths:
                   - UPDATE
                   - DELETE
                   - GRANT
+  /api/operation-capabilities:
+    get:
+      tags:
+      - operation-capabilities-controller
+      operationId: tenant
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  type: string
   /api/configuration/parameters:
     get:
       tags:
@@ -1414,7 +1428,7 @@ paths:
     get:
       tags:
       - audit-query-controller
-      operationId: tenant
+      operationId: tenant_1
       parameters:
       - name: page
         in: query
@@ -2224,9 +2238,9 @@ components:
       properties:
         token:
           type: string
-        headerName:
-          type: string
         parameterName:
+          type: string
+        headerName:
           type: string
     CsrfView:
       type: object
@@ -2472,6 +2486,10 @@ components:
             type: string
         permission:
           type: string
+        operations:
+          type: array
+          items:
+            type: string
   securitySchemes:
     firstParty:
       type: http

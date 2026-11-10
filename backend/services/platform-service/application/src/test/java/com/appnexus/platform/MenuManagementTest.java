@@ -118,4 +118,17 @@ class MenuManagementTest extends DatabaseTestSupport {
  private MenuManagement.Command external(UUID parent,String code,String address,MenuManagement.Scope scope,int sort,boolean visible){
   return new MenuManagement.Command(parent,MenuManagement.Type.EXTERNAL,code,"外部入口","External entry",null,null,null,null,sort,visible,true,scope,address);
  }
+ /** 同一资源不同页面只登记实际操作，菜单未实现的发布/独立启停不再可授予。 */
+ @Test void pageOperationsMatchActualActions(){
+  var nodes=navigation.authorizationCatalog(MenuManagement.Scope.PLATFORM);
+  assertThat(nodes.stream().filter(item->item.titleZh().equals("平台角色")).findFirst().orElseThrow().operations())
+   .contains("access.role:create","access.role:delete").doesNotContain("access.role:grant");
+  assertThat(nodes.stream().filter(item->item.titleZh().equals("授权中心")).findFirst().orElseThrow().operations())
+   .contains("access.role:read","access.role:grant").doesNotContain("access.role:create","access.role:delete","access.role:enable");
+  assertThat(nodes.stream().filter(item->item.permission()!=null&&item.permission().equals("configuration.menu:read")).findFirst().orElseThrow().operations())
+   .containsExactly("configuration.menu:read","configuration.menu:create","configuration.menu:update","configuration.menu:delete");
+  assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM access_permission WHERE enabled=TRUE AND code IN ('configuration.menu:enable','configuration.menu:publish')",Integer.class)).isZero();
+  for(var page:com.appnexus.platform.configuration.NavigationPages.all())for(String operation:com.appnexus.platform.configuration.NavigationPages.operations(page.key()))
+   assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM access_permission WHERE enabled=TRUE AND code=?",Integer.class,operation)).as(page.key()+" -> "+operation).isEqualTo(1);
+ }
 }

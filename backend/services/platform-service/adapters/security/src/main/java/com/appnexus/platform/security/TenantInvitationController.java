@@ -15,11 +15,11 @@ public class TenantInvitationController {
     public record Invite(UUID accountId){}
     /** 凭证不进入 URL 或日志，仅在本人 CSRF 请求体中提交。 */
     public record Acceptance(UUID invitationId,String token){@Override public String toString(){return "Acceptance[redacted]";}}
-    @EndpointOperation("tenant.member:read") @GetMapping("/bff/platform/tenants/{tenant}/invitations")
+    @EndpointOperation("tenant.invitation:read") @GetMapping("/bff/platform/tenants/{tenant}/invitations")
     ResponseEntity<List<TenantInvitations.View>> list(Authentication auth,@PathVariable UUID tenant){return ok(invitations.list(UUID.fromString(auth.getName()),tenant));}
-    @EndpointOperation("tenant:update") @PostMapping("/bff/platform/tenants/{tenant}/invitations")
+    @EndpointOperation("tenant.invitation:create") @PostMapping("/bff/platform/tenants/{tenant}/invitations")
     ResponseEntity<TenantInvitations.Created> invite(Authentication auth,@PathVariable UUID tenant,@RequestBody Invite input){return ok(invitations.invite(UUID.fromString(auth.getName()),tenant,input.accountId()));}
-    @EndpointOperation("tenant:update") @DeleteMapping("/bff/platform/tenants/{tenant}/invitations/{id}")
+    @EndpointOperation("tenant.invitation:revoke") @DeleteMapping("/bff/platform/tenants/{tenant}/invitations/{id}")
     ResponseEntity<Void> revoke(Authentication auth,@PathVariable UUID tenant,@PathVariable UUID id){invitations.revoke(UUID.fromString(auth.getName()),tenant,id);return ResponseEntity.noContent().build();}
     /** 本人激活只创建成员身份，租户选择/业务授权仍分别执行。 */
     @PostMapping("/bff/account/tenant-invitations/acceptance")

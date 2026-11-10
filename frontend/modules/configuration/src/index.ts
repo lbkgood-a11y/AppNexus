@@ -11,7 +11,8 @@ export interface MenuNode { id:string;parentId?:string|null;type:MenuType;code:s
 /** 创建和更新请求字段；更新版本由 API 适配器从 MenuNode 单独提交。 */
 export type MenuInput=Omit<MenuNode,"id"|"version">;
 /** 菜单管理请求边界；领域组件不依赖应用内 HTTP 或 CSRF 实现。 */
-export interface MenuManagementApi { pages:()=>Promise<NavigationPage[]>;list:()=>Promise<MenuNode[]>;create:(input:MenuInput)=>Promise<MenuNode>;update:(id:string,version:number,input:MenuInput)=>Promise<MenuNode>;remove:(id:string,version:number)=>Promise<void> }
+/** 按钮能力来自后端逐操作授权，不能把平台身份当作全部操作权限。 */
+export interface MenuManagementApi { capabilities:()=>Promise<string[]>;pages:()=>Promise<NavigationPage[]>;list:()=>Promise<MenuNode[]>;create:(input:MenuInput)=>Promise<MenuNode>;update:(id:string,version:number,input:MenuInput)=>Promise<MenuNode>;remove:(id:string,version:number)=>Promise<void> }
 
 /** 租户业务字典状态；停用保留历史含义，但不应进入新的业务选择。 */
 export type DictionaryStatus="ENABLED"|"DISABLED";

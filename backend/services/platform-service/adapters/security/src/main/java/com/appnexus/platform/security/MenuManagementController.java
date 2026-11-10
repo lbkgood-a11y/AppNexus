@@ -14,7 +14,15 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/bff/platform/menus")
 public class MenuManagementController {
     private final MenuManagement service;
-    public MenuManagementController(MenuManagement service){this.service=service;}
+    private final com.appnexus.platform.authorization.AccessAuthorization authorization;
+    public MenuManagementController(MenuManagement service,com.appnexus.platform.authorization.AccessAuthorization authorization){this.service=service;this.authorization=authorization;}
+    /** 返回真实可执行操作用于按钮展示；写入仍由用例再次校验，失败不返回默认全部权限。 */
+    @EndpointOperation("configuration.menu:read") @GetMapping("/capabilities")
+    ResponseEntity<List<String>> capabilities(Authentication authentication){return result(()->{
+        service.list(actor(authentication));
+        var subject=com.appnexus.platform.authorization.AccessAuthorization.Subject.platform(actor(authentication));
+        return List.of("read","create","update","delete").stream().filter(action->authorization.hasPermission(subject,"configuration.menu:"+action)).toList();
+    });}
 
     /** 更新请求显式携带乐观锁版本，禁止静默覆盖其他管理员的修改。 */
     public record Update(long version,UUID parentId,MenuManagement.Type type,String code,String titleZh,String titleEn,String path,String component,String icon,String permission,int sortOrder,boolean visible,boolean enabled,MenuManagement.Scope scope,String externalUrl){

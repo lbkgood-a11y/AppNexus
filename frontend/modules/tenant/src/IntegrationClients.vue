@@ -57,15 +57,15 @@ onBeforeUnmount(() => { secret.value = undefined; name.value = ""; });
       <el-form ref="form" :model="{ name }" inline @submit.prevent="create">
         <el-form-item prop="name" :label="t('administration.clientName')" :rules="[{ required: true, whitespace: true, max: 100, message: t('administration.invalidName'), trigger: 'blur' }]"><el-input v-model="name" :maxlength="100" :disabled="saving || loading" /></el-form-item>
         <el-form-item><el-checkbox v-model="allowReferences" :disabled="saving || loading">{{ t("administration.allowReferences") }}</el-checkbox></el-form-item>
-        <el-form-item><el-button type="primary" native-type="submit" :loading="saving" :disabled="loading || !!error">{{ t("administration.createClient") }}</el-button></el-form-item>
+        <el-form-item><el-button v-operation="'integration.client:create'" type="primary" native-type="submit" :loading="saving" :disabled="loading || !!error">{{ t("administration.createClient") }}</el-button></el-form-item>
       </el-form>
     </template>
     <template #data>
       <ManagementTable embedded :title="t('administration.clients')" :columns="columns" :rows="rows" :total="rows.length" :loading="loading" :busy="saving" :empty-text="t('administration.empty')" @refresh="load">
         <template #status="{ row }"><el-tag :type="row.enabled ? 'success' : 'info'">{{ t(row.enabled ? "administration.enabled" : "administration.disabled") }}</el-tag></template>
         <template #operations="{ row }">
-          <el-popconfirm :title="t('administration.clientStateConfirm')" :confirm-button-text="t(row.enabled ? 'administration.disable' : 'administration.enable')" :cancel-button-text="t('organization.cancel')" @confirm="write(() => props.api.clientState(row as IntegrationClient, !row.enabled))"><template #reference><el-button link :type="row.enabled ? 'danger' : 'primary'" :disabled="saving || loading || !!error">{{ t(row.enabled ? "administration.disable" : "administration.enable") }}</el-button></template></el-popconfirm>
-          <el-popconfirm :title="t('administration.clientRotateConfirm')" :confirm-button-text="t('administration.rotateClient')" :cancel-button-text="t('organization.cancel')" @confirm="rotate(row as IntegrationClient)"><template #reference><el-button link type="danger" :disabled="saving || loading || !!error">{{ t("administration.rotateClient") }}</el-button></template></el-popconfirm>
+          <el-popconfirm :title="t('administration.clientStateConfirm')" :confirm-button-text="t(row.enabled ? 'administration.disable' : 'administration.enable')" :cancel-button-text="t('organization.cancel')" @confirm="write(() => props.api.clientState(row as IntegrationClient, !row.enabled))"><template #reference><el-button v-operation="'integration.client:update'" link :type="row.enabled ? 'danger' : 'primary'" :disabled="saving || loading || !!error">{{ t(row.enabled ? "administration.disable" : "administration.enable") }}</el-button></template></el-popconfirm>
+          <el-popconfirm :title="t('administration.clientRotateConfirm')" :confirm-button-text="t('administration.rotateClient')" :cancel-button-text="t('organization.cancel')" @confirm="rotate(row as IntegrationClient)"><template #reference><el-button v-operation="'integration.client:rotate_secret'" link type="danger" :disabled="saving || loading || !!error">{{ t("administration.rotateClient") }}</el-button></template></el-popconfirm>
         </template>
       </ManagementTable>
     </template>

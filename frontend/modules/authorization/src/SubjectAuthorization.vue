@@ -123,7 +123,7 @@ defineExpose({ canLeave: async () => !saving.value && await confirmDiscard() });
             </el-select>
           </el-form-item>
           <el-form-item prop="reason" :label="t('authorizationCenter.reason')"><el-input v-model="reason" type="textarea" :maxlength="500" show-word-limit :disabled="!ready || saving" /></el-form-item>
-          <el-button native-type="submit" type="primary" :loading="saving" :disabled="!ready || !changed || detailLoading">{{ t('organization.save') }}</el-button>
+          <el-button v-operation="'@role:grant'" native-type="submit" type="primary" :loading="saving" :disabled="!ready || !changed || detailLoading">{{ t('organization.save') }}</el-button>
           <el-button :disabled="saving || detailLoading" @click="async () => { if (await confirmDiscard()) await loadDetail(); }">{{ t('authorizationCenter.reload') }}</el-button>
         </el-form>
         <h2 class="explanation-heading">{{ t('authorizationCenter.effectivePermissions') }}</h2>

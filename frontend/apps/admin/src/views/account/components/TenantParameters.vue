@@ -41,7 +41,7 @@ onMounted(load);
     <el-alert v-if="error" :title="error" type="error" :closable="false"><el-button link @click="load">{{ t("account.retry") }}</el-button></el-alert>
     <el-form label-position="top">
       <el-form-item v-for="row in rows" :key="row.key" :label="t('account.parameters.' + row.key.replace('display.', ''))">
-        <div class="parameter-row"><el-input v-model="row.value" :maxlength="500" :disabled="!editable || loading || !!saving" /><el-button v-if="editable" :loading="saving === row.key" :disabled="loading || !!saving" @click="save(row)">{{ t("account.save") }}</el-button></div>
+        <div class="parameter-row"><el-input v-model="row.value" :maxlength="500" :disabled="!editable || loading || !!saving" /><el-button v-operation="'organization.permission:grant'" v-if="editable" :loading="saving === row.key" :disabled="loading || !!saving" @click="save(row)">{{ t("account.save") }}</el-button></div>
         <p>{{ t('account.parameterHints.' + row.key.replace('display.', '')) }}</p>
       </el-form-item>
     </el-form>

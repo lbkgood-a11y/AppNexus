@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- workflow-service：职责与依赖边界见同目录 README 或工作流服务详细设计。 -->
+<project xmlns="http://maven.apache.org/POM/4.0.0">
+  <modelVersion>4.0.0</modelVersion>
+  <parent><groupId>com.appnexus</groupId><artifactId>services</artifactId><version>0.1.0-SNAPSHOT</version><relativePath>../pom.xml</relativePath></parent>
+  <artifactId>workflow-service</artifactId>
+  <packaging>pom</packaging>
+  <modules><module>core</module><module>adapters</module><module>architecture-tests</module></modules>
+
+</project>

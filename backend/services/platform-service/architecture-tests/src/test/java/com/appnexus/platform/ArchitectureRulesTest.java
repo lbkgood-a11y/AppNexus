@@ -65,7 +65,33 @@ class ArchitectureRulesTest {
                 annotation.getRawType().getPackageName().equals("org.springframework.web.bind.annotation") &&
                 annotation.getRawType().getSimpleName().endsWith("Mapping")))
             .filter(method -> !method.isAnnotatedWith(EndpointOperation.class))
+            // 本人平台资格探测不是 tenant:read，后续目录/写入仍独立鉴权。
+            .filter(method -> !(method.getOwner().getSimpleName().equals("PlatformAdministrationController")&&method.getName().equals("access")))
             .map(method -> method.getFullName()).sorted().toList();
         assertTrue(missing.isEmpty(), () -> "未登记稳定权限码的授权端点: " + missing);
+    }
+    /** 所有平台映射均须登记操作，新 Controller 不能通过遗漏类名清单绕过检查。 */
+    @Test void everyPlatformMappingDeclaresOperation(){
+        var classes=new ClassFileImporter().importPackages("com.appnexus.platform.security");
+        var missing=new java.util.ArrayList<String>();
+        for(var type:classes)if(type.isAnnotatedWith(RestController.class)){
+            String prefix="";
+            if(type.isAnnotatedWith(org.springframework.web.bind.annotation.RequestMapping.class)){
+                var mapping=type.getAnnotationOfType(org.springframework.web.bind.annotation.RequestMapping.class);
+                prefix=String.join("",mapping.value())+String.join("",mapping.path());
+            }
+            for(var method:type.getMethods())for(var annotation:method.getAnnotations()){
+                if(!annotation.getRawType().getPackageName().equals("org.springframework.web.bind.annotation")||!annotation.getRawType().getSimpleName().endsWith("Mapping"))continue;
+                Object value=annotation.getProperties().get("value");
+                String paths=value instanceof Object[] array?java.util.Arrays.toString(array):String.valueOf(value);
+                boolean platform=prefix.contains("/bff/platform")||paths.contains("/bff/platform");
+                if(platform&&!method.isAnnotatedWith(EndpointOperation.class)&&!(type.getSimpleName().equals("PlatformAdministrationController")&&method.getName().equals("access")))missing.add(method.getFullName());
+                if(platform&&method.isAnnotatedWith(EndpointOperation.class)){
+                    var operation=method.getAnnotationOfType(EndpointOperation.class);
+                    if(operation.value().startsWith("access.tenant.")&&operation.platformPermission().isBlank())missing.add(method.getFullName()+" 缺少平台代管权限");
+                }
+            }
+        }
+        assertTrue(missing.isEmpty(),()->"平台操作缺少权限登记："+missing);
     }
 }

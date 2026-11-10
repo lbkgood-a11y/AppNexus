@@ -59,4 +59,8 @@ if (-not (Test-Path -LiteralPath $env:APP_SIGNING_KEY_STORE)) {
     & keytool -genkeypair -alias appnexus -keyalg RSA -keysize 3072 -storetype PKCS12 -keystore $env:APP_SIGNING_KEY_STORE -storepass:env APP_SIGNING_KEY_PASSWORD -dname "CN=AppNexus Local" -validity 365 -noprompt
     if ($LASTEXITCODE -ne 0) { throw "Signing key initialization failed" }
 }
+# 本机工作流引擎与 API 默认启用（true）；APP_WORKFLOW_ENGINE_ENABLED 可显式覆盖为 false。仅适用于已完成 V47—V49 迁移的 local 环境，不改变生产默认 false；首次启动由 Flyway 先执行受控迁移。
+if (-not $env:APP_WORKFLOW_ENGINE_ENABLED) { $env:APP_WORKFLOW_ENGINE_ENABLED = "true" }
+# 本机可靠交付扫描默认关闭（false）；真实业务适配器具备持久幂等后才可通过 APP_WORKFLOW_WORKER_ENABLED 显式开启，不因启用菜单自动开启。
+if (-not $env:APP_WORKFLOW_WORKER_ENABLED) { $env:APP_WORKFLOW_WORKER_ENABLED = "false" }
 Write-Host "Local environment initialized. Secrets are stored in ignored .local/environment.json for local development only."

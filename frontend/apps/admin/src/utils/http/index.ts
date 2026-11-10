@@ -17,6 +17,7 @@ export function requestErrorMessage(error: unknown): string {
     if (status === 403) return t("account.forbidden");
     if (status === 429) return t("account.rateLimited");
     const code=error.response?.data?.code;
+    if(typeof code==='string'&&(i18n.global.te as (key:string)=>boolean)("workflow.codes."+code))return t("workflow.codes."+code);
     if(typeof code==='string'&&["PLATFORM_DENIED","DIRECTORY_CONFLICT","INVALID_DIRECTORY_INPUT","TENANT_CONTEXT_CHANGED","TENANT_UNAVAILABLE","TENANT_REQUIRED"].includes(code))return t("administration.errors."+code);
     if(typeof code==='string'&&["MENU_CHANGED","MENU_CODE_CONFLICT","MENU_CONFLICT","INVALID_MENU_INPUT"].includes(code))return t("menuManagement.errors."+code);
     if(typeof code==='string'&&(code.startsWith("ROLE_")||code==="INVALID_ROLE_INPUT"))return t("roleManagement.errors."+code);
@@ -50,6 +51,9 @@ class PureHttp {
     // 切换后旧响应不能覆盖新租户页面；请求头不决定服务器租户来源。
     if(business&&tenant&&currentTenant.value?.version!==tenant.version)throw new Axios.CanceledError("Stale tenant response");
     config?.beforeResponseCallback?.(response);
+    // 管理写入后立即复核按钮能力；不能把成功前的授权快照继续用于撤权后的交互。
+    if(!['get','head','options'].includes(method)&&(url.startsWith('/bff/platform/')||url.startsWith('/api/access/')||url.startsWith('/api/organization/grants')))
+      window.dispatchEvent(new Event('appnexus:authority-changed'));
     return response.data;
   }
   post<T, P>(url: string, params?: AxiosRequestConfig<P>, config?: PureHttpRequestConfig) { return this.request<T>("post", url, params, config); }

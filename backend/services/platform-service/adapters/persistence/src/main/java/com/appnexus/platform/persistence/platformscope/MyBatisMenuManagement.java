@@ -10,15 +10,16 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class MyBatisMenuManagement implements MenuManagement {
     private final MenuMapper mapper;
-    public MyBatisMenuManagement(MenuMapper mapper) { this.mapper=mapper; }
+    private final com.appnexus.platform.authorization.AccessAuthorization authorization;
+    public MyBatisMenuManagement(MenuMapper mapper,com.appnexus.platform.authorization.AccessAuthorization authorization) { this.mapper=mapper;this.authorization=authorization; }
 
     @Override public List<Menu> list(UUID actor) {
-        require(actor);
+        require(actor);operation(actor,"read");
         return mapper.list().stream().map(MyBatisMenuManagement::menu).toList();
     }
 
     @Override @Transactional public Menu create(UUID actor,Command command) {
-        lock(actor);lockCatalog();validate(command,null);
+        lock(actor);operation(actor,"create");lockCatalog();validate(command,null);
         UUID id=com.fasterxml.uuid.Generators.timeBasedEpochGenerator().generate();
         mapper.create(id.toString(),text(command.parentId()),command.type().name(),command.code().trim(),command.titleZh().trim(),command.titleEn().trim(),blank(command.path()),blank(command.component()),blank(command.icon()),blank(command.permission()),command.sortOrder(),command.visible(),command.enabled(),command.scope().name(),blank(command.externalUrl()));
         mapper.audit(actor.toString(),"MENU_CREATED",id.toString(),0);
@@ -26,7 +27,7 @@ public class MyBatisMenuManagement implements MenuManagement {
     }
 
     @Override @Transactional public Menu update(UUID actor,UUID id,long expectedVersion,Command command) {
-        lock(actor);lockCatalog();Objects.requireNonNull(id);if(expectedVersion<0)throw new IllegalArgumentException("Invalid version");
+        lock(actor);operation(actor,"update");lockCatalog();Objects.requireNonNull(id);if(expectedVersion<0)throw new IllegalArgumentException("Invalid version");
         validate(command,id);
         if(mapper.update(id.toString(),expectedVersion,text(command.parentId()),command.type().name(),command.code().trim(),command.titleZh().trim(),command.titleEn().trim(),blank(command.path()),blank(command.component()),blank(command.icon()),blank(command.permission()),command.sortOrder(),command.visible(),command.enabled(),command.scope().name(),blank(command.externalUrl()))!=1)
             throw new ConcurrentModificationException("Menu changed");
@@ -35,7 +36,7 @@ public class MyBatisMenuManagement implements MenuManagement {
     }
 
     @Override @Transactional public void delete(UUID actor,UUID id,long expectedVersion) {
-        lock(actor);lockCatalog();Objects.requireNonNull(id);if(expectedVersion<0)throw new IllegalArgumentException("Invalid version");
+        lock(actor);operation(actor,"delete");lockCatalog();Objects.requireNonNull(id);if(expectedVersion<0)throw new IllegalArgumentException("Invalid version");
         if(mapper.children(id.toString())>0)throw new IllegalArgumentException("Menu has children");
         if(mapper.delete(id.toString(),expectedVersion)!=1)throw new ConcurrentModificationException("Menu changed");
         mapper.audit(actor.toString(),"MENU_DELETED",id.toString(),expectedVersion);
@@ -88,6 +89,8 @@ public class MyBatisMenuManagement implements MenuManagement {
         }catch(java.net.URISyntaxException invalid){return false;}
     }
     private void require(UUID actor){if(actor==null||!mapper.administrator(actor.toString()))throw new SecurityException("Platform authority required");}
+    /** 平台身份不代替操作授权；逐次复核稳定权限码，撤销某一操作不能通过其他菜单绕过。 */
+    private void operation(UUID actor,String action){if(!authorization.hasPermission(com.appnexus.platform.authorization.AccessAuthorization.Subject.platform(actor),"configuration.menu:"+action))throw new SecurityException("Menu operation denied");}
     private void lock(UUID actor){if(actor==null||mapper.lockAdministrator(actor.toString())==null)throw new SecurityException("Platform authority required");}
     private void lockCatalog(){if(mapper.lockCatalog()==null)throw new IllegalStateException("Platform menu lock unavailable");}
     private Set<UUID> descendants(UUID current){

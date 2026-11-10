@@ -169,7 +169,7 @@ onMounted(load);
           <el-form class="save-form" label-position="top" @submit.prevent="save">
             <el-form-item :label="t('authorizationCenter.reason')" required><el-input v-model="reason" type="textarea" :rows="2" :maxlength="500" show-word-limit :disabled="!ready || saving" /></el-form-item>
             <el-alert v-if="incompleteCount" type="warning" :title="t('authorizationCenter.incomplete')" :closable="false" show-icon />
-            <el-button class="save-button" type="primary" native-type="submit" :loading="saving" :disabled="invalid">{{ t('organization.save') }}</el-button>
+            <el-button v-operation="'@role:grant'" class="save-button" type="primary" native-type="submit" :loading="saving" :disabled="invalid">{{ t('organization.save') }}</el-button>
           </el-form>
         </section>
       </div>

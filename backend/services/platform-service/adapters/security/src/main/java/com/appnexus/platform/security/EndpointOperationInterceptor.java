@@ -8,8 +8,8 @@ import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.HandlerInterceptor;
 
 /**
- * 租户业务端点的统一功能权限拦截器；只消费服务端已验证上下文和方法登记权限码。
- * 平台 BFF 与本人自助端点继续由各自用例权威复核，禁止把租户权限错误套用于平台代管。
+ * 平台管理与租户业务的统一操作拦截器；读取方法登记权限及服务端可信主体。
+ * 平台代管使用显式平台能力，目标归属、行/字段范围及事务权威校验仍由领域用例执行。
  */
 public final class EndpointOperationInterceptor implements HandlerInterceptor {
     private final AccessAuthorization authorization;
@@ -20,7 +20,26 @@ public final class EndpointOperationInterceptor implements HandlerInterceptor {
         var operation=method.getMethodAnnotation(EndpointOperation.class);
         String path=request.getRequestURI().substring(request.getContextPath().length());
         // 组织域已有范围感知过滤器和 GRANT 专用错误契约，避免重复拦截改变探测及错误语义。
-        if(operation==null||!path.startsWith("/api/")||path.startsWith("/api/organization/"))return true;
+        if(operation==null)return true;
+        if(path.startsWith("/bff/platform/")){
+            var auth=org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+            if(auth==null||!auth.isAuthenticated()||auth instanceof org.springframework.security.authentication.AnonymousAuthenticationToken)
+                return reject(response,401,"AUTHENTICATION_REQUIRED");
+            var subject=AccessAuthorization.Subject.platform(java.util.UUID.fromString(auth.getName()));
+            // 平台代管必须显式登记平台能力；目标租户/成员/角色归属继续由用例复核。
+            String required=operation.platformPermission().isBlank()?operation.value():operation.platformPermission();
+            if(!authorization.hasPermission(subject,required)){
+                // 前置操作门禁沿用各管理入口的既有拒绝契约，避免鉴权提前执行改变调用方错误处理。
+                String code=switch(method.getBeanType().getSimpleName()) {
+                    case "AuthorizationManagementController", "PolicyTemplateController" -> "AUTHORIZATION_MANAGEMENT_DENIED";
+                    case "RoleManagementController" -> "ROLE_MANAGEMENT_DENIED";
+                    default -> "PLATFORM_DENIED";
+                };
+                return reject(response,403,code);
+            }
+            return true;
+        }
+        if(!path.startsWith("/api/")||(path.startsWith("/api/organization/")&&!path.equals("/api/organization/summaries")))return true;
         var value=request.getAttribute(TenantExecutionFilter.ATTRIBUTE);
         if(!(value instanceof VerifiedTenantContext context))return reject(response,409,"TENANT_REQUIRED");
         var subject=AccessAuthorization.Subject.tenant(context.accountId(),context.tenantId(),context.memberId());

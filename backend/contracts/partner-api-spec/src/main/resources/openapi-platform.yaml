@@ -1273,6 +1273,20 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Page'
+  /bff/platform/menus/capabilities:
+    get:
+      tags:
+      - menu-management-controller
+      operationId: capabilities
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  type: string
   /bff/platform/field-policy-metadata:
     get:
       tags:
@@ -2144,6 +2158,10 @@ components:
             type: string
         permission:
           type: string
+        operations:
+          type: array
+          items:
+            type: string
     Access:
       type: object
       properties:

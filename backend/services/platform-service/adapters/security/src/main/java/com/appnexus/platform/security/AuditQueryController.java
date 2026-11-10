@@ -14,7 +14,7 @@ public class AuditQueryController {
     private final UnifiedAudit audit;
     public AuditQueryController(UnifiedAudit audit){this.audit=audit;}
     /** 平台管理员审计，tenantId 缺省仅平台操作；分页缺省 1/20，最大 100 条。 */
-    @EndpointOperation("tenant:read") @GetMapping("/bff/platform/audits")
+    @EndpointOperation("audit.entry:read") @GetMapping("/bff/platform/audits")
     ResponseEntity<UnifiedAudit.Page> platform(Authentication auth,@RequestParam(required=false) UUID tenantId,@RequestParam(defaultValue="1") int page,@RequestParam(defaultValue="20") int pageSize){return ok(audit.platform(UUID.fromString(auth.getName()),tenantId,page,pageSize));}
     /** 当前租户审计，租户仅从统一上下文取得；忽略任何客户端 tenantId 选择意图。 */
     @EndpointOperation("organization.permission:grant") @GetMapping("/api/audits")

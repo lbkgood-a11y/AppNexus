@@ -11,4 +11,6 @@ import java.lang.annotation.*;
 public @interface EndpointOperation {
     /** 稳定权限码，格式为 resource:action；不得填写角色名、菜单名或 URL。 */
     String value();
+    /** 平台代管租户时的独立平台权限码；缺省空，不允许将租户权限当平台权限或跳过校验。 */
+    String platformPermission() default "";
 }

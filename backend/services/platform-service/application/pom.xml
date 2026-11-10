@@ -14,10 +14,10 @@
       <artifactId>springdoc-openapi-starter-webmvc-api</artifactId>
       <version>3.2.0</version>
     </dependency>
-    <!-- 组合启动专用依赖；平台领域模块不得引用审批实现。Flowable 版本在审批适配器锁定。 -->
+    <!-- 组合启动专用依赖；平台领域模块不得引用工作流实现。Flowable 版本在工作流适配器锁定。 -->
     <dependency>
       <groupId>com.appnexus</groupId>
-      <artifactId>approval-flowable-adapter</artifactId>
+      <artifactId>workflow-flowable-adapter</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>

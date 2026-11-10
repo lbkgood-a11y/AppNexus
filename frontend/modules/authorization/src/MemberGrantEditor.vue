@@ -45,7 +45,7 @@ defineExpose({ canLeave:async()=>!busy.value&&await discard() });
         </el-form-item>
         <el-form-item :label="t('authorizationCenter.expiresAt')"><el-date-picker v-model="draft.expiresAt" type="datetime" value-format="YYYY-MM-DDTHH:mm:ssZ" clearable :disabled="!ready||busy" /></el-form-item>
         <el-form-item class="member-reason" :label="t('authorizationCenter.reason')" required><el-input v-model="reason" type="textarea" :maxlength="500" show-word-limit :disabled="!ready||busy" /></el-form-item>
-        <el-button native-type="submit" type="primary" :loading="busy" :disabled="invalid">{{t('organization.save')}}</el-button>
+        <el-button v-operation="'@role:grant'" native-type="submit" type="primary" :loading="busy" :disabled="invalid">{{t('organization.save')}}</el-button>
       </template>
     </el-form>
   </div>

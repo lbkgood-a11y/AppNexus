@@ -5,8 +5,11 @@ import java.util.UUID;
 
 /** 当前主体导航查询；菜单只描述入口资格，不能替代业务 API 的逐请求授权。 */
 public interface NavigationQuery {
-    /** 授权视图节点；只关联领域明确声明的资源，不根据菜单名称或路径猜测权限。 */
-    record AuthorizationNode(UUID id,UUID parentId,String titleZh,String titleEn,int sortOrder,List<String> resources,String permission) {}
+    /**
+     * 授权视图节点；资源列表仅为元数据，不用于展开整个资源的权限。
+     * @param operations 构建契约登记的页面实际操作权限码，共享操作允许在多个页面展示并按权限 ID 去重
+     */
+    record AuthorizationNode(UUID id,UUID parentId,String titleZh,String titleEn,int sortOrder,List<String> resources,String permission,List<String> operations) {}
 
     /** 读取指定域完整授权导航，不按操作者本人菜单过滤；调用入口必须先复核授权管理权。 */
     List<AuthorizationNode> authorizationCatalog(MenuManagement.Scope scope);

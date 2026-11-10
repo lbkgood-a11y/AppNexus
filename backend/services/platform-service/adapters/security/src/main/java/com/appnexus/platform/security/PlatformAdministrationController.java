@@ -37,7 +37,7 @@ public class PlatformAdministrationController {
     public record State(Boolean enabled) {}
     /** 账号关联意图，不接受客户端 memberId 或业务能力字段。 */
     public record NewMember(UUID accountId) {}
-    @EndpointOperation("tenant:read") @GetMapping("/access")
+    @GetMapping("/access")
     ResponseEntity<Access> access(Authentication auth) { return ok(() -> new Access(service.isAdministrator(actor(auth)))); }
     /** 页码默认 1，每页默认 20、范围 1–100；查询词最长 100 字符。 */
     @EndpointOperation("identity.account:read") @GetMapping("/users")
@@ -58,18 +58,18 @@ public class PlatformAdministrationController {
     ResponseEntity<PlatformAdministration.User> updateUser(Authentication auth,@PathVariable UUID id,@RequestBody UpdateUser input) {
         return ok(() -> service.updateUser(actor(auth),id,input.displayName(),input.email(),input.phoneNumber()));
     }
-    @EndpointOperation("identity.account:update") @PutMapping("/users/{id}/state")
+    @EndpointOperation("identity.account:enable") @PutMapping("/users/{id}/state")
     ResponseEntity<Void> userState(Authentication auth,@PathVariable UUID id,@RequestBody State state) {
         return ok(() -> { service.setUserEnabled(actor(auth),id,enabled(state)); return null; });
     }
     /** 平台管理员强制下线目标账号；保留 CSRF，凭据版本与 OAuth 撤销在用例内原子完成。 */
-    @EndpointOperation("identity.account:update") @PostMapping("/users/{id}/revoke-sessions")
+    @EndpointOperation("identity.account:revoke_sessions") @PostMapping("/users/{id}/revoke-sessions")
     ResponseEntity<Void> revokeSessions(Authentication auth,@PathVariable UUID id,jakarta.servlet.http.HttpServletRequest request) {
         MfaController.requireRecent(mfa,actor(auth),request);
         return ok(() -> { service.revokeUserSessions(actor(auth),id);return null; });
     }
     /** 管理员受权签发单次重置凭证，禁止重置平台管理员或本人；交付渠道由运维核实本人身份。 */
-    @EndpointOperation("identity.account:update") @PostMapping("/users/{id}/password-recovery")
+    @EndpointOperation("identity.account:reset_password") @PostMapping("/users/{id}/password-recovery")
     ResponseEntity<PasswordRecoveryController.Ticket> passwordRecovery(Authentication auth,@PathVariable UUID id,jakarta.servlet.http.HttpServletRequest request){
         MfaController.requireRecent(mfa,actor(auth),request);
         return ok(()->new PasswordRecoveryController.Ticket(recovery.issue(actor(auth),id)));
@@ -88,7 +88,7 @@ public class PlatformAdministrationController {
     ResponseEntity<PlatformAdministration.Tenant> updateTenant(Authentication auth,@PathVariable UUID id,@RequestBody UpdateTenant input) {
         return ok(() -> service.updateTenant(actor(auth),id,input.name()));
     }
-    @EndpointOperation("tenant:update") @PutMapping("/tenants/{id}/state")
+    @EndpointOperation("tenant:enable") @PutMapping("/tenants/{id}/state")
     ResponseEntity<Void> tenantState(Authentication auth,@PathVariable UUID id,@RequestBody State state) {
         return ok(() -> { service.setTenantEnabled(actor(auth),id,enabled(state));return null; });
     }
@@ -96,15 +96,15 @@ public class PlatformAdministrationController {
     ResponseEntity<PlatformAdministration.Page<PlatformAdministration.Member>> members(Authentication auth,@PathVariable UUID tenant,@RequestParam(defaultValue="1") int page,@RequestParam(defaultValue="20") int size,@RequestParam(defaultValue="") String query) {
         return ok(() -> service.members(actor(auth),tenant,page,size,query));
     }
-    @EndpointOperation("tenant:update") @PostMapping("/tenants/{tenant}/members")
+    @EndpointOperation("tenant.member:create") @PostMapping("/tenants/{tenant}/members")
     ResponseEntity<Void> addMember(Authentication auth,@PathVariable UUID tenant,@RequestBody NewMember input) {
         return ok(() -> { Objects.requireNonNull(input.accountId()); service.addMember(actor(auth),tenant,input.accountId());return null; });
     }
-    @EndpointOperation("tenant:update") @PutMapping("/tenants/{tenant}/members/{member}/state")
+    @EndpointOperation("tenant.member:enable") @PutMapping("/tenants/{tenant}/members/{member}/state")
     ResponseEntity<Void> memberState(Authentication auth,@PathVariable UUID tenant,@PathVariable UUID member,@RequestBody State state) {
         return ok(() -> { service.setMemberEnabled(actor(auth),tenant,member,enabled(state));return null; });
     }
-    @EndpointOperation("tenant:update") @DeleteMapping("/tenants/{tenant}/members/{member}")
+    @EndpointOperation("tenant.member:remove") @DeleteMapping("/tenants/{tenant}/members/{member}")
     ResponseEntity<Void> removeMember(Authentication auth,@PathVariable UUID tenant,@PathVariable UUID member) {
         return ok(() -> { service.removeMember(actor(auth),tenant,member);return null; });
     }

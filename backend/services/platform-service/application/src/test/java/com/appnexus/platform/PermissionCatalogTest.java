@@ -23,8 +23,9 @@ class PermissionCatalogTest extends DatabaseTestSupport {
         var tenant = catalog.list(PermissionCatalog.ScopeType.TENANT, false);
 
         assertThat(platform).extracting(PermissionCatalog.Permission::code)
-            .contains("identity.account:read", "access.role:grant", "configuration.menu:publish")
-            .doesNotContain("organization.unit:read");
+            .contains("identity.account:read", "access.role:grant", "configuration.menu:read", "configuration.menu:update")
+            // V45 保留历史定义但停用无执行点的操作；有效目录不得继续提供虚假授权入口。
+            .doesNotContain("organization.unit:read", "configuration.menu:publish", "configuration.menu:enable");
         assertThat(tenant).extracting(PermissionCatalog.Permission::code)
             .contains("access.tenant.role:grant", "organization.unit:read", "organization.permission:grant")
             .doesNotContain("configuration.menu:read");

@@ -60,13 +60,16 @@ public final class TenantExecutionFilter extends OncePerRequestFilter {
             }
             var context=new VerifiedTenantContext(accountId,m.tenantId(),m.memberId(),version);
             request.setAttribute(ATTRIBUTE,context);
+            // 工作流只接收公开契约，租户与操作者均来自上述可信会话，浏览器无权覆盖。
+            request.setAttribute(com.appnexus.contracts.workflow.WorkflowContext.class.getName(),new com.appnexus.contracts.workflow.WorkflowContext(m.tenantId().toString(),accountId.toString(),java.util.UUID.randomUUID().toString()));
             response.setHeader("X-Tenant-Context-Version",Long.toString(version));
             if(request.getRequestURI().startsWith(request.getContextPath()+"/api/organization/units") ||
                request.getRequestURI().startsWith(request.getContextPath()+"/api/organization/domain")) {
                 var action=request.getMethod();
                 var capability=switch(action) {
                     case "GET","HEAD" -> OrganizationCapability.READ;
-                    case "POST" -> OrganizationCapability.CREATE;
+                    // 移动组织是已存在对象的修改，不能因为采用命令 POST 就误要求创建权限。
+                    case "POST" -> request.getRequestURI().matches(".*/domain/units/[^/]+/move")?OrganizationCapability.UPDATE:OrganizationCapability.CREATE;
                     case "PATCH","PUT" -> OrganizationCapability.UPDATE;
                     case "DELETE" -> OrganizationCapability.DELETE;
                     default -> null;
@@ -82,6 +85,7 @@ public final class TenantExecutionFilter extends OncePerRequestFilter {
             reject(response,503,"CONTEXT_UNAVAILABLE");
         } finally {
             request.removeAttribute(ATTRIBUTE);
+            request.removeAttribute(com.appnexus.contracts.workflow.WorkflowContext.class.getName());
         }
     }
     /** 过滤器错误使用标准错误媒体类型和稳定码，不泄露账号、成员或租户存在性。 */

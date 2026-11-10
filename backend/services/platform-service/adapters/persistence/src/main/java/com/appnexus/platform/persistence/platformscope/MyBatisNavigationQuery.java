@@ -28,7 +28,7 @@ public class MyBatisNavigationQuery implements NavigationQuery {
         return menus.list().stream().map(MyBatisMenuManagement::menu)
             .filter(item -> item.scope()==scope&&item.type()!=MenuManagement.Type.BUTTON)
             .map(item -> new AuthorizationNode(item.id(),item.parentId(),item.titleZh(),item.titleEn(),item.sortOrder(),
-                resources.getOrDefault(item.id(),List.of()),item.permission())).toList();
+                resources.getOrDefault(item.id(),List.of()),item.permission(),NavigationPages.operations(item.component()))).toList();
     }
 
     @Override @Transactional(readOnly=true)

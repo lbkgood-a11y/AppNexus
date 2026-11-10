@@ -4,7 +4,15 @@ import type {AuthorizationMenu,PermissionItem} from './index';
 /** 验证共享权限去重、筛选批选和无菜单功能不丢失。 */
 describe('menu permission view',()=>{
  const permission=(id:string,resource:string,enabled=true)=>({id,resource,code:resource+':'+id,enabled}) as PermissionItem;
- const menu=(id:string,parentId:string|null,resources:string[]):AuthorizationMenu=>({id,parentId,resources,titleZh:id,titleEn:id,sortOrder:1,permission:null});
+ const menu=(id:string,parentId:string|null,resources:string[]):AuthorizationMenu=>({id,parentId,resources,operations:resources.flatMap(resource=>['read','delete'].map(action=>resource+':'+action)),titleZh:id,titleEn:id,sortOrder:1,permission:null});
+ it('does not expand all resource actions when pages share one resource',()=>{
+  const roles={...menu('roles',null,['access.role']),operations:['access.role:read','access.role:delete']};
+  const center={...menu('center',null,['access.role']),operations:['access.role:read','access.role:grant']};
+  const tree=menuPermissionTree([roles,center],['read','delete','grant','publish'].map(action=>permission(action,'access.role')),true,'other');
+  expect(tree.find(item=>item.id==='roles')?.items.map(item=>item.code)).toEqual(['access.role:read','access.role:delete']);
+  expect(tree.find(item=>item.id==='center')?.items.map(item=>item.code)).toEqual(['access.role:read','access.role:grant']);
+  expect(tree.find(item=>item.id==='unlinked')?.children[0].items[0].code).toBe('access.role:publish');
+ });
  it('shares permissions between pages and deduplicates directory selection',()=>{
   const read=permission('read','orders');
   const tree=menuPermissionTree([menu('root',null,[]),menu('a','root',['orders']),menu('b','root',['orders'])],[read],true,'other');

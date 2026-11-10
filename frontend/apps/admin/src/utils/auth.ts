@@ -15,7 +15,8 @@ export function setSessionProfile(value: DataInfo) {
   store.SET_ROLES(value.roles ?? []);
   store.SET_PERMS(value.permissions ?? []);
 }
-export function removeToken() { profile = undefined; }
+/** 清理本人展示资料并使按钮能力快照失效，不保留上一账号的操作集合。 */
+export function removeToken() { profile = undefined; window.dispatchEvent(new Event("appnexus:session-ended")); }
 export function hasPerms(value: string | string[]): boolean {
   if (!value) return false;
   const { permissions } = useUserStoreHook();

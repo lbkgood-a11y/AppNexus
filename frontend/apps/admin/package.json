@@ -37,7 +37,8 @@
     "vue-router": "^5.0.4",
     "vue-tippy": "^6.7.1",
     "@appnexus/icons": "workspace:*",
-    "@appnexus/tenant": "workspace:*"
+    "@appnexus/tenant": "workspace:*",
+    "@appnexus/workflow": "workspace:*"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^6.0.5",

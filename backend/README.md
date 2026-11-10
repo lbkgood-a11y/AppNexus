@@ -4,10 +4,10 @@ The formal platform service uses modular domain boundaries and service-level ada
 Formal features are implemented under services/platform-service. poc-app contains isolated
 historical technical verification and is not a runtime dependency.
 
-审批服务工程已位于 services/approval-service，与平台平级，由现有平台启动类组合装配。
+工作流服务工程已位于 services/workflow-service，与平台平级，由现有平台启动类组合装配。
 Flowable 8.0.0 内嵌在审批适配器，默认关闭，不自动建表或升级。
-当前仅交付工程骨架，尚无审批业务 API、工作台或流程设计器。
-结构、启用约束及验证结果见 [审批服务详细设计](../docs/design/审批服务详细设计.md)。
+工作流首批运行时、API、设计器、任务工作台与运行管理已实现；真实WMS/考核业务尚未接入，浏览器视觉验收未完成。详见 docs/design/工作流服务构建交付.md。
+结构、启用约束及验证结果见 [工作流服务详细设计](../docs/design/工作流服务详细设计.md)。
 
 ## Implemented login foundation
 

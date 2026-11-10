@@ -18,10 +18,10 @@ public class TaskManagementController {
     private final JdbcTemplate jdbc;
     public TaskManagementController(ReliableEvents events,PlatformAdministration platform,JdbcTemplate jdbc){this.events=events;this.platform=platform;this.jdbc=jdbc;}
     /** 最近任务最多 50 条；平台级运维入口，不提供租户普通成员访问。 */
-    @EndpointOperation("tenant:read") @GetMapping
+    @EndpointOperation("platform.task:read") @GetMapping
     ResponseEntity<List<ReliableEvents.Task>> list(Authentication auth){require(auth);return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(events.tasks(50));}
     /** 人工确认故障已排除后恢复；已完成或运行中任务不能被重置覆盖。 */
-    @EndpointOperation("tenant:update") @PostMapping("/{id}/retry") @Transactional
+    @EndpointOperation("platform.task:retry") @PostMapping("/{id}/retry") @Transactional
     ResponseEntity<Void> retry(Authentication auth,@PathVariable UUID id){
         require(auth);
         if(!events.retry(id))throw AccountSettingsController.problem(HttpStatus.CONFLICT,"TASK_NOT_MANUAL","任务不处于人工处理状态");
