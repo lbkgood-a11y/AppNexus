@@ -12,6 +12,8 @@ export type Kind =
   | "JOIN";
 /** 节点配置；timeoutSeconds为秒，60—2592000，超时不会自动通过；retries为0—5次。 */
 export interface WorkflowNode {
+  /** 画布坐标，像素；0—20000，只影响展示，缺省由拓扑布局计算。 */
+  position?: { x: number; y: number } | null;
   id: string;
   name: string;
   kind: Kind;

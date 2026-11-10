@@ -1065,6 +1065,7 @@ workflow:
     TASK_OVERDUE: "任务已超期"
     WITHDRAWN: "流程已撤回"
   codes:
+    NODE_POSITION_INVALID: "节点坐标超出允许范围。"
     APPROVAL_BASIS_CHANGED: "单据审批依据已变更，请按业务规则重新提交审核。"
     ACTION_COMPLETED: "流程配置或操作不符合约束：ACTION_COMPLETED"
     ACTION_INVALID: "该节点不支持此操作。"
@@ -1184,3 +1185,9 @@ workflow:
   unsavedTitle: "离开流程设计器"
   leave: "放弃修改并离开"
   keepEditing: "继续编辑"
+  selectConnection: "连接：{from} → {to}"
+  inputPort: "{name}：输入锚点"
+  outputPort: "{name}：输出锚点"
+  pickTarget: "请选择目标节点输入锚点"
+  deleteConnection: "删除选中连接"
+  dragHint: "从节点库拖入；拖动节点移动；从输出锚点拖到输入锚点串联。"

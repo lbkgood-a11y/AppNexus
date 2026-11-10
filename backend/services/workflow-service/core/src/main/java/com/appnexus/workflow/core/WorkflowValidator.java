@@ -43,6 +43,13 @@ public final class WorkflowValidator {
         errors.add("NODE_INVALID");
         continue;
       }
+      if (n.position() != null
+          && (!Double.isFinite(n.position().x())
+              || !Double.isFinite(n.position().y())
+              || n.position().x() < 0
+              || n.position().y() < 0
+              || n.position().x() > 20000
+              || n.position().y() > 20000)) errors.add("NODE_POSITION_INVALID:" + n.id());
       if (n.timeoutSeconds() < 60
           || n.timeoutSeconds() > 2592000
           || n.retries() < 0

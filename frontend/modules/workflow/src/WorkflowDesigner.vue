@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { computed, ref, watch, onMounted, onBeforeUnmount } from "vue";
 import { useI18n } from "vue-i18n";
-import { ElMessageBox } from "element-plus";
+import { ElMessage, ElMessageBox } from "element-plus";
 import { onBeforeRouteLeave } from "vue-router";
 import { ManagedDialog } from "@appnexus/ui";
+import { layoutGraph } from "./layout";
+import { connectionError } from "./graphEditing";
 import WorkflowCanvas from "./WorkflowCanvas.vue";
 import {
   emptyModel,
@@ -81,11 +83,17 @@ const kinds: Kind[] = [
   "FORK",
   "JOIN",
 ];
-function add(value: Kind = kind.value) {
+function add(value: Kind = kind.value, position?: { x: number; y: number }) {
   if (!props.canEdit || busy.value || model.value.nodes.length >= 100) return;
   kind.value = value;
   const id = "node_" + crypto.randomUUID().slice(0, 8);
-  model.value.nodes.push(newNode(id, kind.value));
+  if (value === "START" && model.value.nodes.some((n) => n.kind === "START"))
+    return;
+  freezePositions();
+  const added = newNode(id, kind.value);
+  added.name = t("workflow.kinds." + value);
+  if (position) added.position = position;
+  model.value.nodes.push(added);
   selected.value = id;
   inspector.value = "node";
   validation.value = null;
@@ -160,6 +168,7 @@ const undoStack = ref<string[]>([]),
 const lastSnapshot = ref(JSON.stringify(model.value));
 function restore(source: string[], target: string[]) {
   if (!props.canEdit || busy.value || !source.length) return;
+  selectedEdge.value = -1;
   target.push(JSON.stringify(model.value));
   model.value = JSON.parse(source.pop()!);
   lastSnapshot.value = JSON.stringify(model.value);
@@ -167,7 +176,111 @@ function restore(source: string[], target: string[]) {
     selected.value = model.value.nodes[0]?.id || "";
   validation.value = null;
 }
+const selectedEdge = ref(-1);
+/** 首次手动排布冻结其他节点当前位置，避免修改连接后其余节点跳动。 */
+function freezePositions() {
+  const layout = layoutGraph(model.value);
+  for (const node of model.value.nodes)
+    if (!node.position) node.position = { ...layout.positions[node.id] };
+}
+function moveNode(id: string, position: { x: number; y: number }) {
+  if (!props.canEdit || busy.value) return;
+  freezePositions();
+  const n = model.value.nodes.find((n) => n.id === id);
+  if (n) n.position = position;
+}
+function wireNodes(from: string, to: string) {
+  if (!props.canEdit || busy.value) return;
+  const issue = connectionError(model.value, from, to);
+  if (issue) {
+    ElMessage.warning(t("workflow.codes." + issue));
+    return;
+  }
+  freezePositions();
+  model.value.edges.push({
+    from,
+    to,
+    field: null,
+    value: null,
+    defaultEdge: false,
+  });
+  selectedEdge.value = model.value.edges.length - 1;
+  inspector.value = "connections";
+}
+/** 指针方式支持鼠标和触摸拖入；松手目标必须位于当前画布，不能把页面坐标直接写入模型。 */
+const palettePointer = ref<{
+  kind: Kind;
+  x: number;
+  y: number;
+  startX: number;
+  startY: number;
+} | null>(null);
+function paletteBegin(event: PointerEvent, value: Kind) {
+  if (!props.canEdit || busy.value || event.button !== 0) return;
+  event.preventDefault();
+  palettePointer.value = {
+    kind: value,
+    x: event.clientX,
+    y: event.clientY,
+    startX: event.clientX,
+    startY: event.clientY,
+  };
+  window.addEventListener("pointermove", paletteMove);
+  window.addEventListener("pointerup", paletteEnd);
+  window.addEventListener("pointercancel", paletteCancel);
+}
+function paletteMove(event: PointerEvent) {
+  if (palettePointer.value) {
+    palettePointer.value.x = event.clientX;
+    palettePointer.value.y = event.clientY;
+  }
+}
+function paletteEnd(event: PointerEvent) {
+  const drag = palettePointer.value;
+  if (
+    drag &&
+    Math.hypot(event.clientX - drag.startX, event.clientY - drag.startY) > 5
+  ) {
+    const canvas = document
+      .elementFromPoint(event.clientX, event.clientY)
+      ?.closest(".canvas");
+    if (canvas) {
+      const rect = canvas.getBoundingClientRect();
+      add(drag.kind, {
+        x: Math.max(
+          0,
+          Math.min(20000, Math.round((event.clientX - rect.left) / zoom.value)),
+        ),
+        y: Math.max(
+          0,
+          Math.min(20000, Math.round((event.clientY - rect.top) / zoom.value)),
+        ),
+      });
+    }
+  }
+  paletteCancel();
+}
+function paletteCancel() {
+  palettePointer.value = null;
+  window.removeEventListener("pointermove", paletteMove);
+  window.removeEventListener("pointerup", paletteEnd);
+  window.removeEventListener("pointercancel", paletteCancel);
+}
+onBeforeUnmount(paletteCancel);
+function paletteDrag(event: DragEvent, value: Kind) {
+  if (!props.canEdit || busy.value) {
+    event.preventDefault();
+    return;
+  }
+  event.dataTransfer?.setData("application/x-appnexus-workflow-node", value);
+  if (event.dataTransfer) event.dataTransfer.effectAllowed = "copy";
+}
+function selectEdge(index: number) {
+  selectedEdge.value = index;
+  inspector.value = "connections";
+}
 function selectNode(id: string) {
+  selectedEdge.value = -1;
   selected.value = id;
   inspector.value = "node";
 }
@@ -182,6 +295,9 @@ function connect() {
   inspector.value = "connections";
 }
 function removeEdge(index: number) {
+  if (!props.canEdit || busy.value) return;
+  freezePositions();
+  selectedEdge.value = -1;
   model.value.edges.splice(index, 1);
 }
 async function confirmLeave() {
@@ -232,6 +348,18 @@ watch(
     v-loading="busy"
     :aria-label="t('workflow.designer')"
   >
+    <Teleport to="body"
+      ><div
+        v-if="palettePointer"
+        class="palette-ghost"
+        :style="{
+          left: palettePointer.x + 12 + 'px',
+          top: palettePointer.y + 12 + 'px',
+        }"
+      >
+        {{ t("workflow.kinds." + palettePointer.kind) }}
+      </div></Teleport
+    >
     <header class="designer-header">
       <div class="designer-heading">
         <el-button @click="close" :disabled="busy">{{
@@ -333,6 +461,9 @@ watch(
               busy ||
               (value === 'START' && model.nodes.some((n) => n.kind === 'START'))
             "
+            :draggable="canEdit && !busy"
+            @dragstart="paletteDrag($event, value)"
+            @pointerdown="paletteBegin($event, value)"
             @click="add(value)"
             >{{ t("workflow.kinds." + value) }}</el-button
           >
@@ -380,15 +511,30 @@ watch(
             >
           </div>
         </div>
+        <div class="canvas-help">{{ t("workflow.dragHint") }}</div>
         <div class="canvas-scroll">
           <WorkflowCanvas
             :model="model"
             :selected="selected"
             :zoom="zoom"
+            :editable="canEdit && !busy"
+            :selected-edge="selectedEdge"
+            @move="moveNode"
+            @connect="wireNodes"
+            @drop-node="add"
+            @select-edge="selectEdge"
+            @delete-edge="removeEdge"
             @select="selectNode"
           />
         </div>
         <footer class="canvas-footer">
+          <el-button
+            v-if="selectedEdge >= 0"
+            type="danger"
+            :disabled="!canEdit || busy"
+            @click="removeEdge(selectedEdge)"
+            >{{ t("workflow.deleteConnection") }}</el-button
+          >
           <span>{{ selectedName }}</span
           ><el-button :disabled="!canEdit || !node" @click="connect">{{
             t("workflow.addConnection")
@@ -705,6 +851,7 @@ watch(
                 v-for="(edge, i) in model.edges"
                 :key="i"
                 class="edge-card"
+                :class="{ 'selected-edge': selectedEdge === i }"
                 label-position="top"
                 :disabled="!canEdit || busy"
                 ><div class="connections-heading">
@@ -798,6 +945,19 @@ watch(
   </section>
 </template>
 <style scoped>
+.palette-ghost {
+  position: fixed;
+  z-index: 3000;
+  pointer-events: none;
+  padding: 12px 20px;
+  border: 1px solid var(--el-color-primary);
+  border-radius: var(--el-border-radius-base);
+  background: var(--el-bg-color);
+  color: var(--el-text-color-primary);
+}
+.palette-list .el-button {
+  touch-action: none;
+}
 .designer {
   display: flex;
   flex-direction: column;
@@ -895,6 +1055,11 @@ watch(
   font-size: 12px;
   color: var(--el-text-color-secondary);
 }
+.canvas-help {
+  padding: 8px 12px;
+  font-size: 12px;
+  color: var(--el-text-color-secondary);
+}
 .canvas-scroll {
   flex: 1;
   min-height: 250px;
@@ -942,6 +1107,9 @@ watch(
 }
 .connections-heading {
   justify-content: space-between;
+}
+.edge-card.selected-edge {
+  border-color: var(--el-color-primary);
 }
 .edge-card {
   padding: 12px;

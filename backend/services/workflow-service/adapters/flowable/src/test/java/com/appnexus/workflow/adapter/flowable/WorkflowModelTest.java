@@ -104,4 +104,18 @@ class WorkflowModelTest {
     assertThat(WorkflowValidator.validate(model, Set.of("entry"), Set.of()))
         .contains("CAPABILITY_UNAVAILABLE:action", "NODE_LIMIT_INVALID:action");
   }
+
+  @Test
+  void canvasCoordinatesRoundTripWithoutChangingExecutableBpmn() {
+    var original =
+        m(List.of(n("start", Kind.START), n("end", Kind.END)), List.of(e("start", "end")));
+    String json =
+        WorkflowJson.write(original)
+            .replace("\"position\":null", "\"position\":{\"x\":240,\"y\":360}");
+    var moved = WorkflowJson.read(json, WorkflowModel.class);
+    assertThat(moved.node("start").position()).isEqualTo(new Position(240, 360));
+    assertThat(WorkflowCompiler.compile("same", original))
+        .isEqualTo(WorkflowCompiler.compile("same", moved));
+    assertThatThrownBy(() -> new Position(-1, 0)).isInstanceOf(IllegalArgumentException.class);
+  }
 }

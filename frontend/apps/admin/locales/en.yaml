@@ -1065,6 +1065,7 @@ workflow:
     TASK_OVERDUE: "Task overdue"
     WITHDRAWN: "Workflow withdrawn"
   codes:
+    NODE_POSITION_INVALID: "Node coordinates are outside the allowed range."
     APPROVAL_BASIS_CHANGED: "The approval basis changed. Resubmit according to business rules."
     ACTION_COMPLETED: "Workflow constraint: ACTION_COMPLETED"
     ACTION_INVALID: "Action invalid."
@@ -1184,3 +1185,9 @@ workflow:
   unsavedTitle: "Leave workflow designer"
   leave: "Discard and leave"
   keepEditing: "Keep editing"
+  selectConnection: "Connection: {from} → {to}"
+  inputPort: "{name}: input port"
+  outputPort: "{name}: output port"
+  pickTarget: "Select a target input port"
+  deleteConnection: "Delete selected connection"
+  dragHint: "Drag from the library, move nodes, and connect output ports to input ports."

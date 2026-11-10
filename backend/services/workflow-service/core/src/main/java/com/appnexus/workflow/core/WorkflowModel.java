@@ -73,9 +73,21 @@ public record WorkflowModel(
   /** 等值匹配条件，值来自业务快照；空集合表示适用所有组织/字段。 */
   public record Match(String field, String value) {}
 
+  /** 画布坐标，单位像素，0—20000；仅展示，不参与选人、条件或引擎执行。 */
+  public record Position(double x, double y) {
+    /**
+     * @throws IllegalArgumentException 坐标非有限数或超出0—20000像素时拒绝，草稿保存也不能绕过。
+     */
+    public Position {
+      if (!Double.isFinite(x) || !Double.isFinite(y) || x < 0 || y < 0 || x > 20000 || y > 20000)
+        throw new IllegalArgumentException("NODE_POSITION_INVALID");
+    }
+  }
+
   /**
    * 节点声明。
    *
+   * @param position 画布展示坐标，缺省自动排布；不参与执行语义
    * @param retries 自动动作最大重试次数，0—5 次，不含首次执行
    * @param timeoutSeconds 等待结果或任务期限，60—2592000 秒，超时只转异常不自动通过
    * @param capability 受控能力标识；HANDLE/ACTION/WAIT 必填
@@ -95,7 +107,40 @@ public record WorkflowModel(
       int retries,
       int timeoutSeconds,
       String join,
-      boolean separate) {}
+      boolean separate,
+      Position position) {
+    /** 旧模型缺省自动排布，保留既有构造调用约定。 */
+    public Node(
+        String id,
+        String name,
+        Kind kind,
+        List<Person> people,
+        Completion completion,
+        boolean allowSelf,
+        String capability,
+        Set<String> required,
+        Map<String, String> input,
+        int retries,
+        int timeoutSeconds,
+        String join,
+        boolean separate) {
+      this(
+          id,
+          name,
+          kind,
+          people,
+          completion,
+          allowSelf,
+          capability,
+          required,
+          input,
+          retries,
+          timeoutSeconds,
+          join,
+          separate,
+          null);
+    }
+  }
 
   /** 连接；CHOICE 使用 field/value 等值条件，defaultEdge 只允许一条；字段名受服务端白名单校验。 */
   public record Edge(String from, String to, String field, String value, boolean defaultEdge) {}

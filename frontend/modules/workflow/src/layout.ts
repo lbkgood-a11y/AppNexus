@@ -48,9 +48,30 @@ export function layoutGraph(
           y: 40 + row * 120 + (rows - nodes.length) * 60,
         }),
     );
+  for (const node of model.nodes) {
+    const p = node.position;
+    if (
+      p &&
+      Number.isFinite(p.x) &&
+      Number.isFinite(p.y) &&
+      p.x >= 0 &&
+      p.y >= 0 &&
+      p.x <= 20000 &&
+      p.y <= 20000
+    )
+      positions[node.id] = { ...p };
+  }
   return {
     positions,
-    width: Math.max(520, (Math.max(0, ...layers.keys()) + 1) * 240 + 40),
-    height: Math.max(300, rows * 120 + 40),
+    width: Math.max(
+      520,
+      ...Object.values(positions).map((p) => p.x + 230),
+      (Math.max(0, ...layers.keys()) + 1) * 240 + 40,
+    ),
+    height: Math.max(
+      300,
+      ...Object.values(positions).map((p) => p.y + 120),
+      rows * 120 + 40,
+    ),
   };
 }
