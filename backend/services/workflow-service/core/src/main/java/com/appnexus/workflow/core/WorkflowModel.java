@@ -142,8 +142,16 @@ public record WorkflowModel(
     }
   }
 
-  /** 连接；CHOICE 使用 field/value 等值条件，defaultEdge 只允许一条；字段名受服务端白名单校验。 */
-  public record Edge(String from, String to, String field, String value, boolean defaultEdge) {}
+  /**
+   * 条件连接，默认分支只允许一条；字段来自白名单，不执行用户脚本。
+   * @param operator EQ/NE 为文本比较，NUM_EQ/NUM_NE/GT/GE/LT/LE 为十进制比较；缺省 EQ 兼容历史定义
+   */
+  public record Edge(String from, String to, String field, String value, boolean defaultEdge, String operator) {
+    /** 历史等值连接默认 EQ，保留原内部构造约定。 */
+    public Edge(String from, String to, String field, String value, boolean defaultEdge) {
+      this(from, to, field, value, defaultEdge, null);
+    }
+  }
 
   /** 返回指定节点，未知节点立即拒绝，避免配置错误静默跳过。 */
   public Node node(String id) {

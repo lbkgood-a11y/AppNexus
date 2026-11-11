@@ -1065,6 +1065,10 @@ workflow:
     TASK_OVERDUE: "任务已超期"
     WITHDRAWN: "流程已撤回"
   codes:
+
+    NUMERIC_FIELD_REQUIRED: 数值比较必须选择本单据的数值字段
+    BUSINESS_OUTCOME_REQUIRED: 请为该审批结果选择业务处理动作
+    BUSINESS_WITHDRAWAL_INVALID: 撤回必须同时配置业务校验和撤回结果处理
     NODE_POSITION_INVALID: "节点坐标超出允许范围。"
     APPROVAL_BASIS_CHANGED: "单据审批依据已变更，请按业务规则重新提交审核。"
     ACTION_COMPLETED: "流程配置或操作不符合约束：ACTION_COMPLETED"
@@ -1290,3 +1294,111 @@ printing:
     RECEIPT80: "80mm 小票"
     RECEIPT58: "58mm 小票"
     CUSTOM: "自定义"
+leavePoc:
+  title: 请假单 POC
+  hint: 按自然日含首尾计算，1—365 天；超过 3 天追加人事审批。不计算余额或考勤。
+  search: 请假单查询
+  id: 单据编号
+  type: 请假类型
+  start: 开始日期
+  end: 结束日期
+  days: 天数
+  reason: 请假原因
+  organization: 归属组织
+  organizationHint: 选择本人有效任职的组织，系统将按该组织解析负责人。
+  hrAccount: 人事账号 UUID
+  configure: 配置审批流程
+  generate: 生成草稿
+  flowHint: 主管按单据组织负责人解析，超过 3 天追加指定人事审批。生成后请在流程设计器检查并发布；禁止自审，不自动授予权限。
+  flowExists: 请假审批流程已存在，请到流程设计器编辑，避免重复匹配。
+  flowSaved: 已生成草稿，请检查人员并发布
+  new: 新建请假单
+  detail: 查看单据
+  submit: 提交审批
+  saved: 请假草稿已保存
+  submitted: 已提交审批
+  required: 请填写必填项
+  uuid: 请输入有效 UUID
+  reasonLimit: 请假原因须为 1—2000 字符
+  types:
+    PERSONAL: 事假
+    ANNUAL: 年假
+    SICK: 病假
+  states:
+    DRAFT: 草稿
+    SUBMITTED: 审批中（等待结果回写）
+    APPROVED: 已批准
+    REJECTED: 已驳回
+    WITHDRAWN: 已撤回
+  flow:
+    title: 请假单审批 POC
+    start: 开始
+    supervisor: 主管审批
+    duration: 是否超过 3 天
+    hr: 人事审批
+    merge: 审批汇合
+    end: 结束
+  saveDraft: 保存草稿
+  cancel: 取消
+
+businessWorkflow:
+  view: 配置视图
+  businessView: 业务配置
+  advancedView: 高级编排
+  documentTitle: 1. 关联业务单据
+  document: 审批什么单据
+  approvalSuffix: 审批
+  noDocuments: 当前没有可配置的业务单据，请联系管理员接入业务能力或检查权限。
+  unsupportedDocument: 当前定义没有业务配置目录，请使用高级编排；现有配置已保留。
+  catalogUnavailable: 配置目录加载失败，请重试。
+  dataContract: 单据提交时自动关联本流程；组织、申请人和条件字段由业务系统提供，审批人通过当前待办查看单据原文。
+  reviewTitle: 2. 设置审批步骤
+  stepName: 步骤名称
+  approvers: 谁来审批
+  approverRule: 选人方式
+  approverName: 选择审批人或岗位
+  addApprover: 增加审批人规则
+  unavailablePerson: 原审批人或岗位已失效，请重新选择
+  leaderHint: 单据所属组织负责人随单据组织解析；岗位按该组织的有效任职解析。找不到审批人会保留异常待办，不会自动通过。
+  selfApproval: 允许申请人审批自己的单据
+  nodeActionHint: 审批人提交意见后，业务系统先检查单据状态；检查成功且满足多人规则时完成此步骤，再进入下一步。驳回将结束本次审批。
+  addReview: 增加审批步骤
+  addConditionalReview: 按条件追加审批
+  complexGraph: 当前结构无法直接追加步骤，请使用高级编排；原流程未改变。
+  start: 提交单据
+  review: 审批步骤
+  condition: 条件判断
+  merge: 继续后续流程
+  end: 审批结束
+  conditionsTitle: 3. 设置条件分支
+  conditionHint: 条件只使用业务系统提供的字段。数值条件支持十进制比较；不填写脚本或函数。多个条件同时成立时，按配置顺序选择第一条，否则走默认分支。
+  noConditions: 当前所有单据按相同顺序审批。可使用“按条件追加审批”设置额外审批。
+  field: 判断哪个字段
+  operator: 比较方式
+  value: 比较值
+  then: 条件成立时进入：
+  otherwise: 否则进入：
+  yes: 是
+  no: 否
+  outcomeTitle: 4. 设置审批结果处理
+  deliveryHint: 流程结束后由系统可靠执行以下业务动作。处理失败会显示异常并重试，单据在回写成功后更新状态。
+  allowWithdrawal: 允许申请人撤回审批中的单据
+  withdrawHint: 仅本人发起且仍在审批中的单据可以撤回，业务系统还会校验是否允许；撤回不用于撤销已经批准的单据。修改在发布后生效。
+  overview: 审批流程概览
+  overviewHint: 左侧配置会同步更新流程；通过顶部“样本预演”输入单据条件，检查会经过哪些步骤。
+  versionHint: 保存草稿不影响正在审批的单据。发布后仅新提交单据使用新版本；发布权限单独控制。
+  people:
+    LEADER: 单据所属组织负责人
+    MEMBER: 指定成员
+    POSITION: 单据所属组织的指定岗位
+  operators:
+    NUM_EQ: 等于
+    NUM_NE: 不等于
+    EQ: 等于（文本）
+    NE: 不等于（文本）
+    GT: 大于
+    GE: 大于或等于
+    LT: 小于
+    LE: 小于或等于
+  removeReview: 移除此审批步骤
+  removeConfirm: 移除此审批步骤及其独立条件（如有）？发布后影响新提交单据。

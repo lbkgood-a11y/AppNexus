@@ -21,6 +21,39 @@ public final class WorkflowPlatformBridge implements WorkflowPlatform {
     this.jdbc = jdbc;
   }
 
+  /** 流程查看人员使用最小配置目录；所有查询强制当前租户且只含有效成员/组织/岗位。 */
+  @Override
+  public Map<String, List<WorkflowPlatform.Option>> configurationOptions(WorkflowContext c) {
+    if (!allowed(c, "workflow:read")) throw new SecurityException("WORKFLOW_CONFIGURATION_DENIED");
+    // 流程配置人员需要按名称选人；仅开放有效租户成员名称，不授予人员管理或原文读取权限。
+    var members = jdbc.query("SELECT BIN_TO_UUID(a.id) id,a.display_name name FROM tenant_member m"
+        + " JOIN identity_account a ON a.id=m.account_id WHERE m.tenant_id=UUID_TO_BIN(?)"
+        + " AND m.enabled=TRUE AND m.removed_at IS NULL AND a.enabled=TRUE ORDER BY a.display_name,a.id",
+        (r, n) -> new WorkflowPlatform.Option(r.getString("id"), r.getString("name")), c.tenantId());
+    var organizations = jdbc.query("SELECT BIN_TO_UUID(id) id,name FROM tenant_organization_unit"
+        + " WHERE tenant_id=UUID_TO_BIN(?) AND enabled=TRUE ORDER BY name,id",
+        (r, n) -> new WorkflowPlatform.Option(r.getString("id"), r.getString("name")), c.tenantId());
+    var positions = jdbc.query("SELECT BIN_TO_UUID(p.id) id,CONCAT(u.name,' / ',p.name) name"
+        + " FROM tenant_organization_position p JOIN tenant_organization_unit u ON u.tenant_id=p.tenant_id"
+        + " AND u.id=p.organization_id WHERE p.tenant_id=UUID_TO_BIN(?) AND p.enabled=TRUE AND u.enabled=TRUE ORDER BY u.name,p.name,p.id",
+        (r, n) -> new WorkflowPlatform.Option(r.getString("id"), r.getString("name")), c.tenantId());
+    return Map.of("members", members, "organizations", organizations, "positions", positions);
+  }
+
+  /** 当前申请人只能选择自身有效任职组织，组织名称不作为授权凭证。 */
+  @Override
+  public List<WorkflowPlatform.Option> documentOrganizations(WorkflowContext c) {
+    if (!active(c.tenantId(), c.actorId())) throw new SecurityException("WORKFLOW_ORGANIZATION_DENIED");
+    return jdbc.query("SELECT DISTINCT BIN_TO_UUID(u.id) id,u.name FROM tenant_organization_assignment a"
+        + " JOIN tenant_member m ON m.tenant_id=a.tenant_id AND m.id=a.member_id"
+        + " JOIN tenant_organization_position p ON p.tenant_id=a.tenant_id AND p.id=a.position_id"
+        + " JOIN tenant_organization_unit u ON u.tenant_id=p.tenant_id AND u.id=p.organization_id"
+        + " WHERE a.tenant_id=UUID_TO_BIN(?) AND m.account_id=UUID_TO_BIN(?) AND m.enabled=TRUE AND m.removed_at IS NULL"
+        + " AND a.enabled=TRUE AND p.enabled=TRUE AND u.enabled=TRUE AND a.starts_at<=CURRENT_TIMESTAMP(6)"
+        + " AND (a.ends_at IS NULL OR a.ends_at>CURRENT_TIMESTAMP(6)) ORDER BY u.name,id",
+        (r, n) -> new WorkflowPlatform.Option(r.getString("id"), r.getString("name")), c.tenantId(), c.actorId());
+  }
+
   @Override
   public boolean active(String tenant, String actor) {
     try {

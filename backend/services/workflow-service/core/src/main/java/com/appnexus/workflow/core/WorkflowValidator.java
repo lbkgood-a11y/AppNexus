@@ -106,9 +106,8 @@ public final class WorkflowValidator {
         for (var e : out)
           if (!e.defaultEdge()
               && (!fields.contains(e.field())
-                  || e.value() == null
-                  || e.value().length() > 100
-                  || !seen.add(e.field() + "=" + e.value())))
+                  || !WorkflowCondition.valid(e.operator(), e.value())
+                  || !seen.add(e.field() + ":" + WorkflowCondition.operator(e.operator()) + ":" + e.value())))
             errors.add("CONDITION_INVALID:" + n.id());
       } else if (out.stream()
           .anyMatch(e -> e.field() != null && !e.field().isBlank() || e.defaultEdge()))

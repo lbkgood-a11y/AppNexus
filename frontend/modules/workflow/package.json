@@ -4,7 +4,8 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./center": "./src/WorkflowCenter.vue"
+    "./center": "./src/WorkflowCenter.vue",
+    "./leave": "./src/LeaveRequests.vue"
   },
   "scripts": {
     "build": "vue-tsc --noEmit --skipLibCheck",

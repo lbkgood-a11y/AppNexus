@@ -24,6 +24,7 @@ public final class NavigationPages {
     /** 返回已交付的真实页面，不包含模板演示、远程脚本或尚未集成的应用。 */
     public static List<Page> all() {
         return List.of(
+            new Page("workflow/leave","/workflow/leave","请假单 POC","Leave request POC",MenuManagement.Scope.TENANT,null,Gate.PERMISSION),
             new Page("workflow/designer","/workflow/designer","流程设计器","Workflow designer",MenuManagement.Scope.TENANT,"workflow:read",Gate.PERMISSION),
             new Page("workflow/index","/workflow/center","工作流中心","Workflow center",MenuManagement.Scope.TENANT,null,Gate.PERMISSION),
             new Page("print/index","/print/management","打印管理","Print management",MenuManagement.Scope.TENANT,"print.template:read",Gate.PERMISSION),
@@ -49,6 +50,7 @@ public final class NavigationPages {
     public static List<String> operations(String key) {
         if(key==null)return List.of();
         return switch(key){
+            case "workflow/leave" -> List.of("workflow:start","workflow:read","workflow:edit");
             case "workflow/index" -> List.of("workflow:operate");
             case "workflow/designer" -> List.of("workflow:read","workflow:edit","workflow:publish");
             case "print/index" -> List.of("print.template:read","print.template:design","print.template:publish","print.device:manage","print.job:read","print.job:submit","print.job:reprint");

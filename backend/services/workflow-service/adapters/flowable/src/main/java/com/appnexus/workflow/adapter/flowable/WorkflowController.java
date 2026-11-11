@@ -62,6 +62,12 @@ public final class WorkflowController {
     return reply(() -> runtime.businesses(context(r)));
   }
 
+  /** 面向业务配置的单据、字段、结果动作与租户内人员目录，不返回任意调用地址。 */
+  @GetMapping("/configuration")
+  public Object configuration(HttpServletRequest r) {
+    return reply(() -> runtime.configuration(context(r)));
+  }
+
   @GetMapping("/definitions")
   public Object definitions(HttpServletRequest r) {
     return reply(() -> runtime.definitions(context(r)));

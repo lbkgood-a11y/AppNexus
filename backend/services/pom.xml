@@ -1,3 +1,3 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- 服务工程平级聚合；聚合关系不授予服务间实现访问权限。 -->
-<project xmlns="http://maven.apache.org/POM/4.0.0"><modelVersion>4.0.0</modelVersion><parent><groupId>com.appnexus</groupId><artifactId>backend</artifactId><version>0.1.0-SNAPSHOT</version></parent><artifactId>services</artifactId><packaging>pom</packaging><modules><module>platform-service</module><module>workflow-service</module><module>print-service</module></modules></project>
+<project xmlns="http://maven.apache.org/POM/4.0.0"><modelVersion>4.0.0</modelVersion><parent><groupId>com.appnexus</groupId><artifactId>backend</artifactId><version>0.1.0-SNAPSHOT</version></parent><artifactId>services</artifactId><packaging>pom</packaging><modules><module>platform-service</module><module>workflow-service</module><module>print-service</module><module>leave-poc</module></modules></project>

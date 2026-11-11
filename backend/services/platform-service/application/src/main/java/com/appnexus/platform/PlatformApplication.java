@@ -11,7 +11,7 @@ import org.springframework.context.annotation.Import;
  * 保留平台扫描范围，通过显式导入装配共享服务，避免扩大扫描引入无关组件。
  */
 @SpringBootApplication
-@Import({WorkflowEngineConfiguration.class, PrintConfiguration.class})
+@Import({WorkflowEngineConfiguration.class, PrintConfiguration.class, com.appnexus.leave.LeavePocConfiguration.class})
 public class PlatformApplication {
     /**
      * 启动组合应用，工作流引擎默认关闭，须完成受控数据库迁移后显式启用。

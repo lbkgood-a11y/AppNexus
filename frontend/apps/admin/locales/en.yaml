@@ -1065,6 +1065,10 @@ workflow:
     TASK_OVERDUE: "Task overdue"
     WITHDRAWN: "Workflow withdrawn"
   codes:
+
+    NUMERIC_FIELD_REQUIRED: Select a numeric field from this document for numeric comparisons
+    BUSINESS_OUTCOME_REQUIRED: Select a business action for this approval outcome
+    BUSINESS_WITHDRAWAL_INVALID: Withdrawal requires both business validation and outcome handling
     NODE_POSITION_INVALID: "Node coordinates are outside the allowed range."
     APPROVAL_BASIS_CHANGED: "The approval basis changed. Resubmit according to business rules."
     ACTION_COMPLETED: "Workflow constraint: ACTION_COMPLETED"
@@ -1290,3 +1294,111 @@ printing:
     RECEIPT80: "80mm receipt"
     RECEIPT58: "58mm receipt"
     CUSTOM: "Custom"
+leavePoc:
+  title: Leave request POC
+  hint: Counts inclusive calendar days, 1–365 days. More than 3 days requires HR approval. No balance or attendance calculation.
+  search: Search leave requests
+  id: Request ID
+  type: Leave type
+  start: Start date
+  end: End date
+  days: Days
+  reason: Reason
+  organization: Organization
+  organizationHint: Choose an organization with your active assignment. Its configured leader will review the request.
+  hrAccount: HR account UUID
+  configure: Configure approval
+  generate: Generate draft
+  flowHint: The organization leader reviews first; leave over 3 days also requires HR approval. Review and publish in the designer. Self approval is disabled. No permissions are granted automatically.
+  flowExists: A leave workflow already exists. Edit it in the designer to avoid conflicting matches.
+  flowSaved: Draft created. Review the approvers and publish it.
+  new: New leave request
+  detail: View request
+  submit: Submit for approval
+  saved: Leave draft saved
+  submitted: Submitted for approval
+  required: This field is required
+  uuid: Enter a valid UUID
+  reasonLimit: Reason must contain 1–2000 characters
+  types:
+    PERSONAL: Personal leave
+    ANNUAL: Annual leave
+    SICK: Sick leave
+  states:
+    DRAFT: Draft
+    SUBMITTED: In approval (awaiting result delivery)
+    APPROVED: Approved
+    REJECTED: Rejected
+    WITHDRAWN: Withdrawn
+  flow:
+    title: Leave approval POC
+    start: Start
+    supervisor: Supervisor approval
+    duration: More than 3 days
+    hr: HR approval
+    merge: Merge approvals
+    end: End
+  saveDraft: Save draft
+  cancel: Cancel
+
+businessWorkflow:
+  view: Configuration view
+  businessView: Business setup
+  advancedView: Advanced orchestration
+  documentTitle: 1. Link a business document
+  document: Document to approve
+  approvalSuffix: ' approval'
+  noDocuments: No configurable documents are available. Ask an administrator to connect a business capability or check permissions.
+  unsupportedDocument: This definition has no business configuration catalog. Use advanced orchestration. Existing settings are preserved.
+  catalogUnavailable: Could not load the configuration catalog. Retry.
+  dataContract: Submitting a document links it to this workflow. The business system supplies the organization, applicant and condition fields. Current tasks authorize document access.
+  reviewTitle: 2. Configure approval steps
+  stepName: Step name
+  approvers: Who approves
+  approverRule: Selection rule
+  approverName: Choose a member or position
+  addApprover: Add approver rule
+  unavailablePerson: Previous member or position is unavailable. Choose again.
+  leaderHint: Leaders and position assignments are resolved within the document organization. Missing approvers create an exception task and never approve automatically.
+  selfApproval: Allow applicants to approve their own requests
+  nodeActionHint: The business system checks the document before completing the step. Successful checks and the multi-person policy advance the workflow. Rejection ends this approval.
+  addReview: Add approval step
+  addConditionalReview: Add conditional approval
+  complexGraph: This structure requires advanced orchestration. The existing workflow is unchanged.
+  start: Submit document
+  review: Approval step
+  condition: Evaluate condition
+  merge: Continue workflow
+  end: Approval ends
+  conditionsTitle: 3. Configure branch conditions
+  conditionHint: Conditions use business-provided fields. Numeric comparisons support decimal values, not scripts or functions. If multiple conditions match, the first configured branch wins; otherwise the default branch runs.
+  noConditions: All documents follow the same sequence. Add a conditional approval to route extra reviews.
+  field: Field to evaluate
+  operator: Comparison
+  value: Comparison value
+  then: 'When matched, go to:'
+  otherwise: 'Otherwise, go to:'
+  yes: 'Yes'
+  no: 'No'
+  outcomeTitle: 4. Configure outcome actions
+  deliveryHint: The system reliably executes these business actions after approval ends. Failed delivery is retried or marked for recovery. Document status changes after successful delivery.
+  allowWithdrawal: Allow applicants to withdraw pending requests
+  withdrawHint: Only the applicant can withdraw a running approval, subject to business checks. Completed approvals cannot be cancelled here. Changes take effect after publication.
+  overview: Approval overview
+  overviewHint: Configuration updates the diagram. Use Sample preview above to check the steps for a sample document.
+  versionHint: Draft changes do not affect active approvals. Publishing applies the new version to new submissions only and requires separate permission.
+  people:
+    LEADER: Leader of the document organization
+    MEMBER: Specific member
+    POSITION: Position in the document organization
+  operators:
+    NUM_EQ: Equals
+    NUM_NE: Does not equal
+    EQ: Equals (text)
+    NE: Does not equal (text)
+    GT: Greater than
+    GE: Greater than or equal to
+    LT: Less than
+    LE: Less than or equal to
+  removeReview: Remove approval step
+  removeConfirm: Remove this step and its independent condition, if any? Publishing affects new submissions.

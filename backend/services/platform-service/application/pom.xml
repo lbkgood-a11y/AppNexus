@@ -8,6 +8,8 @@
   </parent>
   <artifactId>platform-application</artifactId>
   <dependencies>
+    <!-- 请假 POC 业务仅在组合启动装配，通过公开工作流契约访问审批。 -->
+    <dependency><groupId>com.appnexus</groupId><artifactId>leave-poc</artifactId><version>${project.version}</version></dependency>
     <!-- 正式契约生成；分组和访问控制在应用装配，不能把所有 Controller 直接发布给外部合作方。 -->
     <dependency>
       <groupId>org.springdoc</groupId>

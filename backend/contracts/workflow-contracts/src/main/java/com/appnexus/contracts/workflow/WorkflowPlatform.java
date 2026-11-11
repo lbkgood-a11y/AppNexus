@@ -4,6 +4,16 @@ import java.util.*;
 
 /** 平台公开能力桥接；每次调用复核有效成员，不以流程分配替代身份与强制权限。 */
 public interface WorkflowPlatform {
+  /** 配置目录选项只包含当前租户非敏感名称及标识，不包含联系方式、凭据或业务原文。 */
+  record Option(String id, String name) {}
+
+  /** 当前租户可选成员、组织及岗位；实现方必须验证流程查看权限并限定租户，不按名称猜选人规则。 */
+  default Map<String, List<Option>> configurationOptions(WorkflowContext context) {
+    return Map.of("members", List.of(), "organizations", List.of(), "positions", List.of());
+  }
+
+  /** 当前成员有效任职的单据组织，供业务表单选择；不默认开放全租户组织目录。 */
+  default List<Option> documentOrganizations(WorkflowContext context) { return List.of(); }
   /** 判断当前可信上下文的功能权限；未知权限或无效成员失败关闭。 */
   boolean allowed(WorkflowContext context, String permission);
 

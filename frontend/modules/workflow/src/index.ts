@@ -30,6 +30,8 @@ export interface WorkflowNode {
 }
 /** 受控连接，只有CHOICE允许条件和默认分支。 */
 export interface Edge {
+  /** 固定比较符；缺省 EQ 兼容旧定义，大小比较仅允许 NUMBER 字段和十进制常量。 */
+  operator?: "EQ" | "NE" | "NUM_EQ" | "NUM_NE" | "GT" | "GE" | "LT" | "LE" | null;
   from: string;
   to: string;
   field: string | null;
@@ -71,6 +73,7 @@ export interface Definition {
 export type Row = Record<string, any>;
 /** 写请求幂等标识由应用适配器生成；客户端不得传入租户或操作者。 */
 export interface WorkflowApi {
+  configuration: () => Promise<BusinessConfiguration>;
   capabilities: () => Promise<string[]>;
   businesses: () => Promise<Capability[]>;
   definitions: () => Promise<Definition[]>;
@@ -145,4 +148,38 @@ export function newNode(id: string, kind: Kind): WorkflowNode {
     join: null,
     separate: true,
   };
+}
+export type { LeaveApi } from "./leave";
+
+/** 后端注册的业务配置目录；不允许浏览器声明任意单据、函数或接口 URL。 */
+export interface BusinessProfile {
+  objectType: string;
+  purpose: string;
+  nameZh: string;
+  nameEn: string;
+  descriptionZh: string;
+  descriptionEn: string;
+  fields: {
+    key: string;
+    nameZh: string;
+    nameEn: string;
+    type: "NUMBER" | "BOOLEAN" | "TEXT";
+    unitZh: string;
+    unitEn: string;
+  }[];
+  outcomes: {
+    result: string;
+    capability: string;
+    nameZh: string;
+    nameEn: string;
+  }[];
+  withdrawalCapability: string | null;
+}
+/** 当前租户真实目录，只有名称及稳定 ID，不包含凭据、联系方式或任意对象原文。 */
+export interface BusinessConfiguration {
+  documents: { capability: string; profile: BusinessProfile }[];
+  options: Record<
+    "members" | "organizations" | "positions",
+    { id: string; name: string }[]
+  >;
 }

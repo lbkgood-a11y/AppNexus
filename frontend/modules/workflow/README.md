@@ -1,5 +1,7 @@
 # 工作流中心前端
 
+流程设计器新增默认“业务配置”视图，按注册单据目录选择单据、按名称选人、设置受控条件和结果动作；与高级画布共用草稿及发布版本。BusinessWorkflowConfiguration 组合已有 Element Plus 表单及 WorkflowCanvas，因为原画布属性面板不提供业务单据目录和结果动作解释。具体权限、条件参数、组件选型及限制见 docs/design/业务人员审批配置.md；不允许业务人员输入脚本或任意接口地址。
+
 复用当前vue-pure-admin应用壳，选择标准列表工作区：任务、定义和实例为平面查询对象，使用BusinessWorkspace及ManagementTable，保留刷新、密度、列设置、全屏和分页。
 编辑与详情使用ManagedDialog，表单使用Element Plus，中英文进入应用locales，API/CSRF/租户上下文由admin应用注入。
 

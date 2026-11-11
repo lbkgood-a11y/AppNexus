@@ -23,6 +23,7 @@ const get = <T>(path: string) => http.request<T>("get", base + path);
 const id = encodeURIComponent;
 /** 应用HTTP适配，领域组件不能直接指定租户或身份。 */
 export const workflowApi: WorkflowApi = {
+  configuration: () => get("/configuration"),
   preview: (model, sample) => write("post", "/preview", { model, sample }),
   withdraw: (key, reason) =>
     write("post", "/instances/" + id(key) + "/withdraw", { reason }),

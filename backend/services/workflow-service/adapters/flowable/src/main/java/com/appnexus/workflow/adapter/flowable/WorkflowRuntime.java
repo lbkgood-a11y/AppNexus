@@ -131,6 +131,16 @@ public final class WorkflowRuntime implements WorkflowResults, WorkflowTaskAcces
         .toList();
   }
 
+  /** 业务设计目录与真实选人选项；只读流程人员可查看，能力仍逐项按既有功能权限过滤。 */
+  public Map<String, Object> configuration(WorkflowContext c) {
+    require(c, "read");
+    var documents = businesses(c).stream()
+        .filter(b -> businesses.get(b.key()).configuration() != null)
+        .map(b -> Map.of("capability", b.key(), "profile", businesses.get(b.key()).configuration()))
+        .toList();
+    return Map.of("documents", documents, "options", platform.configurationOptions(c));
+  }
+
   /** 最多100个定义；支持按名称筛选，分页由HTTP约束。 */
   public List<Map<String, Object>> definitions(WorkflowContext c) {
     require(c, "read");
@@ -158,6 +168,30 @@ public final class WorkflowRuntime implements WorkflowResults, WorkflowTaskAcces
     if (m != null && m.nodes() != null)
       m.nodes().stream().filter(Objects::nonNull).forEach(n -> fields.add(n.id() + "_decision"));
     var errors = new ArrayList<>(WorkflowValidator.validate(m, keys, fields));
+    if (m != null && m.edges() != null) {
+      // 数值条件必须显式来自本单据的 NUMBER 字段，避免按字符串或跨业务字段误判。
+      var entry = businesses.get(m.entryCapability());
+      var profile = entry == null ? null : entry.configuration();
+      if (profile != null && m.mode() == Mode.APPROVAL) {
+        for (String result : List.of("APPROVED", "REJECTED")) {
+          String bound = m.terminalActions() == null ? null : m.terminalActions().get(result);
+          if (profile.outcomes().stream().noneMatch(o -> o.result().equals(result) && o.capability().equals(bound)))
+            errors.add("BUSINESS_OUTCOME_REQUIRED:" + result);
+        }
+        if (m.withdrawalCapability() != null && !m.withdrawalCapability().isBlank()) {
+          String bound = m.terminalActions() == null ? null : m.terminalActions().get("WITHDRAWN");
+          if (!m.withdrawalCapability().equals(profile.withdrawalCapability()) || profile.outcomes().stream()
+              .noneMatch(o -> o.result().equals("WITHDRAWN") && o.capability().equals(bound)))
+            errors.add("BUSINESS_WITHDRAWAL_INVALID");
+        }
+      }
+      for (var edge : m.edges())
+        if (edge != null && !edge.defaultEdge()
+            && !Set.of("EQ", "NE").contains(WorkflowCondition.operator(edge.operator()))
+            && (profile == null || profile.fields().stream()
+                .noneMatch(f -> f.key().equals(edge.field()) && "NUMBER".equals(f.type()))))
+          errors.add("NUMERIC_FIELD_REQUIRED:" + edge.from());
+    }
     if (m != null && m.nodes() != null)
       for (var n : m.nodes())
         if (n != null && n.capability() != null && !n.capability().isBlank()) {

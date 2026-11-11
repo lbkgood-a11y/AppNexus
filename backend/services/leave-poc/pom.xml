@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- 请假 POC 独立业务接入；仅通过公开契约使用工作流，不依赖引擎实现。 -->
+<project xmlns="http://maven.apache.org/POM/4.0.0">
+  <modelVersion>4.0.0</modelVersion>
+  <parent><groupId>com.appnexus</groupId><artifactId>services</artifactId><version>0.1.0-SNAPSHOT</version></parent>
+  <artifactId>leave-poc</artifactId>
+  <dependencies>
+    <dependency><groupId>com.appnexus</groupId><artifactId>workflow-contracts</artifactId><version>${project.version}</version></dependency>
+    <dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-web</artifactId></dependency>
+    <dependency><groupId>org.springframework</groupId><artifactId>spring-jdbc</artifactId></dependency>
+    <dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-test</artifactId><scope>test</scope></dependency>
+    <dependency><groupId>org.testcontainers</groupId><artifactId>testcontainers-mysql</artifactId><scope>test</scope></dependency>
+    <dependency><groupId>org.testcontainers</groupId><artifactId>testcontainers-junit-jupiter</artifactId><scope>test</scope></dependency>
+    <dependency><groupId>com.mysql</groupId><artifactId>mysql-connector-j</artifactId><scope>test</scope></dependency>
+    <!-- 仅测试装配真实引擎闭环，正式业务代码仍只依赖工作流公开契约。 -->
+    <dependency><groupId>com.appnexus</groupId><artifactId>workflow-flowable-adapter</artifactId><version>${project.version}</version><scope>test</scope></dependency>
+  </dependencies>
+</project>

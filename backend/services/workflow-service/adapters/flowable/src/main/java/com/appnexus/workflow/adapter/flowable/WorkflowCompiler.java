@@ -60,7 +60,9 @@ final class WorkflowCompiler {
           ((ExclusiveGateway) process.getFlowElement(e.from())).setDefaultFlow(flow.getId());
         else
           flow.setConditionExpression(
-              "${wf_fields['" + escape(e.field()) + "'] == '" + escape(e.value()) + "'}");
+              "${wfBridge.condition(execution, '" + escape(e.field()) + "', '"
+                  + escape(com.appnexus.workflow.core.WorkflowCondition.operator(e.operator()))
+                  + "', '" + escape(e.value()) + "')}");
       }
       process.addFlowElement(flow);
     }

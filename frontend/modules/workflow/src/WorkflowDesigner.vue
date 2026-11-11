@@ -7,6 +7,7 @@ import { ManagedDialog } from "@appnexus/ui";
 import { layoutGraph } from "./layout";
 import { connectionError } from "./graphEditing";
 import WorkflowCanvas from "./WorkflowCanvas.vue";
+import BusinessWorkflowConfiguration from "./BusinessWorkflowConfiguration.vue";
 import {
   emptyModel,
   newNode,
@@ -15,6 +16,7 @@ import {
   type WorkflowApi,
   type Capability,
   type Kind,
+  type BusinessConfiguration,
 } from "./index";
 /** 整页流程设计器：节点库、拓扑画布和上下文属性复用Element Plus；发布以服务端校验为准。 */
 const props = defineProps<{
@@ -26,7 +28,39 @@ const props = defineProps<{
   errorText: (e: unknown) => string;
 }>();
 const emit = defineEmits<{ saved: []; close: [] }>();
-const { t } = useI18n();
+const { t, locale } = useI18n();
+const catalog = ref<BusinessConfiguration>();
+const configurationLoading = ref(false);
+const view = ref("business");
+const currentProfile = computed(
+  () =>
+    catalog.value?.documents.find(
+      (d) => d.capability === model.value.entryCapability,
+    )?.profile,
+);
+/** 目录加载失败保留原草稿；业务配置不在前端伪造单据或选人数据。 */
+async function loadConfiguration() {
+  configurationLoading.value = true;
+  try {
+    catalog.value = await props.api.configuration();
+    if (
+      (model.value.entryCapability &&
+        !catalog.value.documents.some(
+          (d) => d.capability === model.value.entryCapability,
+        )) ||
+      model.value.mode === "BUSINESS" ||
+      model.value.nodes.some((n) =>
+        ["ACTION", "WAIT", "HANDLE", "FORK", "JOIN"].includes(n.kind),
+      )
+    )
+      view.value = "advanced";
+  } catch (e) {
+    error.value = props.errorText(e);
+  } finally {
+    configurationLoading.value = false;
+  }
+}
+onMounted(loadConfiguration);
 const model = ref<WorkflowModel>(
   props.definition ? JSON.parse(props.definition.model) : emptyModel(),
 );
@@ -405,6 +439,18 @@ watch(
       </div>
     </header>
     <div class="designer-feedback">
+      <el-radio-group
+        v-model="view"
+        :disabled="busy || configurationLoading"
+        :aria-label="t('businessWorkflow.view')"
+      >
+        <el-radio-button value="business">{{
+          t("businessWorkflow.businessView")
+        }}</el-radio-button>
+        <el-radio-button value="advanced">{{
+          t("businessWorkflow.advancedView")
+        }}</el-radio-button>
+      </el-radio-group>
       <el-alert
         v-if="error"
         :title="error"
@@ -443,7 +489,21 @@ watch(
         </ul></el-alert
       >
     </div>
-    <div class="designer-layout">
+    <template v-if="view === 'business'">
+      <el-skeleton v-if="configurationLoading" :rows="5" animated />
+      <BusinessWorkflowConfiguration
+        v-else-if="catalog"
+        v-model="model"
+        :catalog="catalog"
+        :disabled="!canEdit || busy"
+      />
+      <el-empty v-else :description="t('businessWorkflow.catalogUnavailable')"
+        ><el-button @click="loadConfiguration">{{
+          t("management.refresh")
+        }}</el-button></el-empty
+      >
+    </template>
+    <div v-else class="designer-layout">
       <aside class="designer-palette" :aria-label="t('workflow.nodeLibrary')">
         <h2>{{ t("workflow.nodeLibrary") }}</h2>
         <el-input
@@ -889,7 +949,19 @@ watch(
                           :key="f"
                           :value="f"
                           :label="f" /></el-select></el-form-item
-                    ><el-form-item :label="t('workflow.equals')"
+                    ><el-form-item :label="t('businessWorkflow.operator')"
+                      ><el-select
+                        :model-value="edge.operator || 'EQ'"
+                        @update:model-value="edge.operator = $event"
+                        ><el-option
+                          v-for="op in ['EQ', 'NE', 'NUM_EQ', 'NUM_NE', 'GT', 'GE', 'LT', 'LE']"
+                          :key="op"
+                          :value="op"
+                          :label="
+                            t('businessWorkflow.operators.' + op)
+                          " /></el-select
+                    ></el-form-item>
+                    <el-form-item :label="t('workflow.equals')"
                       ><el-input
                         v-model="
                           edge.value
@@ -910,7 +982,17 @@ watch(
         :title="error"
         type="error"
         :closable="false" /><el-form label-position="top"
-        ><el-form-item v-for="field in fields" :key="field" :label="field"
+        ><el-form-item
+          v-for="field in view === 'business' && currentProfile
+            ? currentProfile.fields.map((f) => f.key)
+            : fields"
+          :key="field"
+          :label="
+            (locale.startsWith('en')
+              ? currentProfile?.fields.find((f) => f.key === field)?.nameEn
+              : currentProfile?.fields.find((f) => f.key === field)?.nameZh) ||
+            field
+          "
           ><el-input v-model="sample[field]" /></el-form-item
         ><el-button :loading="busy" @click="preview">{{
           t("workflow.preview")

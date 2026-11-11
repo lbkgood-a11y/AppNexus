@@ -29,7 +29,7 @@ public final class WorkflowPreview {
       if (n.kind() == Kind.CHOICE) {
         var chosen =
             out.stream()
-                .filter(e -> !e.defaultEdge() && Objects.equals(sample.get(e.field()), e.value()))
+                .filter(e -> !e.defaultEdge() && WorkflowCondition.test(sample, e.field(), e.operator(), e.value()))
                 .findFirst()
                 .orElseGet(() -> out.stream().filter(Edge::defaultEdge).findFirst().orElseThrow());
         queue.add(chosen.to());

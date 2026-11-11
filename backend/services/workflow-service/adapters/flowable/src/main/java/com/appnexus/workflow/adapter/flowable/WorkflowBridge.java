@@ -20,6 +20,13 @@ public final class WorkflowBridge
     return runtime.people(execution, node);
   }
 
+  /** 与预演复用固定比较器；参数只来自校验后的模型，不能调用任意函数或读取业务原文。 */
+  @SuppressWarnings("unchecked")
+  public boolean condition(DelegateExecution execution, String field, String operator, String value) {
+    return com.appnexus.workflow.core.WorkflowCondition.test(
+        (Map<String, String>) execution.getVariable("wf_fields"), field, operator, value);
+  }
+
   @Override
   public void notify(DelegateExecution execution) {
     if ("end".equals(execution.getEventName())) runtime.ended(execution);

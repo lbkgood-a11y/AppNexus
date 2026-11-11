@@ -64,8 +64,19 @@ class WorkflowSecurityTest extends DatabaseTestSupport {
     var cookie = selected.getResponse().getCookie("JSESSIONID");
     mvc.perform(get("/api/workflow/definitions").cookie(cookie)).andExpect(status().isForbidden());
     mvc.perform(get("/api/workflow/tasks").cookie(cookie)).andExpect(status().isOk());
+    // 请假原文与列表入口只允许本人；创建仍要求独立发起权限，CSRF 不可绕过。
+    mvc.perform(get("/api/leave-poc").cookie(cookie)).andExpect(status().isOk());
+    mvc.perform(get("/api/workflow/configuration").cookie(cookie)).andExpect(status().isForbidden());
+    mvc.perform(post("/api/leave-poc").cookie(cookie).contentType("application/json").content("{}"))
+        .andExpect(status().isForbidden());
+    mvc.perform(post("/api/leave-poc").cookie(cookie).with(csrf())
+        .header("Idempotency-Key", UUID.randomUUID().toString()).contentType("application/json").content("{}"))
+        .andExpect(status().isForbidden());
     bootstrap.initialize(UUID.fromString(tenant), UUID.fromString(member));
     mvc.perform(get("/api/workflow/definitions").cookie(cookie)).andExpect(status().isOk());
+    mvc.perform(get("/api/workflow/configuration").cookie(cookie)).andExpect(status().isOk())
+        .andExpect(jsonPath("$.documents[0].profile.objectType").value("LeaveRequest"))
+        .andExpect(jsonPath("$.options.members[0].name").value("workflow-test"));
     String body =
         "{\"revision\":-1,\"model\":{\"name\":\"Draft\",\"objectType\":\"Document\",\"purpose\":\"Review\",\"mode\":\"APPROVAL\",\"entryCapability\":\"none\",\"nodes\":[],\"edges\":[],\"matches\":[],\"terminalActions\":{}}}";
     mvc.perform(
