@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import { useRouter } from "vue-router";
+import { useRouter, useRoute } from "vue-router";
 import { ElMessage } from "element-plus";
 import {
   BusinessWorkspace,
@@ -20,6 +20,7 @@ const props = defineProps<{
 }>();
 const { t, locale } = useI18n();
 const router = useRouter();
+const route=useRoute();
 const comment = ref("");
 const tab = ref(props.workspace === "designer" ? "definitions" : "todo"),
   caps = ref<string[]>([]),
@@ -164,7 +165,7 @@ watch(tab, () => {
   submitted.value = "";
   void load();
 });
-onMounted(load);
+onMounted(async()=>{await load();if(props.workspace==='designer'&&route.query.create==='1'&&can('edit'))openDesigner();});
 async function run(action: () => Promise<void>) {
   busy.value = true;
   error.value = "";

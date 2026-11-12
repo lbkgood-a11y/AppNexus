@@ -1316,7 +1316,7 @@ leavePoc:
   detail: View request
   submit: Submit for approval
   saved: Leave draft saved
-  submitted: Submitted for approval
+  submitted: Submission completed
   required: This field is required
   uuid: Enter a valid UUID
   reasonLimit: Reason must contain 1–2000 characters
@@ -1326,6 +1326,7 @@ leavePoc:
     SICK: Sick leave
   states:
     DRAFT: Draft
+    ACCEPTED: Accepted (direct submission)
     SUBMITTED: In approval (awaiting result delivery)
     APPROVED: Approved
     REJECTED: Rejected
@@ -1402,3 +1403,84 @@ businessWorkflow:
     LE: Less than or equal to
   removeReview: Remove approval step
   removeConfirm: Remove this step and its independent condition, if any? Publishing affects new submissions.
+
+document:
+  platformTitle: Document registry
+  title: Document workbench
+  code: Document code
+  name: Name
+  module: Module
+  contractVersion: Contract version
+  publishedVersion: Published configuration
+  state: Status
+  operations: Actions
+  search: Document search
+  refresh: Refresh
+  reset: Reset
+  enabled: Enabled
+  disabled: Disabled
+  enable: Enable
+  disable: Disable
+  grants: Tenant grants and contract
+  configure: Configure submission action
+  empty: No manageable documents
+  field: Condition field
+  fieldType: Type
+  unit: Unit
+  tenant: Tenant
+  authorize: Grant
+  revoke: Revoke configuration access
+  revokeConfirm: Revoke editing access and keep published bindings?
+  enableConfirm: Enable this document type?
+  disableConfirm: Block new submissions and allow existing workflows to finish?
+  saved: Draft or grant saved
+  published: Binding published
+  required: Complete binding names, published workflows and conditions
+  inactiveHint: This document is authorized but disabled. Configuration is available; submissions require platform activation.
+  action: Document action
+  operationKey: Page and API operation key
+  permission: Operation permission
+  submissionMode: Submission mode
+  directHint: Business acceptance without an approval instance. The business owns the resulting state.
+  modes:
+    DIRECT: Direct submission
+    APPROVAL: Approval submission
+  bindingHint: Exactly one explicit submission strategy must match, including direct submission. Numbers use declared units.
+  addBinding: Add binding
+  removeBinding: Remove binding
+  bindingName: Binding name
+  workflow: Published workflow and version
+  createWorkflow: Create or manage workflows
+  reload: Reload configuration
+  noWorkflow: No compatible published workflow. Publish one supporting approval and rejection results first.
+  addCondition: Add condition (AND)
+  operator: Operator
+  value: Value
+  remove: Remove condition
+  close: Close
+  save: Save draft
+  publish: Save and publish
+  editLeave: Edit and resubmit
+  cycleHistory: Approval history
+  returnWorkbench: Return to document workbench
+  operators:
+    EQ: Equals
+    NE: Not equal
+    GT: Greater than
+    GE: Greater or equal
+    LT: Less than
+    LE: Less or equal
+  leaveConfiguration: Unsaved binding changes will be discarded. Open the workflow designer?
+  codes:
+    DOCUMENT_CONTRACT_CHANGED: Document contract changed. Validate and publish the binding again.
+    DOCUMENT_FLOW_NOT_BOUND: No approval binding. Contact your tenant administrator.
+    DOCUMENT_FLOW_NOT_MATCHED: No approval binding matches. Contact your tenant administrator.
+    DOCUMENT_FLOW_MATCH_CONFLICT: Multiple approval bindings match. Adjust the conditions.
+    DOCUMENT_FLOW_INCOMPATIBLE: The workflow is unavailable or incompatible. Select another version.
+    DOCUMENT_VERSION_CONFLICT: Configuration changed. Reload before editing.
+    DOCUMENT_TYPE_DISABLED: Document type is disabled. Contact the platform administrator.
+    DOCUMENT_IDEMPOTENCY_CONFLICT: Request content or approval basis changed.
+    DOCUMENT_CONDITION_INVALID: Invalid condition type or operator.
+    DOCUMENT_BINDINGS_INVALID: Configure at least one complete binding.
+    DOCUMENT_NUMBER_INVALID: A valid decimal number is required.
+    DOCUMENT_BOOLEAN_INVALID: Boolean conditions require true or false.

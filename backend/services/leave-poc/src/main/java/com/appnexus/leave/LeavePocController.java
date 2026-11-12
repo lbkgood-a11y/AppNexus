@@ -24,6 +24,10 @@ public final class LeavePocController {
   @GetMapping("/organizations")
   public Object organizations(HttpServletRequest r) { return reply(() -> service.organizations(context(r))); }
 
+  /** 页面操作契约与实际业务处理共用声明；展示不是授权，提交仍由服务端复核。 */
+  @GetMapping("/actions")
+  public Object actions(HttpServletRequest r) {return reply(()->service.actions(context(r)));}
+
   /** 创建草稿，未知或无主管组织拒绝，不隐式创建组织或人员。 */
   @PostMapping
   public Object create(HttpServletRequest r, @RequestBody LeavePocService.Input input) {
@@ -43,6 +47,17 @@ public final class LeavePocController {
     return reply(() -> service.submit(context(r), id));
   }
 
+  /** 修改参数包含期望依据版本；审批中不可修改，成功后需重新提交新轮次。 */
+  public record Edit(long basisVersion,LeavePocService.Input input) {}
+  /** 本人修改草稿、驳回或撤回单据。 */
+  @PutMapping("/{id}")
+  public Object update(HttpServletRequest r,@PathVariable String id,@RequestBody Edit edit) {
+    return reply(()->service.update(context(r),id,edit.basisVersion(),edit.input()));
+  }
+  /** 本人流程关联历史。 */
+  @GetMapping("/{id}/cycles")
+  public Object cycles(HttpServletRequest r,@PathVariable String id) {return reply(()->service.cycles(context(r),id));}
+
   private WorkflowContext context(HttpServletRequest r) {
     if (!(r.getAttribute(WorkflowContext.class.getName()) instanceof WorkflowContext c))
       throw new SecurityException("TENANT_REQUIRED");
@@ -54,6 +69,8 @@ public final class LeavePocController {
   private Object reply(Supplier<Object> action) {
     try {
       return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(action.get());
+    } catch (com.appnexus.contracts.document.Documents.Rejection e) {
+      return problem(e.status(),e.getMessage());
     } catch (com.appnexus.contracts.workflow.WorkflowRejection e) {
       return problem(e.status(), e.code());
     } catch (SecurityException e) {

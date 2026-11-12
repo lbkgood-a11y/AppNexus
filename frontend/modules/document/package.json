@@ -1,0 +1,11 @@
+{
+  "name": "@appnexus/document",
+  "private": true,
+  "type": "module",
+  "description": "单据配置与关联管理；构建参数说明见 README.md",
+  "exports": { ".": "./src/index.ts", "./management": "./src/DocumentManagement.vue" },
+  "scripts": { "build": "vue-tsc --noEmit --skipLibCheck", "typecheck": "vue-tsc --noEmit --skipLibCheck", "test": "vitest run --passWithNoTests" },
+  "dependencies": { "@appnexus/ui": "workspace:*" },
+  "devDependencies": { "typescript": "^6.0.0", "vitest": "^4.0.0", "vue-tsc": "^3.1.4" },
+  "peerDependencies": { "vue": "^3.5.31", "element-plus": "^2.13.6", "vue-i18n": "^11.3.0", "vue-router": "^5.0.0" }
+}

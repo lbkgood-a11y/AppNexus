@@ -1,0 +1,3 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- 单据集成契约不依赖框架或业务实现，供模块与未来服务客户端复用。 -->
+<project xmlns="http://maven.apache.org/POM/4.0.0"><modelVersion>4.0.0</modelVersion><parent><groupId>com.appnexus</groupId><artifactId>contracts</artifactId><version>0.1.0-SNAPSHOT</version></parent><artifactId>document-contracts</artifactId></project>

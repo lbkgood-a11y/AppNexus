@@ -58,6 +58,8 @@ export function leaveModel(
 
 /** 请假 POC 页面依赖注入接口；日期为 YYYY-MM-DD，标识均为字符串，不传租户或操作者。 */
 export interface LeaveApi {
+  /** 页面操作与后端、工作台共享 operationKey，不在浏览器决定提交策略。 */
+  actions:()=>Promise<{actionCode:string;nameZh:string;nameEn:string;permissionCode:string;operationKey:string;allowed:boolean}[]>;
   organizations: () => Promise<{ id: string; name: string }[]>;
   list: () => Promise<Record<string, any>[]>;
   create: (input: {
@@ -68,5 +70,9 @@ export interface LeaveApi {
     reason: string;
   }) => Promise<Record<string, any>>;
   submit: (id: string) => Promise<unknown>;
+  /** 本人编辑采用读取的依据版本，成功后形成可重提草稿。 */
+  update: (id: string, basisVersion: number, input: { organizationId:string;leaveType:string;startDate:string;endDate:string;reason:string }) => Promise<unknown>;
+  /** 本人各次审批关联，不返回历史原因原文。 */
+  cycles: (id: string) => Promise<Record<string, any>[]>;
   read: (id: string, taskId?: string) => Promise<Record<string, any>>;
 }

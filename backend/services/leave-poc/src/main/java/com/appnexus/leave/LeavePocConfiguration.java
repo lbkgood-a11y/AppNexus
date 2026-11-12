@@ -15,8 +15,11 @@ public class LeavePocConfiguration {
   @Bean
   public LeavePocService leavePocService(JdbcTemplate jdbc, PlatformTransactionManager manager,
       WorkflowPlatform platform, ObjectProvider<WorkflowStarter> starter,
-      ObjectProvider<WorkflowTaskAccess> tasks) {
-    return new LeavePocService(jdbc, manager, platform, starter::getObject, tasks::getObject);
+      ObjectProvider<WorkflowTaskAccess> tasks,
+      ObjectProvider<com.appnexus.contracts.document.DocumentBindings> bindings) {
+    var service=new LeavePocService(jdbc, manager, platform, starter::getObject, tasks::getObject);
+    service.bindings(bindings::getObject);
+    return service;
   }
 
   /** API 沿用组合应用 Cookie/CSRF 及可信租户过滤器。 */

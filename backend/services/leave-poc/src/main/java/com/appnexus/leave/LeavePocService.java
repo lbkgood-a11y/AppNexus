@@ -10,7 +10,26 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
 /** 请假 POC 业务存储与工作流适配；只依赖公开契约，提交后冻结依据，不计算余额或考勤。 */
-public final class LeavePocService implements WorkflowBusiness {
+public final class LeavePocService implements WorkflowBusiness, com.appnexus.contracts.document.Documents.Provider {
+  /** 页面提交、业务 API 和工作台共用行为标识；权限是授权引用，不等同启动流程。 */
+  public static final com.appnexus.contracts.document.Documents.Action SUBMIT_ACTION=
+    new com.appnexus.contracts.document.Documents.Action("submit","提交","Submit","workflow:start","LeaveRequest.submit",Set.of("DIRECT","APPROVAL"));
+  /** 当前主体可用行为视图，不持久化权限判断；写入仍重新检查。 */
+  public record AvailableAction(String actionCode,String nameZh,String nameEn,String permissionCode,String operationKey,boolean allowed) {}
+  /** 页面只依赖业务动作声明及有效授权，不用工作流设计/发起能力猜测提交资格。 */
+  public List<AvailableAction> actions(WorkflowContext c){active(c);var a=SUBMIT_ACTION;return List.of(new AvailableAction(a.actionCode(),a.nameZh(),a.nameEn(),a.permissionCode(),a.operationKey(),platform.allowed(c,a.permissionCode())));}
+  private Supplier<com.appnexus.contracts.document.DocumentBindings> bindings;
+
+  /** 注入公开解析端口，真实装配启用后禁止退回引擎自行选流程。 */
+  public void bindings(Supplier<com.appnexus.contracts.document.DocumentBindings> bindings) {this.bindings=bindings;}
+
+  /** 请假单据只声明已有业务能力，不生成表单或业务状态机。 */
+  @Override public com.appnexus.contracts.document.Documents.Descriptor descriptor() {
+    var p=configuration();
+    return new com.appnexus.contracts.document.Documents.Descriptor(p.objectType(),p.nameZh(),p.nameEn(),"leave",1,"leavePoc",p.purpose(),
+      p.fields().stream().map(f->new com.appnexus.contracts.document.Documents.Field(f.key(),f.nameZh(),f.nameEn(),f.type(),f.unitZh())).toList(),
+      Set.of("APPROVED","REJECTED"),List.of(SUBMIT_ACTION));
+  }
   private final JdbcTemplate jdbc;
   private final TransactionTemplate tx;
   private final WorkflowPlatform platform;
@@ -34,7 +53,7 @@ public final class LeavePocService implements WorkflowBusiness {
   }
 
   /**
-   * 请假依据输入；POC 不支持提交后修改。
+   * 请假依据输入；审批中冻结，撤回或驳回后可修改形成新依据版本并重提。
    * @param organizationId 单据组织 UUID，必填；主管按该组织解析
    * @param leaveType PERSONAL、ANNUAL 或 SICK，必填；不校验余额
    * @param startDate 首日，本地业务日期，必填，不转换时区
@@ -138,7 +157,7 @@ public final class LeavePocService implements WorkflowBusiness {
     return row;
   }
 
-  /** 提交与实例创建同事务；重复提交返回原实例，不改变审批依据或重复启动。 */
+  /** 按 submit 策略直接受理或发起审批；记录及状态同事务，重复提交返回原业务结果。 */
   public Map<String, Object> submit(WorkflowContext c, String id) {
     requireStart(c);
     return tx.execute(s -> {
@@ -146,11 +165,48 @@ public final class LeavePocService implements WorkflowBusiness {
       if (!c.actorId().equals(row.get("applicant"))) throw new SecurityException("LEAVE_ACCESS_DENIED");
       if (!"DRAFT".equals(row.get("state"))) return row;
       jdbc.update("UPDATE leave_poc_request SET state='SUBMITTED' WHERE tenant_id=? AND id=?", c.tenantId(), id);
-      String instance = starter.get().startInstance(c, "LeaveRequest", id, 0,
-          row.get("organization_id").toString(), "approval", "leavePoc");
+      long basis=((Number)row.get("basis_version")).longValue();
+      com.appnexus.contracts.document.Documents.Resolution resolved=bindings==null?null:bindings.get().resolveAction(
+        new com.appnexus.contracts.document.Documents.Context(c.tenantId(),c.actorId(),c.requestId()),"LeaveRequest",SUBMIT_ACTION.actionCode(),id,basis,
+        Map.of("days",row.get("days").toString(),"requiresHr",Boolean.toString(((Number)row.get("days")).intValue()>3)));
+      if(resolved!=null){
+        jdbc.update("INSERT INTO leave_poc_submission(tenant_id,object_id,basis_version,resolution_id,submission_mode) VALUES(?,?,?,?,?)",c.tenantId(),id,basis,resolved.id(),resolved.mode());
+        if(resolved.mode().equals("DIRECT")){
+          // 直接受理是业务显式能力，不伪造审批结论，也不创建流程实例；同事务状态及记录一起提交。
+          jdbc.update("UPDATE leave_poc_request SET state='ACCEPTED',instance_id=NULL WHERE tenant_id=? AND id=?",c.tenantId(),id);
+          return row(c,id,false);
+        }
+      }
+      String instance = resolved==null?starter.get().startInstance(c, "LeaveRequest", id, basis,
+          row.get("organization_id").toString(), "approval", "leavePoc"):
+        starter.get().startBound(c,"LeaveRequest",id,basis,row.get("organization_id").toString(),"approval","leavePoc",resolved.id());
+      if(bindings!=null) jdbc.update("INSERT INTO leave_poc_approval_cycle(tenant_id,id,object_id,basis_version,instance_id,resolution_id,configuration_version,basis_snapshot) VALUES(?,?,?,?,?,?,?,JSON_OBJECT('leaveType',?,'startDate',?,'endDate',?,'days',?,'reason',?,'organizationId',?))",
+        c.tenantId(),UUID.randomUUID().toString(),id,basis,instance,resolved.id(),resolved.configurationVersion(),row.get("leave_type"),row.get("start_date").toString(),row.get("end_date").toString(),row.get("days"),row.get("reason"),row.get("organization_id"));
       jdbc.update("UPDATE leave_poc_request SET instance_id=? WHERE tenant_id=? AND id=?", instance, c.tenantId(), id);
       return row(c, id, false);
     });
+  }
+
+  /**
+   * 本人可编辑草稿或驳回/撤回单据；提交中的审批依据冻结，乐观版本防止陈旧覆盖。
+   * @param expectedBasisVersion 读取的非负依据版本，修改成功递增，旧审批结果不再适用
+   */
+  public Map<String,Object> update(WorkflowContext c,String id,long expectedBasisVersion,Input input) {
+    requireStart(c);int count=days(input);
+    if(!Set.of("PERSONAL","ANNUAL","SICK").contains(input.leaveType())||input.reason()==null||input.reason().isBlank()||input.reason().trim().length()>2000)throw new IllegalArgumentException("LEAVE_INPUT_INVALID");
+    if(platform.documentOrganizations(c).stream().noneMatch(o->o.id().equals(input.organizationId()))||platform.resolve(c.tenantId(),input.organizationId(),"LEADER","").isEmpty())throw new SecurityException("LEAVE_ORGANIZATION_DENIED");
+    return tx.execute(s->{var row=row(c,id,true);
+      if(!c.actorId().equals(row.get("applicant")))throw new SecurityException("LEAVE_ACCESS_DENIED");
+      if(!Set.of("DRAFT","REJECTED","WITHDRAWN").contains(row.get("state"))||expectedBasisVersion!=((Number)row.get("basis_version")).longValue())throw new IllegalArgumentException("LEAVE_BASIS_CHANGED");
+      jdbc.update("UPDATE leave_poc_request SET organization_id=?,leave_type=?,start_date=?,end_date=?,days=?,reason=?,basis_version=basis_version+1,state='DRAFT',instance_id=NULL WHERE tenant_id=? AND id=?",
+        input.organizationId(),input.leaveType(),input.startDate(),input.endDate(),count,input.reason().trim(),c.tenantId(),id);
+      return row(c,id,false);});
+  }
+
+  /** 本人审批轮次历史，不返回历史原因原文，避免把公共关联查询变成数据泄露入口。 */
+  public List<Map<String,Object>> cycles(WorkflowContext c,String id) {
+    active(c);var row=row(c,id,false);if(!c.actorId().equals(row.get("applicant")))throw new SecurityException("LEAVE_ACCESS_DENIED");
+    return jdbc.queryForList("SELECT id,basis_version,instance_id,resolution_id,configuration_version,created_at FROM leave_poc_approval_cycle WHERE tenant_id=? AND object_id=? ORDER BY basis_version DESC",c.tenantId(),id);
   }
 
   /** 从业务存储重读依据；任务授权不隐式授予模块功能权限。 */
@@ -242,6 +298,6 @@ public final class LeavePocService implements WorkflowBusiness {
   }
 
   private void requireStart(WorkflowContext c) {
-    if (!platform.allowed(c, "workflow:start")) throw new SecurityException("LEAVE_ACCESS_DENIED");
+    if (!platform.allowed(c, SUBMIT_ACTION.permissionCode())) throw new SecurityException("LEAVE_ACCESS_DENIED");
   }
 }

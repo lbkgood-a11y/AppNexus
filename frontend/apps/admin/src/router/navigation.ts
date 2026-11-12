@@ -9,6 +9,8 @@ import { buildNavigationMenus, safeNavigationUrl } from "./navigationModel";
 
 /** 显式构建内注册表；不接受路径模糊匹配、远程组件或服务端脚本。 */
 const pages = {
+  "platform/documents": {path:"/platform/documents",name:"PlatformDocumentManagement",component:()=>import("@/views/platform/documents.vue")},
+  "documents/index": {path:"/documents/workbench",name:"DocumentWorkbench",component:()=>import("@/views/documents/index.vue")},
   "workflow/leave": {path:"/workflow/leave",name:"LeaveRequests",component:()=>import("@/views/workflow/leave.vue")},
   "print/index": {path:"/print/management",name:"PrintManagement",component:()=>import("@/views/print/index.vue")},
   "workflow/designer": {path:"/workflow/designer",name:"WorkflowDesigner",component:()=>import("@/views/workflow/designer.vue")},

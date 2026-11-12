@@ -18,7 +18,9 @@ const props = defineProps<{
   workflow: WorkflowApi;
   errorText: (e: unknown) => string;
 }>();
-const { t } = useI18n();
+const { t,locale } = useI18n();
+const actions=ref<Awaited<ReturnType<LeaveApi['actions']>>>([]);
+const submitAction=computed(()=>actions.value.find(a=>a.operationKey==='LeaveRequest.submit'&&a.actionCode==='submit'));
 const route = useRoute(),
   router = useRouter();
 const rows = ref<Row[]>([]),
@@ -30,6 +32,11 @@ const loading = ref(false),
 const createOpen = ref(false),
   detailOpen = ref(false);
 const form = ref<FormInstance>();
+const editing=ref<Row>();
+const history=ref<Row[]>([]), historyOpen=ref(false);
+/** 修改使用业务返回的依据版本，前端不自行解除审批冻结。 */
+function edit(row:Row){editing.value=row;Object.assign(input,{organizationId:row.organization_id,leaveType:row.leave_type,startDate:String(row.start_date).slice(0,10),endDate:String(row.end_date).slice(0,10),reason:row.reason});createOpen.value=true;}
+async function showCycles(id:string){busy.value=true;error.value='';try{history.value=await props.api.cycles(id);historyOpen.value=true;}catch(e){error.value=props.errorText(e);}finally{busy.value=false;}}
 const organizations = ref<{ id: string; name: string }[]>([]);
 const query = ref(""),
   submitted = ref(""),
@@ -93,7 +100,7 @@ const columns = computed<ManagementColumn[]>(() => [
   {
     key: "operations",
     label: t("workflow.operations"),
-    width: 180,
+    width: 420,
     fixed: "right",
   },
 ]);
@@ -102,9 +109,10 @@ async function load() {
   loading.value = true;
   error.value = "";
   try {
-    [rows.value, caps.value] = await Promise.all([
+    [rows.value, caps.value,actions.value] = await Promise.all([
       props.api.list(),
       props.workflow.capabilities(),
+      props.api.actions(),
     ]);
     organizations.value = caps.value.includes("start")
       ? await props.api.organizations()
@@ -132,7 +140,9 @@ async function create() {
   busy.value = true;
   error.value = "";
   try {
-    await props.api.create({ ...input });
+    if(editing.value)await props.api.update(editing.value.id,editing.value.basis_version,{...input});
+    else await props.api.create({ ...input });
+    editing.value=undefined;
     createOpen.value = false;
     Object.assign(input, {
       organizationId: "",
@@ -235,7 +245,7 @@ onMounted(async () => {
             v-if="caps.includes('start')"
             type="primary"
             :disabled="busy"
-            @click="createOpen = true"
+            @click="editing=undefined; createOpen = true"
             >{{ t("leavePoc.new") }}</el-button
           >
         </template>
@@ -249,16 +259,18 @@ onMounted(async () => {
           ><el-tag>{{ t("leavePoc.states." + row.state) }}</el-tag></template
         >
         <template #operations="{ row }">
+          <el-button v-if="['DRAFT','REJECTED','WITHDRAWN'].includes(row.state)&&caps.includes('start')" link :disabled="busy" @click="edit(row)">{{t('document.editLeave')}}</el-button>
+          <el-button link :disabled="busy" @click="showCycles(row.id)">{{t('document.cycleHistory')}}</el-button>
           <el-button link :disabled="busy" @click="openDocument(row.id)">{{
             t("leavePoc.detail")
           }}</el-button>
           <el-button
-            v-if="row.state === 'DRAFT' && caps.includes('start')"
+            v-if="row.state === 'DRAFT' && submitAction?.allowed"
             link
             type="primary"
             :disabled="busy"
             @click="submit(row.id)"
-            >{{ t("leavePoc.submit") }}</el-button
+            >{{ locale.startsWith('zh')?submitAction.nameZh:submitAction.nameEn }}</el-button
           >
         </template>
         <template #pagination
@@ -278,6 +290,7 @@ onMounted(async () => {
       />
     </template>
   </BusinessWorkspace>
+  <ManagedDialog v-model="historyOpen" :title="t('document.cycleHistory')" width="900px"><el-table :data="history"><el-table-column prop="basis_version" :label="t('document.contractVersion')" width="140"/><el-table-column prop="instance_id" :label="t('workflow.objectId')" min-width="260"/><el-table-column prop="configuration_version" :label="t('document.publishedVersion')" min-width="160"/><el-table-column prop="created_at" :label="t('leavePoc.start')" min-width="180"/></el-table></ManagedDialog>
   <ManagedDialog
     v-model="createOpen"
     :title="t('leavePoc.new')"

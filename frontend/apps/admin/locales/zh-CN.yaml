@@ -1316,7 +1316,7 @@ leavePoc:
   detail: 查看单据
   submit: 提交审批
   saved: 请假草稿已保存
-  submitted: 已提交审批
+  submitted: 提交成功
   required: 请填写必填项
   uuid: 请输入有效 UUID
   reasonLimit: 请假原因须为 1—2000 字符
@@ -1326,6 +1326,7 @@ leavePoc:
     SICK: 病假
   states:
     DRAFT: 草稿
+    ACCEPTED: 已受理（直接提交）
     SUBMITTED: 审批中（等待结果回写）
     APPROVED: 已批准
     REJECTED: 已驳回
@@ -1402,3 +1403,84 @@ businessWorkflow:
     LE: 小于或等于
   removeReview: 移除此审批步骤
   removeConfirm: 移除此审批步骤及其独立条件（如有）？发布后影响新提交单据。
+
+document:
+  platformTitle: 单据管理
+  title: 单据工作台
+  code: 单据编码
+  name: 名称
+  module: 所属模块
+  contractVersion: 契约版本
+  publishedVersion: 配置发布版本
+  state: 状态
+  operations: 操作
+  search: 单据查询
+  refresh: 刷新
+  reset: 重置
+  enabled: 已启用
+  disabled: 未启用
+  enable: 启用
+  disable: 停用
+  grants: 租户授权与契约
+  configure: 配置提交行为
+  empty: 暂无可管理的单据
+  field: 条件字段
+  fieldType: 类型
+  unit: 单位
+  tenant: 租户
+  authorize: 授权
+  revoke: 收回配置权
+  revokeConfirm: 收回后租户不能继续维护，已发布绑定保留。是否收回？
+  enableConfirm: 是否启用此单据类型？
+  disableConfirm: 停用后阻止新提交，已有流程继续完成。是否停用？
+  saved: 草稿或授权已保存
+  published: 绑定已发布
+  required: 请填写绑定名称、发布流程及完整条件
+  inactiveHint: 此单据已授权但尚未启用，可维护配置；实际提交需平台管理员启用。
+  action: 单据行为
+  operationKey: 页面与 API 操作标识
+  permission: 操作权限
+  submissionMode: 提交方式
+  directHint: 直接调用业务受理，不创建审批实例；最终状态由业务实现决定。
+  modes:
+    DIRECT: 直接提交
+    APPROVAL: 审批提交
+  bindingHint: 提交行为必须恰好匹配一条策略，直接提交也必须显式配置；数值使用声明单位。
+  addBinding: 添加绑定
+  removeBinding: 移除绑定
+  bindingName: 绑定名称
+  workflow: 已发布流程及版本
+  createWorkflow: 创建或管理流程
+  reload: 重新加载配置
+  noWorkflow: 暂无兼容的已发布流程，请先创建并发布支持批准和驳回结果的流程。
+  addCondition: 添加条件（且）
+  operator: 比较方式
+  value: 条件值
+  remove: 移除条件
+  close: 关闭
+  save: 保存草稿
+  publish: 保存并发布
+  editLeave: 修改并重新提交
+  cycleHistory: 审批历史
+  returnWorkbench: 返回单据工作台
+  operators:
+    EQ: 等于
+    NE: 不等于
+    GT: 大于
+    GE: 大于等于
+    LT: 小于
+    LE: 小于等于
+  leaveConfiguration: 未保存的绑定修改不会保留，是否进入流程设计器？
+  codes:
+    DOCUMENT_CONTRACT_CHANGED: 单据契约已升级，请重新校验并发布绑定。
+    DOCUMENT_FLOW_NOT_BOUND: 未配置审批流程，请联系租户管理员。
+    DOCUMENT_FLOW_NOT_MATCHED: 没有匹配的审批绑定，请联系租户管理员。
+    DOCUMENT_FLOW_MATCH_CONFLICT: 审批绑定匹配冲突，请调整条件。
+    DOCUMENT_FLOW_INCOMPATIBLE: 流程已失效或与单据契约不兼容，请重新选择。
+    DOCUMENT_VERSION_CONFLICT: 配置已变化，请重新加载后修改。
+    DOCUMENT_TYPE_DISABLED: 单据类型未启用，请联系平台管理员。
+    DOCUMENT_IDEMPOTENCY_CONFLICT: 请求内容或审批依据已变化，请重新操作。
+    DOCUMENT_CONDITION_INVALID: 条件类型或比较方式不正确。
+    DOCUMENT_BINDINGS_INVALID: 请至少配置一条完整绑定。
+    DOCUMENT_NUMBER_INVALID: 数值条件必须为有效十进制数。
+    DOCUMENT_BOOLEAN_INVALID: 布尔条件只能填写 true 或 false。

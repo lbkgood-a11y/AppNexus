@@ -8,6 +8,8 @@
   </parent>
   <artifactId>platform-security-adapter</artifactId>
   <dependencies>
+    <!-- 单据服务仅通过公开契约集成，业务执行仍归业务模块。 -->
+    <dependency><groupId>com.appnexus</groupId><artifactId>document-contracts</artifactId><version>${project.version}</version></dependency>
     <!-- 公开工作流能力桥接；禁止引用工作流实现或引擎。 -->
     <dependency><groupId>com.appnexus</groupId><artifactId>workflow-contracts</artifactId><version>${project.version}</version></dependency>
     <!-- 打印服务只通过公开契约复核权限，不引用打印实现。 -->

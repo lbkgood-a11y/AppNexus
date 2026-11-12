@@ -28,6 +28,7 @@ import RiCodeBoxLine from "~icons/ri/code-box-line?raw";
 import RiArtboardLine from "~icons/ri/artboard-line?raw";
 import RiMarkdownLine from "~icons/ri/markdown-line?raw";
 import RiFileInfoLine from "~icons/ri/file-info-line?raw";
+import RiFileListLine from "~icons/ri/file-list-line?raw";
 import RiBankCardLine from "~icons/ri/bank-card-line?raw";
 import RiFilePpt2Line from "~icons/ri/file-ppt-2-line?raw";
 import RiGitBranchLine from "~icons/ri/git-branch-line?raw";
@@ -54,6 +55,8 @@ import RiShieldUserLine from "~icons/ri/shield-user-line?raw";
 import RiUserSettingsLine from "~icons/ri/user-settings-line?raw";
 
 const icons = [
+  // 单据入口使用本地 SVG，避免菜单名称已配置但图标缺失。
+  ["ri/file-list-line", RiFileListLine],
   // Element Plus Icon: https://github.com/element-plus/element-plus-icons
   ["ep/menu", EpMenu],
   ["ep/edit", EpEdit],

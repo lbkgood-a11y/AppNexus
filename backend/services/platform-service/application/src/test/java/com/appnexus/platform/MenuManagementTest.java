@@ -100,6 +100,16 @@ class MenuManagementTest extends DatabaseTestSupport {
   assertThat(navigation.authorizationCatalog(MenuManagement.Scope.TENANT)).anySatisfy(item->assertThat(item.resources()).contains("organization.unit"));
  }
 
+ /** 平台单据入口属于平台管理目录，修复迁移必须保留受控图标和路由。 */
+ @Test void documentRegistryBelongsToPlatformDirectory(){
+  var items=navigation.current(actor,null,null,0).items();
+  var parent=items.stream().filter(item->item.code().equals("builtin.navigation.platform")).findFirst().orElseThrow();
+  var document=items.stream().filter(item->item.component()!=null&&item.component().equals("platform/documents")).findFirst().orElseThrow();
+  assertThat(document.parentId()).isEqualTo(parent.id());
+  assertThat(document.icon()).isEqualTo("ri/file-list-line");
+  assertThat(document.path()).isEqualTo("/platform/documents");
+ }
+
  /** 租户上下文决定入口域，权限撤销后的下一次快照立即移除组织页面。 */
  @Test void tenantNavigationFollowsRealPermissionDecisions(){
   UUID owner=UUID.randomUUID(),account=UUID.randomUUID();
@@ -108,11 +118,14 @@ class MenuManagementTest extends DatabaseTestSupport {
   administration.addMember(actor,tenant.id(),account);
   UUID member=UUID.fromString(jdbc.queryForObject("SELECT BIN_TO_UUID(id) FROM tenant_member WHERE tenant_id=UUID_TO_BIN(?) AND account_id=UUID_TO_BIN(?)",String.class,tenant.id().toString(),account.toString()));
   UUID ownerMember=UUID.fromString(jdbc.queryForObject("SELECT BIN_TO_UUID(id) FROM tenant_member WHERE tenant_id=UUID_TO_BIN(?) AND account_id=UUID_TO_BIN(?)",String.class,tenant.id().toString(),owner.toString()));
-  assertThat(navigation.current(account,tenant.id(),member,1).items()).isEmpty();
+  // 待办及本人单据入口可存在；不能把公共导航存在误判为获得组织或配置管理权。
+  assertThat(navigation.current(account,tenant.id(),member,1).items()).extracting(MenuManagement.Menu::component)
+    .doesNotContain("organization/index","roles/index","documents/index","platform/documents");
   organizationGrants.grant(tenant.id(),member,ownerMember,com.appnexus.platform.authorization.OrganizationCapability.READ,null);
   assertThat(navigation.current(account,tenant.id(),member,1).items()).extracting(MenuManagement.Menu::component).contains("organization/index").doesNotContain("roles/index");
   organizationGrants.revoke(tenant.id(),member,ownerMember,com.appnexus.platform.authorization.OrganizationCapability.READ);
-  assertThat(navigation.current(account,tenant.id(),member,1).items()).isEmpty();
+  assertThat(navigation.current(account,tenant.id(),member,1).items()).extracting(MenuManagement.Menu::component)
+    .doesNotContain("organization/index","roles/index","documents/index","platform/documents");
  }
 
  private MenuManagement.Command external(UUID parent,String code,String address,MenuManagement.Scope scope,int sort,boolean visible){

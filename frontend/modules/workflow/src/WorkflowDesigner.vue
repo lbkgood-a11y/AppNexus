@@ -2,7 +2,8 @@
 import { computed, ref, watch, onMounted, onBeforeUnmount } from "vue";
 import { useI18n } from "vue-i18n";
 import { ElMessage, ElMessageBox } from "element-plus";
-import { onBeforeRouteLeave } from "vue-router";
+import { onBeforeRouteLeave, useRoute } from "vue-router";
+import { businessModel } from './businessConfiguration';
 import { ManagedDialog } from "@appnexus/ui";
 import { layoutGraph } from "./layout";
 import { connectionError } from "./graphEditing";
@@ -29,6 +30,7 @@ const props = defineProps<{
 }>();
 const emit = defineEmits<{ saved: []; close: [] }>();
 const { t, locale } = useI18n();
+const route=useRoute();
 const catalog = ref<BusinessConfiguration>();
 const configurationLoading = ref(false);
 const view = ref("business");
@@ -43,6 +45,10 @@ async function loadConfiguration() {
   configurationLoading.value = true;
   try {
     catalog.value = await props.api.configuration();
+    if(!props.definition&&typeof route.query.documentType==='string'){
+      const entry=catalog.value.documents.find(d=>d.profile.objectType===route.query.documentType);
+      if(entry)model.value=businessModel(entry.capability,entry.profile,{title:locale.value.startsWith('zh')?entry.profile.nameZh:entry.profile.nameEn,start:t('workflow.kinds.START'),review:t('workflow.kinds.REVIEW'),end:t('workflow.kinds.END')});
+    }
     if (
       (model.value.entryCapability &&
         !catalog.value.documents.some(

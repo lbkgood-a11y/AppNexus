@@ -20,7 +20,28 @@ import org.springframework.transaction.support.TransactionTemplate;
  * 工作流应用入口；写入、引擎推进、幂等响应、任务及Outbox共享本地事务。 业务能力仍以稳定调用ID幂等，不能假设业务服务与引擎共享事务。
  * 所有对象查询带租户；历史只向参与者或受权运维开放，不返回原始业务实体。
  */
-public final class WorkflowRuntime implements WorkflowResults, WorkflowTaskAccess, WorkflowStarter {
+public final class WorkflowRuntime implements WorkflowResults, WorkflowTaskAccess, WorkflowStarter, WorkflowDefinitionCatalog {
+  private java.util.function.Supplier<com.appnexus.contracts.document.DocumentBindings> documentBindings;
+
+  /** 由装配层设置延迟公开契约；避免业务、配置和引擎相互初始化，非浏览器配置点。 */
+  public void documentBindings(java.util.function.Supplier<com.appnexus.contracts.document.DocumentBindings> bindings) {
+    this.documentBindings = bindings;
+  }
+
+  /** 本租户兼容发布版本目录，管理端是否可调用由公开目录宿主鉴权。 */
+  @Override public List<WorkflowDefinitionCatalog.Option> published(WorkflowContext c,String type,String purpose,String entry,Set<String> outcomes) {
+    requireActive(c);
+    return jdbc.queryForList("SELECT v.*,d.enabled FROM wf_version v JOIN wf_definition d ON d.tenant_id=v.tenant_id AND d.id=v.definition_id WHERE v.tenant_id=? AND d.enabled=TRUE ORDER BY v.definition_id,v.version DESC",c.tenantId()).stream()
+      .filter(r->{var m=model(r);return m.objectType().equals(type)&&m.purpose().equals(purpose)&&m.entryCapability().equals(entry)
+        &&m.mode()==Mode.APPROVAL&&m.terminalActions()!=null&&outcomes.stream().allMatch(o->entry.equals(m.terminalActions().get(o)))
+        &&(m.matches()==null||m.matches().isEmpty());})
+      .map(r->new WorkflowDefinitionCatalog.Option(r.get("definition_id").toString(),((Number)r.get("version")).intValue(),model(r).name())).toList();
+  }
+
+  @Override public String startBound(WorkflowContext c,String type,String object,long version,String organization,String purpose,String entry,String resolution) {
+    if(documentBindings==null)throw fail("DOCUMENT_BINDINGS_UNAVAILABLE",503);
+    return String.valueOf(((Map<?,?>)startInternal(c,type,object,version,organization,purpose,entry,resolution)).get("id"));
+  }
   private final ProcessEngine engine;
   private final JdbcTemplate jdbc;
   private final TransactionTemplate tx;
@@ -336,6 +357,13 @@ public final class WorkflowRuntime implements WorkflowResults, WorkflowTaskAcces
       String organization,
       String purpose,
       String entry) {
+    if(documentBindings!=null&&businesses.get(entry) instanceof com.appnexus.contracts.document.Documents.Provider)
+      throw fail("DOCUMENT_BINDING_REQUIRED",409);
+    return startInternal(c,objectType,objectId,objectVersion,organization,purpose,entry,null);
+  }
+
+  private Object startInternal(WorkflowContext c,String objectType,String objectId,long objectVersion,
+      String organization,String purpose,String entry,String resolution) {
     require(c, "start");
     identifier(objectType);
     identifier(purpose);
@@ -355,7 +383,7 @@ public final class WorkflowRuntime implements WorkflowResults, WorkflowTaskAcces
             + ":"
             + purpose
             + ":"
-            + entry,
+            + entry + ":" + Objects.toString(resolution,"legacy"),
         () -> {
           var business = business(c, entry);
           var snapshot =
@@ -374,18 +402,23 @@ public final class WorkflowRuntime implements WorkflowResults, WorkflowTaskAcces
                           null,
                           null,
                           Map.of())));
+          var bound = resolution==null?null:documentBindings.get().verify(
+              new com.appnexus.contracts.document.Documents.Context(c.tenantId(),c.actorId(),c.requestId()),
+              resolution,objectType,objectId,objectVersion,snapshot);
           var rows =
               jdbc.queryForList(
                   "SELECT v.*,d.id FROM wf_definition d JOIN wf_version v ON"
                       + " v.tenant_id=d.tenant_id AND v.definition_id=d.id AND"
-                      + " v.version=d.published WHERE d.tenant_id=? AND d.enabled=TRUE FOR SHARE",
+                      + (bound==null?" v.version=d.published":" v.version="+bound.definitionVersion())
+                      + " WHERE d.tenant_id=? AND d.enabled=TRUE FOR SHARE",
                   c.tenantId());
           var matching =
               rows.stream()
                   .filter(
                       row -> {
                         var m = model(row);
-                        return m.objectType().equals(objectType)
+                        return (bound==null||bound.definitionId().equals(row.get("definition_id")))
+                            && m.objectType().equals(objectType)
                             && m.purpose().equals(purpose)
                             && m.entryCapability().equals(entry)
                             && (m.matches() == null

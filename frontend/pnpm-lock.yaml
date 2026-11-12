@@ -16,6 +16,9 @@ importers:
       '@appnexus/configuration':
         specifier: workspace:*
         version: link:../../modules/configuration
+      '@appnexus/document':
+        specifier: workspace:*
+        version: link:../../modules/document
       '@appnexus/icons':
         specifier: workspace:*
         version: link:../../infra/icons
@@ -268,6 +271,34 @@ importers:
       vue-i18n:
         specifier: ^11.3.0
         version: 11.4.18(vue@3.5.44(typescript@6.0.3))
+    devDependencies:
+      typescript:
+        specifier: ^6.0.0
+        version: 6.0.3
+      vitest:
+        specifier: ^4.0.0
+        version: 4.1.12(@types/node@20.19.43)(jsdom@16.7.0)(vite@8.3.5(@types/node@20.19.43)(esbuild@0.27.7)(jiti@2.7.0)(sass@1.107.1)(yaml@2.9.1))
+      vue-tsc:
+        specifier: ^3.1.4
+        version: 3.3.14(typescript@6.0.3)
+
+  modules/document:
+    dependencies:
+      '@appnexus/ui':
+        specifier: workspace:*
+        version: link:../../infra/ui
+      element-plus:
+        specifier: ^2.13.6
+        version: 2.14.7(vue@3.5.44(typescript@6.0.3))
+      vue:
+        specifier: ^3.5.31
+        version: 3.5.44(typescript@6.0.3)
+      vue-i18n:
+        specifier: ^11.3.0
+        version: 11.4.18(vue@3.5.44(typescript@6.0.3))
+      vue-router:
+        specifier: ^5.0.0
+        version: 5.4.0(@vue/compiler-sfc@3.5.44)(esbuild@0.27.7)(pinia@3.0.4(typescript@6.0.3)(vue@3.5.44(typescript@6.0.3)))(rolldown@1.2.16)(rollup@4.67.5)(vite@8.3.5(@types/node@20.19.43)(esbuild@0.27.7)(jiti@2.7.0)(sass@1.107.1)(yaml@2.9.1))(vue@3.5.44(typescript@6.0.3))
     devDependencies:
       typescript:
         specifier: ^6.0.0

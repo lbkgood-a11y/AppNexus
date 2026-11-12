@@ -32,7 +32,17 @@ public class WorkflowEngineConfiguration {
       PlatformTransactionManager manager,
       com.appnexus.contracts.workflow.WorkflowPlatform platform,
       java.util.List<com.appnexus.contracts.workflow.WorkflowBusiness> businesses,
-      WorkflowBridge bridge) {
+      WorkflowBridge bridge,
+      org.springframework.beans.factory.ObjectProvider<com.appnexus.contracts.document.DocumentBindings> documents) {
+    var runtime=workflowRuntime(engine,source,manager,platform,businesses,bridge);
+    runtime.documentBindings(documents::getObject);
+    return runtime;
+  }
+
+  /** 测试装配兼容入口；真实应用必须装配单据绑定公开契约。 */
+  public WorkflowRuntime workflowRuntime(ProcessEngine engine,DataSource source,PlatformTransactionManager manager,
+      com.appnexus.contracts.workflow.WorkflowPlatform platform,
+      java.util.List<com.appnexus.contracts.workflow.WorkflowBusiness> businesses,WorkflowBridge bridge) {
     var runtime =
         new WorkflowRuntime(
             engine,

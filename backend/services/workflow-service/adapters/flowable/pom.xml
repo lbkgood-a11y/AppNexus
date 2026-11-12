@@ -6,6 +6,8 @@
   <artifactId>workflow-flowable-adapter</artifactId>
 
   <dependencies>
+    <!-- 单据服务仅通过公开契约集成，业务执行仍归业务模块。 -->
+    <dependency><groupId>com.appnexus</groupId><artifactId>document-contracts</artifactId><version>${project.version}</version></dependency>
     <!-- 引擎装配必须等待受控数据库迁移，不能抢先访问未建表的数据源。 -->
     <dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-sql</artifactId></dependency>
     <!-- 工作流应用适配提供真实 HTTP 与 JDBC 持久化；认证复用组合应用的安全链。 -->
