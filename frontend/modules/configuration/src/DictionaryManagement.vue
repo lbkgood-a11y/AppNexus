@@ -9,6 +9,8 @@ import type {BusinessDictionary,DictionaryItem,DictionaryManagementApi,Dictionar
 /** 页面复用左树右表、统一弹窗和 Element Plus；字典类型适合作为右侧数据范围选择器。 */
 const props=defineProps<{api:DictionaryManagementApi;errorText:(error:unknown)=>string}>();
 const {t}=useI18n();
+/** 左树折叠状态默认展开；仅控制布局，保留已选字典及右侧查询结果。 */
+const treeCollapsed=ref(false);
 /** 本人能力失败时保持空集合，不能回退为管理员；真实接口仍逐请求鉴权。 */
 const capabilities=ref<string[]>([]);
 const can=(action:string)=>capabilities.value.includes(action);
@@ -35,7 +37,7 @@ async function removeDictionary(){if(!selected.value)return;saving.value=true;tr
 async function removeItem(item:DictionaryItem){saving.value=true;try{await props.api.removeItem(item.dictionaryId,item.id,item.version);ElMessage.success(t("dictionary.deleted"));await loadItems();}catch(cause){error.value=props.errorText(cause);}finally{saving.value=false;}}
 const required=[{required:true,whitespace:true,max:100,message:t("dictionary.required"),trigger:"blur"}],codeRules=[{required:true,pattern:/^[a-z][a-z0-9_]{1,63}$/,message:t("dictionary.invalidCode"),trigger:"blur"}];
 </script>
-<template><div class="management-page"><TreeListTemplate :title="t('dictionary.title')">
+<template><div class="management-page"><TreeListTemplate v-model:collapsed="treeCollapsed" :title="t('dictionary.title')" :tree-label="t('dictionary.types')">
  <template #treeHeader><div class="tree-heading"><strong>{{t('dictionary.types')}}</strong><el-tooltip :content="t('dictionary.createType')"><el-button v-operation="'configuration.dictionary:create'" v-if="can('create')" text :aria-label="t('dictionary.createType')" @click="openDictionary()"><AppIcon name="add" :size="18" /></el-button></el-tooltip></div></template>
  <template #tree><el-menu :default-active="selectedId" @select="selectedId=$event"><el-menu-item v-for="value in dictionaries" :key="value.id" :index="value.id"><span>{{value.name}}</span><el-tag class="ml-auto" size="small" :type="value.status==='ENABLED'?'success':'info'">{{t('dictionary.statuses.'+value.status)}}</el-tag></el-menu-item></el-menu><el-empty v-if="!dictionaries.length" :description="t('dictionary.emptyTypes')" :image-size="56" /></template>
  <template v-if="error&&!dictionaryDialog&&!itemDialog" #feedback><el-alert type="error" :title="error" :closable="false" show-icon><el-button link type="primary" @click="loadDictionaries">{{t('account.retry')}}</el-button></el-alert></template>

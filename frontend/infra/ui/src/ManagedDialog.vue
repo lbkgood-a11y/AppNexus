@@ -32,6 +32,10 @@ const props = withDefaults(defineProps<{
   closeOnClickModal?: boolean;
   /** 是否允许按 Esc 关闭；默认 true，busy 时始终禁止。 */
   closeOnPressEscape?: boolean;
+  /** 是否显示模态遮罩，默认 true；画布工具窗口可设 false 以继续操作底层画布。 */
+  modal?: boolean;
+  /** 初始垂直位置，缺省沿用 Element Plus；仅首次布局使用，不在动画后重新定位。 */
+  top?: string;
 }>(), {
   width: "min(680px, calc(100vw - 32px))",
   maximizable: true,
@@ -118,6 +122,10 @@ onBeforeUnmount(()=>{stopPointer?.();stopMaximizeObserver?.();});
 
 <template>
   <el-dialog
+    :modal="modal ?? true"
+    :modal-penetrable="modal === false"
+    :lock-scroll="modal !== false"
+    :top="top"
     :model-value="modelValue"
     :title="title"
     :width="width"

@@ -31,7 +31,7 @@ public final class AccountStatusFilter extends OncePerRequestFilter {
             // 机密集成客户端由不透明 Token 内省逐次复核租户、启停和权限版本，不映射为人员账号。
             if (auth.getAuthorities().stream().anyMatch(value -> value.getAuthority().equals("PARTNER_CLIENT"))) {
                 String path=request.getRequestURI().substring(request.getContextPath().length());
-                if(path.startsWith("/api/printing/agent/"))chain.doFilter(request, response);
+                if(path.startsWith("/api/printing/agent/")||path.startsWith("/api/printing/external/"))chain.doFilter(request, response);
                 else response.setStatus(401);
                 return;
             }

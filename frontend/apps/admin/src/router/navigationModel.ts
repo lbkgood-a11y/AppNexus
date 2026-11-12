@@ -30,11 +30,16 @@ export function buildNavigationMenus(items: MenuNode[]): NavigationMenu[] {
       if(item.type==="DIRECTORY"&&!children.length)return [];
       return [{path:item.type==="EXTERNAL"?item.externalUrl!:item.type==="DIRECTORY"?`/navigation/${item.id}`:item.path!,
         name:item.type==="EXTERNAL"?item.externalUrl!:`Navigation_${item.id}`,
-        meta:{title:{"zh-CN":item.titleZh,zh:item.titleZh,en:item.titleEn},icon:item.icon??undefined,rank:item.sortOrder,
+        meta:{title:{"zh-CN":item.titleZh,zh:item.titleZh,en:item.titleEn},icon:menuIcon(item),rank:item.sortOrder,
           showLink:true,showParent:true,navigation:true},
         ...(item.type==="DIRECTORY"?{children}:{})}];
     });
   return visit(null,new Set());
+}
+
+/** 未配置图标时按菜单职责提供本地默认图标，保证新旧目录、页面及外链都有可识别标识。 */
+function menuIcon(item: MenuNode): string {
+  return item.icon?.trim() || (item.type === "DIRECTORY" ? "ri/menu-line" : item.type === "EXTERNAL" ? "ri/links-fill" : "ri/file-info-line");
 }
 
 /** 使用与服务端 code 排序相同的字符序，避免浏览器语言改变同值排序。 */

@@ -61,15 +61,20 @@ const getSubMenuIconStyle = computed((): CSSProperties => {
   };
 });
 
+/**
+ * 仅折叠侧栏的当前根节点；弹出层内的嵌套菜单仍展示完整标题。
+ * 使用渲染层级判断，避免依赖静态路由与服务端菜单未统一提供的 parentId/pathList。
+ */
+const isCollapsedRoot = computed(
+  () => layout.value !== "horizontal" && isCollapse.value && !props.isNest
+);
+
 const textClass = computed(() => {
   const item = props.item;
   const baseClass = "w-full! text-inherit!";
   if (
-    layout.value !== "horizontal" &&
-    isCollapse.value &&
-    !toRaw(item.meta.icon) &&
-    ((layout.value === "vertical" && item.parentId === null) ||
-      (layout.value === "mix" && item.pathList.length === 2))
+    isCollapsedRoot.value &&
+    !toRaw(item.meta.icon)
   ) {
     return `${baseClass} min-w-13.5! text-center! px-3!`;
   }
@@ -149,14 +154,7 @@ function resolvePath(routePath) {
       </div>
       <el-text
         v-if="
-          (!item?.meta.icon &&
-            isCollapse &&
-            layout === 'vertical' &&
-            item?.pathList?.length === 1) ||
-          (!onlyOneChild.meta.icon &&
-            isCollapse &&
-            layout === 'mix' &&
-            item?.pathList?.length === 2)
+          isCollapsedRoot && !item?.meta.icon
         "
         truncated
         class="w-full! px-3! min-w-13.5! text-center! text-inherit!"
@@ -196,16 +194,7 @@ function resolvePath(routePath) {
         <component :is="useRenderIcon(item.meta && toRaw(item.meta.icon))" />
       </div>
       <ReText
-        v-if="
-          layout === 'mix' && toRaw(item.meta.icon)
-            ? !isCollapse || item?.pathList?.length !== 2
-            : !(
-                layout === 'vertical' &&
-                isCollapse &&
-                toRaw(item.meta.icon) &&
-                item.parentId === null
-              )
-        "
+        v-if="!isCollapsedRoot || !toRaw(item.meta.icon)"
         :tippyProps="{
           offset: [0, -10],
           theme: tooltipEffect

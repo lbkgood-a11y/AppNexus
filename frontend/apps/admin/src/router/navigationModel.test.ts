@@ -25,4 +25,12 @@ describe("navigation composition",()=>{
     expect(safeNavigationUrl("http://intranet.example/tasks")).toBe(true);
     expect(safeNavigationUrl("https://example.com/tasks?id=1")).toBe(true);
   });
+  it("provides local icons for every navigation type and preserves configured icons",()=>{
+    const menus=buildNavigationMenus([node("root",{type:"DIRECTORY"}),node("page",{parentId:"root",icon:" "}),
+      node("external",{type:"EXTERNAL",externalUrl:"https://example.com"}),node("custom",{icon:"ri/flow-chart"})]);
+    expect(menus.find(item=>item.name==="Navigation_root")?.meta.icon).toBe("ri/menu-line");
+    expect(menus.find(item=>item.name==="Navigation_root")?.children?.[0].meta.icon).toBe("ri/file-info-line");
+    expect(menus.find(item=>item.path==="https://example.com")?.meta.icon).toBe("ri/links-fill");
+    expect(menus.find(item=>item.name==="Navigation_custom")?.meta.icon).toBe("ri/flow-chart");
+  });
 });

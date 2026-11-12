@@ -70,6 +70,19 @@ class IntegrationClientTest extends DatabaseTestSupport {
             .andExpect(status().isUnauthorized());
         mvc.perform(get("/api/tenants").header("Authorization","Bearer "+bearer))
             .andExpect(status().isUnauthorized());
+        mvc.perform(post("/api/printing/external/outputs").header("Authorization","Bearer "+bearer)
+                .header("Idempotency-Key",UUID.randomUUID().toString()).contentType("application/json")
+                .content("{\"sceneCode\":\"missing\",\"sourceId\":\"test\",\"data\":{},\"mode\":\"PREVIEW\",\"copies\":1}"))
+            .andExpect(status().isForbidden());
+        var external=clients.create(actor,tenant,"External print",Set.of("print:submit"));
+        String externalToken=token(external);
+        mvc.perform(post("/api/printing/external/outputs").header("Authorization","Bearer "+externalToken)
+                .header("Idempotency-Key",UUID.randomUUID().toString()).contentType("application/json")
+                .content("{\"sceneCode\":\"missing\",\"sourceId\":\"test\",\"data\":{},\"mode\":\"PREVIEW\",\"copies\":1}"))
+            .andExpect(status().isConflict()).andExpect(jsonPath("$.code").value("PRINT_SCENE_UNAVAILABLE"));
+        mvc.perform(post("/api/printing/agent/claim").queryParam("site","default").queryParam("agent","test")
+                .header("Authorization","Bearer "+externalToken).header("Idempotency-Key",UUID.randomUUID().toString()))
+            .andExpect(status().isForbidden());
         var dictionary=clients.create(actor,tenant,"Dictionary client",Set.of("dictionaries:read"));
         mvc.perform(post("/api/printing/agent/claim").queryParam("site","default").queryParam("agent","test-agent")
                 .header("Authorization","Bearer "+token(dictionary)).header("Idempotency-Key",UUID.randomUUID().toString()))

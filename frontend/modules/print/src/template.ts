@@ -23,6 +23,11 @@ export function copyTemplate(value: unknown): PrintTemplate {
       throw new Error("PRINT_TEMPLATE_JSON_ONLY");
     }
     for (const [key, item] of Object.entries(node)) {
+      // 上游页码格式会执行模板字符串，仅允许固定占位符，禁止 ${...} 进入执行路径。
+      if(key==="paperNumberFormat"&&item!==null&&item!==""&&item!==undefined
+          &&(typeof item!=="string"||!/^[- /0-9]*(?:paperNo|paperCount)(?:[- /0-9]|paperNo|paperCount)*$/.test(item))) {
+        throw new Error("PRINT_TEMPLATE_EXTENSION_DISABLED");
+      }
       // 已知回调入口只允许空值；options、orientation 等普通字段不按子串误判。
       if ((/formatter|styler|script|html|rowscolumnsmerge/i.test(key) || /^on[A-Z]/.test(key))
           && item !== "" && item !== null && item !== undefined) {

@@ -189,7 +189,7 @@ onMounted(load);
       <template #navigation><el-tabs v-model="workspaceView" class="organization-navigation"><el-tab-pane :label="t('organization.structure')" name="structure" /><el-tab-pane :label="t('organization.assignmentManagement')" name="assignments" /><el-tab-pane :label="t('organization.relations')" name="relations" /><el-tab-pane :label="t('organization.types')" name="types" /></el-tabs></template>
       <template #feedback><el-alert v-if="error" :title="error" type="error" show-icon :closable="false" /><el-alert v-else-if="relationTypesError" :title="t('organization.relationTypesUnavailable')" type="warning" show-icon :closable="false" /></template>
       <template #data>
-        <TreeListTemplate v-if="workspaceView === 'structure'" v-model:collapsed="treeCollapsed" embedded>
+        <TreeListTemplate v-if="workspaceView === 'structure'" v-model:collapsed="treeCollapsed" :tree-label="t('organization.structure')" embedded>
           <template #treeHeader><strong>{{ t("organization.structure") }}</strong></template>
           <template #tree>
             <div class="organization-tree-controls"><el-select :model-value="selectedTypeId" :aria-label="t('organization.type')" @change="selectType"><el-option v-for="item in types" :key="item.id" :label="item.name" :value="item.id" :disabled="!item.enabled" /></el-select><el-input v-model="treeKeyword" clearable :placeholder="t('organization.searchPlaceholder')"><template #prefix><AppIcon name="search" :size="16" /></template></el-input></div>

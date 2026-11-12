@@ -14,5 +14,12 @@ public class PrintConfiguration {
   public PrintRuntime printRuntime(DataSource source,PrintPlatform platform){return new PrintRuntime(new JdbcTemplate(source),platform,tools.jackson.databind.json.JsonMapper.builder().build());}
 
   /** @return 租户打印 HTTP 入口；由现有安全过滤链保护。 */
-  @Bean public PrintController printController(PrintRuntime runtime){return new PrintController(runtime);}
+  @Bean public PrintController printController(PrintRuntime runtime,PrintFlow flow,PrintOutputs outputs){return new PrintController(runtime,flow,outputs);}
+  /** 统一输出编排复用宿主事务和可信身份，外部 API 不建立第二套认证。 */
+  @Bean @DependsOnDatabaseInitialization
+  public PrintOutputs printOutputs(DataSource source,PrintPlatform platform,PrintRuntime runtime,PrintFlow flow){return new PrintOutputs(new JdbcTemplate(source),platform,runtime,flow,tools.jackson.databind.json.JsonMapper.builder().build());}
+
+  /** @return 配置式场景与手工单据事务服务，复用宿主数据库及身份权限。 */
+  @Bean @DependsOnDatabaseInitialization
+  public PrintFlow printFlow(DataSource source,PrintPlatform platform,PrintRuntime runtime){return new PrintFlow(new JdbcTemplate(source),platform,runtime,tools.jackson.databind.json.JsonMapper.builder().build());}
 }

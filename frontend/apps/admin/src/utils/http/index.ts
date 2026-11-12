@@ -9,6 +9,7 @@ const client = Axios.create({ timeout: 10000, withCredentials: true });
  */
 export function requestErrorMessage(error: unknown): string {
   const t = i18n.global.t as (key: string) => string;
+  if(error instanceof Error&&(i18n.global.te as (key:string)=>boolean)("printing.codes."+error.message))return t("printing.codes."+error.message);
   if (Axios.isAxiosError(error)) {
     const status = error.response?.status;
     const securityCode=error.response?.data?.code;
@@ -18,6 +19,7 @@ export function requestErrorMessage(error: unknown): string {
     if (status === 429) return t("account.rateLimited");
     const code=error.response?.data?.code;
     if(typeof code==='string'&&(i18n.global.te as (key:string)=>boolean)("document.codes."+code))return t("document.codes."+code);
+    if(typeof code==='string'&&(i18n.global.te as (key:string)=>boolean)("printing.codes."+code))return t("printing.codes."+code);
     if(typeof code==='string'&&(i18n.global.te as (key:string)=>boolean)("workflow.codes."+code))return t("workflow.codes."+code);
     if(typeof code==='string'&&["PLATFORM_DENIED","DIRECTORY_CONFLICT","INVALID_DIRECTORY_INPUT","TENANT_CONTEXT_CHANGED","TENANT_UNAVAILABLE","TENANT_REQUIRED"].includes(code))return t("administration.errors."+code);
     if(typeof code==='string'&&["MENU_CHANGED","MENU_CODE_CONFLICT","MENU_CONFLICT","INVALID_MENU_INPUT"].includes(code))return t("menuManagement.errors."+code);

@@ -17,10 +17,10 @@ public final class PrintPlatformBridge implements PrintPlatform {
   public PrintPlatformBridge(AccessAuthorization access,TenantAccess tenants,IntegrationClients integrations,RegisteredClientRepository clients){this.access=access;this.tenants=tenants;this.integrations=integrations;this.clients=clients;}
 
   @Override public boolean allowed(PrintContext c,String permission){
-    if(permission.equals("print.agent:operate")&&c.actorId().startsWith("partner-")) {
+    if(c.actorId().startsWith("partner-")) {
       var policy=integrations.policy(c.actorId());
       var client=clients.findById(c.actorId());
-      return policy!=null&&policy.enabled()&&policy.tenant().toString().equals(c.tenantId())&&client!=null&&client.getScopes().contains("print-agent:operate");
+      return policy!=null&&policy.enabled()&&policy.tenant().toString().equals(c.tenantId())&&client!=null&&(permission.equals("print.agent:operate")&&client.getScopes().contains("print-agent:operate")||java.util.Set.of("print.external:submit","print.job:submit","print.job:read").contains(permission)&&client.getScopes().contains("print:submit"));
     }
     try {
       UUID actor=UUID.fromString(c.actorId()),tenant=UUID.fromString(c.tenantId());

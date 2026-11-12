@@ -2,6 +2,10 @@ import { describe, expect, it } from "vitest";
 import { copyTemplate, createBlankTemplate } from "./template";
 
 describe("HiPrint 接入模板边界", () => {
+  it("页码只允许固定占位符，拒绝模板字符串表达式",()=>{
+    expect(()=>copyTemplate({panels:[{paperNumberFormat:"paperNo / paperCount"}]})).not.toThrow();
+    expect(()=>copyTemplate({panels:[{paperNumberFormat:"${fetch('https://example.invalid')}"}]})).toThrow();
+  });
   it("复制模板且保留原生 options 和尺寸", () => {
     const input = createBlankTemplate();
     input.panels[0].options = { orientation: "portrait" };

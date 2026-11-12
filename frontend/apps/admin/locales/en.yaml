@@ -208,7 +208,9 @@ login:
   purePassword: Password
   pureVerifyCode: VerifyCode
   pureRemember: days no need to login
-  pureRememberInfo: After checking and logging in, will automatically log in to the system without entering your username and password within the specified number of days.
+  pureRememberInfo: After checking and logging in, will automatically log in to
+    the system without entering your username and password within the specified
+    number of days.
   pureSure: Sure Password
   pureForget: Forget Password?
   pureLogin: Login
@@ -263,1037 +265,1276 @@ tableBar:
   purePinLeft: Pin Left
   purePinRight: Pin Right
   pureUnpin: Unpin
-# 平台共享界面文案；键名供登录页与主题入口复用。
 platform:
-  theme: "Theme mode"
-  themeLight: "Light theme"
-  themeDark: "Dark theme"
-  themeSystem: "Use system theme"
-  account: "Account"
-  password: "Password"
-  login: "Sign in"
-  welcome: "Welcome back"
-  subtitle: "Sign in to AppNexus and get to work"
-  accountPlaceholder: "Enter your account"
-  passwordPlaceholder: "Enter your password"
-  loginError: "Invalid credentials or account unavailable"
-  serviceError: "Sign-in is unavailable. Please refresh and try again."
-  language: "Change language"
-  secure: "Secure access · Unified identity"
-  taglineLead: "Connected work."
-  tagline: "Better together."
-  description: "One workspace for everything you do."
-  continue: "Open management console"
-
-# 个人中心与会话错误提示。
+  theme: Theme mode
+  themeLight: Light theme
+  themeDark: Dark theme
+  themeSystem: Use system theme
+  account: Account
+  password: Password
+  login: Sign in
+  welcome: Welcome back
+  subtitle: Sign in to AppNexus and get to work
+  accountPlaceholder: Enter your account
+  passwordPlaceholder: Enter your password
+  loginError: Invalid credentials or account unavailable
+  serviceError: Sign-in is unavailable. Please refresh and try again.
+  language: Change language
+  secure: Secure access · Unified identity
+  taglineLead: Connected work.
+  tagline: Better together.
+  description: One workspace for everything you do.
+  continue: Open management console
 account:
-  acceptInvitation: "Accept tenant invitation"
-  invitationId: "Invitation ID"
-  invitationToken: "Invitation ticket"
-  invitationHint: "Only unexpired invitations bound to this account can be accepted. Membership does not grant business permissions."
-  invitationAccepted: "Invitation accepted. Refresh available tenants from the tenant selector."
-  auditQuery: "Authorized audit queries"
-  auditHint: "Queries the current tenant when selected, otherwise platform operations. Requires management authority and excludes passwords, tokens, contact details and raw business values."
-  auditSource: "Source"
-  auditActor: "Actor ID"
-  auditTarget: "Target ID"
-  auditTrace: "Trace ID"
-  tenantParameters: "Current tenant display parameters"
+  acceptInvitation: Accept tenant invitation
+  invitationId: Invitation ID
+  invitationToken: Invitation ticket
+  invitationHint: Only unexpired invitations bound to this account can be
+    accepted. Membership does not grant business permissions.
+  invitationAccepted: Invitation accepted. Refresh available tenants from the tenant selector.
+  auditQuery: Authorized audit queries
+  auditHint: Queries the current tenant when selected, otherwise platform
+    operations. Requires management authority and excludes passwords, tokens,
+    contact details and raw business values.
+  auditSource: Source
+  auditActor: Actor ID
+  auditTarget: Target ID
+  auditTrace: Trace ID
+  tenantParameters: Current tenant display parameters
   parameters:
-    time-zone: "Display time zone"
-    currency: "Default display currency"
-    page-size: "Suggested page size"
+    time-zone: Display time zone
+    currency: Default display currency
+    page-size: Suggested page size
   parameterHints:
-    time-zone: "IANA time zone, default Asia/Shanghai. Affects instant display only, preserving business dates and UTC storage."
-    currency: "ISO 4217 code, default CNY. Does not convert amounts or change the original business currency."
-    page-size: "Default 20, range 10–100 items. APIs retain their own limits and permission boundaries."
-  failed: "Failed or blocked"
+    time-zone: IANA time zone, default Asia/Shanghai. Affects instant display only,
+      preserving business dates and UTC storage.
+    currency: ISO 4217 code, default CNY. Does not convert amounts or change the
+      original business currency.
+    page-size: Default 20, range 10–100 items. APIs retain their own limits and
+      permission boundaries.
+  failed: Failed or blocked
   errors:
-    MFA_STEP_UP_REQUIRED: "Reauthenticate under Account security in your profile, then retry this action."
-    MFA_ENROLLMENT_REQUIRED: "Platform changes require two-factor authentication. Enroll under Account security in your profile first."
-    MFA_CHALLENGE_INVALID: "Authentication information is invalid or expired."
-    MFA_UNAVAILABLE: "Two-factor authentication is unavailable. Contact your administrator."
-    PASSWORD_RECOVERY_INVALID: "Recovery information is invalid or expired."
-  recoveryTitle: "Recover password"
-  recoveryHint: "Use an offline two-factor recovery code, or ask an administrator to verify your identity and issue a one-time reset ticket. Resetting preserves two-factor authentication."
-  recoveryCode: "32-character recovery code"
-  recoveryTicket: "64-character reset ticket"
-  recoveryStart: "Verify recovery code"
-  recoveryHaveTicket: "I have a reset ticket"
-  recoveryComplete: "Reset password"
-  recoveryDone: "Password reset and previous sign-ins revoked. Return to sign in."
-  recoveryBack: "Back to sign in"
-  mfaTitle: "Two-factor authentication"
-  mfaHint: "Use a six-digit authenticator code or a one-time recovery code. Enabling or disabling revokes previous sign-ins."
-  mfaNotEnabled: "Not enabled"
-  mfaUnavailable: "Two-factor authentication is unavailable. Contact your administrator."
-  mfaCode: "Authenticator or recovery code"
-  mfaLoginCode: "Authenticator or recovery code (required when enabled)"
-  mfaEnroll: "Start enrollment"
-  mfaActivate: "Enable authentication"
-  mfaSaved: "Two-factor authentication enabled"
-  mfaSecretHint: "Enter the key below in your authenticator, then enter its code to confirm. The key expires in 10 minutes."
-  mfaRecoveryHint: "Save these recovery codes offline now. Each works once and cannot be displayed again after leaving this page."
-  mfaRecoverySaved: "Saved, hide recovery codes"
-  mfaStepUp: "Reauthenticate"
-  mfaStepUpSaved: "Reauthentication is valid for sensitive actions for 5 minutes."
-  mfaDisable: "Disable authentication"
-  mfaDisableConfirm: "Disable two-factor authentication and end all sign-ins? Enter your password and a valid authenticator or recovery code first."
-  title: "Personal center"
-  subtitle: "Manage your profile and account security"
-  profile: "Profile"
-  security: "Change password"
-  id: "Account ID"
-  displayName: "Display name"
-  email: "Email"
-  phoneNumber: "Phone number"
-  verified: "Verified"
-  unverified: "Unverified"
-  contactChangeHint: "Changes require verification again; leave blank to remove."
-  phoneHint: "Use E.164 format (for example, +8613800000000); changes require verification again."
-  save: "Save profile"
-  saved: "Profile updated"
-  retry: "Reload"
-  passwordHint: "Use 12–128 characters. All existing sessions expire after a password change; sign in again."
-  currentPassword: "Current password"
-  newPassword: "New password"
-  confirmPassword: "Confirm new password"
-  changePassword: "Change password"
-  mismatch: "The new passwords do not match"
-  passwordSaved: "Password changed. Please sign in with your new password."
-  sessionExpired: "Your session expired or account status changed. Please sign in again."
-  forbidden: "Operation denied or security credentials expired. Refresh and try again."
-  rateLimited: "Too many attempts. Please try again later."
-  unavailable: "Service is temporarily unavailable. Please try again later."
-  requestFailed: "Request failed. Please try again."
-  back: "Back to home"
-  personalInfo: "Personal information"
-  preferences: "Preferences"
-  accountSecurity: "Account security"
-  personalIntro: "Manage how your information appears to your colleagues."
-  avatarHint: "Using the platform default avatar"
-  usernameHint: "The login account cannot be changed here"
-  preferencesIntro: "Adjust your workspace. Changes apply immediately."
-  themeHint: "Choose light, dark, or follow your operating system."
-  language: "Interface language"
-  languageHint: "Change the language for menus, forms and messages."
-  preferenceScope: "Preferences are stored in this browser and shared by sign-in and workspace pages."
-  securityIntro: "Manage your credentials and protect your sessions."
-  modify: "Edit"
-  cancel: "Cancel"
-  sessionProtection: "Session protection"
-  sessionHint: "After a password change, old sessions on other devices are rejected on their next request."
-  enabled: "Enabled"
-  loginExpired: "The sign-in page expired. Please enter your password and try again."
-  securityLogs: "Security logs"
-  logsIntro: "Review recorded security activity for this account."
-  refresh: "Refresh"
-  event: "Activity"
-  result: "Result"
-  success: "Success"
-  eventTime: "Time"
-  noLogs: "No security activity yet"
-  logsRetry: "Unable to load. Select Refresh to retry."
-  logsScope: "Only successful actions recorded since this feature was enabled are shown. Times use this browser's time zone. Failed attempts, location and device information are not included."
-  sessions: "Sign-in sessions"
-  sessionsIntro: "Review active sessions and revoke sign-ins you no longer use."
-  currentSession: "Current session"
-  otherSession: "Other session"
-  sessionType: "Session"
-  sessionCreated: "Created"
-  sessionAccess: "Last accessed"
-  sessionOperation: "Action"
-  revokeSession: "Revoke session"
-  revokeConfirm: "This session will need to sign in again on its next request. Revoke it?"
-  sessionRevoked: "Session revoked"
-  noSessions: "No active sessions"
-  sessionsNote: "Tabs in the same browser usually share one session. Last access includes background session checks. No device or location is inferred. Use Sign out to end this session."
-  revokeOthers: "Sign out other sessions"
-  revokeOthersConfirm: "Sign out other sessions for this account and keep this session. Continue?"
-  othersRevoked: "Revoked {count} other sessions"
+    MFA_STEP_UP_REQUIRED: Reauthenticate under Account security in your profile,
+      then retry this action.
+    MFA_ENROLLMENT_REQUIRED: Platform changes require two-factor authentication.
+      Enroll under Account security in your profile first.
+    MFA_CHALLENGE_INVALID: Authentication information is invalid or expired.
+    MFA_UNAVAILABLE: Two-factor authentication is unavailable. Contact your administrator.
+    PASSWORD_RECOVERY_INVALID: Recovery information is invalid or expired.
+  recoveryTitle: Recover password
+  recoveryHint: Use an offline two-factor recovery code, or ask an administrator
+    to verify your identity and issue a one-time reset ticket. Resetting
+    preserves two-factor authentication.
+  recoveryCode: 32-character recovery code
+  recoveryTicket: 64-character reset ticket
+  recoveryStart: Verify recovery code
+  recoveryHaveTicket: I have a reset ticket
+  recoveryComplete: Reset password
+  recoveryDone: Password reset and previous sign-ins revoked. Return to sign in.
+  recoveryBack: Back to sign in
+  mfaPlatformRequired: Platform administration currently requires MFA and
+    verification within the last 5 minutes.
+  mfaPlatformOptional: Platform administration does not currently require MFA.
+    Voluntary enrollment still protects sign-in and sensitive self-service
+    operations.
+  mfaMethod: Verification method
+  mfaTotp: Authenticator code
+  mfaTotpDescription: "TOTP supports Microsoft Authenticator and Google
+    Authenticator. Add the key manually: time-based, 6 digits, 30 seconds,
+    SHA-1. SMS, email and security keys are not supported."
+  mfaRecoveryMethod: One-time recovery code
+  mfaRecoveryDescription: Generated after enrollment and displayed once. Use a
+    code if your authenticator is unavailable. Each code works once; store them
+    offline.
+  mfaSetupOne: In your authenticator, add an account and enter a key manually. Use
+    AppNexus as the account label.
+  mfaSetupTwo: Enter the key below and select time-based codes. Complete
+    enrollment within 10 minutes.
+  mfaSetupThree: Re-enter your current password and the six-digit code, activate
+    MFA, then save recovery codes. Enable automatic time synchronization on your
+    phone.
+  mfaSixDigits: Enter the current six-digit authenticator code.
+  mfaTitle: Two-factor authentication
+  mfaHint: Use a six-digit authenticator code or a one-time recovery code.
+    Enabling or disabling revokes previous sign-ins.
+  mfaNotEnabled: Not enabled
+  mfaUnavailable: Two-factor authentication is unavailable. Contact your administrator.
+  mfaCode: Authenticator or recovery code
+  mfaLoginCode: Authenticator or recovery code (required when enabled)
+  mfaEnroll: Start enrollment
+  mfaActivate: Enable authentication
+  mfaSaved: Two-factor authentication enabled
+  mfaSecretHint: Enter the key below in your authenticator, then enter its code to
+    confirm. The key expires in 10 minutes.
+  mfaRecoveryHint: Save these recovery codes offline now. Each works once and
+    cannot be displayed again after leaving this page.
+  mfaRecoverySaved: Saved, hide recovery codes
+  mfaStepUp: Reauthenticate
+  mfaStepUpSaved: Reauthentication is valid for sensitive actions for 5 minutes.
+  mfaDisable: Disable authentication
+  mfaDisableConfirm: Disable two-factor authentication and end all sign-ins? Enter
+    your password and a valid authenticator or recovery code first.
+  title: Personal center
+  subtitle: Manage your profile and account security
+  profile: Profile
+  security: Change password
+  id: Account ID
+  displayName: Display name
+  email: Email
+  phoneNumber: Phone number
+  verified: Verified
+  unverified: Unverified
+  contactChangeHint: Changes require verification again; leave blank to remove.
+  phoneHint: Use E.164 format (for example, +8613800000000); changes require
+    verification again.
+  save: Save profile
+  saved: Profile updated
+  retry: Reload
+  passwordHint: Use 12–128 characters. All existing sessions expire after a
+    password change; sign in again.
+  currentPassword: Current password
+  newPassword: New password
+  confirmPassword: Confirm new password
+  changePassword: Change password
+  mismatch: The new passwords do not match
+  passwordSaved: Password changed. Please sign in with your new password.
+  sessionExpired: Your session expired or account status changed. Please sign in again.
+  forbidden: Operation denied or security credentials expired. Refresh and try again.
+  rateLimited: Too many attempts. Please try again later.
+  unavailable: Service is temporarily unavailable. Please try again later.
+  requestFailed: Request failed. Please try again.
+  back: Back to home
+  personalInfo: Personal information
+  preferences: Preferences
+  accountSecurity: Account security
+  personalIntro: Manage how your information appears to your colleagues.
+  avatarHint: Using the platform default avatar
+  usernameHint: The login account cannot be changed here
+  preferencesIntro: Adjust your workspace. Changes apply immediately.
+  themeHint: Choose light, dark, or follow your operating system.
+  language: Interface language
+  languageHint: Change the language for menus, forms and messages.
+  preferenceScope: Preferences are stored in this browser and shared by sign-in
+    and workspace pages.
+  securityIntro: Manage your credentials and protect your sessions.
+  modify: Edit
+  cancel: Cancel
+  sessionProtection: Session protection
+  sessionHint: After a password change, old sessions on other devices are rejected
+    on their next request.
+  enabled: Enabled
+  loginExpired: The sign-in page expired. Please enter your password and try again.
+  securityLogs: Security logs
+  logsIntro: Review recorded security activity for this account.
+  refresh: Refresh
+  event: Activity
+  result: Result
+  success: Success
+  eventTime: Time
+  noLogs: No security activity yet
+  logsRetry: Unable to load. Select Refresh to retry.
+  logsScope: Only successful actions recorded since this feature was enabled are
+    shown. Times use this browser's time zone. Failed attempts, location and
+    device information are not included.
+  sessions: Sign-in sessions
+  sessionsIntro: Review active sessions and revoke sign-ins you no longer use.
+  currentSession: Current session
+  otherSession: Other session
+  sessionType: Session
+  sessionCreated: Created
+  sessionAccess: Last accessed
+  sessionOperation: Action
+  revokeSession: Revoke session
+  revokeConfirm: This session will need to sign in again on its next request. Revoke it?
+  sessionRevoked: Session revoked
+  noSessions: No active sessions
+  sessionsNote: Tabs in the same browser usually share one session. Last access
+    includes background session checks. No device or location is inferred. Use
+    Sign out to end this session.
+  revokeOthers: Sign out other sessions
+  revokeOthersConfirm: Sign out other sessions for this account and keep this session. Continue?
+  othersRevoked: Revoked {count} other sessions
   events:
-    LOGIN: "Signed in"
-    LOGOUT: "Signed out"
-    PROFILE_UPDATED: "Profile updated"
-    PASSWORD_CHANGED: "Password changed"
-    OTHER_SESSIONS_REVOKED: "Other sessions revoked"
-    SESSION_REVOKED: "Sign-in session revoked"
-    MFA_ENABLED: "Two-factor authentication enabled"
-    MFA_DISABLED: "Two-factor authentication disabled"
-    MFA_RECOVERY_USED: "Recovery code used"
-    MFA_STEP_UP: "Reauthentication completed"
-    PASSWORD_RECOVERY_ISSUED: "Password reset ticket issued"
-    PASSWORD_RECOVERED: "Password recovered"
-    LOGIN_FAILED: "Sign-in authentication failed"
-    MFA_FAILED: "Second-factor authentication failed"
-    REFRESH_TOKEN_REPLAY: "Refresh token replay detected; device authorization revoked"
-
+    LOGIN: Signed in
+    LOGOUT: Signed out
+    PROFILE_UPDATED: Profile updated
+    PASSWORD_CHANGED: Password changed
+    OTHER_SESSIONS_REVOKED: Other sessions revoked
+    SESSION_REVOKED: Sign-in session revoked
+    MFA_ENABLED: Two-factor authentication enabled
+    MFA_DISABLED: Two-factor authentication disabled
+    MFA_RECOVERY_USED: Recovery code used
+    MFA_STEP_UP: Reauthentication completed
+    PASSWORD_RECOVERY_ISSUED: Password reset ticket issued
+    PASSWORD_RECOVERED: Password recovered
+    LOGIN_FAILED: Sign-in authentication failed
+    MFA_FAILED: Second-factor authentication failed
+    REFRESH_TOKEN_REPLAY: Refresh token replay detected; device authorization revoked
 management:
-  refresh: "Refresh"
+  refresh: Refresh
   totalRecords: "{total} records"
-  reset: "Reset"
-  density: "Density"
-  small: "Compact"
-  default: "Default"
-  large: "Comfortable"
-  columns: "Column settings"
-  moveUp: "Move {name} up"
-  moveDown: "Move {name} down"
-  pinColumn: "Pin {name}"
-  left: "Pin left"
-  right: "Pin right"
-  unfixed: "Unpin"
-  fullscreen: "Fullscreen"
-  exitFullscreen: "Exit fullscreen"
-  collapseTree: "Collapse tree panel"
-  expandTree: "Expand tree panel"
-  maximizeDialog: "Maximize dialog"
-  restoreDialog: "Restore dialog"
-  closeDialog: "Close dialog"
-  resizeDialog: "Resize dialog; use arrow keys for incremental adjustment"
-  fullscreenFailed: "Fullscreen is unavailable. Check browser permissions and retry."
-  empty: "No data"
-  noResults: "No matching records. Adjust your filters."
-  keyword: "Enter a keyword"
-  accountQuery: "Username or display name"
-  backTenants: "Back to tenants"
-  units: "Organization units"
-  membersAndGrants: "Members and permissions"
-  organizationScope: "Organization scope"
-  allOrganizations: "All organizations"
-  searchOrganization: "Search organizations"
-  manageGrants: "Assignment and permissions"
+  reset: Reset
+  density: Density
+  small: Compact
+  default: Default
+  large: Comfortable
+  columns: Column settings
+  moveUp: Move {name} up
+  moveDown: Move {name} down
+  pinColumn: Pin {name}
+  left: Pin left
+  right: Pin right
+  unfixed: Unpin
+  fullscreen: Fullscreen
+  exitFullscreen: Exit fullscreen
+  collapseTree: Collapse tree panel
+  expandTree: Expand tree panel
+  maximizeDialog: Maximize dialog
+  restoreDialog: Restore dialog
+  closeDialog: Close dialog
+  resizeDialog: Resize dialog; use arrow keys for incremental adjustment
+  fullscreenFailed: Fullscreen is unavailable. Check browser permissions and retry.
+  empty: No data
+  noResults: No matching records. Adjust your filters.
+  keyword: Enter a keyword
+  accountQuery: Username or display name
+  backTenants: Back to tenants
+  units: Organization units
+  membersAndGrants: Members and permissions
+  organizationScope: Organization scope
+  allOrganizations: All organizations
+  searchOrganization: Search organizations
+  manageGrants: Assignment and permissions
   memberSettings: "{name} · Assignment and permissions"
-  currentGrants: "Current permissions"
-
+  currentGrants: Current permissions
 tenant:
-  switch: "Switch tenant"
-  switchConfirm: "Switching refreshes the current business content and discards unsaved changes. Continue?"
-  select: "Select tenant"
-  selectDescription: "Choose the active tenant and enter its organization and permission context."
-  search: "Tenant search"
-  availableList: "Accessible tenants"
-  noMembership: "No accessible tenant. Contact your administrator to grant membership."
-  name: "Tenant name"
-  operation: "Action"
-  enter: "Enter"
-
+  switch: Switch tenant
+  switchConfirm: Switching refreshes the current business content and discards
+    unsaved changes. Continue?
+  select: Select tenant
+  selectDescription: Choose the active tenant and enter its organization and permission context.
+  search: Tenant search
+  availableList: Accessible tenants
+  noMembership: No accessible tenant. Contact your administrator to grant membership.
+  name: Tenant name
+  operation: Action
+  enter: Enter
 organization:
-  structure: "Organization structure"
-  assignmentManagement: "Assignment management"
-  types: "Organization types"
-  typeTrees: "Independent type trees"
-  code: "Code"
-  status: "Status"
-  enabled: "Enabled"
-  disabled: "Disabled"
-  type: "Organization type"
-  relations: "Organization relations"
-  noRelations: "No organization relations"
-  relationType: "Relation type"
-  source: "Source organization"
-  target: "Target organization"
-  positionsAndAssignments: "Positions and assignments"
-  positions: "Positions"
-  positionName: "Position name"
-  assignments: "Assignments"
-  currentAssignments: "Current organization assignments"
-  assignmentPeriod: "Assignment period"
-  active: "Active"
-  ended: "Ended"
-  allStatuses: "All statuses"
-  noEndDate: "No end date"
-  createType: "Create organization type"
-  createTreeUnit: "Create organization node"
-  createChildUnit: "Create child organization"
-  parent: "Parent organization"
-  tenantRoot: "Tenant root"
-  leaders: "Leaders"
-  availableMembers: "Active members"
-  createRelation: "Create relation"
-  createPosition: "Create position"
-  createAssignment: "Create assignment"
-  setLeader: "Set leader"
-  confirmDeleteRelation: "Delete this organization relation?"
-  confirmEndAssignment: 'End {member} assignment to "{position}"? The member will no longer be selected through this assignment for leadership or approvals.'
-  confirmRemoveLeader: "Remove {member} as organization leader? The underlying assignment will remain active."
-  relationDialog: "Create organization relation"
-  positionDialog: "Create position"
-  assignmentDialog: "Create assignment"
-  leaderDialog: "Set organization leader"
-  startsAt: "Assignment starts at"
-  endsAt: "Assignment ends at"
-  enable: "Enable"
-  disable: "Disable"
-  move: "Move organization"
-  edit: "Edit"
-  endAssignment: "End assignment"
-  removeLeader: "Remove leader"
-  invalidLeader: "The selected assignment cannot currently be a leader"
-  invalidCode: "Enter a non-blank code"
-  invalidRelation: "Select a relation type and two different active organizations"
-  relationTypesUnavailable: "Organization relation types are unavailable. Verify that the dictionary service is up to date and retry."
-  invalidAssignment: "Select a member and position, and ensure the end time is after the start time"
-  impactSummary: "Children {children}, relations {relations}, positions {positions}, active assignments {activeAssignments}, leaders {leaders}. Disable?"
-  typeDialog: "Organization type"
-  unitDialog: "Organization node"
-  moveDialog: "Move organization"
-  primaryOrganization: "Primary organization"
-  unassigned: "Unassigned"
-  saveAssignment: "Save organization assignment"
-  title: "Organization management"
-  description: "Manage organization types, independent trees, relations, positions, assignments and leaders. Permissions belong to the access center."
-  unitSearch: "Organization search"
-  searchPlaceholder: "Search name or code"
-  searchAssignmentPlaceholder: "Search member, position or organization"
-  searchRelationPlaceholder: "Search relation type or organization"
-  searchTypePlaceholder: "Search type name or code"
-  noSearchResults: "No matching organizations"
-  selectUnitHint: "Select an organization from the tree to manage it"
-  relatedRelations: "Current organization relations"
-  typeName: "Type name"
-  unitCount: "Organizations"
-  moreActions: "More organization actions"
-  memberSearch: "Member search"
-  name: "Organization name"
-  create: "Create organization"
-  rename: "Rename"
-  delete: "Delete"
-  cancel: "Cancel"
-  save: "Save"
-  saved: "Changes saved"
-  empty: "No organization units"
-  invalidName: "Enter a non-blank name of 1–100 characters"
-  confirmDelete: 'Delete organization "{name}"? This cannot be undone.'
-  authorization: "Member permissions"
-  grantHint: "Grants apply only to this tenant. Management authority is configured by operations and cannot be delegated here."
-  member: "Tenant member"
-  selectMember: "Select an active member"
-  capability: "Permission"
-  expiresAt: "Expires at (local time)"
-  permanent: "No expiry"
-  grant: "Grant / update permission"
-  revoke: "Revoke"
-  confirmRevoke: "Revoke this permission? Subsequent operations will be denied immediately."
-  noGrants: "This member has no active grants"
-  READ: "Read organizations"
-  CREATE: "Create organizations"
-  UPDATE: "Update organizations"
-  DELETE: "Delete organizations"
-  GRANT: "Manage grants (operations only)"
-  invalidExpiry: "Expiry must be in the future"
-
+  structure: Organization structure
+  assignmentManagement: Assignment management
+  types: Organization types
+  typeTrees: Independent type trees
+  code: Code
+  status: Status
+  enabled: Enabled
+  disabled: Disabled
+  type: Organization type
+  relations: Organization relations
+  noRelations: No organization relations
+  relationType: Relation type
+  source: Source organization
+  target: Target organization
+  positionsAndAssignments: Positions and assignments
+  positions: Positions
+  positionName: Position name
+  assignments: Assignments
+  currentAssignments: Current organization assignments
+  assignmentPeriod: Assignment period
+  active: Active
+  ended: Ended
+  allStatuses: All statuses
+  noEndDate: No end date
+  createType: Create organization type
+  createTreeUnit: Create organization node
+  createChildUnit: Create child organization
+  parent: Parent organization
+  tenantRoot: Tenant root
+  leaders: Leaders
+  availableMembers: Active members
+  createRelation: Create relation
+  createPosition: Create position
+  createAssignment: Create assignment
+  setLeader: Set leader
+  confirmDeleteRelation: Delete this organization relation?
+  confirmEndAssignment: End {member} assignment to "{position}"? The member will
+    no longer be selected through this assignment for leadership or approvals.
+  confirmRemoveLeader: Remove {member} as organization leader? The underlying
+    assignment will remain active.
+  relationDialog: Create organization relation
+  positionDialog: Create position
+  assignmentDialog: Create assignment
+  leaderDialog: Set organization leader
+  startsAt: Assignment starts at
+  endsAt: Assignment ends at
+  enable: Enable
+  disable: Disable
+  move: Move organization
+  edit: Edit
+  endAssignment: End assignment
+  removeLeader: Remove leader
+  invalidLeader: The selected assignment cannot currently be a leader
+  invalidCode: Enter a non-blank code
+  invalidRelation: Select a relation type and two different active organizations
+  relationTypesUnavailable: Organization relation types are unavailable. Verify
+    that the dictionary service is up to date and retry.
+  invalidAssignment: Select a member and position, and ensure the end time is after the start time
+  impactSummary: Children {children}, relations {relations}, positions
+    {positions}, active assignments {activeAssignments}, leaders {leaders}.
+    Disable?
+  typeDialog: Organization type
+  unitDialog: Organization node
+  moveDialog: Move organization
+  primaryOrganization: Primary organization
+  unassigned: Unassigned
+  saveAssignment: Save organization assignment
+  title: Organization management
+  description: Manage organization types, independent trees, relations, positions,
+    assignments and leaders. Permissions belong to the access center.
+  unitSearch: Organization search
+  searchPlaceholder: Search name or code
+  searchAssignmentPlaceholder: Search member, position or organization
+  searchRelationPlaceholder: Search relation type or organization
+  searchTypePlaceholder: Search type name or code
+  noSearchResults: No matching organizations
+  selectUnitHint: Select an organization from the tree to manage it
+  relatedRelations: Current organization relations
+  typeName: Type name
+  unitCount: Organizations
+  moreActions: More organization actions
+  memberSearch: Member search
+  name: Organization name
+  create: Create organization
+  rename: Rename
+  delete: Delete
+  cancel: Cancel
+  save: Save
+  saved: Changes saved
+  empty: No organization units
+  invalidName: Enter a non-blank name of 1–100 characters
+  confirmDelete: Delete organization "{name}"? This cannot be undone.
+  authorization: Member permissions
+  grantHint: Grants apply only to this tenant. Management authority is configured
+    by operations and cannot be delegated here.
+  member: Tenant member
+  selectMember: Select an active member
+  capability: Permission
+  expiresAt: Expires at (local time)
+  permanent: No expiry
+  grant: Grant / update permission
+  revoke: Revoke
+  confirmRevoke: Revoke this permission? Subsequent operations will be denied immediately.
+  noGrants: This member has no active grants
+  READ: Read organizations
+  CREATE: Create organizations
+  UPDATE: Update organizations
+  DELETE: Delete organizations
+  GRANT: Manage grants (operations only)
+  invalidExpiry: Expiry must be in the future
 administration:
-  inviteInstead: "Issue an invitation for the account owner to activate membership"
-  invitationCreated: "Invitation issued"
-  invitationDeliveryHint: "Deliver the invitation ID and ticket to the specified account owner through a controlled channel for acceptance in their profile. Valid for 24 hours and shown once."
-  clients: "Integration clients"
-  clientName: "Client name"
-  createClient: "Create client"
-  rotateClient: "Rotate secret"
-  clientScopeHint: "Clients are bound to this tenant. Dictionary reads are enabled by default; business reference registration requires explicit authorization. They do not act as users or members."
-  allowReferences: "Allow dictionary business references"
-  clientSecretHint: "Shown once. Deliver to the authorized integration owner for storage in their secret manager. It cannot be displayed again after closing."
-  clientStateConfirm: "Changing client status revokes all existing tokens. Re-enabling requires new authentication."
-  clientRotateConfirm: "Rotate the secret and revoke existing tokens? The previous secret remains valid for 10 minutes. Update the caller promptly."
-  issueRecovery: "Reset ticket"
-  confirmRecovery: "Have you verified this person's identity and need to issue a reset ticket? It replaces any unused ticket."
-  recoveryTicketHint: "Shown once and valid for 10 minutes. Deliver only to the verified account owner through a controlled channel. It cannot be displayed again after closing."
-  revokeSessions: "Revoke sign-ins"
-  confirmRevokeSessions: "Revoke all sign-ins for this account? It must sign in again. Requests already executing are not interrupted."
-  title: "Platform administration"
-  tenantTitle: "Tenant management"
-  userTitle: "User management"
-  tenantDescription: "Manage platform tenants, status, membership and organization permissions."
-  userDescription: "Manage platform account profiles, contact details and access status. Unverified contacts are not sign-in credentials."
-  home: "Home"
-  filter: "Filters"
-  tenantSearch: "Tenant search"
-  userSearch: "User search"
-  expandFilter: "Expand filters"
-  collapseFilter: "Collapse filters"
-  flow: "Create users → Create a tenant with its first administrator → Add members → Enter organization management to set organizations, assignments and permissions."
-  tenants: "Tenants"
-  users: "Users"
-  tenantList: "Tenant list"
-  userList: "User list"
-  members: "Manage members"
+  clientPurpose: Client purpose
+  dictionaryClient: Business dictionaries
+  printClient: Print agent
+  inviteInstead: Issue an invitation for the account owner to activate membership
+  invitationCreated: Invitation issued
+  invitationDeliveryHint: Deliver the invitation ID and ticket to the specified
+    account owner through a controlled channel for acceptance in their profile.
+    Valid for 24 hours and shown once.
+  clients: Integration clients
+  clientName: Client name
+  createClient: Create client
+  rotateClient: Rotate secret
+  clientScopeHint: Clients are bound to this tenant. Dictionary reads are enabled
+    by default; business reference registration requires explicit authorization.
+    They do not act as users or members.
+  allowReferences: Allow dictionary business references
+  clientSecretHint: Shown once. Deliver to the authorized integration owner for
+    storage in their secret manager. It cannot be displayed again after closing.
+  clientStateConfirm: Changing client status revokes all existing tokens.
+    Re-enabling requires new authentication.
+  clientRotateConfirm: Rotate the secret and revoke existing tokens? The previous
+    secret remains valid for 10 minutes. Update the caller promptly.
+  issueRecovery: Reset ticket
+  confirmRecovery: Have you verified this person's identity and need to issue a
+    reset ticket? It replaces any unused ticket.
+  recoveryTicketHint: Shown once and valid for 10 minutes. Deliver only to the
+    verified account owner through a controlled channel. It cannot be displayed
+    again after closing.
+  revokeSessions: Revoke sign-ins
+  confirmRevokeSessions: Revoke all sign-ins for this account? It must sign in
+    again. Requests already executing are not interrupted.
+  title: Platform administration
+  tenantTitle: Tenant management
+  userTitle: User management
+  tenantDescription: Manage platform tenants, status, membership and organization permissions.
+  userDescription: Manage platform account profiles, contact details and access
+    status. Unverified contacts are not sign-in credentials.
+  home: Home
+  filter: Filters
+  tenantSearch: Tenant search
+  userSearch: User search
+  expandFilter: Expand filters
+  collapseFilter: Collapse filters
+  flow: Create users → Create a tenant with its first administrator → Add members
+    → Enter organization management to set organizations, assignments and
+    permissions.
+  tenants: Tenants
+  users: Users
+  tenantList: Tenant list
+  userList: User list
+  members: Manage members
   membersOf: "{name} · Members"
-  createUser: "Create user"
-  editUser: "Edit user"
-  createTenant: "Create tenant"
-  editTenant: "Edit tenant"
-  removeMember: "Remove member"
-  removed: "Removed"
-  confirmRemoveMember: "Remove this member? Historical identity is retained and previous grants will not be restored on rejoin."
-  addMember: "Add member"
-  enterOrganization: "Manage organizations"
-  memberHint: "Membership permits tenant access but grants no organization permissions. The tenant administrator assigns organizations and permissions. Disabling a member revokes permissions; enabling requires new grants."
-  username: "Login account"
-  displayName: "Display name"
-  email: "Email"
-  phoneNumber: "Phone number"
-  verified: "Verified"
-  unverified: "Unverified"
-  phonePlaceholder: "For example, +14155552671"
-  contactVerificationHint: "Changing an email or phone number resets its verification status. Unverified contacts cannot currently be used for sign-in or password recovery."
-  password: "Initial password"
-  invalidName: "Enter a non-blank name of 1–100 characters"
-  invalidUsername: "Use 1–100 letters, digits or . _ {'@'} -, starting with a letter or digit"
-  invalidEmail: "Enter a valid email address of no more than 254 characters"
-  invalidPhoneNumber: "Enter an E.164 phone number, for example +14155552671"
-  invalidPassword: "Use 12–128 characters"
-  firstAdministrator: "First tenant administrator"
-  firstAdministratorHint: "This account becomes a tenant member with organization and grant management permissions. The platform operator is not automatically added."
-  account: "Existing user"
-  chooseAccount: "Search active users by login, display name, email or phone"
-  search: "Search"
-  status: "Status"
-  enabled: "Enabled"
-  disabled: "Disabled"
-  enable: "Enable"
-  disable: "Disable"
-  empty: "No records. Adjust the search or create one."
-  confirmDisable: "Disable access? Disabling a member also revokes permissions; enabling requires new grants. Administrator accounts and memberships are protected."
-  confirmEnable: "Enable? Historical member permissions will not be restored."
+  createUser: Create user
+  editUser: Edit user
+  createTenant: Create tenant
+  editTenant: Edit tenant
+  removeMember: Remove member
+  removed: Removed
+  confirmRemoveMember: Remove this member? Historical identity is retained and
+    previous grants will not be restored on rejoin.
+  addMember: Add member
+  enterOrganization: Manage organizations
+  memberHint: Membership permits tenant access but grants no organization
+    permissions. The tenant administrator assigns organizations and permissions.
+    Disabling a member revokes permissions; enabling requires new grants.
+  username: Login account
+  displayName: Display name
+  email: Email
+  phoneNumber: Phone number
+  verified: Verified
+  unverified: Unverified
+  phonePlaceholder: For example, +14155552671
+  contactVerificationHint: Changing an email or phone number resets its
+    verification status. Unverified contacts cannot currently be used for
+    sign-in or password recovery.
+  password: Initial password
+  invalidName: Enter a non-blank name of 1–100 characters
+  invalidUsername: Use 1–100 letters, digits or . _ {'@'} -, starting with a letter or digit
+  invalidEmail: Enter a valid email address of no more than 254 characters
+  invalidPhoneNumber: Enter an E.164 phone number, for example +14155552671
+  invalidPassword: Use 12–128 characters
+  firstAdministrator: First tenant administrator
+  firstAdministratorHint: This account becomes a tenant member with organization
+    and grant management permissions. The platform operator is not automatically
+    added.
+  account: Existing user
+  chooseAccount: Search active users by login, display name, email or phone
+  search: Search
+  status: Status
+  enabled: Enabled
+  disabled: Disabled
+  enable: Enable
+  disable: Disable
+  empty: No records. Adjust the search or create one.
+  confirmDisable: Disable access? Disabling a member also revokes permissions;
+    enabling requires new grants. Administrator accounts and memberships are
+    protected.
+  confirmEnable: Enable? Historical member permissions will not be restored.
   errors:
-    PLATFORM_DENIED: "Platform administration permission is required"
-    DIRECTORY_CONFLICT: "The account, membership or request already exists. Reload and retry."
-    INVALID_DIRECTORY_INPUT: "Invalid input or target state. Administrator accounts and memberships are protected."
-    TENANT_CONTEXT_CHANGED: "Tenant context changed. Reload and retry."
-    TENANT_UNAVAILABLE: "You are not an active member of this tenant. Ask a platform administrator to add membership."
-    TENANT_REQUIRED: "Select an accessible tenant"
-
+    PLATFORM_DENIED: Platform administration permission is required
+    DIRECTORY_CONFLICT: The account, membership or request already exists. Reload and retry.
+    INVALID_DIRECTORY_INPUT: Invalid input or target state. Administrator accounts
+      and memberships are protected.
+    TENANT_CONTEXT_CHANGED: Tenant context changed. Reload and retry.
+    TENANT_UNAVAILABLE: You are not an active member of this tenant. Ask a platform
+      administrator to add membership.
+    TENANT_REQUIRED: Select an accessible tenant
+  externalPrintClient: External print API
 templateLab:
-  title: "Page template acceptance"
-  notice: "This hidden page validates layouts only; it does not connect to production data or expose a business entry."
-  vertical: "T03 Vertical split template"
-  form: "T04 Detail form template"
-  verticalDescription: "Validate master selection, detail empty state and independently scrolling panels."
-  formDescription: "Validate edit mode, grouped two-column forms, responsive layout and unsaved-change warnings."
-  master: "Master data"
-  detail: "Related details"
-  masterA: "Layout acceptance item A"
-  masterB: "Layout acceptance item B"
-  name: "Name"
-  code: "Code"
-  description: "Description"
-  selected: "Selected item"
-  selectMaster: "Select a master record first"
-  basic: "Basic information"
-
+  title: Page template acceptance
+  notice: This hidden page validates layouts only; it does not connect to
+    production data or expose a business entry.
+  vertical: T03 Vertical split template
+  form: T04 Detail form template
+  verticalDescription: Validate master selection, detail empty state and
+    independently scrolling panels.
+  formDescription: Validate edit mode, grouped two-column forms, responsive layout
+    and unsaved-change warnings.
+  master: Master data
+  detail: Related details
+  masterA: Layout acceptance item A
+  masterB: Layout acceptance item B
+  name: Name
+  code: Code
+  description: Description
+  selected: Selected item
+  selectMaster: Select a master record first
+  basic: Basic information
 menuManagement:
-  scope: "Audience"
-  page: "Registered page"
-  externalUrl: "External URL (new tab)"
+  scope: Audience
+  page: Registered page
+  externalUrl: External URL (new tab)
   scopes:
-    PLATFORM: "Platform administrators"
-    TENANT: "Current tenant"
-    AUTHENTICATED: "Signed-in users"
-  title: "Menu management"
-  description: "Maintain the platform navigation and action resource catalog. Visibility does not replace API authorization."
-  tree: "Menu tree"
-  all: "All menus"
-  list: "Menu list"
-  query: "Search menus"
-  queryPlaceholder: "Name, code, path or permission"
-  refresh: "Refresh"
-  createRoot: "Create root"
-  create: "Create menu node"
-  addChild: "Add child"
-  edit: "Edit"
-  delete: "Delete"
-  confirmDelete: 'Delete "{name}"? Nodes with children cannot be deleted.'
-  deleted: "Menu deleted"
-  saved: "Menu saved"
-  empty: "No menu nodes"
-  name: "Menu name"
-  parent: "Parent menu"
-  type: "Node type"
-  code: "Menu code"
-  titleZh: "Chinese name"
-  titleEn: "English name"
-  path: "Route path"
-  component: "Component key"
-  permission: "Permission code"
-  icon: "Icon"
-  sortOrder: "Sort order"
-  status: "Status"
-  visible: "Visible"
-  enabled: "Enabled"
+    PLATFORM: Platform administrators
+    TENANT: Current tenant
+    AUTHENTICATED: Signed-in users
+  title: Menu management
+  description: Maintain the platform navigation and action resource catalog.
+    Visibility does not replace API authorization.
+  tree: Menu tree
+  all: All menus
+  list: Menu list
+  query: Search menus
+  queryPlaceholder: Name, code, path or permission
+  refresh: Refresh
+  createRoot: Create root
+  create: Create menu node
+  addChild: Add child
+  edit: Edit
+  delete: Delete
+  confirmDelete: Delete "{name}"? Nodes with children cannot be deleted.
+  deleted: Menu deleted
+  saved: Menu saved
+  empty: No menu nodes
+  name: Menu name
+  parent: Parent menu
+  type: Node type
+  code: Menu code
+  titleZh: Chinese name
+  titleEn: English name
+  path: Route path
+  component: Component key
+  permission: Permission code
+  icon: Icon
+  sortOrder: Sort order
+  status: Status
+  visible: Visible
+  enabled: Enabled
   invalidCode: "Use 1–100 letters, digits or . _ : -, starting with a letter or digit"
-  invalidTitle: "Enter a non-blank name of 1–100 characters"
-  securityHint: "Lower values appear first; ties use stable identifiers. External links open in a new tab and require authorization in the target system. Local APIs enforce their own permissions."
+  invalidTitle: Enter a non-blank name of 1–100 characters
+  securityHint: Lower values appear first; ties use stable identifiers. External
+    links open in a new tab and require authorization in the target system.
+    Local APIs enforce their own permissions.
   types:
-    DIRECTORY: "Directory"
-    MENU: "Menu"
-    EXTERNAL: "External link"
-    BUTTON: "Button"
+    DIRECTORY: Directory
+    MENU: Menu
+    EXTERNAL: External link
+    BUTTON: Button
   errors:
-    MENU_CHANGED: "Another administrator changed this menu. Reload and retry."
-    MENU_CODE_CONFLICT: "The menu code already exists."
-    MENU_CONFLICT: "The menu is still referenced or its constraints changed."
-    INVALID_MENU_INPUT: "Invalid menu fields or hierarchy. Check the parent, type and required fields."
-
+    MENU_CHANGED: Another administrator changed this menu. Reload and retry.
+    MENU_CODE_CONFLICT: The menu code already exists.
+    MENU_CONFLICT: The menu is still referenced or its constraints changed.
+    INVALID_MENU_INPUT: Invalid menu fields or hierarchy. Check the parent, type and
+      required fields.
 welcome:
-  title: "AppNexus workspace"
-  description: "Use the navigation to open platform, tenant and organization management."
-  empty: "Choose a business module to get started"
-
+  title: AppNexus workspace
+  description: Use the navigation to open platform, tenant and organization management.
+  empty: Choose a business module to get started
 dictionary:
-  configuration: "Configuration"
-  title: "Dictionary Management"
-  types: "Dictionaries"
-  items: "Dictionary Items"
-  createType: "New Dictionary"
-  editType: "Edit Dictionary"
-  createItem: "New Item"
-  editItem: "Edit Item"
-  addChild: "Add Child"
-  edit: "Edit"
-  delete: "Delete"
-  name: "Name"
-  code: "Stable Code"
-  value: "Business Value"
-  parent: "Parent Item"
-  description: "Description"
-  status: "Status"
-  sortOrder: "Sort Order"
-  itemQuery: "Item Search"
-  queryPlaceholder: "Name, code, value, or description"
-  emptyTypes: "No dictionaries"
-  emptyItems: "No dictionary items"
-  selectType: "Select a dictionary first"
-  saved: "Dictionary saved"
-  deleted: "Dictionary deleted"
-  required: "Enter 1–100 characters"
-  invalidCode: "Use 2–64 lowercase letters, digits, or underscores, starting with a letter"
-  confirmDeleteType: "Delete this dictionary? A non-empty dictionary cannot be deleted."
-  confirmDeleteItem: "Delete this item? Items with children or references cannot be deleted."
-  statuses: { ENABLED: "Enabled", DISABLED: "Disabled" }
+  configuration: Configuration
+  title: Dictionary Management
+  types: Dictionaries
+  items: Dictionary Items
+  createType: New Dictionary
+  editType: Edit Dictionary
+  createItem: New Item
+  editItem: Edit Item
+  addChild: Add Child
+  edit: Edit
+  delete: Delete
+  name: Name
+  code: Stable Code
+  value: Business Value
+  parent: Parent Item
+  description: Description
+  status: Status
+  sortOrder: Sort Order
+  itemQuery: Item Search
+  queryPlaceholder: Name, code, value, or description
+  emptyTypes: No dictionaries
+  emptyItems: No dictionary items
+  selectType: Select a dictionary first
+  saved: Dictionary saved
+  deleted: Dictionary deleted
+  required: Enter 1–100 characters
+  invalidCode: Use 2–64 lowercase letters, digits, or underscores, starting with a letter
+  confirmDeleteType: Delete this dictionary? A non-empty dictionary cannot be deleted.
+  confirmDeleteItem: Delete this item? Items with children or references cannot be deleted.
+  statuses:
+    ENABLED: Enabled
+    DISABLED: Disabled
   errors:
-    DICTIONARY_MANAGEMENT_DENIED: "You do not have dictionary management permission"
-    DICTIONARY_NOT_FOUND: "The dictionary or item does not exist"
-    DICTIONARY_VERSION_CONFLICT: "The data changed; refresh and try again"
-    DICTIONARY_CODE_CONFLICT: "The stable code or value already exists and cannot be reused"
-    DICTIONARY_NOT_EMPTY: "Remove all dictionary items first"
-    DICTIONARY_ITEM_HAS_CHILDREN: "This item has children and cannot be deleted"
-    DICTIONARY_ITEM_REFERENCED: "This item is referenced; disable it instead"
-    DICTIONARY_DATA_CONFLICT: "Dictionary constraints changed"
-    INVALID_DICTIONARY_INPUT: "The dictionary fields or hierarchy are invalid"
-
+    DICTIONARY_MANAGEMENT_DENIED: You do not have dictionary management permission
+    DICTIONARY_NOT_FOUND: The dictionary or item does not exist
+    DICTIONARY_VERSION_CONFLICT: The data changed; refresh and try again
+    DICTIONARY_CODE_CONFLICT: The stable code or value already exists and cannot be reused
+    DICTIONARY_NOT_EMPTY: Remove all dictionary items first
+    DICTIONARY_ITEM_HAS_CHILDREN: This item has children and cannot be deleted
+    DICTIONARY_ITEM_REFERENCED: This item is referenced; disable it instead
+    DICTIONARY_DATA_CONFLICT: Dictionary constraints changed
+    INVALID_DICTIONARY_INPUT: The dictionary fields or hierarchy are invalid
 roleManagement:
-  access: "Access control"
-  title: "Role management"
-  platformTitle: "Platform roles"
-  tenantTitle: "Tenant roles"
-  descriptionText: "Maintain role details and lifecycle. Member assignment and menu authorization are outside this phase."
-  query: "Search roles"
-  queryPlaceholder: "Role name or code"
-  allStatuses: "All statuses"
-  allTypes: "All types"
-  list: "Roles"
-  create: "Create role"
-  edit: "Edit"
-  delete: "Delete role"
-  enable: "Enable role"
-  disable: "Disable role"
-  name: "Role name"
-  code: "Role code"
-  codeHint: "Immutable after creation. Use 2–64 lowercase letters, digits or underscores, starting with a letter. The sys_ prefix is reserved; use a custom code such as yunwei_admin."
-  type: "Role type"
-  typeHint: "User-created roles are always custom roles. System roles are maintained only by initialization and migrations."
-  status: "Status"
-  description: "Description"
-  sortOrder: "Sort order"
-  updatedAt: "Updated"
-  reason: "Reason"
-  confirmCode: "Enter the role code to confirm"
-  deleteHint: "Deletion cannot be undone, and the role code cannot be reused."
-  empty: "No roles"
-  saved: "Role saved"
-  statusSaved: "Role status updated"
-  deleted: "Role deleted"
-  types: { SYSTEM: "System", CUSTOM: "Custom" }
-  statuses: { ENABLED: "Enabled", DISABLED: "Disabled" }
+  access: Access control
+  title: Role management
+  platformTitle: Platform roles
+  tenantTitle: Tenant roles
+  descriptionText: Maintain role details and lifecycle. Member assignment and menu
+    authorization are outside this phase.
+  query: Search roles
+  queryPlaceholder: Role name or code
+  allStatuses: All statuses
+  allTypes: All types
+  list: Roles
+  create: Create role
+  edit: Edit
+  delete: Delete role
+  enable: Enable role
+  disable: Disable role
+  name: Role name
+  code: Role code
+  codeHint: Immutable after creation. Use 2–64 lowercase letters, digits or
+    underscores, starting with a letter. The sys_ prefix is reserved; use a
+    custom code such as yunwei_admin.
+  type: Role type
+  typeHint: User-created roles are always custom roles. System roles are
+    maintained only by initialization and migrations.
+  status: Status
+  description: Description
+  sortOrder: Sort order
+  updatedAt: Updated
+  reason: Reason
+  confirmCode: Enter the role code to confirm
+  deleteHint: Deletion cannot be undone, and the role code cannot be reused.
+  empty: No roles
+  saved: Role saved
+  statusSaved: Role status updated
+  deleted: Role deleted
+  types:
+    SYSTEM: System
+    CUSTOM: Custom
+  statuses:
+    ENABLED: Enabled
+    DISABLED: Disabled
   validation:
-    codeRequired: "Enter a role code."
-    codeInvalid: "Use 2–64 lowercase letters, digits or underscores, starting with a letter; the sys_ prefix is reserved."
-    nameRequired: "Enter a role name."
-    nameTooLong: "The role name cannot exceed 100 characters."
-    descriptionTooLong: "The description cannot exceed 500 characters."
-    sortRequired: "Enter a sort order."
+    codeRequired: Enter a role code.
+    codeInvalid: Use 2–64 lowercase letters, digits or underscores, starting with a
+      letter; the sys_ prefix is reserved.
+    nameRequired: Enter a role name.
+    nameTooLong: The role name cannot exceed 100 characters.
+    descriptionTooLong: The description cannot exceed 500 characters.
+    sortRequired: Enter a sort order.
   errors:
-    ROLE_MANAGEMENT_DENIED: "You do not have permission to manage roles."
-    ROLE_CODE_ALREADY_EXISTS: "The role code already exists and cannot be reused."
-    ROLE_VERSION_CONFLICT: "Another administrator changed this role. Reload and retry."
-    ROLE_SYSTEM_DELETE_FORBIDDEN: "System roles cannot be deleted."
-    ROLE_SYSTEM_DISABLE_FORBIDDEN: "This protected system role cannot be disabled."
-    ROLE_NOT_DISABLED: "Disable the role before deleting it."
-    ROLE_CONFIRMATION_MISMATCH: "The confirmation code does not match."
-    ROLE_SCOPE_NOT_FOUND: "The role does not exist in the current management scope."
-    ROLE_DATA_CONFLICT: "The role constraints changed."
-    INVALID_ROLE_INPUT: "The role fields are invalid."
+    ROLE_MANAGEMENT_DENIED: You do not have permission to manage roles.
+    ROLE_CODE_ALREADY_EXISTS: The role code already exists and cannot be reused.
+    ROLE_VERSION_CONFLICT: Another administrator changed this role. Reload and retry.
+    ROLE_SYSTEM_DELETE_FORBIDDEN: System roles cannot be deleted.
+    ROLE_SYSTEM_DISABLE_FORBIDDEN: This protected system role cannot be disabled.
+    ROLE_NOT_DISABLED: Disable the role before deleting it.
+    ROLE_CONFIRMATION_MISMATCH: The confirmation code does not match.
+    ROLE_SCOPE_NOT_FOUND: The role does not exist in the current management scope.
+    ROLE_DATA_CONFLICT: The role constraints changed.
+    INVALID_ROLE_INPUT: The role fields are invalid.
 authorizationCenter:
-  templates: "Policy templates"
-  templateName: "Template name"
-  saveTemplate: "Save current policy template"
-  applyTemplate: "Apply template"
-  templateSaved: "Policy template saved"
-  templateHint: "Templates capture saved functions, data scopes and field restrictions. Save or discard current changes and enter a reason below before applying."
-  templateWarning: "Applying replaces this role's functions, data scopes and field restrictions and affects related grants. Continue?"
-  menuFunctions: "Menus and functions"
-  resourceView: "By resource"
-  functionView: "Permission view"
-  unlinkedPermissions: "Other functions (no menu)"
-  menuFunctionHint: "Menus locate operations. Changes save permission IDs and synchronize shared permissions. Bulk selection only affects filtered operations; it grants no menu or external system access."
+  templates: Policy templates
+  templateName: Template name
+  saveTemplate: Save current policy template
+  applyTemplate: Apply template
+  templateSaved: Policy template saved
+  templateHint: Templates capture saved functions, data scopes and field
+    restrictions. Save or discard current changes and enter a reason below
+    before applying.
+  templateWarning: Applying replaces this role's functions, data scopes and field
+    restrictions and affects related grants. Continue?
+  menuFunctions: Menus and functions
+  resourceView: By resource
+  functionView: Permission view
+  unlinkedPermissions: Other functions (no menu)
+  menuFunctionHint: Menus locate operations. Changes save permission IDs and
+    synchronize shared permissions. Bulk selection only affects filtered
+    operations; it grants no menu or external system access.
   resourceNames:
-    access_role: "Platform roles"
-    configuration_menu: "Menu configuration"
-    identity_account: "Account management"
-    tenant: "Tenant management"
-    tenant_member: "Tenant members"
-    organization_unit: "Organizations"
-    organization_permission: "Organization authorization"
-    access_tenant_role: "Tenant roles"
-  roleContextHint: "Choose a role, configure permissions, default scopes and field rules, then save together."
-  unsavedChanges: "Unsaved changes"
-  fieldSelect: "Select"
-  fieldResource: "Resource"
-  fieldName: "Field"
-  fieldKind: "Sensitive type"
-  fieldRule: "Display rule"
-  fieldSearch: "Find fields"
-  selectFilteredFields: "Select filtered fields"
-  applyFields: "Apply to {count} selected"
-  fieldKinds: {"EMAIL": "Email", "PHONE": "Phone", "PERSON_NAME": "Name", "IDENTIFIER": "Identity number", "BANK_ACCOUNT": "Bank account", "TEXT": "Sensitive text"}
-  fieldSecurity: "Fields and masking"
-  memberData: "Member data access"
-  fieldSecurityHint: "Manage sensitive fields centrally. Filter by resource or type, apply rules in bulk, then save once. The strictest role restriction wins. Masking grants no write or query rights."
-  noFieldCatalog: "No executable field catalog is registered in this scope. Tenant fields become configurable when their backend resource is integrated."
-  memberDataHint: "Assign a role first, then configure this member's own data scope. Changes to role defaults do not widen existing member grants."
-  assignRoleFirst: "Assign roles on the Subject roles tab first."
-  expiresAt: "Authorization expiry (empty means no fixed expiry)"
-  roleDefaultData: "Role default data scopes"
-  fieldModes: { NONE: "No extra restriction", MASKED: "Masked", HIDDEN: "Hidden" }
-  dataPolicies: "Data scopes"
-  noMatchingPermissions: "No matching permissions. Data scopes only show selected permissions that require a scope."
-  permissionQuery: "Find permissions by name, code or resource"
-  onlySelected: "Show selected permissions only"
-  selectResource: "Select filtered permissions in this resource"
-  dataPolicyHint: "These are defaults for newly assigned members. Existing grants do not widen when defaults change. Use Member data access for individual scopes."
+    access_role: Platform roles
+    configuration_menu: Menu configuration
+    identity_account: Account management
+    tenant: Tenant management
+    tenant_member: Tenant members
+    organization_unit: Organizations
+    organization_permission: Organization authorization
+    access_tenant_role: Tenant roles
+  roleContextHint: Choose a role, configure permissions, default scopes and field
+    rules, then save together.
+  unsavedChanges: Unsaved changes
+  fieldSelect: Select
+  fieldResource: Resource
+  fieldName: Field
+  fieldKind: Sensitive type
+  fieldRule: Display rule
+  fieldSearch: Find fields
+  selectFilteredFields: Select filtered fields
+  applyFields: Apply to {count} selected
+  fieldKinds:
+    EMAIL: Email
+    PHONE: Phone
+    PERSON_NAME: Name
+    IDENTIFIER: Identity number
+    BANK_ACCOUNT: Bank account
+    TEXT: Sensitive text
+  fieldSecurity: Fields and masking
+  memberData: Member data access
+  fieldSecurityHint: Manage sensitive fields centrally. Filter by resource or
+    type, apply rules in bulk, then save once. The strictest role restriction
+    wins. Masking grants no write or query rights.
+  noFieldCatalog: No executable field catalog is registered in this scope. Tenant
+    fields become configurable when their backend resource is integrated.
+  memberDataHint: Assign a role first, then configure this member's own data
+    scope. Changes to role defaults do not widen existing member grants.
+  assignRoleFirst: Assign roles on the Subject roles tab first.
+  expiresAt: Authorization expiry (empty means no fixed expiry)
+  roleDefaultData: Role default data scopes
+  fieldModes:
+    NONE: No extra restriction
+    MASKED: Masked
+    HIDDEN: Hidden
+  dataPolicies: Data scopes
+  noMatchingPermissions: No matching permissions. Data scopes only show selected
+    permissions that require a scope.
+  permissionQuery: Find permissions by name, code or resource
+  onlySelected: Show selected permissions only
+  selectResource: Select filtered permissions in this resource
+  dataPolicyHint: These are defaults for newly assigned members. Existing grants
+    do not widen when defaults change. Use Member data access for individual
+    scopes.
   pendingScopes: "{count} data scopes need attention. Configure now"
-  roleReplaceWarning: "Update role {name}, default scopes and mandatory field restrictions. Removed permissions and restrictions affect existing members. New permissions and wider defaults do not expand existing grants. An empty selection revokes all role permissions."
-  subject: "Subject"
-  account: "Account"
-  subjects: "Users / members"
-  subjectQuery: "Find subjects"
-  subjectRoles: "Subject roles"
-  search: "Search"
-  reset: "Reset"
-  configure: "Assign roles"
-  selectSubject: "Select a user or member to assign roles"
-  subjectDisabled: "This account is disabled. Assigning roles does not enable it."
-  reasonRequired: "Enter a change reason"
-  roleListChanged: "The role directory changed. Reload to continue."
-  unavailableRole: "Unavailable assigned role (removable)"
-  discard: "Discard unsaved changes and continue?"
-  discardAction: "Discard changes"
-  replaceWarning: "Replace all roles for {name}. Removing a role revokes its permissions. An empty selection removes all roles."
-  reload: "Reload"
-  effectivePermissions: "Effective permission explanations"
-  explanationNote: "Saved role contributions only. Legacy direct grants and other business conditions are outside this explanation."
-  noEffectivePermissions: "No role permission sources"
-  effective: "Role branch effective"
-  inactive: "Inactive"
-  unknownReason: "Source unavailable"
+  roleReplaceWarning: Update role {name}, default scopes and mandatory field
+    restrictions. Removed permissions and restrictions affect existing members.
+    New permissions and wider defaults do not expand existing grants. An empty
+    selection revokes all role permissions.
+  subject: Subject
+  account: Account
+  subjects: Users / members
+  subjectQuery: Find subjects
+  subjectRoles: Subject roles
+  search: Search
+  reset: Reset
+  configure: Assign roles
+  selectSubject: Select a user or member to assign roles
+  subjectDisabled: This account is disabled. Assigning roles does not enable it.
+  reasonRequired: Enter a change reason
+  roleListChanged: The role directory changed. Reload to continue.
+  unavailableRole: Unavailable assigned role (removable)
+  discard: Discard unsaved changes and continue?
+  discardAction: Discard changes
+  replaceWarning: Replace all roles for {name}. Removing a role revokes its
+    permissions. An empty selection removes all roles.
+  reload: Reload
+  effectivePermissions: Effective permission explanations
+  explanationNote: Saved role contributions only. Legacy direct grants and other
+    business conditions are outside this explanation.
+  noEffectivePermissions: No role permission sources
+  effective: Role branch effective
+  inactive: Inactive
+  unknownReason: Source unavailable
   organizationCount: "{count} organizations selected"
   reasons:
-    ROLE_DELETED: "Role deleted"
-    ROLE_DISABLED: "Role disabled"
-    PERMISSION_DISABLED: "Permission disabled"
-    SUBJECT_DISABLED: "Subject disabled"
-    AUTHORIZATION_EXPIRED: "Authorization expired"
-    ROLE_PERMISSION_REMOVED: "Permission removed from role"
-    DATA_SCOPE_UNSUPPORTED: "Scope unsupported by resource"
-    DATA_SCOPE_MISSING: "Required data scope missing"
-  title: "Authorization Center"
-  description: "Configure role permissions and structured data scopes. The server enforces every request."
-  roles: "Roles"
-  permissions: "Permissions"
-  summary: "Authorization summary"
-  noRoles: "No configurable roles"
-  noPermissions: "No published permissions"
-  selectedCount: "Selected permissions"
-  selectScope: "Select data scope"
-  selectOrganizations: "Select organizations"
-  reason: "Change reason"
-  incomplete: "Complete the data scope for every scoped permission."
-  saved: "Authorization saved"
-  scopes: { SELF: "Self", ORGANIZATION: "Organizations", ORGANIZATION_SUBTREE: "Organizations and descendants", ALL: "All in current tenant" }
-
+    ROLE_DELETED: Role deleted
+    ROLE_DISABLED: Role disabled
+    PERMISSION_DISABLED: Permission disabled
+    SUBJECT_DISABLED: Subject disabled
+    AUTHORIZATION_EXPIRED: Authorization expired
+    ROLE_PERMISSION_REMOVED: Permission removed from role
+    DATA_SCOPE_UNSUPPORTED: Scope unsupported by resource
+    DATA_SCOPE_MISSING: Required data scope missing
+  title: Authorization Center
+  description: Configure role permissions and structured data scopes. The server
+    enforces every request.
+  roles: Roles
+  permissions: Permissions
+  summary: Authorization summary
+  noRoles: No configurable roles
+  noPermissions: No published permissions
+  selectedCount: Selected permissions
+  selectScope: Select data scope
+  selectOrganizations: Select organizations
+  reason: Change reason
+  incomplete: Complete the data scope for every scoped permission.
+  saved: Authorization saved
+  scopes:
+    SELF: Self
+    ORGANIZATION: Organizations
+    ORGANIZATION_SUBTREE: Organizations and descendants
+    ALL: All in current tenant
 workflow:
-  title: "Workflow center"
-  designer: "Workflow designer"
-  name: "Name"
-  objectType: "Document type"
-  objectId: "Document ID"
-  purpose: "Purpose"
-  mode: "Mode"
-  entryCapability: "Document capability"
-  capability: "Business capability"
-  nodeType: "Node type"
-  nodeId: "Node ID"
-  node: "Node"
-  graph: "Workflow graph"
-  addNode: "Add node"
-  removeNode: "Delete node"
-  confirmRemoveNode: "Delete this node and its connections?"
-  remove: "Remove"
-  people: "Participants"
-  reference: "Account or position ID"
-  addPerson: "Add participant rule"
-  completion: "Completion rule"
-  allowSelf: "Allow self review"
-  separate: "Separate submissions"
-  timeoutSeconds: "Time limit (seconds)"
-  retries: "Maximum retries"
-  join: "Join node"
-  requiredFields: "Required fields"
-  inputMapping: "Input mapping"
-  mappingHint: "Select a field or enter literal:value"
-  connections: "Connections"
-  from: "Source"
-  to: "Target"
-  condition: "Equality condition"
-  equals: "Value"
-  defaultEdge: "Default"
-  addConnection: "Add connection"
-  matches: "Matching rules"
-  addMatch: "Add matching rule"
-  terminalActions: "Terminal delivery"
-  validate: "Validate"
-  saveDraft: "Save draft"
-  publish: "Publish"
-  confirmPublish: "Save and publish a new version? Running instances keep their original version."
-  validationFailed: "Validation failed"
-  validationPassed: "Validation passed"
-  versions: "Published versions"
-  approvalBoundary: "Approval: deliver the final decision reliably; track business completion separately."
+  title: Workflow center
+  designer: Workflow designer
+  name: Name
+  objectType: Document type
+  objectId: Document ID
+  purpose: Purpose
+  mode: Mode
+  entryCapability: Document capability
+  capability: Business capability
+  nodeType: Node type
+  nodeId: Node ID
+  node: Node
+  graph: Workflow graph
+  addNode: Add node
+  removeNode: Delete node
+  confirmRemoveNode: Delete this node and its connections?
+  remove: Remove
+  people: Participants
+  reference: Account or position ID
+  addPerson: Add participant rule
+  completion: Completion rule
+  allowSelf: Allow self review
+  separate: Separate submissions
+  timeoutSeconds: Time limit (seconds)
+  retries: Maximum retries
+  join: Join node
+  requiredFields: Required fields
+  inputMapping: Input mapping
+  mappingHint: Select a field or enter literal:value
+  connections: Connections
+  from: Source
+  to: Target
+  condition: Equality condition
+  equals: Value
+  defaultEdge: Default
+  addConnection: Add connection
+  matches: Matching rules
+  addMatch: Add matching rule
+  terminalActions: Terminal delivery
+  validate: Validate
+  saveDraft: Save draft
+  publish: Publish
+  confirmPublish: Save and publish a new version? Running instances keep their
+    original version.
+  validationFailed: Validation failed
+  validationPassed: Validation passed
+  versions: Published versions
+  approvalBoundary: "Approval: deliver the final decision reliably; track business
+    completion separately."
   businessBoundary: "End-to-end: end the instance after business actions and waits complete."
-  publishedVersion: "Version"
-  state: "Status"
-  operations: "Actions"
-  query: "Workflow search"
-  newDefinition: "New workflow"
-  empty: "No workflow records"
-  enabled: "Enabled"
-  disabled: "Disabled"
-  disable: "Disable"
-  design: "Design"
-  process: "Process"
-  history: "History"
-  tasks: "Human tasks"
-  deliveries: "Deliveries"
-  saved: "Saved"
-  openDocument: "Open business document"
-  save: "Save progress"
-  submit: "Submit"
-  approve: "Approve"
-  reject: "Reject"
-  confirmReject: "Reject this review?"
-  actor: "Account"
-  reassign: "Reassign"
-  retry: "Retry"
-  reason: "Reason"
-  attempts: "Attempts"
-  errorCode: "Error code"
-  limitHint: "Showing up to 100 recent records. Use business query scope to locate records."
+  publishedVersion: Version
+  state: Status
+  operations: Actions
+  query: Workflow search
+  newDefinition: New workflow
+  empty: No workflow records
+  enabled: Enabled
+  disabled: Disabled
+  disable: Disable
+  design: Design
+  process: Process
+  history: History
+  tasks: Human tasks
+  deliveries: Deliveries
+  saved: Saved
+  openDocument: Open business document
+  save: Save progress
+  submit: Submit
+  approve: Approve
+  reject: Reject
+  confirmReject: Reject this review?
+  actor: Account
+  reassign: Reassign
+  retry: Retry
+  reason: Reason
+  attempts: Attempts
+  errorCode: Error code
+  limitHint: Showing up to 100 recent records. Use business query scope to locate records.
   tabs:
-    todo: "To process"
-    done: "Processed"
-    started: "Started by me"
-    copied: "Copied to me"
-    definitions: "Workflows"
-    instances: "Operations"
+    todo: To process
+    done: Processed
+    started: Started by me
+    copied: Copied to me
+    definitions: Workflows
+    instances: Operations
   kinds:
-    START: "Start"
-    END: "End"
-    REVIEW: "Review"
-    HANDLE: "Handle"
-    ACTION: "Action"
-    WAIT: "Wait"
-    CHOICE: "Choice"
-    MERGE: "Exclusive merge"
-    FORK: "Fork"
-    JOIN: "Join"
+    START: Start
+    END: End
+    REVIEW: Review
+    HANDLE: Handle
+    ACTION: Action
+    WAIT: Wait
+    CHOICE: Choice
+    MERGE: Exclusive merge
+    FORK: Fork
+    JOIN: Join
   modes:
-    APPROVAL: "Approval"
-    BUSINESS: "End-to-end business"
+    APPROVAL: Approval
+    BUSINESS: End-to-end business
   completions:
-    ALL: "All"
-    ANY: "Any"
-    SEQUENTIAL: "Sequential"
+    ALL: All
+    ANY: Any
+    SEQUENTIAL: Sequential
   peopleKinds:
-    MEMBER: "Member"
-    LEADER: "Document organization leader"
-    POSITION: "Document organization position"
+    MEMBER: Member
+    LEADER: Document organization leader
+    POSITION: Document organization position
   states:
-    RUNNING: "Running"
-    ENDED: "Ended"
-    OPEN: "Open"
-    DONE: "Done"
-    CANCELLED: "Cancelled"
-    APPROVED: "Approved"
-    REJECTED: "Rejected"
-    WITHDRAWN: "Withdrawn"
+    RUNNING: Running
+    ENDED: Ended
+    OPEN: Open
+    DONE: Done
+    CANCELLED: Cancelled
+    APPROVED: Approved
+    REJECTED: Rejected
+    WITHDRAWN: Withdrawn
   audit:
-    ACTION_COMPLETED: "Business action completed"
-    DRAFT_CREATED: "Draft created"
-    DRAFT_SAVED: "Draft saved"
-    PUBLISHED: "Version published"
-    DISABLED: "Workflow disabled"
-    STARTED: "Workflow started"
-    ENDED: "Workflow ended"
-    TASK_CREATED: "Task assigned"
-    NO_ASSIGNEE: "No assignee; intervention required"
-    TASK_SAVED: "Progress saved"
-    TASK_COMPLETED: "Task completed"
-    REASSIGNED: "Task reassigned"
-    REASSIGN_REQUIRED: "Assignment expired; intervention required"
-    JOB_RETRIED: "Delivery retry requested"
-    TASK_OVERDUE: "Task overdue"
-    WITHDRAWN: "Workflow withdrawn"
+    ACTION_COMPLETED: Business action completed
+    DRAFT_CREATED: Draft created
+    DRAFT_SAVED: Draft saved
+    PUBLISHED: Version published
+    DISABLED: Workflow disabled
+    STARTED: Workflow started
+    ENDED: Workflow ended
+    TASK_CREATED: Task assigned
+    NO_ASSIGNEE: No assignee; intervention required
+    TASK_SAVED: Progress saved
+    TASK_COMPLETED: Task completed
+    REASSIGNED: Task reassigned
+    REASSIGN_REQUIRED: Assignment expired; intervention required
+    JOB_RETRIED: Delivery retry requested
+    TASK_OVERDUE: Task overdue
+    WITHDRAWN: Workflow withdrawn
   codes:
-
     NUMERIC_FIELD_REQUIRED: Select a numeric field from this document for numeric comparisons
     BUSINESS_OUTCOME_REQUIRED: Select a business action for this approval outcome
     BUSINESS_WITHDRAWAL_INVALID: Withdrawal requires both business validation and outcome handling
-    NODE_POSITION_INVALID: "Node coordinates are outside the allowed range."
-    APPROVAL_BASIS_CHANGED: "The approval basis changed. Resubmit according to business rules."
+
+    NODE_POSITION_INVALID: Node coordinates are outside the allowed range.
+    APPROVAL_BASIS_CHANGED: The approval basis changed. Resubmit according to business rules.
     ACTION_COMPLETED: "Workflow constraint: ACTION_COMPLETED"
-    ACTION_INVALID: "Action invalid."
-    ASSIGNEE_INVALID: "Assignee invalid."
-    BUSINESS_ACCESS_DENIED: "Business access denied."
-    BUSINESS_CONFIRMATION_REQUIRED: "Business confirmation required."
+    ACTION_INVALID: Action invalid.
+    ASSIGNEE_INVALID: Assignee invalid.
+    BUSINESS_ACCESS_DENIED: Business access denied.
+    BUSINESS_CONFIRMATION_REQUIRED: Business confirmation required.
     BUSINESS_REJECTED: "Workflow constraint: BUSINESS_REJECTED"
-    BUSINESS_TERMINAL_ACTION_FORBIDDEN: "Business terminal action forbidden."
-    CALLBACK_CONFLICT: "Callback conflict."
-    CALLBACK_DENIED: "Callback denied."
-    CALLBACK_NOT_WAITING: "Callback not waiting."
+    BUSINESS_TERMINAL_ACTION_FORBIDDEN: Business terminal action forbidden.
+    CALLBACK_CONFLICT: Callback conflict.
+    CALLBACK_DENIED: Callback denied.
+    CALLBACK_NOT_WAITING: Callback not waiting.
     CAPABILITY_FIELD_INVALID: "Workflow constraint: CAPABILITY_FIELD_INVALID"
     CAPABILITY_INVALID: "Workflow constraint: CAPABILITY_INVALID"
-    CAPABILITY_UNAVAILABLE: "The business capability is unavailable."
-    CHOICE_DEFAULT_REQUIRED: "Choice default required."
-    CONDITION_INVALID: "Condition invalid."
-    CONDITION_ON_NON_CHOICE: "Condition on non choice."
-    COPIES_LIMIT: "Copies limit."
-    COPY_RULE_INVALID: "Copy rule invalid."
-    CYCLE_FORBIDDEN: "Cycles are not supported in this release."
+    CAPABILITY_UNAVAILABLE: The business capability is unavailable.
+    CHOICE_DEFAULT_REQUIRED: Choice default required.
+    CONDITION_INVALID: Condition invalid.
+    CONDITION_ON_NON_CHOICE: Condition on non choice.
+    COPIES_LIMIT: Copies limit.
+    COPY_RULE_INVALID: Copy rule invalid.
+    CYCLE_FORBIDDEN: Cycles are not supported in this release.
     DRAFT_CREATED: "Workflow constraint: DRAFT_CREATED"
     DRAFT_SAVED: "Workflow constraint: DRAFT_SAVED"
-    DUPLICATE_EDGE: "Duplicate edge."
-    EDGE_INVALID: "Edge invalid."
-    ENTRY_CAPABILITY_UNAVAILABLE: "Select an available document capability."
-    EXECUTION_UNAVAILABLE: "Execution unavailable."
-    FLOW_MATCH_CONFLICT: "Multiple workflows match. Review matching rules."
-    FLOW_NOT_MATCHED: "No enabled workflow matches this document."
-    FORK_BRANCH_CONTROL_UNSUPPORTED: "Conditional or early-end paths inside parallel branches are not supported."
-    FORK_BRANCH_OVERLAP: "Fork branch overlap."
-    FORK_EXTERNAL_ENTRY: "Fork external entry."
-    FORK_JOIN_REQUIRED: "Fork join required."
-    FORK_NOT_CONVERGENT: "Fork not convergent."
-    GRAPH_SIZE_INVALID: "Use 2–100 nodes and no more than 200 connections."
-    IDEMPOTENCY_CONFLICT: "The request key was reused for a different operation."
-    IDEMPOTENCY_KEY_REQUIRED: "Idempotency key required."
-    IDENTIFIER_INVALID: "Identifier invalid."
-    INPUT_FIELD_INVALID: "Input field invalid."
-    INPUT_INVALID: "Input invalid."
-    INPUT_LIMIT: "Input limit."
-    INPUT_REFERENCE_INVALID: "Map a declared field or use literal:value."
-    INSTANCE_DENIED: "Instance denied."
-    INSTANCE_NOT_RUNNING: "Instance not running."
-    JOB_NOT_MANUAL: "Job not manual."
+    DUPLICATE_EDGE: Duplicate edge.
+    EDGE_INVALID: Edge invalid.
+    ENTRY_CAPABILITY_UNAVAILABLE: Select an available document capability.
+    EXECUTION_UNAVAILABLE: Execution unavailable.
+    FLOW_MATCH_CONFLICT: Multiple workflows match. Review matching rules.
+    FLOW_NOT_MATCHED: No enabled workflow matches this document.
+    FORK_BRANCH_CONTROL_UNSUPPORTED: Conditional or early-end paths inside parallel branches are not supported.
+    FORK_BRANCH_OVERLAP: Fork branch overlap.
+    FORK_EXTERNAL_ENTRY: Fork external entry.
+    FORK_JOIN_REQUIRED: Fork join required.
+    FORK_NOT_CONVERGENT: Fork not convergent.
+    GRAPH_SIZE_INVALID: Use 2–100 nodes and no more than 200 connections.
+    IDEMPOTENCY_CONFLICT: The request key was reused for a different operation.
+    IDEMPOTENCY_KEY_REQUIRED: Idempotency key required.
+    IDENTIFIER_INVALID: Identifier invalid.
+    INPUT_FIELD_INVALID: Input field invalid.
+    INPUT_INVALID: Input invalid.
+    INPUT_LIMIT: Input limit.
+    INPUT_REFERENCE_INVALID: Map a declared field or use literal:value.
+    INSTANCE_DENIED: Instance denied.
+    INSTANCE_NOT_RUNNING: Instance not running.
+    JOB_NOT_MANUAL: Job not manual.
     JOB_RETRIED: "Workflow constraint: JOB_RETRIED"
-    JOIN_OWNER_REQUIRED: "Join owner required."
-    MATCH_INVALID: "Match invalid."
-    MEMBER_NOT_ACTIVE: "Your tenant membership is no longer active."
-    MERGE_REQUIRES_JOIN: "Merge requires join."
-    MODEL_IDENTITY_INVALID: "Model identity invalid."
-    MODEL_INVALID: "Model invalid."
-    MODEL_REQUIRED: "Model required."
-    NODE_CONNECTION_INVALID: "Node connection invalid."
-    NODE_INVALID: "Node invalid."
-    NODE_LIMIT_INVALID: "Retry count or time limit is outside the allowed range."
+    JOIN_OWNER_REQUIRED: Join owner required.
+    MATCH_INVALID: Match invalid.
+    MEMBER_NOT_ACTIVE: Your tenant membership is no longer active.
+    MERGE_REQUIRES_JOIN: Merge requires join.
+    MODEL_IDENTITY_INVALID: Model identity invalid.
+    MODEL_INVALID: Model invalid.
+    MODEL_REQUIRED: Model required.
+    NODE_CONNECTION_INVALID: Node connection invalid.
+    NODE_INVALID: Node invalid.
+    NODE_LIMIT_INVALID: Retry count or time limit is outside the allowed range.
     NO_ASSIGNEE: "Workflow constraint: NO_ASSIGNEE"
-    OBJECT_VERSION_INVALID: "Object version invalid."
-    OUTGOING_INVALID: "Outgoing invalid."
-    OUTPUT_FIELD_INVALID: "Output field invalid."
-    PEOPLE_REQUIRED: "People required."
-    PERSON_INVALID: "Person invalid."
-    PREVIEW_INVALID_MODEL: "Resolve workflow validation errors first."
+    OBJECT_VERSION_INVALID: Object version invalid.
+    OUTGOING_INVALID: Outgoing invalid.
+    OUTPUT_FIELD_INVALID: Output field invalid.
+    PEOPLE_REQUIRED: People required.
+    PERSON_INVALID: Person invalid.
+    PREVIEW_INVALID_MODEL: Resolve workflow validation errors first.
     REASSIGN_REQUIRED: "Workflow constraint: REASSIGN_REQUIRED"
-    REQUIRED_FIELD_INVALID: "Required field invalid."
-    REQUIRED_INPUT: "Complete all required fields."
-    START_END_REQUIRED: "Start end required."
-    TASK_ASSIGNMENT_EXPIRED: "The assignment expired. Request reassignment."
+    REQUIRED_FIELD_INVALID: Required field invalid.
+    REQUIRED_INPUT: Complete all required fields.
+    START_END_REQUIRED: Start end required.
+    TASK_ASSIGNMENT_EXPIRED: The assignment expired. Request reassignment.
     TASK_COMPLETED: "Workflow constraint: TASK_COMPLETED"
     TASK_CREATED: "Workflow constraint: TASK_CREATED"
-    TASK_DENIED: "Task denied."
-    TASK_NOT_ACTIVE: "The task changed or is not assigned to you."
+    TASK_DENIED: Task denied.
+    TASK_NOT_ACTIVE: The task changed or is not assigned to you.
     TASK_SAVED: "Workflow constraint: TASK_SAVED"
     TENANT_REQUIRED: "Workflow constraint: TENANT_REQUIRED"
-    TERMINAL_ACTION_INVALID: "Terminal action invalid."
-    UNREACHABLE_NODE: "Unreachable node."
-    VERSION_CONFLICT: "The version changed. Refresh and try again."
-    VIEW_INVALID: "View invalid."
-    WITHDRAWAL_CAPABILITY_UNAVAILABLE: "Withdrawal capability unavailable."
-    WITHDRAWAL_DENIED: "Withdrawal denied."
-    WITHDRAWAL_NOT_CONFIGURED: "Withdrawal is not configured for this workflow."
-    WORKFLOW_DENIED: "You do not have permission for this workflow operation."
-    WORKFLOW_DUPLICATE: "An active instance or identifier already exists."
-    WORKFLOW_INPUT_INVALID: "Workflow input invalid."
-    WORKFLOW_NOT_FOUND: "The record is unavailable in this tenant."
-  withdraw: "Withdraw"
-  withdrawalCapability: "Withdrawal validation capability"
-  copies: "Copy rules"
-  preview: "Sample preview"
-  previewHint: "Evaluate sample paths only. No business actions or instances are created."
-  noAssignee: "Reassignment required"
-  relatedInstances: "Related workflow instances"
-  result: "Result"
-  comment: "Comment"
-  nodeLibrary: "Node library"
-  searchNodes: "Search node types"
-  outline: "Outline"
-  properties: "Properties"
-  flowSettings: "Workflow"
-  nodeProperties: "Node"
-  selectNode: "Select a node to inspect"
-  nodeCount: "nodes"
-  edgeCount: "connections"
-  backToFlows: "Back to workflows"
-  untitled: "Untitled workflow"
-  unsaved: "Unsaved changes"
-  savedState: "Saved"
-  newDraft: "New draft"
-  readOnly: "Read only"
-  noCapabilities: "No business capabilities are registered. Drafts can be edited; publishing requires a registered capability."
-  undoStructure: "Undo"
-  redoStructure: "Redo"
-  zoomIn: "Zoom in"
-  zoomOut: "Zoom out"
-  resetZoom: "Reset zoom"
-  noConnections: "No connections"
-  unsavedPrompt: "You have unsaved changes. Leaving will discard them."
-  unsavedTitle: "Leave workflow designer"
-  leave: "Discard and leave"
-  keepEditing: "Keep editing"
+    TERMINAL_ACTION_INVALID: Terminal action invalid.
+    UNREACHABLE_NODE: Unreachable node.
+    VERSION_CONFLICT: The version changed. Refresh and try again.
+    VIEW_INVALID: View invalid.
+    WITHDRAWAL_CAPABILITY_UNAVAILABLE: Withdrawal capability unavailable.
+    WITHDRAWAL_DENIED: Withdrawal denied.
+    WITHDRAWAL_NOT_CONFIGURED: Withdrawal is not configured for this workflow.
+    WORKFLOW_DENIED: You do not have permission for this workflow operation.
+    WORKFLOW_DUPLICATE: An active instance or identifier already exists.
+    WORKFLOW_INPUT_INVALID: Workflow input invalid.
+    WORKFLOW_NOT_FOUND: The record is unavailable in this tenant.
+  withdraw: Withdraw
+  withdrawalCapability: Withdrawal validation capability
+  copies: Copy rules
+  preview: Sample preview
+  previewHint: Evaluate sample paths only. No business actions or instances are created.
+  noAssignee: Reassignment required
+  relatedInstances: Related workflow instances
+  result: Result
+  comment: Comment
+  nodeLibrary: Node library
+  searchNodes: Search node types
+  outline: Outline
+  properties: Properties
+  flowSettings: Workflow
+  nodeProperties: Node
+  selectNode: Select a node to inspect
+  nodeCount: nodes
+  edgeCount: connections
+  backToFlows: Back to workflows
+  untitled: Untitled workflow
+  unsaved: Unsaved changes
+  savedState: Saved
+  newDraft: New draft
+  readOnly: Read only
+  noCapabilities: No business capabilities are registered. Drafts can be edited;
+    publishing requires a registered capability.
+  undoStructure: Undo
+  redoStructure: Redo
+  zoomIn: Zoom in
+  zoomOut: Zoom out
+  resetZoom: Reset zoom
+  noConnections: No connections
+  unsavedPrompt: You have unsaved changes. Leaving will discard them.
+  unsavedTitle: Leave workflow designer
+  leave: Discard and leave
+  keepEditing: Keep editing
   selectConnection: "Connection: {from} → {to}"
   inputPort: "{name}: input port"
   outputPort: "{name}: output port"
-  pickTarget: "Select a target input port"
-  deleteConnection: "Delete selected connection"
-  dragHint: "Drag from the library, move nodes, and connect output ports to input ports."
+  pickTarget: Select a target input port
+  deleteConnection: Delete selected connection
+  dragHint: Drag from the library, move nodes, and connect output ports to input ports.
 printing:
-  title: "Print management"
-  templates: "Print templates"
-  devices: "Print devices"
-  jobs: "Print jobs"
-  search: "Keyword"
-  refresh: "Refresh"
-  createTemplate: "New template"
-  editTemplate: "Edit template"
-  createDevice: "Register device"
-  editDevice: "Edit device"
-  name: "Name"
-  code: "Code"
-  category: "Paper type"
-  dataContract: "Data contract"
-  version: "Published version"
-  unpublished: "Unpublished"
-  updatedAt: "Updated"
-  createdAt: "Created"
-  operations: "Actions"
-  edit: "Edit"
-  design: "Design template"
-  publish: "Publish"
-  publishConfirm: "Publishing creates an immutable version for new jobs. Continue?"
-  published: "Template published"
-  saved: "Saved"
-  scopeHint: "Applicability is stored as controlled server-side conditions. An empty scope requires explicit selection by the business entry point."
-  site: "Agent site"
-  queue: "System print queue"
-  state: "State"
-  enabled: "Enabled"
-  disabled: "Disabled"
-  lastSeen: "Last seen"
-  sourceType: "Source type"
-  sourceId: "Source object"
-  template: "Template"
-  device: "Device"
-  copies: "Copies"
-  reprint: "Reprint"
-  reprintHint: "Reprinting creates a related job and never overwrites the original record."
-  reprintCreated: "Reprint job created"
-  reason: "Reason"
-  empty: "No matching data"
+  autoArrange: Auto arrange
+  arrangeConfirm: Reposition elements on every panel in reading order? Content and sizes are preserved. You can undo this change.
+  arrangeSpace: Insufficient paper space or invalid element size. The original layout is retained. Adjust paper or element sizes.
+  arrangeComplex: Fixed or rotated elements require manual layout. The original layout is retained.
+  rotatePaper: Rotate paper
+  flow:
+    downloadClient: Download Windows print client (extract and run client/Start.cmd)
+    pdfHint: PDF requires no printer or copies. A deployed rendering agent generates
+      the file for download in Jobs.
+    noDevices: No enabled printer is registered. Register a queue from Online client
+      printers.
+    stepContracts: 1. Data contracts
+    stepTemplates: 2. Template design
+    stepScenes: 3. Scene configuration
+    stepPrint: 4. Enter and print
+    designFromContract: Design with this contract
+    needPublishedTemplate: No published template is available. Design and publish a
+      template before configuring a print scene.
+    goTemplates: Go to template design
+    needContract: Define a data contract before creating a print template.
+    contractFromTemplate: Inherited from the selected template; no separate selection is needed.
+    configureScene: Configure print scene
+    saveAndDesign: Save and design template
+    addColumn: Add detail column
+    detailTable: Detail table
+    createContract: Define data contract
+    chineseName: Chinese name
+    englishName: English name
+    contractHint: Field keys start with a letter and use letters, numbers or
+      underscores. Saved structures are immutable; create a new version to
+      change fields. Use non-sensitive preview samples only.
+    title: Configure and print
+    guide: Publish a template → Configure a scene → Bring the client online and
+      register a queue → Enter a document → Select a device and output →
+      Download PDF or check the queue result in Jobs.
+    scenes: Print scenes
+    createScene: Add scene
+    sceneCode: Scene code
+    sceneId: Scene ID
+    copy: Copy
+    copySceneCode: Copy scene code
+    copySceneId: Copy scene ID
+    identifierCopied: Copied
+    identifierCopyFailed: Copy failed. Select the text and copy it manually.
+    sceneCodeInvalid: Use 1–64 letters, digits, underscores, dots or hyphens, starting with a letter.
+    sceneCodeDuplicate: This scene code already exists. Use another code.
+    sceneCodeHint: External calls use sceneCode. Unique per tenant, generated by default and editable on creation; immutable after saving.
+    clientQueues: Online client printers
+    client: Client
+    agentHint: Clients report local queues every minute. Only clients seen in the
+      last two minutes appear. Register a device before selecting it for jobs.
+    documents: My print documents
+    createDocument: Enter document
+    number: Document number
+    scene: Print scene
+    print: Submit output
+    required: Complete required fields and select a valid template or device.
+    queued: Output job created. Check its progress in Jobs.
+    addLine: Add line
+    removeLine: Remove
+    output: Output type
+    physical: Print to device
+    outputHint: PDF is generated by the selected site agent. Physical printing
+      submits to the selected system queue. If the result is unknown, check the
+      device before submitting again.
+  overflowHint: "{count} elements exceed the paper bounds. Adjust their position,
+    width or paper size before printing."
+  selfServiceHint: Choose a starter or add fields → Drag and edit on the canvas →
+    Check the preview → Save a draft → Publish with separate permission.
+  designOnlyHint: These fields support template design and sample preview. Live
+    outbound business data is not connected yet.
+  quickTools: "Quick tools: fields, text and paper"
+  businessField: Business field
+  chooseField: Choose a field or line items
+  addField: Add to canvas
+  fixedText: Fixed text (title, notes or signature)
+  addText: Add text
+  useStarter: Use outbound starter
+  starterConfirm: Replace the current canvas? You can undo this change.
+  previewRows: Sample line count (1–100)
+  requiredFields: Enter a template name and choose a data contract.
+  startWith: Starting layout
+  outboundStarter: Outbound delivery starter
+  blankStarter: Blank template
+  codes:
+    PRINT_DUPLICATE: This code already exists. Use another code.
+    PRINT_SCENE_CONFLICT: The scene has changed or no longer exists. Reload and try again.
+    PRINT_SCENE_CODE_IMMUTABLE: Scene codes cannot be changed after saving. Use the original code.
+    PRINT_TEMPLATE_CONFLICT: The draft has changed or the historical version is
+      missing. Reload before continuing.
+    PRINT_TEMPLATE_EXECUTION_FORBIDDEN: Remove unsupported script or HTML properties before saving.
+    PRINT_EXTERNAL_RESOURCE_FORBIDDEN: External images and network resources are not supported.
+    PRINT_PDF_NOT_FOUND: The PDF is not ready or no longer available. Refresh the job status.
+    PRINT_JOB_RECEIPT_CONFLICT: The job state has changed. Refresh to view it.
+    PRINT_DEVICE_DISABLED: The selected device is disabled. Choose another device.
+    PRINT_DEVICE_REQUIRED: Select a site device to execute the job.
+    PRINT_INPUT_INVALID: Check required fields and parameter formats.
+    PRINT_DESIGNER_NOT_READY: Wait for the designer to finish loading before saving.
+  title: Print management
+  templates: Print templates
+  devices: Print devices
+  jobs: Print jobs
+  search: Keyword
+  refresh: Refresh
+  createTemplate: New template
+  editTemplate: Edit template
+  createDevice: Register device
+  editDevice: Edit device
+  name: Name
+  code: Code
+  category: Paper type
+  dataContract: Data contract
+  version: Published version
+  unpublished: Unpublished
+  updatedAt: Updated
+  createdAt: Created
+  operations: Actions
+  edit: Edit
+  design: Design template
+  publish: Publish
+  publishConfirm: Publishing creates an immutable version for new jobs. Continue?
+  published: Template published
+  saved: Saved
+  scopeHint: Applicability is stored as controlled server-side conditions. An
+    empty scope requires explicit selection by the business entry point.
+  site: Agent site
+  queue: System print queue
+  state: State
+  enabled: Enabled
+  disabled: Disabled
+  lastSeen: Last seen
+  sourceType: Source type
+  sourceId: Source object
+  template: Template
+  device: Device
+  copies: Copies
+  reprint: Reprint
+  reprintHint: Reprinting creates a related job and never overwrites the original record.
+  reprintCreated: Reprint job created
+  reason: Reason
+  empty: No matching data
   states:
-    QUEUED: "Queued"
-    CLAIMED: "Claimed"
-    SUBMITTED: "Submitted"
-    SUCCEEDED: "Succeeded"
-    FAILED: "Failed"
-    UNKNOWN: "Unknown"
-    CANCELLED: "Cancelled"
-  preview: "Preview"
-  backToDesign: "Back to design"
-  sampleValue: "Preview sample"
-  elementLibrary: "Elements"
-  fieldName: "Bound field"
-  layers: "Layers"
-  noElements: "Add content from the element library"
-  properties: "Properties"
-  pageSettings: "Page settings"
-  content: "Content"
-  width: "Width"
-  height: "Height"
-  fontSize: "Font size"
-  alignment: "Alignment"
-  left: "Left"
-  center: "Center"
-  right: "Right"
-  apply: "Apply"
-  deleteElement: "Delete element"
-  selectElement: "Select an element"
-  paperPreset: "Paper preset"
-  paperWidth: "Paper width"
-  paperHeight: "Paper height"
-  orientation: "Orientation"
-  portrait: "Portrait"
-  landscape: "Landscape"
-  applyPaper: "Apply page settings"
-  elementUpdated: "Element updated"
-  paperUpdated: "Page settings updated"
-  undo: "Undo"
-  redo: "Redo"
-  syncDesign: "Sync design"
+    QUEUED: Queued
+    CLAIMED: Claimed
+    SUBMITTED: Submitted
+    SUCCEEDED: Succeeded
+    FAILED: Failed
+    UNKNOWN: Unknown
+    CANCELLED: Cancelled
+  preview: Preview
+  backToDesign: Back to design
+  sampleValue: Preview sample
+  elementLibrary: Elements
+  fieldName: Bound field
+  layers: Layers
+  noElements: Add content from the element library
+  properties: Properties
+  pageSettings: Page settings
+  content: Content
+  width: Width
+  height: Height
+  fontSize: Font size
+  alignment: Alignment
+  left: Left
+  center: Center
+  right: Right
+  apply: Apply
+  deleteElement: Delete element
+  selectElement: Select an element
+  paperPreset: Paper preset
+  paperWidth: Paper width
+  paperHeight: Paper height
+  orientation: Orientation
+  portrait: Portrait
+  landscape: Landscape
+  applyPaper: Apply page settings
+  elementUpdated: Element updated
+  paperUpdated: Page settings updated
+  undo: Undo
+  redo: Redo
+  syncDesign: Sync design
+  engineLoadFailed: The designer failed to load. Please retry.
+  engineActionFailed: The designer operation failed. Check the template; your
+    design has been retained.
+  previewSample: Sample data
+  unsavedDesign: Unsaved design
+  discardDesign: Leaving will discard your unsaved design. Continue?
+  discard: Discard changes
+  downloadPdf: Download PDF
+  versions: Version history
+  publishedAt: Published at
+  restoreVersion: Restore draft
+  restoreConfirm: Replace the current draft? The active version changes only after publishing.
   elements:
-    text: "Text"
-    field: "Data field"
-    barcode: "Barcode"
-    qrcode: "QR code"
-    image: "Image"
-    hline: "Horizontal line"
-    vline: "Vertical line"
-    rect: "Rectangle"
+    text: Text
+    field: Data field
+    barcode: Barcode
+    qrcode: QR code
+    image: Image
+    hline: Horizontal line
+    vline: Vertical line
+    rect: Rectangle
   papers:
-    A4: "A4 (210×297mm)"
-    A5: "A5 (148×210mm)"
-    WAYBILL: "Waybill (100×150mm)"
-    RECEIPT80: "80mm receipt"
-    RECEIPT58: "58mm receipt"
-    CUSTOM: "Custom"
+    LABEL: Label (100×60mm)
+    RECEIPT: Receipt (80×200mm)
+    A4: A4 (210×297mm)
+    A5: A5 (148×210mm)
+    WAYBILL: Waybill (100×150mm)
+    RECEIPT80: 80mm receipt
+    RECEIPT58: 58mm receipt
+    CUSTOM: Custom
+  printMode: Print mode
+  previewThenPrint: Preview then print
+  silentPrint: Silent printing
+  confirmPrint: Confirm printing
+
 leavePoc:
   title: Leave request POC
   hint: Counts inclusive calendar days, 1–365 days. More than 3 days requires HR approval. No balance or attendance calculation.
@@ -1403,7 +1644,6 @@ businessWorkflow:
     LE: Less than or equal to
   removeReview: Remove approval step
   removeConfirm: Remove this step and its independent condition, if any? Publishing affects new submissions.
-
 document:
   platformTitle: Document registry
   title: Document workbench

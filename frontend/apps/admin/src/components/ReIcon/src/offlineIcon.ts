@@ -54,9 +54,15 @@ import RiShieldKeyholeLine from "~icons/ri/shield-keyhole-line?raw";
 import RiShieldUserLine from "~icons/ri/shield-user-line?raw";
 import RiUserSettingsLine from "~icons/ri/user-settings-line?raw";
 
+import RiFlowChart from "~icons/ri/flow-chart?raw";
+import RiPrinterLine from "~icons/ri/printer-line?raw";
+
 const icons = [
-  // 单据入口使用本地 SVG，避免菜单名称已配置但图标缺失。
+  // 单据目录及工作台采用已登记的本地 SVG，不依赖运行时远程加载。
   ["ri/file-list-line", RiFileListLine],
+  // 流程与打印菜单使用本地 SVG，避免配置了名称却未注册而显示空白。
+  ["ri/flow-chart", RiFlowChart],
+  ["ri/printer-line", RiPrinterLine],
   // Element Plus Icon: https://github.com/element-plus/element-plus-icons
   ["ep/menu", EpMenu],
   ["ep/edit", EpEdit],

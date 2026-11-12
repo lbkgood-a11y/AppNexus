@@ -1,7 +1,7 @@
 import { http } from "@/utils/http";
 
 /** 本人第二因子状态；不包含密钥或恢复码。 */
-export interface MfaStatus { available: boolean; enabled: boolean; steppedUp: boolean }
+export interface MfaStatus { available: boolean; enabled: boolean; steppedUp: boolean; platformRequired:boolean; methods:("TOTP"|"RECOVERY_CODE")[] }
 /** 只查询本人绑定状态，不接受目标账号参数。 */
 export const getMfaStatus = () => http.request<MfaStatus>("get", "/bff/account/mfa");
 /**

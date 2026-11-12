@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "engines": { "node": ">=24 <27" },
-  "scripts": { "build": "tsc --noEmit", "start": "tsx src/main.ts" },
+  "scripts": { "build": "tsc --noEmit", "test": "tsx --test src/*.test.ts", "start": "tsx src/main.ts" },
   "dependencies": {
     "bwip-js": "4.11.1",
     "jquery": "3.7.1",

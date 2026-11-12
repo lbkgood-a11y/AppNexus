@@ -36,7 +36,8 @@ public final class TenantExecutionFilter extends OncePerRequestFilter {
                 boolean printingAgent=path.startsWith("/api/printing/agent/")&&auth.getAuthorities().stream()
                     .anyMatch(value->value.getAuthority().equals("SCOPE_print-agent:operate"));
                 Object tenant=service.getTokenAttributes().get("tenantId"),client=service.getTokenAttributes().get("clientId");
-                if(!printingAgent||!(tenant instanceof String tenantId)||!(client instanceof String clientId)) {
+                boolean externalPrint=path.startsWith("/api/printing/external/")&&auth.getAuthorities().stream().anyMatch(value->value.getAuthority().equals("SCOPE_print:submit"));
+                if(!(printingAgent||externalPrint)||!(tenant instanceof String tenantId)||!(client instanceof String clientId)) {
                     reject(response,403,"SERVICE_OPERATION_NOT_AUTHORIZED"); return;
                 }
                 request.setAttribute(com.appnexus.contracts.printing.PrintContext.class.getName(),

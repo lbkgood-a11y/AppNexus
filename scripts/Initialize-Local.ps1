@@ -64,3 +64,5 @@ if (-not $env:APP_WORKFLOW_ENGINE_ENABLED) { $env:APP_WORKFLOW_ENGINE_ENABLED = 
 # 本机可靠交付扫描默认关闭（false）；真实业务适配器具备持久幂等后才可通过 APP_WORKFLOW_WORKER_ENABLED 显式开启，不因启用菜单自动开启。
 if (-not $env:APP_WORKFLOW_WORKER_ENABLED) { $env:APP_WORKFLOW_WORKER_ENABLED = "false" }
 Write-Host "Local environment initialized. Secrets are stored in ignored .local/environment.json for local development only."
+# 开发阶段平台写操作暂不强制 MFA，默认 false；仅本机 local 启动生效，显式 APP_MFA_REQUIRE_PLATFORM=true 可恢复。个人主动绑定、登录验证和敏感自助操作规则不变。
+if (-not $env:APP_MFA_REQUIRE_PLATFORM) { $env:APP_MFA_REQUIRE_PLATFORM = "false" }

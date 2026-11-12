@@ -22,11 +22,14 @@ public class MfaController {
     private final AccountRepository accounts;
     private final PasswordEncoder encoder;
     private final SecurityLogRepository logs;
+    /** 平台写入强制策略，默认 true；只用于展示实际部署策略，不授予个人权限。 */
+    @org.springframework.beans.factory.annotation.Value("${app.mfa.require-platform:true}")
+    private boolean platformRequired=true;
     public MfaController(MultiFactorAuthentication mfa,AccountRepository accounts,PasswordEncoder encoder,SecurityLogRepository logs){
         this.mfa=mfa;this.accounts=accounts;this.encoder=encoder;this.logs=logs;
     }
-    /** 状态仅描述本人，不返回密钥、恢复码或其他账号认证资料。 */
-    public record Status(boolean available,boolean enabled,boolean steppedUp){}
+    /** 状态描述本人绑定、实际平台强制策略及已实现方式；不返回密钥、恢复码或其他账号资料。 */
+    public record Status(boolean available,boolean enabled,boolean steppedUp,boolean platformRequired,List<String> methods){}
     /** 密码及一次性验证码只在请求内存使用；禁止自动 record.toString 泄露凭据。 */
     public record Challenge(String password,String code){@Override public String toString(){return "Challenge[redacted]";}}
     /** 待确认 Base32 密钥，只在本次建立绑定时返回，不缓存。 */
@@ -37,7 +40,7 @@ public class MfaController {
     ResponseEntity<Status> status(Authentication auth,HttpServletRequest request){
         Object verified=request.getSession().getAttribute(VERIFIED_AT);
         boolean recent=verified instanceof Instant time&&!time.isAfter(Instant.now())&&time.plusSeconds(300).isAfter(Instant.now());
-        return noStore(new Status(mfa.available(),mfa.enabled(id(auth)),recent));
+        return noStore(new Status(mfa.available(),mfa.enabled(id(auth)),recent,platformRequired,List.of("TOTP","RECOVERY_CODE")));
     }
     /** 当前密码复核后建立 10 分钟待确认绑定，已有有效因子不可覆盖。 */
     @PostMapping("/enrollment")

@@ -1,26 +1,53 @@
 import { chromium, type Browser } from "playwright-core";
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { dirname, join } from "node:path";
-import { spawn } from "node:child_process";
-import { createRequire } from "node:module";
+import { join } from "node:path";
+import { readConfig, type AgentConfig } from "./config.js";
+import { QueueFailure, queueCommand, runQueue } from "./queue.js";
+import { renderPdf, type ClaimedJob } from "./render.js";
 import { pathToFileURL } from "node:url";
+import { discoverPrinters } from "./printers.js";
 
-/** 代理配置全部来自部署环境；凭据不写入文件、命令行或日志。 */
-interface AgentConfig { api:string;site:string;agent:string;tenantVersion:string;tokenUrl:string;clientId:string;clientSecret:string;chromium:string;sumatra?:string;pollMs:number }
-export interface ClaimedJob { id:string;copies:number;data_snapshot:Record<string,unknown>;template_json:Record<string,unknown>;system_name:string }
-const require=createRequire(import.meta.url);
-const needed=(name:string)=>{const value=process.env[name];if(!value)throw new Error(`${name} is required`);return value};
-const config:AgentConfig={api:needed("PRINT_API_URL").replace(/\/$/,""),site:needed("PRINT_SITE_CODE"),agent:needed("PRINT_AGENT_ID"),tenantVersion:process.env.PRINT_TENANT_CONTEXT_VERSION||"1",tokenUrl:needed("PRINT_TOKEN_URL"),clientId:needed("PRINT_CLIENT_ID"),clientSecret:needed("PRINT_CLIENT_SECRET"),chromium:needed("PRINT_CHROMIUM_PATH"),sumatra:process.env.PRINT_SUMATRA_PATH,pollMs:Number(process.env.PRINT_POLL_INTERVAL_MS||"3000")};
-if(!/^[A-Za-z][A-Za-z0-9_.-]{0,63}$/.test(config.site)||config.agent.length>128||config.pollMs<1000||config.pollMs>60000)throw new Error("Invalid print agent configuration");
+let config: AgentConfig;
 let token="",expires=0;
-async function accessToken(){if(Date.now()<expires-30_000)return token;const body=new URLSearchParams({grant_type:"client_credentials",client_id:config.clientId,client_secret:config.clientSecret,scope:"print-agent:operate"});const response=await fetch(config.tokenUrl,{method:"POST",headers:{"content-type":"application/x-www-form-urlencoded"},body});if(!response.ok)throw new Error(`Token request failed: ${response.status}`);const value=await response.json() as {access_token:string;expires_in?:number};token=value.access_token;expires=Date.now()+(value.expires_in||300)*1000;return token}
+async function accessToken(){if(Date.now()<expires-30_000)return token;const body=new URLSearchParams({grant_type:"client_credentials",scope:"print-agent:operate"});const response=await fetch(config.tokenUrl,{method:"POST",headers:{"content-type":"application/x-www-form-urlencoded",authorization:"Basic "+Buffer.from(encodeURIComponent(config.clientId)+":"+encodeURIComponent(config.clientSecret)).toString("base64")},body,redirect:"error",signal:AbortSignal.timeout(30_000)});if(!response.ok)throw new Error(`Token request failed: ${response.status}`);const value=await response.json() as {access_token:string;expires_in?:number};token=value.access_token;expires=Date.now()+(value.expires_in||300)*1000;return token}
 /** 平台写调用使用新幂等键；只记录状态码，不输出 Token、模板、快照或设备队列详情。 */
-async function call<T>(path:string,body?:unknown):Promise<T>{const response=await fetch(config.api+path,{method:"POST",headers:{authorization:`Bearer ${await accessToken()}`,"content-type":"application/json","Idempotency-Key":crypto.randomUUID(),"X-Tenant-Context-Version":config.tenantVersion},body:body===undefined?undefined:JSON.stringify(body),signal:AbortSignal.timeout(30_000)});if(response.status===204)return undefined as T;if(!response.ok)throw new Error(`Print API failed: ${response.status}`);return response.json() as Promise<T>}
-export async function renderPdf(browser:Browser,job:ClaimedJob,file:string){const page=await browser.newPage({javaScriptEnabled:true});try{await page.setContent("<!doctype html><meta charset=utf-8><main id=output></main>");await page.addScriptTag({content:"window.autoConnect=false;window.io={io:function(){throw new Error('PRINT_CAPABILITY_DISABLED')}};window.jspdf={};window.canvg={};var values=new Map();Object.defineProperty(window,'localStorage',{value:{getItem:function(key){return values.get(key)||null},setItem:function(key,value){values.set(key,String(value))},removeItem:function(key){values.delete(key)},clear:function(){values.clear()}}});"});const assets=[require.resolve("jquery/dist/jquery.min.js"),require.resolve("jsbarcode/dist/JsBarcode.all.min.js"),join(dirname(require.resolve("bwip-js")),"bwip-js-min.js"),require.resolve("vue-plugin-hiprint/dist/vue-plugin-hiprint.js")];for(const asset of assets)await page.addScriptTag({path:asset});await page.evaluate(({template,data})=>{type Library={disAutoConnect():void;defaultElementTypeProvider:new()=>unknown;hiprint:{init(value:unknown):void;PrintTemplate:new(value:{template:unknown})=>{getHtml(data:unknown):unknown}}};const scope=globalThis as typeof globalThis&Record<string,unknown>;const library=scope["vue-plugin-hiprint"] as Library;library.disAutoConnect();library.hiprint.init({providers:[new library.defaultElementTypeProvider()],lang:"cn"});const instance=new library.hiprint.PrintTemplate({template});const html=instance.getHtml(data);const output=document.querySelector("#output")!;const jq=scope.$ as (value:Element)=>{empty():{append(content:unknown):void}};jq(output).empty().append(html)},{template:job.template_json,data:job.data_snapshot});await page.emulateMedia({media:"print"});await page.pdf({path:file,printBackground:true,preferCSSPageSize:true,tagged:true});}finally{await page.close()}}
+async function call<T>(path:string,body?:unknown):Promise<T>{const response=await fetch(config.api+path,{method:"POST",headers:{authorization:`Bearer ${await accessToken()}`,"content-type":"application/json","Idempotency-Key":crypto.randomUUID(),"X-Tenant-Context-Version":config.tenantVersion},body:body===undefined?undefined:JSON.stringify(body),redirect:"error",signal:AbortSignal.timeout(30_000)});if(response.status===204)return undefined as T;if(!response.ok)throw new Error(`Print API failed: ${response.status}`);return response.json() as Promise<T>}
 /** 将 PDF 提交指定队列；参数数组不经过 shell，队列名不能注入额外命令。 */
-async function submit(file:string,printer:string,copies:number){let command:string,args:string[];if(process.platform==="win32"){if(!config.sumatra)throw new Error("PRINT_SUMATRA_PATH is required on Windows");command=config.sumatra;args=["-silent","-print-to",printer,"-print-settings",`${copies}x`,file]}else{command="lp";args=["-d",printer,"-n",String(copies),file]}await new Promise<void>((resolve,reject)=>{const child=spawn(command,args,{stdio:["ignore","ignore","pipe"],shell:false,windowsHide:true});let error="";child.stderr.on("data",chunk=>{if(error.length<2000)error+=String(chunk)});child.once("error",reject);child.once("exit",code=>code===0?resolve():reject(new Error(`Print command failed (${code}): ${error.replace(/[\r\n]+/g," ")}`)))})}
+async function submit(file:string,printer:string,copies:number){const {command,args}=queueCommand(process.platform,file,printer,copies,config.sumatra);await runQueue(command,args)}
 async function receipt(id:string,state:"SUBMITTED"|"FAILED"|"UNKNOWN",code:string){await call(`/api/printing/agent/jobs/${encodeURIComponent(id)}/receipt`,{state,agent:config.agent,result:{code}})}
-async function execute(browser:Browser,job:ClaimedJob){const directory=await mkdtemp(join(tmpdir(),"appnexus-print-")),file=join(directory,"document.pdf");try{await renderPdf(browser,job,file);await submit(file,job.system_name,job.copies);await receipt(job.id,"SUBMITTED","SYSTEM_QUEUE_ACCEPTED")}catch(error){const code=error instanceof Error&&/Print command failed/.test(error.message)?"QUEUE_REJECTED":"RENDER_OR_EXECUTION_FAILED";try{await receipt(job.id,code==="QUEUE_REJECTED"?"FAILED":"UNKNOWN",code)}catch{/* 平台不可达时保留租约状态，由人工判定，禁止本地自动重打。 */}}finally{await rm(directory,{recursive:true,force:true})}}
-async function main(){const browser=await chromium.launch({executablePath:config.chromium,headless:true,args:["--disable-background-networking","--disable-component-update","--no-default-browser-check"]});const stop=async()=>{await browser.close();process.exit(0)};process.once("SIGINT",stop);process.once("SIGTERM",stop);for(;;){try{const job=await call<ClaimedJob|null>(`/api/printing/agent/claim?site=${encodeURIComponent(config.site)}&agent=${encodeURIComponent(config.agent)}`);if(job)await execute(browser,job)}catch(error){console.error(error instanceof Error?error.message:"Print agent failure")}await new Promise(resolve=>setTimeout(resolve,config.pollMs))}}
-if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href)await main();
+/** 渲染失败确定未提交；调用队列后发生任何异常均保守记 UNKNOWN，绝不自动重打。 */
+async function execute(browser:Browser,job:ClaimedJob){
+  let directory:string|undefined;
+  let submitting=false;
+  try{
+    directory=await mkdtemp(join(tmpdir(),"appnexus-print-"));
+    const file=join(directory,"document.pdf");
+    await renderPdf(browser,job,file);
+    if(job.output_type==="PDF"){
+      // PDF 任务不触碰设备队列；上传失败保留领取租约，防止成功产物被失败回执覆盖。
+      submitting=true;
+      const response=await fetch(config.api+`/api/printing/agent/jobs/${encodeURIComponent(job.id)}/pdf?agent=${encodeURIComponent(config.agent)}`,{
+        method:"POST",redirect:"error",signal:AbortSignal.timeout(30_000),
+        headers:{authorization:`Bearer ${await accessToken()}`,"content-type":"application/pdf","Idempotency-Key":crypto.randomUUID(),"X-Tenant-Context-Version":config.tenantVersion},
+        body:await readFile(file)
+      });
+      if(!response.ok)throw new Error("PDF_UPLOAD_FAILED");
+      return;
+    }
+    submitting=true;
+    await submit(file,job.system_name,job.copies);
+    await receipt(job.id,"SUBMITTED","SYSTEM_QUEUE_ACCEPTED");
+  }catch(error){
+    const uncertain=submitting&&!(error instanceof QueueFailure&&!error.uncertain);
+    const code=uncertain?"QUEUE_RESULT_UNKNOWN":submitting?"QUEUE_NOT_STARTED":"RENDER_FAILED";
+    try{await receipt(job.id,uncertain?"UNKNOWN":"FAILED",code)}catch{
+      // 回执失败保留平台租约，由过期处理转 UNKNOWN；代理不重新执行任务。
+    }
+  }finally{if(directory)await rm(directory,{recursive:true,force:true})}
+}
+async function main(){config=readConfig(process.env);const browser=await chromium.launch({executablePath:config.chromium,headless:true,args:["--disable-background-networking","--disable-component-update","--no-default-browser-check"]});const stop=async()=>{await browser.close();process.exit(0)};process.once("SIGINT",stop);process.once("SIGTERM",stop);let queueReportAt=0;for(;;){try{if(Date.now()-queueReportAt>60_000){try{const queues=await discoverPrinters();await call("/api/printing/agent/queues",{site:config.site,agent:config.agent,queues:queues.map(value=>value.name)})}catch{console.error("PRINT_QUEUE_REPORT_FAILED")}queueReportAt=Date.now()}const job=await call<ClaimedJob|null>(`/api/printing/agent/claim?site=${encodeURIComponent(config.site)}&agent=${encodeURIComponent(config.agent)}`);if(job)await execute(browser,job)}catch(error){console.error(error instanceof Error?error.message:"Print agent failure")}await new Promise(resolve=>setTimeout(resolve,config.pollMs))}}
+if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href){
+  if(process.argv.includes("--list-printers")) console.log(JSON.stringify(await discoverPrinters(),null,2));
+  else await main();
+}

@@ -61,7 +61,7 @@ onMounted(load);
 </script>
 <template>
  <div class="management-page menu-management">
-  <TreeListTemplate v-model:collapsed="treeCollapsed" :title="t('menuManagement.title')">
+  <TreeListTemplate v-model:collapsed="treeCollapsed" :title="t('menuManagement.title')" :tree-label="t('menuManagement.tree')">
   <template #treeHeader><div class="menu-tree-heading"><strong>{{t('menuManagement.tree')}}</strong><el-tooltip :content="t('menuManagement.createRoot')"><el-button v-operation="'configuration.menu:create'" text :aria-label="t('menuManagement.createRoot')" :disabled="saving||!can('create')" @click="openCreate()"><AppIcon name="add" :size="18" /></el-button></el-tooltip></div></template>
   <template #tree>
    <el-button text class="menu-tree-all" :class="{'is-active':!selected}" @click="selected=''">{{t('menuManagement.all')}}</el-button>

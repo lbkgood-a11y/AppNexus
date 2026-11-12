@@ -59,3 +59,11 @@
 | peerDependencies | Vue、Element Plus、vue-i18n 版本范围跟随 admin；复用宿主实例，避免重复状态与主题。 |
 
 tenant、organization 的 dependencies 与 admin 的 dependencies 新增 `@appnexus/ui: workspace:*`；领域页面使用图标的包同时显式声明 `@appnexus/icons: workspace:*`。这些字段只连接本地模块，不引入运行环境参数或敏感配置。
+# 左树收起后的业务标识
+
+TreeListTemplate 继续复用 T02 左树右表布局和 Element Plus 按钮，不新增组件。`treeLabel` 接收业务页已翻译的树名称；桌面收起时在 48px 窄栏显示组织树图标与竖排名称，点击标识可展开树。移动端改为横排标识，避免挤占正文高度。缺省不显示业务标识，原展开按钮仍可用。
+
+组织结构、菜单树和字典类型沿用各自已有国际化名称，以区分不同业务树；标识仅控制面板展示，不更改选中节点、查询范围或权限。
+# 非模态工具窗口
+
+ManagedDialog 的 `modal` 默认 true；画布工具可显式传 false，关闭遮罩和滚动锁并允许操作底层画布。`top` 缺省沿用 Element Plus，仅指定初始纵向位置。业务可设置初始右对齐样式，拖动、调整大小与边界仍由统一组件管理；不得自建遮罩或拖动系统。

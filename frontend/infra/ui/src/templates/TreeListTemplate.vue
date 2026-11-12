@@ -10,6 +10,8 @@ import { AppIcon } from "@appnexus/icons";
 const props = withDefaults(defineProps<{
   /** 独立页面顶部标题；以模板标签栏呈现，嵌入已有导航工作区时可省略。 */
   title?: string;
+  /** 树的业务名称，使用已翻译文案；收起后作为窄栏标识，缺省时仅保留展开按钮。 */
+  treeLabel?: string;
   /** 是否收起左侧树；受控状态由业务页持有。 */
   collapsed?: boolean;
   /** 左树宽度，单位 px；有效范围 220–360，默认 248。 */
@@ -43,6 +45,10 @@ const style = computed(() => ({ "--tree-panel-width": `${Math.min(360, Math.max(
               </el-button>
             </el-tooltip>
           </header>
+          <el-button v-if="collapsed && treeLabel" text class="tree-list-template__identity" :aria-label="`${t('management.expandTree')}：${treeLabel}`" @click="emit('update:collapsed', false)">
+            <AppIcon name="organization" :size="18" />
+            <span>{{ treeLabel }}</span>
+          </el-button>
           <div v-show="!collapsed" class="tree-list-template__tree"><slot name="tree" /></div>
         </aside>
         <main class="tree-list-template__content">
