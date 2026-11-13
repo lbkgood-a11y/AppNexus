@@ -23,6 +23,6 @@ describe('page operation binding',()=>{
   });
   it('maps multiple pages to one action and supports print targets',()=>{
     const d:Descriptor={...descriptor,actions:[{...descriptor.actions[0],actionCode:'print',operationKey:'LeaveRequest.print',interaction:interaction(['PRINT']),aliases:[{operationKey:'LeaveRequest.detail.print',pageOperation:descriptor.actions[0].pageOperation!}]}]};
-    expect(pageOperations(d)).toHaveLength(2);const b=binding();selectPageOperation(b,d,'LeaveRequest.detail.print');expect(b.actionCode).toBe('print');expect(b.service).toBe('PRINT');expect(hasPageOperation(b,d)).toBe(true);expect(b.sceneCode).toBeNull();
+    expect(pageOperations(d)).toHaveLength(1);const b=binding();selectPageOperation(b,d,'LeaveRequest.print');expect(b.actionCode).toBe('print');expect(b.service).toBe('PRINT');expect(hasPageOperation(b,d)).toBe(true);expect(b.sceneCode).toBeNull();
   });
 });

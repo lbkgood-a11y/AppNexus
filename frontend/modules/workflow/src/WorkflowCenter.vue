@@ -10,7 +10,7 @@ import {
   type ManagementColumn,
 } from "@appnexus/ui";
 import WorkflowDesigner from "./WorkflowDesigner.vue";
-import type { WorkflowApi, Definition, Capability, Row } from "./index";
+import type { WorkflowApi, Definition, Capability, Row, BusinessConfiguration } from "./index";
 /** 三工作区共享模板表格与反馈；只有已授权且已接通的动作才显示，任务权由后端逐次复核。 */
 const props = defineProps<{
   /** 独立设计器入口只显示流程定义，任务入口不再混入编排Tab。 */
@@ -22,7 +22,7 @@ const { t, locale } = useI18n();
 const router = useRouter();
 const route=useRoute();
 const comment = ref("");
-const tab = ref(props.workspace === "designer" ? "definitions" : "todo"),
+const tab = ref(props.workspace === "designer" ? (route.query.create==='1'?"definitions":"contracts") : "todo"),
   caps = ref<string[]>([]),
   businesses = ref<Capability[]>([]),
   rows = ref<Row[]>([]),
@@ -34,6 +34,7 @@ const tab = ref(props.workspace === "designer" ? "definitions" : "todo"),
   submitted = ref(""),
   page = ref(1),
   size = ref(20);
+const contracts=ref<BusinessConfiguration["documents"]>([]), contractDetail=ref<BusinessConfiguration["documents"][number]>();
 const designer = ref(false),
   editing = ref<Definition>(),
   selectedTask = ref<Row>(),
@@ -54,7 +55,7 @@ const formatTime = (value: string) =>
 const can = (a: string) => caps.value.includes(a);
 const tabs = computed(() =>
   props.workspace === "designer"
-    ? ["definitions"]
+    ? ["contracts", "definitions"]
     : [
         "todo",
         "done",
@@ -70,7 +71,7 @@ const filtered = computed(() => {
   return rows.value.filter(
     (r) =>
       !q ||
-      [r.name, r.object_type, r.object_id, r.purpose, r.state, r.node_id].some(
+      [r.name, r.code,r.objectType, r.object_type, r.object_id, r.purpose, r.state, r.node_id].some(
         (v) =>
           String(v || "")
             .toLowerCase()
@@ -82,7 +83,13 @@ const paged = computed(() =>
   filtered.value.slice((page.value - 1) * size.value, page.value * size.value),
 );
 const columns = computed<ManagementColumn[]>(() =>
-  tab.value === "definitions"
+  tab.value === "contracts" ? [
+    {key:"name",prop:"name",label:t("workflow.name"),minWidth:160},
+    {key:"code",prop:"code",label:t("document.code"),minWidth:190},
+    {key:"version",prop:"version",label:t("document.contractVersion"),width:110},
+    {key:"objectType",prop:"objectType",label:t("workflow.objectType"),minWidth:140},
+    {key:"operations",label:t("workflow.operations"),width:180,fixed:"right"},
+  ] : tab.value === "definitions"
     ? [
         { key: "name", prop: "name", label: t("workflow.name"), minWidth: 180 },
         {
@@ -141,8 +148,11 @@ async function load() {
     caps.value = await props.api.capabilities();
     businesses.value = await props.api.businesses();
     if (!tabs.value.includes(tab.value))
-      tab.value = props.workspace === "designer" ? "definitions" : "todo";
-    if (tab.value === "definitions") {
+      tab.value = props.workspace === "designer" ? (route.query.create==='1'?"definitions":"contracts") : "todo";
+    if(tab.value === "contracts"){
+      contracts.value=(await props.api.configuration()).documents;
+      rows.value=contracts.value.map((entry,index)=>({id:String(index),name:locale.value.startsWith('zh')?entry.profile.nameZh:entry.profile.nameEn,code:entry.dataContract?.code||entry.capability,version:entry.dataContract?.version||1,objectType:entry.profile.objectType}));
+    } else if (tab.value === "definitions") {
       definitions.value = await props.api.definitions();
       rows.value = definitions.value.map((d) => ({
         ...d,
@@ -265,18 +275,25 @@ async function recover() {
       @saved="load"
       @close="designer = false"
     />
+    <ManagedDialog :model-value="!!contractDetail" :title="t('workflow.contractFields')" width="760px" @update:model-value="contractDetail=undefined">
+      <div v-if="contractDetail" class="contract-detail">
+        <p>{{contractDetail.dataContract?.code}} / v{{contractDetail.dataContract?.version}}</p>
+        <el-table :data="contractDetail.profile.fields"><el-table-column prop="key" :label="t('document.code')"/><el-table-column :label="t('workflow.name')"><template #default="{row}">{{locale.startsWith('zh')?row.nameZh:row.nameEn}}</template></el-table-column><el-table-column prop="type" :label="t('workflow.contractType')"/><el-table-column prop="unitZh" :label="t('workflow.contractUnit')"/></el-table>
+        <el-alert :title="t('workflow.contractOrderHint')" type="info" :closable="false"/>
+      </div>
+    </ManagedDialog>
     <BusinessWorkspace
-      v-else
+      v-if="!designer"
       :title="
         t(workspace === 'designer' ? 'workflow.designer' : 'workflow.title')
       "
-      ><template v-if="workspace !== 'designer'" #navigation
+      ><template #navigation
         ><el-tabs v-model="tab"
           ><el-tab-pane
             v-for="view in tabs"
             :key="view"
             :name="view"
-            :label="t('workflow.tabs.' + view)" /></el-tabs></template
+            :label="workspace==='designer'?`${view==='contracts'?1:2}. ${t('workflow.tabs.'+view)}`:t('workflow.tabs.'+view)" /></el-tabs></template
       ><template
         v-if="error && !designer && !taskOpen && !detailOpen && !recovery"
         #feedback
@@ -287,7 +304,7 @@ async function recover() {
         ></template
       ><template #search
         ><div class="management-filter">
-          <h2 class="management-filter-title">{{ title }}</h2>
+          <div class="management-filter-header"><h2 class="management-filter-title">{{ title }}</h2></div>
           <el-form
             inline
             @submit.prevent="
@@ -313,7 +330,9 @@ async function recover() {
           >
         </div></template
       ><template #data
-        ><ManagementTable
+        ><div class="workflow-data">
+        <el-alert v-if="tab==='contracts'" class="contract-source-hint" :description="t('workflow.contractSourceHint')" type="info" :closable="false" />
+        <ManagementTable
           embedded
           :title="title"
           :rows="paged"
@@ -342,11 +361,11 @@ async function recover() {
               t("workflow.states." + row.state, row.state)
             }}</el-tag></template
           ><template #operations="{ row }"
-            ><template v-if="tab === 'definitions'"
+            ><template v-if="tab==='contracts'"><el-button link @click="contractDetail=contracts[Number(row.id)]">{{t('workflow.contractFields')}}</el-button></template><template v-else-if="tab === 'definitions'"
               ><el-button link type="primary" @click="openDesigner(row.id)">{{
                 t("workflow.design")
               }}</el-button
-              ><el-button
+              ><el-button v-if="row.published" link @click="router.push({path:'/documents/workbench',query:{type:row.objectType}})">{{t('workflow.configureBinding')}}</el-button><el-button
                 v-if="can('publish') && row.enabled"
                 link
                 type="danger"
@@ -380,7 +399,7 @@ async function recover() {
           v-if="rows.length === 100"
           :title="t('workflow.limitHint')"
           type="info"
-          :closable="false" /></template
+          :closable="false" /></div></template
     ></BusinessWorkspace>
     <ManagedDialog
       v-model="taskOpen"
@@ -601,6 +620,27 @@ async function recover() {
   </div>
 </template>
 <style scoped>
+/* 工作区与契约详情使用统一垂直节奏，避免表格、提示及摘要贴连；不覆盖公共容器边界。 */
+.workflow-data,
+.contract-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+/* 长说明按可用宽度换行，避免表格容器随不可断行文本向右撑开。 */
+.contract-source-hint :deep(.el-alert__content) {
+  min-width: 0;
+}
+.contract-source-hint :deep(.el-alert__description) {
+  margin: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.contract-detail > p {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
 .actions {
   display: flex;
   justify-content: flex-end;

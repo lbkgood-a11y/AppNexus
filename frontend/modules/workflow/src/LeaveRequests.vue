@@ -37,13 +37,15 @@ const loading = ref(false),
   error = ref("");
 const createOpen = ref(false),
   detailOpen = ref(false);
+/** 草稿错误只展示在编辑弹窗，避免与列表请求错误重复呈现。 */
+const formError=ref("");
 const form = ref<FormInstance>();
 const editing=ref<Row>();
 const history=ref<Row[]>([]), historyOpen=ref(false);
 const lifecycle=ref<Row[]>([]);
 const actionAvailability=ref<Awaited<ReturnType<LeaveApi['availability']>>>([]);
 /** 修改使用业务返回的依据版本，前端不自行解除审批冻结。 */
-function edit(row:Row){editing.value=row;Object.assign(input,{organizationId:row.organization_id,leaveType:row.leave_type,startDate:String(row.start_date).slice(0,10),endDate:String(row.end_date).slice(0,10),reason:row.reason});createOpen.value=true;}
+function edit(row:Row){formError.value="";editing.value=row;Object.assign(input,{organizationId:row.organization_id,leaveType:row.leave_type,startDate:String(row.start_date).slice(0,10),endDate:String(row.end_date).slice(0,10),reason:row.reason});createOpen.value=true;}
 async function showCycles(id:string){busy.value=true;error.value='';try{[history.value,lifecycle.value]=await Promise.all([props.api.cycles(id),props.api.timeline(id)]);historyOpen.value=true;}catch(e){error.value=props.errorText(e);}finally{busy.value=false;}}
 const organizations = ref<{ id: string; name: string }[]>([]);
 const query = ref(""),
@@ -148,7 +150,7 @@ async function openDocument(id: string, taskId?: string) {
 async function create() {
   if (!(await form.value?.validate().catch(() => false))) return;
   busy.value = true;
-  error.value = "";
+  formError.value = "";
   try {
     if(editing.value)await props.api.update(editing.value.id,editing.value.basis_version,{...input});
     else await props.api.create({ ...input });
@@ -164,7 +166,7 @@ async function create() {
     ElMessage.success(t("leavePoc.saved"));
     await load();
   } catch (e) {
-    error.value = props.errorText(e);
+    formError.value = props.errorText(e);
   } finally {
     busy.value = false;
   }
@@ -256,7 +258,7 @@ onMounted(async () => {
             v-if="caps.includes('start')"
             type="primary"
             :disabled="busy"
-            @click="editing=undefined; createOpen = true"
+            @click="editing=undefined; formError=''; createOpen = true"
             >{{ t("leavePoc.new") }}</el-button
           >
         </template>
@@ -309,7 +311,7 @@ onMounted(async () => {
     :busy="busy"
     width="min(640px, calc(100vw - 32px))"
   >
-    <el-alert v-if="error" :title="error" type="error" :closable="false" />
+    <el-alert v-if="formError" :title="formError" type="error" :closable="false" />
     <el-form ref="form" :model="input" :rules="rules" label-position="top">
       <el-form-item :label="t('leavePoc.organization')" prop="organizationId"
         ><el-select v-model="input.organizationId" filterable

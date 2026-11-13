@@ -177,7 +177,7 @@ export interface BusinessProfile {
 }
 /** 当前租户真实目录，只有名称及稳定 ID，不包含凭据、联系方式或任意对象原文。 */
 export interface BusinessConfiguration {
-  documents: { capability: string; profile: BusinessProfile }[];
+  documents: { capability: string; profile: BusinessProfile; dataContract?: {code:string;version:number;purpose:string;fields:{path:string;type:string;required:boolean;unit:string}[]} }[];
   options: Record<
     "members" | "organizations" | "positions",
     { id: string; name: string }[]

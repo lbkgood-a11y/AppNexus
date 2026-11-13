@@ -94,6 +94,7 @@ public final class PrintController {
 
   private Object reply(Supplier<Object> action){
     try{return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(action.get());}
+    catch(com.appnexus.contracts.data.DataContract.Violation e){return ResponseEntity.badRequest().cacheControl(CacheControl.noStore()).body(Map.of("status",400,"code",e.getMessage(),"field",e.path()));}
     catch(PrintFailure e){return problem(e.status(),e.code());}
     catch(org.springframework.dao.DuplicateKeyException e){return problem(409,"PRINT_DUPLICATE");}
     catch(org.springframework.dao.DataAccessException e){return problem(503,"PRINT_STORAGE_UNAVAILABLE");}

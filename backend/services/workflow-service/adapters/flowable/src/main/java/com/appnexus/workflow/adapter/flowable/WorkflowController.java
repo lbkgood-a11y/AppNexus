@@ -173,7 +173,8 @@ public final class WorkflowController {
   private Object reply(Supplier<Object> action) {
     try {
       return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(action.get());
-    } catch (WorkflowFailure e) {
+    } catch(com.appnexus.contracts.data.DataContract.Violation e){return ResponseEntity.badRequest().cacheControl(CacheControl.noStore()).body(Map.of("status",400,"code",e.getMessage(),"field",e.path()));}
+    catch (WorkflowFailure e) {
       return problem(e.status(), e.code());
     } catch (SecurityException e) {
       return problem(403, "BUSINESS_ACCESS_DENIED");

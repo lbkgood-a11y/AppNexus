@@ -6,4 +6,4 @@
   <artifactId>workflow-contracts</artifactId>
 
 
-</project>
+<dependencies><dependency><groupId>com.appnexus</groupId><artifactId>data-contracts</artifactId><version>${project.version}</version></dependency></dependencies></project>

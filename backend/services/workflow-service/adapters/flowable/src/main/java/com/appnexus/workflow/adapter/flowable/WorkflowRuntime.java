@@ -32,7 +32,7 @@ public final class WorkflowRuntime implements WorkflowResults, WorkflowTaskAcces
   @Override public List<WorkflowDefinitionCatalog.Option> published(WorkflowContext c,String type,String purpose,String entry,Set<String> outcomes) {
     requireActive(c);
     return jdbc.queryForList("SELECT v.*,d.enabled FROM wf_version v JOIN wf_definition d ON d.tenant_id=v.tenant_id AND d.id=v.definition_id WHERE v.tenant_id=? AND d.enabled=TRUE ORDER BY v.definition_id,v.version DESC",c.tenantId()).stream()
-      .filter(r->{var m=model(r);return m.objectType().equals(type)&&m.purpose().equals(purpose)&&m.entryCapability().equals(entry)
+      .filter(r->{var m=model(r);return (r.get("data_contract_schema")==null||WorkflowJson.read(r.get("data_contract_schema").toString(),com.appnexus.contracts.data.DataContract.class).equals(dataSchema(businesses.get(entry),entry)))&&m.objectType().equals(type)&&m.purpose().equals(purpose)&&m.entryCapability().equals(entry)
         &&m.mode()==Mode.APPROVAL&&m.terminalActions()!=null&&outcomes.stream().allMatch(o->entry.equals(m.terminalActions().get(o)))
         &&(m.matches()==null||m.matches().isEmpty());})
       .map(r->new WorkflowDefinitionCatalog.Option(r.get("definition_id").toString(),((Number)r.get("version")).intValue(),model(r).name())).toList();
@@ -152,6 +152,29 @@ public final class WorkflowRuntime implements WorkflowResults, WorkflowTaskAcces
         .toList();
   }
 
+  /** 数据契约身份来自业务声明；非单据能力不伪造契约。 */
+  private com.appnexus.contracts.data.DataContract dataSchema(WorkflowBusiness business,String entry){
+    if(!(business instanceof com.appnexus.contracts.document.Documents.Provider provider))return null;
+    return provider.descriptor().actions().stream().flatMap(a->a.interaction().capabilities().stream()).filter(c->c.service()==com.appnexus.contracts.document.InteractionContract.Service.WORKFLOW&&c.reference().equals(entry)).findFirst().orElseThrow().schema();
+  }
+
+  /** 在流程匹配和实例写入前验证业务快照；字符串传输按声明显式解码，缺失和非法值失败关闭。 */
+  private void validateContractSnapshot(WorkflowBusiness business,String entry,Map<String,String> snapshot){
+    if(!(business instanceof com.appnexus.contracts.document.Documents.Provider provider))return;
+    var capability=provider.descriptor().actions().stream().flatMap(a->a.interaction().capabilities().stream()).filter(c->c.service()==com.appnexus.contracts.document.InteractionContract.Service.WORKFLOW&&c.reference().equals(entry)).findFirst().orElseThrow();
+    var data=new HashMap<String,Object>();
+    for(var field:capability.fields()){
+      String value=snapshot.get(field.key());if(value==null)continue;
+      try{data.put(field.key(),switch(field.type()){
+        case "NUMBER"->new java.math.BigDecimal(value);
+        case "BOOLEAN"->{if(!Set.of("true","false").contains(value))throw new IllegalArgumentException();yield Boolean.valueOf(value);}
+        default->value;
+      });}catch(IllegalArgumentException ex){throw new com.appnexus.contracts.data.DataContract.Violation(field.key(),"DATA_FIELD_TYPE_INVALID");}
+    }
+    for(String key:snapshot.keySet())if(!data.containsKey(key))throw new com.appnexus.contracts.data.DataContract.Violation(key,"DATA_FIELD_UNKNOWN");
+    capability.schema().validate(data);
+  }
+
   /** 流程设计视图由统一单据行为声明投影生成，业务不再维护第二份工作流目录。 */
   private WorkflowBusinessProfile businessProfile(WorkflowBusiness business,String capability){
     if(!(business instanceof com.appnexus.contracts.document.Documents.Provider provider))return null;
@@ -170,7 +193,7 @@ public final class WorkflowRuntime implements WorkflowResults, WorkflowTaskAcces
     require(c, "read");
     var documents = businesses(c).stream()
         .filter(b -> businessProfile(businesses.get(b.key()),b.key()) != null)
-        .map(b -> Map.of("capability", b.key(), "profile", businessProfile(businesses.get(b.key()),b.key())))
+        .map(b -> Map.of("capability", b.key(), "profile", businessProfile(businesses.get(b.key()),b.key()), "dataContract", ((com.appnexus.contracts.document.Documents.Provider)businesses.get(b.key())).descriptor().actions().stream().flatMap(a->a.interaction().capabilities().stream()).filter(cap->cap.service()==com.appnexus.contracts.document.InteractionContract.Service.WORKFLOW&&cap.reference().equals(b.key())).findFirst().orElseThrow().schema()))
         .toList();
     return Map.of("documents", documents, "options", platform.configurationOptions(c));
   }
@@ -311,15 +334,16 @@ public final class WorkflowRuntime implements WorkflowResults, WorkflowTaskAcces
                   .singleResult();
           jdbc.update(
               "INSERT INTO"
-                  + " wf_version(tenant_id,definition_id,version,model,bpmn,engine_definition,published_by)"
-                  + " VALUES(?,?,?,?,?,?,?)",
+                  + " wf_version(tenant_id,definition_id,version,model,bpmn,engine_definition,published_by,data_contract_schema)"
+                  + " VALUES(?,?,?,?,?,?,?,?)",
               c.tenantId(),
               id,
               version,
               WorkflowJson.write(model),
               new String(bpmn, StandardCharsets.UTF_8),
               definition.getId(),
-              c.actorId());
+              c.actorId(),
+              dataSchema(businesses.get(model.entryCapability()),model.entryCapability())==null?null:WorkflowJson.write(dataSchema(businesses.get(model.entryCapability()),model.entryCapability())));
           jdbc.update(
               "UPDATE wf_definition SET published=?,enabled=TRUE,revision=revision+1 WHERE"
                   + " tenant_id=? AND id=?",
@@ -415,6 +439,7 @@ public final class WorkflowRuntime implements WorkflowResults, WorkflowTaskAcces
                           null,
                           null,
                           Map.of())));
+          validateContractSnapshot(business,entry,snapshot);
           var bound = resolution==null?null:documentBindings.get().verifyApproval(
               new com.appnexus.contracts.document.Documents.Context(c.tenantId(),c.actorId(),c.requestId()),
               resolution,objectType,objectId,objectVersion,snapshot,purpose,entry);
@@ -444,11 +469,14 @@ public final class WorkflowRuntime implements WorkflowResults, WorkflowTaskAcces
             throw fail(matching.isEmpty() ? "FLOW_NOT_MATCHED" : "FLOW_MATCH_CONFLICT", 409);
           var selected = matching.getFirst();
           var m = model(selected);
+          var currentSchema=dataSchema(business,entry);
+          Object frozenSchema=selected.get("data_contract_schema");
+          if(frozenSchema!=null&&!WorkflowJson.read(frozenSchema.toString(),com.appnexus.contracts.data.DataContract.class).equals(currentSchema))throw fail("DATA_CONTRACT_CHANGED",409);
           String id = UUID.randomUUID().toString();
           jdbc.update(
               "INSERT INTO"
-                  + " wf_instance(tenant_id,id,definition_id,definition_version,object_type,object_id,object_version,purpose,organization_id,starter,active_key,snapshot)"
-                  + " VALUES(?,?,?,?,?,?,?,?,?,?,?,?)",
+                  + " wf_instance(tenant_id,id,definition_id,definition_version,object_type,object_id,object_version,purpose,organization_id,starter,active_key,snapshot,data_contract_schema)"
+                  + " VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)",
               c.tenantId(),
               id,
               selected.get("definition_id"),
@@ -460,7 +488,8 @@ public final class WorkflowRuntime implements WorkflowResults, WorkflowTaskAcces
               organization,
               c.actorId(),
               hash(objectType + ":" + objectId + ":" + purpose),
-              WorkflowJson.write(snapshot));
+              WorkflowJson.write(snapshot),
+              currentSchema==null?null:WorkflowJson.write(currentSchema));
           if (m.copies() != null)
             for (var rule : m.copies())
               for (var actor :

@@ -19,14 +19,14 @@ public final class DocumentController {
   public record Draft(long revision,List<Binding> bindings) {}
   /** 发布请求；revision 为草稿读取版本，避免覆盖其他管理人员修改。 */
   public record Publish(long revision) {}
-  /** 平台关系保存参数；全量关系，revision 首次 -1；空集合显式关闭页面关联。 */
-  public record Relationships(long revision,List<PageRelationship> relationships) {}
-  /** 平台编辑候选及已保存关系，管理权限不授予业务原文访问。 */
+  /** 入口控制参数；首次版本 -1，原因必填且最多 200 字，禁用只影响新命令。 */
+  public record PageControl(long revision,String operationKey,boolean enabled,String reason) {}
+  /** 已接入操作只读目录，不向平台开放任意关系编辑。 */
   @GetMapping("/bff/platform/documents/{type}/page-relationships")
   public Object relationships(HttpServletRequest r,@PathVariable String type){return reply(()->service.pageRelationships(context(r,true),type));}
-  /** 保存后即时影响新页面命令；既有流程结果交付独立继续。 */
-  @PutMapping("/bff/platform/documents/{type}/page-relationships")
-  public Object saveRelationships(HttpServletRequest r,@PathVariable String type,@RequestBody Relationships input){return reply(()->{service.savePageRelationships(context(r,true),type,input.revision(),input.relationships());return service.pageRelationships(context(r,true),type);});}
+  /** 独立启停入口，需平台权限并记录原因及版本。 */
+  @PutMapping("/bff/platform/documents/{type}/page-controls")
+  public Object control(HttpServletRequest r,@PathVariable String type,@RequestBody PageControl input){return reply(()->{service.controlPage(context(r,true),type,input.revision(),input.operationKey(),input.enabled(),input.reason());return service.pageRelationships(context(r,true),type);});}
   /** 远程业务只提交非敏感可信依据；身份和租户由 OAuth 认证链固定，不接受 body 覆盖。 */
   public record ResolveInput(String typeCode,String actionCode,String objectId,long basisVersion,Map<String,String> facts) {}
   /** 专用服务入口；普通浏览器会话不能伪装业务提供器提交任意依据。 */

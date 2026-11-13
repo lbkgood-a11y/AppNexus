@@ -55,6 +55,7 @@ public final class DocumentService implements DocumentBindings,InteractionCatalo
     this.jdbc=jdbc; this.tx=new TransactionTemplate(manager); this.platform=platform; this.workflows=workflows;
     var map=new TreeMap<String,Descriptor>();
     var contractCodes=new HashSet<String>();
+    var dataSchemas=new HashMap<String,com.appnexus.contracts.data.DataContract>();
     for(var p:providers) {
       var d=p.descriptor();
       if(d.typeCode()==null||!d.typeCode().matches("[A-Za-z][A-Za-z0-9_]{0,63}")||d.version()<1||map.put(d.typeCode(),d)!=null)
@@ -66,6 +67,11 @@ public final class DocumentService implements DocumentBindings,InteractionCatalo
       for(var a:d.actions()) if(a.actionCode()==null||!a.actionCode().matches("[a-zA-Z][a-zA-Z0-9_-]{0,63}")||!actions.add(a.actionCode())||a.permissionCode()==null||a.permissionCode().isBlank()
           ||!a.operationKey().equals(d.typeCode()+"."+a.actionCode())||a.supportedServices().isEmpty()
           ||!Set.of("BUSINESS","WORKFLOW","PRINT").containsAll(a.supportedServices()))throw new IllegalArgumentException("DOCUMENT_ACTION_INVALID");
+      // 同身份数据契约不可由不同业务提供者悄悄覆盖；部署即拒绝冲突声明。
+      for(var action:d.actions())for(var capability:action.interaction().capabilities()){
+        var schema=capability.schema();var prior=dataSchemas.putIfAbsent(schema.code()+":"+schema.version(),schema);
+        if(prior!=null&&!prior.equals(schema))throw new IllegalArgumentException("DATA_CONTRACT_SCHEMA_CONFLICT");
+      }
       var operations=new HashSet<String>();
       for(var a:d.actions()){
         if(!a.interaction().objectType().equals(d.typeCode())||!contractCodes.add(a.interaction().code()))throw new IllegalArgumentException("INTERACTION_IDENTITY_INVALID");
@@ -79,6 +85,14 @@ public final class DocumentService implements DocumentBindings,InteractionCatalo
       }
     }
     types=Map.copyOf(map);
+    // 在开放请求前将旧允许列表转换为禁用覆盖；逐类型行锁防止多实例迁移或管理员更新互相覆盖。
+    tx.executeWithoutResult(status->{for(String type:types.keySet()){
+      var rows=jdbc.queryForList("SELECT relationships,disabled_operations FROM doc_page_relationships WHERE type_code=? FOR UPDATE",type);
+      if(rows.isEmpty()||rows.getFirst().get("disabled_operations")!=null)continue;
+      List<PageRelationship> prior=read(rows.getFirst().get("relationships"),new TypeReference<>(){});
+      var disabled=pageCandidates(type).stream().filter(candidate->prior.stream().noneMatch(r->r.operationKey().equals(candidate.operationKey())&&r.actionCode().equals(candidate.compatibleActionCode()))).map(PageCandidate::operationKey).toList();
+      jdbc.update("UPDATE doc_page_relationships SET disabled_operations=? WHERE type_code=?",write(disabled),type);
+    }});
   }
 
   /** 管理目录；租户可见全部已授权类型并明确展示启停状态，避免授权成功后被运行开关静默隐藏。 */
@@ -90,7 +104,7 @@ public final class DocumentService implements DocumentBindings,InteractionCatalo
           "revision",state.isEmpty()?0L:state.getFirst().get("revision"));}).toList();
   }
 
-  /** 平台页面关联编辑模型；revision=-1 为未维护；未维护或空集合均不授权页面入口。 */
+  /** 已接入操作与管控状态；revision=-1 为无覆盖记录，代码登记自动生效。 */
   public Map<String,Object> pageRelationships(Context c,String type) {
     requirePlatform(c);descriptor(type);
     var rows=jdbc.queryForList("SELECT revision,relationships FROM doc_page_relationships WHERE type_code=?",type);
@@ -98,7 +112,7 @@ public final class DocumentService implements DocumentBindings,InteractionCatalo
   }
 
   /**
-   * 原子替换平台关系并审计；只允许同动作兼容候选，拒绝跨行为错绑、重复操作和陈旧覆盖。
+   * 内部迁移及管控辅助：将有效入口集合转换为禁用覆盖；HTTP 不开放关系编辑。
    * @param revision 首次 -1，后续原样回传读取版本；空集合表示显式关闭所有页面入口
    * @param list 当前完整关系集，不是增量；最多 100 项，不改变业务接口和权限
    */
@@ -107,9 +121,29 @@ public final class DocumentService implements DocumentBindings,InteractionCatalo
       if(list==null||list.size()>100)fail(400,"DOCUMENT_PAGE_RELATION_INVALID");
       var candidates=pageCandidates(type);var used=new HashSet<String>();
       for(var relation:list){if(relation==null||!used.add(relation.operationKey())||candidates.stream().noneMatch(candidate->candidate.operationKey().equals(relation.operationKey())&&candidate.compatibleActionCode().equals(relation.actionCode())))fail(400,"DOCUMENT_PAGE_RELATION_INVALID");}
-      if(revision==-1){if(jdbc.update("INSERT IGNORE INTO doc_page_relationships(type_code,relationships,updated_by) VALUES(?,?,?)",type,write(list),c.actorId())!=1)fail(409,"DOCUMENT_VERSION_CONFLICT");}
-      else if(jdbc.update("UPDATE doc_page_relationships SET relationships=?,updated_by=?,revision=revision+1 WHERE type_code=? AND revision=?",write(list),c.actorId(),type,revision)!=1)fail(409,"DOCUMENT_VERSION_CONFLICT");
+      var disabled=candidates.stream().filter(candidate->list.stream().noneMatch(r->r.operationKey().equals(candidate.operationKey()))).map(PageCandidate::operationKey).toList();
+      if(revision==-1){if(jdbc.update("INSERT IGNORE INTO doc_page_relationships(type_code,relationships,disabled_operations,updated_by) VALUES(?,?,?,?)",type,write(list),write(disabled),c.actorId())!=1)fail(409,"DOCUMENT_VERSION_CONFLICT");}
+      else if(jdbc.update("UPDATE doc_page_relationships SET relationships=?,disabled_operations=?,updated_by=?,revision=revision+1 WHERE type_code=? AND revision=?",write(list),write(disabled),c.actorId(),type,revision)!=1)fail(409,"DOCUMENT_VERSION_CONFLICT");
       audit(c,type,"PAGE_RELATION_SAVED");
+    });
+  }
+
+  /**
+   * 独立入口启停控制；关系本身不可编辑，不影响历史结果回调。
+   * @param revision 读取的控制版本，首次为 -1；并发更新拒绝覆盖
+   * @param operation 代码登记的操作编码，不接受任意页面或接口
+   * @param enabled 是否允许新命令；启用仍受租户、权限和业务状态约束
+   * @param reason 必填管控原因，最多 200 字；不得包含业务原文或敏感数据
+   */
+  public void controlPage(Context c,String type,long revision,String operation,boolean enabled,String reason){
+    requirePlatform(c);
+    if(reason==null||reason.isBlank()||reason.length()>200)fail(400,"DOCUMENT_CONTROL_REASON_REQUIRED");
+    var candidate=pageCandidates(type).stream().filter(p->p.operationKey().equals(operation)).findFirst().orElseThrow(()->new Rejection(400,"DOCUMENT_PAGE_OPERATION_INVALID"));
+    tx.executeWithoutResult(status->{
+      var list=new ArrayList<>(relationships(type));list.removeIf(r->r.operationKey().equals(operation));
+      if(enabled)list.add(new PageRelationship(candidate.compatibleActionCode(),operation));
+      savePageRelationships(c,type,revision,list);
+      jdbc.update("INSERT INTO doc_entry_control_audit(type_code,operation_key,enabled,reason,actor) VALUES(?,?,?,?,?)",type,operation,enabled,reason.trim(),c.actorId());
     });
   }
 
@@ -127,15 +161,14 @@ public final class DocumentService implements DocumentBindings,InteractionCatalo
     }
     return List.copyOf(result);
   }
+  /** 代码登记自动建立关系，平台仅应用禁用覆盖；未保存控制记录时所有真实入口可用。 */
   private List<PageRelationship> relationships(String type){
-    var rows=jdbc.queryForList("SELECT relationships FROM doc_page_relationships WHERE type_code=?",type);
-    if(rows.isEmpty())return List.of();
-    // 新代码删除的候选不继续生效；平台仍可重新保存关系，不能自动获得部署新增入口。
-    List<PageRelationship> saved=read(rows.getFirst().get("relationships"),new TypeReference<>(){});
-    var candidates=pageCandidates(type);
-    return saved.stream().filter(r->candidates.stream().anyMatch(p->p.operationKey().equals(r.operationKey())&&p.compatibleActionCode().equals(r.actionCode()))).toList();
+    var rows=jdbc.queryForList("SELECT disabled_operations FROM doc_page_relationships WHERE type_code=?",type);
+    List<String> disabled=rows.isEmpty()?List.of():read(rows.getFirst().get("disabled_operations"),new TypeReference<>(){});
+    return pageCandidates(type).stream().filter(c->!disabled.contains(c.operationKey())).map(c->new PageRelationship(c.compatibleActionCode(),c.operationKey())).toList();
   }
-  /** 租户目录只暴露平台已建立的页面关系，行为元数据及服务端接入保留独立。 */
+
+  /** 租户目录投影有效入口；行为仍采用统一身份，禁用只影响对应入口。 */
   private Descriptor effectiveDescriptor(Descriptor d){
     var relations=relationships(d.typeCode());
     var actions=d.actions().stream().map(a->new Action(a.actionCode(),a.nameZh(),a.nameEn(),a.permissionCode(),a.operationKey(),
@@ -259,9 +292,8 @@ public final class DocumentService implements DocumentBindings,InteractionCatalo
       UUID.fromString(b.id());
       if(!ids.add(b.id())||b.name()==null||b.name().isBlank()||b.name().length()>100||b.conditions().size()>10) fail(400,"DOCUMENT_BINDINGS_INVALID");
       var action=descriptor(type).actions().stream().filter(a->a.actionCode().equals(b.actionCode())).findFirst().orElseThrow(()->new Rejection(400,"DOCUMENT_ACTION_INVALID"));
-      // 保存/发布不能选择平台已撤销的页面关联；后台无页面动作不受此限制。
-      if(!pageCandidates(type).isEmpty()&&pageCandidates(type).stream().anyMatch(p->p.operationKey().equals(b.operationKey()))
-          &&relationships(type).stream().noneMatch(r->r.actionCode().equals(b.actionCode())&&r.operationKey().equals(b.operationKey())))fail(409,"DOCUMENT_PAGE_RELATION_DISABLED");
+      // 策略属于行为，不属于按钮；至少一个入口可用即可维护，具体入口执行时独立复核。
+      if(pageCandidates(type).stream().anyMatch(p->p.compatibleActionCode().equals(b.actionCode()))&&relationships(type).stream().noneMatch(r->r.actionCode().equals(b.actionCode())))fail(409,"DOCUMENT_PAGE_RELATION_DISABLED");
       if(action.interaction().trigger()!=InteractionContract.Trigger.USER_ACTION)fail(400,"INTERACTION_TRIGGER_UNSUPPORTED");
       if(!action.supportedServices().contains(b.service()))fail(400,"DOCUMENT_ACTION_INVALID");
       if(b.service().equals("PRINT")) {if(b.definitionId()!=null||b.definitionVersion()!=0||scenes(c,type,b.actionCode()).stream().noneMatch(scene->scene.code().equals(b.sceneCode())))fail(409,"DOCUMENT_PRINT_SCENE_INVALID");}
@@ -284,12 +316,12 @@ public final class DocumentService implements DocumentBindings,InteractionCatalo
       var action=descriptor(type).actions().stream().filter(a->a.actionCode().equals(b.actionCode())).findFirst().orElseThrow(()->new Rejection(400,"DOCUMENT_ACTION_INVALID"));
       String operation=Objects.requireNonNull(b.operationKey(),"INTERACTION_OPERATION_REQUIRED");
       if(!action.operationKey().equals(operation)&&action.aliases().stream().noneMatch(a->a.operationKey().equals(operation)))fail(400,"DOCUMENT_PAGE_OPERATION_INVALID");
-      return new Binding(b.id(),b.name(),b.definitionId(),b.definitionVersion(),b.conditions(),b.actionCode(),b.service(),operation,b.sceneCode());
+      return new Binding(b.id(),b.name(),b.definitionId(),b.definitionVersion(),b.conditions(),b.actionCode(),b.service(),action.operationKey(),b.sceneCode());
     }).toList();
   }
   private void checkFacts(Descriptor d,Map<String,String> facts) {
-    if(facts==null||facts.size()!=d.fields().size()) fail(400,"DOCUMENT_FACTS_INVALID");
-    for(var f:d.fields()) {String value=facts.get(f.key());if(value==null||value.length()>200) fail(400,"DOCUMENT_FACTS_INVALID");scalar(f,value);}
+    if(facts==null||facts.keySet().stream().anyMatch(key->d.fields().stream().noneMatch(f->f.key().equals(key))))fail(400,"DOCUMENT_FACTS_INVALID");
+    for(var f:d.fields()) {String value=facts.get(f.key());if(value==null){if(f.required())fail(400,"DOCUMENT_FACTS_INVALID");continue;}if(value.length()>200)fail(400,"DOCUMENT_FACTS_INVALID");scalar(f,value);}
   }
   private void scalar(Field f,String value) {
     if(f.type().equals("NUMBER")) {try {new BigDecimal(value);} catch(NumberFormatException e) {fail(400,"DOCUMENT_NUMBER_INVALID");}}

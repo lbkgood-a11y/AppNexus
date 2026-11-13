@@ -400,9 +400,27 @@ function setOutcome(result: string, capability?: string) {
 .business-configuration-preview {
   border-left: 1px solid var(--el-border-color-lighter);
 }
+/* 用单一 gap 管理业务配置的区块间距，避免 Alert、表单项与卡片各自外边距叠加。 */
+.business-configuration-form > :deep(.el-form) {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.business-configuration-form :deep(.el-form-item) {
+  margin-bottom: 0;
+}
+.business-configuration-form p,
+.business-rule h3 {
+  margin: 0;
+}
+.business-buttons :deep(.el-button + .el-button) {
+  margin-left: 0;
+}
 .business-rule {
   padding: 16px;
-  margin: 16px 0;
+  margin: 0;
+  display: grid;
+  gap: 16px;
   border: 1px solid var(--el-border-color);
   border-radius: var(--el-border-radius-base);
 }
@@ -414,7 +432,7 @@ function setOutcome(result: string, capability?: string) {
   width: 100%;
 }
 .business-person {
-  margin-bottom: 8px;
+  margin-bottom: 0;
 }
 .business-person .el-select {
   flex: 1;
@@ -430,7 +448,7 @@ function setOutcome(result: string, capability?: string) {
   overflow: auto;
 }
 h2 {
-  margin: 24px 0 16px;
+  margin: 8px 0 0;
   font-size: 16px;
 }
 h2:first-child {

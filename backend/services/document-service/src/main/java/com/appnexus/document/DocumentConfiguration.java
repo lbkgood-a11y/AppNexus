@@ -26,9 +26,9 @@ public class DocumentConfiguration {
         for (var action : descriptor.actions()) for (var capability : action.interaction().capabilities()) {
           if (capability.service() != InteractionContract.Service.PRINT) continue;
           var contract = java.util.Map.<String,Object>of(
-              "code",capability.reference(),"nameZh",descriptor.nameZh(),"nameEn",descriptor.nameEn(),"designOnly",false,
+              "code",capability.dataContract(),"version",capability.dataVersion(),"purpose","PRINT","nameZh",descriptor.nameZh(),"nameEn",descriptor.nameEn(),"designOnly",false,
               "fields",capability.fields().stream().map(field -> java.util.Map.<String,Object>of(
-                  "key",field.key(),"labelZh",field.nameZh(),"labelEn",field.nameEn(),"sample","")).toList());
+                  "key",field.key(),"labelZh",field.nameZh(),"labelEn",field.nameEn(),"sample","","type",field.type(),"required",field.required(),"unit",field.unit())).toList());
           var previous = catalog.putIfAbsent(capability.reference(),contract);
           // 多个动作可引用同一打印投影，但同编码不能悄悄替换字段协议。
           if (previous != null && !previous.get("fields").equals(contract.get("fields"))) {

@@ -962,6 +962,12 @@ authorizationCenter:
     ORGANIZATION_SUBTREE: 组织及下级
     ALL: 当前租户全部
 workflow:
+  contractSourceHint: 此处展示业务代码登记的审批数据契约，字段由业务适配器提供，不能在页面中直接修改。打印另支持新增租户自定义契约；已保存的打印契约同样不可原地修改。
+  configureBinding: 配置单据策略
+  contractFields: 契约字段
+  contractType: 数据类型
+  contractUnit: 单位
+  contractOrderHint: 流程发布后，请前往单据工作台配置行为绑定；从业务页面提交真实单据。
   title: 工作流中心
   designer: 编排设计器
   name: 名称
@@ -1039,6 +1045,7 @@ workflow:
   errorCode: 错误码
   limitHint: 当前最多展示最近100条记录，请使用业务查询范围定位。
   tabs:
+    contracts: 数据契约
     todo: 待我处理
     done: 我已处理
     started: 我发起的
@@ -1226,6 +1233,8 @@ workflow:
   deleteConnection: 删除选中连接
   dragHint: 从节点库拖入；拖动节点移动；从输出锚点拖到输入锚点串联。
 printing:
+  booleanTrue: 是
+  booleanFalse: 否
   outputStages:
     WAITING_RENDER: 等待渲染任务领取
     RENDERING: 正在生成 PDF
@@ -1437,6 +1446,14 @@ printing:
   confirmPrint: 确认打印
 
 leavePoc:
+  codes:
+    LEAVE_ORGANIZATION_UNAVAILABLE: 提交审批所需的归属组织不可用或当前无有效任职，请调整组织后再提交；草稿可以保存。
+    LEAVE_ORGANIZATION_LEADER_REQUIRED: 归属组织尚未配置有效负责人，请联系租户管理员配置后再提交审批；草稿可以保存。
+    LEAVE_DATE_RANGE_INVALID: 请假日期应为开始日期至结束日期，共 1—365 天。
+    LEAVE_IDEMPOTENCY_CONFLICT: 本次请求内容已变化，请重新操作。
+    LEAVE_BASIS_CHANGED: 单据已变化或正在审批，请刷新后重试。
+    LEAVE_STATE_CONFLICT: 当前单据状态不允许此操作，请刷新。
+    LEAVE_INPUT_INVALID: 请检查请假类型、日期和原因是否填写正确。
   title: 请假单 POC
   hint: 按自然日含首尾计算，1—365 天；超过 3 天追加人事审批。不计算余额或考勤。
   search: 请假单查询
@@ -1625,14 +1642,17 @@ document:
   required: 请填写绑定名称、发布流程及完整条件
   inactiveHint: 此单据已授权但尚未启用，可维护配置；实际提交需平台管理员启用。
   action: 单据行为
-  pageRelations: 页面操作关联
+  enableEntry: 启用入口
+  disableEntry: 禁用入口
+  controlReason: 请填写管控原因（1—200 字，不含敏感信息）
+  pageRelations: 已接入操作
   addPageRelation: 添加页面关联
   savePageRelations: 保存页面关联
-  pageRelationHint: 选择业务已接入的页面操作与行为建立关系；移除后将阻止该页面的新操作，已有流程结果交付不受影响。
+  pageRelationHint: 页面与行为由代码自动登记；入口禁用仅阻止新操作，不影响历史流程结果交付。
   pageRelationInvalid: 请选择完整且不重复的行为与页面操作关联。
   pageRelationConfirm: 保存后立即生效，移除的页面关联将禁止新操作，是否保存？
   pageOperation: 页面操作
-  selectPageOperation: 请选择已接入的页面操作
+  selectPageOperation: 请选择已接入的业务行为
   noPageOperation: 此单据尚未登记可绑定的页面操作，请由业务开发人员接入。
   businessEndpoint: 业务处理接口
   operationKey: 页面与 API 操作标识
@@ -1689,3 +1709,11 @@ document:
     DOCUMENT_BINDINGS_INVALID: 请至少配置一条完整绑定。
     DOCUMENT_NUMBER_INVALID: 数值条件必须为有效十进制数。
     DOCUMENT_BOOLEAN_INVALID: 布尔条件只能填写 true 或 false。
+
+dataContractErrors:
+  DATA_OBJECT_REQUIRED: 必须提供契约数据对象
+  DATA_FIELD_REQUIRED: 缺少契约必填字段
+  DATA_FIELD_TYPE_INVALID: 字段类型不符合数据契约
+  DATA_FIELD_UNKNOWN: 字段未在数据契约中声明
+  DATA_CONTRACT_CHANGED: 数据契约已变更，请检查并重新发布配置
+  DOCUMENT_CONTROL_REASON_REQUIRED: 请填写有效的入口管控原因

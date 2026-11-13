@@ -7,8 +7,14 @@ public final class Documents {
   private Documents() {}
   /** 可信身份；租户及操作者由认证链建立，requestId 为本次 UUID 请求键。 */
   public record Context(String tenantId, String actorId, String requestId) {}
-  /** 条件字段；type 为 NUMBER、BOOLEAN 或 TEXT，unit 为展示单位，不参与隐式换算。 */
-  public record Field(String key, String nameZh, String nameEn, String type, String unit) {}
+  /**
+   * 数据字段；type 为 NUMBER、BOOLEAN 或 TEXT；unit 不参与隐式换算。
+   * @param required 是否必填；五参数构造默认 true，缺失可选字段不自动补值
+   */
+  public record Field(String key, String nameZh, String nameEn, String type, String unit, boolean required) {
+    /** 已有业务字段默认必填，保持原审批依据完整性。 */
+    public Field(String key,String nameZh,String nameEn,String type,String unit){this(key,nameZh,nameEn,type,unit,true);}
+  }
   /** 构建登记的页面操作；入口和 API 只用于解释已接入关系，不允许管理人员填写任意地址。 */
   public record PageOperation(String pageKey,String pagePath,String nameZh,String nameEn,String method,String apiPath) {}
   /** 行为专属审批契约；用途、业务入口及必需终态由业务声明，不能让管理员任意拼接。 */
@@ -36,7 +42,7 @@ public final class Documents {
     /** 审批专属读取视图，不接受缺省契约或从其他服务猜测用途。 */
     public ApprovalContract approval(){return interaction.capabilities().stream().filter(c->c.service()==InteractionContract.Service.WORKFLOW).findFirst().map(c->new ApprovalContract(c.purpose(),c.reference(),c.outcomes())).orElse(null);}
     /** 打印专属读取视图，同一声明为场景兼容校验提供权威契约编码。 */
-    public PrintingContract printing(){return interaction.capabilities().stream().filter(c->c.service()==InteractionContract.Service.PRINT).findFirst().map(c->new PrintingContract(c.reference())).orElse(null);}
+    public PrintingContract printing(){return interaction.capabilities().stream().filter(c->c.service()==InteractionContract.Service.PRINT).findFirst().map(c->new PrintingContract(c.dataContract())).orElse(null);}
   }
   /** 代码注册声明；version 为正整数，行为交互契约是服务能力的唯一来源，行为不在中心执行。 */
   public record Descriptor(String typeCode, String nameZh, String nameEn, String module,

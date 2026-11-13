@@ -41,6 +41,7 @@ class WorkflowRuntimeTest {
           connection, new ClassPathResource("db/migration/V47__workflow_flowable_8.sql"));
       ScriptUtils.executeSqlScript(
           connection, new ClassPathResource("db/migration/V48__workflow_application.sql"));
+      ScriptUtils.executeSqlScript(connection,new ClassPathResource("db/migration/V69__workflow_data_contract_snapshots.sql"));
     }
     var bridge = new WorkflowBridge();
     var manager = new DataSourceTransactionManager(source);

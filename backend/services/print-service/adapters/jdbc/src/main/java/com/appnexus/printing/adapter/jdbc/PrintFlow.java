@@ -20,7 +20,7 @@ public class PrintFlow {
   private final PrintRuntime runtime;
   private final ObjectMapper mapper;
   private final PrintJson json;
-  public PrintFlow(JdbcTemplate jdbc,PrintPlatform platform,PrintRuntime runtime,ObjectMapper mapper){this.jdbc=jdbc;this.platform=platform;this.runtime=runtime;this.mapper=mapper;this.json=new PrintJson(mapper);}
+  public PrintFlow(JdbcTemplate jdbc,PrintPlatform platform,PrintRuntime runtime,ObjectMapper mapper){this.jdbc=jdbc;this.platform=platform;this.runtime=runtime;this.mapper=mapper;this.json=new PrintJson(mapper);runtime.dataContracts(this::contract,this::validateData);}
 
   /** 返回授权人员可用的场景；只返回元数据，不读取其他人的业务单据。 */
   public List<Map<String,Object>> scenes(PrintContext c){allow(c,"print.template:read","print.job:submit","print.template:publish");return jdbc.queryForList("SELECT BIN_TO_UUID(id) id,code,name,data_contract,BIN_TO_UUID(template_id) template_id,copies,enabled,revision FROM print_scene WHERE tenant_id=UUID_TO_BIN(?) ORDER BY name",c.tenantId());}
@@ -95,7 +95,7 @@ public class PrintFlow {
 
   /** 契约目录可供设计者和录入人员查看；仅提供字段元数据与合成样例。 */
   public List<Map<String,Object>> contracts(PrintContext c){
-    allow(c,"print.template:design","print.job:submit","print.template:publish","print.external:submit");
+    allow(c,"print.template:design","print.job:submit","print.template:publish","print.external:submit","print.template:read");
     var values=new ArrayList<Map<String,Object>>(PrintDesignCatalog.contracts());
     values.addAll(businessContracts);
     for(String definition:jdbc.queryForList("SELECT definition_json FROM print_data_contract WHERE tenant_id=UUID_TO_BIN(?) ORDER BY code",String.class,c.tenantId())){
@@ -160,6 +160,11 @@ public class PrintFlow {
   private void validateData(JsonNode data,Map<String,Object> definition){
     if(data==null||!data.isObject())bad();
     var fields=(List<Map<String,Object>>)definition.get("fields");
+    // 业务投影具有严格类型；历史租户文本/明细契约保留原协议，不能隐式改变既有模板。
+    if(fields.stream().allMatch(f->f.containsKey("type"))){
+      var schema=new com.appnexus.contracts.data.DataContract(definition.get("code").toString(),((Number)definition.getOrDefault("version",1)).intValue(),"PRINT",fields.stream().map(f->new com.appnexus.contracts.data.DataContract.Field(f.get("key").toString(),com.appnexus.contracts.data.DataContract.Type.valueOf(f.get("type").toString()),Boolean.TRUE.equals(f.get("required")),Objects.toString(f.get("unit"),""))).toList());
+      schema.validate(mapper.convertValue(data,Map.class));return;
+    }
     for(var property:data.properties()){
       var field=fields.stream().filter(value->value.get("key").equals(property.getKey())).findFirst().orElseThrow(()->new PrintFailure("PRINT_CONTRACT_INVALID",400));
       JsonNode value=property.getValue();

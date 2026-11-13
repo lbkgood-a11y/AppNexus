@@ -19,14 +19,16 @@ const checks=ref<Awaited<ReturnType<DocumentApi['readiness']>>>([]);
 async function inspectReadiness(){if(!selected.value)return;await run(async()=>{checks.value=await props.api.readiness(selected.value!.typeCode);});}
 const savedFeedback=ref('');
 const pageEditor=ref<PageRelationshipEditor>({revision:-1,relationships:[],candidates:[]});
-/** 页面候选由服务端登记，选择行为后仅显示真实兼容入口，禁止拿相同权限码跨动作猜测。 */
-const compatiblePages=(actionCode:string)=>pageEditor.value.candidates.filter(c=>c.compatibleActionCode===actionCode);
-function addPageRelationship(){pageEditor.value.relationships.push({actionCode:'',operationKey:''});}
-async function savePages(){if(!selected.value)return;
-  const list=pageEditor.value.relationships;
-  if(list.some(r=>!r.actionCode||!r.operationKey)||new Set(list.map(r=>r.operationKey)).size!==list.length){error.value=t('document.pageRelationInvalid');return;}
-  try{await ElMessageBox.confirm(t('document.pageRelationConfirm'),t('document.pageRelations'),{type:'warning'});}catch{return;}
-  await run(async()=>{pageEditor.value=await props.api.savePageRelationships(selected.value!.typeCode,pageEditor.value.revision,list);ElMessage.success(t('document.saved'));});
+/** 已接入关系只读，搜索限定当前单据；管控使用独立接口并要求原因。 */
+const entryQuery=ref(''),entryPage=ref(1);
+const entryRows=computed(()=>pageEditor.value.candidates.filter(c=>[c.operationKey,c.compatibleActionCode,c.pageOperation.nameZh,c.pageOperation.nameEn].some(v=>v.toLowerCase().includes(entryQuery.value.toLowerCase()))));
+const entryEnabled=(key:string)=>pageEditor.value.relationships.some(r=>r.operationKey===key);
+async function controlEntry(operation:string){
+  if(!selected.value)return;
+  const enabled=!entryEnabled(operation);
+  let reason:string;
+  try{reason=(await ElMessageBox.prompt(t('document.controlReason'),t(enabled?'document.enableEntry':'document.disableEntry'),{inputValidator:value=>!!value?.trim()&&value.length<=200, inputErrorMessage:t('document.controlReason'),type:'warning'})).value;}catch{return;}
+  await run(async()=>{pageEditor.value=await props.api.controlPage(selected.value!.typeCode,pageEditor.value.revision,operation,enabled,reason);ElMessage.success(t('document.saved'));});
 }
 const printScenes=ref<Record<string,Awaited<ReturnType<DocumentApi['scenes']>>>>({});
 const operationAction=(d:Descriptor,key:string)=>pageOperations(d).find(a=>a.operationKey===key);
@@ -35,7 +37,7 @@ const bindingForms=new Map<string,FormInstance>();
 function bindForm(id:string,form:unknown){if(form)bindingForms.set(id,form as FormInstance);else bindingForms.delete(id);}
 const bindingRules=computed(()=>({name:[{required:true,whitespace:true,max:100,message:t('document.required'),trigger:'blur'}],operationKey:[{required:true,message:t('document.selectPageOperation'),trigger:'change'}],definitionId:[{required:true,message:t('document.required'),trigger:'change'}]}));
 const name=(d:Descriptor)=>locale.value.startsWith('zh')?d.nameZh:d.nameEn;
-const filtered=computed(()=>rows.value.filter(r=>[r.descriptor.typeCode,name(r.descriptor)].some(x=>x.toLowerCase().includes(applied.value.toLowerCase()))));
+const filtered=computed(()=>rows.value.filter(r=>[r.descriptor.typeCode,r.descriptor.module,name(r.descriptor)].some(x=>x.toLowerCase().includes(applied.value.toLowerCase()))));
 const paged=computed(()=>filtered.value.slice((page.value-1)*size.value,page.value*size.value));
 const columns=computed<ManagementColumn[]>(()=>[
   {key:'typeCode',label:t('document.code'),minWidth:180}, {key:'name',label:t('document.name'),minWidth:160},
@@ -45,7 +47,7 @@ const columns=computed<ManagementColumn[]>(()=>[
 ]);
 async function run(action:()=>Promise<void>) {busy.value=true;error.value='';try{await action();}catch(e){error.value=props.errorText(e);}finally{busy.value=false;}}
 async function load(){loading.value=true;error.value='';try{rows.value=await props.api.catalog();}catch(e){error.value=props.errorText(e);}finally{loading.value=false;}}
-async function open(d:Descriptor){checks.value=[];savedFeedback.value="";selected.value=d;await run(async()=>{
+async function open(d:Descriptor){checks.value=[];savedFeedback.value="";selected.value=d;entryQuery.value='';entryPage.value=1;await run(async()=>{
   if(props.platform){[tenants.value,grants.value,pageEditor.value]=await Promise.all([props.api.tenants(),props.api.grants(d.typeCode),props.api.pageRelationships(d.typeCode)]);tenant.value='';}
   else {const [config,options]=await Promise.all([props.api.configuration(d.typeCode),Promise.all(d.actions.filter(a=>a.interaction.capabilities.map(c=>c.service).includes('WORKFLOW')).map(async a=>[a.actionCode,await props.api.workflows(d.typeCode,a.actionCode)] as const))]);revision.value=config.revision;published.value=config.publishedVersion;bindings.value=config.bindings;workflows.value=Object.fromEntries(options);}
   if(!props.platform)printScenes.value=Object.fromEntries(await Promise.all(d.actions.filter(a=>a.interaction.capabilities.map(c=>c.service).includes('PRINT')).map(async a=>[a.actionCode,await props.api.scenes(d.typeCode,a.actionCode)] as const)));
@@ -78,7 +80,7 @@ function operators(field:string){return selected.value?.fields.find(f=>f.key===f
 /** 创建入口带回跳信息；绑定草稿保存后再离开，流程仍需人工校验和发布。 */
 async function createWorkflow(actionCode:string){
   const capability=selected.value?.actions.find(a=>a.actionCode===actionCode)?.interaction.capabilities.find(c=>c.service==='WORKFLOW');if(!capability)return;if(bindings.value.length){try{await ElMessageBox.confirm(t('document.leaveConfiguration'),t('document.createWorkflow'),{type:'warning'});}catch{return;}}dialog.value=false;await router.push({path:'/workflow/designer',query:{documentType:selected.value?.typeCode,entryCapability:capability.reference,returnTo:'/documents/workbench',create:'1'}});}
-onMounted(load);
+onMounted(async()=>{await load();const type=router.currentRoute.value.query.type;if(!props.platform&&typeof type==='string'){const item=rows.value.find(row=>row.descriptor.typeCode===type);if(item)await open(item.descriptor);}});
 </script>
 <template>
   <div class="management-page">
@@ -105,7 +107,7 @@ onMounted(load);
           <el-table :data="row.interaction.capabilities">
             <el-table-column min-width="140" :label="t('document.service')"><template #default="{row:capability}">{{t('document.services.'+capability.service)}}</template></el-table-column>
             <el-table-column min-width="120" :label="t('document.completion')"><template #default="{row:capability}">{{t('document.completions.'+capability.completion)}}</template></el-table-column>
-            <el-table-column prop="reference" min-width="180" :label="t('document.reference')"/>
+            <el-table-column prop="dataContract" min-width="180" :label="t('workflow.tabs.contracts')"/><el-table-column prop="dataVersion" width="110" :label="t('document.contractVersion')"/><el-table-column prop="reference" min-width="180" :label="t('document.reference')"/>
             <el-table-column prop="purpose" min-width="130" :label="t('document.purpose')"/>
             <el-table-column min-width="240" :label="t('document.inputs')"><template #default="{row:capability}">{{capability.fields.map((field: {key:string})=>field.key).join(', ')||'—'}}</template></el-table-column>
             <el-table-column min-width="240" :label="t('document.outcomes')"><template #default="{row:capability}">{{capability.outcomes.join(', ')||'—'}}</template></el-table-column>
@@ -120,15 +122,16 @@ onMounted(load);
       <template v-if="platform">
         <el-divider content-position="left">{{t('document.pageRelations')}}</el-divider>
         <el-alert :title="t('document.pageRelationHint')" type="info" :closable="false" />
-        <el-button :disabled="busy||!pageEditor.candidates.length" @click="addPageRelationship">{{t('document.addPageRelation')}}</el-button>
-        <el-table :data="pageEditor.relationships">
-          <el-table-column :label="t('document.action')" min-width="150"><template #default="{row}"><el-select v-model="row.actionCode" :disabled="busy" @change="row.operationKey=''"><el-option v-for="a in selected.actions" :key="a.actionCode" :value="a.actionCode" :label="`${locale.startsWith('zh')?a.nameZh:a.nameEn} (${a.actionCode})`"/></el-select></template></el-table-column>
-          <el-table-column :label="t('document.pageOperation')" min-width="280"><template #default="{row}"><el-select v-model="row.operationKey" :disabled="busy||!row.actionCode" filterable :placeholder="t('document.selectPageOperation')"><el-option v-for="c in compatiblePages(row.actionCode)" :key="c.operationKey" :value="c.operationKey" :label="`${locale.startsWith('zh')?c.pageOperation.nameZh:c.pageOperation.nameEn} · ${c.operationKey}`"/></el-select></template></el-table-column>
-          <el-table-column :label="t('document.businessEndpoint')" min-width="260"><template #default="{row}">{{pageEditor.candidates.find(c=>c.operationKey===row.operationKey)?.pageOperation.method}} {{pageEditor.candidates.find(c=>c.operationKey===row.operationKey)?.pageOperation.apiPath}}</template></el-table-column>
-          <el-table-column :label="t('document.permission')" min-width="170"><template #default="{row}">{{pageEditor.candidates.find(c=>c.operationKey===row.operationKey)?.permissionCode||'—'}}</template></el-table-column>
-          <el-table-column :label="t('document.operations')" width="100"><template #default="{ $index }"><el-button link type="danger" :disabled="busy" @click="pageEditor.relationships.splice($index,1)">{{t('document.removePageRelation')}}</el-button></template></el-table-column>
+        <el-input v-model="entryQuery" clearable :aria-label="t('document.query')" :placeholder="t('document.query')" @input="entryPage=1" />
+        <el-table :data="entryRows.slice((entryPage-1)*10,entryPage*10)">
+          <el-table-column prop="compatibleActionCode" :label="t('document.action')" min-width="110" />
+          <el-table-column :label="t('document.pageOperation')" min-width="230"><template #default="{row}">{{locale.startsWith('zh')?row.pageOperation.nameZh:row.pageOperation.nameEn}}<div>{{row.operationKey}}</div></template></el-table-column>
+          <el-table-column :label="t('document.businessEndpoint')" min-width="260"><template #default="{row}">{{row.pageOperation.method}} {{row.pageOperation.apiPath}}</template></el-table-column>
+          <el-table-column prop="permissionCode" :label="t('document.permission')" min-width="170" />
+          <el-table-column :label="t('document.state')" width="100"><template #default="{row}"><el-tag :type="entryEnabled(row.operationKey)?'success':'warning'">{{t(entryEnabled(row.operationKey)?'document.enabled':'document.disabled')}}</el-tag></template></el-table-column>
+          <el-table-column :label="t('document.operations')" width="120"><template #default="{row}"><el-button link :type="entryEnabled(row.operationKey)?'danger':'primary'" :disabled="busy" @click="controlEntry(row.operationKey)">{{t(entryEnabled(row.operationKey)?'document.disableEntry':'document.enableEntry')}}</el-button></template></el-table-column>
         </el-table>
-        <el-button type="primary" :loading="busy" @click="savePages">{{t('document.savePageRelations')}}</el-button>
+        <el-pagination v-model:current-page="entryPage" :page-size="10" :total="entryRows.length" layout="prev, pager, next" />
         <el-divider content-position="left">{{t('document.grants')}}</el-divider>
         <el-form label-position="top"><el-form-item :label="t('document.tenant')"><el-select v-model="tenant" filterable><el-option v-for="v in tenants" :key="v.id" :label="v.name" :value="v.id"/></el-select></el-form-item><el-button type="primary" :disabled="!tenant" :loading="busy" @click="grant(tenant,true)">{{t('document.authorize')}}</el-button></el-form>
         <el-table :data="grants"><el-table-column :label="t('document.tenant')"><template #default="{row}">{{tenants.find(v=>v.id===row.tenant_id)?.name||row.tenant_id}}</template></el-table-column><el-table-column :label="t('document.state')"><template #default="{row}">{{t(row.enabled?'document.enabled':'document.disabled')}}</template></el-table-column><el-table-column :label="t('document.operations')"><template #default="{row}"><el-button link :disabled="busy" @click="grant(row.tenant_id,!row.enabled)">{{t(row.enabled?'document.revoke':'document.authorize')}}</el-button></template></el-table-column></el-table>
@@ -143,9 +146,9 @@ onMounted(load);
         <el-empty v-if="bindings.some(b=>b.actionCode&&b.service==='WORKFLOW'&&!(workflows[b.actionCode]?.length))" :description="t('document.noWorkflow')" />
         <el-form v-for="(b,index) in bindings" :key="b.id" :ref="form=>bindForm(b.id,form)" :model="b" :rules="bindingRules" label-position="top" class="document-binding">
           <el-form-item :label="t('document.bindingName')" prop="name"><el-input v-model="b.name" maxlength="100"/></el-form-item>
-          <el-form-item :label="t('document.pageOperation')" prop="operationKey">
+          <el-form-item :label="t('document.action')" prop="operationKey">
             <el-select :model-value="b.operationKey" :placeholder="t('document.selectPageOperation')" filterable @update:model-value="selectPageOperation(b,selected,$event)">
-              <el-option v-for="a in pageOperations(selected)" :key="a.operationKey" :value="a.operationKey" :label="`${locale.startsWith('zh')?a.pageOperation!.nameZh:a.pageOperation!.nameEn} / ${locale.startsWith('zh')?a.nameZh:a.nameEn} (${a.operationKey})`" />
+              <el-option v-for="a in pageOperations(selected)" :key="a.operationKey" :value="a.operationKey" :label="`${locale.startsWith('zh')?a.nameZh:a.nameEn} (${a.actionCode})`" />
             </el-select>
             <el-alert v-if="!pageOperations(selected).length" :title="t('document.noPageOperation')" type="warning" :closable="false" />
           </el-form-item>

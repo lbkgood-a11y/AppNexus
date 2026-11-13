@@ -26,7 +26,7 @@ class DocumentIntegrationTest {
   static WorkflowContext wc(String actor){return new WorkflowContext(TENANT,actor,UUID.randomUUID().toString());}
   @BeforeAll static void setup() throws Exception {
     var source=new DriverManagerDataSource(MYSQL.getJdbcUrl(),MYSQL.getUsername(),MYSQL.getPassword());jdbc=new JdbcTemplate(source);
-    try(var connection=source.getConnection()){for(String name:List.of("V47__workflow_flowable_8.sql","V48__workflow_application.sql","V57__leave_poc.sql","V59__document_configuration.sql","V60__leave_approval_cycles.sql","V63__document_submission_strategy.sql","V64__leave_direct_submission.sql","V65__document_print_binding.sql","V66__document_page_relationships.sql","V67__explicit_interaction_bindings.sql")) {
+    try(var connection=source.getConnection()){for(String name:List.of("V47__workflow_flowable_8.sql","V48__workflow_application.sql","V69__workflow_data_contract_snapshots.sql","V57__leave_poc.sql","V59__document_configuration.sql","V60__leave_approval_cycles.sql","V63__document_submission_strategy.sql","V64__leave_direct_submission.sql","V65__document_print_binding.sql","V66__document_page_relationships.sql","V68__document_entry_controls.sql","V67__explicit_interaction_bindings.sql")) {
       if(name.startsWith("V67")) {
         // 只在隔离测试库构造旧协议夹具，验证一次迁移后不会残留运行时双协议。
         jdbc.update("INSERT INTO doc_configuration(tenant_id,type_code,draft,published) VALUES('migration','MigrationFixture',?,?)",
@@ -72,7 +72,7 @@ class DocumentIntegrationTest {
   static void configure(List<Binding> list){var config=documents.configuration(dc("manager"),"LeaveRequest");documents.save(dc("manager"),"LeaveRequest",((Number)config.get("revision")).longValue(),list);var saved=documents.configuration(dc("manager"),"LeaveRequest");documents.publish(dc("manager"),"LeaveRequest",((Number)saved.get("revision")).longValue());}
   /** 第二单据不实现任何中心特例：相同条件的不同动作独立匹配，独立用途的审批目录不能串用。 */
   @Test void arbitraryActionsAreIsolatedWithoutDocumentSpecificBranches() {
-    assertThat(documents.pageRelationships(dc("platform"),"Order").get("relationships")).isEqualTo(List.of());
+    assertThat((List<?>)documents.pageRelationships(dc("platform"),"Order").get("relationships")).hasSize(1);
     documents.savePageRelationships(dc("platform"),"Order",-1,List.of(new PageRelationship("confirm","Order.detail.confirm")));
     documents.activate(dc("platform"),"Order",0,true);documents.grant(dc("platform"),"Order",TENANT,true);
     List<Binding> bindings=List.of(
@@ -120,20 +120,31 @@ class DocumentIntegrationTest {
     assertThatThrownBy(()->generic.verifyApproval(dc("applicant"),release.id(),"Order",object,0,facts,"approval","order")).hasMessage("DOCUMENT_APPROVAL_CONTRACT_REQUIRED");
     documents.grant(dc("platform"),"Order",TENANT,false);
   }
+  @Test void entryControlsRequireAuthorityReasonAndVersion(){
+    var before=documents.pageRelationships(dc("platform"),"LeaveRequest");long revision=((Number)before.get("revision")).longValue();
+    assertThatThrownBy(()->documents.controlPage(dc("manager"),"LeaveRequest",revision,"LeaveRequest.print",false,"测试停用")).hasMessage("DOCUMENT_PLATFORM_DENIED");
+    assertThatThrownBy(()->documents.controlPage(dc("platform"),"LeaveRequest",revision,"LeaveRequest.print",false,"")).hasMessage("DOCUMENT_CONTROL_REASON_REQUIRED");
+    documents.controlPage(dc("platform"),"LeaveRequest",revision,"LeaveRequest.print",false,"测试停用");
+    assertThatThrownBy(()->documents.controlPage(dc("platform"),"LeaveRequest",revision,"LeaveRequest.print",true,"陈旧版本")).hasMessage("DOCUMENT_VERSION_CONFLICT");
+    documents.controlPage(dc("platform"),"LeaveRequest",revision+1,"LeaveRequest.print",true,"恢复入口");
+    assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM doc_entry_control_audit WHERE operation_key='LeaveRequest.print'",Integer.class)).isGreaterThanOrEqualTo(2);
+    // 其他测试使用固定首次控制版本；该测试仅清理自己的控制和审计记录，不影响业务数据。
+    jdbc.update("UPDATE doc_page_relationships SET revision=? WHERE type_code='LeaveRequest'",revision);
+  }
   @Test void completeDocumentContract() {
     assertThat(leave.descriptor().actions()).contains(LeavePocService.SUBMIT_ACTION);
     assertThat(leave.actions(wc("applicant"))).first().satisfies(a->{assertThat(a.operationKey()).isEqualTo("LeaveRequest.submit");assertThat(a.allowed()).isTrue();});
     assertThatThrownBy(()->documents.resolveAction(dc("applicant"),"LeaveRequest","unknown",UUID.randomUUID().toString(),0,Map.of())).hasMessage("DOCUMENT_ACTION_INVALID");
     // 授权资格与启用开关分别表达：未启用仍可配置/查看，但不能发起运行。
     documents.activate(dc("platform"),"LeaveRequest",1,false);
-    assertThat(documents.catalog(dc("manager"),false)).hasSize(1).first().satisfies(item->assertThat(item.get("enabled")).isEqualTo(false));
+    assertThat(documents.catalog(dc("manager"),false).stream().filter(item->((Descriptor)item.get("descriptor")).typeCode().equals("LeaveRequest")).toList()).hasSize(1).first().satisfies(item->assertThat(item.get("enabled")).isEqualTo(false));
     assertThat(documents.configuration(dc("manager"),"LeaveRequest").get("revision")).isEqualTo(-1);
     documents.grant(dc("platform"),"LeaveRequest",TENANT,false);
     assertThat(documents.catalog(dc("manager"),false)).isEmpty();
     documents.grant(dc("platform"),"LeaveRequest",TENANT,true);
     assertThatThrownBy(()->documents.resolveAction(dc("applicant"),"LeaveRequest","submit",UUID.randomUUID().toString(),0,Map.of("days","2","requiresHr","false"))).hasMessage("DOCUMENT_TYPE_DISABLED");
     documents.activate(dc("platform"),"LeaveRequest",2,true);
-    assertThat(documents.catalog(dc("manager"),false)).hasSize(1).first().satisfies(item->assertThat(item.get("enabled")).isEqualTo(true));
+    assertThat(documents.catalog(dc("manager"),false).stream().filter(item->((Descriptor)item.get("descriptor")).typeCode().equals("LeaveRequest")).toList()).hasSize(1).first().satisfies(item->assertThat(item.get("enabled")).isEqualTo(true));
     assertThatThrownBy(()->documents.catalog(dc("applicant"),false)).isInstanceOf(Rejection.class);
     assertThatThrownBy(()->documents.configuration(new Context(OTHER,"manager",UUID.randomUUID().toString()),"LeaveRequest")).isInstanceOf(Rejection.class);
     var row=leave.create(wc("applicant"),LeavePocTest.input(3));String id=row.get("id").toString();

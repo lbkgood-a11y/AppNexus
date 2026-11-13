@@ -18,6 +18,12 @@ export function requestErrorMessage(error: unknown): string {
     if (status === 403) return t("account.forbidden");
     if (status === 429) return t("account.rateLimited");
     const code=error.response?.data?.code;
+    // 契约错误只呈现服务端稳定码与字段路径，不回显提交值；长度限制避免异常响应撑开页面。
+    if(typeof code==='string'&&(i18n.global.te as (key:string)=>boolean)("leavePoc.codes."+code))return t("leavePoc.codes."+code);
+    if(typeof code==='string'&&(i18n.global.te as (key:string)=>boolean)("dataContractErrors."+code)){
+      const field=error.response?.data?.field;
+      return t("dataContractErrors."+code)+(typeof field==='string'?` (${field.slice(0,120)})`:'');
+    }
     if(typeof code==='string'&&(i18n.global.te as (key:string)=>boolean)("document.codes."+code))return t("document.codes."+code);
     if(typeof code==='string'&&(i18n.global.te as (key:string)=>boolean)("printing.codes."+code))return t("printing.codes."+code);
     if(typeof code==='string'&&(i18n.global.te as (key:string)=>boolean)("workflow.codes."+code))return t("workflow.codes."+code);

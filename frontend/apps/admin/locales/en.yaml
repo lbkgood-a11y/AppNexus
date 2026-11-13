@@ -1058,6 +1058,12 @@ authorizationCenter:
     ORGANIZATION_SUBTREE: Organizations and descendants
     ALL: All in current tenant
 workflow:
+  contractSourceHint: Approval data contracts are registered by business code and supplied by business adapters, so fields cannot be edited here. Printing also supports new tenant-defined contracts; saved print contracts are immutable as well.
+  configureBinding: Configure document policy
+  contractFields: Contract fields
+  contractType: Data type
+  contractUnit: Unit
+  contractOrderHint: After publishing, bind the action in the document workbench and submit from the business page.
   title: Workflow center
   designer: Workflow designer
   name: Name
@@ -1137,6 +1143,7 @@ workflow:
   errorCode: Error code
   limitHint: Showing up to 100 recent records. Use business query scope to locate records.
   tabs:
+    contracts: Data contracts
     todo: To process
     done: Processed
     started: Started by me
@@ -1325,6 +1332,8 @@ workflow:
   deleteConnection: Delete selected connection
   dragHint: Drag from the library, move nodes, and connect output ports to input ports.
 printing:
+  booleanTrue: "True"
+  booleanFalse: "False"
   outputStages:
     WAITING_RENDER: Waiting Render
     RENDERING: Rendering
@@ -1552,6 +1561,14 @@ printing:
   confirmPrint: Confirm printing
 
 leavePoc:
+  codes:
+    LEAVE_ORGANIZATION_UNAVAILABLE: The approval organization is unavailable or your assignment is inactive. Update it before approval submission; drafts can still be saved.
+    LEAVE_ORGANIZATION_LEADER_REQUIRED: The organization has no active leader. Ask a tenant administrator to configure one before approval submission. Drafts can still be saved.
+    LEAVE_DATE_RANGE_INVALID: Leave dates must cover 1–365 days, including both dates.
+    LEAVE_IDEMPOTENCY_CONFLICT: Request contents changed. Please start a new operation.
+    LEAVE_BASIS_CHANGED: The document changed or is under approval. Refresh and retry.
+    LEAVE_STATE_CONFLICT: The current document state does not allow this operation. Please refresh.
+    LEAVE_INPUT_INVALID: Check the leave type, dates, and reason.
   title: Leave request POC
   hint: Counts inclusive calendar days, 1–365 days. More than 3 days requires HR approval. No balance or attendance calculation.
   search: Search leave requests
@@ -1740,6 +1757,9 @@ document:
   required: Complete binding names, published workflows and conditions
   inactiveHint: This document is authorized but disabled. Configuration is available; submissions require platform activation.
   action: Document action
+  enableEntry: Enable entry
+  disableEntry: Disable entry
+  controlReason: Enter a reason (1–200 characters, no sensitive data)
   pageRelations: Page operation relationships
   addPageRelation: Add page relationship
   savePageRelations: Save page relationships
@@ -1804,3 +1824,11 @@ document:
     DOCUMENT_BINDINGS_INVALID: Configure at least one complete binding.
     DOCUMENT_NUMBER_INVALID: A valid decimal number is required.
     DOCUMENT_BOOLEAN_INVALID: Boolean conditions require true or false.
+
+dataContractErrors:
+  DATA_OBJECT_REQUIRED: Contract data object is required
+  DATA_FIELD_REQUIRED: Required contract field is missing
+  DATA_FIELD_TYPE_INVALID: Field type does not match the data contract
+  DATA_FIELD_UNKNOWN: Field is not declared in the data contract
+  DATA_CONTRACT_CHANGED: Data contract changed; review and publish the configuration again
+  DOCUMENT_CONTROL_REASON_REQUIRED: A valid entry control reason is required

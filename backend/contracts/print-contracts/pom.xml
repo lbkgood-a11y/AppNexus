@@ -4,4 +4,4 @@
   <modelVersion>4.0.0</modelVersion>
   <parent><groupId>com.appnexus</groupId><artifactId>contracts</artifactId><version>0.1.0-SNAPSHOT</version><relativePath>../pom.xml</relativePath></parent>
   <artifactId>print-contracts</artifactId>
-</project>
+<dependencies><dependency><groupId>com.appnexus</groupId><artifactId>data-contracts</artifactId><version>${project.version}</version></dependency></dependencies></project>

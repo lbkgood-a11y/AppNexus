@@ -14,6 +14,20 @@ import org.springframework.transaction.annotation.Transactional;
 public class PrintRuntime {
   /** 代理连接诊断元数据，身份与固定租户由平台权威端口提供，不返回密钥。 */
   public Map<String,String> agentIdentity(PrintContext c){require(c,"print.agent:operate");return platform.agentIdentity(c);}
+  private java.util.function.BiFunction<PrintContext,String,Map<String,Object>> contractCatalog;
+  private java.util.function.BiConsumer<JsonNode,Map<String,Object>> contractValidator;
+  /** 复用打印目录与校验器；装配不取业务数据，防止原始任务入口绕过字段校验。 */
+  void dataContracts(java.util.function.BiFunction<PrintContext,String,Map<String,Object>> catalog,java.util.function.BiConsumer<JsonNode,Map<String,Object>> validator){this.contractCatalog=catalog;this.contractValidator=validator;}
+  /** 递归检查模板 field 引用；明细列由父契约提供，不接受未知字段。 */
+  private void validateReferences(JsonNode node,Set<String> fields){
+    if(node.isObject())for(var property:node.properties()){
+      if(property.getKey().equals("field")&&property.getValue().isTextual()&&!property.getValue().asText().isBlank()&&!fields.contains(property.getValue().asText()))throw new com.appnexus.contracts.data.DataContract.Violation(property.getValue().asText(),"DATA_FIELD_UNKNOWN");
+      validateReferences(property.getValue(),fields);
+    }else if(node.isArray())for(var child:node)validateReferences(child,fields);
+  }
+  @SuppressWarnings("unchecked")
+  private void collectFields(List<Map<String,Object>> fields,Set<String> keys){for(var field:fields){keys.add(field.get("key").toString());if(field.containsKey("columns"))collectFields((List<Map<String,Object>>)field.get("columns"),keys);}}
+
   private final JdbcTemplate jdbc;
   private final PrintPlatform platform;
   private final PrintJson json;
@@ -78,8 +92,10 @@ public class PrintRuntime {
     jdbc.queryForList("SELECT id FROM print_template WHERE tenant_id=UUID_TO_BIN(?) AND id=UUID_TO_BIN(?) FOR UPDATE",c.tenantId(),id);
     Map<String,Object> current=templateWithPermission(c,id,"print.template:publish");
     if(((Number)current.get("draft_revision")).longValue()!=revision) throw new PrintFailure("PRINT_TEMPLATE_CONFLICT",409);
+    Map<String,Object> schema=contractCatalog==null?null:contractCatalog.apply(c,current.get("data_contract").toString());
+    if(schema!=null){var fields=new HashSet<String>();collectFields((List<Map<String,Object>>)schema.get("fields"),fields);validateReferences(mapper.readTree(current.get("draft_json").toString()),fields);}
     int version=current.get("published_version")==null?1:((Number)current.get("published_version")).intValue()+1;
-    jdbc.update("INSERT INTO print_template_version(tenant_id,template_id,version,template_json,scope_json,data_contract,published_by) SELECT tenant_id,id,?,draft_json,scope_json,data_contract,UUID_TO_BIN(?) FROM print_template WHERE tenant_id=UUID_TO_BIN(?) AND id=UUID_TO_BIN(?)",version,c.actorId(),c.tenantId(),id);
+    jdbc.update("INSERT INTO print_template_version(tenant_id,template_id,version,template_json,scope_json,data_contract,published_by,data_contract_schema) SELECT tenant_id,id,?,draft_json,scope_json,data_contract,UUID_TO_BIN(?),CAST(? AS JSON) FROM print_template WHERE tenant_id=UUID_TO_BIN(?) AND id=UUID_TO_BIN(?)",version,c.actorId(),schema==null?null:mapper.writeValueAsString(schema),c.tenantId(),id);
     jdbc.update("UPDATE print_template SET published_version=?,enabled=TRUE,updated_by=UUID_TO_BIN(?) WHERE tenant_id=UUID_TO_BIN(?) AND id=UUID_TO_BIN(?)",version,c.actorId(),c.tenantId(),id);
     return templateWithPermission(c,id,"print.template:publish");
   }
@@ -144,8 +160,13 @@ public class PrintRuntime {
     }
     Map<String,Object> template=jdbc.query("SELECT published_version,enabled FROM print_template WHERE tenant_id=UUID_TO_BIN(?) AND id=UUID_TO_BIN(?)",rs->{if(!rs.next())throw new PrintFailure("PRINT_TEMPLATE_NOT_FOUND",404);return Map.of("version",rs.getInt(1),"enabled",rs.getBoolean(2));},c.tenantId(),d.templateId());
     int version=((Number)template.get("version")).intValue(); if(version<1||!((Boolean)template.get("enabled"))) throw new PrintFailure("PRINT_TEMPLATE_NOT_PUBLISHED",409);
+    var published=jdbc.queryForMap("SELECT data_contract,data_contract_schema FROM print_template_version WHERE tenant_id=UUID_TO_BIN(?) AND template_id=UUID_TO_BIN(?) AND version=?",c.tenantId(),d.templateId(),version);
+    Map<String,Object> schema=published.get("data_contract_schema")==null?(contractCatalog==null?null:contractCatalog.apply(c,published.get("data_contract").toString())):mapper.convertValue(mapper.readTree(published.get("data_contract_schema").toString()),Map.class);
+    // 新发布业务模板固定完整字段语义；目录变更后需重新审查发布，不能静默套用新结构。
+    if(schema!=null&&schema.containsKey("version")&&contractCatalog!=null&&!schema.equals(contractCatalog.apply(c,published.get("data_contract").toString())))throw new PrintFailure("DATA_CONTRACT_CHANGED",409);
+    if(schema!=null&&contractValidator!=null)contractValidator.accept(d.data(),schema);
     String snapshot=json.snapshot(d.data()); UUID id=UUID.randomUUID();
-    try { jdbc.update("INSERT INTO print_job(tenant_id,id,request_id,actor_id,source_type,source_id,template_id,template_version,output_type,device_id,copies,data_snapshot,state) VALUES(UUID_TO_BIN(?),UUID_TO_BIN(?),UUID_TO_BIN(?),UUID_TO_BIN(?),?,?,UUID_TO_BIN(?),?,?,UUID_TO_BIN(?),?,CAST(? AS JSON),'QUEUED')",c.tenantId(),id.toString(),c.requestId(),actorKey(c),d.sourceType(),d.sourceId(),d.templateId(),version,d.outputType(),d.outputType().equals("PDF")?null:d.deviceId(),d.outputType().equals("PDF")?1:d.copies(),snapshot); }
+    try { jdbc.update("INSERT INTO print_job(tenant_id,id,request_id,actor_id,source_type,source_id,template_id,template_version,output_type,device_id,copies,data_snapshot,data_contract_schema,state) VALUES(UUID_TO_BIN(?),UUID_TO_BIN(?),UUID_TO_BIN(?),UUID_TO_BIN(?),?,?,UUID_TO_BIN(?),?,?,UUID_TO_BIN(?),?,CAST(? AS JSON),CAST(? AS JSON),'QUEUED')",c.tenantId(),id.toString(),c.requestId(),actorKey(c),d.sourceType(),d.sourceId(),d.templateId(),version,d.outputType(),d.outputType().equals("PDF")?null:d.deviceId(),d.outputType().equals("PDF")?1:d.copies(),snapshot,schema==null?null:mapper.writeValueAsString(schema)); }
     catch(DuplicateKeyException duplicate){ return byRequest(c); }
     return job(c,id.toString(),"print.job:submit");
   }
@@ -156,7 +177,7 @@ public class PrintRuntime {
     var existing=jdbc.queryForList("SELECT BIN_TO_UUID(id) id FROM print_job WHERE tenant_id=UUID_TO_BIN(?) AND actor_id=UUID_TO_BIN(?) AND request_id=UUID_TO_BIN(?)",c.tenantId(),c.actorId(),c.requestId());
     if(!existing.isEmpty())return job(c,existing.getFirst().get("id").toString(),"print.job:reprint");
     job(c,id,"print.job:reprint"); UUID next=UUID.randomUUID();
-    jdbc.update("INSERT INTO print_job(tenant_id,id,request_id,actor_id,source_type,source_id,template_id,template_version,output_type,device_id,copies,data_snapshot,state,parent_job_id,reprint_reason) SELECT tenant_id,UUID_TO_BIN(?),UUID_TO_BIN(?),UUID_TO_BIN(?),source_type,source_id,template_id,template_version,output_type,device_id,copies,data_snapshot,'QUEUED',id,? FROM print_job WHERE tenant_id=UUID_TO_BIN(?) AND id=UUID_TO_BIN(?)",next.toString(),c.requestId(),c.actorId(),reason.trim(),c.tenantId(),id);
+    jdbc.update("INSERT INTO print_job(tenant_id,id,request_id,actor_id,source_type,source_id,template_id,template_version,output_type,device_id,copies,data_snapshot,data_contract_schema,state,parent_job_id,reprint_reason) SELECT tenant_id,UUID_TO_BIN(?),UUID_TO_BIN(?),UUID_TO_BIN(?),source_type,source_id,template_id,template_version,output_type,device_id,copies,data_snapshot,data_contract_schema,'QUEUED',id,? FROM print_job WHERE tenant_id=UUID_TO_BIN(?) AND id=UUID_TO_BIN(?)",next.toString(),c.requestId(),c.actorId(),reason.trim(),c.tenantId(),id);
     return job(c,next.toString(),"print.job:reprint");
   }
 
@@ -249,7 +270,7 @@ public class PrintRuntime {
     require(c,"print.job:submit");uuid(device);
     if(jdbc.queryForObject("SELECT COUNT(*) FROM print_device WHERE tenant_id=UUID_TO_BIN(?) AND id=UUID_TO_BIN(?) AND enabled=TRUE",Integer.class,c.tenantId(),device)!=1)throw new PrintFailure("PRINT_DEVICE_DISABLED",409);
     String next=UUID.randomUUID().toString();
-    jdbc.update("INSERT INTO print_job(tenant_id,id,request_id,actor_id,source_type,source_id,template_id,template_version,output_type,device_id,copies,data_snapshot,state,parent_job_id) SELECT tenant_id,UUID_TO_BIN(?),UUID_TO_BIN(?),UUID_TO_BIN(?),source_type,source_id,template_id,template_version,'PRINTER',UUID_TO_BIN(?),?,data_snapshot,'QUEUED',id FROM print_job WHERE tenant_id=UUID_TO_BIN(?) AND id=UUID_TO_BIN(?) AND output_type='PDF' AND state='SUCCEEDED'",next,UUID.randomUUID().toString(),actorKey(c),device,copies,c.tenantId(),id);
+    jdbc.update("INSERT INTO print_job(tenant_id,id,request_id,actor_id,source_type,source_id,template_id,template_version,output_type,device_id,copies,data_snapshot,data_contract_schema,state,parent_job_id) SELECT tenant_id,UUID_TO_BIN(?),UUID_TO_BIN(?),UUID_TO_BIN(?),source_type,source_id,template_id,template_version,'PRINTER',UUID_TO_BIN(?),?,data_snapshot,data_contract_schema,'QUEUED',id FROM print_job WHERE tenant_id=UUID_TO_BIN(?) AND id=UUID_TO_BIN(?) AND output_type='PDF' AND state='SUCCEEDED'",next,UUID.randomUUID().toString(),actorKey(c),device,copies,c.tenantId(),id);
     return job(c,next,"print.job:submit");
   }
 

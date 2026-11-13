@@ -32,7 +32,7 @@ public final class LeavePocService implements WorkflowBusiness, com.appnexus.con
                       List.of(
                           new Field("days", "请假天数", "Leave days", "NUMBER", "天"),
                           new Field("requiresHr", "是否超过三天", "More than three days", "BOOLEAN", "")),
-                      Set.of("APPROVED", "REJECTED", "WITHDRAWN")))));
+                      Set.of("APPROVED", "REJECTED", "WITHDRAWN"), "leave.approval", 1))));
 
   /** 列表和详情打印共享业务动作；字段投影同时用于打印目录，不能独立维护另一份。 */
   public static final com.appnexus.contracts.document.Documents.Action PRINT_ACTION =
@@ -63,9 +63,9 @@ public final class LeavePocService implements WorkflowBusiness, com.appnexus.con
     active(c);if(!platform.allowed(c,PRINT_ACTION.permissionCode())||!(PRINT_ACTION.operationKey().equals(operation)||PRINT_ACTION.aliases().stream().anyMatch(a->a.operationKey().equals(operation))))throw new SecurityException("LEAVE_ACCESS_DENIED");
     bindings.get().verifyPageOperation(new com.appnexus.contracts.document.Documents.Context(c.tenantId(),c.actorId(),c.requestId()),"LeaveRequest","print",operation);
     var row=row(c,id,false);if(!c.actorId().equals(row.get("applicant")))throw new SecurityException("LEAVE_ACCESS_DENIED");
-    var resolved=bindings.get().resolveAction(new com.appnexus.contracts.document.Documents.Context(c.tenantId(),c.actorId(),c.requestId()),"LeaveRequest","print",id,((Number)row.get("basis_version")).longValue(),Map.of("days",row.get("days").toString(),"requiresHr",Boolean.toString(((Number)row.get("days")).intValue()>3)));
+    var resolved=bindings.get().resolveAction(new com.appnexus.contracts.document.Documents.Context(c.tenantId(),c.actorId(),c.requestId()),"LeaveRequest","print",id,((Number)row.get("basis_version")).longValue(),LeaveContractData.facts(row));
     if(!resolved.service().equals("PRINT"))throw new IllegalArgumentException("LEAVE_PRINT_STRATEGY_INVALID");
-    return printing.get().request(new com.appnexus.contracts.printing.PrintContext(c.tenantId(),c.actorId(),c.requestId()),new com.appnexus.contracts.printing.BusinessPrinting.Request(resolved.sceneCode(),resolved.dataContract(),id,Map.of("documentNumber",id,"startDate",row.get("start_date").toString(),"endDate",row.get("end_date").toString(),"days",row.get("days").toString(),"state",row.get("state").toString()),"PREVIEW",null,1));
+    return printing.get().request(new com.appnexus.contracts.printing.PrintContext(c.tenantId(),c.actorId(),c.requestId()),new com.appnexus.contracts.printing.BusinessPrinting.Request(resolved.sceneCode(),resolved.dataContract(),id,LeaveContractData.printing(id,row),"PREVIEW",null,1));
   }
   /** 当前主体可用行为视图，不持久化权限判断；写入仍重新检查。 */
   public record AvailableAction(String actionCode,String nameZh,String nameEn,String permissionCode,String operationKey,boolean allowed,String reasonCode) {}
@@ -172,14 +172,10 @@ public final class LeavePocService implements WorkflowBusiness, com.appnexus.con
     int count = days(input);
     UUID.fromString(input.organizationId());
     UUID.fromString(c.requestId());
-    if (platform.documentOrganizations(c).stream().noneMatch(o -> o.id().equalsIgnoreCase(input.organizationId())))
-      throw new SecurityException("LEAVE_ORGANIZATION_DENIED");
     if (!Set.of("PERSONAL", "ANNUAL", "SICK").contains(input.leaveType())
         || input.reason() == null || input.reason().isBlank() || input.reason().trim().length() > 2000)
       throw new IllegalArgumentException("LEAVE_INPUT_INVALID");
-    // POC 不允许用不存在的组织启动流程；组织负责人解析同时验证组织和有效任职。
-    if (platform.resolve(c.tenantId(), input.organizationId(), "LEADER", "").isEmpty())
-      throw new IllegalArgumentException("LEAVE_ORGANIZATION_LEADER_REQUIRED");
+    // 保存仅校验表单业务值及标识格式；组织任职与负责人是审批提交条件，不在草稿阶段提前执行。
     return tx.execute(s -> {
       String id = UUID.randomUUID().toString();
       // 唯一键序列化并发重放；ON DUPLICATE 不更新依据或状态。
@@ -230,13 +226,19 @@ public final class LeavePocService implements WorkflowBusiness, com.appnexus.con
       long basis=((Number)row.get("basis_version")).longValue();
       com.appnexus.contracts.document.Documents.Resolution resolved=bindings.get().resolveAction(
         new com.appnexus.contracts.document.Documents.Context(c.tenantId(),c.actorId(),c.requestId()),"LeaveRequest",SUBMIT_ACTION.actionCode(),id,basis,
-        Map.of("days",row.get("days").toString(),"requiresHr",Boolean.toString(((Number)row.get("days")).intValue()>3)));
+        LeaveContractData.facts(row));
       jdbc.update("INSERT INTO leave_poc_submission(tenant_id,object_id,basis_version,resolution_id,service) VALUES(?,?,?,?,?)",c.tenantId(),id,basis,resolved.id(),resolved.service());
       if(resolved.service().equals("BUSINESS")){
         // 直接受理是业务显式能力，不伪造审批结论，也不创建流程实例；同事务状态及记录一起提交。
         jdbc.update("UPDATE leave_poc_request SET state='ACCEPTED',instance_id=NULL WHERE tenant_id=? AND id=?",c.tenantId(),id);
         return row(c,id,false);
       }
+      // 只有审批策略使用组织路由；按可信租户复核有效任职，草稿填写不能替代提交时的业务授权。
+      if(platform.documentOrganizations(c).stream().noneMatch(o->o.id().equalsIgnoreCase(row.get("organization_id").toString())))
+        throw new com.appnexus.contracts.document.Documents.Rejection(409,"LEAVE_ORGANIZATION_UNAVAILABLE");
+      // 请假 POC 的审批场景要求组织主管；失败回滚状态与解析，不影响直接受理策略。
+      if(platform.resolve(c.tenantId(),row.get("organization_id").toString(),"LEADER","").isEmpty())
+        throw new com.appnexus.contracts.document.Documents.Rejection(409,"LEAVE_ORGANIZATION_LEADER_REQUIRED");
       String instance = starter.get().startBound(c,"LeaveRequest",id,basis,row.get("organization_id").toString(),"approval","leavePoc",resolved.id());
       jdbc.update("INSERT INTO leave_poc_approval_cycle(tenant_id,id,object_id,basis_version,instance_id,resolution_id,configuration_version,basis_snapshot) VALUES(?,?,?,?,?,?,?,JSON_OBJECT('leaveType',?,'startDate',?,'endDate',?,'days',?,'reason',?,'organizationId',?))",
         c.tenantId(),UUID.randomUUID().toString(),id,basis,instance,resolved.id(),resolved.configurationVersion(),row.get("leave_type"),row.get("start_date").toString(),row.get("end_date").toString(),row.get("days"),row.get("reason"),row.get("organization_id"));
@@ -252,7 +254,7 @@ public final class LeavePocService implements WorkflowBusiness, com.appnexus.con
   public Map<String,Object> update(WorkflowContext c,String id,long expectedBasisVersion,Input input) {
     requireStart(c);int count=days(input);
     if(!Set.of("PERSONAL","ANNUAL","SICK").contains(input.leaveType())||input.reason()==null||input.reason().isBlank()||input.reason().trim().length()>2000)throw new IllegalArgumentException("LEAVE_INPUT_INVALID");
-    if(platform.documentOrganizations(c).stream().noneMatch(o->o.id().equals(input.organizationId()))||platform.resolve(c.tenantId(),input.organizationId(),"LEADER","").isEmpty())throw new SecurityException("LEAVE_ORGANIZATION_DENIED");
+    UUID.fromString(input.organizationId()); // 仅校验字段格式，不读取组织任职或负责人。
     return tx.execute(s->{var row=row(c,id,true);
       if(!c.actorId().equals(row.get("applicant")))throw new SecurityException("LEAVE_ACCESS_DENIED");
       if(!Set.of("DRAFT","REJECTED","WITHDRAWN").contains(row.get("state"))||expectedBasisVersion!=((Number)row.get("basis_version")).longValue())throw new IllegalArgumentException("LEAVE_BASIS_CHANGED");
@@ -278,8 +280,7 @@ public final class LeavePocService implements WorkflowBusiness, com.appnexus.con
     } else if (!permitted(i.context(), row, i.taskId())) {
       throw new SecurityException("LEAVE_TASK_DENIED");
     }
-    return Map.of("days", row.get("days").toString(), "requiresHr",
-        Boolean.toString(((Number) row.get("days")).intValue() > 3));
+    return LeaveContractData.facts(row);
   }
 
   /**

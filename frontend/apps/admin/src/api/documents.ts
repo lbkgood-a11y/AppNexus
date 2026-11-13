@@ -12,7 +12,7 @@ export function documentApi(platform=false):DocumentApi {
   return {
     readiness:type=>http.request('get',`/api/documents/${id(type)}/readiness`),
     pageRelationships:type=>http.request('get',`${base}/${id(type)}/page-relationships`),
-    savePageRelationships:(type,revision,relationships)=>write('put',`${base}/${id(type)}/page-relationships`,{revision,relationships}) as ReturnType<DocumentApi['savePageRelationships']>,
+    controlPage:(type,revision,operationKey,enabled,reason)=>write('put',`${base}/${id(type)}/page-controls`,{revision,operationKey,enabled,reason}) as ReturnType<DocumentApi['controlPage']>,
     catalog:()=>http.request('get',base),
     activate:(type,revision,enabled)=>write('put',`${base}/${id(type)}/state`,{revision,enabled}),
     tenants:async()=>{const rows:{id:string;name:string}[]=[];let page=1;let total=0;

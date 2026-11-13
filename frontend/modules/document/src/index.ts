@@ -6,7 +6,7 @@ export interface Descriptor {
 }
 /** 构建登记的真实页面入口，管理端不能录入任意地址。 */
 export interface PageOperation {pageKey:string;pagePath:string;nameZh:string;nameEn:string;method:string;apiPath:string}
-/** 平台维护的全量关联及只读候选，候选约束真实业务处理能力。 */
+/** 代码登记的入口及平台启停投影；不能通过客户端新增页面或接口。 */
 export interface PageRelationship {actionCode:string;operationKey:string}
 export interface PageRelationshipEditor {revision:number;relationships:PageRelationship[];candidates:{operationKey:string;compatibleActionCode:string;permissionCode:string;pageOperation:PageOperation}[]}
 /** 每条绑定全部条件满足，绑定间要求唯一匹配，version 为具体流程发布版本。 */
@@ -18,7 +18,7 @@ export interface Binding {
 export interface DocumentApi {
   readiness:(type:string)=>Promise<{actionCode:string;category:string;code:string;ready:boolean;target:string}[]>;
   pageRelationships:(type:string)=>Promise<PageRelationshipEditor>;
-  savePageRelationships:(type:string,revision:number,relationships:PageRelationship[])=>Promise<PageRelationshipEditor>;
+  controlPage:(type:string,revision:number,operationKey:string,enabled:boolean,reason:string)=>Promise<PageRelationshipEditor>;
   catalog: () => Promise<{ descriptor: Descriptor; enabled: boolean; revision: number }[]>;
   activate: (type: string, revision: number, enabled: boolean) => Promise<unknown>;
   tenants: () => Promise<{ id: string; name: string }[]>;

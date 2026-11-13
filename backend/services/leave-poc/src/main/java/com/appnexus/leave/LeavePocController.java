@@ -35,7 +35,7 @@ public final class LeavePocController {
   @PostMapping("/{id}/print")
   public Object print(HttpServletRequest r,@PathVariable String id,@RequestBody SubmitOperation input){return reply(()->service.print(context(r),id,input.operationKey()));}
 
-  /** 创建草稿，未知或无主管组织拒绝，不隐式创建组织或人员。 */
+  /** 创建草稿，仅校验表单业务值和标识格式；组织任职在审批提交时核验，不隐式创建组织或人员。 */
   @PostMapping
   public Object create(HttpServletRequest r, @RequestBody LeavePocService.Input input) {
     return reply(() -> service.create(context(r), input));
@@ -82,7 +82,8 @@ public final class LeavePocController {
   private Object reply(Supplier<Object> action) {
     try {
       return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(action.get());
-    } catch (com.appnexus.contracts.printing.PrintRejection e) {
+    } catch(com.appnexus.contracts.data.DataContract.Violation e){return ResponseEntity.badRequest().cacheControl(CacheControl.noStore()).body(Map.of("status",400,"code",e.getMessage(),"field",e.path()));}
+    catch (com.appnexus.contracts.printing.PrintRejection e) {
       return problem(e.status(),e.code());
     } catch (com.appnexus.contracts.document.Documents.Rejection e) {
       return problem(e.status(),e.getMessage());
@@ -90,7 +91,11 @@ public final class LeavePocController {
       return problem(e.status(), e.code());
     } catch (SecurityException e) {
       return problem(403, "LEAVE_ACCESS_DENIED");
-    } catch (IllegalArgumentException | NullPointerException e) {
+    } catch (IllegalArgumentException e) {
+      // 仅透传服务内部稳定码，不将任意异常消息或业务原文作为客户端错误返回。
+      String code=Set.of("LEAVE_DATE_RANGE_INVALID","LEAVE_IDEMPOTENCY_CONFLICT","LEAVE_BASIS_CHANGED","LEAVE_STATE_CONFLICT").contains(Objects.toString(e.getMessage(),""))?e.getMessage():"LEAVE_INPUT_INVALID";
+      return problem(code.endsWith("CONFLICT")||code.equals("LEAVE_BASIS_CHANGED")?409:400,code);
+    } catch (NullPointerException e) {
       return problem(400, "LEAVE_INPUT_INVALID");
     }
   }

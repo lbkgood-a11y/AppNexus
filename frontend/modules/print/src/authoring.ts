@@ -1,9 +1,9 @@
 import { copyTemplate, createBlankTemplate, type PrintTemplate } from "./template";
 
 /** 设计用字段定义；由服务端契约提供，示例值仅用于预览，不授予业务读取权限。 */
-export interface DesignField { key:string; labelZh:string; labelEn:string; sample:string; columns?:DesignField[] }
+export interface DesignField { key:string; labelZh:string; labelEn:string; sample:string; type?:"TEXT"|"NUMBER"|"BOOLEAN"; required?:boolean; unit?:string; columns?:DesignField[] }
 /** 已注册的设计契约；designOnly=true 表示尚未接入真实业务快照。 */
-export interface DesignContract { code:string; nameZh:string; nameEn:string; designOnly:boolean; fields:DesignField[] }
+export interface DesignContract { code:string; version?:number; purpose?:string; nameZh:string; nameEn:string; designOnly:boolean; fields:DesignField[] }
 
 /**
  * 创建受控文字或动态明细元素，不要求用户输入字段编码或回调脚本。

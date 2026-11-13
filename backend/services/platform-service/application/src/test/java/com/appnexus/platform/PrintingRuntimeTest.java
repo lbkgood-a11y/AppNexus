@@ -164,4 +164,18 @@ class PrintingRuntimeTest extends DatabaseTestSupport {
     flow.saveScene(design,sceneId,new PrintFlow.Scene("outbound","出仓单","warehouse.outbound.v1",templateId,1,false,0));
     assertThatThrownBy(()->flow.print(new PrintContext(tenant,actor,UUID.randomUUID().toString()),documentId,options)).hasMessage("PRINT_SCENE_UNAVAILABLE");
   }
+  @Test void typedContractRejectsInvalidDataAndFreezesSchema(){
+    String tenant=UUID.randomUUID().toString(),actor=UUID.randomUUID().toString();var c=new PrintContext(tenant,actor,UUID.randomUUID().toString());
+    var flow=new PrintFlow(jdbc,(context,permission)->true,runtime,mapper);
+    flow.businessContracts(List.of(()->List.of(Map.of("code","test.typed.v1","version",1,"nameZh","测试契约","nameEn","Typed test","fields",List.of(Map.of("key","days","type","NUMBER","required",true,"unit","天"))))));
+    var template=runtime.saveTemplate(c,null,new PrintRuntime.TemplateDraft("typed","类型测试","A4","test.typed.v1",mapper.createObjectNode(),mapper.readTree("{\"panels\":[]}"),-1));
+    String templateId=template.get("id").toString();runtime.publish(c,templateId,0);
+    String scene=flow.saveScene(c,null,new PrintFlow.Scene("typed","类型测试","test.typed.v1",templateId,1,true,-1)).getFirst().get("id").toString();
+    assertThatThrownBy(()->flow.saveDocument(c,new PrintFlow.Document(scene,"BAD",mapper.readTree("{\"days\":\"5\"}")))).hasMessage("DATA_FIELD_TYPE_INVALID");
+    assertThatThrownBy(()->flow.saveDocument(c,new PrintFlow.Document(scene,"MISSING",mapper.createObjectNode()))).hasMessage("DATA_FIELD_REQUIRED");
+    String document=flow.saveDocument(c,new PrintFlow.Document(scene,"GOOD",mapper.readTree("{\"days\":5}"))).getFirst().get("id").toString();
+    var job=flow.print(new PrintContext(tenant,actor,UUID.randomUUID().toString()),document,new PrintFlow.Output(null,"PDF",1));
+    assertThat(jdbc.queryForObject("SELECT JSON_UNQUOTE(JSON_EXTRACT(data_contract_schema,'$.code')) FROM print_job WHERE id=UUID_TO_BIN(?)",String.class,job.get("id"))).isEqualTo("test.typed.v1");
+  }
+
 }

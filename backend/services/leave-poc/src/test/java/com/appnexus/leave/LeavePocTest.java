@@ -22,6 +22,7 @@ class LeavePocTest {
   @Container static final MySQLContainer MYSQL = new MySQLContainer("mysql:8.4");
   static final String ORG = "019a65d0-0057-7000-8000-000000000001";
   static JdbcTemplate jdbc;
+  static boolean leaderMissing;
   static LeavePocService service;
   static WorkflowRuntime runtime;
   static org.flowable.engine.ProcessEngine engine;
@@ -32,7 +33,7 @@ class LeavePocTest {
     var source = new DriverManagerDataSource(MYSQL.getJdbcUrl(), MYSQL.getUsername(), MYSQL.getPassword());
     jdbc = new JdbcTemplate(source);
     try (var connection = source.getConnection()) {
-      for (String file : List.of("V47__workflow_flowable_8.sql", "V48__workflow_application.sql", "V57__leave_poc.sql", "V59__document_configuration.sql", "V60__leave_approval_cycles.sql", "V63__document_submission_strategy.sql", "V64__leave_direct_submission.sql", "V65__document_print_binding.sql", "V66__document_page_relationships.sql", "V67__explicit_interaction_bindings.sql"))
+      for (String file : List.of("V47__workflow_flowable_8.sql", "V48__workflow_application.sql","V69__workflow_data_contract_snapshots.sql", "V57__leave_poc.sql", "V59__document_configuration.sql", "V60__leave_approval_cycles.sql", "V63__document_submission_strategy.sql", "V64__leave_direct_submission.sql", "V65__document_print_binding.sql", "V66__document_page_relationships.sql","V68__document_entry_controls.sql", "V67__explicit_interaction_bindings.sql"))
         ScriptUtils.executeSqlScript(connection, new ClassPathResource("db/migration/" + file));
     }
     var manager = new DataSourceTransactionManager(source);
@@ -44,7 +45,7 @@ class LeavePocTest {
       }
       public List<String> resolve(String t, String o, String k, String r) {
         if (!t.equals("019a65d0-0061-7000-8000-000000000001") || !ORG.equals(o)) return List.of();
-        return k.equals("LEADER") ? List.of("leader") : active(t, r) ? List.of(r) : List.of();
+        return k.equals("LEADER") ? (leaderMissing?List.of():List.of("leader")) : active(t, r) ? List.of(r) : List.of();
       }
     };
     service = new LeavePocService(jdbc, manager, platform, () -> runtime, () -> runtime);
@@ -142,6 +143,27 @@ class LeavePocTest {
     assertThat(runtime.dispatch()).isTrue();
     assertThat(service.read(c("applicant"), id, null).get("state")).isEqualTo("WITHDRAWN");
     assertThat(runtime.tasks(c("leader"), "todo")).noneMatch(t -> id.equals(t.get("object_id")));
+  }
+
+  @Test void organizationMembershipIsCheckedOnlyWhenSubmittingApproval(){
+    var base=input(2);
+    var draft=new LeavePocService.Input(UUID.randomUUID().toString(),base.leaveType(),base.startDate(),base.endDate(),base.reason());
+    String id=service.create(c("applicant"),draft).get("id").toString();
+    assertThat(service.update(c("applicant"),id,0,draft).get("state")).isEqualTo("DRAFT");
+    assertThatThrownBy(()->service.submit(c("applicant"),id)).hasMessage("LEAVE_ORGANIZATION_UNAVAILABLE");
+    assertThat(service.read(c("applicant"),id,null).get("state")).isEqualTo("DRAFT");
+    assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM wf_instance WHERE object_id=?",Integer.class,id)).isZero();
+  }
+
+  @Test void missingLeaderAllowsDraftButApprovalRollsBack(){
+    leaderMissing=true;
+    try{
+      String id=service.create(c("applicant"),input(2)).get("id").toString();
+      assertThat(service.update(c("applicant"),id,0,input(3)).get("state")).isEqualTo("DRAFT");
+      assertThatThrownBy(()->service.submit(c("applicant"),id)).hasMessage("LEAVE_ORGANIZATION_LEADER_REQUIRED");
+      assertThat(service.read(c("applicant"),id,null).get("state")).isEqualTo("DRAFT");
+      assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM wf_instance WHERE object_id=?",Integer.class,id)).isZero();
+    }finally{leaderMissing=false;}
   }
 
   @Test void businessCatalogAndTypedConditionsAreAuthoritative() {

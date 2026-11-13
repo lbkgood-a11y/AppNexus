@@ -51,13 +51,24 @@ public record InteractionContract(
    * @param reference 已注册业务能力或打印数据契约编码，必填
    * @param purpose 服务用途；工作流必须提供明确用途以隔离不同审批语义
    * @param fields 非敏感输入字段元数据，同一投影内键唯一；不包含真实单据值
+   * @param dataContract 数据契约稳定编码，不是执行处理器标识
+   * @param dataVersion 数据契约正整数版本，缺省构造为 1
    * @param outcomes 业务认可的结果事件编码；审批不能省略
    */
   public record Capability(
       Service service, Completion completion, String reference, String purpose,
-      List<Documents.Field> fields, Set<String> outcomes) {
+      List<Documents.Field> fields, Set<String> outcomes, String dataContract, int dataVersion) {
+    /** 兼容已有代码声明；打印使用带版本编码，审批按业务能力建立独立数据身份。 */
+    public Capability(Service service, Completion completion, String reference, String purpose, List<Documents.Field> fields, Set<String> outcomes) {
+      this(service,completion,reference,purpose,fields,outcomes,service==Service.PRINT?reference:reference+".data",1);
+    }
+    /** 数据结构从同一字段声明生成，不维护第二份字段清单；必填性取自字段声明且无隐式默认值。 */
+    public com.appnexus.contracts.data.DataContract schema(){
+      return new com.appnexus.contracts.data.DataContract(dataContract,dataVersion,service.name(),fields.stream().map(f->new com.appnexus.contracts.data.DataContract.Field(f.key(),com.appnexus.contracts.data.DataContract.Type.valueOf(f.type()),f.required(),f.unit())).toList());
+    }
     /** 检查当前执行协议实际支持的完成方式，不允许配置声称支持尚未实现的行为。 */
     public Capability {
+      if(dataContract==null||dataContract.isBlank()||dataVersion<1)throw new IllegalArgumentException("DATA_CONTRACT_INVALID");
       Objects.requireNonNull(service);
       Objects.requireNonNull(completion);
       if (reference == null || reference.isBlank()) {
