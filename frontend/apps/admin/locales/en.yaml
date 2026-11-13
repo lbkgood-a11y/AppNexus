@@ -632,6 +632,7 @@ organization:
   invalidExpiry: Expiry must be in the future
 administration:
   clientPurpose: Client purpose
+  documentClient: Document and printing integration
   dictionaryClient: Business dictionaries
   printClient: Print agent
   inviteInstead: Issue an invitation for the account owner to activate membership
@@ -924,6 +925,10 @@ roleManagement:
     ROLE_DATA_CONFLICT: The role constraints changed.
     INVALID_ROLE_INPUT: The role fields are invalid.
 authorizationCenter:
+  memberGranted: Granted to member (data and business rules still apply)
+  memberNotGranted: Role allows; member grant missing
+  roleCeilingHint: The role is a ceiling. Member draft changes require saving; scope, expiry and business state are checked separately.
+  memberOperations: Member operations within role limits
   templates: Policy templates
   templateName: Template name
   saveTemplate: Save current policy template
@@ -1150,6 +1155,7 @@ workflow:
     FORK: Fork
     JOIN: Join
   modes:
+    PRINT: Print output
     APPROVAL: Approval
     BUSINESS: End-to-end business
   completions:
@@ -1319,6 +1325,16 @@ workflow:
   deleteConnection: Delete selected connection
   dragHint: Drag from the library, move nodes, and connect output ports to input ports.
 printing:
+  outputStages:
+    WAITING_RENDER: Waiting Render
+    RENDERING: Rendering
+    RENDERER_OFFLINE: Renderer Offline
+    PREVIEW_READY: Preview Ready
+    DEVICE_QUEUED: Device Queued
+    DEVICE_SUBMITTED: Device Submitted
+    FAILED: Failed
+    UNKNOWN: Unknown
+    CANCELLED: Cancelled
   autoArrange: Auto arrange
   arrangeConfirm: Reposition elements on every panel in reading order? Content and sizes are preserved. You can undo this change.
   arrangeSpace: Insufficient paper space or invalid element size. The original layout is retained. Adjust paper or element sizes.
@@ -1645,6 +1661,52 @@ businessWorkflow:
   removeReview: Remove approval step
   removeConfirm: Remove this step and its independent condition, if any? Publishing affects new submissions.
 document:
+  interactions: Interaction contracts
+  interactionCode: Contract code
+  service: Target service
+  completion: Completion
+  reference: Capability reference
+  purpose: Purpose
+  inputs: Input fields
+  outcomes: Outcomes
+  trigger: Trigger
+  triggers:
+    USER_ACTION: User action
+    BUSINESS_EVENT: Business event
+    SERVICE_RESULT: Service result
+    SCHEDULE: Schedule
+  completions:
+    SYNCHRONOUS: Synchronous
+    CALLBACK: Callback
+    CONFIRMATION: Confirmation
+    ASYNCHRONOUS: Asynchronous
+  events:
+    DOCUMENT_CREATED: Document Created
+    APPROVAL_STARTED: Approval Started
+    APPROVAL_APPLIED: Approval Applied
+    PRINT_DEVICE: Device queue delivery (not physical completion)
+    PRINT_OUTPUT: Print Output
+  actionAvailability: Action availability
+  availability:
+    READY: Available; rechecked on execution
+    OPERATION_PERMISSION_MISSING: Effective operation grant missing
+    PAGE_RELATION_DISABLED: Platform page relationship disabled
+    BUSINESS_STATE_DENIED: Business state does not allow this action
+  checkReadiness: Check readiness
+  checkItem: Check
+  checkTarget: Target
+  ready: Ready
+  notReady: Not ready
+  liveHint: (live)
+  lifecycleEvent: Lifecycle event
+  occurredAt: Occurred at
+  checks:
+    TYPE_ENABLED: Type Enabled
+    PAGE_RELATION: Page Relation
+    PUBLISHED_BINDING: Published Binding
+    WORKFLOW_VERSION: Workflow Version
+    PRINT_SCENE: Print Scene
+    RENDERER_ONLINE: Renderer Online
   platformTitle: Document registry
   title: Document workbench
   code: Document code
@@ -1662,7 +1724,7 @@ document:
   enable: Enable
   disable: Disable
   grants: Tenant grants and contract
-  configure: Configure submission action
+  configure: Configure document actions
   empty: No manageable documents
   field: Condition field
   fieldType: Type
@@ -1678,14 +1740,26 @@ document:
   required: Complete binding names, published workflows and conditions
   inactiveHint: This document is authorized but disabled. Configuration is available; submissions require platform activation.
   action: Document action
+  pageRelations: Page operation relationships
+  addPageRelation: Add page relationship
+  savePageRelations: Save page relationships
+  pageRelationHint: Link integrated page operations to compatible actions. Removed links block new page commands without affecting existing workflow results.
+  pageRelationInvalid: Select complete relationships without duplicate operations.
+  pageRelationConfirm: Changes take effect immediately. Removed links block new commands. Save?
+  pageOperation: Page operation
+  selectPageOperation: Select an integrated page operation
+  noPageOperation: No integrated page operation is registered. Contact the business developer.
+  businessEndpoint: Business endpoint
   operationKey: Page and API operation key
   permission: Operation permission
-  submissionMode: Submission mode
-  directHint: Business acceptance without an approval instance. The business owns the resulting state.
-  modes:
-    DIRECT: Direct submission
-    APPROVAL: Approval submission
-  bindingHint: Exactly one explicit submission strategy must match, including direct submission. Numbers use declared units.
+  printScene: Print scene
+  submissionMode: Action execution mode
+  directHint: Execute the declared business action without an approval instance. The business owns its rules and resulting state.
+  services:
+    PRINT: Print output
+    BUSINESS: Execute business action
+    WORKFLOW: Approval workflow
+  bindingHint: Match strategies independently per action. Each invocation requires exactly one explicit match.
   addBinding: Add binding
   removeBinding: Remove binding
   bindingName: Binding name
@@ -1696,6 +1770,7 @@ document:
   addCondition: Add condition (AND)
   operator: Operator
   value: Value
+  removePageRelation: Remove link
   remove: Remove condition
   close: Close
   save: Save draft
@@ -1712,6 +1787,11 @@ document:
     LE: Less or equal
   leaveConfiguration: Unsaved binding changes will be discarded. Open the workflow designer?
   codes:
+    DOCUMENT_PRINT_SCENE_INVALID: The print scene is disabled or incompatible with the business contract.
+    DOCUMENT_PRINT_CONTRACT_REQUIRED: The action has no printing data contract.
+    DOCUMENT_PAGE_RELATION_INVALID: Incompatible or duplicate page relationship.
+    DOCUMENT_PAGE_RELATION_DISABLED: The platform removed this page relationship. Contact your administrator.
+    DOCUMENT_PAGE_OPERATION_INVALID: The page operation does not match the document action. Select it again.
     DOCUMENT_CONTRACT_CHANGED: Document contract changed. Validate and publish the binding again.
     DOCUMENT_FLOW_NOT_BOUND: No approval binding. Contact your tenant administrator.
     DOCUMENT_FLOW_NOT_MATCHED: No approval binding matches. Contact your tenant administrator.

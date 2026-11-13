@@ -29,6 +29,15 @@ class IntegrationClientTest extends DatabaseTestSupport {
     private UUID actor;
     @BeforeEach void initialize(){administration.initializeAdministrator("admin-test");actor=UUID.fromString(jdbc.queryForObject("SELECT BIN_TO_UUID(id) FROM identity_account WHERE username='admin-test'",String.class));}
     private UUID tenant(){UUID id=UUID.randomUUID();jdbc.update("INSERT INTO platform_tenant(id,name) VALUES(UUID_TO_BIN(?),'Partner tenant')",id.toString());return id;}
+    /** 专用服务 scope 只开放解析入口，Token 固定租户，不能访问人员配置或伪装任意账号。 */
+    @Test void documentScopeOnlyAllowsResolution() throws Exception {
+        var client=clients.create(actor,tenant(),"Document service",Set.of("document:resolve"));String bearer=token(client);
+        mvc.perform(post("/api/documents/integration/resolutions").header("Authorization","Bearer "+bearer).header("Idempotency-Key",UUID.randomUUID().toString()).contentType("application/json").content("{\"typeCode\":\"Unknown\",\"actionCode\":\"submit\",\"objectId\":\""+UUID.randomUUID()+"\",\"basisVersion\":0,\"facts\":{}}"))
+          .andExpect(status().isNotFound());
+        mvc.perform(get("/api/documents").header("Authorization","Bearer "+bearer)).andExpect(status().isUnauthorized());
+        var other=clients.create(actor,tenant(),"Dictionary only",Set.of("dictionaries:read"));
+        mvc.perform(post("/api/documents/integration/resolutions").header("Authorization","Bearer "+token(other)).contentType("application/json").content("{}")) .andExpect(status().isForbidden());
+    }
     private String token(IntegrationClients.Created client)throws Exception{
         String body=mvc.perform(post("/oauth2/token").with(httpBasic(client.client().id(),client.secret()))
             .contentType("application/x-www-form-urlencoded").param("grant_type","client_credentials").param("scope",String.join(" ",client.client().scopes())))
@@ -63,6 +72,8 @@ class IntegrationClientTest extends DatabaseTestSupport {
         UUID tenant=tenant();
         var agent=clients.create(actor,tenant,"Print agent",Set.of("print-agent:operate"));
         String bearer=token(agent);
+        mvc.perform(get("/api/printing/agent/identity").header("Authorization","Bearer "+bearer))
+          .andExpect(status().isOk()).andExpect(jsonPath("$.tenantId").value(tenant.toString())).andExpect(jsonPath("$.tenantName").value("Partner tenant")).andExpect(jsonPath("$.clientId").value(agent.client().id()));
         mvc.perform(post("/api/printing/agent/claim").queryParam("site","default").queryParam("agent","test-agent")
                 .header("Authorization","Bearer "+bearer).header("Idempotency-Key",UUID.randomUUID().toString()))
             .andExpect(status().isNoContent());

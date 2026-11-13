@@ -25,25 +25,25 @@ class LeavePocTest {
   static LeavePocService service;
   static WorkflowRuntime runtime;
   static org.flowable.engine.ProcessEngine engine;
-  static WorkflowContext c(String actor) { return new WorkflowContext("tenant-a", actor, UUID.randomUUID().toString()); }
+  static WorkflowContext c(String actor) { return new WorkflowContext("019a65d0-0061-7000-8000-000000000001", actor, UUID.randomUUID().toString()); }
 
   @BeforeAll
   static void setup() throws Exception {
     var source = new DriverManagerDataSource(MYSQL.getJdbcUrl(), MYSQL.getUsername(), MYSQL.getPassword());
     jdbc = new JdbcTemplate(source);
     try (var connection = source.getConnection()) {
-      for (String file : List.of("V47__workflow_flowable_8.sql", "V48__workflow_application.sql", "V57__leave_poc.sql"))
+      for (String file : List.of("V47__workflow_flowable_8.sql", "V48__workflow_application.sql", "V57__leave_poc.sql", "V59__document_configuration.sql", "V60__leave_approval_cycles.sql", "V63__document_submission_strategy.sql", "V64__leave_direct_submission.sql", "V65__document_print_binding.sql", "V66__document_page_relationships.sql", "V67__explicit_interaction_bindings.sql"))
         ScriptUtils.executeSqlScript(connection, new ClassPathResource("db/migration/" + file));
     }
     var manager = new DataSourceTransactionManager(source);
     WorkflowPlatform platform = new WorkflowPlatform() {
       public boolean allowed(WorkflowContext c, String p) { return active(c.tenantId(), c.actorId()); }
-      public boolean active(String t, String a) { return t.equals("tenant-a") && Set.of("applicant", "leader", "hr").contains(a); }
+      public boolean active(String t, String a) { return t.equals("019a65d0-0061-7000-8000-000000000001") && Set.of("applicant", "leader", "hr").contains(a); }
       public List<WorkflowPlatform.Option> documentOrganizations(WorkflowContext c) {
         return active(c.tenantId(), c.actorId()) ? List.of(new WorkflowPlatform.Option(ORG, "测试组织")) : List.of();
       }
       public List<String> resolve(String t, String o, String k, String r) {
-        if (!t.equals("tenant-a") || !ORG.equals(o)) return List.of();
+        if (!t.equals("019a65d0-0061-7000-8000-000000000001") || !ORG.equals(o)) return List.of();
         return k.equals("LEADER") ? List.of("leader") : active(t, r) ? List.of(r) : List.of();
       }
     };
@@ -51,10 +51,25 @@ class LeavePocTest {
     var bridge = new WorkflowBridge();
     engine = new WorkflowEngineConfiguration().workflowProcessEngine(source, manager, bridge);
     runtime = new WorkflowEngineConfiguration().workflowRuntime(engine, source, manager, platform, List.of(service), bridge);
+    var documents = new com.appnexus.document.DocumentService(jdbc, manager, new com.appnexus.contracts.document.DocumentPlatform() {
+      public boolean platformAdministrator(String actor) { return actor.equals("applicant"); }
+      public boolean active(com.appnexus.contracts.document.Documents.Context context) { return platform.active(context.tenantId(),context.actorId()); }
+      public boolean tenantAdministrator(com.appnexus.contracts.document.Documents.Context context) { return active(context); }
+      public boolean tenantExists(String tenant) { return tenant.equals("019a65d0-0061-7000-8000-000000000001"); }
+    }, () -> runtime, List.of(service));
+    service.bindings(() -> documents);
+    runtime.documentBindings(() -> documents);
     var model = model();
     assertThat(runtime.validate(c("applicant"), model)).isEmpty();
     runtime.save(c("applicant"), "leave-poc", -1, model);
     runtime.publish(c("applicant"), "leave-poc", 0);
+    var context = new com.appnexus.contracts.document.Documents.Context("019a65d0-0061-7000-8000-000000000001","applicant",UUID.randomUUID().toString());
+    documents.savePageRelationships(context,"LeaveRequest",-1,List.of(new com.appnexus.contracts.document.Documents.PageRelationship("submit","LeaveRequest.submit")));
+    documents.activate(context,"LeaveRequest",0,true);
+    documents.grant(context,"LeaveRequest","019a65d0-0061-7000-8000-000000000001",true);
+    documents.save(context,"LeaveRequest",-1,List.of(new com.appnexus.contracts.document.Documents.Binding(UUID.randomUUID().toString(),"审批","leave-poc",1,List.of(),"submit","WORKFLOW","LeaveRequest.submit",null)));
+    documents.publish(context,"LeaveRequest",0);
+
   }
 
   @AfterAll static void close() { if (engine != null) engine.close(); }
@@ -70,7 +85,7 @@ class LeavePocTest {
             node("hr", Kind.REVIEW, "hr"), node("merge", Kind.MERGE, null), node("end", Kind.END, null)),
         List.of(edge("start", "leader"), edge("leader", "choice"), new Edge("choice", "hr", "days", "3", false, "GT"),
             new Edge("choice", "merge", null, null, true), edge("hr", "merge"), edge("merge", "end")),
-        Map.of("APPROVED", "leavePoc", "REJECTED", "leavePoc"));
+        Map.of("APPROVED", "leavePoc", "REJECTED", "leavePoc", "WITHDRAWN", "leavePoc"), List.of(), "leavePoc");
   }
   static LeavePocService.Input input(int days) {
     return new LeavePocService.Input(ORG, "PERSONAL", LocalDate.of(2026, 11, 1), LocalDate.of(2026, 11, days), "私人原因");
@@ -120,16 +135,8 @@ class LeavePocTest {
   }
 
   @Test void withdrawalIsBusinessCheckedAndDeliveredWithoutApproving() {
-    var base = model();
-    var enabled = new WorkflowModel(base.name(), base.objectType(), "withdrawal", base.mode(), base.entryCapability(), base.matches(),
-        base.nodes(), base.edges(), Map.of("APPROVED", "leavePoc", "REJECTED", "leavePoc", "WITHDRAWN", "leavePoc"), List.of(), "leavePoc");
-    runtime.save(c("applicant"), "withdrawal", -1, enabled);
-    runtime.publish(c("applicant"), "withdrawal", 0);
     String id = create(4).get("id").toString();
-    // 本测试使用独立用途，调用与业务提交相同事务中的冻结状态，避免干扰默认审批流程。
-    jdbc.update("UPDATE leave_poc_request SET state='SUBMITTED' WHERE id=?", id);
-    String instance = runtime.startInstance(c("applicant"), "LeaveRequest", id, 0, ORG, "withdrawal", "leavePoc");
-    jdbc.update("UPDATE leave_poc_request SET instance_id=? WHERE id=?", instance, id);
+    String instance = service.submit(c("applicant"),id).get("instance_id").toString();
     assertThatThrownBy(() -> runtime.withdraw(c("hr"), instance, "POC 校验")).isInstanceOf(RuntimeException.class);
     runtime.withdraw(c("applicant"), instance, "POC 本人撤回");
     assertThat(runtime.dispatch()).isTrue();

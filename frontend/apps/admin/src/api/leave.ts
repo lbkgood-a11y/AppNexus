@@ -18,11 +18,14 @@ async function write<T>(path: string, data?: unknown, method:"post"|"put"="post"
 
 /** 只调用真实业务 API，不在浏览器推断或写入审批结果。 */
 export const leaveApi: LeaveApi = {
+  timeline:id=>http.request('get','/api/leave-poc/'+encodeURIComponent(id)+'/timeline'),
+  availability:id=>http.request('get','/api/leave-poc/'+encodeURIComponent(id)+'/availability'),
   actions:()=>http.request('get','/api/leave-poc/actions'),
   organizations: () => http.request("get", "/api/leave-poc/organizations"),
   list: () => http.request("get", "/api/leave-poc"),
   create: (input) => write("", input),
-  submit: (id) => write("/" + encodeURIComponent(id) + "/submit"),
+  submit: (id,operationKey) => write("/" + encodeURIComponent(id) + "/submit",{operationKey}),
+  print:(id,operationKey)=>write('/'+encodeURIComponent(id)+'/print',{operationKey}),
   update: (id,basisVersion,input)=>write('/'+encodeURIComponent(id),{basisVersion,input},'put'),
   cycles: id=>http.request('get','/api/leave-poc/'+encodeURIComponent(id)+'/cycles'),
   read: (id, taskId) =>

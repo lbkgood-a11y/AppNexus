@@ -152,12 +152,25 @@ public final class WorkflowRuntime implements WorkflowResults, WorkflowTaskAcces
         .toList();
   }
 
+  /** 流程设计视图由统一单据行为声明投影生成，业务不再维护第二份工作流目录。 */
+  private WorkflowBusinessProfile businessProfile(WorkflowBusiness business,String capability){
+    if(!(business instanceof com.appnexus.contracts.document.Documents.Provider provider))return null;
+    var d=provider.descriptor();
+    var a=d.actions().stream().filter(action->action.approval()!=null && action.approval().entry().equals(capability)).findFirst().orElse(null);
+    if(a==null)return null;
+    var contract=java.util.Objects.requireNonNull(a.approval(),"INTERACTION_WORKFLOW_CONTRACT_REQUIRED");
+    return new WorkflowBusinessProfile(d.typeCode(),contract.purpose(),d.nameZh(),d.nameEn(),"适用业务契约；触发策略在单据工作台配置。","Compatible business contract; configure triggers in the document workbench.",
+      a.interaction().capabilities().stream().filter(c->c.service()==com.appnexus.contracts.document.InteractionContract.Service.WORKFLOW).findFirst().orElseThrow().fields().stream().map(f->new WorkflowBusinessProfile.Field(f.key(),f.nameZh(),f.nameEn(),f.type(),f.unit(),f.unit())).toList(),
+      contract.outcomes().stream().map(result->new WorkflowBusinessProfile.Outcome(result,contract.entry(),result,result)).toList(),
+      contract.outcomes().contains("WITHDRAWN")?contract.entry():null);
+  }
+
   /** 业务设计目录与真实选人选项；只读流程人员可查看，能力仍逐项按既有功能权限过滤。 */
   public Map<String, Object> configuration(WorkflowContext c) {
     require(c, "read");
     var documents = businesses(c).stream()
-        .filter(b -> businesses.get(b.key()).configuration() != null)
-        .map(b -> Map.of("capability", b.key(), "profile", businesses.get(b.key()).configuration()))
+        .filter(b -> businessProfile(businesses.get(b.key()),b.key()) != null)
+        .map(b -> Map.of("capability", b.key(), "profile", businessProfile(businesses.get(b.key()),b.key())))
         .toList();
     return Map.of("documents", documents, "options", platform.configurationOptions(c));
   }
@@ -192,7 +205,7 @@ public final class WorkflowRuntime implements WorkflowResults, WorkflowTaskAcces
     if (m != null && m.edges() != null) {
       // 数值条件必须显式来自本单据的 NUMBER 字段，避免按字符串或跨业务字段误判。
       var entry = businesses.get(m.entryCapability());
-      var profile = entry == null ? null : entry.configuration();
+      var profile = entry == null ? null : businessProfile(entry,m.entryCapability());
       if (profile != null && m.mode() == Mode.APPROVAL) {
         for (String result : List.of("APPROVED", "REJECTED")) {
           String bound = m.terminalActions() == null ? null : m.terminalActions().get(result);
@@ -357,7 +370,7 @@ public final class WorkflowRuntime implements WorkflowResults, WorkflowTaskAcces
       String organization,
       String purpose,
       String entry) {
-    if(documentBindings!=null&&businesses.get(entry) instanceof com.appnexus.contracts.document.Documents.Provider)
+    if(businesses.get(entry) instanceof com.appnexus.contracts.document.Documents.Provider)
       throw fail("DOCUMENT_BINDING_REQUIRED",409);
     return startInternal(c,objectType,objectId,objectVersion,organization,purpose,entry,null);
   }
@@ -383,7 +396,7 @@ public final class WorkflowRuntime implements WorkflowResults, WorkflowTaskAcces
             + ":"
             + purpose
             + ":"
-            + entry + ":" + Objects.toString(resolution,"legacy"),
+            + entry + ":" + Objects.toString(resolution,"orchestration"),
         () -> {
           var business = business(c, entry);
           var snapshot =
@@ -402,9 +415,9 @@ public final class WorkflowRuntime implements WorkflowResults, WorkflowTaskAcces
                           null,
                           null,
                           Map.of())));
-          var bound = resolution==null?null:documentBindings.get().verify(
+          var bound = resolution==null?null:documentBindings.get().verifyApproval(
               new com.appnexus.contracts.document.Documents.Context(c.tenantId(),c.actorId(),c.requestId()),
-              resolution,objectType,objectId,objectVersion,snapshot);
+              resolution,objectType,objectId,objectVersion,snapshot,purpose,entry);
           var rows =
               jdbc.queryForList(
                   "SELECT v.*,d.id FROM wf_definition d JOIN wf_version v ON"

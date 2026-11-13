@@ -81,9 +81,6 @@ public interface WorkflowBusiness {
   /** 返回稳定能力声明，不读取调用者提交的目标地址。 */
   Capability capability();
 
-  /** 返回业务配置目录；缺省 null 表示仅可在高级编排中使用，不编造可用单据或结果处理。 */
-  default WorkflowBusinessProfile configuration() { return null; }
-
   /**
    * 执行业务动作或保存办理数据；调用方不得提前完成任务。
    * @param invocation 已验证对象与受控输入，必须区分暂存、提交、撤回和自动执行

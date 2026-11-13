@@ -27,6 +27,8 @@ public final class PrintController {
   }
 
   @GetMapping("/capabilities") public Object capabilities(HttpServletRequest r){return reply(()->runtime.capabilities(context(r)));}
+  /** 已认证代理自查租户与客户端，避免把其他租户客户端误认为本租户渲染能力。 */
+  @GetMapping("/agent/identity") public Object agentIdentity(HttpServletRequest r){return reply(()->runtime.agentIdentity(context(r)));}
   @GetMapping("/design-contracts") public Object designContracts(HttpServletRequest r){return reply(()->flow.contracts(context(r)));}
   @PostMapping("/design-contracts") public Object createContract(HttpServletRequest r,@RequestBody tools.jackson.databind.JsonNode d){return reply(()->flow.createContract(context(r),d));}
   @GetMapping("/scenes") public Object scenes(HttpServletRequest r){return reply(()->flow.scenes(context(r)));}

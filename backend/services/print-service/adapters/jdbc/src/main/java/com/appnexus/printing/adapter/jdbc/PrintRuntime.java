@@ -12,6 +12,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 /** 打印模板、不可变发布版本、设备和任务的事务边界；所有 SQL 显式绑定可信租户。 */
 public class PrintRuntime {
+  /** 代理连接诊断元数据，身份与固定租户由平台权威端口提供，不返回密钥。 */
+  public Map<String,String> agentIdentity(PrintContext c){require(c,"print.agent:operate");return platform.agentIdentity(c);}
   private final JdbcTemplate jdbc;
   private final PrintPlatform platform;
   private final PrintJson json;

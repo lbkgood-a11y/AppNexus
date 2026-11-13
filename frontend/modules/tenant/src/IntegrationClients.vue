@@ -34,7 +34,7 @@ async function write(action: () => Promise<unknown>) {
 }
 async function create() {
   if (!await form.value?.validate().catch(() => false)) return;
-  await write(async () => { secret.value = await props.api.createClient(props.tenantId, name.value.trim(), purpose.value==="externalPrint" ? ["print:submit"] : purpose.value==="print" ? ["print-agent:operate"] : allowReferences.value ? ["dictionaries:read", "dictionary-references:write"] : ["dictionaries:read"]); name.value = ""; });
+  await write(async () => { secret.value = await props.api.createClient(props.tenantId, name.value.trim(), purpose.value==="document" ? ["document:resolve","print:submit"] : purpose.value==="externalPrint" ? ["print:submit"] : purpose.value==="print" ? ["print-agent:operate"] : allowReferences.value ? ["dictionaries:read", "dictionary-references:write"] : ["dictionaries:read"]); name.value = ""; });
 }
 /** 固定使用当前行版本和完整 scope，不能由按钮悄悄扩大外部权限。 */
 async function rotate(row: IntegrationClient) { await write(async () => { secret.value = await props.api.rotateClient(row); }); }
@@ -56,7 +56,7 @@ onBeforeUnmount(() => { secret.value = undefined; name.value = ""; });
     <template #search>
       <el-form ref="form" :model="{ name }" inline @submit.prevent="create">
         <el-form-item prop="name" :label="t('administration.clientName')" :rules="[{ required: true, whitespace: true, max: 100, message: t('administration.invalidName'), trigger: 'blur' }]"><el-input v-model="name" :maxlength="100" :disabled="saving || loading" /></el-form-item>
-        <el-form-item :label="t('administration.clientPurpose')"><el-select v-model="purpose" :disabled="saving||loading"><el-option value="dictionary" :label="t('administration.dictionaryClient')"/><el-option value="print" :label="t('administration.printClient')"/><el-option value="externalPrint" :label="t('administration.externalPrintClient')"/></el-select></el-form-item><el-form-item v-if="purpose==='dictionary'"><el-checkbox v-model="allowReferences" :disabled="saving || loading">{{ t("administration.allowReferences") }}</el-checkbox></el-form-item>
+        <el-form-item :label="t('administration.clientPurpose')"><el-select v-model="purpose" :disabled="saving||loading"><el-option value="document" :label="t('administration.documentClient')"/><el-option value="dictionary" :label="t('administration.dictionaryClient')"/><el-option value="print" :label="t('administration.printClient')"/><el-option value="externalPrint" :label="t('administration.externalPrintClient')"/></el-select></el-form-item><el-form-item v-if="purpose==='dictionary'"><el-checkbox v-model="allowReferences" :disabled="saving || loading">{{ t("administration.allowReferences") }}</el-checkbox></el-form-item>
         <el-form-item><el-button v-operation="'integration.client:create'" type="primary" native-type="submit" :loading="saving" :disabled="loading || !!error">{{ t("administration.createClient") }}</el-button></el-form-item>
       </el-form>
     </template>

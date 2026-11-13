@@ -121,11 +121,24 @@ class PrintingRuntimeTest extends DatabaseTestSupport {
     assertThatThrownBy(()->flow.print(new PrintContext(tenant,UUID.randomUUID().toString(),UUID.randomUUID().toString()),documentId,options)).hasMessage("PRINT_DOCUMENT_NOT_FOUND");
     assertThatThrownBy(()->flow.saveDocument(design,new PrintFlow.Document(sceneId,"BAD",mapper.readTree("{\"unexpected\":\"value\"}")))).hasMessage("PRINT_CONTRACT_INVALID");
     var outputs=new PrintOutputs(jdbc,(context,permission)->true,runtime,flow,mapper);
+    var bridge=new com.appnexus.printing.adapter.jdbc.BusinessPrintingAdapter(jdbc,outputs,(context,permission)->true);
+    assertThat(bridge.rendererOnline(design)).isTrue();
+    jdbc.update("UPDATE print_agent_queue SET seen_at=DATE_SUB(CURRENT_TIMESTAMP(6),INTERVAL 121 SECOND) WHERE tenant_id=UUID_TO_BIN(?)",tenant);
+    assertThat(bridge.rendererOnline(design)).isFalse();
+    flow.report(agent,new PrintFlow.QueueReport("default","agent-1",List.of("test-queue","中文队列")));
+    assertThat(bridge.rendererOnline(design)).isTrue();
+    assertThat(bridge.scenes(design,"warehouse.outbound.v1")).hasSize(1);
+    assertThat(bridge.scenes(new PrintContext(UUID.randomUUID().toString(),design.actorId(),UUID.randomUUID().toString()),"warehouse.outbound.v1")).isEmpty();
+    // 公开业务端口复用场景契约与幂等输出，数据先由业务端授权，打印端仍拒绝不兼容契约。
+    var businessContext=new PrintContext(tenant,"partner-business-test",UUID.randomUUID().toString());
+    var businessInput=new com.appnexus.contracts.printing.BusinessPrinting.Request("outbound","warehouse.outbound.v1","BUSINESS-1",Map.of("documentNumber","BUSINESS-1"),"PREVIEW",deviceId,1);
+    assertThatThrownBy(()->bridge.request(businessContext,new com.appnexus.contracts.printing.BusinessPrinting.Request("outbound","wrong.v1","BUSINESS-1",Map.of(),"PREVIEW",deviceId,1))).hasMessage("PRINT_SCENE_UNAVAILABLE");
+    // 后面的代理领取断言依赖队列顺序，业务端口的额外任务在本用例结束再创建。
     var external=new PrintContext(tenant,"partner-output-test",UUID.randomUUID().toString());
-    var input=new PrintOutputs.Input("outbound","OUT-EXT-001",mapper.readTree("{\"documentNumber\":\"OUT-EXT-001\"}"),"PREVIEW",deviceId,2);
+    var input=new PrintOutputs.Input("outbound","OUT-EXT-001",mapper.readTree("{\"documentNumber\":\"OUT-EXT-001\"}"),"PREVIEW",deviceId,2,"warehouse.outbound.v1");
     var preview=outputs.external(external,input);String outputId=preview.get("id").toString();
     assertThat(outputs.external(external,input).get("id")).isEqualTo(outputId);
-    assertThatThrownBy(()->outputs.external(external,new PrintOutputs.Input("outbound","OTHER",input.data(),"PREVIEW",deviceId,2))).hasMessage("PRINT_IDEMPOTENCY_CONFLICT");
+    assertThatThrownBy(()->outputs.external(external,new PrintOutputs.Input("outbound","OTHER",input.data(),"PREVIEW",deviceId,2,"warehouse.outbound.v1"))).hasMessage("PRINT_IDEMPOTENCY_CONFLICT");
     assertThatThrownBy(()->outputs.confirm(external,outputId,deviceId)).hasMessage("PRINT_PREVIEW_NOT_READY");
     assertThatThrownBy(()->outputs.status(new PrintContext(tenant,"partner-another",UUID.randomUUID().toString()),outputId)).hasMessage("PRINT_OUTPUT_NOT_FOUND");
     // 前一项配置式 PDF 仍在队列，显式完成后才领取外部预览，确认前绝不出现 PRINTER 子任务。
@@ -137,11 +150,16 @@ class PrintingRuntimeTest extends DatabaseTestSupport {
     assertThat(outputs.pdf(external,outputId)).isEqualTo(pdf);
     var confirmed=outputs.confirm(external,outputId,deviceId);
     assertThat(confirmed.get("confirmedJobId")).isNotNull();
+    var businessOutput=bridge.request(businessContext,businessInput);
+    assertThat(bridge.request(businessContext,businessInput).get("id")).isEqualTo(businessOutput.get("id"));
+    assertThat(bridge.history(businessContext,"BUSINESS-1")).singleElement().satisfies(event->assertThat(event.get("id")).isEqualTo(businessOutput.get("id")));
+    assertThat(bridge.history(new PrintContext(tenant,"partner-other",UUID.randomUUID().toString()),"BUSINESS-1")).isEmpty();
     assertThat(outputs.confirm(external,outputId,deviceId).get("confirmedJobId")).isEqualTo(confirmed.get("confirmedJobId"));
     var physical=runtime.claim(agent,"default","agent-1").orElseThrow();
     assertThat(physical.get("copies")).isEqualTo(2);
     assertThat(physical.get("output_type")).isEqualTo("PRINTER");
-    var silent=outputs.external(new PrintContext(tenant,"partner-output-test",UUID.randomUUID().toString()),new PrintOutputs.Input("outbound","OUT-SILENT",input.data(),"SILENT",deviceId,1));
+    assertThat(outputs.status(external,outputId).get("deliveryState")).isNotNull();
+    var silent=outputs.external(new PrintContext(tenant,"partner-output-test",UUID.randomUUID().toString()),new PrintOutputs.Input("outbound","OUT-SILENT",input.data(),"SILENT",deviceId,1,"warehouse.outbound.v1"));
     assertThat(silent.get("mode")).isEqualTo("SILENT");
     flow.saveScene(design,sceneId,new PrintFlow.Scene("outbound","出仓单","warehouse.outbound.v1",templateId,1,false,0));
     assertThatThrownBy(()->flow.print(new PrintContext(tenant,actor,UUID.randomUUID().toString()),documentId,options)).hasMessage("PRINT_SCENE_UNAVAILABLE");

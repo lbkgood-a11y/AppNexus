@@ -10,6 +10,9 @@ async function write(method:"put"|"post",path:string,data:unknown) {
 export function documentApi(platform=false):DocumentApi {
   const base=platform?'/bff/platform/documents':'/api/documents';const id=encodeURIComponent;
   return {
+    readiness:type=>http.request('get',`/api/documents/${id(type)}/readiness`),
+    pageRelationships:type=>http.request('get',`${base}/${id(type)}/page-relationships`),
+    savePageRelationships:(type,revision,relationships)=>write('put',`${base}/${id(type)}/page-relationships`,{revision,relationships}) as ReturnType<DocumentApi['savePageRelationships']>,
     catalog:()=>http.request('get',base),
     activate:(type,revision,enabled)=>write('put',`${base}/${id(type)}/state`,{revision,enabled}),
     tenants:async()=>{const rows:{id:string;name:string}[]=[];let page=1;let total=0;
@@ -17,7 +20,8 @@ export function documentApi(platform=false):DocumentApi {
     grants:type=>http.request('get',`${base}/${id(type)}/grants`),
     grant:(type,tenant,enabled)=>write('put',`${base}/${id(type)}/grants/${id(tenant)}`,{enabled,revision:0}),
     configuration:type=>http.request('get',`${base}/${id(type)}/configuration`),
-    workflows:type=>http.request('get',`${base}/${id(type)}/workflows`),
+    workflows:(type,actionCode)=>http.request('get',`${base}/${id(type)}/workflows`,{params:{actionCode}}),
+    scenes:(type,actionCode)=>http.request('get',`${base}/${id(type)}/print-scenes`,{params:{actionCode}}),
     save:(type,revision,bindings)=>write('put',`${base}/${id(type)}/configuration`,{revision,bindings}),
     publish:(type,revision)=>write('post',`${base}/${id(type)}/configuration:publish`,{revision})
   };

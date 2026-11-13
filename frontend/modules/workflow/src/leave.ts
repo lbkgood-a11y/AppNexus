@@ -58,8 +58,10 @@ export function leaveModel(
 
 /** 请假 POC 页面依赖注入接口；日期为 YYYY-MM-DD，标识均为字符串，不传租户或操作者。 */
 export interface LeaveApi {
+  timeline:(id:string)=>Promise<Record<string,any>[]>;
+  availability:(id:string)=>Promise<{actionCode:string;operationKey:string;allowed:boolean;reasonCode:string}[]>;
   /** 页面操作与后端、工作台共享 operationKey，不在浏览器决定提交策略。 */
-  actions:()=>Promise<{actionCode:string;nameZh:string;nameEn:string;permissionCode:string;operationKey:string;allowed:boolean}[]>;
+  actions:()=>Promise<{actionCode:string;nameZh:string;nameEn:string;permissionCode:string;operationKey:string;allowed:boolean;reasonCode:string}[]>;
   organizations: () => Promise<{ id: string; name: string }[]>;
   list: () => Promise<Record<string, any>[]>;
   create: (input: {
@@ -69,7 +71,9 @@ export interface LeaveApi {
     endDate: string;
     reason: string;
   }) => Promise<Record<string, any>>;
-  submit: (id: string) => Promise<unknown>;
+  submit: (id: string, operationKey:string) => Promise<unknown>;
+  /** 业务端授权取数并生成统一预览，浏览器不能提交快照。 */
+  print:(id:string,operationKey:string)=>Promise<{id:string;previewUrl:string}>;
   /** 本人编辑采用读取的依据版本，成功后形成可重提草稿。 */
   update: (id: string, basisVersion: number, input: { organizationId:string;leaveType:string;startDate:string;endDate:string;reason:string }) => Promise<unknown>;
   /** 本人各次审批关联，不返回历史原因原文。 */

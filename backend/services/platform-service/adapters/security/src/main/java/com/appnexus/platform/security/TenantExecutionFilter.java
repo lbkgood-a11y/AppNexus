@@ -37,11 +37,13 @@ public final class TenantExecutionFilter extends OncePerRequestFilter {
                     .anyMatch(value->value.getAuthority().equals("SCOPE_print-agent:operate"));
                 Object tenant=service.getTokenAttributes().get("tenantId"),client=service.getTokenAttributes().get("clientId");
                 boolean externalPrint=path.startsWith("/api/printing/external/")&&auth.getAuthorities().stream().anyMatch(value->value.getAuthority().equals("SCOPE_print:submit"));
-                if(!(printingAgent||externalPrint)||!(tenant instanceof String tenantId)||!(client instanceof String clientId)) {
+                boolean documentResolve=path.equals("/api/documents/integration/resolutions")&&request.getMethod().equals("POST")&&auth.getAuthorities().stream().anyMatch(value->value.getAuthority().equals("SCOPE_document:resolve"));
+                if(!(printingAgent||externalPrint||documentResolve)||!(tenant instanceof String tenantId)||!(client instanceof String clientId)) {
                     reject(response,403,"SERVICE_OPERATION_NOT_AUTHORIZED"); return;
                 }
                 request.setAttribute(com.appnexus.contracts.printing.PrintContext.class.getName(),
                     new com.appnexus.contracts.printing.PrintContext(tenantId,clientId,java.util.UUID.randomUUID().toString()));
+                if(documentResolve)request.setAttribute(com.appnexus.contracts.document.Documents.Context.class.getName(),new com.appnexus.contracts.document.Documents.Context(tenantId,clientId,java.util.UUID.randomUUID().toString()));
                 chain.doFilter(request,response);
                 return;
             }
@@ -104,6 +106,7 @@ public final class TenantExecutionFilter extends OncePerRequestFilter {
             request.removeAttribute(ATTRIBUTE);
             request.removeAttribute(com.appnexus.contracts.workflow.WorkflowContext.class.getName());
             request.removeAttribute(com.appnexus.contracts.printing.PrintContext.class.getName());
+            request.removeAttribute(com.appnexus.contracts.document.Documents.Context.class.getName());
         }
     }
     /** 过滤器错误使用标准错误媒体类型和稳定码，不泄露账号、成员或租户存在性。 */

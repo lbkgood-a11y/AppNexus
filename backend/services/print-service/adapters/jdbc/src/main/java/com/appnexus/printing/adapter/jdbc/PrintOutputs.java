@@ -10,6 +10,14 @@ import tools.jackson.databind.*;
 
 /** 统一输出编排：静默直接入队，预览必须显式确认；外部主体仅能读取和确认自己的请求。 */
 public class PrintOutputs {
+  /** 进程内业务提供器入口；不映射为人员任意快照 API，远程入口仍要求外部打印 scope。 */
+  @Transactional public Map<String,Object> business(PrintContext c,BusinessPrinting.Request input){
+    require(c,"print.job:submit");validate(input.mode(),input.copies());
+    var rows=jdbc.queryForList("SELECT BIN_TO_UUID(id) id FROM print_scene WHERE tenant_id=UUID_TO_BIN(?) AND code=? AND data_contract=? AND enabled=TRUE",c.tenantId(),input.sceneCode(),input.dataContract());
+    if(rows.isEmpty())throw new PrintFailure("PRINT_SCENE_UNAVAILABLE",409);
+    var data=mapper.valueToTree(input.data());
+    return create(c,input.mode(),input.deviceId(),input.copies(),input,()->flow.submitSnapshot(c,rows.getFirst().get("id").toString(),input.sourceId(),data,input.mode().equals("SILENT")?"PRINTER":"PDF",input.deviceId(),input.copies()));
+  }
   private final JdbcTemplate jdbc;private final PrintPlatform platform;private final PrintRuntime runtime;private final PrintFlow flow;private final ObjectMapper mapper;
   public PrintOutputs(JdbcTemplate jdbc,PrintPlatform platform,PrintRuntime runtime,PrintFlow flow,ObjectMapper mapper){this.jdbc=jdbc;this.platform=platform;this.runtime=runtime;this.flow=flow;this.mapper=mapper;}
 
@@ -22,8 +30,9 @@ public class PrintOutputs {
   @Transactional
   public Map<String,Object> external(PrintContext c,Input input){
     require(c,"print.external:submit");validate(input.mode(),input.copies());
-    var rows=jdbc.queryForList("SELECT BIN_TO_UUID(id) id FROM print_scene WHERE tenant_id=UUID_TO_BIN(?) AND code=? AND enabled=TRUE",c.tenantId(),input.sceneCode());
+    var rows=jdbc.queryForList("SELECT BIN_TO_UUID(id) id,data_contract FROM print_scene WHERE tenant_id=UUID_TO_BIN(?) AND code=? AND enabled=TRUE",c.tenantId(),input.sceneCode());
     if(rows.isEmpty())throw new PrintFailure("PRINT_SCENE_UNAVAILABLE",409);
+    if(input.dataContract()==null||!input.dataContract().equals(rows.getFirst().get("data_contract")))throw new PrintFailure("PRINT_CONTRACT_INVALID",409);
     return create(c,input.mode(),input.deviceId(),input.copies(),input,()->flow.submitSnapshot(internal(c),rows.getFirst().get("id").toString(),input.sourceId(),input.data(),input.mode().equals("SILENT")?"PRINTER":"PDF",input.deviceId(),input.copies()));
   }
 
@@ -49,7 +58,11 @@ public class PrintOutputs {
   public Map<String,Object> status(PrintContext c,String id){
     access(c);var rows=jdbc.queryForList("SELECT BIN_TO_UUID(r.id) id,r.owner,r.mode,BIN_TO_UUID(r.job_id) jobId,BIN_TO_UUID(r.confirmed_job_id) confirmedJobId,BIN_TO_UUID(r.device_id) deviceId,r.copies,j.state,EXISTS(SELECT 1 FROM print_job_artifact a WHERE a.tenant_id=r.tenant_id AND a.job_id=r.job_id) pdfReady FROM print_output_request r JOIN print_job j ON j.tenant_id=r.tenant_id AND j.id=r.job_id WHERE r.tenant_id=UUID_TO_BIN(?) AND r.id=UUID_TO_BIN(?)",c.tenantId(),uuid(id));
     if(rows.isEmpty()||c.actorId().startsWith("partner-")&&!c.actorId().equals(rows.getFirst().get("owner")))throw new PrintFailure("PRINT_OUTPUT_NOT_FOUND",404);
-    var value=rows.getFirst();value.remove("owner");value.put("previewUrl","/#/print/management?output="+id);return value;
+    var value=rows.getFirst();value.remove("owner");
+    boolean online=Boolean.TRUE.equals(jdbc.queryForObject("SELECT EXISTS(SELECT 1 FROM print_agent_queue WHERE tenant_id=UUID_TO_BIN(?) AND seen_at>DATE_SUB(CURRENT_TIMESTAMP(6),INTERVAL 120 SECOND))",Boolean.class,c.tenantId()));
+    value.put("rendererOnline",online);
+    if(value.get("confirmedJobId")!=null){var job=jdbc.queryForMap("SELECT state FROM print_job WHERE tenant_id=UUID_TO_BIN(?) AND id=UUID_TO_BIN(?)",c.tenantId(),value.get("confirmedJobId"));value.put("deliveryState",job.get("state"));}
+    value.put("previewUrl","/#/print/management?output="+id);return value;
   }
 
   /** 统一预览 PDF 附件仅通过当前认证上下文访问，不在 URL 中放 Token。 */
@@ -76,7 +89,7 @@ public class PrintOutputs {
   private static String uuid(String s){try{return UUID.fromString(s).toString();}catch(Exception e){throw new PrintFailure("PRINT_IDENTIFIER_INVALID",400);}}
   private static String hash(String s){try{return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(s.getBytes(StandardCharsets.UTF_8)));}catch(Exception e){throw new IllegalStateException(e);}}
   /** 外部参数；sourceId 为调用方单据号，data 必须符合已注册契约，mode 必填。 */
-  public record Input(String sceneCode,String sourceId,JsonNode data,String mode,String deviceId,int copies){}
+  public record Input(String sceneCode,String sourceId,JsonNode data,String mode,String deviceId,int copies,String dataContract) {}
   /** 人员入口不接受业务快照，mode 为 SILENT 或 PREVIEW。 */
   public record DocumentInput(String mode,String deviceId,int copies){}
 }

@@ -6,6 +6,8 @@
 
 配置保存在 `%LOCALAPPDATA%/AppNexus/PrintClient/settings.xml`，Secret 使用当前 Windows 用户 DPAPI 加密。不能将该文件复制给其他用户。下载包不包含平台凭据；首次绑定仍需要对应租户的 `print-agent:operate` 客户端身份。
 
+更新版“保存并连接”先用 OAuth 认证查询平台权威租户，再显示租户名称、站点和客户端标识；无法确认身份时不启动代理。认证及身份请求超时为 15 秒，禁止跟随重定向；Secret/Token 不显示或写日志。现有已启动客户端不会自动换绑，需手动使用更新下载包。
+
 HTTP 已按用户要求支持，HTTP 链路不提供传输加密，适用于用户控制的本机/内网。地址、密钥只在本机配置，不将密钥传入命令行或网页下载链接。程序仍禁止 URL 内嵌凭据和重定向。
 
 下载包使用 Node 24.22.1、SumatraPDF 3.5.2、仓库锁定代理依赖。SumatraPDF 来源：https://www.sumatrapdfreader.org/ ，许可证与源码：https://github.com/sumatrapdfreader/sumatrapdf 。Node 许可证与源码：https://github.com/nodejs/node 。HiPrint 许可与商业分发限制见 frontend/modules/print/THIRD_PARTY_NOTICES.md。当前包供本机开发验证，未签名，尚未完成商业分发许可和三系统安装包验收。

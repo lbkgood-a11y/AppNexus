@@ -54,7 +54,8 @@ public final class NavigationPages {
         return switch(key){
             case "platform/documents" -> List.of("tenant:read","tenant:update");
             case "documents/index" -> List.of("organization.permission:grant");
-            case "workflow/leave" -> List.of("workflow:start","workflow:read","workflow:edit");
+            // 业务页只登记真实执行操作，流程设计权归独立设计器；列表及详情打印共享同一权限。
+            case "workflow/leave" -> List.of("workflow:start","print.job:submit","print.job:read");
             case "workflow/index" -> List.of("workflow:operate");
             case "workflow/designer" -> List.of("workflow:read","workflow:edit","workflow:publish");
             case "print/index" -> List.of("print.template:read","print.template:design","print.template:publish","print.device:manage","print.job:read","print.job:submit","print.job:reprint");

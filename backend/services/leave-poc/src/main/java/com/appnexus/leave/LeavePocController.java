@@ -27,6 +27,13 @@ public final class LeavePocController {
   /** 页面操作契约与实际业务处理共用声明；展示不是授权，提交仍由服务端复核。 */
   @GetMapping("/actions")
   public Object actions(HttpServletRequest r) {return reply(()->service.actions(context(r)));}
+  /** 本人单据可执行性，不能用于枚举其他人的对象。 */
+  @GetMapping("/{id}/availability") public Object availability(HttpServletRequest r,@PathVariable String id){return reply(()->service.availability(context(r),id));}
+  /** 本人生命周期及专业服务关联摘要，不泄漏打印快照。 */
+  @GetMapping("/{id}/timeline") public Object timeline(HttpServletRequest r,@PathVariable String id){return reply(()->service.timeline(context(r),id));}
+  /** 业务供数打印只接受操作标识，不允许浏览器替换数据或模板；统一预览需另行确认。 */
+  @PostMapping("/{id}/print")
+  public Object print(HttpServletRequest r,@PathVariable String id,@RequestBody SubmitOperation input){return reply(()->service.print(context(r),id,input.operationKey()));}
 
   /** 创建草稿，未知或无主管组织拒绝，不隐式创建组织或人员。 */
   @PostMapping
@@ -41,10 +48,16 @@ public final class LeavePocController {
     return reply(() -> service.read(context(r), id, taskId));
   }
 
-  /** 冻结并发起；没有唯一启用流程时回滚单据提交状态。 */
+  /** 页面提交意图只接受稳定操作标识，不能指定策略、流程目标或业务终态。 */
+  public record SubmitOperation(String operationKey) {}
+  /** 页面按登记操作调用业务提交；旧客户端无请求体时兼容原固定入口，传入其他操作必须拒绝。 */
   @PostMapping("/{id}/submit")
-  public Object submit(HttpServletRequest r, @PathVariable String id) {
-    return reply(() -> service.submit(context(r), id));
+  public Object submit(HttpServletRequest r, @PathVariable String id,@RequestBody(required=false) SubmitOperation input) {
+    return reply(() -> {
+      if(input!=null&&!LeavePocService.SUBMIT_ACTION.operationKey().equals(input.operationKey()))
+        throw new com.appnexus.contracts.document.Documents.Rejection(400,"DOCUMENT_PAGE_OPERATION_INVALID");
+      return service.submit(context(r), id);
+    });
   }
 
   /** 修改参数包含期望依据版本；审批中不可修改，成功后需重新提交新轮次。 */
@@ -69,6 +82,8 @@ public final class LeavePocController {
   private Object reply(Supplier<Object> action) {
     try {
       return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(action.get());
+    } catch (com.appnexus.contracts.printing.PrintRejection e) {
+      return problem(e.status(),e.code());
     } catch (com.appnexus.contracts.document.Documents.Rejection e) {
       return problem(e.status(),e.getMessage());
     } catch (com.appnexus.contracts.workflow.WorkflowRejection e) {

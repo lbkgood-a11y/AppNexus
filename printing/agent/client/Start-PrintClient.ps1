@@ -1,4 +1,4 @@
-﻿<#
+<#
 .SYNOPSIS
 启动 AppNexus Windows 打印客户端配置窗口。
 .DESCRIPTION
@@ -68,6 +68,11 @@ $start.Add_Click({
         $api = [Uri]$fields.Api.Text.Trim().TrimEnd('/')
         if ($api.Scheme -notin @('http','https') -or $api.UserInfo -or $api.Query -or $api.Fragment) { throw '平台地址格式无效。' }
         if (-not $fields.ClientId.Text.Trim() -or -not $fields.Secret.Text) { throw '请填写客户端 ID 和 Secret。' }
+        # 连接前通过现有 OAuth 认证自查权威租户，防止误连其他租户；凭据及 Token 仅留在进程内，不输出。
+        $basicBytes = [Text.Encoding]::UTF8.GetBytes([Uri]::EscapeDataString($fields.ClientId.Text.Trim())+':'+[Uri]::EscapeDataString($fields.Secret.Text))
+        $tokenReply = Invoke-RestMethod -Method Post -Uri ($api.AbsoluteUri.TrimEnd('/')+'/oauth2/token') -Headers @{Authorization=('Basic '+[Convert]::ToBase64String($basicBytes))} -Body @{grant_type='client_credentials'} -TimeoutSec 15 -MaximumRedirection 0
+        $identity = Invoke-RestMethod -Method Get -Uri ($api.AbsoluteUri.TrimEnd('/')+'/api/printing/agent/identity') -Headers @{Authorization=('Bearer '+$tokenReply.access_token)} -TimeoutSec 15 -MaximumRedirection 0
+        if (-not $identity.tenantName) { throw '无法确认绑定租户，停止连接。' }
         $browser = @("${env:ProgramFiles(x86)}\Microsoft\Edge\Application\msedge.exe", "$env:ProgramFiles\Google\Chrome\Application\chrome.exe") | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1
         if (-not $browser) { throw '未检测到 Edge 或 Chrome，请先安装浏览器。' }
         $runtime = Join-Path $clientRoot 'runtime\node.exe'
@@ -85,7 +90,7 @@ $start.Add_Click({
         $values = @{PRINT_API_URL=$api.AbsoluteUri.TrimEnd('/');PRINT_TOKEN_URL=($api.AbsoluteUri.TrimEnd('/')+'/oauth2/token');PRINT_CLIENT_ID=$fields.ClientId.Text.Trim();PRINT_CLIENT_SECRET=$fields.Secret.Text;PRINT_SITE_CODE=$fields.Site.Text.Trim();PRINT_AGENT_ID=$fields.Agent.Text.Trim();PRINT_CHROMIUM_PATH=$browser;PRINT_SUMATRA_PATH=$sumatra}
         foreach ($key in $values.Keys) { $info.EnvironmentVariables[$key] = $values[$key] }
         $script:agentProcess = [Diagnostics.Process]::Start($info)
-        $status.Text = '代理已启动，队列将每分钟上报。请在平台“在线客户端打印机”登记各台设备。'
+        $status.Text = '租户：'+$identity.tenantName+'；站点：'+$fields.Site.Text.Trim()+'；客户端：'+$identity.clientId+'。代理已启动，队列每分钟上报。'
     } catch { [Windows.Forms.MessageBox]::Show($_.Exception.Message,'启动失败') | Out-Null }
 })
 $stop.Add_Click({ if ($script:agentProcess -and -not $script:agentProcess.HasExited) { $script:agentProcess.Kill() }; $status.Text='代理已停止。' })

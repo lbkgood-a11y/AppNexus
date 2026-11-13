@@ -10,11 +10,17 @@ import org.springframework.stereotype.Component;
 /** 打印平台公开桥接；每次调用复核有效租户成员和显式角色权限。 */
 @Component
 public final class PrintPlatformBridge implements PrintPlatform {
+  private final org.springframework.jdbc.core.JdbcTemplate jdbc;
   private final AccessAuthorization access;
   private final TenantAccess tenants;
   private final IntegrationClients integrations;
   private final RegisteredClientRepository clients;
-  public PrintPlatformBridge(AccessAuthorization access,TenantAccess tenants,IntegrationClients integrations,RegisteredClientRepository clients){this.access=access;this.tenants=tenants;this.integrations=integrations;this.clients=clients;}
+  public PrintPlatformBridge(AccessAuthorization access,TenantAccess tenants,IntegrationClients integrations,RegisteredClientRepository clients,org.springframework.jdbc.core.JdbcTemplate jdbc){this.access=access;this.tenants=tenants;this.integrations=integrations;this.clients=clients;this.jdbc=jdbc;}
+  @Override public java.util.Map<String,String> agentIdentity(PrintContext c){
+    if(!allowed(c,"print.agent:operate"))throw new SecurityException("PRINT_ACCESS_DENIED");
+    String name=jdbc.queryForObject("SELECT name FROM platform_tenant WHERE id=UUID_TO_BIN(?)",String.class,c.tenantId());
+    return java.util.Map.of("tenantId",c.tenantId(),"tenantName",name,"clientId",c.actorId());
+  }
 
   @Override public boolean allowed(PrintContext c,String permission){
     if(c.actorId().startsWith("partner-")) {

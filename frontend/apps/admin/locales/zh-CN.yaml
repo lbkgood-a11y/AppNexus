@@ -591,6 +591,7 @@ organization:
   invalidExpiry: 到期时间必须晚于当前时间
 administration:
   clientPurpose: 客户端用途
+  documentClient: 单据与打印业务集成
   dictionaryClient: 业务字典
   printClient: 打印代理
   inviteInstead: 签发邀请，由本人接受后激活成员
@@ -846,6 +847,10 @@ roleManagement:
     ROLE_DATA_CONFLICT: 角色数据约束已变化
     INVALID_ROLE_INPUT: 角色参数不符合要求
 authorizationCenter:
+  memberGranted: 成员已授予（仍受数据及业务规则限制）
+  memberNotGranted: 角色允许，成员尚未授予
+  roleCeilingHint: 角色是授权上限，以下状态来自当前成员草稿；保存前不生效。数据范围、期限和业务状态仍独立校验。
+  memberOperations: 成员操作权限（角色上限内）
   templates: 策略模板
   templateName: 模板名称
   saveTemplate: 保存当前策略模板
@@ -1052,6 +1057,7 @@ workflow:
     FORK: 并行分支
     JOIN: 并行汇合
   modes:
+    PRINT: 打印输出
     APPROVAL: 审批型
     BUSINESS: 端到端业务型
   completions:
@@ -1220,6 +1226,16 @@ workflow:
   deleteConnection: 删除选中连接
   dragHint: 从节点库拖入；拖动节点移动；从输出锚点拖到输入锚点串联。
 printing:
+  outputStages:
+    WAITING_RENDER: 等待渲染任务领取
+    RENDERING: 正在生成 PDF
+    RENDERER_OFFLINE: 渲染客户端离线，请联系管理员连接本租户客户端
+    PREVIEW_READY: 预览已生成，选择设备后可确认打印
+    DEVICE_QUEUED: 实体打印已入队，等待客户端提交
+    DEVICE_SUBMITTED: 已提交设备队列，实际出纸需现场确认
+    FAILED: 输出失败，请查看任务原因
+    UNKNOWN: 设备结果未知，请核对后再处理，勿盲目重打
+    CANCELLED: 任务已取消
   autoArrange: 自动排布
   arrangeConfirm: 将按原有阅读顺序重新排列所有面板的元素，保留内容和尺寸，可通过撤销恢复。是否继续？
   arrangeSpace: 纸张空间不足或元素尺寸异常，原布局已保留。请增大纸张或调整元素尺寸。
@@ -1472,8 +1488,8 @@ businessWorkflow:
   view: 配置视图
   businessView: 业务配置
   advancedView: 高级编排
-  documentTitle: 1. 关联业务单据
-  document: 审批什么单据
+  documentTitle: 1. 选择适用交互契约
+  document: 适用业务契约
   approvalSuffix: 审批
   noDocuments: 当前没有可配置的业务单据，请联系管理员接入业务能力或检查权限。
   unsupportedDocument: 当前定义没有业务配置目录，请使用高级编排；现有配置已保留。
@@ -1530,6 +1546,52 @@ businessWorkflow:
   removeReview: 移除此审批步骤
   removeConfirm: 移除此审批步骤及其独立条件（如有）？发布后影响新提交单据。
 document:
+  interactions: 交互契约
+  interactionCode: 契约编码
+  service: 目标服务
+  completion: 完成方式
+  reference: 能力引用
+  purpose: 服务用途
+  inputs: 输入字段
+  outcomes: 结果事件
+  trigger: 触发来源
+  triggers:
+    USER_ACTION: 用户操作
+    BUSINESS_EVENT: 业务事件
+    SERVICE_RESULT: 服务结果
+    SCHEDULE: 定时触发
+  completions:
+    SYNCHRONOUS: 同步完成
+    CALLBACK: 结果回调
+    CONFIRMATION: 结果确认
+    ASYNCHRONOUS: 异步完成
+  events:
+    DOCUMENT_CREATED: 单据创建
+    APPROVAL_STARTED: 审批发起
+    APPROVAL_APPLIED: 审批结果已应用
+    PRINT_DEVICE: 设备队列交付（非物理出纸）
+    PRINT_OUTPUT: 打印输出
+  actionAvailability: 当前操作可用性
+  availability:
+    READY: 可执行（提交时重新校验）
+    OPERATION_PERMISSION_MISSING: 缺少有效操作授权
+    PAGE_RELATION_DISABLED: 平台页面关联未启用
+    BUSINESS_STATE_DENIED: 当前业务状态不允许
+  checkReadiness: 检查接入就绪
+  checkItem: 检查项
+  checkTarget: 关联目标
+  ready: 已就绪
+  notReady: 未就绪
+  liveHint: （实时状态）
+  lifecycleEvent: 生命周期事件
+  occurredAt: 发生时间
+  checks:
+    TYPE_ENABLED: 平台类型启用
+    PAGE_RELATION: 页面操作关联
+    PUBLISHED_BINDING: 已发布行为策略
+    WORKFLOW_VERSION: 兼容流程版本
+    PRINT_SCENE: 兼容打印场景
+    RENDERER_ONLINE: 渲染客户端在线
   platformTitle: 单据管理
   title: 单据工作台
   code: 单据编码
@@ -1547,7 +1609,7 @@ document:
   enable: 启用
   disable: 停用
   grants: 租户授权与契约
-  configure: 配置提交行为
+  configure: 配置单据行为
   empty: 暂无可管理的单据
   field: 条件字段
   fieldType: 类型
@@ -1563,14 +1625,26 @@ document:
   required: 请填写绑定名称、发布流程及完整条件
   inactiveHint: 此单据已授权但尚未启用，可维护配置；实际提交需平台管理员启用。
   action: 单据行为
+  pageRelations: 页面操作关联
+  addPageRelation: 添加页面关联
+  savePageRelations: 保存页面关联
+  pageRelationHint: 选择业务已接入的页面操作与行为建立关系；移除后将阻止该页面的新操作，已有流程结果交付不受影响。
+  pageRelationInvalid: 请选择完整且不重复的行为与页面操作关联。
+  pageRelationConfirm: 保存后立即生效，移除的页面关联将禁止新操作，是否保存？
+  pageOperation: 页面操作
+  selectPageOperation: 请选择已接入的页面操作
+  noPageOperation: 此单据尚未登记可绑定的页面操作，请由业务开发人员接入。
+  businessEndpoint: 业务处理接口
   operationKey: 页面与 API 操作标识
   permission: 操作权限
-  submissionMode: 提交方式
-  directHint: 直接调用业务受理，不创建审批实例；最终状态由业务实现决定。
-  modes:
-    DIRECT: 直接提交
-    APPROVAL: 审批提交
-  bindingHint: 提交行为必须恰好匹配一条策略，直接提交也必须显式配置；数值使用声明单位。
+  printScene: 打印场景
+  submissionMode: 行为执行方式
+  directHint: 直接执行业务声明的动作，不创建审批实例；业务规则及最终状态由业务服务决定。
+  services:
+    PRINT: 打印输出
+    BUSINESS: 直接执行业务
+    WORKFLOW: 通过审批流程
+  bindingHint: 每个行为独立匹配策略；同一行为必须唯一命中，直接执行业务也需显式配置。
   addBinding: 添加绑定
   removeBinding: 移除绑定
   bindingName: 绑定名称
@@ -1581,6 +1655,7 @@ document:
   addCondition: 添加条件（且）
   operator: 比较方式
   value: 条件值
+  removePageRelation: 移除关联
   remove: 移除条件
   close: 关闭
   save: 保存草稿
@@ -1597,6 +1672,11 @@ document:
     LE: 小于等于
   leaveConfiguration: 未保存的绑定修改不会保留，是否进入流程设计器？
   codes:
+    DOCUMENT_PRINT_SCENE_INVALID: 打印场景未启用或与业务投影契约不兼容，请重新选择。
+    DOCUMENT_PRINT_CONTRACT_REQUIRED: 此行为缺少打印投影契约。
+    DOCUMENT_PAGE_RELATION_INVALID: 页面操作与行为不兼容或重复，请重新选择。
+    DOCUMENT_PAGE_RELATION_DISABLED: 平台已移除此页面操作关联，请联系平台管理员。
+    DOCUMENT_PAGE_OPERATION_INVALID: 页面操作与单据行为不匹配，请重新选择。
     DOCUMENT_CONTRACT_CHANGED: 单据契约已升级，请重新校验并发布绑定。
     DOCUMENT_FLOW_NOT_BOUND: 未配置审批流程，请联系租户管理员。
     DOCUMENT_FLOW_NOT_MATCHED: 没有匹配的审批绑定，请联系租户管理员。

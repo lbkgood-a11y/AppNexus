@@ -9,6 +9,12 @@ import org.springframework.transaction.annotation.Transactional;
 
 /** 配置式打印闭环；手工单据读取仅限本人，场景配置需发布权限，代理队列不自动登记设备。 */
 public class PrintFlow {
+  private List<Map<String,Object>> businessContracts=List.of();
+  /** 构建登记业务契约，与自定义租户契约使用同一格式及校验，不访问业务数据。 */
+  public void businessContracts(List<PrintDataContractProvider> providers){
+    var values=new ArrayList<Map<String,Object>>();var keys=new HashSet<String>();PrintDesignCatalog.contracts().forEach(c->keys.add(c.get("code").toString()));
+    for(var provider:providers)for(var contract:provider.contracts()){if(!keys.add(contract.get("code").toString()))throw new IllegalArgumentException("PRINT_CONTRACT_DUPLICATE");values.add(Map.copyOf(contract));}businessContracts=List.copyOf(values);
+  }
   private final JdbcTemplate jdbc;
   private final PrintPlatform platform;
   private final PrintRuntime runtime;
@@ -91,6 +97,7 @@ public class PrintFlow {
   public List<Map<String,Object>> contracts(PrintContext c){
     allow(c,"print.template:design","print.job:submit","print.template:publish","print.external:submit");
     var values=new ArrayList<Map<String,Object>>(PrintDesignCatalog.contracts());
+    values.addAll(businessContracts);
     for(String definition:jdbc.queryForList("SELECT definition_json FROM print_data_contract WHERE tenant_id=UUID_TO_BIN(?) ORDER BY code",String.class,c.tenantId())){
       JsonNode node=mapper.readTree(definition);Map<String,Object> value=new LinkedHashMap<>();
       value.put("code",node.get("code").textValue());value.put("nameZh",node.get("nameZh").textValue());value.put("nameEn",node.get("nameEn").textValue());value.put("designOnly",false);

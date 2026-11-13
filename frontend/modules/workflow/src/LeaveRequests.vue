@@ -18,9 +18,15 @@ const props = defineProps<{
   workflow: WorkflowApi;
   errorText: (e: unknown) => string;
 }>();
+/** 输出预览由应用装配公开打印组件，不强制进入模板管理路由或扩大模板权限。 */
+const emit=defineEmits<{printOutput:[id:string]}>();
 const { t,locale } = useI18n();
 const actions=ref<Awaited<ReturnType<LeaveApi['actions']>>>([]);
 const submitAction=computed(()=>actions.value.find(a=>a.operationKey==='LeaveRequest.submit'&&a.actionCode==='submit'));
+const printAction=computed(()=>actions.value.find(a=>a.operationKey==='LeaveRequest.print'&&a.allowed));
+const detailPrintAction=computed(()=>actions.value.find(a=>a.operationKey==='LeaveRequest.detail.print'&&a.allowed));
+/** 列表和详情别名进入同一业务打印入口，预览只使用后端返回的受控输出标识。 */
+async function printDocument(id:string,detail=false){busy.value=true;error.value='';try{const output=await props.api.print(id,detail?'LeaveRequest.detail.print':'LeaveRequest.print');emit('printOutput',output.id);}catch(e){error.value=props.errorText(e);}finally{busy.value=false;}}
 const route = useRoute(),
   router = useRouter();
 const rows = ref<Row[]>([]),
@@ -34,9 +40,11 @@ const createOpen = ref(false),
 const form = ref<FormInstance>();
 const editing=ref<Row>();
 const history=ref<Row[]>([]), historyOpen=ref(false);
+const lifecycle=ref<Row[]>([]);
+const actionAvailability=ref<Awaited<ReturnType<LeaveApi['availability']>>>([]);
 /** 修改使用业务返回的依据版本，前端不自行解除审批冻结。 */
 function edit(row:Row){editing.value=row;Object.assign(input,{organizationId:row.organization_id,leaveType:row.leave_type,startDate:String(row.start_date).slice(0,10),endDate:String(row.end_date).slice(0,10),reason:row.reason});createOpen.value=true;}
-async function showCycles(id:string){busy.value=true;error.value='';try{history.value=await props.api.cycles(id);historyOpen.value=true;}catch(e){error.value=props.errorText(e);}finally{busy.value=false;}}
+async function showCycles(id:string){busy.value=true;error.value='';try{[history.value,lifecycle.value]=await Promise.all([props.api.cycles(id),props.api.timeline(id)]);historyOpen.value=true;}catch(e){error.value=props.errorText(e);}finally{busy.value=false;}}
 const organizations = ref<{ id: string; name: string }[]>([]);
 const query = ref(""),
   submitted = ref(""),
@@ -128,6 +136,8 @@ async function openDocument(id: string, taskId?: string) {
   error.value = "";
   try {
     selected.value = await props.api.read(id, taskId);
+    // 有效任务原文读取不授予本人管理诊断，审批人不请求本人动作接口。
+    actionAvailability.value=taskId?[]:await props.api.availability(id);
     detailOpen.value = true;
   } catch (e) {
     error.value = props.errorText(e);
@@ -163,7 +173,8 @@ async function submit(id: string) {
   busy.value = true;
   error.value = "";
   try {
-    await props.api.submit(id);
+    if(!submitAction.value?.allowed)throw new Error(t('account.forbidden'));
+    await props.api.submit(id,submitAction.value.operationKey);
     ElMessage.success(t("leavePoc.submitted"));
     await load();
   } catch (e) {
@@ -259,6 +270,7 @@ onMounted(async () => {
           ><el-tag>{{ t("leavePoc.states." + row.state) }}</el-tag></template
         >
         <template #operations="{ row }">
+          <el-button v-if="printAction" link :disabled="busy" @click="printDocument(row.id)">{{locale.startsWith('zh')?printAction.nameZh:printAction.nameEn}}</el-button>
           <el-button v-if="['DRAFT','REJECTED','WITHDRAWN'].includes(row.state)&&caps.includes('start')" link :disabled="busy" @click="edit(row)">{{t('document.editLeave')}}</el-button>
           <el-button link :disabled="busy" @click="showCycles(row.id)">{{t('document.cycleHistory')}}</el-button>
           <el-button link :disabled="busy" @click="openDocument(row.id)">{{
@@ -290,7 +302,7 @@ onMounted(async () => {
       />
     </template>
   </BusinessWorkspace>
-  <ManagedDialog v-model="historyOpen" :title="t('document.cycleHistory')" width="900px"><el-table :data="history"><el-table-column prop="basis_version" :label="t('document.contractVersion')" width="140"/><el-table-column prop="instance_id" :label="t('workflow.objectId')" min-width="260"/><el-table-column prop="configuration_version" :label="t('document.publishedVersion')" min-width="160"/><el-table-column prop="created_at" :label="t('leavePoc.start')" min-width="180"/></el-table></ManagedDialog>
+  <ManagedDialog v-model="historyOpen" :title="t('document.cycleHistory')" width="900px"><el-table :data="lifecycle"><el-table-column :label="t('document.lifecycleEvent')"><template #default="{row}">{{t('document.events.'+row.kind)}}</template></el-table-column><el-table-column prop="reference" :label="t('document.checkTarget')" min-width="260"/><el-table-column prop="state" :label="t('document.state')"/><el-table-column prop="at" :label="t('document.occurredAt')"/></el-table><el-table :data="history"><el-table-column prop="basis_version" :label="t('document.contractVersion')" width="140"/><el-table-column prop="instance_id" :label="t('workflow.objectId')" min-width="260"/><el-table-column prop="configuration_version" :label="t('document.publishedVersion')" min-width="160"/><el-table-column prop="created_at" :label="t('leavePoc.start')" min-width="180"/></el-table></ManagedDialog>
   <ManagedDialog
     v-model="createOpen"
     :title="t('leavePoc.new')"
@@ -352,6 +364,8 @@ onMounted(async () => {
     width="min(720px, calc(100vw - 32px))"
   >
     <el-descriptions v-if="selected" :column="1" border>
+      <el-descriptions-item v-if="actionAvailability.length" :label="t('document.actionAvailability')"><el-tag v-for="a in actionAvailability" :key="a.operationKey" :type="a.allowed?'success':'info'">{{a.operationKey}}：{{t('document.availability.'+a.reasonCode)}}</el-tag></el-descriptions-item>
+      <el-descriptions-item v-if="detailPrintAction" :label="t('document.operations')"><el-button :loading="busy" @click="printDocument(selected.id,true)">{{locale.startsWith('zh')?detailPrintAction.nameZh:detailPrintAction.nameEn}}</el-button></el-descriptions-item>
       <el-descriptions-item :label="t('leavePoc.id')">{{
         selected.id
       }}</el-descriptions-item>
