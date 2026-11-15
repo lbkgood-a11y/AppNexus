@@ -31,12 +31,12 @@ class IntegrationClientTest extends DatabaseTestSupport {
     private UUID tenant(){UUID id=UUID.randomUUID();jdbc.update("INSERT INTO platform_tenant(id,name) VALUES(UUID_TO_BIN(?),'Partner tenant')",id.toString());return id;}
     /** 专用服务 scope 只开放解析入口，Token 固定租户，不能访问人员配置或伪装任意账号。 */
     @Test void documentScopeOnlyAllowsResolution() throws Exception {
-        var client=clients.create(actor,tenant(),"Document service",Set.of("document:resolve"));String bearer=token(client);
-        mvc.perform(post("/api/documents/integration/resolutions").header("Authorization","Bearer "+bearer).header("Idempotency-Key",UUID.randomUUID().toString()).contentType("application/json").content("{\"typeCode\":\"Unknown\",\"actionCode\":\"submit\",\"objectId\":\""+UUID.randomUUID()+"\",\"basisVersion\":0,\"facts\":{}}"))
+        var client=clients.create(actor,tenant(),"Document service",Set.of("business-object:resolve"));String bearer=token(client);
+        mvc.perform(post("/api/business-objects/integration/resolutions").header("Authorization","Bearer "+bearer).header("Idempotency-Key",UUID.randomUUID().toString()).contentType("application/json").content("{\"objectType\":\"Unknown\",\"operationCode\":\"submit\",\"objectId\":\""+UUID.randomUUID()+"\",\"basisVersion\":0,\"facts\":{}}"))
           .andExpect(status().isNotFound());
-        mvc.perform(get("/api/documents").header("Authorization","Bearer "+bearer)).andExpect(status().isUnauthorized());
+        mvc.perform(get("/api/business-objects").header("Authorization","Bearer "+bearer)).andExpect(status().isUnauthorized());
         var other=clients.create(actor,tenant(),"Dictionary only",Set.of("dictionaries:read"));
-        mvc.perform(post("/api/documents/integration/resolutions").header("Authorization","Bearer "+token(other)).contentType("application/json").content("{}")) .andExpect(status().isForbidden());
+        mvc.perform(post("/api/business-objects/integration/resolutions").header("Authorization","Bearer "+token(other)).contentType("application/json").content("{}")) .andExpect(status().isForbidden());
     }
     private String token(IntegrationClients.Created client)throws Exception{
         String body=mvc.perform(post("/oauth2/token").with(httpBasic(client.client().id(),client.secret()))

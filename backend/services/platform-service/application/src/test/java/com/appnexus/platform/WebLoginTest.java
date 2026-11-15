@@ -14,6 +14,20 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 class WebLoginTest extends DatabaseTestSupport {
     @Autowired MockMvc mvc;
+    @Autowired org.springframework.session.data.redis.RedisIndexedSessionRepository redisSessions;
+    @org.springframework.beans.factory.annotation.Value("${spring.session.data.redis.namespace}") String sessionNamespace;
+    /** 并发失效后的残留增量不能升级回有效认证，也不能让普通读取变成 500。 */
+    @Test void incompleteSessionHashIsUnauthenticated() throws Exception {
+        String id=java.util.UUID.randomUUID().toString();
+        var redis=redisSessions.getSessionRedisOperations();
+        String key=sessionNamespace+":sessions:"+id;
+        redis.opsForHash().put(key,"lastAccessedTime",System.currentTimeMillis());
+        try{
+            org.assertj.core.api.Assertions.assertThat(redisSessions.findById(id)).isNull();
+            mvc.perform(get("/bff/account").cookie(new jakarta.servlet.http.Cookie("JSESSIONID",java.util.Base64.getEncoder().encodeToString(id.getBytes(java.nio.charset.StandardCharsets.UTF_8)))))
+                .andExpect(status().isUnauthorized());
+        }finally{redis.delete(key);}
+    }
     @Autowired com.appnexus.platform.identity.AccountRepository accounts;
     /** 缺少真实认证因子时间的旧会话必须重认证，不能进入 OIDC 签发后触发 500。 */
     @Test void legacySessionWithoutAuthenticationTimeMustAuthenticateAgain() throws Exception {

@@ -1,0 +1,9 @@
+# ApprovaPlat选择性移植实验
+
+启动既有npm run dev，打开 /approva-port.html。独立原生按钮仅为实验属性入口，不作为正式UI组件交付。window.approvaPort提供configure、xml及Modeler公开服务；不连接RuoYi或AppNexus API。
+
+固定上游971d229e4b0f9b7e906a014eb803b2a5858a2fb0，源atomicPropertiesModule.js采用MIT，许可见APPROVAPLAT-LICENSE.txt。当前组合机制适配为TypeScript：preExecute发出多个updateModdleProperties子命令，execute/revert为空，撤销由子命令历史完成，不在revert里嵌套命令。
+
+运行npx playwright test tests/approva-port.spec.ts。业务扩展声明与Flowable实验descriptor分开；JSON内people/input保留现有模型结构。descriptor中文参数：peopleJson为人员规则JSON，requiredJson为必填字段数组，inputJson为输入映射；retries单位次，现有0—5；timeoutSeconds单位秒，现有60—2592000；positionJson为历史兼容位置非布局权威；Flowable assignee等只作标准引擎字段实验声明，不承载kind或业务策略。descriptor不是完整生产schema。
+
+结果与限制见evidence/APPROVA-PORT-REPORT.md。不改正式模块、不改依赖版本。测试前置拒绝不是执行中异常回滚证明。

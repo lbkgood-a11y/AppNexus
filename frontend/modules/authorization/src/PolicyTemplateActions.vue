@@ -1,5 +1,7 @@
 <script setup lang="ts">
-import { ref, watch } from "vue";
+import { setErrorFeedback } from "@appnexus/ui";
+import { FloatingError } from "@appnexus/ui";
+import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { ElMessage, ElMessageBox } from "element-plus";
 import type { AuthorizationCenterApi, PolicyTemplate } from "./index";
@@ -16,7 +18,7 @@ async function load() {
   const current = ++generation; loading.value = true; error.value = ""; templates.value = []; selected.value = "";
   if (!props.roleId || !props.api.templates) { loading.value = false; return; }
   try { const values = await props.api.templates.list(props.roleId); if (current === generation) templates.value = values; }
-  catch (cause) { if (current === generation) error.value = props.errorText(cause); }
+  catch (cause) { if (current === generation) await setErrorFeedback(error, props.errorText(cause)); }
   finally { if (current === generation) loading.value = false; }
 }
 /** 保存当前已持久化角色快照，未保存的编辑必须先完成，不能制造模板已包含草稿的误解。 */
@@ -24,7 +26,7 @@ async function save() {
   if (!props.api.templates || !name.value.trim() || props.dirty) return;
   saving.value = true; error.value = "";
   try { await props.api.templates.save(props.roleId, name.value.trim()); name.value = ""; await load(); ElMessage.success(t("authorizationCenter.templateSaved")); }
-  catch (cause) { error.value = props.errorText(cause); }
+  catch (cause) { await setErrorFeedback(error, props.errorText(cause)); }
   finally { saving.value = false; }
 }
 /** 模板应用是完整覆盖，显式确认并使用当前角色版本，失败后由用户重读。 */
@@ -34,23 +36,26 @@ async function apply() {
   catch { return; }
   saving.value = true; error.value = "";
   try { await props.api.templates.apply(props.roleId, selected.value, props.version, props.reason.trim()); emit("applied"); ElMessage.success(t("authorizationCenter.saved")); }
-  catch (cause) { error.value = props.errorText(cause); }
+  catch (cause) { await setErrorFeedback(error, props.errorText(cause)); }
   finally { saving.value = false; }
 }
 watch(() => props.roleId, load, { immediate: true });
+/** 同一组件按当前授权域选择真实模板接口操作，身份不作为服务端授权输入。 */
+const templateSaveOperation = computed(() => location.hash.includes('/platform/') ? 'AuthorizationTemplate.savePlatform' : 'AuthorizationTemplate.saveTenant');
+const templateApplyOperation = computed(() => location.hash.includes('/platform/') ? 'AuthorizationTemplate.applyPlatform' : 'AuthorizationTemplate.applyTenant');
 </script>
 <template>
   <section v-if="api.templates" class="template-actions">
     <h3>{{ t("authorizationCenter.templates") }}</h3>
-    <el-alert v-if="error" :title="error" type="error" :closable="false"><el-button link @click="load">{{ t("account.retry") }}</el-button></el-alert>
+    <FloatingError v-if="error" :title="error" scope="error" type="error" :closable="false"><el-button link @click="load">{{ t("account.retry") }}</el-button></FloatingError>
     <p>{{ t("authorizationCenter.templateHint") }}</p>
     <el-form inline @submit.prevent="save">
       <el-form-item :label="t('authorizationCenter.templateName')"><el-input v-model="name" :maxlength="100" :disabled="busy || loading || saving || dirty" /></el-form-item>
-      <el-form-item><el-button v-operation="'@role:grant'" :loading="saving" :disabled="busy || loading || dirty || !name.trim() || !!error" native-type="submit">{{ t("authorizationCenter.saveTemplate") }}</el-button></el-form-item>
+      <el-form-item><el-button v-operation="templateSaveOperation" :loading="saving" :disabled="busy || loading || dirty || !name.trim() || !!error" native-type="submit">{{ t("authorizationCenter.saveTemplate") }}</el-button></el-form-item>
     </el-form>
     <el-form inline @submit.prevent="apply">
       <el-form-item :label="t('authorizationCenter.templates')"><el-select v-model="selected" filterable :disabled="busy || loading || saving || dirty" class="template-select"><el-option v-for="item in templates" :key="item.id" :label="item.name" :value="item.id" /></el-select></el-form-item>
-      <el-form-item><el-button v-operation="'@role:grant'" type="warning" :loading="saving" :disabled="busy || loading || dirty || !selected || !reason.trim() || !!error" native-type="submit">{{ t("authorizationCenter.applyTemplate") }}</el-button></el-form-item>
+      <el-form-item><el-button v-operation="templateApplyOperation" type="warning" :loading="saving" :disabled="busy || loading || dirty || !selected || !reason.trim() || !!error" native-type="submit">{{ t("authorizationCenter.applyTemplate") }}</el-button></el-form-item>
     </el-form>
   </section>
 </template>

@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { setErrorFeedback } from "@appnexus/ui";
+import { FloatingError } from "@appnexus/ui";
 import { ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { http, requestErrorMessage } from "@/utils/http";
@@ -14,7 +16,7 @@ async function accept() {
     const csrf = await http.request<{ token: string; headerName: string }>("get", "/bff/csrf");
     await http.request("post", "/bff/account/tenant-invitations/acceptance", { data: { invitationId: id.value, token: token.value }, headers: { [csrf.headerName]: csrf.token } });
     id.value = ""; ElMessage.success(t("account.invitationAccepted"));
-  } catch (cause) { error.value = requestErrorMessage(cause); }
+  } catch (cause) { await setErrorFeedback(error, requestErrorMessage(cause)); }
   finally { busy.value = false; token.value = ""; }
 }
 </script>
@@ -22,11 +24,11 @@ async function accept() {
   <section class="invitation-acceptance">
     <h2>{{ t("account.acceptInvitation") }}</h2>
     <p>{{ t("account.invitationHint") }}</p>
-    <el-alert v-if="error" :title="error" type="error" :closable="false" />
+    <FloatingError v-if="error" :title="error" scope="error" type="error" :closable="false" />
     <el-form ref="form" :model="{ id, token }" label-position="top" @submit.prevent="accept">
       <el-form-item prop="id" :label="t('account.invitationId')" :rules="[{ required: true, pattern: /^[a-fA-F0-9-]{36}$/, message: t('account.invitationId'), trigger: 'blur' }]"><el-input v-model="id" :maxlength="36" :disabled="busy" /></el-form-item>
       <el-form-item prop="token" :label="t('account.invitationToken')" :rules="[{ required: true, pattern: /^[a-f0-9]{64}$/, message: t('account.invitationToken'), trigger: 'blur' }]"><el-input v-model="token" type="password" show-password :maxlength="64" :disabled="busy" autocomplete="off" /></el-form-item>
-      <el-button type="primary" native-type="submit" :loading="busy">{{ t("account.acceptInvitation") }}</el-button>
+      <el-button v-operation="'TenantInvitation.accept'" type="primary" native-type="submit" :loading="busy">{{ t("account.acceptInvitation") }}</el-button>
     </el-form>
   </section>
 </template>

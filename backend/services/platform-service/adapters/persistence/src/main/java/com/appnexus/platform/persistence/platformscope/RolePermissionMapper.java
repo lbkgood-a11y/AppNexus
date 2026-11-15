@@ -25,6 +25,9 @@ public interface RolePermissionMapper {
     Map<String,Object> lockRole(@Param("owner") String owner,@Param("role") String role);
     @Select("SELECT BIN_TO_UUID(permission_id) FROM access_role_permission WHERE role_id=UUID_TO_BIN(#{role}) ORDER BY permission_id")
     List<String> permissions(String role);
+    /** 按当前角色域读取失效项详情；未知或跨域标识不泄露其他管理域的名称。 */
+    @Select("SELECT code,name_zh,enabled FROM access_permission WHERE id=UUID_TO_BIN(#{id}) AND scope_type=#{scope}")
+    Map<String,Object> permissionDetail(@Param("scope") String scope,@Param("id") String id);
     @Select({"<script>","SELECT BIN_TO_UUID(id) FROM access_permission WHERE scope_type=#{scope} AND enabled=TRUE AND id IN","<foreach collection='ids' item='id' open='(' separator=',' close=')'>UUID_TO_BIN(#{id})</foreach>","ORDER BY id FOR UPDATE","</script>"})
     List<String> lockPermissions(@Param("scope") String scope,@Param("ids") List<String> ids);
     @Select({"<script>","SELECT DISTINCT BIN_TO_UUID(permission_id) permission_text FROM access_permission_scope_type WHERE permission_id IN","<foreach collection='ids' item='id' open='(' separator=',' close=')'>UUID_TO_BIN(#{id})</foreach>","ORDER BY permission_text","</script>"})

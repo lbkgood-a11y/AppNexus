@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import { setErrorFeedback } from "@appnexus/ui";
+import { FloatingError } from "@appnexus/ui";
+import { InfoHint } from "@appnexus/ui";
 import { computed, ref, watch, onMounted, onBeforeUnmount } from "vue";
 import { useI18n } from "vue-i18n";
 import { ElMessage, ElMessageBox } from "element-plus";
@@ -45,8 +48,8 @@ async function loadConfiguration() {
   configurationLoading.value = true;
   try {
     catalog.value = await props.api.configuration();
-    if(!props.definition&&typeof route.query.documentType==='string'&&typeof route.query.entryCapability==='string'){
-      const entry=catalog.value.documents.find(d=>d.profile.objectType===route.query.documentType&&d.capability===route.query.entryCapability);
+    if(!props.definition&&typeof route.query.objectType==='string'&&typeof route.query.entryCapability==='string'){
+      const entry=catalog.value.documents.find(d=>d.profile.objectType===route.query.objectType&&d.capability===route.query.entryCapability);
       if(entry)model.value=businessModel(entry.capability,entry.profile,{title:locale.value.startsWith('zh')?entry.profile.nameZh:entry.profile.nameEn,start:t('workflow.kinds.START'),review:t('workflow.kinds.REVIEW'),end:t('workflow.kinds.END')});
     }
     if (
@@ -61,7 +64,7 @@ async function loadConfiguration() {
     )
       view.value = "advanced";
   } catch (e) {
-    error.value = props.errorText(e);
+    await setErrorFeedback(error, props.errorText(e));
   } finally {
     configurationLoading.value = false;
   }
@@ -155,7 +158,7 @@ async function run(action: () => Promise<unknown>) {
   try {
     await action();
   } catch (e) {
-    error.value = props.errorText(e);
+    await setErrorFeedback(error, props.errorText(e));
   } finally {
     busy.value = false;
   }
@@ -423,18 +426,18 @@ watch(
         <el-button :disabled="!canEdit" @click="previewOpen = true">{{
           t("workflow.preview")
         }}</el-button
-        ><el-button v-if="revision >= 0" @click="showVersions">{{
+        ><el-button v-operation="'WorkflowDefinition.versions'" v-if="revision >= 0" @click="showVersions">{{
           t("workflow.versions")
         }}</el-button
-        ><el-button :disabled="!canEdit" @click="validate">{{
+        ><el-button v-operation="'WorkflowDefinition.validate'" :disabled="!canEdit" @click="validate">{{
           t("workflow.validate")
         }}</el-button
-        ><el-button :disabled="!canEdit" @click="save">{{
+        ><el-button v-operation="'WorkflowDefinition.save'" :disabled="!canEdit" @click="save">{{
           t("workflow.saveDraft")
         }}</el-button
         ><el-popconfirm :title="t('workflow.confirmPublish')" @confirm="publish"
           ><template #reference
-            ><el-button
+            ><el-button v-operation="'WorkflowDefinition.publish'"
               type="primary"
               :disabled="!canEdit || !canPublish"
               :loading="busy"
@@ -457,15 +460,10 @@ watch(
           t("businessWorkflow.advancedView")
         }}</el-radio-button>
       </el-radio-group>
-      <el-alert
+      <FloatingError
         v-if="error"
-        :title="error"
+        :title="error" scope="error"
         type="error"
-        :closable="false"
-      /><el-alert
-        v-if="!businesses.length"
-        :title="t('workflow.noCapabilities')"
-        type="info"
         :closable="false"
       />
       <el-alert
@@ -637,7 +635,13 @@ watch(
                     v-model="model.purpose"
                     maxlength="64" /></el-form-item
                 ><el-form-item :label="t('workflow.mode')"
-                  ><el-select v-model="model.mode"
+                  ><template #label>{{t('workflow.mode')}}<InfoHint :content="
+                  t(
+                    model.mode === 'APPROVAL'
+                      ? 'workflow.approvalBoundary'
+                      : 'workflow.businessBoundary',
+                  )
+                " /></template><el-select v-model="model.mode"
                     ><el-option
                       v-for="mode in ['APPROVAL', 'BUSINESS']"
                       :key="mode"
@@ -646,24 +650,14 @@ watch(
                         t('workflow.modes.' + mode)
                       " /></el-select></el-form-item
                 ><el-form-item :label="t('workflow.entryCapability')" required
-                  ><el-select v-model="model.entryCapability" filterable
+                  ><template #label>{{t('workflow.entryCapability')}}<InfoHint v-if="!businesses.length" :content="t('workflow.noCapabilities')" /></template><el-select v-model="model.entryCapability" filterable
                     ><el-option
                       v-for="b in businesses"
                       :key="b.key"
                       :value="b.key"
                       :label="b.name" /></el-select></el-form-item
               ></el-form>
-              <el-alert
-                :title="
-                  t(
-                    model.mode === 'APPROVAL'
-                      ? 'workflow.approvalBoundary'
-                      : 'workflow.businessBoundary',
-                  )
-                "
-                type="info"
-                :closable="false"
-              />
+              
               <h3>{{ t("workflow.matches") }}</h3>
               <div v-for="(match, i) in model.matches" :key="i" class="toolbar">
                 <el-select v-model="match.field" :disabled="!canEdit"
@@ -980,12 +974,9 @@ watch(
       v-model="previewOpen"
       :title="t('workflow.preview')"
       width="min(700px, calc(100vw - 32px))"
-      ><el-alert
-        :title="t('workflow.previewHint')"
-        type="info"
-        :closable="false" /><el-alert
+      ><template #title><span class="info-hint-title">{{t('workflow.preview')}}<InfoHint :content="t('workflow.previewHint')" /></span></template><FloatingError
         v-if="error"
-        :title="error"
+        :title="error" scope="error"
         type="error"
         :closable="false" /><el-form label-position="top"
         ><el-form-item
@@ -1000,7 +991,7 @@ watch(
             field
           "
           ><el-input v-model="sample[field]" /></el-form-item
-        ><el-button :loading="busy" @click="preview">{{
+        ><el-button v-operation="'WorkflowDefinition.preview'" :loading="busy" @click="preview">{{
           t("workflow.preview")
         }}</el-button></el-form
       ><el-steps direction="vertical"

@@ -57,7 +57,7 @@ class RoleManagementTest extends DatabaseTestSupport {
   var selection=mvc.perform(post("/bff/tenants/current").with(authenticated(account.toString(),0)).with(csrf()).contentType("application/json").content("{\"tenantId\":\""+tenant.id()+"\"}")).andExpect(status().isOk()).andReturn();
   var cookie=selection.getResponse().getCookie("JSESSIONID");
   mvc.perform(get("/api/configuration/dictionaries").cookie(cookie)).andExpect(status().isOk());
-  mvc.perform(get("/api/configuration/dictionaries/capabilities").cookie(cookie)).andExpect(status().isOk()).andExpect(content().json("[\"read\"]"));
+  mvc.perform(get("/api/operation-decisions").cookie(cookie)).andExpect(status().isOk()).andExpect(jsonPath("$",org.hamcrest.Matchers.hasItem("BusinessDictionary.list"))).andExpect(jsonPath("$",org.hamcrest.Matchers.not(org.hamcrest.Matchers.hasItem("BusinessDictionary.create"))));
   mvc.perform(post("/api/configuration/dictionaries").cookie(cookie).with(csrf()).contentType("application/json").content("{\"code\":\"test_dictionary\",\"name\":\"Test\",\"sortOrder\":100}")).andExpect(status().isForbidden());
   var currentRole=rolePermissions.getAuthorization(c,role.id());
   rolePermissions.replaceAuthorization(c,role.id(),currentRole.roleVersion(),java.util.Set.of(read,permission("configuration.dictionary:create")),java.util.Set.of(),"允许创建字典");

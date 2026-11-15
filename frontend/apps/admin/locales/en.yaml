@@ -29,6 +29,7 @@ search:
   pureEmpty: Empty
   purePlaceholder: Search Menu
 panel:
+  hidePageBanner: Hide page banners
   pureSystemSet: System Configs
   pureCloseSystemSet: Close System Configs
   pureClearCacheAndToLogin: Clear cache and return to login page
@@ -471,6 +472,8 @@ account:
     MFA_FAILED: Second-factor authentication failed
     REFRESH_TOKEN_REPLAY: Refresh token replay detected; device authorization revoked
 management:
+  queryFor: "{name} search"
+  queryConditions: Search filters
   refresh: Refresh
   totalRecords: "{total} records"
   reset: Reset
@@ -821,6 +824,7 @@ welcome:
   description: Use the navigation to open platform, tenant and organization management.
   empty: Choose a business module to get started
 dictionary:
+  visualSubtitle: Manage business dictionaries and options in one organized workspace.
   configuration: Configuration
   title: Dictionary Management
   types: Dictionaries
@@ -1058,6 +1062,9 @@ authorizationCenter:
     ORGANIZATION_SUBTREE: Organizations and descendants
     ALL: All in current tenant
 workflow:
+  queryPlaceholder: Search object type, record ID, node or status
+  contractCode: Data contract code
+  fieldCode: Field code
   contractSourceHint: Approval data contracts are registered by business code and supplied by business adapters, so fields cannot be edited here. Printing also supports new tenant-defined contracts; saved print contracts are immutable as well.
   configureBinding: Configure document policy
   contractFields: Contract fields
@@ -1067,7 +1074,7 @@ workflow:
   title: Workflow center
   designer: Workflow designer
   name: Name
-  objectType: Document type
+  objectType: Object type
   objectId: Document ID
   purpose: Purpose
   mode: Mode
@@ -1332,6 +1339,20 @@ workflow:
   deleteConnection: Delete selected connection
   dragHint: Drag from the library, move nodes, and connect output ports to input ports.
 printing:
+  preflightHint: Dependency checks are instantaneous. Offline jobs may queue; this does not guarantee execution.
+  preflightLayers:
+    SCENE_TEMPLATE: Scene and published template
+    RENDERER: Rendering agent
+    DEVICE: Physical printer
+  preflightReasons:
+    READY: Ready
+    PRINT_TARGET_INVALID: Scene or template unavailable
+    UPSTREAM_BLOCKED: "Not checked: upstream blocked"
+    PRINT_AGENT_OFFLINE: No recently online rendering agent
+    PREVIEW_NO_DEVICE_REQUIRED: Preview/PDF does not require a printer
+    PRINT_DEVICE_REQUIRED: Select a printer
+    PRINT_DEVICE_UNAVAILABLE: Device unavailable in this tenant
+    PRINT_DEVICE_OFFLINE: Target site queue offline
   booleanTrue: "True"
   booleanFalse: "False"
   outputStages:
@@ -1677,9 +1698,17 @@ businessWorkflow:
     LE: Less than or equal to
   removeReview: Remove approval step
   removeConfirm: Remove this step and its independent condition, if any? Publishing affects new submissions.
-document:
+businessObject:
+  catalogBoundary: This page manages objects with configurable workflow or printing capabilities. Find all registered objects and operations in Feature catalog → By business object.
+  category: Object category
+  categories:
+    MASTER_DATA: Master data
+    TRANSACTION: Transaction
+    CONFIGURATION: Configuration
+    LEDGER: Ledger
+    SYSTEM: System resource
   interactions: Interaction contracts
-  interactionCode: Contract code
+  interoperationCode: Contract code
   service: Target service
   completion: Completion
   reference: Capability reference
@@ -1698,13 +1727,23 @@ document:
     CONFIRMATION: Confirmation
     ASYNCHRONOUS: Asynchronous
   events:
-    DOCUMENT_CREATED: Document Created
+    BUSINESS_OBJECT_CREATED: Document Created
     APPROVAL_STARTED: Approval Started
     APPROVAL_APPLIED: Approval Applied
     PRINT_DEVICE: Device queue delivery (not physical completion)
     PRINT_OUTPUT: Print Output
   actionAvailability: Action availability
   availability:
+    PRINT_UNAVAILABLE: Printing service unavailable
+    PRINT_TARGET_INVALID: Bound print scene or template unavailable
+    WORKFLOW_UNAVAILABLE: Workflow service unavailable
+    WORKFLOW_TARGET_INVALID: Bound workflow disabled or incompatible
+    TYPE_DISABLED: Object type disabled
+    TENANT_NOT_GRANTED: Object not granted to tenant
+    CONFIGURATION_NOT_PUBLISHED: Configuration not published
+    CONTRACT_CHANGED: Contract changed; publish again
+    CONFIGURATION_NOT_MATCHED: No matching configuration
+    CONFIGURATION_AMBIGUOUS: Multiple matching configurations
     READY: Available; rechecked on execution
     OPERATION_PERMISSION_MISSING: Effective operation grant missing
     PAGE_RELATION_DISABLED: Platform page relationship disabled
@@ -1724,8 +1763,10 @@ document:
     WORKFLOW_VERSION: Workflow Version
     PRINT_SCENE: Print Scene
     RENDERER_ONLINE: Renderer Online
-  platformTitle: Document registry
-  title: Document workbench
+  basicInfo: Basic information
+  tenantAuthorization: Tenant grants
+  platformTitle: Business object catalog
+  title: Business configuration
   code: Document code
   name: Name
   module: Module
@@ -1770,7 +1811,7 @@ document:
   selectPageOperation: Select an integrated page operation
   noPageOperation: No integrated page operation is registered. Contact the business developer.
   businessEndpoint: Business endpoint
-  operationKey: Page and API operation key
+  operationId: Page and API operation key
   permission: Operation permission
   printScene: Print scene
   submissionMode: Action execution mode
@@ -1807,23 +1848,23 @@ document:
     LE: Less or equal
   leaveConfiguration: Unsaved binding changes will be discarded. Open the workflow designer?
   codes:
-    DOCUMENT_PRINT_SCENE_INVALID: The print scene is disabled or incompatible with the business contract.
-    DOCUMENT_PRINT_CONTRACT_REQUIRED: The action has no printing data contract.
-    DOCUMENT_PAGE_RELATION_INVALID: Incompatible or duplicate page relationship.
-    DOCUMENT_PAGE_RELATION_DISABLED: The platform removed this page relationship. Contact your administrator.
-    DOCUMENT_PAGE_OPERATION_INVALID: The page operation does not match the document action. Select it again.
-    DOCUMENT_CONTRACT_CHANGED: Document contract changed. Validate and publish the binding again.
-    DOCUMENT_FLOW_NOT_BOUND: No approval binding. Contact your tenant administrator.
-    DOCUMENT_FLOW_NOT_MATCHED: No approval binding matches. Contact your tenant administrator.
-    DOCUMENT_FLOW_MATCH_CONFLICT: Multiple approval bindings match. Adjust the conditions.
-    DOCUMENT_FLOW_INCOMPATIBLE: The workflow is unavailable or incompatible. Select another version.
-    DOCUMENT_VERSION_CONFLICT: Configuration changed. Reload before editing.
-    DOCUMENT_TYPE_DISABLED: Document type is disabled. Contact the platform administrator.
-    DOCUMENT_IDEMPOTENCY_CONFLICT: Request content or approval basis changed.
-    DOCUMENT_CONDITION_INVALID: Invalid condition type or operator.
-    DOCUMENT_BINDINGS_INVALID: Configure at least one complete binding.
-    DOCUMENT_NUMBER_INVALID: A valid decimal number is required.
-    DOCUMENT_BOOLEAN_INVALID: Boolean conditions require true or false.
+    BUSINESS_OBJECT_PRINT_SCENE_INVALID: The print scene is disabled or incompatible with the business contract.
+    BUSINESS_OBJECT_PRINT_CONTRACT_REQUIRED: The action has no printing data contract.
+    BUSINESS_OBJECT_PAGE_RELATION_INVALID: Incompatible or duplicate page relationship.
+    BUSINESS_OBJECT_PAGE_RELATION_DISABLED: The platform removed this page relationship. Contact your administrator.
+    BUSINESS_OBJECT_PAGE_OPERATION_INVALID: The page operation does not match the document action. Select it again.
+    BUSINESS_OBJECT_CONTRACT_CHANGED: Document contract changed. Validate and publish the binding again.
+    BUSINESS_OBJECT_FLOW_NOT_BOUND: No approval binding. Contact your tenant administrator.
+    BUSINESS_OBJECT_FLOW_NOT_MATCHED: No approval binding matches. Contact your tenant administrator.
+    BUSINESS_OBJECT_FLOW_MATCH_CONFLICT: Multiple approval bindings match. Adjust the conditions.
+    BUSINESS_OBJECT_FLOW_INCOMPATIBLE: The workflow is unavailable or incompatible. Select another version.
+    BUSINESS_OBJECT_VERSION_CONFLICT: Configuration changed. Reload before editing.
+    BUSINESS_OBJECT_TYPE_DISABLED: Document type is disabled. Contact the platform administrator.
+    BUSINESS_OBJECT_IDEMPOTENCY_CONFLICT: Request content or approval basis changed.
+    BUSINESS_OBJECT_CONDITION_INVALID: Invalid condition type or operator.
+    BUSINESS_OBJECT_BINDINGS_INVALID: Configure at least one complete binding.
+    BUSINESS_OBJECT_NUMBER_INVALID: A valid decimal number is required.
+    BUSINESS_OBJECT_BOOLEAN_INVALID: Boolean conditions require true or false.
 
 dataContractErrors:
   DATA_OBJECT_REQUIRED: Contract data object is required
@@ -1831,4 +1872,117 @@ dataContractErrors:
   DATA_FIELD_TYPE_INVALID: Field type does not match the data contract
   DATA_FIELD_UNKNOWN: Field is not declared in the data contract
   DATA_CONTRACT_CHANGED: Data contract changed; review and publish the configuration again
-  DOCUMENT_CONTROL_REASON_REQUIRED: A valid entry control reason is required
+  BUSINESS_OBJECT_CONTROL_REASON_REQUIRED: A valid entry control reason is required
+
+featureCatalog:
+  help: About the feature catalog
+  pageView: By page
+  objectView: By business object
+  category: Object category
+  module: Module
+  objectType: Object type
+  operationCode: Operation code
+  operationId: Operation ID
+  endpoints: Endpoints
+  policy: Additional constraints
+  title: Feature catalog
+  hint: Registered pages, operation IDs, permission requirements and actual endpoints. Buttons reference operations. Entry eligibility does not prove object access or execution authorization.
+  name: Feature
+  type: Type
+  permission: Permission code
+  path: Route
+  component: Page component
+  gate: Access constraint
+  keyword: Feature search
+  placeholder: Name, permission, route or component
+  scope: Scope
+  search: Search
+  reset: Reset
+  expand: Expand all
+  collapse: Collapse all
+  types:
+    object: Business object
+    scope: Category
+    page: Page
+    operation: Operation
+  gates:
+    PLATFORM_ADMIN: Platform management
+    TENANT_ADMIN: Tenant management
+    PERMISSION: Permission check
+
+invalidPermissionCleanup:
+  title: Role contains invalid permissions
+  reason: Disabled or no longer available in this scope
+  confirm: Remove these invalid permissions and their data policies from the draft? Save to apply.
+  remove: Remove invalid permissions
+
+operationDiagnostics:
+  dataScope: Data scope
+  notApplicable: No data scope required
+  objectHint: Check ownership and business state in the record detail. Functional permission is not record access.
+  pageAllowed: Page accessible
+  pageDenied: Page blocked
+  menuVisible: Menu visible
+  menuHidden: Menu hidden
+  title: User operation permission diagnostics
+  search: Find operation, name or permission
+  limits: Checks functional grant sources only. Runtime identity and navigation gates are checked; object/business state is not checked. This is not execution authorization.
+  FUNCTION_GRANTED: Functional permissions granted
+  NOT_GRANTED: Functional permissions missing
+  OBJECT_CHECK_REQUIRED: Self or object checks required
+  missing: No effective grant
+  reasons:
+    ACCOUNT_DISABLED: Account disabled or unavailable
+    MEMBERSHIP_INACTIVE: Inactive tenant membership
+    MENU_NOT_CONFIGURED: No menu entry configured
+    MENU_DISABLED: Menu disabled
+    ANCESTOR_DISABLED_OR_INVALID: Disabled or invalid ancestor
+    PLATFORM_IDENTITY_REQUIRED: Platform identity required
+    TENANT_REQUIRED: Tenant context required
+    PAGE_PERMISSION_MISSING: Page permission missing
+    PAGE_REGISTRATION_MISMATCH: Page registration mismatch
+    TENANT_ADMIN_REQUIRED: Tenant administration required
+    EXTERNAL_URL_INVALID: Invalid external URL
+    MENU_OR_ANCESTOR_HIDDEN: Menu or ancestor hidden
+
+printWorkbench:
+  alignment: Align
+  alignHint: Select at least two alignable elements on the canvas
+  canvasAids: Canvas guides
+  gridSettings: Grid settings
+  zoom: Canvas zoom
+  orientation: Orientation
+  portrait: Portrait
+  landscape: Landscape
+  quickTitle: Quick tools
+  quickSubtitle: Add content and configure paper.
+  applyHint: Apply the selected paper size to the design canvas.
+  gridSpacing: Grid spacing
+  more: More
+  sampleSettings: Sample data
+  copy: Copy
+  paste: Paste
+  delete: Delete
+  deleteConfirm: Delete the selected elements? You can undo this change.
+  unsaved: "Unsaved"
+  saved: "Saved"
+  edit: "Edit"
+  canvas: "Canvas"
+  layout: "Layout"
+  preview: "Sample preview"
+  grid: "Grid"
+  ruler: "Rulers"
+  align: "Align selection"
+  panels: "{count} panels"
+  selected: "{count} selected"
+  panHint: "Middle-drag to pan · Scroll to navigate"
+  zoomOut: "Zoom out"
+  zoomIn: "Zoom in"
+  fit: "Fit canvas"
+  alignments:
+    left: "Align left"
+    right: "Align right"
+    top: "Align top"
+    bottom: "Align bottom"
+    vertical: "Center horizontally"
+    horizontal: "Center vertically"

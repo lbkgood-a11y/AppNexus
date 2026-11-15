@@ -35,6 +35,8 @@ public class AccountSessionsController {
     public record SessionView(String handle, Instant createdAt, Instant lastAccessedAt, boolean current) {}
 
     /** 通过主体索引查询本人未过期会话，不扫描其他账号；不展示推断的设备或位置。 */
+    @com.appnexus.contracts.operation.BusinessObjectType(code="AccountSession",nameZh="登录会话",nameEn="Account Session",category=com.appnexus.contracts.operation.BusinessObjectType.Category.SYSTEM,module="identity")
+ @com.appnexus.contracts.operation.OperationBinding(id="AccountSession.list",objectType="AccountSession",operationCode="list",pages={"account/profile"},nameZh="登录会话：查看列表",nameEn="View sessions",eligibility=com.appnexus.contracts.operation.OperationBinding.Eligibility.SELF,policy="当前会话本人身份；写操作继续校验 CSRF、当前密码及所需二次验证")
     @GetMapping
     ResponseEntity<List<SessionView>> list(Authentication auth, HttpServletRequest request) {
         String currentId = request.getSession().getId();
@@ -57,6 +59,7 @@ public class AccountSessionsController {
      * @param auth 当前认证主体
      * @param request 用于保护当前会话；退出当前会话应使用已有注销入口
      */
+    @com.appnexus.contracts.operation.OperationBinding(id="AccountSession.revoke",objectType="AccountSession",operationCode="revoke",pages={"account/profile"},nameZh="登录会话：撤销",nameEn="Revoke session",eligibility=com.appnexus.contracts.operation.OperationBinding.Eligibility.SELF,policy="当前会话本人身份；写操作继续校验 CSRF、当前密码及所需二次验证")
     @DeleteMapping("/{handle}")
     ResponseEntity<Void> revoke(@PathVariable String handle, Authentication auth, HttpServletRequest request) {
         if (!handle.matches("[a-f0-9]{64}")) throw AccountSettingsController.problem(
@@ -77,6 +80,7 @@ public class AccountSessionsController {
      * @param request 取得必须保留的当前会话
      * @return 完成删除的会话数量；不返回会话凭据或目标标识
      */
+    @com.appnexus.contracts.operation.OperationBinding(id="AccountSession.revokeOthers",objectType="AccountSession",operationCode="revokeOthers",pages={"account/profile"},nameZh="登录会话：撤销其他会话",nameEn="Revoke other sessions",eligibility=com.appnexus.contracts.operation.OperationBinding.Eligibility.SELF,policy="当前会话本人身份；写操作继续校验 CSRF、当前密码及所需二次验证")
     @PostMapping("/revoke-others")
     ResponseEntity<RevocationResult> revokeOthers(Authentication auth, HttpServletRequest request) {
         String current = request.getSession().getId();

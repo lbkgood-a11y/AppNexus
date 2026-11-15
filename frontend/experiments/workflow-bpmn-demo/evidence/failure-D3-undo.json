@@ -1,0 +1,644 @@
+{
+  "before": {
+    "node": {
+      "di": {
+        "x": 550.25,
+        "y": 150.5,
+        "width": 100.75,
+        "height": 80.125
+      },
+      "canvas": {
+        "x": 550.25,
+        "y": 150.5,
+        "width": 100.75,
+        "height": 80.125
+      }
+    },
+    "ids": [
+      "Process_1",
+      "StartEvent_1",
+      "Activity_09hb37x",
+      "Flow_14htjfp"
+    ],
+    "count": 4,
+    "topology": [
+      "StartEvent_1",
+      "Activity_09hb37x",
+      "StartEvent_1",
+      "Activity_09hb37x"
+    ],
+    "diPoints": [
+      {
+        "x": 651,
+        "y": 191
+      },
+      {
+        "x": 726,
+        "y": 191
+      },
+      {
+        "x": 726,
+        "y": 180
+      },
+      {
+        "x": 800,
+        "y": 180
+      }
+    ],
+    "canvasPoints": [
+      {
+        "x": 651,
+        "y": 191
+      },
+      {
+        "x": 726,
+        "y": 191
+      },
+      {
+        "x": 726,
+        "y": 180
+      },
+      {
+        "x": 800,
+        "y": 180
+      }
+    ],
+    "xmlShapes": [
+      {
+        "ref": "Activity_09hb37x",
+        "bounds": {
+          "x": 800,
+          "y": 140,
+          "width": 100,
+          "height": 80
+        }
+      },
+      {
+        "ref": "StartEvent_1",
+        "bounds": {
+          "x": 550.25,
+          "y": 150.5,
+          "width": 100.75,
+          "height": 80.125
+        }
+      }
+    ],
+    "xmlPoints": [
+      {
+        "x": 651,
+        "y": 191
+      },
+      {
+        "x": 726,
+        "y": 191
+      },
+      {
+        "x": 726,
+        "y": 180
+      },
+      {
+        "x": 800,
+        "y": 180
+      }
+    ],
+    "xmlFlow": [
+      {
+        "id": "Flow_14htjfp",
+        "source": "StartEvent_1",
+        "target": "Activity_09hb37x"
+      }
+    ],
+    "xml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<bpmn:definitions xmlns:bpmn=\"http://www.omg.org/spec/BPMN/20100524/MODEL\" xmlns:bpmndi=\"http://www.omg.org/spec/BPMN/20100524/DI\" xmlns:dc=\"http://www.omg.org/spec/DD/20100524/DC\" xmlns:di=\"http://www.omg.org/spec/DD/20100524/DI\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" id=\"Definitions_1\" targetNamespace=\"http://bpmn.io/schema/bpmn\"><bpmn:process id=\"Process_1\" isExecutable=\"false\"><bpmn:startEvent id=\"StartEvent_1\"><bpmn:outgoing>Flow_14htjfp</bpmn:outgoing></bpmn:startEvent><bpmn:userTask id=\"Activity_09hb37x\"><bpmn:incoming>Flow_14htjfp</bpmn:incoming></bpmn:userTask><bpmn:sequenceFlow id=\"Flow_14htjfp\" sourceRef=\"StartEvent_1\" targetRef=\"Activity_09hb37x\" /></bpmn:process><bpmndi:BPMNDiagram id=\"BPMNDiagram_1\"><bpmndi:BPMNPlane id=\"BPMNPlane_1\" bpmnElement=\"Process_1\"><bpmndi:BPMNShape id=\"Activity_09hb37x_di\" bpmnElement=\"Activity_09hb37x\"><dc:Bounds x=\"800\" y=\"140\" width=\"100\" height=\"80\" /></bpmndi:BPMNShape><bpmndi:BPMNShape id=\"_BPMNShape_StartEvent_2\" bpmnElement=\"StartEvent_1\"><dc:Bounds x=\"550.25\" y=\"150.5\" width=\"100.75\" height=\"80.125\" /></bpmndi:BPMNShape><bpmndi:BPMNEdge id=\"Flow_14htjfp_di\" bpmnElement=\"Flow_14htjfp\"><di:waypoint x=\"651\" y=\"191\" /><di:waypoint x=\"726\" y=\"191\" /><di:waypoint x=\"726\" y=\"180\" /><di:waypoint x=\"800\" y=\"180\" /></bpmndi:BPMNEdge></bpmndi:BPMNPlane></bpmndi:BPMNDiagram></bpmn:definitions>",
+    "canUndo": true,
+    "canRedo": false
+  },
+  "failed": {
+    "success": false,
+    "error": "Error: INJECTED:undo:canvas-middle",
+    "diagnostic": {
+      "node": {
+        "di": {
+          "x": 530.25,
+          "y": 140.5,
+          "width": 100.75,
+          "height": 80.125
+        },
+        "canvas": {
+          "x": 530.25,
+          "y": 140.5,
+          "width": 100.75,
+          "height": 80.125
+        }
+      },
+      "ids": [
+        "Process_1",
+        "StartEvent_1",
+        "Activity_09hb37x",
+        "Flow_14htjfp"
+      ],
+      "count": 4,
+      "topology": [
+        "StartEvent_1",
+        "Activity_09hb37x",
+        "StartEvent_1",
+        "Activity_09hb37x"
+      ],
+      "diPoints": [
+        {
+          "x": 631,
+          "y": 180.5625
+        },
+        {
+          "x": 700.25,
+          "y": 180.5625
+        },
+        {
+          "x": 700.25,
+          "y": 180
+        },
+        {
+          "x": 800,
+          "y": 180
+        }
+      ],
+      "canvasPoints": [
+        {
+          "x": 631,
+          "y": 180.5625
+        },
+        {
+          "x": 700.25,
+          "y": 180.5625
+        },
+        {
+          "x": 700.25,
+          "y": 180
+        },
+        {
+          "x": 800,
+          "y": 180
+        }
+      ],
+      "xmlShapes": [
+        {
+          "ref": "StartEvent_1",
+          "bounds": {
+            "x": 530.25,
+            "y": 140.5,
+            "width": 100.75,
+            "height": 80.125
+          }
+        },
+        {
+          "ref": "Activity_09hb37x",
+          "bounds": {
+            "x": 800,
+            "y": 140,
+            "width": 100,
+            "height": 80
+          }
+        }
+      ],
+      "xmlPoints": [
+        {
+          "x": 631,
+          "y": 180.5625
+        },
+        {
+          "x": 700.25,
+          "y": 180.5625
+        },
+        {
+          "x": 700.25,
+          "y": 180
+        },
+        {
+          "x": 800,
+          "y": 180
+        }
+      ],
+      "xmlFlow": [
+        {
+          "id": "Flow_14htjfp",
+          "source": "StartEvent_1",
+          "target": "Activity_09hb37x"
+        }
+      ],
+      "xml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<bpmn:definitions xmlns:bpmn=\"http://www.omg.org/spec/BPMN/20100524/MODEL\" xmlns:bpmndi=\"http://www.omg.org/spec/BPMN/20100524/DI\" xmlns:dc=\"http://www.omg.org/spec/DD/20100524/DC\" xmlns:di=\"http://www.omg.org/spec/DD/20100524/DI\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" id=\"Definitions_1\" targetNamespace=\"http://bpmn.io/schema/bpmn\"><bpmn:process id=\"Process_1\" isExecutable=\"false\"><bpmn:startEvent id=\"StartEvent_1\"><bpmn:outgoing>Flow_14htjfp</bpmn:outgoing></bpmn:startEvent><bpmn:userTask id=\"Activity_09hb37x\"><bpmn:incoming>Flow_14htjfp</bpmn:incoming></bpmn:userTask><bpmn:sequenceFlow id=\"Flow_14htjfp\" sourceRef=\"StartEvent_1\" targetRef=\"Activity_09hb37x\" /></bpmn:process><bpmndi:BPMNDiagram id=\"BPMNDiagram_1\"><bpmndi:BPMNPlane id=\"BPMNPlane_1\" bpmnElement=\"Process_1\"><bpmndi:BPMNShape id=\"_BPMNShape_StartEvent_2\" bpmnElement=\"StartEvent_1\"><dc:Bounds x=\"530.25\" y=\"140.5\" width=\"100.75\" height=\"80.125\" /></bpmndi:BPMNShape><bpmndi:BPMNShape id=\"Activity_09hb37x_di\" bpmnElement=\"Activity_09hb37x\"><dc:Bounds x=\"800\" y=\"140\" width=\"100\" height=\"80\" /></bpmndi:BPMNShape><bpmndi:BPMNEdge id=\"Flow_14htjfp_di\" bpmnElement=\"Flow_14htjfp\"><di:waypoint x=\"631\" y=\"180.5625\" /><di:waypoint x=\"700.25\" y=\"180.5625\" /><di:waypoint x=\"700.25\" y=\"180\" /><di:waypoint x=\"800\" y=\"180\" /></bpmndi:BPMNEdge></bpmndi:BPMNPlane></bpmndi:BPMNDiagram></bpmn:definitions>",
+      "canUndo": false,
+      "canRedo": true
+    }
+  },
+  "status": {
+    "poisoned": true,
+    "hits": 1,
+    "events": [
+      {
+        "phase": "preExecute",
+        "direction": "move",
+        "di": {
+          "x": 530.25,
+          "y": 140.5,
+          "width": 100.75,
+          "height": 80.125
+        },
+        "canvas": {
+          "x": 530,
+          "y": 141,
+          "width": 101,
+          "height": 80
+        }
+      },
+      {
+        "phase": "execute",
+        "direction": "move",
+        "di": {
+          "x": 530.25,
+          "y": 140.5,
+          "width": 100.75,
+          "height": 80.125
+        },
+        "canvas": {
+          "x": 530,
+          "y": 141,
+          "width": 101,
+          "height": 80
+        }
+      },
+      {
+        "phase": "executed",
+        "direction": "move",
+        "di": {
+          "x": 530.25,
+          "y": 140.5,
+          "width": 100.75,
+          "height": 80.125
+        },
+        "canvas": {
+          "x": 550,
+          "y": 151,
+          "width": 101,
+          "height": 80
+        }
+      },
+      {
+        "phase": "postExecute",
+        "direction": "move",
+        "di": {
+          "x": 550.25,
+          "y": 150.5,
+          "width": 100.75,
+          "height": 80.125
+        },
+        "canvas": {
+          "x": 550.25,
+          "y": 150.5,
+          "width": 100.75,
+          "height": 80.125
+        }
+      },
+      {
+        "phase": "postExecuted",
+        "direction": "move",
+        "di": {
+          "x": 550.25,
+          "y": 150.5,
+          "width": 100.75,
+          "height": 80.125
+        },
+        "canvas": {
+          "x": 550.25,
+          "y": 150.5,
+          "width": 100.75,
+          "height": 80.125
+        }
+      },
+      {
+        "phase": "revert",
+        "direction": "undo",
+        "di": {
+          "x": 550.25,
+          "y": 150.5,
+          "width": 100.75,
+          "height": 80.125
+        },
+        "canvas": {
+          "x": 550.25,
+          "y": 150.5,
+          "width": 100.75,
+          "height": 80.125
+        }
+      },
+      {
+        "phase": "reverted",
+        "direction": "undo",
+        "di": {
+          "x": 550.25,
+          "y": 150.5,
+          "width": 100.75,
+          "height": 80.125
+        },
+        "canvas": {
+          "x": 530.25,
+          "y": 140.5,
+          "width": 100.75,
+          "height": 80.125
+        }
+      }
+    ],
+    "snapshots": [
+      {
+        "at": "canvas-middle",
+        "di": {
+          "x": 530.25,
+          "y": 140.5,
+          "width": 100.75,
+          "height": 80.125
+        },
+        "canvas": {
+          "x": 530.25,
+          "y": 140.5,
+          "width": 100.75,
+          "height": 80.125
+        }
+      }
+    ]
+  },
+  "blocked": {
+    "move": "Error: SESSION_ISOLATED: reload last committed document",
+    "undo": "Error: SESSION_ISOLATED: reload last committed document",
+    "redo": "Error: SESSION_ISOLATED: reload last committed document",
+    "save": "Error: SESSION_ISOLATED: reload last committed document",
+    "export": "Error: SESSION_ISOLATED: reload last committed document"
+  },
+  "after": {
+    "poisoned": true,
+    "hits": 1,
+    "events": [
+      {
+        "phase": "preExecute",
+        "direction": "move",
+        "di": {
+          "x": 530.25,
+          "y": 140.5,
+          "width": 100.75,
+          "height": 80.125
+        },
+        "canvas": {
+          "x": 530,
+          "y": 141,
+          "width": 101,
+          "height": 80
+        }
+      },
+      {
+        "phase": "execute",
+        "direction": "move",
+        "di": {
+          "x": 530.25,
+          "y": 140.5,
+          "width": 100.75,
+          "height": 80.125
+        },
+        "canvas": {
+          "x": 530,
+          "y": 141,
+          "width": 101,
+          "height": 80
+        }
+      },
+      {
+        "phase": "executed",
+        "direction": "move",
+        "di": {
+          "x": 530.25,
+          "y": 140.5,
+          "width": 100.75,
+          "height": 80.125
+        },
+        "canvas": {
+          "x": 550,
+          "y": 151,
+          "width": 101,
+          "height": 80
+        }
+      },
+      {
+        "phase": "postExecute",
+        "direction": "move",
+        "di": {
+          "x": 550.25,
+          "y": 150.5,
+          "width": 100.75,
+          "height": 80.125
+        },
+        "canvas": {
+          "x": 550.25,
+          "y": 150.5,
+          "width": 100.75,
+          "height": 80.125
+        }
+      },
+      {
+        "phase": "postExecuted",
+        "direction": "move",
+        "di": {
+          "x": 550.25,
+          "y": 150.5,
+          "width": 100.75,
+          "height": 80.125
+        },
+        "canvas": {
+          "x": 550.25,
+          "y": 150.5,
+          "width": 100.75,
+          "height": 80.125
+        }
+      },
+      {
+        "phase": "revert",
+        "direction": "undo",
+        "di": {
+          "x": 550.25,
+          "y": 150.5,
+          "width": 100.75,
+          "height": 80.125
+        },
+        "canvas": {
+          "x": 550.25,
+          "y": 150.5,
+          "width": 100.75,
+          "height": 80.125
+        }
+      },
+      {
+        "phase": "reverted",
+        "direction": "undo",
+        "di": {
+          "x": 550.25,
+          "y": 150.5,
+          "width": 100.75,
+          "height": 80.125
+        },
+        "canvas": {
+          "x": 530.25,
+          "y": 140.5,
+          "width": 100.75,
+          "height": 80.125
+        }
+      }
+    ],
+    "snapshots": [
+      {
+        "at": "canvas-middle",
+        "di": {
+          "x": 530.25,
+          "y": 140.5,
+          "width": 100.75,
+          "height": 80.125
+        },
+        "canvas": {
+          "x": 530.25,
+          "y": 140.5,
+          "width": 100.75,
+          "height": 80.125
+        }
+      }
+    ]
+  },
+  "settled": {
+    "poisoned": true,
+    "hits": 1,
+    "events": [
+      {
+        "phase": "preExecute",
+        "direction": "move",
+        "di": {
+          "x": 530.25,
+          "y": 140.5,
+          "width": 100.75,
+          "height": 80.125
+        },
+        "canvas": {
+          "x": 530,
+          "y": 141,
+          "width": 101,
+          "height": 80
+        }
+      },
+      {
+        "phase": "execute",
+        "direction": "move",
+        "di": {
+          "x": 530.25,
+          "y": 140.5,
+          "width": 100.75,
+          "height": 80.125
+        },
+        "canvas": {
+          "x": 530,
+          "y": 141,
+          "width": 101,
+          "height": 80
+        }
+      },
+      {
+        "phase": "executed",
+        "direction": "move",
+        "di": {
+          "x": 530.25,
+          "y": 140.5,
+          "width": 100.75,
+          "height": 80.125
+        },
+        "canvas": {
+          "x": 550,
+          "y": 151,
+          "width": 101,
+          "height": 80
+        }
+      },
+      {
+        "phase": "postExecute",
+        "direction": "move",
+        "di": {
+          "x": 550.25,
+          "y": 150.5,
+          "width": 100.75,
+          "height": 80.125
+        },
+        "canvas": {
+          "x": 550.25,
+          "y": 150.5,
+          "width": 100.75,
+          "height": 80.125
+        }
+      },
+      {
+        "phase": "postExecuted",
+        "direction": "move",
+        "di": {
+          "x": 550.25,
+          "y": 150.5,
+          "width": 100.75,
+          "height": 80.125
+        },
+        "canvas": {
+          "x": 550.25,
+          "y": 150.5,
+          "width": 100.75,
+          "height": 80.125
+        }
+      },
+      {
+        "phase": "revert",
+        "direction": "undo",
+        "di": {
+          "x": 550.25,
+          "y": 150.5,
+          "width": 100.75,
+          "height": 80.125
+        },
+        "canvas": {
+          "x": 550.25,
+          "y": 150.5,
+          "width": 100.75,
+          "height": 80.125
+        }
+      },
+      {
+        "phase": "reverted",
+        "direction": "undo",
+        "di": {
+          "x": 550.25,
+          "y": 150.5,
+          "width": 100.75,
+          "height": 80.125
+        },
+        "canvas": {
+          "x": 530.25,
+          "y": 140.5,
+          "width": 100.75,
+          "height": 80.125
+        }
+      }
+    ],
+    "snapshots": [
+      {
+        "at": "canvas-middle",
+        "di": {
+          "x": 530.25,
+          "y": 140.5,
+          "width": 100.75,
+          "height": 80.125
+        },
+        "canvas": {
+          "x": 530.25,
+          "y": 140.5,
+          "width": 100.75,
+          "height": 80.125
+        }
+      }
+    ]
+  }
+}

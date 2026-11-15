@@ -1,10 +1,12 @@
 /* 内容区沿用模板 main-content 外边距；这里只定义筛选、数据、范围选择三类内部排布。 */
 .management-page { display: grid; gap: 16px; min-width: 0; }
 .management-page .management-filter .el-card__body { padding: 16px 24px; }
-.management-filter .el-form { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; }
+/* 筛选类可用于容器或表单本身，两种组合共用靠右操作与响应式换行。 */
+.management-filter.el-form, .management-filter .el-form { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; }
 .management-filter .el-form-item { margin: 0; }
-.management-filter .management-filter-actions { margin-left: auto; display: flex; justify-content: flex-end; gap: 6px; }
+.management-filter .management-filter-actions { margin-left: auto; display: flex; justify-content: flex-end; gap: 8px; }
 .management-filter .management-filter-actions .el-button + .el-button { margin-left: 0; }
+.management-filter .management-filter-actions .el-form-item__content { justify-content: flex-end; }
 .management-filter .el-input { width: 240px; max-width: 100%; }
 .management-context { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
 .management-context h2 { margin: 0; font-size: var(--el-font-size-large); }
@@ -42,3 +44,92 @@
   .app-managed-dialog .el-button { min-height: 44px; }
   .management-filter .el-form-item { flex-wrap: wrap; }
 }
+
+/* 业务字典样板推广：共用组件统一密度、边框、分页及工具区，不改变数据和权限契约。 */
+.management-page,.page-template { gap:var(--app-section-gap, 12px); }
+.management-page-title,.page-header h1 { font-size:20px; line-height:26px; }
+.management-page-description,.page-header p { font-size:13px; line-height:20px; }
+.management-filter-title,.management-context h2 { font-size:15px; font-weight:600; }
+.management-filter-header { margin-bottom:8px; }
+.management-table-surface { border:1px solid var(--el-border-color-lighter); border-radius:var(--app-card-radius, 8px); background:var(--el-bg-color); padding:12px; }
+/* el-card 自带 body 留白，取消外层重复 padding。 */
+.el-card.management-table-surface { padding:0; }
+.management-table-surface > .el-card__body { padding:12px; }
+.management-table .management-toolbar { margin-bottom:12px; }
+.management-table .management-table-title { font-size:15px; }
+.management-table .management-table-total { font-size:12px; }
+.management-table .management-pagination { margin-top:6px; padding-top:6px; border-top:0; }
+.management-table .el-pagination { --el-pagination-button-width:24px; --el-pagination-button-height:24px; --el-pagination-font-size:12px; }
+.management-table .el-pagination .el-select { width:100px; }
+/* 对话框沿用 ManagedDialog 的焦点、尺寸和关闭管理，仅统一视觉密度。 */
+.app-managed-dialog .el-dialog__header { background:var(--el-bg-color); }
+.app-managed-dialog .app-dialog-header { min-height:48px; padding-left:20px; }
+.app-managed-dialog .el-dialog__body { padding:16px 20px; }
+.app-managed-dialog .el-dialog__footer { padding:12px 20px; }
+@media(max-width:760px){
+  .management-table .el-pagination { --el-pagination-button-width:44px; --el-pagination-button-height:44px; }
+  .app-managed-dialog .el-dialog__body { padding:16px; }
+}
+
+/* 公共表格 scoped 规则优先级更高，显式限定层级以确保统一密度生效。 */
+.management-table .management-table-surface { padding:12px; }
+.management-table .el-card.management-table-surface { padding:0; }
+.management-table .management-table-surface > .el-card__body { padding:12px; }
+.management-table .management-toolbar .management-table-title { font-size:15px; }
+/* 嵌入数据区保留单层卡片，避免工作区与表格外框重复堆叠。 */
+.business-workspace__data > .management-table > div.management-table-surface { border:0; padding:0; }
+
+/* 查询栏统一字段间距与操作尺寸；窄屏操作独占一行并保持右对齐，沿用 Element Plus 主题。 */
+.business-workspace__search .el-form,
+.tree-list-template__search .el-form { display:flex; flex-wrap:wrap; align-items:center; gap:12px 20px; }
+.business-workspace__search .el-form-item,
+.tree-list-template__search .el-form-item { margin:0; }
+.business-workspace__search .management-filter-actions,
+.tree-list-template__search .management-filter-actions { display:flex; margin-left:auto; justify-content:flex-end; gap:8px; }
+.management-filter-actions .el-button + .el-button { margin-left:0; }
+.management-filter-actions .el-button .app-icon { margin-right:4px; }
+@media(max-width:600px) {
+  .business-workspace__search .management-filter-actions,
+  .tree-list-template__search .management-filter-actions { width:100%; margin-left:auto; }
+}
+
+/* 查询/重置统一相距 8px；el-form-item 的实际按钮容器在 content 内，需同步设置，避免只清除默认 margin 后按钮贴合。 */
+.management-filter-actions,
+.management-filter-actions > .el-form-item__content,
+.print-search-actions { display:flex; column-gap:8px; }
+.management-filter-actions .el-button + .el-button,
+.print-search-actions .el-button + .el-button { margin-inline-start:0; }
+
+/* 嵌入工作区的表格即使经过业务包装层，也不重复生成卡片边界。 */
+.business-workspace__data .management-table:not(.is-fullscreen) > div.management-table-surface { border:0; padding:0; }
+
+/* 异常浮层限定在视口内；长文案及补救操作在图层内部滚动，不撑开业务页面。 */
+.app-error-feedback {
+  max-width: calc(100vw - 32px);
+  max-height: calc(100dvh - 32px);
+  overflow: auto;
+  overflow-wrap: anywhere;
+}
+.app-error-feedback .el-notification__content { margin-right: 16px; }
+
+/* 全站查询与数据列表共享标题标记；使用主题变量以跟随深浅色和用户主色，无业务语义或交互副作用。 */
+.management-filter-title,
+.management-table-title { display:flex; align-items:center; gap:8px; }
+.management-filter-title::before,
+.management-table-title::before { content:""; flex:0 0 4px; width:4px; height:18px; border-radius:var(--el-border-radius-small); background:var(--el-color-primary); }
+
+/* 横向业务页签沿用流程工作台：保留 Element Plus 活动条和窄屏滚动，只移除重复底线；不隐藏页签内容。 */
+.el-tabs--top > .el-tabs__header,
+.el-tabs--bottom > .el-tabs__header { margin:0; }
+.el-tabs--top:not(.el-tabs--card):not(.el-tabs--border-card) > .el-tabs__header .el-tabs__nav-wrap::after,
+.el-tabs--bottom:not(.el-tabs--card):not(.el-tabs--border-card) > .el-tabs__header .el-tabs__nav-wrap::after { display:none; }
+.el-tabs--top > .el-tabs__header .el-tabs__item,
+.el-tabs--bottom > .el-tabs__header .el-tabs__item { height:44px; font-weight:500; }
+.el-tabs--top > .el-tabs__header .el-tabs__item.is-active,
+.el-tabs--bottom > .el-tabs__header .el-tabs__item.is-active { font-weight:600; }
+
+/* 详情弹窗与列表卡片共用圆角；正文内旧式操作区同样以轻分隔线区分，页脚插槽沿用组件边界。 */
+.app-managed-dialog.el-dialog:not(.is-dialog-maximized) { border-radius:var(--app-card-radius,8px); }
+.app-managed-dialog .app-dialog-actions .el-button + .el-button { margin-inline-start:0; }
+.app-managed-dialog .el-dialog__body :is(.management-form-actions,.actions) { border-top:1px solid var(--el-border-color-lighter); margin-top:16px; padding-top:12px; display:flex; justify-content:flex-end; flex-wrap:wrap; gap:8px; }
+.app-managed-dialog .el-dialog__body :is(.management-form-actions,.actions) .el-button + .el-button { margin-inline-start:0; }

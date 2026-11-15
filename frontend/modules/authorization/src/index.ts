@@ -43,9 +43,23 @@ export interface PermissionSource { roleId: string; roleName: string; effective:
 export interface EffectivePermission { permissionCode: string; effective: boolean; sources: PermissionSource[] }
 /** 主体页签端口；分页单位为条，应用适配器负责真实目录、CSRF 和可信管理域。 */
 export interface SubjectAuthorizationApi {
+  /** 指定主体操作诊断；服务端复核管理域，不作为业务执行凭证。 */
+  diagnostics(subjectId:string):Promise<OperationDiagnosis[]>;
   grants?:MemberGrantApi;
   subjects(page: number, query: string): Promise<{ items: AuthorizationSubject[]; total: number }>;
   assignment(subjectId: string): Promise<SubjectAssignment>;
   replace(subjectId: string, input: { ids: string[]; version: number; reason: string }): Promise<SubjectAssignment>;
   effective(subjectId: string): Promise<EffectivePermission[]>;
+}
+
+/** 操作权限诊断；明确保留未检查项，不把功能权限当作最终执行资格。 */
+export interface OperationDiagnosis {
+ operation:{id:string;nameZh:string;nameEn:string;pages:string[];permissions:string[];policy:string};
+ status:"FUNCTION_GRANTED"|"NOT_GRANTED"|"OBJECT_CHECK_REQUIRED";
+ permissions:EffectivePermission[];
+ unchecked:string[];
+ /** 来自执行端口的数据范围及字段限制，不代表具体对象可访问。 */
+ data:{permission:string;resource:string;scope:string;organizations:string[];fields:Record<string,string>}[];
+ /** 由真实导航准入规则检查的页面结果；可访问与菜单可见分别表达。 */
+ pages:{page:string;path:string;accessible:boolean;visible:boolean;reasons:string[]}[];
 }

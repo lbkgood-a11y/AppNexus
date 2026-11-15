@@ -27,7 +27,12 @@ export const workflowApi: WorkflowApi = {
   preview: (model, sample) => write("post", "/preview", { model, sample }),
   withdraw: (key, reason) =>
     write("post", "/instances/" + id(key) + "/withdraw", { reason }),
-  capabilities: () => get("/capabilities"),
+  /** 页面能力分组由统一操作身份投影，任务处理资格仍由任务接口复核。 */
+  capabilities: async () => {
+    const operations=new Set(await http.request<string[]>("get","/api/operation-decisions"));
+    return Object.entries({read:"WorkflowDefinition.list",edit:"WorkflowDefinition.save",publish:"WorkflowDefinition.publish",start:"WorkflowInstance.start",operate:"WorkflowTask.reassign"})
+      .filter(([,operation])=>operations.has(operation)).map(([name])=>name);
+  },
   businesses: () => get("/businesses"),
   definitions: () => get("/definitions"),
   save: (key, revision, model) =>

@@ -1,0 +1,65 @@
+{
+  "evidence": {},
+  "manager": {
+    "managerState": "IDLE",
+    "session": {
+      "identity": {
+        "sessionId": "63a8c399-a174-4e18-bf0e-ff9266fda137",
+        "generation": 2
+      },
+      "definitionId": "d",
+      "tenantId": "t",
+      "loadedRevision": 1,
+      "lifecycleState": "DISPOSED",
+      "saveState": "IDLE",
+      "reason": "Error: unparsable content detected\n\tline: 0\n\tcolumn: 8\n\tnested error: unexpected end of file",
+      "createdAt": 1794677981225,
+      "hasModeler": false,
+      "committedXml": null
+    },
+    "requests": [
+      {
+        "envelope": {
+          "sessionId": "0a4e018b-0378-40f7-977d-9fa560e47072",
+          "generation": 1,
+          "requestId": "878c655a-6997-437f-a5c5-42d87394f219",
+          "definitionId": "d",
+          "tenantId": "t",
+          "expectedRevision": 0,
+          "token": 1,
+          "xml": "<broken>"
+        },
+        "status": "SUCCEEDED"
+      }
+    ]
+  },
+  "old": {
+    "identity": {
+      "sessionId": "0a4e018b-0378-40f7-977d-9fa560e47072",
+      "generation": 1
+    },
+    "definitionId": "d",
+    "tenantId": "t",
+    "loadedRevision": 1,
+    "lifecycleState": "DISPOSED",
+    "saveState": "SUCCEEDED",
+    "reason": "FAULT",
+    "createdAt": 1794677981222,
+    "hasModeler": false,
+    "committedXml": null
+  },
+  "resources": [
+    {
+      "name": "Adapter cache",
+      "status": "PASS"
+    },
+    {
+      "name": "Modeler",
+      "status": "PASS"
+    },
+    {
+      "name": "DOM",
+      "status": "PASS"
+    }
+  ]
+}

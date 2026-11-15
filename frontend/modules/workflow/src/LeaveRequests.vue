@@ -1,4 +1,10 @@
 <script setup lang="ts">
+import { VxeTable, VxeColumn } from "@appnexus/ui";
+import { setErrorFeedback } from "@appnexus/ui";
+import { AppPagination } from "@appnexus/ui";
+import { FloatingError } from "@appnexus/ui";
+import { InfoHint } from "@appnexus/ui";
+import { AppIcon } from "@appnexus/icons";
 import { computed, onMounted, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
@@ -22,11 +28,11 @@ const props = defineProps<{
 const emit=defineEmits<{printOutput:[id:string]}>();
 const { t,locale } = useI18n();
 const actions=ref<Awaited<ReturnType<LeaveApi['actions']>>>([]);
-const submitAction=computed(()=>actions.value.find(a=>a.operationKey==='LeaveRequest.submit'&&a.actionCode==='submit'));
-const printAction=computed(()=>actions.value.find(a=>a.operationKey==='LeaveRequest.print'&&a.allowed));
-const detailPrintAction=computed(()=>actions.value.find(a=>a.operationKey==='LeaveRequest.detail.print'&&a.allowed));
+const submitAction=computed(()=>actions.value.find(a=>a.operationId==='LeaveRequest.submit'&&a.operationCode==='submit'));
+const printAction=computed(()=>actions.value.find(a=>a.operationId==='LeaveRequest.print'&&a.allowed));
+const detailPrintAction=computed(()=>actions.value.find(a=>a.operationId==='LeaveRequest.detail.print'&&a.allowed));
 /** 列表和详情别名进入同一业务打印入口，预览只使用后端返回的受控输出标识。 */
-async function printDocument(id:string,detail=false){busy.value=true;error.value='';try{const output=await props.api.print(id,detail?'LeaveRequest.detail.print':'LeaveRequest.print');emit('printOutput',output.id);}catch(e){error.value=props.errorText(e);}finally{busy.value=false;}}
+async function printDocument(id:string,detail=false){busy.value=true;error.value='';try{const output=await props.api.print(id,detail?'LeaveRequest.detail.print':'LeaveRequest.print');emit('printOutput',output.id);}catch(e){await setErrorFeedback(error, props.errorText(e));}finally{busy.value=false;}}
 const route = useRoute(),
   router = useRouter();
 const rows = ref<Row[]>([]),
@@ -46,7 +52,7 @@ const lifecycle=ref<Row[]>([]);
 const actionAvailability=ref<Awaited<ReturnType<LeaveApi['availability']>>>([]);
 /** 修改使用业务返回的依据版本，前端不自行解除审批冻结。 */
 function edit(row:Row){formError.value="";editing.value=row;Object.assign(input,{organizationId:row.organization_id,leaveType:row.leave_type,startDate:String(row.start_date).slice(0,10),endDate:String(row.end_date).slice(0,10),reason:row.reason});createOpen.value=true;}
-async function showCycles(id:string){busy.value=true;error.value='';try{[history.value,lifecycle.value]=await Promise.all([props.api.cycles(id),props.api.timeline(id)]);historyOpen.value=true;}catch(e){error.value=props.errorText(e);}finally{busy.value=false;}}
+async function showCycles(id:string){busy.value=true;error.value='';try{[history.value,lifecycle.value]=await Promise.all([props.api.cycles(id),props.api.timeline(id)]);historyOpen.value=true;}catch(e){await setErrorFeedback(error, props.errorText(e));}finally{busy.value=false;}}
 const organizations = ref<{ id: string; name: string }[]>([]);
 const query = ref(""),
   submitted = ref(""),
@@ -128,7 +134,7 @@ async function load() {
       ? await props.api.organizations()
       : [];
   } catch (e) {
-    error.value = props.errorText(e);
+    await setErrorFeedback(error, props.errorText(e));
   } finally {
     loading.value = false;
   }
@@ -142,7 +148,7 @@ async function openDocument(id: string, taskId?: string) {
     actionAvailability.value=taskId?[]:await props.api.availability(id);
     detailOpen.value = true;
   } catch (e) {
-    error.value = props.errorText(e);
+    await setErrorFeedback(error, props.errorText(e));
   } finally {
     busy.value = false;
   }
@@ -166,7 +172,7 @@ async function create() {
     ElMessage.success(t("leavePoc.saved"));
     await load();
   } catch (e) {
-    formError.value = props.errorText(e);
+    await setErrorFeedback(formError, props.errorText(e));
   } finally {
     busy.value = false;
   }
@@ -176,11 +182,11 @@ async function submit(id: string) {
   error.value = "";
   try {
     if(!submitAction.value?.allowed)throw new Error(t('account.forbidden'));
-    await props.api.submit(id,submitAction.value.operationKey);
+    await props.api.submit(id,submitAction.value.operationId);
     ElMessage.success(t("leavePoc.submitted"));
     await load();
   } catch (e) {
-    error.value = props.errorText(e);
+    await setErrorFeedback(error, props.errorText(e));
   } finally {
     busy.value = false;
   }
@@ -200,17 +206,16 @@ onMounted(async () => {
 </script>
 
 <template>
-  <BusinessWorkspace :title="t('leavePoc.title')">
+  <BusinessWorkspace :title="t('leavePoc.title')" :search-title="t('leavePoc.search')">
     <template #feedback>
-      <el-alert v-if="error" :title="error" type="error" :closable="false"
+      <FloatingError v-if="error" :title="error" scope="error" type="error" :closable="false"
         ><el-button text @click="load">{{
           t("management.refresh")
-        }}</el-button></el-alert
-      >
-      <el-alert :title="t('leavePoc.hint')" type="info" :closable="false" />
+        }}</el-button></FloatingError>
     </template>
     <template #search>
       <el-form
+        class="management-filter"
         inline
         @submit.prevent="
           submitted = query;
@@ -220,8 +225,8 @@ onMounted(async () => {
         <el-form-item :label="t('leavePoc.search')"
           ><el-input v-model="query" clearable
         /></el-form-item>
-        <div class="leave-search-actions">
-          <el-button type="primary" native-type="submit">{{
+        <div class="management-filter-actions">
+          <el-button type="primary" native-type="submit"><AppIcon name="search" :size="16" />{{
             t("administration.search")
           }}</el-button
           ><el-button
@@ -230,7 +235,7 @@ onMounted(async () => {
               submitted = '';
               page = 1;
             "
-            >{{ t("management.reset") }}</el-button
+            ><AppIcon name="refresh" :size="16" />{{ t("management.reset") }}</el-button
           >
         </div>
       </el-form>
@@ -246,7 +251,7 @@ onMounted(async () => {
         :busy="busy"
         :empty-text="t('workflow.empty')"
         @refresh="load"
-      >
+      ><template #titleHelp><InfoHint :content="t('leavePoc.hint')" /></template>
         <template #actions>
           <el-button
             v-if="caps.includes('edit') && caps.includes('read')"
@@ -258,7 +263,7 @@ onMounted(async () => {
             v-if="caps.includes('start')"
             type="primary"
             :disabled="busy"
-            @click="editing=undefined; formError=''; createOpen = true"
+            v-operation="'LeaveRequest.create'" @click="editing=undefined; formError=''; createOpen = true"
             >{{ t("leavePoc.new") }}</el-button
           >
         </template>
@@ -272,13 +277,13 @@ onMounted(async () => {
           ><el-tag>{{ t("leavePoc.states." + row.state) }}</el-tag></template
         >
         <template #operations="{ row }">
-          <el-button v-if="printAction" link :disabled="busy" @click="printDocument(row.id)">{{locale.startsWith('zh')?printAction.nameZh:printAction.nameEn}}</el-button>
-          <el-button v-if="['DRAFT','REJECTED','WITHDRAWN'].includes(row.state)&&caps.includes('start')" link :disabled="busy" @click="edit(row)">{{t('document.editLeave')}}</el-button>
-          <el-button link :disabled="busy" @click="showCycles(row.id)">{{t('document.cycleHistory')}}</el-button>
-          <el-button link :disabled="busy" @click="openDocument(row.id)">{{
+          <el-button v-operation="'LeaveRequest.print'" v-if="printAction" link :disabled="busy" @click="printDocument(row.id)">{{locale.startsWith('zh')?printAction.nameZh:printAction.nameEn}}</el-button>
+          <el-button v-operation="'LeaveRequest.update'" v-if="['DRAFT','REJECTED','WITHDRAWN'].includes(row.state)&&caps.includes('start')" link :disabled="busy" @click="edit(row)">{{t('businessObject.editLeave')}}</el-button>
+          <el-button v-operation="'LeaveRequest.approvalHistory'" link :disabled="busy" @click="showCycles(row.id)">{{t('businessObject.cycleHistory')}}</el-button>
+          <el-button v-operation="'LeaveRequest.read'" link :disabled="busy" @click="openDocument(row.id)">{{
             t("leavePoc.detail")
           }}</el-button>
-          <el-button
+          <el-button v-operation="'LeaveRequest.submit'"
             v-if="row.state === 'DRAFT' && submitAction?.allowed"
             link
             type="primary"
@@ -288,7 +293,7 @@ onMounted(async () => {
           >
         </template>
         <template #pagination
-          ><el-pagination
+          ><AppPagination
             v-model:current-page="page"
             v-model:page-size="size"
             :page-sizes="[20, 50, 100]"
@@ -296,22 +301,17 @@ onMounted(async () => {
             :total="filtered.length"
         /></template>
       </ManagementTable>
-      <el-alert
-        v-if="rows.length === 100"
-        :title="t('workflow.limitHint')"
-        type="info"
-        :closable="false"
-      />
+      <el-alert v-if="rows.length === 100" :title="t('workflow.limitHint')" type="info" :closable="false" />
     </template>
   </BusinessWorkspace>
-  <ManagedDialog v-model="historyOpen" :title="t('document.cycleHistory')" width="900px"><el-table :data="lifecycle"><el-table-column :label="t('document.lifecycleEvent')"><template #default="{row}">{{t('document.events.'+row.kind)}}</template></el-table-column><el-table-column prop="reference" :label="t('document.checkTarget')" min-width="260"/><el-table-column prop="state" :label="t('document.state')"/><el-table-column prop="at" :label="t('document.occurredAt')"/></el-table><el-table :data="history"><el-table-column prop="basis_version" :label="t('document.contractVersion')" width="140"/><el-table-column prop="instance_id" :label="t('workflow.objectId')" min-width="260"/><el-table-column prop="configuration_version" :label="t('document.publishedVersion')" min-width="160"/><el-table-column prop="created_at" :label="t('leavePoc.start')" min-width="180"/></el-table></ManagedDialog>
+  <ManagedDialog v-model="historyOpen" :title="t('businessObject.cycleHistory')" width="900px"><vxe-table :column-config="{ resizable: true }"  :data="lifecycle" border="inner"><vxe-column :title="t('businessObject.lifecycleEvent')"><template #default="{row}">{{t('businessObject.events.'+row.kind)}}</template></vxe-column><vxe-column field="reference" :title="t('businessObject.checkTarget')" min-width="260"/><vxe-column field="state" :title="t('businessObject.state')"/><vxe-column field="at" :title="t('businessObject.occurredAt')"/></vxe-table><vxe-table :column-config="{ resizable: true }"  :data="history" border="inner"><vxe-column field="basis_version" :title="t('businessObject.contractVersion')" width="140"/><vxe-column field="instance_id" :title="t('workflow.objectId')" min-width="260"/><vxe-column field="configuration_version" :title="t('businessObject.publishedVersion')" min-width="160"/><vxe-column field="created_at" :title="t('leavePoc.start')" min-width="180"/></vxe-table></ManagedDialog>
   <ManagedDialog
     v-model="createOpen"
     :title="t('leavePoc.new')"
     :busy="busy"
     width="min(640px, calc(100vw - 32px))"
   >
-    <el-alert v-if="formError" :title="formError" type="error" :closable="false" />
+    <FloatingError v-if="formError" :title="formError" scope="formError" type="error" :closable="false" />
     <el-form ref="form" :model="input" :rules="rules" label-position="top">
       <el-form-item :label="t('leavePoc.organization')" prop="organizationId"
         ><el-select v-model="input.organizationId" filterable
@@ -355,7 +355,7 @@ onMounted(async () => {
       ><el-button :disabled="busy" @click="createOpen = false">{{
         t("leavePoc.cancel")
       }}</el-button
-      ><el-button type="primary" :loading="busy" @click="create">{{
+      ><el-button v-operation="'LeaveRequest.create'" type="primary" :loading="busy" @click="create">{{
         t("leavePoc.saveDraft")
       }}</el-button></template
     >
@@ -366,8 +366,8 @@ onMounted(async () => {
     width="min(720px, calc(100vw - 32px))"
   >
     <el-descriptions v-if="selected" :column="1" border>
-      <el-descriptions-item v-if="actionAvailability.length" :label="t('document.actionAvailability')"><el-tag v-for="a in actionAvailability" :key="a.operationKey" :type="a.allowed?'success':'info'">{{a.operationKey}}：{{t('document.availability.'+a.reasonCode)}}</el-tag></el-descriptions-item>
-      <el-descriptions-item v-if="detailPrintAction" :label="t('document.operations')"><el-button :loading="busy" @click="printDocument(selected.id,true)">{{locale.startsWith('zh')?detailPrintAction.nameZh:detailPrintAction.nameEn}}</el-button></el-descriptions-item>
+      <el-descriptions-item v-if="actionAvailability.length" :label="t('businessObject.actionAvailability')"><el-tag v-for="a in actionAvailability" :key="a.operationId" :type="a.allowed?'success':'info'">{{a.operationId}}：{{t('businessObject.availability.'+a.reasonCode)}}</el-tag></el-descriptions-item>
+      <el-descriptions-item v-if="detailPrintAction" :label="t('businessObject.operations')"><el-button v-operation="'LeaveRequest.print'" :loading="busy" @click="printDocument(selected.id,true)">{{locale.startsWith('zh')?detailPrintAction.nameZh:detailPrintAction.nameEn}}</el-button></el-descriptions-item>
       <el-descriptions-item :label="t('leavePoc.id')">{{
         selected.id
       }}</el-descriptions-item>

@@ -1,3 +1,4 @@
+import { clearErrorFeedback } from "@appnexus/ui";
 import { removeToken } from "@/utils/auth";
 /** 会话结束原因，用于登录页提供精确反馈，不包含身份凭据。 */
 export type SessionEndReason = "expired" | "passwordChanged";
@@ -9,6 +10,7 @@ let pending: Promise<void> | undefined;
 export function clearSession(reason: SessionEndReason): Promise<void> {
   if (pending) return pending;
   pending = (async () => {
+    clearErrorFeedback();
     removeToken();
     const context=await import("@/utils/tenantContext");context.currentTenant.value=undefined;context.availableTenants.value=[];
     const [{ router, resetRouter }, { useUserStoreHook }, { useMultiTagsStoreHook }, { routerArrays }] =

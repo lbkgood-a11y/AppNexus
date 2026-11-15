@@ -1,7 +1,10 @@
 import App from "./App.vue";
+import { setTableLocale, clearErrorFeedback } from "@appnexus/ui";
+import { watch } from "vue";
+import { currentTenant } from "@/utils/tenantContext";
 import router from "./router";
 import { setupStore } from "@/store";
-import { useI18n } from "@/plugins/i18n";
+import { i18n, useI18n } from "@/plugins/i18n";
 import { getPlatformConfig } from "./config";
 import { MotionPlugin } from "@vueuse/motion";
 import { createApp, type Directive } from "vue";
@@ -21,6 +24,11 @@ import "./assets/iconfont/iconfont.js";
 import "./assets/iconfont/iconfont.css";
 
 const app = createApp(App);
+// 表格内置文案跟随全站语言，禁止维护独立语言偏好。
+watch(() => (i18n.global.locale as { value: string }).value, setTableLocale, { immediate: true });
+// 路由和可信租户上下文变化时关闭旧提示，禁止跨页面保留旧操作回调。
+router.beforeEach(() => { clearErrorFeedback(); });
+watch(currentTenant, () => clearErrorFeedback());
 
 // 自定义指令
 import * as directives from "@/directives";

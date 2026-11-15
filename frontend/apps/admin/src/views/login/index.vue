@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { FloatingError } from "@appnexus/ui";
 import { computed, nextTick, ref, toRaw, watch } from "vue";
 import { useRoute } from "vue-router";
 import { useI18n } from "vue-i18n";
@@ -82,10 +83,10 @@ async function submitLogin(event: Event) {
           <p class="form-subtitle">{{ t("platform.subtitle") }}</p>
           <el-alert v-if="route.query.reason" :title="t(route.query.reason === 'csrfExpired' ? 'account.loginExpired' : route.query.reason === 'passwordChanged' ? 'account.passwordSaved' : 'account.sessionExpired')"
             type="info" :closable="false" show-icon class="form-alert" />
+            <FloatingError v-if="route.query.error" :title="t('platform.loginError')" type="error" :closable="false" show-icon class="form-alert" />
           <PasswordRecoveryForm v-if="recovering" />
           <form v-else-if="credentials" method="post" action="/login" @submit.prevent="submitLogin">
-            <el-alert v-if="route.query.error" :title="t('platform.loginError')" type="error" :closable="false" show-icon class="form-alert" />
-            <el-alert v-if="serviceUnavailable" :title="t('platform.serviceError')" type="error" :closable="false" show-icon class="form-alert" />
+            <FloatingError v-if="serviceUnavailable" :title="t('platform.serviceError')" type="error" :closable="false" show-icon class="form-alert" />
             <input v-if="csrf" type="hidden" :name="csrf.parameterName" :value="csrf.token" />
             <div class="form-field">
               <label for="username">{{ t("platform.account") }}</label>

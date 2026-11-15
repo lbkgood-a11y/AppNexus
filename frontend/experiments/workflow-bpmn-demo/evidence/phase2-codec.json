@@ -1,0 +1,949 @@
+{
+  "model": {
+    "name": "审批",
+    "objectType": "Leave",
+    "purpose": "approval",
+    "mode": "APPROVAL",
+    "entryCapability": "leave.submit",
+    "matches": [
+      {
+        "field": "amount",
+        "value": "1"
+      }
+    ],
+    "terminalActions": {
+      "APPROVED": "leave.approve"
+    },
+    "copies": [
+      {
+        "kind": "POSITION",
+        "reference": "p"
+      }
+    ],
+    "withdrawalCapability": null,
+    "nodes": [
+      {
+        "id": "N_START",
+        "name": "START",
+        "kind": "START",
+        "people": [
+          {
+            "kind": "MEMBER",
+            "reference": "m"
+          }
+        ],
+        "completion": "ALL",
+        "allowSelf": false,
+        "capability": null,
+        "required": [
+          "reason"
+        ],
+        "input": {
+          "reason": "literal:中文"
+        },
+        "retries": 2,
+        "timeoutSeconds": 86400,
+        "join": null,
+        "separate": true,
+        "position": {
+          "x": 200,
+          "y": 180
+        }
+      },
+      {
+        "id": "N_END",
+        "name": "END",
+        "kind": "END",
+        "people": [
+          {
+            "kind": "MEMBER",
+            "reference": "m"
+          }
+        ],
+        "completion": "ALL",
+        "allowSelf": false,
+        "capability": null,
+        "required": [
+          "reason"
+        ],
+        "input": {
+          "reason": "literal:中文"
+        },
+        "retries": 2,
+        "timeoutSeconds": 86400,
+        "join": null,
+        "separate": true,
+        "position": {
+          "x": 380,
+          "y": 180
+        }
+      },
+      {
+        "id": "N_REVIEW",
+        "name": "REVIEW",
+        "kind": "REVIEW",
+        "people": [
+          {
+            "kind": "MEMBER",
+            "reference": "m"
+          }
+        ],
+        "completion": "ALL",
+        "allowSelf": false,
+        "capability": null,
+        "required": [
+          "reason"
+        ],
+        "input": {
+          "reason": "literal:中文"
+        },
+        "retries": 2,
+        "timeoutSeconds": 86400,
+        "join": null,
+        "separate": true,
+        "position": {
+          "x": 560,
+          "y": 180
+        }
+      },
+      {
+        "id": "N_HANDLE",
+        "name": "HANDLE",
+        "kind": "HANDLE",
+        "people": [
+          {
+            "kind": "MEMBER",
+            "reference": "m"
+          }
+        ],
+        "completion": "ALL",
+        "allowSelf": false,
+        "capability": null,
+        "required": [
+          "reason"
+        ],
+        "input": {
+          "reason": "literal:中文"
+        },
+        "retries": 2,
+        "timeoutSeconds": 86400,
+        "join": null,
+        "separate": true,
+        "position": {
+          "x": 740,
+          "y": 180
+        }
+      },
+      {
+        "id": "N_ACTION",
+        "name": "ACTION",
+        "kind": "ACTION",
+        "people": [
+          {
+            "kind": "MEMBER",
+            "reference": "m"
+          }
+        ],
+        "completion": "ALL",
+        "allowSelf": false,
+        "capability": null,
+        "required": [
+          "reason"
+        ],
+        "input": {
+          "reason": "literal:中文"
+        },
+        "retries": 2,
+        "timeoutSeconds": 86400,
+        "join": null,
+        "separate": true,
+        "position": {
+          "x": 920,
+          "y": 180
+        }
+      },
+      {
+        "id": "N_WAIT",
+        "name": "WAIT",
+        "kind": "WAIT",
+        "people": [
+          {
+            "kind": "MEMBER",
+            "reference": "m"
+          }
+        ],
+        "completion": "ALL",
+        "allowSelf": false,
+        "capability": null,
+        "required": [
+          "reason"
+        ],
+        "input": {
+          "reason": "literal:中文"
+        },
+        "retries": 2,
+        "timeoutSeconds": 86400,
+        "join": null,
+        "separate": true,
+        "position": {
+          "x": 1100,
+          "y": 180
+        }
+      },
+      {
+        "id": "N_CHOICE",
+        "name": "CHOICE",
+        "kind": "CHOICE",
+        "people": [
+          {
+            "kind": "MEMBER",
+            "reference": "m"
+          }
+        ],
+        "completion": "ALL",
+        "allowSelf": false,
+        "capability": null,
+        "required": [
+          "reason"
+        ],
+        "input": {
+          "reason": "literal:中文"
+        },
+        "retries": 2,
+        "timeoutSeconds": 86400,
+        "join": null,
+        "separate": true,
+        "position": {
+          "x": 1280,
+          "y": 180
+        }
+      },
+      {
+        "id": "N_MERGE",
+        "name": "MERGE",
+        "kind": "MERGE",
+        "people": [
+          {
+            "kind": "MEMBER",
+            "reference": "m"
+          }
+        ],
+        "completion": "ALL",
+        "allowSelf": false,
+        "capability": null,
+        "required": [
+          "reason"
+        ],
+        "input": {
+          "reason": "literal:中文"
+        },
+        "retries": 2,
+        "timeoutSeconds": 86400,
+        "join": null,
+        "separate": true,
+        "position": {
+          "x": 1460,
+          "y": 180
+        }
+      },
+      {
+        "id": "N_FORK",
+        "name": "FORK",
+        "kind": "FORK",
+        "people": [
+          {
+            "kind": "MEMBER",
+            "reference": "m"
+          }
+        ],
+        "completion": "ALL",
+        "allowSelf": false,
+        "capability": null,
+        "required": [
+          "reason"
+        ],
+        "input": {
+          "reason": "literal:中文"
+        },
+        "retries": 2,
+        "timeoutSeconds": 86400,
+        "join": "N_JOIN",
+        "separate": true,
+        "position": {
+          "x": 1640,
+          "y": 180
+        }
+      },
+      {
+        "id": "N_JOIN",
+        "name": "JOIN",
+        "kind": "JOIN",
+        "people": [
+          {
+            "kind": "MEMBER",
+            "reference": "m"
+          }
+        ],
+        "completion": "ALL",
+        "allowSelf": false,
+        "capability": null,
+        "required": [
+          "reason"
+        ],
+        "input": {
+          "reason": "literal:中文"
+        },
+        "retries": 2,
+        "timeoutSeconds": 86400,
+        "join": null,
+        "separate": true,
+        "position": {
+          "x": 1820,
+          "y": 180
+        }
+      }
+    ],
+    "edges": [
+      {
+        "from": "N_START",
+        "to": "N_REVIEW",
+        "field": null,
+        "value": null,
+        "defaultEdge": false,
+        "operator": null
+      }
+    ]
+  },
+  "decoded": {
+    "name": "审批",
+    "objectType": "Leave",
+    "purpose": "approval",
+    "mode": "APPROVAL",
+    "entryCapability": "leave.submit",
+    "matches": [
+      {
+        "field": "amount",
+        "value": "1"
+      }
+    ],
+    "terminalActions": {
+      "APPROVED": "leave.approve"
+    },
+    "copies": [
+      {
+        "kind": "POSITION",
+        "reference": "p"
+      }
+    ],
+    "withdrawalCapability": null,
+    "nodes": [
+      {
+        "id": "N_START",
+        "name": "START",
+        "kind": "START",
+        "people": [
+          {
+            "kind": "MEMBER",
+            "reference": "m"
+          }
+        ],
+        "completion": "ALL",
+        "allowSelf": false,
+        "capability": null,
+        "required": [
+          "reason"
+        ],
+        "input": {
+          "reason": "literal:中文"
+        },
+        "retries": 2,
+        "timeoutSeconds": 86400,
+        "join": null,
+        "separate": true,
+        "position": {
+          "x": 200,
+          "y": 180
+        }
+      },
+      {
+        "id": "N_END",
+        "name": "END",
+        "kind": "END",
+        "people": [
+          {
+            "kind": "MEMBER",
+            "reference": "m"
+          }
+        ],
+        "completion": "ALL",
+        "allowSelf": false,
+        "capability": null,
+        "required": [
+          "reason"
+        ],
+        "input": {
+          "reason": "literal:中文"
+        },
+        "retries": 2,
+        "timeoutSeconds": 86400,
+        "join": null,
+        "separate": true,
+        "position": {
+          "x": 380,
+          "y": 180
+        }
+      },
+      {
+        "id": "N_REVIEW",
+        "name": "REVIEW",
+        "kind": "REVIEW",
+        "people": [
+          {
+            "kind": "MEMBER",
+            "reference": "m"
+          }
+        ],
+        "completion": "ALL",
+        "allowSelf": false,
+        "capability": null,
+        "required": [
+          "reason"
+        ],
+        "input": {
+          "reason": "literal:中文"
+        },
+        "retries": 2,
+        "timeoutSeconds": 86400,
+        "join": null,
+        "separate": true,
+        "position": {
+          "x": 560,
+          "y": 180
+        }
+      },
+      {
+        "id": "N_HANDLE",
+        "name": "HANDLE",
+        "kind": "HANDLE",
+        "people": [
+          {
+            "kind": "MEMBER",
+            "reference": "m"
+          }
+        ],
+        "completion": "ALL",
+        "allowSelf": false,
+        "capability": null,
+        "required": [
+          "reason"
+        ],
+        "input": {
+          "reason": "literal:中文"
+        },
+        "retries": 2,
+        "timeoutSeconds": 86400,
+        "join": null,
+        "separate": true,
+        "position": {
+          "x": 740,
+          "y": 180
+        }
+      },
+      {
+        "id": "N_ACTION",
+        "name": "ACTION",
+        "kind": "ACTION",
+        "people": [
+          {
+            "kind": "MEMBER",
+            "reference": "m"
+          }
+        ],
+        "completion": "ALL",
+        "allowSelf": false,
+        "capability": null,
+        "required": [
+          "reason"
+        ],
+        "input": {
+          "reason": "literal:中文"
+        },
+        "retries": 2,
+        "timeoutSeconds": 86400,
+        "join": null,
+        "separate": true,
+        "position": {
+          "x": 920,
+          "y": 180
+        }
+      },
+      {
+        "id": "N_WAIT",
+        "name": "WAIT",
+        "kind": "WAIT",
+        "people": [
+          {
+            "kind": "MEMBER",
+            "reference": "m"
+          }
+        ],
+        "completion": "ALL",
+        "allowSelf": false,
+        "capability": null,
+        "required": [
+          "reason"
+        ],
+        "input": {
+          "reason": "literal:中文"
+        },
+        "retries": 2,
+        "timeoutSeconds": 86400,
+        "join": null,
+        "separate": true,
+        "position": {
+          "x": 1100,
+          "y": 180
+        }
+      },
+      {
+        "id": "N_CHOICE",
+        "name": "CHOICE",
+        "kind": "CHOICE",
+        "people": [
+          {
+            "kind": "MEMBER",
+            "reference": "m"
+          }
+        ],
+        "completion": "ALL",
+        "allowSelf": false,
+        "capability": null,
+        "required": [
+          "reason"
+        ],
+        "input": {
+          "reason": "literal:中文"
+        },
+        "retries": 2,
+        "timeoutSeconds": 86400,
+        "join": null,
+        "separate": true,
+        "position": {
+          "x": 1280,
+          "y": 180
+        }
+      },
+      {
+        "id": "N_MERGE",
+        "name": "MERGE",
+        "kind": "MERGE",
+        "people": [
+          {
+            "kind": "MEMBER",
+            "reference": "m"
+          }
+        ],
+        "completion": "ALL",
+        "allowSelf": false,
+        "capability": null,
+        "required": [
+          "reason"
+        ],
+        "input": {
+          "reason": "literal:中文"
+        },
+        "retries": 2,
+        "timeoutSeconds": 86400,
+        "join": null,
+        "separate": true,
+        "position": {
+          "x": 1460,
+          "y": 180
+        }
+      },
+      {
+        "id": "N_FORK",
+        "name": "FORK",
+        "kind": "FORK",
+        "people": [
+          {
+            "kind": "MEMBER",
+            "reference": "m"
+          }
+        ],
+        "completion": "ALL",
+        "allowSelf": false,
+        "capability": null,
+        "required": [
+          "reason"
+        ],
+        "input": {
+          "reason": "literal:中文"
+        },
+        "retries": 2,
+        "timeoutSeconds": 86400,
+        "join": "N_JOIN",
+        "separate": true,
+        "position": {
+          "x": 1640,
+          "y": 180
+        }
+      },
+      {
+        "id": "N_JOIN",
+        "name": "JOIN",
+        "kind": "JOIN",
+        "people": [
+          {
+            "kind": "MEMBER",
+            "reference": "m"
+          }
+        ],
+        "completion": "ALL",
+        "allowSelf": false,
+        "capability": null,
+        "required": [
+          "reason"
+        ],
+        "input": {
+          "reason": "literal:中文"
+        },
+        "retries": 2,
+        "timeoutSeconds": 86400,
+        "join": null,
+        "separate": true,
+        "position": {
+          "x": 1820,
+          "y": 180
+        }
+      }
+    ],
+    "edges": [
+      {
+        "from": "N_START",
+        "to": "N_REVIEW",
+        "field": null,
+        "value": null,
+        "defaultEdge": false,
+        "operator": null
+      }
+    ]
+  },
+  "twice": {
+    "name": "审批",
+    "objectType": "Leave",
+    "purpose": "approval",
+    "mode": "APPROVAL",
+    "entryCapability": "leave.submit",
+    "matches": [
+      {
+        "field": "amount",
+        "value": "1"
+      }
+    ],
+    "terminalActions": {
+      "APPROVED": "leave.approve"
+    },
+    "copies": [
+      {
+        "kind": "POSITION",
+        "reference": "p"
+      }
+    ],
+    "withdrawalCapability": null,
+    "nodes": [
+      {
+        "id": "N_START",
+        "name": "START",
+        "kind": "START",
+        "people": [
+          {
+            "kind": "MEMBER",
+            "reference": "m"
+          }
+        ],
+        "completion": "ALL",
+        "allowSelf": false,
+        "capability": null,
+        "required": [
+          "reason"
+        ],
+        "input": {
+          "reason": "literal:中文"
+        },
+        "retries": 2,
+        "timeoutSeconds": 86400,
+        "join": null,
+        "separate": true,
+        "position": {
+          "x": 200,
+          "y": 180
+        }
+      },
+      {
+        "id": "N_END",
+        "name": "END",
+        "kind": "END",
+        "people": [
+          {
+            "kind": "MEMBER",
+            "reference": "m"
+          }
+        ],
+        "completion": "ALL",
+        "allowSelf": false,
+        "capability": null,
+        "required": [
+          "reason"
+        ],
+        "input": {
+          "reason": "literal:中文"
+        },
+        "retries": 2,
+        "timeoutSeconds": 86400,
+        "join": null,
+        "separate": true,
+        "position": {
+          "x": 380,
+          "y": 180
+        }
+      },
+      {
+        "id": "N_REVIEW",
+        "name": "REVIEW",
+        "kind": "REVIEW",
+        "people": [
+          {
+            "kind": "MEMBER",
+            "reference": "m"
+          }
+        ],
+        "completion": "ALL",
+        "allowSelf": false,
+        "capability": null,
+        "required": [
+          "reason"
+        ],
+        "input": {
+          "reason": "literal:中文"
+        },
+        "retries": 2,
+        "timeoutSeconds": 86400,
+        "join": null,
+        "separate": true,
+        "position": {
+          "x": 560,
+          "y": 180
+        }
+      },
+      {
+        "id": "N_HANDLE",
+        "name": "HANDLE",
+        "kind": "HANDLE",
+        "people": [
+          {
+            "kind": "MEMBER",
+            "reference": "m"
+          }
+        ],
+        "completion": "ALL",
+        "allowSelf": false,
+        "capability": null,
+        "required": [
+          "reason"
+        ],
+        "input": {
+          "reason": "literal:中文"
+        },
+        "retries": 2,
+        "timeoutSeconds": 86400,
+        "join": null,
+        "separate": true,
+        "position": {
+          "x": 740,
+          "y": 180
+        }
+      },
+      {
+        "id": "N_ACTION",
+        "name": "ACTION",
+        "kind": "ACTION",
+        "people": [
+          {
+            "kind": "MEMBER",
+            "reference": "m"
+          }
+        ],
+        "completion": "ALL",
+        "allowSelf": false,
+        "capability": null,
+        "required": [
+          "reason"
+        ],
+        "input": {
+          "reason": "literal:中文"
+        },
+        "retries": 2,
+        "timeoutSeconds": 86400,
+        "join": null,
+        "separate": true,
+        "position": {
+          "x": 920,
+          "y": 180
+        }
+      },
+      {
+        "id": "N_WAIT",
+        "name": "WAIT",
+        "kind": "WAIT",
+        "people": [
+          {
+            "kind": "MEMBER",
+            "reference": "m"
+          }
+        ],
+        "completion": "ALL",
+        "allowSelf": false,
+        "capability": null,
+        "required": [
+          "reason"
+        ],
+        "input": {
+          "reason": "literal:中文"
+        },
+        "retries": 2,
+        "timeoutSeconds": 86400,
+        "join": null,
+        "separate": true,
+        "position": {
+          "x": 1100,
+          "y": 180
+        }
+      },
+      {
+        "id": "N_CHOICE",
+        "name": "CHOICE",
+        "kind": "CHOICE",
+        "people": [
+          {
+            "kind": "MEMBER",
+            "reference": "m"
+          }
+        ],
+        "completion": "ALL",
+        "allowSelf": false,
+        "capability": null,
+        "required": [
+          "reason"
+        ],
+        "input": {
+          "reason": "literal:中文"
+        },
+        "retries": 2,
+        "timeoutSeconds": 86400,
+        "join": null,
+        "separate": true,
+        "position": {
+          "x": 1280,
+          "y": 180
+        }
+      },
+      {
+        "id": "N_MERGE",
+        "name": "MERGE",
+        "kind": "MERGE",
+        "people": [
+          {
+            "kind": "MEMBER",
+            "reference": "m"
+          }
+        ],
+        "completion": "ALL",
+        "allowSelf": false,
+        "capability": null,
+        "required": [
+          "reason"
+        ],
+        "input": {
+          "reason": "literal:中文"
+        },
+        "retries": 2,
+        "timeoutSeconds": 86400,
+        "join": null,
+        "separate": true,
+        "position": {
+          "x": 1460,
+          "y": 180
+        }
+      },
+      {
+        "id": "N_FORK",
+        "name": "FORK",
+        "kind": "FORK",
+        "people": [
+          {
+            "kind": "MEMBER",
+            "reference": "m"
+          }
+        ],
+        "completion": "ALL",
+        "allowSelf": false,
+        "capability": null,
+        "required": [
+          "reason"
+        ],
+        "input": {
+          "reason": "literal:中文"
+        },
+        "retries": 2,
+        "timeoutSeconds": 86400,
+        "join": "N_JOIN",
+        "separate": true,
+        "position": {
+          "x": 1640,
+          "y": 180
+        }
+      },
+      {
+        "id": "N_JOIN",
+        "name": "JOIN",
+        "kind": "JOIN",
+        "people": [
+          {
+            "kind": "MEMBER",
+            "reference": "m"
+          }
+        ],
+        "completion": "ALL",
+        "allowSelf": false,
+        "capability": null,
+        "required": [
+          "reason"
+        ],
+        "input": {
+          "reason": "literal:中文"
+        },
+        "retries": 2,
+        "timeoutSeconds": 86400,
+        "join": null,
+        "separate": true,
+        "position": {
+          "x": 1820,
+          "y": 180
+        }
+      }
+    ],
+    "edges": [
+      {
+        "from": "N_START",
+        "to": "N_REVIEW",
+        "field": null,
+        "value": null,
+        "defaultEdge": false,
+        "operator": null
+      }
+    ]
+  },
+  "unknown": true,
+  "xml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<bpmn:definitions xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:bpmn=\"http://www.omg.org/spec/BPMN/20100524/MODEL\" xmlns:bpmndi=\"http://www.omg.org/spec/BPMN/20100524/DI\" xmlns:dc=\"http://www.omg.org/spec/DD/20100524/DC\" xmlns:codec=\"urn:devhub:experiment:codec\" xmlns:di=\"http://www.omg.org/spec/DD/20100524/DI\" id=\"Definitions_1\" targetNamespace=\"http://bpmn.io/schema/bpmn\"><bpmn:process id=\"Process_1\" isExecutable=\"false\"><bpmn:extensionElements><codec:Model>{\"name\":\"审批\",\"objectType\":\"Leave\",\"purpose\":\"approval\",\"mode\":\"APPROVAL\",\"entryCapability\":\"leave.submit\",\"matches\":[{\"field\":\"amount\",\"value\":\"1\"}],\"terminalActions\":{\"APPROVED\":\"leave.approve\"},\"copies\":[{\"kind\":\"POSITION\",\"reference\":\"p\"}],\"withdrawalCapability\":null,\"nodes\":[{\"id\":\"N_START\",\"name\":\"START\",\"kind\":\"START\",\"people\":[{\"kind\":\"MEMBER\",\"reference\":\"m\"}],\"completion\":\"ALL\",\"allowSelf\":false,\"capability\":null,\"required\":[\"reason\"],\"input\":{\"reason\":\"literal:中文\"},\"retries\":2,\"timeoutSeconds\":86400,\"join\":null,\"separate\":true,\"position\":{\"x\":200,\"y\":180}},{\"id\":\"N_END\",\"name\":\"END\",\"kind\":\"END\",\"people\":[{\"kind\":\"MEMBER\",\"reference\":\"m\"}],\"completion\":\"ALL\",\"allowSelf\":false,\"capability\":null,\"required\":[\"reason\"],\"input\":{\"reason\":\"literal:中文\"},\"retries\":2,\"timeoutSeconds\":86400,\"join\":null,\"separate\":true,\"position\":{\"x\":380,\"y\":180}},{\"id\":\"N_REVIEW\",\"name\":\"REVIEW\",\"kind\":\"REVIEW\",\"people\":[{\"kind\":\"MEMBER\",\"reference\":\"m\"}],\"completion\":\"ALL\",\"allowSelf\":false,\"capability\":null,\"required\":[\"reason\"],\"input\":{\"reason\":\"literal:中文\"},\"retries\":2,\"timeoutSeconds\":86400,\"join\":null,\"separate\":true,\"position\":{\"x\":560,\"y\":180}},{\"id\":\"N_HANDLE\",\"name\":\"HANDLE\",\"kind\":\"HANDLE\",\"people\":[{\"kind\":\"MEMBER\",\"reference\":\"m\"}],\"completion\":\"ALL\",\"allowSelf\":false,\"capability\":null,\"required\":[\"reason\"],\"input\":{\"reason\":\"literal:中文\"},\"retries\":2,\"timeoutSeconds\":86400,\"join\":null,\"separate\":true,\"position\":{\"x\":740,\"y\":180}},{\"id\":\"N_ACTION\",\"name\":\"ACTION\",\"kind\":\"ACTION\",\"people\":[{\"kind\":\"MEMBER\",\"reference\":\"m\"}],\"completion\":\"ALL\",\"allowSelf\":false,\"capability\":null,\"required\":[\"reason\"],\"input\":{\"reason\":\"literal:中文\"},\"retries\":2,\"timeoutSeconds\":86400,\"join\":null,\"separate\":true,\"position\":{\"x\":920,\"y\":180}},{\"id\":\"N_WAIT\",\"name\":\"WAIT\",\"kind\":\"WAIT\",\"people\":[{\"kind\":\"MEMBER\",\"reference\":\"m\"}],\"completion\":\"ALL\",\"allowSelf\":false,\"capability\":null,\"required\":[\"reason\"],\"input\":{\"reason\":\"literal:中文\"},\"retries\":2,\"timeoutSeconds\":86400,\"join\":null,\"separate\":true,\"position\":{\"x\":1100,\"y\":180}},{\"id\":\"N_CHOICE\",\"name\":\"CHOICE\",\"kind\":\"CHOICE\",\"people\":[{\"kind\":\"MEMBER\",\"reference\":\"m\"}],\"completion\":\"ALL\",\"allowSelf\":false,\"capability\":null,\"required\":[\"reason\"],\"input\":{\"reason\":\"literal:中文\"},\"retries\":2,\"timeoutSeconds\":86400,\"join\":null,\"separate\":true,\"position\":{\"x\":1280,\"y\":180}},{\"id\":\"N_MERGE\",\"name\":\"MERGE\",\"kind\":\"MERGE\",\"people\":[{\"kind\":\"MEMBER\",\"reference\":\"m\"}],\"completion\":\"ALL\",\"allowSelf\":false,\"capability\":null,\"required\":[\"reason\"],\"input\":{\"reason\":\"literal:中文\"},\"retries\":2,\"timeoutSeconds\":86400,\"join\":null,\"separate\":true,\"position\":{\"x\":1460,\"y\":180}},{\"id\":\"N_FORK\",\"name\":\"FORK\",\"kind\":\"FORK\",\"people\":[{\"kind\":\"MEMBER\",\"reference\":\"m\"}],\"completion\":\"ALL\",\"allowSelf\":false,\"capability\":null,\"required\":[\"reason\"],\"input\":{\"reason\":\"literal:中文\"},\"retries\":2,\"timeoutSeconds\":86400,\"join\":\"N_JOIN\",\"separate\":true,\"position\":{\"x\":1640,\"y\":180}},{\"id\":\"N_JOIN\",\"name\":\"JOIN\",\"kind\":\"JOIN\",\"people\":[{\"kind\":\"MEMBER\",\"reference\":\"m\"}],\"completion\":\"ALL\",\"allowSelf\":false,\"capability\":null,\"required\":[\"reason\"],\"input\":{\"reason\":\"literal:中文\"},\"retries\":2,\"timeoutSeconds\":86400,\"join\":null,\"separate\":true,\"position\":{\"x\":1820,\"y\":180}}],\"edges\":[{\"from\":\"N_START\",\"to\":\"N_REVIEW\",\"field\":null,\"value\":null,\"defaultEdge\":false,\"operator\":null}]}</codec:Model></bpmn:extensionElements><bpmn:startEvent id=\"N_START\" name=\"START\"><bpmn:outgoing>Flow_0ixsusx</bpmn:outgoing></bpmn:startEvent><bpmn:endEvent id=\"N_END\" name=\"END\" /><bpmn:userTask id=\"N_REVIEW\" name=\"REVIEW\"><bpmn:incoming>Flow_0ixsusx</bpmn:incoming></bpmn:userTask><bpmn:userTask id=\"N_HANDLE\" name=\"HANDLE\" /><bpmn:receiveTask id=\"N_ACTION\" name=\"ACTION\" /><bpmn:receiveTask id=\"N_WAIT\" name=\"WAIT\" /><bpmn:exclusiveGateway id=\"N_CHOICE\" name=\"CHOICE\" /><bpmn:exclusiveGateway id=\"N_MERGE\" name=\"MERGE\" /><bpmn:parallelGateway id=\"N_FORK\" name=\"FORK\" /><bpmn:parallelGateway id=\"N_JOIN\" name=\"JOIN\" /><bpmn:sequenceFlow id=\"Flow_0ixsusx\" sourceRef=\"N_START\" targetRef=\"N_REVIEW\" /></bpmn:process><bpmndi:BPMNDiagram id=\"BPMNDiagram_1\"><bpmndi:BPMNPlane id=\"BPMNPlane_1\" bpmnElement=\"Process_1\"><bpmndi:BPMNShape id=\"Event_0fpzufp_di\" bpmnElement=\"N_START\"><dc:Bounds x=\"182\" y=\"162\" width=\"36\" height=\"36\" /><bpmndi:BPMNLabel><dc:Bounds x=\"182\" y=\"205\" width=\"36\" height=\"14\" /></bpmndi:BPMNLabel></bpmndi:BPMNShape><bpmndi:BPMNShape id=\"Event_1v4vjsh_di\" bpmnElement=\"N_END\"><dc:Bounds x=\"362\" y=\"162\" width=\"36\" height=\"36\" /><bpmndi:BPMNLabel><dc:Bounds x=\"368\" y=\"205\" width=\"24\" height=\"14\" /></bpmndi:BPMNLabel></bpmndi:BPMNShape><bpmndi:BPMNShape id=\"Activity_0qwbmvg_di\" bpmnElement=\"N_REVIEW\"><dc:Bounds x=\"510\" y=\"140\" width=\"100\" height=\"80\" /><bpmndi:BPMNLabel /></bpmndi:BPMNShape><bpmndi:BPMNShape id=\"Activity_17b749g_di\" bpmnElement=\"N_HANDLE\"><dc:Bounds x=\"690\" y=\"140\" width=\"100\" height=\"80\" /><bpmndi:BPMNLabel /></bpmndi:BPMNShape><bpmndi:BPMNShape id=\"Activity_0xyb235_di\" bpmnElement=\"N_ACTION\"><dc:Bounds x=\"870\" y=\"140\" width=\"100\" height=\"80\" /><bpmndi:BPMNLabel /></bpmndi:BPMNShape><bpmndi:BPMNShape id=\"Activity_0lmgsr5_di\" bpmnElement=\"N_WAIT\"><dc:Bounds x=\"1050\" y=\"140\" width=\"100\" height=\"80\" /><bpmndi:BPMNLabel /></bpmndi:BPMNShape><bpmndi:BPMNShape id=\"Gateway_0dclzav_di\" bpmnElement=\"N_CHOICE\" isMarkerVisible=\"true\"><dc:Bounds x=\"1255\" y=\"155\" width=\"50\" height=\"50\" /><bpmndi:BPMNLabel><dc:Bounds x=\"1259\" y=\"212\" width=\"43\" height=\"14\" /></bpmndi:BPMNLabel></bpmndi:BPMNShape><bpmndi:BPMNShape id=\"Gateway_0gh3edt_di\" bpmnElement=\"N_MERGE\" isMarkerVisible=\"true\"><dc:Bounds x=\"1435\" y=\"155\" width=\"50\" height=\"50\" /><bpmndi:BPMNLabel><dc:Bounds x=\"1440\" y=\"212\" width=\"41\" height=\"14\" /></bpmndi:BPMNLabel></bpmndi:BPMNShape><bpmndi:BPMNShape id=\"Gateway_1707djv_di\" bpmnElement=\"N_FORK\"><dc:Bounds x=\"1615\" y=\"155\" width=\"50\" height=\"50\" /><bpmndi:BPMNLabel><dc:Bounds x=\"1625\" y=\"212\" width=\"31\" height=\"14\" /></bpmndi:BPMNLabel></bpmndi:BPMNShape><bpmndi:BPMNShape id=\"Gateway_0onj6yt_di\" bpmnElement=\"N_JOIN\"><dc:Bounds x=\"1795\" y=\"155\" width=\"50\" height=\"50\" /><bpmndi:BPMNLabel><dc:Bounds x=\"1807\" y=\"212\" width=\"26\" height=\"14\" /></bpmndi:BPMNLabel></bpmndi:BPMNShape><bpmndi:BPMNEdge id=\"Flow_0ixsusx_di\" bpmnElement=\"Flow_0ixsusx\"><di:waypoint x=\"218\" y=\"180\" /><di:waypoint x=\"510\" y=\"180\" /></bpmndi:BPMNEdge></bpmndi:BPMNPlane></bpmndi:BPMNDiagram></bpmn:definitions>"
+}

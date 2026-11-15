@@ -22,6 +22,11 @@ class AllOperationAuthorizationTest extends DatabaseTestSupport {
     @Autowired MockMvc mvc;
     @Autowired JdbcTemplate jdbc;
     @Autowired RequestMappingHandlerMapping requestMappingHandlerMapping;
+    /** 确认旧能力协议已从真实 MVC 路由表移除，不接受编译残留或兼容回退。 */
+    @Test void retiredCapabilityEndpointsAreAbsent(){
+        var retired=java.util.Set.of("/api/operation-capabilities","/bff/operation-capabilities","/bff/platform/access","/bff/platform/menus/capabilities","/api/configuration/dictionaries/capabilities","/api/organization/capabilities","/api/printing/capabilities","/api/workflow/capabilities");
+        assertThat(requestMappingHandlerMapping.getHandlerMethods().keySet().stream().flatMap(mapping->mapping.getPatternValues().stream()).filter(retired::contains).toList()).isEmpty();
+    }
     @Test void everyPlatformOperationDeniesAdministratorWithoutItsPermission()throws Exception{
         String account=UUID.randomUUID().toString();
         jdbc.update("INSERT INTO identity_account(id,username,display_name,password_hash) VALUES(UUID_TO_BIN(?),?,'Operation test','unused')",account,"operation-"+account);
@@ -52,11 +57,11 @@ class AllOperationAuthorizationTest extends DatabaseTestSupport {
         jdbc.update("INSERT INTO access_role(id,scope_type,role_type,code,name,status) VALUES(UUID_TO_BIN(?),'PLATFORM','CUSTOM',?,'Capabilities role','ENABLED')",role,"cap_"+role.replace("-",""));
         jdbc.update("INSERT INTO access_account_role(account_id,role_id,scope_type,assigned_by) VALUES(UUID_TO_BIN(?),UUID_TO_BIN(?),'PLATFORM',UUID_TO_BIN(?))",account,role,account);
         jdbc.update("INSERT INTO access_role_permission(role_id,permission_id,scope_type,granted_by) SELECT UUID_TO_BIN(?),id,'PLATFORM',UUID_TO_BIN(?) FROM access_permission WHERE code='identity.account:revoke_sessions'",role,account);
-        var granted=mvc.perform(get("/bff/operation-capabilities").with(authenticated(account,0))).andReturn().getResponse();
-        assertThat(granted.getStatus()).isEqualTo(200);assertThat(granted.getContentAsString()).contains("identity.account:revoke_sessions").doesNotContain("identity.account:reset_password");
+        var granted=mvc.perform(get("/bff/operation-decisions").with(authenticated(account,0))).andReturn().getResponse();
+        assertThat(granted.getStatus()).isEqualTo(200);assertThat(granted.getContentAsString()).contains("Account.revokeSessions").doesNotContain("Account.issueRecovery");
         jdbc.update("DELETE FROM access_role_permission WHERE role_id=UUID_TO_BIN(?)",role);
-        var revoked=mvc.perform(get("/bff/operation-capabilities").with(authenticated(account,0))).andReturn().getResponse();
-        assertThat(revoked.getStatus()).isEqualTo(200);assertThat(revoked.getContentAsString()).doesNotContain("identity.account:revoke_sessions");
+        var revoked=mvc.perform(get("/bff/operation-decisions").with(authenticated(account,0))).andReturn().getResponse();
+        assertThat(revoked.getStatus()).isEqualTo(200);assertThat(revoked.getContentAsString()).doesNotContain("Account.revokeSessions");
     }
     /** 当前有效成员没有业务操作时，所有登记租户端点逐一拒绝，不能以成员资格代替功能权限。 */
     @Test void everyTenantBusinessOperationDeniesMemberWithoutPermission()throws Exception{
@@ -69,7 +74,7 @@ class AllOperationAuthorizationTest extends DatabaseTestSupport {
         assertThat(selected.getStatus()).isEqualTo(200);var cookie=selected.getCookie("JSESSIONID");int checked=0;
         for(var entry:requestMappingHandlerMapping.getHandlerMethods().entrySet()){
             var operation=entry.getValue().getMethodAnnotation(EndpointOperation.class);if(operation==null)continue;
-            for(String path:entry.getKey().getPatternValues())if(path.startsWith("/api/")&&!path.equals("/api/organization/capabilities")){
+            for(String path:entry.getKey().getPatternValues())if(path.startsWith("/api/")){
                 assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM access_permission WHERE code=? AND enabled=TRUE AND scope_type='TENANT'",Integer.class,operation.value())).as(path).isEqualTo(1);
                 String resolved=path.replace("{capability}","READ").replaceAll("\\{[^}]+}",UUID.randomUUID().toString());
                 for(var method:entry.getKey().getMethodsCondition().getMethods()){

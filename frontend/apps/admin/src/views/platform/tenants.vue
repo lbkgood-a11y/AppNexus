@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { setErrorFeedback } from "@appnexus/ui";
+import { FloatingError } from "@appnexus/ui";
 import { ref } from "vue";
 import Administration from "@appnexus/tenant/management";
 import { administrationApi } from "@/api/administration";
@@ -19,16 +21,16 @@ async function enter(id: string) {
     error.value = "";
     await enterTenant(id, "/organization/manage");
   } catch (cause) {
-    error.value = requestErrorMessage(cause);
+    await setErrorFeedback(error, requestErrorMessage(cause));
   }
 }
 </script>
 
 <template>
   <div>
-    <el-alert
+    <FloatingError
       v-if="error"
-      :title="error"
+      :title="error" scope="error"
       type="error"
       show-icon
       :closable="false"

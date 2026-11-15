@@ -21,8 +21,6 @@ public class PlatformAdministrationController {
             com.appnexus.platform.identity.MultiFactorAuthentication mfa,com.appnexus.platform.identity.PasswordRecovery recovery) {
         this.service=service;this.encoder=encoder;this.mfa=mfa;this.recovery=recovery;
     }
-    /** 展示能力不代表授权，后续操作仍复核权威源。 */
-    public record Access(boolean administrator) {}
     /** 初始密码仅在请求内处理，响应和审计不包含明文或哈希。 */
     public record NewUser(String username,String displayName,String email,String phoneNumber,String password) {
         @Override public String toString() { return "NewUser[redacted]"; }
@@ -37,15 +35,16 @@ public class PlatformAdministrationController {
     public record State(Boolean enabled) {}
     /** 账号关联意图，不接受客户端 memberId 或业务能力字段。 */
     public record NewMember(UUID accountId) {}
-    @GetMapping("/access")
-    ResponseEntity<Access> access(Authentication auth) { return ok(() -> new Access(service.isAdministrator(actor(auth)))); }
     /** 页码默认 1，每页默认 20、范围 1–100；查询词最长 100 字符。 */
-    @EndpointOperation("identity.account:read") @GetMapping("/users")
+    @com.appnexus.contracts.operation.BusinessObjectType(code="Account",nameZh="账号",nameEn="Account",category=com.appnexus.contracts.operation.BusinessObjectType.Category.SYSTEM,module="identity")
+ @com.appnexus.contracts.operation.OperationBinding(id="Account.list",objectType="Account",operationCode="list",pages={"platform/users","platform/tenants","platform/authorization"},nameZh="账号：查看列表",nameEn="Read accounts",policy="主体管理域、角色权限及业务用例约束由原执行器逐请求复核")
+ @EndpointOperation("identity.account:read") @GetMapping("/users")
     ResponseEntity<PlatformAdministration.Page<PlatformAdministration.User>> users(Authentication auth,@RequestParam(defaultValue="1") int page,@RequestParam(defaultValue="20") int size,@RequestParam(defaultValue="") String query) {
         return ok(() -> service.users(actor(auth),page,size,query));
     }
     /** 登录名为 1–100 位 ASCII 标识，名称 1–100 字符，密码 12–128 字符；不允许普通账号借创建操作自提权。 */
-    @EndpointOperation("identity.account:create") @PostMapping("/users")
+    @com.appnexus.contracts.operation.OperationBinding(id="Account.create",objectType="Account",operationCode="create",pages={"platform/users"},nameZh="账号：新增",nameEn="Create accounts",policy="主体管理域、角色权限及业务用例约束由原执行器逐请求复核")
+ @EndpointOperation("identity.account:create") @PostMapping("/users")
     ResponseEntity<PlatformAdministration.User> user(Authentication auth,@RequestBody NewUser input) {
         return ok(() -> {
             if(!service.isAdministrator(actor(auth))) throw new SecurityException();
@@ -54,57 +53,77 @@ public class PlatformAdministrationController {
         });
     }
     /** 联系方式修改后为未验证；验证流程与登录识别符开通不属于此管理接口。 */
-    @EndpointOperation("identity.account:update") @PutMapping("/users/{id}")
+    @com.appnexus.contracts.operation.OperationBinding(id="Account.update",objectType="Account",operationCode="update",pages={"platform/users"},nameZh="账号：修改",nameEn="Update accounts",policy="主体管理域、角色权限及业务用例约束由原执行器逐请求复核")
+ @EndpointOperation("identity.account:update") @PutMapping("/users/{id}")
     ResponseEntity<PlatformAdministration.User> updateUser(Authentication auth,@PathVariable UUID id,@RequestBody UpdateUser input) {
         return ok(() -> service.updateUser(actor(auth),id,input.displayName(),input.email(),input.phoneNumber()));
     }
-    @EndpointOperation("identity.account:enable") @PutMapping("/users/{id}/state")
+    /** 操作契约关联下方真实接口；仅供展示与一致性校验，主体、权限及业务约束仍由原用例执行。 */
+    @com.appnexus.contracts.operation.OperationBinding(id="Account.setEnabled",objectType="Account",operationCode="setEnabled",pages={"platform/users"},nameZh="账号：启停",nameEn="Enable accounts",policy="主体管理域、角色权限及业务用例约束由原执行器逐请求复核")
+ @EndpointOperation("identity.account:enable") @PutMapping("/users/{id}/state")
     ResponseEntity<Void> userState(Authentication auth,@PathVariable UUID id,@RequestBody State state) {
         return ok(() -> { service.setUserEnabled(actor(auth),id,enabled(state)); return null; });
     }
     /** 平台管理员强制下线目标账号；保留 CSRF，凭据版本与 OAuth 撤销在用例内原子完成。 */
-    @EndpointOperation("identity.account:revoke_sessions") @PostMapping("/users/{id}/revoke-sessions")
+    @com.appnexus.contracts.operation.OperationBinding(id="Account.revokeSessions",objectType="Account",operationCode="revokeSessions",pages={"platform/users"},nameZh="账号：强制下线",nameEn="Revoke account sessions",policy="主体管理域、角色权限及业务用例约束由原执行器逐请求复核")
+ @EndpointOperation("identity.account:revoke_sessions") @PostMapping("/users/{id}/revoke-sessions")
     ResponseEntity<Void> revokeSessions(Authentication auth,@PathVariable UUID id,jakarta.servlet.http.HttpServletRequest request) {
         MfaController.requireRecent(mfa,actor(auth),request);
         return ok(() -> { service.revokeUserSessions(actor(auth),id);return null; });
     }
     /** 管理员受权签发单次重置凭证，禁止重置平台管理员或本人；交付渠道由运维核实本人身份。 */
-    @EndpointOperation("identity.account:reset_password") @PostMapping("/users/{id}/password-recovery")
+    @com.appnexus.contracts.operation.OperationBinding(id="Account.issueRecovery",objectType="Account",operationCode="issueRecovery",pages={"platform/users"},nameZh="账号：签发找回凭证",nameEn="Issue password reset ticket",policy="主体管理域、角色权限及业务用例约束由原执行器逐请求复核")
+ @EndpointOperation("identity.account:reset_password") @PostMapping("/users/{id}/password-recovery")
     ResponseEntity<PasswordRecoveryController.Ticket> passwordRecovery(Authentication auth,@PathVariable UUID id,jakarta.servlet.http.HttpServletRequest request){
         MfaController.requireRecent(mfa,actor(auth),request);
         return ok(()->new PasswordRecoveryController.Ticket(recovery.issue(actor(auth),id)));
     }
     /** 平台租户目录分页，不读取租户内业务数据。 */
-    @EndpointOperation("tenant:read") @GetMapping("/tenants")
+    @com.appnexus.contracts.operation.BusinessObjectType(code="Tenant",nameZh="租户",nameEn="Tenant",category=com.appnexus.contracts.operation.BusinessObjectType.Category.SYSTEM,module="tenant")
+ @com.appnexus.contracts.operation.OperationBinding(id="Tenant.list",objectType="Tenant",operationCode="list",pages={"platform/tenants"},nameZh="租户：查看列表",nameEn="Read tenants",policy="主体管理域、角色权限及业务用例约束由原执行器逐请求复核")
+ @EndpointOperation("tenant:read") @GetMapping("/tenants")
     ResponseEntity<PlatformAdministration.Page<PlatformAdministration.Tenant>> tenants(Authentication auth,@RequestParam(defaultValue="1") int page,@RequestParam(defaultValue="20") int size,@RequestParam(defaultValue="") String query) {
         return ok(() -> service.tenants(actor(auth),page,size,query));
     }
     /** 创建租户、管理员成员、组织权限和审计同事务；不将平台操作者自动加入租户。 */
-    @EndpointOperation("tenant:create") @PostMapping("/tenants")
+    @com.appnexus.contracts.operation.OperationBinding(id="Tenant.create",objectType="Tenant",operationCode="create",pages={"platform/tenants"},nameZh="租户：新增",nameEn="Create tenants",policy="主体管理域、角色权限及业务用例约束由原执行器逐请求复核")
+ @EndpointOperation("tenant:create") @PostMapping("/tenants")
     ResponseEntity<PlatformAdministration.Tenant> tenant(Authentication auth,@RequestBody NewTenant input) {
         return ok(() -> { Objects.requireNonNull(input.requestId());Objects.requireNonNull(input.administratorAccountId());return service.createTenant(actor(auth),input.requestId(),input.name(),input.administratorAccountId()); });
     }
-    @EndpointOperation("tenant:update") @PutMapping("/tenants/{id}")
+    /** 操作契约关联下方真实接口；仅供展示与一致性校验，主体、权限及业务约束仍由原用例执行。 */
+    @com.appnexus.contracts.operation.OperationBinding(id="Tenant.update",objectType="Tenant",operationCode="update",pages={"platform/tenants"},nameZh="租户：修改",nameEn="Update tenants",policy="主体管理域、角色权限及业务用例约束由原执行器逐请求复核")
+ @EndpointOperation("tenant:update") @PutMapping("/tenants/{id}")
     ResponseEntity<PlatformAdministration.Tenant> updateTenant(Authentication auth,@PathVariable UUID id,@RequestBody UpdateTenant input) {
         return ok(() -> service.updateTenant(actor(auth),id,input.name()));
     }
-    @EndpointOperation("tenant:enable") @PutMapping("/tenants/{id}/state")
+    /** 操作契约关联下方真实接口；仅供展示与一致性校验，主体、权限及业务约束仍由原用例执行。 */
+    @com.appnexus.contracts.operation.OperationBinding(id="Tenant.setEnabled",objectType="Tenant",operationCode="setEnabled",pages={"platform/tenants"},nameZh="租户：启停",nameEn="Enable tenants",policy="主体管理域、角色权限及业务用例约束由原执行器逐请求复核")
+ @EndpointOperation("tenant:enable") @PutMapping("/tenants/{id}/state")
     ResponseEntity<Void> tenantState(Authentication auth,@PathVariable UUID id,@RequestBody State state) {
         return ok(() -> { service.setTenantEnabled(actor(auth),id,enabled(state));return null; });
     }
-    @EndpointOperation("tenant.member:read") @GetMapping("/tenants/{tenant}/members")
+    /** 操作契约关联下方真实接口；仅供展示与一致性校验，主体、权限及业务约束仍由原用例执行。 */
+    @com.appnexus.contracts.operation.OperationBinding(id="TenantMember.listManaged",objectType="TenantMember",operationCode="listManaged",pages={"platform/tenants"},nameZh="租户成员：查看列表（平台代管）",nameEn="Read tenant members",policy="主体管理域、角色权限及业务用例约束由原执行器逐请求复核")
+ @EndpointOperation("tenant.member:read") @GetMapping("/tenants/{tenant}/members")
     ResponseEntity<PlatformAdministration.Page<PlatformAdministration.Member>> members(Authentication auth,@PathVariable UUID tenant,@RequestParam(defaultValue="1") int page,@RequestParam(defaultValue="20") int size,@RequestParam(defaultValue="") String query) {
         return ok(() -> service.members(actor(auth),tenant,page,size,query));
     }
-    @EndpointOperation("tenant.member:create") @PostMapping("/tenants/{tenant}/members")
+    /** 操作契约关联下方真实接口；仅供展示与一致性校验，主体、权限及业务约束仍由原用例执行。 */
+    @com.appnexus.contracts.operation.OperationBinding(id="TenantMember.createManaged",objectType="TenantMember",operationCode="createManaged",pages={"platform/tenants"},nameZh="租户成员：新增（平台代管）",nameEn="Add tenant members",policy="主体管理域、角色权限及业务用例约束由原执行器逐请求复核")
+ @EndpointOperation("tenant.member:create") @PostMapping("/tenants/{tenant}/members")
     ResponseEntity<Void> addMember(Authentication auth,@PathVariable UUID tenant,@RequestBody NewMember input) {
         return ok(() -> { Objects.requireNonNull(input.accountId()); service.addMember(actor(auth),tenant,input.accountId());return null; });
     }
-    @EndpointOperation("tenant.member:enable") @PutMapping("/tenants/{tenant}/members/{member}/state")
+    /** 操作契约关联下方真实接口；仅供展示与一致性校验，主体、权限及业务约束仍由原用例执行。 */
+    @com.appnexus.contracts.operation.OperationBinding(id="TenantMember.setEnabledManaged",objectType="TenantMember",operationCode="setEnabledManaged",pages={"platform/tenants"},nameZh="租户成员：启停（平台代管）",nameEn="Enable tenant members",policy="主体管理域、角色权限及业务用例约束由原执行器逐请求复核")
+ @EndpointOperation("tenant.member:enable") @PutMapping("/tenants/{tenant}/members/{member}/state")
     ResponseEntity<Void> memberState(Authentication auth,@PathVariable UUID tenant,@PathVariable UUID member,@RequestBody State state) {
         return ok(() -> { service.setMemberEnabled(actor(auth),tenant,member,enabled(state));return null; });
     }
-    @EndpointOperation("tenant.member:remove") @DeleteMapping("/tenants/{tenant}/members/{member}")
+    /** 操作契约关联下方真实接口；仅供展示与一致性校验，主体、权限及业务约束仍由原用例执行。 */
+    @com.appnexus.contracts.operation.OperationBinding(id="TenantMember.removeManaged",objectType="TenantMember",operationCode="removeManaged",pages={"platform/tenants"},nameZh="租户成员：移除（平台代管）",nameEn="Remove tenant members",policy="主体管理域、角色权限及业务用例约束由原执行器逐请求复核")
+ @EndpointOperation("tenant.member:remove") @DeleteMapping("/tenants/{tenant}/members/{member}")
     ResponseEntity<Void> removeMember(Authentication auth,@PathVariable UUID tenant,@PathVariable UUID member) {
         return ok(() -> { service.removeMember(actor(auth),tenant,member);return null; });
     }

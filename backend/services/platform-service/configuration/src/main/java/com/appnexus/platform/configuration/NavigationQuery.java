@@ -22,6 +22,34 @@ public interface NavigationQuery {
     record Snapshot(UUID tenantId,long contextVersion,List<MenuManagement.Menu> items) {}
 
     /**
+     * 页面准入诊断，隐藏入口仍可能允许直接进入。
+     * @param page 构建内页面标识
+     * @param path 已登记路由地址
+     * @param accessible 当前主体是否满足真实导航准入
+     * @param visible 至少一个合法菜单入口及其全部祖先可见
+     * @param reasons 稳定阻断/隐藏原因；可见时为空
+     */
+    record PageCheck(String page,String path,boolean accessible,boolean visible,List<String> reasons) {}
+    /**
+     * 指定主体页面诊断；调用方必须先验证目标管理授权，不能直接暴露给普通用户。
+     * @param accountId 目标账号 UUID，必填；不存在或停用时返回不可用原因
+     * @param tenantId 目标租户 UUID；平台诊断为 null
+     * @param memberId 同租户成员 UUID；平台诊断为 null
+     * @return 当前管理域全部登记页面的准入与显隐结果
+     */
+    List<PageCheck> inspect(UUID accountId,UUID tenantId,UUID memberId);
+    /**
+     * 同租户成员诊断；调用方先验证成员管理授权，账号由持久化关系解析。
+     * @param tenantId 已验证管理租户 UUID，必填
+     * @param memberId 目标成员 UUID，必须属于该租户
+     * @return 目标成员的页面准入诊断，不执行业务写入
+     * @throws SecurityException 目标不属于该租户，不泄露其他租户成员资料
+     */
+    List<PageCheck> inspectMember(UUID tenantId,UUID memberId);
+    /** 已授权管理调用解析目标成员账号；严格限定租户，不用于公开身份枚举。 */
+    UUID accountForMember(UUID tenantId,UUID memberId);
+
+    /**
      * 按当前账号与有效成员过滤菜单，每次重新查询权威授权，不依赖浏览器缓存。
      * @param accountId 已认证账号 UUID，必填
      * @param tenantId 可信租户 UUID；未选择时 null

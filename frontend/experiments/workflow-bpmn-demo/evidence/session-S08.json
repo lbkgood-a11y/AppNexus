@@ -1,0 +1,96 @@
+{
+  "evidence": [
+    {
+      "name": "Vue unsubscribe",
+      "status": "PASS"
+    },
+    {
+      "name": "timer",
+      "status": "PASS"
+    },
+    {
+      "name": "ResizeObserver",
+      "status": "PASS"
+    },
+    {
+      "name": "external",
+      "status": "PASS"
+    },
+    {
+      "name": "Adapter cache",
+      "status": "PASS"
+    },
+    {
+      "name": "Modeler",
+      "status": "PASS"
+    },
+    {
+      "name": "DOM",
+      "status": "PASS"
+    }
+  ],
+  "manager": {
+    "managerState": "IDLE",
+    "session": {
+      "identity": {
+        "sessionId": "7286aa80-6edb-4619-8184-1ec1cbde1f10",
+        "generation": 1
+      },
+      "definitionId": "d",
+      "tenantId": "t",
+      "loadedRevision": 0,
+      "lifecycleState": "DISPOSED",
+      "saveState": "IDLE",
+      "reason": "",
+      "createdAt": 1794677979145,
+      "hasModeler": false,
+      "committedXml": null
+    },
+    "requests": []
+  },
+  "old": {
+    "identity": {
+      "sessionId": "7286aa80-6edb-4619-8184-1ec1cbde1f10",
+      "generation": 1
+    },
+    "definitionId": "d",
+    "tenantId": "t",
+    "loadedRevision": 0,
+    "lifecycleState": "DISPOSED",
+    "saveState": "IDLE",
+    "reason": "",
+    "createdAt": 1794677979145,
+    "hasModeler": false,
+    "committedXml": null
+  },
+  "resources": [
+    {
+      "name": "Vue unsubscribe",
+      "status": "PASS"
+    },
+    {
+      "name": "timer",
+      "status": "PASS"
+    },
+    {
+      "name": "ResizeObserver",
+      "status": "PASS"
+    },
+    {
+      "name": "external",
+      "status": "PASS"
+    },
+    {
+      "name": "Adapter cache",
+      "status": "PASS"
+    },
+    {
+      "name": "Modeler",
+      "status": "PASS"
+    },
+    {
+      "name": "DOM",
+      "status": "PASS"
+    }
+  ]
+}

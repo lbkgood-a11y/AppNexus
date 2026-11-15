@@ -5,10 +5,35 @@
 @use "dark";
 
 /* 自定义全局 CssVar */
-:root {
+html:root {
+  /* Vben 系统字体策略：本地系统字体优先，中文回退系统中文字体；无需下载字体。 */
+  --app-font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", "PingFang SC", "Microsoft YaHei", sans-serif;
+  --el-font-family: var(--app-font-family);
+  /* Vben 中性前景、辅助文字及白色表面；用户主题主色仍由模板主题入口维护。 */
+  --el-bg-color: #fff;
+  --el-bg-color-overlay: #fff;
+  --el-fill-color-blank: #fff;
+  --el-text-color-primary: #323539;
+  --el-text-color-regular: #52525b;
+  --el-text-color-secondary: #71717a;
+  --el-text-color-placeholder: #a1a1aa;
   /* AppNexus 语义设计 Token：业务页面只使用语义，不绑定具体主题颜色。 */
   --color-primary: var(--el-color-primary);
-  --color-bg: #f4f7fb;
+  /* 页面底色提亮为白灰，保留与白色工作区的层次。 */
+  --color-bg: #f1f3f6;
+  --el-bg-color-page: var(--color-bg);
+  /* 全站控件、表头和悬停层统一使用明亮中性色，不覆盖用户主题主色。 */
+  --el-fill-color: #f4f4f5;
+  --el-fill-color-light: #f4f4f5;
+  --el-fill-color-lighter: #fafafa;
+  --el-fill-color-extra-light: #fdfdfd;
+  --el-fill-color-dark: #e9e9eb;
+  --el-fill-color-darker: #e4e4e7;
+  /* 边框弱化灰度但保留可辨识的输入框和表格分隔线。 */
+  --el-border-color: #d4d4d8;
+  --el-border-color-light: #e4e4e7;
+  --el-border-color-lighter: #ededf0;
+  --el-border-color-extra-light: #f4f4f5;
   --color-surface: var(--el-bg-color);
   --color-surface-secondary: var(--el-fill-color-light);
   --color-text-primary: var(--el-text-color-primary);
@@ -18,7 +43,11 @@
   --color-warning: var(--el-color-warning);
   --color-danger: var(--el-color-danger);
   /* 内容卡片、业务工作区与模板表面统一跟随 Element Plus 基础圆角，主题调整时同步生效。 */
-  --app-card-radius: var(--el-border-radius-base);
+  --app-card-radius: 8px;
+  /* 业务区块间距，单位 px，默认 12px；影响公共模板与字典样板排布。 */
+  --app-section-gap: 12px;
+  /* 分类栏默认宽度，单位 px，默认 220px；页面显式指定宽度时优先使用页面值。 */
+  --app-category-width: 220px;
   --app-control-radius: 6px;
 
   /* 左侧菜单展开、收起动画时长 */
@@ -42,22 +71,34 @@
 }
 
 html.dark {
-  --color-bg: #0f1724;
-  --color-surface: #172131;
-  --color-surface-secondary: #1d2939;
-  --color-text-primary: #e5eaf2;
-  --color-text-secondary: #98a2b3;
-  --color-border: #2b3a4f;
+  /* Vben 深色中性灰：背景低于卡片明度，浮层略亮；与浅色共享语义入口。 */
+  --color-bg: #14161a;
+  --color-surface: #1c1e23;
+  --color-surface-secondary: #242424;
+  --color-text-primary: #f2f2f2;
+  --color-text-secondary: #a1a1aa;
+  --color-border: #3f3f46;
   --el-bg-color: var(--color-surface);
   --el-bg-color-page: var(--color-bg);
   --el-fill-color-blank: var(--color-surface);
   --el-border-color: var(--color-border);
-  --el-border-color-light: #34445a;
-  --el-border-color-lighter: #29384b;
+  --el-border-color-light: #34343a;
+  --el-border-color-lighter: #2d2d33;
+  --el-border-color-extra-light: #27272a;
+  /* 覆盖浅色填充变量，避免系统主题切换后出现亮白表头；浮层略亮于卡片。 */
+  --el-bg-color-overlay: #242424;
+  --el-fill-color: #2b2b30;
+  --el-fill-color-light: var(--color-surface-secondary);
+  --el-fill-color-lighter: #232328;
+  --el-fill-color-extra-light: #202025;
+  --el-fill-color-dark: #35353b;
+  --el-fill-color-darker: #3f3f46;
   --el-text-color-primary: var(--color-text-primary);
-  --el-text-color-regular: #c3cad5;
+  --el-text-color-regular: #d4d4d8;
   --el-text-color-secondary: var(--color-text-secondary);
 }
+
+/* 所有表格（含固定列、分组表头及弹窗）共享主题填充色，避免直接使用 ElTable 时退回不同底色。 */
 
 .el-card { --el-card-border-radius: var(--app-card-radius); }
 .el-button, .el-input__wrapper, .el-select__wrapper { border-radius: var(--app-control-radius); }
@@ -105,3 +146,28 @@ html.dark {
     background: var(--el-fill-color-light);
   }
 }
+
+/* 全站字体统一覆盖 Teleport 浮层和原生表单；代码字段继续使用等宽字体。 */
+body,button,input,select,textarea { font-family:var(--app-font-family); }
+body { font-size:14px; line-height:1.5; -webkit-font-smoothing:antialiased; }
+/* 应用壳及工作区导航统一使用中性表面，品牌主色仅表达选中和操作。 */
+html[data-theme] {
+  --pure-theme-menu-bg:var(--el-bg-color);
+  --pure-theme-sub-menu-bg:var(--el-bg-color);
+  --pure-theme-sidebar-logo:var(--el-bg-color);
+  --pure-theme-menu-text:var(--el-text-color-regular);
+  --pure-theme-sub-menu-active-text:var(--el-color-primary);
+  --pure-theme-menu-hover:var(--el-fill-color-light);
+  --pure-theme-menu-title-hover:var(--el-color-primary);
+  --pure-theme-menu-active-before:var(--el-color-primary);
+}
+.business-workspace__navigation,.tree-list-template__navigation { background:var(--el-bg-color); }
+
+/* 全局横幅开关仅作用显式标记的纯展示区域；导航、查询和业务操作不可随其隐藏。 */
+.hide-page-banner [data-page-banner] { display:none !important; }
+.hide-page-banner .tree-list-template__navigation:has([data-page-banner]) { display:none; }
+
+/* 非公共工作区页面共享卡片、表格及表单视觉；不改变设计器、画布和详情布局。 */
+.main-content .el-card { border-color:var(--el-border-color-lighter); border-radius:var(--app-card-radius); box-shadow:none; }
+.main-content .el-form-item__label,.app-managed-dialog .el-form-item__label { font-size:13px; font-weight:500; color:var(--el-text-color-regular); }
+.hide-page-banner .page-header:not(:has(.page-header__actions > *)):not(:has(.el-breadcrumb)) { display:none; }

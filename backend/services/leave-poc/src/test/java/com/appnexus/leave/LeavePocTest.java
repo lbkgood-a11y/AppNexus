@@ -36,6 +36,13 @@ class LeavePocTest {
       for (String file : List.of("V47__workflow_flowable_8.sql", "V48__workflow_application.sql","V69__workflow_data_contract_snapshots.sql", "V57__leave_poc.sql", "V59__document_configuration.sql", "V60__leave_approval_cycles.sql", "V63__document_submission_strategy.sql", "V64__leave_direct_submission.sql", "V65__document_print_binding.sql", "V66__document_page_relationships.sql","V68__document_entry_controls.sql", "V67__explicit_interaction_bindings.sql"))
         ScriptUtils.executeSqlScript(connection, new ClassPathResource("db/migration/" + file));
     }
+    // 切片集成库只包含业务相关表；执行 V73 中这些表对应的全部改名和 JSON 转换。
+    var migration=new ClassPathResource("db/migration/V73__business_object_operation_naming.sql");
+    String sql=new String(migration.getInputStream().readAllBytes(),java.nio.charset.StandardCharsets.UTF_8);
+    for(String statement:sql.replaceAll("(?m)^--.*$","").split(";")){
+      var table=java.util.regex.Pattern.compile("(?:TABLE|UPDATE)\\s+`?([a-z_]+)`?",java.util.regex.Pattern.CASE_INSENSITIVE).matcher(statement);
+      if(table.find()&&jdbc.queryForObject("SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=?",Integer.class,table.group(1))>0)jdbc.execute(statement);
+    }
     var manager = new DataSourceTransactionManager(source);
     WorkflowPlatform platform = new WorkflowPlatform() {
       public boolean allowed(WorkflowContext c, String p) { return active(c.tenantId(), c.actorId()); }
@@ -52,10 +59,10 @@ class LeavePocTest {
     var bridge = new WorkflowBridge();
     engine = new WorkflowEngineConfiguration().workflowProcessEngine(source, manager, bridge);
     runtime = new WorkflowEngineConfiguration().workflowRuntime(engine, source, manager, platform, List.of(service), bridge);
-    var documents = new com.appnexus.document.DocumentService(jdbc, manager, new com.appnexus.contracts.document.DocumentPlatform() {
+    var documents = new com.appnexus.businessobject.BusinessObjectService(jdbc, manager, new com.appnexus.contracts.businessobject.BusinessObjectPlatform() {
       public boolean platformAdministrator(String actor) { return actor.equals("applicant"); }
-      public boolean active(com.appnexus.contracts.document.Documents.Context context) { return platform.active(context.tenantId(),context.actorId()); }
-      public boolean tenantAdministrator(com.appnexus.contracts.document.Documents.Context context) { return active(context); }
+      public boolean active(com.appnexus.contracts.businessobject.BusinessObjects.Context context) { return platform.active(context.tenantId(),context.actorId()); }
+      public boolean tenantAdministrator(com.appnexus.contracts.businessobject.BusinessObjects.Context context) { return active(context); }
       public boolean tenantExists(String tenant) { return tenant.equals("019a65d0-0061-7000-8000-000000000001"); }
     }, () -> runtime, List.of(service));
     service.bindings(() -> documents);
@@ -64,11 +71,11 @@ class LeavePocTest {
     assertThat(runtime.validate(c("applicant"), model)).isEmpty();
     runtime.save(c("applicant"), "leave-poc", -1, model);
     runtime.publish(c("applicant"), "leave-poc", 0);
-    var context = new com.appnexus.contracts.document.Documents.Context("019a65d0-0061-7000-8000-000000000001","applicant",UUID.randomUUID().toString());
-    documents.savePageRelationships(context,"LeaveRequest",-1,List.of(new com.appnexus.contracts.document.Documents.PageRelationship("submit","LeaveRequest.submit")));
+    var context = new com.appnexus.contracts.businessobject.BusinessObjects.Context("019a65d0-0061-7000-8000-000000000001","applicant",UUID.randomUUID().toString());
+    documents.savePageRelationships(context,"LeaveRequest",-1,List.of(new com.appnexus.contracts.businessobject.BusinessObjects.PageRelationship("submit","LeaveRequest.submit")));
     documents.activate(context,"LeaveRequest",0,true);
     documents.grant(context,"LeaveRequest","019a65d0-0061-7000-8000-000000000001",true);
-    documents.save(context,"LeaveRequest",-1,List.of(new com.appnexus.contracts.document.Documents.Binding(UUID.randomUUID().toString(),"审批","leave-poc",1,List.of(),"submit","WORKFLOW","LeaveRequest.submit",null)));
+    documents.save(context,"LeaveRequest",-1,List.of(new com.appnexus.contracts.businessobject.BusinessObjects.Binding(UUID.randomUUID().toString(),"审批","leave-poc",1,List.of(),"submit","WORKFLOW","LeaveRequest.submit",null)));
     documents.publish(context,"LeaveRequest",0);
 
   }

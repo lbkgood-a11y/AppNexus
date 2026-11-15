@@ -163,17 +163,19 @@ onBeforeUnmount(()=>{stopPointer?.();stopMaximizeObserver?.();});
 </template>
 
 <style>
-.app-managed-dialog.el-dialog { position: relative; display: flex; flex-direction: column; max-width: calc(100vw - 32px); max-height: calc(100dvh - 32px); overflow: hidden; padding: 0; }
+.app-managed-dialog.el-dialog { position: relative; display: flex; flex-direction: column; max-width: calc(100vw - 32px); max-height: calc(100dvh - 32px); overflow: hidden; padding: 0; border-radius: var(--app-card-radius, 8px); }
 .app-managed-dialog.is-dialog-resizable:not(.is-dialog-maximized) { min-width: min(360px, calc(100vw - 32px)); min-height: 240px; }
 .app-managed-dialog .el-dialog__header { flex: none; margin: 0; padding: 0; border-bottom: 1px solid var(--el-border-color-lighter); background: color-mix(in srgb, var(--el-bg-color) 94%, var(--el-color-primary) 6%); }
 .app-dialog-header { display: flex; min-height: 56px; align-items: center; justify-content: space-between; gap: 16px; padding: 0 12px 0 24px; }
 .app-dialog-header.is-dialog-draggable { cursor: move; user-select: none; }
 .app-dialog-title { min-width: 0; overflow: hidden; color: var(--el-text-color-primary); font-size: var(--el-font-size-large); font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
 .app-dialog-actions { display: flex; flex: none; align-items: center; gap: 2px; }
-.app-dialog-actions .el-button { width: 36px; height: 36px; margin: 0; padding: 0; }
+/* 标题工具紧凑排列，清除 Element Plus 相邻按钮默认外边距；移动端仍保留触控尺寸。 */
+.app-dialog-actions .el-button { width: 32px; height: 32px; margin: 0; padding: 0; }
+.app-dialog-actions .el-button + .el-button { margin-left: 0; }
 .app-managed-dialog .el-dialog__body { flex: 1; min-height: 0; overflow: auto; padding: 20px 24px; }
 .app-managed-dialog .el-dialog__footer { flex: none; padding: 16px 24px; border-top: 1px solid var(--el-border-color-lighter); }
-.app-managed-dialog.is-dialog-maximized { max-width: none; max-height: none; resize: none; }
+.app-managed-dialog.is-dialog-maximized { max-width: none; max-height: none; resize: none; border-radius: 0; }
 .app-dialog-resize-handle { position: absolute; z-index: 2; right: 2px; bottom: 2px; width: 20px; height: 20px; padding: 0; border: 0; color: var(--el-text-color-secondary); background: linear-gradient(135deg, transparent 45%, currentcolor 46%, currentcolor 52%, transparent 53%, transparent 63%, currentcolor 64%, currentcolor 70%, transparent 71%); cursor: nwse-resize; }
 .app-dialog-resize-handle:focus-visible { outline: 2px solid var(--el-color-primary); outline-offset: -2px; }
 @media (max-width: 760px) {

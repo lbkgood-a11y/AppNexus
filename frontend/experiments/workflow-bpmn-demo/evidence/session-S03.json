@@ -1,0 +1,66 @@
+{
+  "evidence": {
+    "denied": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  "manager": {
+    "managerState": "IDLE",
+    "session": {
+      "identity": {
+        "sessionId": "0e1397f0-aff1-4ffc-85e6-35a3fbc808e0",
+        "generation": 1
+      },
+      "definitionId": "d",
+      "tenantId": "t",
+      "loadedRevision": 0,
+      "lifecycleState": "DISPOSED",
+      "saveState": "IDLE",
+      "reason": "FAULT",
+      "createdAt": 1794677978118,
+      "hasModeler": false,
+      "committedXml": null
+    },
+    "requests": []
+  },
+  "old": {
+    "identity": {
+      "sessionId": "0e1397f0-aff1-4ffc-85e6-35a3fbc808e0",
+      "generation": 1
+    },
+    "definitionId": "d",
+    "tenantId": "t",
+    "loadedRevision": 0,
+    "lifecycleState": "DISPOSED",
+    "saveState": "IDLE",
+    "reason": "FAULT",
+    "createdAt": 1794677978118,
+    "hasModeler": false,
+    "committedXml": null
+  },
+  "resources": [
+    {
+      "name": "Adapter cache",
+      "status": "PASS"
+    },
+    {
+      "name": "Modeler",
+      "status": "PASS"
+    },
+    {
+      "name": "DOM",
+      "status": "PASS"
+    }
+  ]
+}

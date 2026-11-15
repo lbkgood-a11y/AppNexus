@@ -7,7 +7,7 @@ async function write(method:"post"|"put"|"delete",path:string,data:object={}){
 }
 /** 每页固定 20 条，后端权威分页；筛选词作为参数绑定。 */
 export const administrationApi:AdministrationApi={
- access:()=>http.request("get","/bff/platform/access"),
+ operations:()=>http.request<string[]>("get","/bff/operation-decisions"),
  users:(page,query)=>http.request<DirectoryPage<DirectoryUser>>("get","/bff/platform/users",{params:{page,size:20,query}}),
  tenants:(page,query)=>http.request<DirectoryPage<DirectoryTenant>>("get","/bff/platform/tenants",{params:{page,size:20,query}}),
  members:(tenant,page,query)=>http.request<DirectoryPage<DirectoryMember>>("get",`/bff/platform/tenants/${encodeURIComponent(tenant)}/members`,{params:{page,size:20,query}}),

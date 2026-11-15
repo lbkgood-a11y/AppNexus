@@ -19,7 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class IntegrationClients {
     /** 当前正式可执行的外部 API scope；打印代理 scope 只允许受控代理路径，不授予其他租户 API。 */
-    public static final Set<String> SUPPORTED=Set.of("dictionaries:read","dictionary-references:write","print-agent:operate","print:submit","document:resolve");
+    public static final Set<String> SUPPORTED=Set.of("dictionaries:read","dictionary-references:write","print-agent:operate","print:submit","business-object:resolve");
     private final JdbcTemplate jdbc;
     private final RegisteredClientRepository clients;
     private final PasswordEncoder encoder;

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import SearchPanel from "../SearchPanel.vue";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { AppIcon } from "@appnexus/icons";
@@ -8,21 +9,23 @@ import { AppIcon } from "@appnexus/icons";
  * 树与数据请求仍由业务页负责；模板只管理分栏、折叠和响应式，不把树选择当作权限边界。
  */
 const props = withDefaults(defineProps<{
+  /** 查询区标题；缺省由公共组件提供查询条件文案。 */
+  searchTitle?: string;
   /** 独立页面顶部标题；以模板标签栏呈现，嵌入已有导航工作区时可省略。 */
   title?: string;
   /** 树的业务名称，使用已翻译文案；收起后作为窄栏标识，缺省时仅保留展开按钮。 */
   treeLabel?: string;
   /** 是否收起左侧树；受控状态由业务页持有。 */
   collapsed?: boolean;
-  /** 左树宽度，单位 px；有效范围 220–360，默认 248。 */
+  /** 左树宽度，单位 px；有效范围 220–360，缺省使用全局 --app-category-width（默认 220px）。 */
   treeWidth?: number;
   /** 嵌入 BusinessWorkspace 时移除重复外框，默认 false。 */
   embedded?: boolean;
-}>(), { collapsed: false, treeWidth: 248, embedded: false });
+}>(), { collapsed: false, embedded: false });
 const emit = defineEmits<{ "update:collapsed": [value: boolean] }>();
 defineSlots<{ navigation?: () => unknown; treeHeader?: () => unknown; tree: () => unknown; header?: () => unknown; search?: () => unknown; toolbar?: () => unknown; table: () => unknown; pagination?: () => unknown; feedback?: () => unknown }>();
 const { t } = useI18n();
-const style = computed(() => ({ "--tree-panel-width": `${Math.min(360, Math.max(220, props.treeWidth))}px` }));
+const style = computed(() => ({ "--tree-panel-width": props.treeWidth === undefined ? "var(--app-category-width, 220px)" : `${Math.min(360, Math.max(220, props.treeWidth))}px` }));
 </script>
 
 <template>
@@ -30,9 +33,7 @@ const style = computed(() => ({ "--tree-panel-width": `${Math.min(360, Math.max(
     <component :is="embedded ? 'section' : 'el-card'" class="tree-list-template__surface" shadow="never">
       <header v-if="title || $slots.navigation" class="tree-list-template__navigation">
         <slot name="navigation">
-          <el-tabs model-value="title">
-            <el-tab-pane :label="title" name="title" />
-          </el-tabs>
+          <div class="workspace-banner" data-page-banner><span class="workspace-banner-icon" aria-hidden="true"><AppIcon name="layers" :size="26" /></span><h1>{{title}}</h1></div>
         </slot>
       </header>
       <div class="tree-list-template__layout">
@@ -41,7 +42,7 @@ const style = computed(() => ({ "--tree-panel-width": `${Math.min(360, Math.max(
             <div v-show="!collapsed" class="tree-list-template__tree-heading"><slot name="treeHeader" /></div>
             <el-tooltip :content="t(collapsed ? 'management.expandTree' : 'management.collapseTree')" placement="right">
               <el-button text class="tree-list-template__toggle" :aria-label="t(collapsed ? 'management.expandTree' : 'management.collapseTree')" :aria-expanded="!collapsed" @click="emit('update:collapsed', !collapsed)">
-                <AppIcon name="arrowRight" :size="18" :class="{ 'is-expanded': !collapsed }" />
+                <AppIcon :name="collapsed ? 'expandPanel' : 'collapsePanel'" :size="18" />
               </el-button>
             </el-tooltip>
           </header>
@@ -54,7 +55,7 @@ const style = computed(() => ({ "--tree-panel-width": `${Math.min(360, Math.max(
         <main class="tree-list-template__content">
           <header v-if="$slots.header" class="tree-list-template__header"><slot name="header" /></header>
           <div v-if="$slots.feedback" class="tree-list-template__feedback"><slot name="feedback" /></div>
-          <section v-if="$slots.search" class="tree-list-template__search"><slot name="search" /></section>
+          <section v-if="$slots.search" class="tree-list-template__search"><SearchPanel :title="searchTitle" :scope="title"><slot name="search" /></SearchPanel></section>
           <section class="tree-list-template__data">
             <div v-if="$slots.toolbar" class="template-toolbar"><slot name="toolbar" /></div>
             <div class="template-table"><slot name="table" /></div>

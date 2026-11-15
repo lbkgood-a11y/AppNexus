@@ -70,6 +70,7 @@ const settings = reactive({
   showLogo: $storage.configure.showLogo,
   tagsStyle: $storage.configure.tagsStyle,
   hideFooter: $storage.configure.hideFooter,
+  hidePageBanner: $storage.configure.hidePageBanner ?? false,
   multiTagsCache: $storage.configure.multiTagsCache,
   stretch: $storage.configure.stretch
 });
@@ -118,6 +119,11 @@ const tagsChange = () => {
 const hideFooterChange = () => {
   const hideFooter = settings.hideFooter;
   storageConfigureChange("hideFooter", hideFooter);
+};
+
+/** 标题横幅为纯展示偏好，沿用模板持久化入口；不隐藏查询、操作或权限信息。 */
+const hidePageBannerChange = () => {
+  storageConfigureChange("hidePageBanner", settings.hidePageBanner);
 };
 
 /** 标签页持久化设置 */
@@ -496,6 +502,10 @@ onUnmounted(() => removeMatchMedia);
         {{ t("panel.pureInterfaceDisplay") }}
       </p>
       <ul class="setting">
+        <li>
+          <span class="dark:text-white">{{ t('panel.hidePageBanner') }}</span>
+          <el-switch v-model="settings.hidePageBanner" inline-prompt :active-text="t('buttons.pureOpenText')" :inactive-text="t('buttons.pureCloseText')" @change="hidePageBannerChange" />
+        </li>
         <li>
           <span class="dark:text-white">{{ t("panel.pureHiddenTags") }}</span>
           <el-switch

@@ -1,4 +1,10 @@
 <script setup lang="ts">
+import { VxeTable, VxeColumn } from "@appnexus/ui";
+import { setErrorFeedback } from "@appnexus/ui";
+import { AppPagination } from "@appnexus/ui";
+import { FloatingError } from "@appnexus/ui";
+import { InfoHint } from "@appnexus/ui";
+import { AppIcon } from "@appnexus/icons";
 import { computed, onMounted, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter, useRoute } from "vue-router";
@@ -85,8 +91,8 @@ const paged = computed(() =>
 const columns = computed<ManagementColumn[]>(() =>
   tab.value === "contracts" ? [
     {key:"name",prop:"name",label:t("workflow.name"),minWidth:160},
-    {key:"code",prop:"code",label:t("document.code"),minWidth:190},
-    {key:"version",prop:"version",label:t("document.contractVersion"),width:110},
+    {key:"code",prop:"code",label:t("workflow.contractCode"),minWidth:190},
+    {key:"version",prop:"version",label:t("businessObject.contractVersion"),width:110},
     {key:"objectType",prop:"objectType",label:t("workflow.objectType"),minWidth:140},
     {key:"operations",label:t("workflow.operations"),width:180,fixed:"right"},
   ] : tab.value === "definitions"
@@ -164,7 +170,7 @@ async function load() {
           ? await props.api.instances()
           : await props.api.tasks(tab.value);
   } catch (e) {
-    error.value = props.errorText(e);
+    await setErrorFeedback(error, props.errorText(e));
   } finally {
     loading.value = false;
   }
@@ -182,7 +188,7 @@ async function run(action: () => Promise<void>) {
   try {
     await action();
   } catch (e) {
-    error.value = props.errorText(e);
+    await setErrorFeedback(error, props.errorText(e));
   } finally {
     busy.value = false;
   }
@@ -262,7 +268,7 @@ async function recover() {
 }
 </script>
 <template>
-  <div class="management-page">
+  <div class="management-page workflow-center">
     <WorkflowDesigner
       v-if="workspace === 'designer' && designer"
       :key="editing?.id || 'new'"
@@ -275,20 +281,21 @@ async function recover() {
       @saved="load"
       @close="designer = false"
     />
-    <ManagedDialog :model-value="!!contractDetail" :title="t('workflow.contractFields')" width="760px" @update:model-value="contractDetail=undefined">
+    <ManagedDialog :model-value="!!contractDetail" :title="t('workflow.contractFields')" width="760px" @update:model-value="contractDetail=undefined"><template #title><span class="info-hint-title">{{t('workflow.contractFields')}}<InfoHint :content="t('workflow.contractOrderHint')" /></span></template>
       <div v-if="contractDetail" class="contract-detail">
         <p>{{contractDetail.dataContract?.code}} / v{{contractDetail.dataContract?.version}}</p>
-        <el-table :data="contractDetail.profile.fields"><el-table-column prop="key" :label="t('document.code')"/><el-table-column :label="t('workflow.name')"><template #default="{row}">{{locale.startsWith('zh')?row.nameZh:row.nameEn}}</template></el-table-column><el-table-column prop="type" :label="t('workflow.contractType')"/><el-table-column prop="unitZh" :label="t('workflow.contractUnit')"/></el-table>
-        <el-alert :title="t('workflow.contractOrderHint')" type="info" :closable="false"/>
+        <vxe-table :column-config="{ resizable: true }"  :data="contractDetail.profile.fields" border="inner"><vxe-column field="key" :title="t('workflow.fieldCode')"/><vxe-column :title="t('workflow.name')"><template #default="{row}">{{locale.startsWith('zh')?row.nameZh:row.nameEn}}</template></vxe-column><vxe-column field="type" :title="t('workflow.contractType')"/><vxe-column field="unitZh" :title="t('workflow.contractUnit')"/></vxe-table>
+        
       </div>
     </ManagedDialog>
     <BusinessWorkspace
       v-if="!designer"
+      :search-title="t('workflow.query')"
       :title="
         t(workspace === 'designer' ? 'workflow.designer' : 'workflow.title')
       "
       ><template #navigation
-        ><el-tabs v-model="tab"
+        ><el-tabs v-model="tab" class="workflow-tabs"
           ><el-tab-pane
             v-for="view in tabs"
             :key="view"
@@ -297,25 +304,24 @@ async function recover() {
       ><template
         v-if="error && !designer && !taskOpen && !detailOpen && !recovery"
         #feedback
-        ><el-alert type="error" :title="error" :closable="false"
+        ><FloatingError type="error" :title="error" scope="error" :closable="false"
           ><el-button link @click="load">{{
             t("account.retry")
-          }}</el-button></el-alert
-        ></template
+          }}</el-button></FloatingError></template
       ><template #search
         ><div class="management-filter">
-          <div class="management-filter-header"><h2 class="management-filter-title">{{ title }}</h2></div>
+          
           <el-form
             inline
             @submit.prevent="
               submitted = query;
               page = 1;
             "
-            ><el-form-item :label="t('workflow.query')"
-              ><el-input v-model="query" clearable
+            ><el-form-item class="workflow-query-field" :label="t('workflow.query')"
+              ><el-input v-model="query" :placeholder="t('workflow.queryPlaceholder')" clearable
             /></el-form-item>
             <div class="management-filter-actions">
-              <el-button type="primary" native-type="submit">{{
+              <el-button type="primary" native-type="submit"><AppIcon name="search" :size="16" />{{
                 t("administration.search")
               }}</el-button
               ><el-button
@@ -324,14 +330,13 @@ async function recover() {
                   submitted = '';
                   page = 1;
                 "
-                >{{ t("management.reset") }}</el-button
+                ><AppIcon name="refresh" :size="16" />{{ t("management.reset") }}</el-button
               >
             </div></el-form
           >
         </div></template
       ><template #data
         ><div class="workflow-data">
-        <el-alert v-if="tab==='contracts'" class="contract-source-hint" :description="t('workflow.contractSourceHint')" type="info" :closable="false" />
         <ManagementTable
           embedded
           :title="title"
@@ -342,11 +347,11 @@ async function recover() {
           :busy="busy"
           :empty-text="t('workflow.empty')"
           @refresh="load"
-          ><template #actions
+          ><template #titleHelp><InfoHint v-if="rows.length === 100" :content="t('workflow.limitHint')" /><InfoHint v-if="tab==='contracts'" :content="t('workflow.contractSourceHint')" /></template><template #actions
             ><el-button
               v-if="tab === 'definitions' && can('edit')"
               type="primary"
-              @click="openDesigner()"
+              v-operation="'WorkflowDefinition.save'" @click="openDesigner()"
               >{{ t("workflow.newDefinition") }}</el-button
             ></template
           ><template #mode="{ row }">{{
@@ -362,18 +367,18 @@ async function recover() {
             }}</el-tag></template
           ><template #operations="{ row }"
             ><template v-if="tab==='contracts'"><el-button link @click="contractDetail=contracts[Number(row.id)]">{{t('workflow.contractFields')}}</el-button></template><template v-else-if="tab === 'definitions'"
-              ><el-button link type="primary" @click="openDesigner(row.id)">{{
+              ><el-button link type="primary" v-operation="'WorkflowDefinition.save'" @click="openDesigner(row.id)">{{
                 t("workflow.design")
               }}</el-button
-              ><el-button v-if="row.published" link @click="router.push({path:'/documents/workbench',query:{type:row.objectType}})">{{t('workflow.configureBinding')}}</el-button><el-button
+              ><el-button v-if="row.published" link @click="router.push({path:'/business-objects/workbench',query:{type:row.objectType}})">{{t('workflow.configureBinding')}}</el-button><el-button
                 v-if="can('publish') && row.enabled"
                 link
                 type="danger"
-                @click="openRecovery('disable', row.id)"
+                v-operation="'WorkflowDefinition.disable'" @click="openRecovery('disable', row.id)"
                 >{{ t("workflow.disable") }}</el-button
               ></template
             ><template v-else
-              ><el-button
+              ><el-button v-operation="'WorkflowTask.read'"
                 v-if="tab === 'todo'"
                 link
                 type="primary"
@@ -382,33 +387,29 @@ async function recover() {
               ><el-button
                 v-if="tab === 'started' && row.state === 'RUNNING'"
                 link
-                @click="openRecovery('withdraw', row.id)"
+                v-operation="'WorkflowInstance.withdraw'" @click="openRecovery('withdraw', row.id)"
                 >{{ t("workflow.withdraw") }}</el-button
-              ><el-button link @click="openDetail(row)">{{
+              ><el-button v-operation="'WorkflowInstance.read'" link @click="openDetail(row)">{{
                 t("workflow.history")
               }}</el-button></template
             ></template
           ><template #pagination
-            ><el-pagination
+            ><AppPagination
               v-model:current-page="page"
               v-model:page-size="size"
               :page-sizes="[20, 50, 100]"
               layout="total, sizes, prev, pager, next"
               :total="filtered.length" /></template></ManagementTable
-        ><el-alert
-          v-if="rows.length === 100"
-          :title="t('workflow.limitHint')"
-          type="info"
-          :closable="false" /></div></template
+        ></div></template
     ></BusinessWorkspace>
     <ManagedDialog
       v-model="taskOpen"
       :title="selectedTask?.node.name || t('workflow.process')"
       width="min(720px, calc(100vw - 32px))"
       :busy="busy"
-      ><el-alert
+      ><FloatingError
         v-if="error"
-        :title="error"
+        :title="error" scope="error"
         type="error"
         :closable="false"
       /><template v-if="selectedTask"
@@ -445,10 +446,10 @@ async function recover() {
         ></el-form>
         <div class="actions">
           <template v-if="selectedTask.node.kind === 'HANDLE'"
-            ><el-button :loading="busy" @click="complete('SAVE')">{{
+            ><el-button v-operation="'WorkflowTask.complete'" :loading="busy" @click="complete('SAVE')">{{
               t("workflow.save")
             }}</el-button
-            ><el-button
+            ><el-button v-operation="'WorkflowTask.complete'"
               type="primary"
               :loading="busy"
               @click="complete('SUBMIT')"
@@ -459,11 +460,11 @@ async function recover() {
               :title="t('workflow.confirmReject')"
               @confirm="complete('REJECT')"
               ><template #reference
-                ><el-button type="danger" :disabled="busy">{{
+                ><el-button v-operation="'WorkflowTask.complete'" type="danger" :disabled="busy">{{
                   t("workflow.reject")
                 }}</el-button></template
               ></el-popconfirm
-            ><el-button
+            ><el-button v-operation="'WorkflowTask.complete'"
               type="primary"
               :loading="busy"
               @click="complete('APPROVE')"
@@ -477,9 +478,9 @@ async function recover() {
       v-model="detailOpen"
       :title="t('workflow.history')"
       width="min(1000px, calc(100vw - 32px))"
-      ><el-alert
+      ><FloatingError
         v-if="error"
-        :title="error"
+        :title="error" scope="error"
         type="error"
         :closable="false"
       /><template v-if="detail"
@@ -497,57 +498,57 @@ async function recover() {
           ></el-descriptions
         >
         <h3>{{ t("workflow.tasks") }}</h3>
-        <el-table :data="detail.tasks"
-          ><el-table-column
-            prop="node_name"
-            :label="t('workflow.node')"
-          /><el-table-column :label="t('workflow.actor')"
+        <vxe-table :column-config="{ resizable: true }"  :data="detail.tasks"
+           border="inner"><vxe-column
+            field="node_name"
+            :title="t('workflow.node')"
+          /><vxe-column :title="t('workflow.actor')"
             ><template #default="{ row }"
               ><span v-if="row.actor">{{ row.actor }}</span
               ><el-tag v-else type="warning">{{
                 t("workflow.noAssignee")
               }}</el-tag></template
-            ></el-table-column
-          ><el-table-column :label="t('workflow.state')"
+            ></vxe-column
+          ><vxe-column :title="t('workflow.state')"
             ><template #default="{ row }">{{
               t("workflow.states." + row.state, row.state)
-            }}</template></el-table-column
-          ><el-table-column
-            prop="comment"
-            :label="t('workflow.comment')"
-            show-overflow-tooltip
+            }}</template></vxe-column
+          ><vxe-column
+            field="comment"
+            :title="t('workflow.comment')"
+            show-overflow
           />
-          <el-table-column
+          <vxe-column
             v-if="can('operate')"
-            :label="t('workflow.operations')"
+            :title="t('workflow.operations')"
             ><template #default="{ row }"
               ><el-button
                 v-if="row.state === 'OPEN'"
                 link
-                @click="openRecovery('reassign', row.id)"
+                v-operation="'WorkflowTask.reassign'" @click="openRecovery('reassign', row.id)"
                 >{{ t("workflow.reassign") }}</el-button
               ></template
-            ></el-table-column
-          ></el-table
+            ></vxe-column
+          ></vxe-table
         >
         <h3>{{ t("workflow.relatedInstances") }}</h3>
-        <el-table :data="detail.relatedInstances || []"
-          ><el-table-column
-            prop="definition_version"
-            :label="t('workflow.publishedVersion')"
-          /><el-table-column
-            prop="state"
-            :label="t('workflow.state')"
-          /><el-table-column
-            prop="result"
-            :label="t('workflow.result')"
-          /><el-table-column :label="t('workflow.operations')"
+        <vxe-table :column-config="{ resizable: true }"  :data="detail.relatedInstances || []"
+           border="inner"><vxe-column
+            field="definition_version"
+            :title="t('workflow.publishedVersion')"
+          /><vxe-column
+            field="state"
+            :title="t('workflow.state')"
+          /><vxe-column
+            field="result"
+            :title="t('workflow.result')"
+          /><vxe-column :title="t('workflow.operations')"
             ><template #default="{ row }"
-              ><el-button link @click="openDetail(row)">{{
+              ><el-button v-operation="'WorkflowInstance.read'" link @click="openDetail(row)">{{
                 t("workflow.history")
               }}</el-button></template
-            ></el-table-column
-          ></el-table
+            ></vxe-column
+          ></vxe-table
         >
         <h3>{{ t("workflow.history") }}</h3>
         <el-timeline
@@ -560,29 +561,29 @@ async function recover() {
           ></el-timeline
         ><template v-if="detail.jobs"
           ><h3>{{ t("workflow.deliveries") }}</h3>
-          <el-table :data="detail.jobs"
-            ><el-table-column
-              prop="capability"
-              :label="t('workflow.capability')"
-            /><el-table-column
-              prop="state"
-              :label="t('workflow.state')"
-            /><el-table-column
-              prop="attempts"
-              :label="t('workflow.attempts')"
-            /><el-table-column
-              prop="error_code"
-              :label="t('workflow.errorCode')"
-            /><el-table-column :label="t('workflow.operations')"
+          <vxe-table :column-config="{ resizable: true }"  :data="detail.jobs"
+             border="inner"><vxe-column
+              field="capability"
+              :title="t('workflow.capability')"
+            /><vxe-column
+              field="state"
+              :title="t('workflow.state')"
+            /><vxe-column
+              field="attempts"
+              :title="t('workflow.attempts')"
+            /><vxe-column
+              field="error_code"
+              :title="t('workflow.errorCode')"
+            /><vxe-column :title="t('workflow.operations')"
               ><template #default="{ row }"
                 ><el-button
                   v-if="['MANUAL', 'TIMEOUT'].includes(row.state)"
                   link
-                  @click="openRecovery('retry', row.id)"
+                  v-operation="'WorkflowJob.retry'" @click="openRecovery('retry', row.id)"
                   >{{ t("workflow.retry") }}</el-button
                 ></template
-              ></el-table-column
-            ></el-table
+              ></vxe-column
+            ></vxe-table
           ></template
         ></template
       ></ManagedDialog
@@ -592,9 +593,9 @@ async function recover() {
       :title="t('workflow.' + recoveryKind)"
       width="min(600px, calc(100vw - 32px))"
       :busy="busy"
-      ><el-alert
+      ><FloatingError
         v-if="error"
-        :title="error"
+        :title="error" scope="error"
         type="error"
         :closable="false"
       /><el-form label-position="top" @submit.prevent="recover"
@@ -609,7 +610,7 @@ async function recover() {
         <div class="actions">
           <el-button
             type="primary"
-            native-type="submit"
+            v-operation="recoveryKind === 'withdraw' ? 'WorkflowInstance.withdraw' : recoveryKind === 'disable' ? 'WorkflowDefinition.disable' : recoveryKind === 'reassign' ? 'WorkflowTask.reassign' : 'WorkflowJob.retry'" native-type="submit"
             :disabled="!reason.trim()"
             :loading="busy"
             >{{ t("workflow." + recoveryKind) }}</el-button
@@ -620,14 +621,22 @@ async function recover() {
   </div>
 </template>
 <style scoped>
+/* 本地查询不绑定写操作权限；输入宽度随视口变化，保留右侧查询与重置区域。 */
+.workflow-query-field :deep(.el-input) { width: clamp(220px, 32vw, 460px); }
+@media (max-width: 600px) {
+  .workflow-query-field { width: 100%; }
+  .workflow-query-field :deep(.el-form-item__content), .workflow-query-field :deep(.el-input) { width: 100%; min-width: 0; }
+}
+
 /* 工作区与契约详情使用统一垂直节奏，避免表格、提示及摘要贴连；不覆盖公共容器边界。 */
-.workflow-data,
 .contract-detail {
   display: flex;
   flex-direction: column;
   gap: 16px;
   min-width: 0;
 }
+/* 中间容器必须传递工作区剩余高度，否则公共表体的 flex 零基准会将列表压为 0。 */
+.workflow-data { display:flex; flex-direction:column; flex:1 1 0; min-height:0; min-width:0; gap:var(--app-section-gap,12px); }
 /* 长说明按可用宽度换行，避免表格容器随不可断行文本向右撑开。 */
 .contract-source-hint :deep(.el-alert__content) {
   min-width: 0;

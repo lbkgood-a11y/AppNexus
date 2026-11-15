@@ -67,3 +67,17 @@ TreeListTemplate 继续复用 T02 左树右表布局和 Element Plus 按钮，�
 # 非模态工具窗口
 
 ManagedDialog 的 `modal` 默认 true；画布工具可显式传 false，关闭遮罩和滚动锁并允许操作底层画布。`top` 缺省沿用 Element Plus，仅指定初始纵向位置。业务可设置初始右对齐样式，拖动、调整大小与边界仍由统一组件管理；不得自建遮罩或拖动系统。
+
+## 全站表格列宽调整
+
+所有 Element Plus 表格统一启用 `border`，使用组件原生表头分隔线拖动调整列宽；`el-table-column` 沿用默认 `resizable=true`。边框是 Element Plus 开启拖动的必要条件，不另建拖动实现。宽度单位为 px，初始值由业务列的 `width`、`minWidth` 决定；拖动仅影响当前表格展示，不修改业务数据，也不写入浏览器存储。刷新页面后恢复初始列宽。新增表格须保持此约定，分组表头的父列遵循组件原生限制。
+
+表头背景统一由应用主题的 `.el-table` 设置 `--el-table-header-bg-color: var(--el-fill-color-light)`；公共封装与直接使用 Element Plus 的表格共用此规则，不再在公共表格设置内联表头背景，固定列和弹窗随主题同步。
+
+## 全站 VxeTable 迁移（2026-11-14）
+
+表格引擎统一为 VxeTable，取代上文 Element Plus 表格约定。领域模块从 `@appnexus/ui` 导入 VxeTable/VxeColumn；标准列表继续复用 ManagementTable。列配置使用 field/title，展开列使用 content 插槽，明细索引使用 rowIndex。column-config.resizable 默认为 true，单位 px，拖动只影响展示且不持久化；主题通过 vxe-theme.css 继承 Element Plus 变量。新增依赖 vxe-table 与 vxe-pc-ui 仅用于表格引擎与配套基础能力，不改变权限、接口或业务分页。
+
+全站表格使用 `border="inner"`：保留横向行分隔，去掉表体外框及纵向网格，表头拖动标记仍可调列宽。表头、数据与汇总单元格左右各保留 12px，由 vxe-theme.css 统一提供；不得依赖旧 el-table 单元格样式。
+
+桌面管理工作区的分页统一固定在数据容器底部右侧。templates.css 通过工作区结构选择器传递装配层高度；数据区内仅显式标记 management-list-host 的单列表纵向宿主传递 flex 高度，不得通过任意后代包含 ManagementTable 就改写容器 display。树表与左右分栏保留原 grid/flex 方向；management-table-stack 标记详情中的多表堆叠，自然高度并整体滚动；表体占剩余高度，工具栏和分页不伸缩。761px 以下及弹窗保持自然流式布局。高度测量仅用于实际分配 flex 高度的表格，避免自然表高反馈增长。多层包装浏览器回归中数据区底部 608px、分页底部 595px（含容器留白），这些数值仅为验证证据，不写入样式。

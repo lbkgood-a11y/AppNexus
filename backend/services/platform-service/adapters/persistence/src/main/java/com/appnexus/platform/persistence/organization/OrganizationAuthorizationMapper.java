@@ -43,7 +43,7 @@ public interface OrganizationAuthorizationMapper {
     /** 初始化前要求该租户从未存在管理授权，避免覆盖人工运维治理的管理者。 */
     @Select("SELECT EXISTS(SELECT 1 FROM access_effective_tenant_permission WHERE tenant_id=UUID_TO_BIN(#{tenant}) AND permission_code='organization.permission:grant')")
     boolean hasManagementHistory(String tenant);
-    /** 统一 RBAC 双读分支；所有连接固定 tenant_id，停用主体、角色或权限均不生效。 */
+    /** 统一 RBAC 判定；所有连接固定 tenant_id，停用主体、角色或权限均不生效。 */
     @Select("SELECT EXISTS(SELECT 1 FROM tenant_member m JOIN identity_account a ON a.id=m.account_id JOIN platform_tenant t ON t.id=m.tenant_id JOIN access_member_role mr ON mr.tenant_id=m.tenant_id AND mr.member_id=m.id JOIN access_role r ON r.id=mr.role_id AND r.tenant_id=m.tenant_id JOIN access_role_permission rp ON rp.role_id=r.id JOIN access_permission p ON p.id=rp.permission_id JOIN access_member_authorization g ON g.tenant_id=mr.tenant_id AND g.member_id=mr.member_id AND g.role_id=mr.role_id JOIN access_member_authorization_permission ap ON ap.tenant_id=g.tenant_id AND ap.member_id=g.member_id AND ap.role_id=g.role_id AND ap.permission_id=p.id WHERE (g.expires_at IS NULL OR g.expires_at>CURRENT_TIMESTAMP(6)) AND m.tenant_id=UUID_TO_BIN(#{tenantId}) AND m.id=UUID_TO_BIN(#{memberId}) AND m.enabled=TRUE AND a.enabled=TRUE AND t.enabled=TRUE AND r.status='ENABLED' AND r.deleted_at IS NULL AND p.enabled=TRUE AND p.code=CASE WHEN #{capability}='GRANT' THEN 'organization.permission:grant' ELSE CONCAT('organization.unit:',LOWER(#{capability})) END)")
     boolean rbacExists(@Param("tenantId") String tenantId,@Param("memberId") String memberId,@Param("capability") String capability);
 

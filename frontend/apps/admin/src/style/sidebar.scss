@@ -182,6 +182,17 @@
         z-index: 1;
       }
 
+      /* 展开箭头必须保持绝对定位；通用内容层级规则不能将其拉回文档流，否则箭头会落到文字下方。 */
+      > .el-sub-menu__icon-arrow {
+        position: absolute;
+        top: 50%;
+        right: 20px;
+        width: 14px;
+        height: 14px;
+        margin-top: -7px;
+        line-height: 14px;
+      }
+
       div,
       span {
         height: 50px;

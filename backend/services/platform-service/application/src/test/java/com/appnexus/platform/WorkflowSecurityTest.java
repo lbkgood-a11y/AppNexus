@@ -19,7 +19,8 @@ import org.springframework.test.web.servlet.MockMvc;
 @ActiveProfiles("local")
 @AutoConfigureMockMvc
 class WorkflowSecurityTest extends DatabaseTestSupport {
-  @Autowired MockMvc mvc;
+  @Autowired OperationRegistry operationRegistry;
+ @Autowired MockMvc mvc;
   @Autowired JdbcTemplate jdbc;
 
   @Autowired
@@ -30,8 +31,8 @@ class WorkflowSecurityTest extends DatabaseTestSupport {
     var page=com.appnexus.platform.configuration.NavigationPages.find("workflow/designer");
     org.assertj.core.api.Assertions.assertThat(page.path()).isEqualTo("/workflow/designer");
     org.assertj.core.api.Assertions.assertThat(page.permission()).isEqualTo("workflow:read");
-    org.assertj.core.api.Assertions.assertThat(com.appnexus.platform.configuration.NavigationPages.operations("workflow/index")).doesNotContain("workflow:edit","workflow:publish");
-    org.assertj.core.api.Assertions.assertThat(com.appnexus.platform.configuration.NavigationPages.operations("workflow/designer")).containsExactly("workflow:read","workflow:edit","workflow:publish");
+    org.assertj.core.api.Assertions.assertThat(operationRegistry.permissions("workflow/index")).doesNotContain("workflow:edit","workflow:publish");
+    org.assertj.core.api.Assertions.assertThat(operationRegistry.permissions("workflow/designer")).containsExactlyInAnyOrder("workflow:read","workflow:edit","workflow:publish");
     org.assertj.core.api.Assertions.assertThat(jdbc.queryForObject("SELECT permission_code FROM platform_menu WHERE component_key='workflow/designer'",String.class)).isEqualTo("workflow:read");
   }
   @Test
@@ -64,6 +65,8 @@ class WorkflowSecurityTest extends DatabaseTestSupport {
     var cookie = selected.getResponse().getCookie("JSESSIONID");
     mvc.perform(get("/api/workflow/definitions").cookie(cookie)).andExpect(status().isForbidden());
     mvc.perform(get("/api/workflow/tasks").cookie(cookie)).andExpect(status().isOk());
+    mvc.perform(get("/api/operations/Unknown.read/objects/"+UUID.randomUUID()+"/diagnostics").cookie(cookie)).andExpect(status().isOk()).andExpect(jsonPath("$[0].status").value("NOT_CHECKED"));
+    mvc.perform(get("/api/operations/LeaveRequest.submit/objects/"+UUID.randomUUID()+"/diagnostics").cookie(cookie)).andExpect(status().isNotFound()).andExpect(jsonPath("$.code").value("OBJECT_NOT_ACCESSIBLE"));
     // 请假原文与列表入口只允许本人；创建仍要求独立发起权限，CSRF 不可绕过。
     mvc.perform(get("/api/leave-poc").cookie(cookie)).andExpect(status().isOk());
     mvc.perform(get("/api/workflow/configuration").cookie(cookie)).andExpect(status().isForbidden());

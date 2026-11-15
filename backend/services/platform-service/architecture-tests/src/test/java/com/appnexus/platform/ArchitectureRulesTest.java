@@ -85,7 +85,7 @@ class ArchitectureRulesTest {
                 Object value=annotation.getProperties().get("value");
                 String paths=value instanceof Object[] array?java.util.Arrays.toString(array):String.valueOf(value);
                 boolean platform=prefix.contains("/bff/platform")||paths.contains("/bff/platform");
-                if(platform&&!method.isAnnotatedWith(EndpointOperation.class)&&!(type.getSimpleName().equals("PlatformAdministrationController")&&method.getName().equals("access")))missing.add(method.getFullName());
+                if(platform&&!method.isAnnotatedWith(EndpointOperation.class))missing.add(method.getFullName());
                 if(platform&&method.isAnnotatedWith(EndpointOperation.class)){
                     var operation=method.getAnnotationOfType(EndpointOperation.class);
                     if(operation.value().startsWith("access.tenant.")&&operation.platformPermission().isBlank())missing.add(method.getFullName()+" 缺少平台代管权限");

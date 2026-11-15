@@ -16,12 +16,23 @@ public class LeavePocConfiguration {
   public LeavePocService leavePocService(JdbcTemplate jdbc, PlatformTransactionManager manager,
       WorkflowPlatform platform, ObjectProvider<WorkflowStarter> starter,
       ObjectProvider<WorkflowTaskAccess> tasks,
-      ObjectProvider<com.appnexus.contracts.document.DocumentBindings> bindings,
+      ObjectProvider<com.appnexus.contracts.businessobject.BusinessObjectBindings> bindings,
       ObjectProvider<com.appnexus.contracts.printing.BusinessPrinting> printing) {
     var service=new LeavePocService(jdbc, manager, platform, starter::getObject, tasks::getObject);
     service.bindings(bindings::getObject);
     service.printing(printing::getObject);
     return service;
+  }
+  /** 注册只读对象诊断；复用本人读取及配置检查，不模拟指定用户或越过业务归属。 */
+  @Bean public com.appnexus.contracts.operation.ObjectDiagnostics leaveObjectDiagnostics(LeavePocService service){
+    return new com.appnexus.contracts.operation.ObjectDiagnostics(){
+      public java.util.Set<String> operations(){return java.util.Set.of("LeaveRequest.submit","LeaveRequest.print");}
+      public java.util.List<Check> inspect(Context c,String operation,String object){
+        var value=service.availability(new WorkflowContext(c.tenantId(),c.accountId(),c.requestId()),object).stream().filter(item->item.operationId().equals(operation)).findFirst().orElseThrow();
+        // availability 先校验本人归属；后续原因来自同一业务及配置执行器，无权记录不返回状态。
+        return java.util.List.of(new Check("OWNERSHIP","READY","OWNER_VERIFIED"),new Check("BUSINESS_AND_CONFIGURATION",value.allowed()?"READY":"BLOCKED",value.reasonCode()));
+      }
+    };
   }
   /** API 沿用组合应用 Cookie/CSRF 及可信租户过滤器。 */
   @Bean

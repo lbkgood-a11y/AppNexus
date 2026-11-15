@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { setErrorFeedback } from "@appnexus/ui";
+import { FloatingError } from "@appnexus/ui";
 import { nextTick,onBeforeUnmount, onMounted, ref } from "vue";
 import {getDocument,GlobalWorkerOptions} from 'pdfjs-dist';
 import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
@@ -28,20 +30,20 @@ async function refresh(){if(timer){clearTimeout(timer);timer=undefined;}error.va
   if(value.deviceId&&!device.value)device.value=String(value.deviceId);
   if(value.state==="SUCCEEDED"&&!rendered.value){const blob=await props.api.outputPdf(props.outputId);if(disposed)return;if(url.value)URL.revokeObjectURL(url.value);url.value=URL.createObjectURL(blob);await renderPdf(blob)}
   if((value.confirmedJobId&&!['SUBMITTED','SUCCEEDED','FAILED','UNKNOWN','CANCELLED'].includes(String(value.deliveryState)))||!["SUCCEEDED","FAILED","UNKNOWN","CANCELLED"].includes(String(value.state)))timer=setTimeout(refresh,2000);
-}catch(e){if(!disposed)error.value=props.errorText(e)}}
-async function confirm(){if(!device.value||busy.value)return;busy.value=true;error.value="";try{request.value=await props.api.confirmOutput(props.outputId,device.value,confirmationKey);emit("confirmed");await refresh()}catch(e){error.value=props.errorText(e)}finally{busy.value=false}}
-onMounted(async()=>{try{devices.value=await props.api.devices()}catch(e){error.value=props.errorText(e)}await refresh()});
+}catch(e){if(!disposed)await setErrorFeedback(error, props.errorText(e))}}
+async function confirm(){if(!device.value||busy.value)return;busy.value=true;error.value="";try{request.value=await props.api.confirmOutput(props.outputId,device.value,confirmationKey);emit("confirmed");await refresh()}catch(e){await setErrorFeedback(error, props.errorText(e))}finally{busy.value=false}}
+onMounted(async()=>{try{devices.value=await props.api.devices()}catch(e){await setErrorFeedback(error, props.errorText(e))}await refresh()});
 onBeforeUnmount(()=>{disposed=true;if(timer)clearTimeout(timer);if(url.value)URL.revokeObjectURL(url.value)});
 </script>
 <template>
   <ManagedDialog :model-value="true" :title="t('printing.preview')" width="calc(100vw - 48px)" height="calc(100vh - 48px)" :busy="busy" @update:model-value="value=>{if(!value)emit('close')}">
     <el-alert v-if="request" :title="t('printing.outputStages.'+outputStage(request))" :type="outputStage(request)==='RENDERER_OFFLINE'?'warning':'info'" :closable="false" />
-    <el-alert v-if="error" :title="error" type="error" :closable="false"><el-button link @click="refresh">{{t('account.retry')}}</el-button></el-alert>
+    <FloatingError v-if="error" :title="error" scope="error" type="error" :closable="false"><el-button link @click="refresh">{{t('account.retry')}}</el-button></FloatingError>
     <el-alert v-if="request?.confirmedJobId" :title="t('printing.flow.queued')" type="success" :closable="false"/>
     <el-alert v-if="request&&['FAILED','UNKNOWN','CANCELLED'].includes(String(request.state))" :title="t('printing.states.'+request.state)" type="warning" :closable="false"/>
     <el-skeleton v-if="!url&&!error&&request?.state!=='FAILED'&&request?.state!=='UNKNOWN'" :rows="6" animated/>
     <div v-if="url" class="pdf-preview" :aria-label="t('printing.preview')"><canvas v-for="n in pageCount" :key="n" :ref="el=>{if(el)pages[n-1]=el as HTMLCanvasElement}" :aria-label="t('printing.preview')+' '+n"/></div>
-    <template #footer><el-select v-model="device" :disabled="busy||!!request?.confirmedJobId" :placeholder="t('printing.device')" :aria-label="t('printing.device')"><el-option v-for="item in devices.filter(value=>value.enabled)" :key="item.id" :value="item.id" :label="String(item.name)"/></el-select><el-button @click="emit('close')">{{t('organization.cancel')}}</el-button><el-button type="primary" :loading="busy" :disabled="!rendered||!device||!!request?.confirmedJobId" @click="confirm">{{t('printing.confirmPrint')}}</el-button></template>
+    <template #footer><el-select v-model="device" :disabled="busy||!!request?.confirmedJobId" :placeholder="t('printing.device')" :aria-label="t('printing.device')"><el-option v-for="item in devices.filter(value=>value.enabled)" :key="item.id" :value="item.id" :label="String(item.name)"/></el-select><el-button @click="emit('close')">{{t('organization.cancel')}}</el-button><el-button v-operation="'PrintOutput.confirm'" type="primary" :loading="busy" :disabled="!rendered||!device||!!request?.confirmedJobId" @click="confirm">{{t('printing.confirmPrint')}}</el-button></template>
   </ManagedDialog>
 </template>
 <style scoped>.pdf-preview{width:100%;height:calc(100% - 24px);min-height:400px;overflow:auto;border:1px solid var(--el-border-color);background:var(--el-fill-color)}.pdf-preview canvas{display:block;max-width:100%;height:auto;margin:0 auto 16px}</style>

@@ -9,6 +9,7 @@ async function write<T>(method:"post"|"put",path:string,data:unknown,requestId:s
 const get=<T>(path:string)=>http.request<T>("get",base+path);
 /** 打印领域应用适配；组件不能传入租户或操作者。 */
 export const printingApi:PrintApi={
+  preflight:(key,mode,deviceId)=>http.request("get",base+"/documents/"+id(key)+"/preflight",{params:{mode,deviceId}}),
   createOutput:(key,data,requestId)=>write("post","/documents/"+id(key)+"/outputs",data,requestId),
   outputStatus:key=>get("/outputs/"+id(key)),outputPdf:key=>http.request<Blob>("get",base+"/outputs/"+id(key)+"/pdf",{responseType:"blob"}),
   confirmOutput:(key,deviceId,requestId)=>write("post","/outputs/"+id(key)+"/confirm",{deviceId},requestId),
@@ -18,7 +19,12 @@ export const printingApi:PrintApi={
   clientQueues:()=>get("/client-queues"),
   designContracts:()=>get("/design-contracts"),
   createContract:data=>write("post","/design-contracts",data),
-  capabilities:()=>get("/capabilities"),templates:()=>get("/templates"),template:key=>get("/templates/"+id(key)),
+  // 页面分组名称保留领域语义，但权限来源统一为操作目录；不再读取打印独立权限映射。
+  capabilities:async()=>{
+    const operations=new Set(await http.request<string[]>("get","/api/operation-decisions"));
+    return Object.entries({read:"PrintTemplate.list",design:"PrintTemplate.update",publish:"PrintTemplate.publish",devices:"PrintDevice.update",jobs:"PrintJob.list",submit:"PrintOutput.create",reprint:"PrintJob.reprint"})
+      .filter(([,operation])=>operations.has(operation)).map(([name])=>name);
+  },templates:()=>get("/templates"),template:key=>get("/templates/"+id(key)),
   saveTemplate:(key,draft:TemplateDraft)=>write(key?"put":"post",key?"/templates/"+id(key):"/templates",draft),
   publish:(key,revision)=>write("post","/templates/"+id(key)+"/publish",{revision}),versions:key=>get("/templates/"+id(key)+"/versions"),
   devices:()=>get("/devices"),saveDevice:(key,draft:DeviceDraft)=>write(key?"put":"post",key?"/devices/"+id(key):"/devices",draft),

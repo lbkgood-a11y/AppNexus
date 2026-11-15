@@ -21,7 +21,7 @@
 | HideFooter | 是否隐藏页脚；默认 `false`。 |
 | Stretch | 是否使用内容拉伸模式；默认 `false`。 |
 | SidebarStatus | 首次访问侧栏是否展开；默认 `true`，用户操作后由现有偏好存储覆盖。 |
-| EpThemeColor | Element Plus 品牌主色；默认 `#409EFF`，修改会影响按钮、链接、选中及焦点状态，须验证浅色和深色对比度。 |
+| EpThemeColor | Element Plus 品牌主色；默认 `#006BE6`，修改会影响按钮、链接、选中及焦点状态，须验证浅色和深色对比度。 |
 | ShowLogo | 是否在侧栏显示 Logo 与产品名；默认 `true`。 |
 | Watermark | 是否启用模板水印；默认 `false`；启用时同时设置非敏感的 `WatermarkText`。 |
 | TagsStyle | 标签页样式；默认 `chrome`，可选值服从当前模板。 |

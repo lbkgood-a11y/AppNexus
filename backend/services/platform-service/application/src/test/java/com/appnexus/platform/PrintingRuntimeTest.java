@@ -118,9 +118,22 @@ class PrintingRuntimeTest extends DatabaseTestSupport {
     var configured=flow.print(request,documentId,options);
     assertThat(flow.print(request,documentId,options).get("id")).isEqualTo(configured.get("id"));
     assertThat(configured.get("source_type")).isEqualTo("CONFIGURED_DOCUMENT");
-    assertThatThrownBy(()->flow.print(new PrintContext(tenant,UUID.randomUUID().toString(),UUID.randomUUID().toString()),documentId,options)).hasMessage("PRINT_DOCUMENT_NOT_FOUND");
+    assertThatThrownBy(()->flow.print(new PrintContext(tenant,UUID.randomUUID().toString(),UUID.randomUUID().toString()),documentId,options)).hasMessage("PRINT_BUSINESS_OBJECT_NOT_FOUND");
     assertThatThrownBy(()->flow.saveDocument(design,new PrintFlow.Document(sceneId,"BAD",mapper.readTree("{\"unexpected\":\"value\"}")))).hasMessage("PRINT_CONTRACT_INVALID");
     var outputs=new PrintOutputs(jdbc,(context,permission)->true,runtime,flow,mapper);
+    // 预检按模式检查设备；不创建任务，跨账号和跨租户都不泄露该单据。
+    int jobsBefore=jdbc.queryForObject("SELECT COUNT(*) FROM print_job",Integer.class);
+    assertThat(outputs.preflight(design,documentId,"PREVIEW",null)).anySatisfy(check->{assertThat(check.layer()).isEqualTo("DEVICE");assertThat(check.status()).isEqualTo("NOT_APPLICABLE");});
+    assertThat(outputs.preflight(design,documentId,"SILENT",deviceId)).allSatisfy(check->assertThat(check.status()).isEqualTo("READY"));
+    jdbc.update("UPDATE print_agent_queue SET seen_at=DATE_SUB(CURRENT_TIMESTAMP(6),INTERVAL 121 SECOND) WHERE tenant_id=UUID_TO_BIN(?)",tenant);
+    assertThat(outputs.preflight(design,documentId,"SILENT",deviceId)).anySatisfy(check->assertThat(check.reason()).isEqualTo("PRINT_DEVICE_OFFLINE"));
+    flow.report(agent,new PrintFlow.QueueReport("default","agent-1",List.of("test-queue","中文队列")));
+    jdbc.update("UPDATE print_device SET enabled=FALSE WHERE tenant_id=UUID_TO_BIN(?) AND id=UUID_TO_BIN(?)",tenant,deviceId);
+    assertThat(outputs.preflight(design,documentId,"SILENT",deviceId)).anySatisfy(check->assertThat(check.reason()).isEqualTo("PRINT_DEVICE_UNAVAILABLE"));
+    jdbc.update("UPDATE print_device SET enabled=TRUE WHERE tenant_id=UUID_TO_BIN(?) AND id=UUID_TO_BIN(?)",tenant,deviceId);
+    assertThatThrownBy(()->outputs.preflight(new PrintContext(tenant,UUID.randomUUID().toString(),UUID.randomUUID().toString()),documentId,"PREVIEW",null)).hasMessage("PRINT_DOCUMENT_NOT_FOUND");
+    assertThatThrownBy(()->outputs.preflight(new PrintContext(UUID.randomUUID().toString(),actor,UUID.randomUUID().toString()),documentId,"PREVIEW",null)).hasMessage("PRINT_DOCUMENT_NOT_FOUND");
+    assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM print_job",Integer.class)).isEqualTo(jobsBefore);
     var bridge=new com.appnexus.printing.adapter.jdbc.BusinessPrintingAdapter(jdbc,outputs,(context,permission)->true);
     assertThat(bridge.rendererOnline(design)).isTrue();
     jdbc.update("UPDATE print_agent_queue SET seen_at=DATE_SUB(CURRENT_TIMESTAMP(6),INTERVAL 121 SECOND) WHERE tenant_id=UUID_TO_BIN(?)",tenant);

@@ -14,6 +14,14 @@ public interface BusinessPrinting {
   record Request(String sceneCode,String dataContract,String sourceId,Map<String,Object> data,String mode,String deviceId,int copies) {}
   /** 当前租户与指定契约兼容的打印场景。 */
   List<Scene> scenes(PrintContext context,String dataContract);
+  /**
+   * 可信业务服务检查已绑定场景是否仍可用，只返回布尔值，不提供任意资源管理入口。
+   * @param context 已验证租户和业务主体，打印权限仍由打印服务复核
+   * @param dataContract 业务操作声明的数据契约
+   * @param sceneCode 已发布绑定中的场景编码，不接受浏览器任意探测
+   * @return 场景、模板及发布契约兼容；基础设施错误继续抛出
+   */
+  default boolean sceneAvailable(PrintContext context,String dataContract,String sceneCode){return scenes(context,dataContract).stream().anyMatch(scene->scene.code().equals(sceneCode));}
   /** 创建可查询、可幂等重放的打印输出；HTTP 超时不能更换请求键盲目重试。 */
   Map<String,Object> request(PrintContext context,Request request);
 }

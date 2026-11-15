@@ -24,7 +24,8 @@ export interface IntegrationClient { id: string; tenantId: string; name: string;
 export interface IntegrationSecret { client: IntegrationClient; secret: string }
 /** 应用壳注入真实 API，领域页面不依赖模板内部 HTTP 或会话实现。 */
 export interface AdministrationApi {
-  access(): Promise<{ administrator: boolean }>;
+  /** 当前平台主体的统一操作准入；身份和业务权限仍由后端逐请求验证。 */
+  operations(): Promise<string[]>;
   users(page: number, query: string): Promise<DirectoryPage<DirectoryUser>>;
   tenants(page: number, query: string): Promise<DirectoryPage<DirectoryTenant>>;
   members(tenant: string, page: number, query: string): Promise<DirectoryPage<DirectoryMember>>;

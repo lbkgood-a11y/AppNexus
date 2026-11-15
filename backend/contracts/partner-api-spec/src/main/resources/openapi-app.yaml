@@ -2330,7 +2330,7 @@ components:
     Group:
       type: object
       properties:
-        typeCode:
+        objectType:
           type: string
         typeName:
           type: string

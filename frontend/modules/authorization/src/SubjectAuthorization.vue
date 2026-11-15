@@ -1,15 +1,21 @@
 <script setup lang="ts">
+import { setErrorFeedback } from "@appnexus/ui";
+import { AppPagination } from "@appnexus/ui";
+import { FloatingError } from "@appnexus/ui";
+import { InfoHint } from "@appnexus/ui";
 import { computed, onMounted, onBeforeUnmount, ref } from "vue";
 import { ElMessage, ElMessageBox, type FormInstance } from "element-plus";
 import { useI18n } from "vue-i18n";
 import { ManagementTable, type ManagementColumn } from "@appnexus/ui";
-import type { AuthorizationSubject, EffectivePermission, RoleItem, RoleManagementApi, SubjectAuthorizationApi } from "./index";
+import type { OperationDiagnosis, AuthorizationSubject, EffectivePermission, RoleItem, RoleManagementApi, SubjectAuthorizationApi } from "./index";
 
 /** 主体角色编辑复用管理表格与 Element Plus；完整快照只有读取成功后才允许提交。 */
 const props = defineProps<{ api: SubjectAuthorizationApi; roleApi: RoleManagementApi; errorText: (error: unknown) => string }>();
-const { t, te } = useI18n();
+const { t, te, locale } = useI18n();
 const rows = ref<AuthorizationSubject[]>([]), total = ref(0), page = ref(1), query = ref(""), submittedQuery = ref("");
 const roles = ref<RoleItem[]>([]), subject = ref<AuthorizationSubject>(), selected = ref<string[]>([]), original = ref<string[]>([]);
+const diagnostics=ref<OperationDiagnosis[]>([]),diagnosticQuery=ref("");
+const diagnosticRows=computed(()=>diagnostics.value.filter(item=>[item.operation.id,item.operation.nameZh,item.operation.nameEn,...item.operation.permissions].some(value=>value.toLowerCase().includes(diagnosticQuery.value.trim().toLowerCase()))));
 const effective = ref<EffectivePermission[]>([]), version = ref(0), reason = ref("");
 const loading = ref(false), detailLoading = ref(false), saving = ref(false), ready = ref(false), error = ref(""), detailError = ref("");
 const form = ref<FormInstance>();
@@ -31,7 +37,7 @@ async function loadList() {
     const result = await props.api.subjects(page.value, submittedQuery.value);
     if (request !== listRequest) return;
     rows.value = result.items; total.value = result.total;
-  } catch (cause) { if (request === listRequest) error.value = props.errorText(cause); }
+  } catch (cause) { if (request === listRequest) await setErrorFeedback(error, props.errorText(cause)); }
   finally { if (request === listRequest) loading.value = false; }
 }
 /** 读取全部角色页，防止仅取前 100 条导致覆盖写时静默丢失原角色。 */
@@ -60,14 +66,14 @@ async function loadDetail() {
   if (!subject.value || saving.value) return;
   const id = subject.value.id, request = ++detailRequest;
   detailLoading.value = true; ready.value = false; detailError.value = "";
-  selected.value = []; original.value = []; effective.value = []; reason.value = "";
+  selected.value = []; original.value = []; effective.value = []; diagnostics.value=[]; reason.value = "";
   try {
-    const [assignment, explanations, catalog] = await Promise.all([props.api.assignment(id), props.api.effective(id), loadRoles()]);
+    const [assignment, explanations, catalog, operationDetails] = await Promise.all([props.api.assignment(id), props.api.effective(id), loadRoles(), props.api.diagnostics(id)]);
     if (request !== detailRequest) return;
     selected.value = [...assignment.roleIds]; original.value = [...assignment.roleIds];
-    version.value = assignment.authorityVersion; roles.value = catalog; effective.value = explanations; ready.value = true;
+    version.value = assignment.authorityVersion; roles.value = catalog; effective.value = explanations; diagnostics.value=operationDetails; ready.value = true;
     form.value?.clearValidate();
-  } catch (cause) { if (request === detailRequest) detailError.value = props.errorText(cause); }
+  } catch (cause) { if (request === detailRequest) await setErrorFeedback(detailError, props.errorText(cause)); }
   finally { if (request === detailRequest) detailLoading.value = false; }
 }
 /** 角色覆盖写有撤权副作用；先确认目标与原因，冲突后禁止盲目重试。 */
@@ -82,10 +88,10 @@ async function save() {
     selected.value = [...result.roleIds]; original.value = [...result.roleIds]; version.value = result.authorityVersion; reason.value = "";
     ElMessage.success(t("authorizationCenter.saved"));
     // 写入已成功，解释刷新失败必须单独展示，避免管理员误认为需要重复写入。
-    effective.value = [];
-    try { effective.value = await props.api.effective(subject.value.id); }
-    catch (cause) { detailError.value = props.errorText(cause); ready.value = false; }
-  } catch (cause) { detailError.value = props.errorText(cause); ready.value = false; }
+    effective.value = []; diagnostics.value=[];
+    try { effective.value = await props.api.effective(subject.value.id); diagnostics.value=await props.api.diagnostics(subject.value.id); }
+    catch (cause) { await setErrorFeedback(detailError, props.errorText(cause)); ready.value = false; }
+  } catch (cause) { await setErrorFeedback(detailError, props.errorText(cause)); ready.value = false; }
   finally { saving.value = false; }
 }
 function search(reset = false) { if (reset) query.value = ""; submittedQuery.value = query.value.trim(); page.value = 1; void loadList(); }
@@ -94,6 +100,8 @@ onMounted(loadList);
 onBeforeUnmount(() => { ++listRequest; ++detailRequest; });
 /** 由应用壳路由守卫调用；提交期间不能离开，未保存草稿须确认丢弃。 */
 defineExpose({ canLeave: async () => !saving.value && await confirmDiscard() });
+/** 按主体授权场景绑定实际保存接口；不把角色权限编辑冒充主体角色分配。 */
+const subjectSaveOperation = computed(() => location.hash.includes('/platform/') ? 'AccountRoleAssignment.replace' : 'MemberRoleAssignment.replace');
 </script>
 
 <template>
@@ -103,10 +111,10 @@ defineExpose({ canLeave: async () => !saving.value && await confirmDiscard() });
         <el-form-item :label="t('authorizationCenter.subjectQuery')"><el-input v-model="query" clearable :maxlength="100" /></el-form-item>
         <el-form-item><el-button type="primary" native-type="submit" :disabled="loading || saving">{{ t('authorizationCenter.search') }}</el-button><el-button :disabled="loading || saving" @click="search(true)">{{ t('authorizationCenter.reset') }}</el-button></el-form-item>
       </el-form>
-      <el-alert v-if="error" :title="error" type="error" :closable="false" show-icon><el-button link @click="loadList">{{ t('account.retry') }}</el-button></el-alert>
+      <FloatingError v-if="error" :title="error" scope="error" type="error" :closable="false" show-icon><el-button link @click="loadList">{{ t('account.retry') }}</el-button></FloatingError>
       <ManagementTable :title="t('authorizationCenter.subjects')" :rows="rows" :columns="columns" :loading="loading" :busy="saving" :total="total" embedded @refresh="loadList">
         <template #operations="{ row }"><el-button link type="primary" :disabled="saving || detailLoading" @click="open(row)">{{ t('authorizationCenter.configure') }}</el-button></template>
-        <template #pagination><el-pagination v-model:current-page="page" :page-size="20" :total="total" layout="prev, pager, next" :disabled="loading || saving" @current-change="loadList" /></template>
+        <template #pagination><AppPagination v-model:current-page="page" :page-size="20" :total="total" layout="prev, pager, next" :disabled="loading || saving" @current-change="loadList" /></template>
       </ManagementTable>
     </section>
     <section v-loading="detailLoading" class="subject-editor">
@@ -114,7 +122,7 @@ defineExpose({ canLeave: async () => !saving.value && await confirmDiscard() });
       <template v-else>
         <h2>{{ subject.name }}</h2>
         <el-alert v-if="subject.enabled === false" type="warning" :title="t('authorizationCenter.subjectDisabled')" :closable="false" />
-        <el-alert v-if="detailError" type="error" :title="detailError" :closable="false" show-icon><el-button link :disabled="saving" @click="loadDetail">{{ t('authorizationCenter.reload') }}</el-button></el-alert>
+        <FloatingError v-if="detailError" type="error" :title="detailError" scope="detailError" :closable="false" show-icon><el-button link :disabled="saving" @click="loadDetail">{{ t('authorizationCenter.reload') }}</el-button></FloatingError>
         <el-form ref="form" :model="{ reason }" :rules="rules" label-position="top" @submit.prevent="save">
           <el-form-item :label="t('authorizationCenter.subjectRoles')">
             <el-select v-model="selected" multiple filterable :disabled="!ready || saving || detailLoading" class="role-select">
@@ -123,11 +131,22 @@ defineExpose({ canLeave: async () => !saving.value && await confirmDiscard() });
             </el-select>
           </el-form-item>
           <el-form-item prop="reason" :label="t('authorizationCenter.reason')"><el-input v-model="reason" type="textarea" :maxlength="500" show-word-limit :disabled="!ready || saving" /></el-form-item>
-          <el-button v-operation="'@role:grant'" native-type="submit" type="primary" :loading="saving" :disabled="!ready || !changed || detailLoading">{{ t('organization.save') }}</el-button>
+          <el-button v-operation="subjectSaveOperation" native-type="submit" type="primary" :loading="saving" :disabled="!ready || !changed || detailLoading">{{ t('organization.save') }}</el-button>
           <el-button :disabled="saving || detailLoading" @click="async () => { if (await confirmDiscard()) await loadDetail(); }">{{ t('authorizationCenter.reload') }}</el-button>
         </el-form>
-        <h2 class="explanation-heading">{{ t('authorizationCenter.effectivePermissions') }}</h2>
-        <el-alert :title="t('authorizationCenter.explanationNote')" type="info" :closable="false" />
+        <h2>{{ t('operationDiagnostics.title') }}<InfoHint :content="t('operationDiagnostics.limits')" /></h2>
+        <el-input v-model="diagnosticQuery" clearable :placeholder="t('operationDiagnostics.search')" />
+        
+        <el-collapse><el-collapse-item v-for="item in diagnosticRows" :key="item.operation.id" :name="item.operation.id">
+          <template #title>{{ locale.startsWith('zh') ? item.operation.nameZh : item.operation.nameEn }} · {{ item.operation.id }} — {{ t('operationDiagnostics.'+item.status) }}</template>
+          <p>{{ item.operation.policy }}</p>
+          <p v-for="page in item.pages" :key="page.page">{{ page.path }}：{{ t(page.accessible ? 'operationDiagnostics.pageAllowed' : 'operationDiagnostics.pageDenied') }} / {{ t(page.visible ? 'operationDiagnostics.menuVisible' : 'operationDiagnostics.menuHidden') }}<span v-for="reason in page.reasons" :key="reason"> · {{ t('operationDiagnostics.reasons.'+reason) }}</span></p>
+          <p v-for="data in item.data" :key="data.permission">{{data.permission}} · {{t('operationDiagnostics.dataScope')}}：{{data.scope==='NOT_APPLICABLE'?t('operationDiagnostics.notApplicable'):t('authorizationCenter.scopes.'+data.scope)}}<span v-if="data.organizations.length"> · {{t('authorizationCenter.organizationCount',{count:data.organizations.length})}}</span><span v-for="(mode,field) in data.fields" :key="field"> · {{field}}: {{mode}}</span></p>
+          <p>{{t('operationDiagnostics.objectHint')}}</p>
+          <p v-for="permission in item.permissions" :key="permission.permissionCode">{{ permission.permissionCode }}：{{ permission.effective ? t('authorizationCenter.effective') : t('operationDiagnostics.missing') }}<span v-for="source in permission.sources" :key="source.roleId"> · {{ source.roleName }} / {{ source.effective ? t('authorizationCenter.effective') : inactiveReason(source.inactiveReason) }}</span></p>
+        </el-collapse-item></el-collapse>
+        <h2 class="explanation-heading">{{ t('authorizationCenter.effectivePermissions') }}<InfoHint :content="t('authorizationCenter.explanationNote')" /></h2>
+        
         <el-empty v-if="ready && !effective.length" :description="t('authorizationCenter.noEffectivePermissions')" />
         <el-collapse v-if="ready">
           <el-collapse-item v-for="item in effective" :key="item.permissionCode" :name="item.permissionCode">

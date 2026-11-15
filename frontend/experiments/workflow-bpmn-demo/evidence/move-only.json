@@ -1,0 +1,430 @@
+{
+  "initial": {
+    "di": {
+      "x": 530.25,
+      "y": 140.5,
+      "width": 100.75,
+      "height": 80.125
+    },
+    "canvas": {
+      "x": 530,
+      "y": 141,
+      "width": 101,
+      "height": 80
+    },
+    "xmlBounds": {
+      "x": 530.25,
+      "y": 140.5,
+      "width": 100.75,
+      "height": 80.125
+    },
+    "xml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<bpmn:definitions xmlns:bpmn=\"http://www.omg.org/spec/BPMN/20100524/MODEL\" xmlns:bpmndi=\"http://www.omg.org/spec/BPMN/20100524/DI\" xmlns:dc=\"http://www.omg.org/spec/DD/20100524/DC\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" id=\"Definitions_1\" targetNamespace=\"http://bpmn.io/schema/bpmn\"><bpmn:process id=\"Process_1\" isExecutable=\"false\"><bpmn:startEvent id=\"StartEvent_1\" /></bpmn:process><bpmndi:BPMNDiagram id=\"BPMNDiagram_1\"><bpmndi:BPMNPlane id=\"BPMNPlane_1\" bpmnElement=\"Process_1\"><bpmndi:BPMNShape id=\"_BPMNShape_StartEvent_2\" bpmnElement=\"StartEvent_1\"><dc:Bounds x=\"530.25\" y=\"140.5\" width=\"100.75\" height=\"80.125\" /></bpmndi:BPMNShape></bpmndi:BPMNPlane></bpmndi:BPMNDiagram></bpmn:definitions>"
+  },
+  "executed": {
+    "di": {
+      "x": 550.25,
+      "y": 150.5,
+      "width": 100.75,
+      "height": 80.125
+    },
+    "canvas": {
+      "x": 550.25,
+      "y": 150.5,
+      "width": 100.75,
+      "height": 80.125
+    },
+    "xmlBounds": {
+      "x": 550.25,
+      "y": 150.5,
+      "width": 100.75,
+      "height": 80.125
+    },
+    "xml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<bpmn:definitions xmlns:bpmn=\"http://www.omg.org/spec/BPMN/20100524/MODEL\" xmlns:bpmndi=\"http://www.omg.org/spec/BPMN/20100524/DI\" xmlns:dc=\"http://www.omg.org/spec/DD/20100524/DC\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" id=\"Definitions_1\" targetNamespace=\"http://bpmn.io/schema/bpmn\"><bpmn:process id=\"Process_1\" isExecutable=\"false\"><bpmn:startEvent id=\"StartEvent_1\" /></bpmn:process><bpmndi:BPMNDiagram id=\"BPMNDiagram_1\"><bpmndi:BPMNPlane id=\"BPMNPlane_1\" bpmnElement=\"Process_1\"><bpmndi:BPMNShape id=\"_BPMNShape_StartEvent_2\" bpmnElement=\"StartEvent_1\"><dc:Bounds x=\"550.25\" y=\"150.5\" width=\"100.75\" height=\"80.125\" /></bpmndi:BPMNShape></bpmndi:BPMNPlane></bpmndi:BPMNDiagram></bpmn:definitions>"
+  },
+  "undone": {
+    "di": {
+      "x": 530.25,
+      "y": 140.5,
+      "width": 100.75,
+      "height": 80.125
+    },
+    "canvas": {
+      "x": 530.25,
+      "y": 140.5,
+      "width": 100.75,
+      "height": 80.125
+    },
+    "xmlBounds": {
+      "x": 530.25,
+      "y": 140.5,
+      "width": 100.75,
+      "height": 80.125
+    },
+    "xml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<bpmn:definitions xmlns:bpmn=\"http://www.omg.org/spec/BPMN/20100524/MODEL\" xmlns:bpmndi=\"http://www.omg.org/spec/BPMN/20100524/DI\" xmlns:dc=\"http://www.omg.org/spec/DD/20100524/DC\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" id=\"Definitions_1\" targetNamespace=\"http://bpmn.io/schema/bpmn\"><bpmn:process id=\"Process_1\" isExecutable=\"false\"><bpmn:startEvent id=\"StartEvent_1\" /></bpmn:process><bpmndi:BPMNDiagram id=\"BPMNDiagram_1\"><bpmndi:BPMNPlane id=\"BPMNPlane_1\" bpmnElement=\"Process_1\"><bpmndi:BPMNShape id=\"_BPMNShape_StartEvent_2\" bpmnElement=\"StartEvent_1\"><dc:Bounds x=\"530.25\" y=\"140.5\" width=\"100.75\" height=\"80.125\" /></bpmndi:BPMNShape></bpmndi:BPMNPlane></bpmndi:BPMNDiagram></bpmn:definitions>"
+  },
+  "redone": {
+    "di": {
+      "x": 550.25,
+      "y": 150.5,
+      "width": 100.75,
+      "height": 80.125
+    },
+    "canvas": {
+      "x": 550.25,
+      "y": 150.5,
+      "width": 100.75,
+      "height": 80.125
+    },
+    "xmlBounds": {
+      "x": 550.25,
+      "y": 150.5,
+      "width": 100.75,
+      "height": 80.125
+    },
+    "xml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<bpmn:definitions xmlns:bpmn=\"http://www.omg.org/spec/BPMN/20100524/MODEL\" xmlns:bpmndi=\"http://www.omg.org/spec/BPMN/20100524/DI\" xmlns:dc=\"http://www.omg.org/spec/DD/20100524/DC\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" id=\"Definitions_1\" targetNamespace=\"http://bpmn.io/schema/bpmn\"><bpmn:process id=\"Process_1\" isExecutable=\"false\"><bpmn:startEvent id=\"StartEvent_1\" /></bpmn:process><bpmndi:BPMNDiagram id=\"BPMNDiagram_1\"><bpmndi:BPMNPlane id=\"BPMNPlane_1\" bpmnElement=\"Process_1\"><bpmndi:BPMNShape id=\"_BPMNShape_StartEvent_2\" bpmnElement=\"StartEvent_1\"><dc:Bounds x=\"550.25\" y=\"150.5\" width=\"100.75\" height=\"80.125\" /></bpmndi:BPMNShape></bpmndi:BPMNPlane></bpmndi:BPMNDiagram></bpmn:definitions>"
+  },
+  "trace": [
+    {
+      "phase": "preExecute:before-sync",
+      "delta": {
+        "x": 20,
+        "y": 10
+      },
+      "di": {
+        "x": 530.25,
+        "y": 140.5,
+        "width": 100.75,
+        "height": 80.125
+      },
+      "canvas": {
+        "x": 530,
+        "y": 141,
+        "width": 101,
+        "height": 80
+      }
+    },
+    {
+      "phase": "preExecuted:before-sync",
+      "delta": {
+        "x": 20,
+        "y": 10
+      },
+      "di": {
+        "x": 530.25,
+        "y": 140.5,
+        "width": 100.75,
+        "height": 80.125
+      },
+      "canvas": {
+        "x": 530,
+        "y": 141,
+        "width": 101,
+        "height": 80
+      }
+    },
+    {
+      "phase": "execute:before-sync",
+      "delta": {
+        "x": 20,
+        "y": 10
+      },
+      "di": {
+        "x": 530.25,
+        "y": 140.5,
+        "width": 100.75,
+        "height": 80.125
+      },
+      "canvas": {
+        "x": 530,
+        "y": 141,
+        "width": 101,
+        "height": 80
+      }
+    },
+    {
+      "phase": "intent-and-history",
+      "delta": {
+        "x": 20,
+        "y": 10
+      },
+      "di": {
+        "x": 530.25,
+        "y": 140.5,
+        "width": 100.75,
+        "height": 80.125
+      },
+      "canvas": {
+        "x": 530,
+        "y": 141,
+        "width": 101,
+        "height": 80
+      }
+    },
+    {
+      "phase": "executed:before-sync",
+      "delta": {
+        "x": 20,
+        "y": 10
+      },
+      "di": {
+        "x": 530.25,
+        "y": 140.5,
+        "width": 100.75,
+        "height": 80.125
+      },
+      "canvas": {
+        "x": 550,
+        "y": 151,
+        "width": 101,
+        "height": 80
+      }
+    },
+    {
+      "phase": "executed:after-native-updater",
+      "delta": {
+        "x": 20,
+        "y": 10
+      },
+      "di": {
+        "x": 550,
+        "y": 151,
+        "width": 101,
+        "height": 80
+      },
+      "canvas": {
+        "x": 550,
+        "y": 151,
+        "width": 101,
+        "height": 80
+      }
+    },
+    {
+      "phase": "restore:after",
+      "delta": {
+        "x": 20,
+        "y": 10
+      },
+      "di": {
+        "x": 550.25,
+        "y": 150.5,
+        "width": 100.75,
+        "height": 80.125
+      },
+      "canvas": {
+        "x": 550.25,
+        "y": 150.5,
+        "width": 100.75,
+        "height": 80.125
+      }
+    },
+    {
+      "phase": "postExecute:before-sync",
+      "delta": {
+        "x": 20,
+        "y": 10
+      },
+      "di": {
+        "x": 550.25,
+        "y": 150.5,
+        "width": 100.75,
+        "height": 80.125
+      },
+      "canvas": {
+        "x": 550.25,
+        "y": 150.5,
+        "width": 100.75,
+        "height": 80.125
+      }
+    },
+    {
+      "phase": "postExecuted:before-sync",
+      "delta": {
+        "x": 20,
+        "y": 10
+      },
+      "di": {
+        "x": 550.25,
+        "y": 150.5,
+        "width": 100.75,
+        "height": 80.125
+      },
+      "canvas": {
+        "x": 550.25,
+        "y": 150.5,
+        "width": 100.75,
+        "height": 80.125
+      }
+    },
+    {
+      "phase": "revert:before-sync",
+      "delta": {
+        "x": 20,
+        "y": 10
+      },
+      "di": {
+        "x": 550.25,
+        "y": 150.5,
+        "width": 100.75,
+        "height": 80.125
+      },
+      "canvas": {
+        "x": 550.25,
+        "y": 150.5,
+        "width": 100.75,
+        "height": 80.125
+      }
+    },
+    {
+      "phase": "reverted:before-sync",
+      "delta": {
+        "x": 20,
+        "y": 10
+      },
+      "di": {
+        "x": 550.25,
+        "y": 150.5,
+        "width": 100.75,
+        "height": 80.125
+      },
+      "canvas": {
+        "x": 530.25,
+        "y": 140.5,
+        "width": 100.75,
+        "height": 80.125
+      }
+    },
+    {
+      "phase": "reverted:after-native-updater",
+      "delta": {
+        "x": 20,
+        "y": 10
+      },
+      "di": {
+        "x": 530.25,
+        "y": 140.5,
+        "width": 100.75,
+        "height": 80.125
+      },
+      "canvas": {
+        "x": 530.25,
+        "y": 140.5,
+        "width": 100.75,
+        "height": 80.125
+      }
+    },
+    {
+      "phase": "restore:before",
+      "delta": {
+        "x": 20,
+        "y": 10
+      },
+      "di": {
+        "x": 530.25,
+        "y": 140.5,
+        "width": 100.75,
+        "height": 80.125
+      },
+      "canvas": {
+        "x": 530.25,
+        "y": 140.5,
+        "width": 100.75,
+        "height": 80.125
+      }
+    },
+    {
+      "phase": "execute:before-sync",
+      "delta": {
+        "x": 20,
+        "y": 10
+      },
+      "di": {
+        "x": 530.25,
+        "y": 140.5,
+        "width": 100.75,
+        "height": 80.125
+      },
+      "canvas": {
+        "x": 530.25,
+        "y": 140.5,
+        "width": 100.75,
+        "height": 80.125
+      }
+    },
+    {
+      "phase": "intent-and-history",
+      "delta": {
+        "x": 20,
+        "y": 10
+      },
+      "di": {
+        "x": 530.25,
+        "y": 140.5,
+        "width": 100.75,
+        "height": 80.125
+      },
+      "canvas": {
+        "x": 530.25,
+        "y": 140.5,
+        "width": 100.75,
+        "height": 80.125
+      }
+    },
+    {
+      "phase": "executed:before-sync",
+      "delta": {
+        "x": 20,
+        "y": 10
+      },
+      "di": {
+        "x": 530.25,
+        "y": 140.5,
+        "width": 100.75,
+        "height": 80.125
+      },
+      "canvas": {
+        "x": 550.25,
+        "y": 150.5,
+        "width": 100.75,
+        "height": 80.125
+      }
+    },
+    {
+      "phase": "executed:after-native-updater",
+      "delta": {
+        "x": 20,
+        "y": 10
+      },
+      "di": {
+        "x": 550.25,
+        "y": 150.5,
+        "width": 100.75,
+        "height": 80.125
+      },
+      "canvas": {
+        "x": 550.25,
+        "y": 150.5,
+        "width": 100.75,
+        "height": 80.125
+      }
+    },
+    {
+      "phase": "restore:after",
+      "delta": {
+        "x": 20,
+        "y": 10
+      },
+      "di": {
+        "x": 550.25,
+        "y": 150.5,
+        "width": 100.75,
+        "height": 80.125
+      },
+      "canvas": {
+        "x": 550.25,
+        "y": 150.5,
+        "width": 100.75,
+        "height": 80.125
+      }
+    }
+  ]
+}

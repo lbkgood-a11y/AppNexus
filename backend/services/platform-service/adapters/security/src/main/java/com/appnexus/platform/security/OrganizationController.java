@@ -23,21 +23,16 @@ public class OrganizationController {
     /** 名称必填，1–100 个 Java UTF-16 字符；不接受客户端指定 ID 或租户。 */
     public record Name(String name) {}
 
-    /** 当前成员能力仅用于菜单、按钮展示，不代替每个写接口的服务端权限校验。 */
-    @EndpointOperation("organization.unit:read") @GetMapping("/capabilities")
-    ResponseEntity<List<OrganizationCapability>> capabilities(HttpServletRequest request) {
-        if (!(request.getAttribute(TenantExecutionFilter.ATTRIBUTE) instanceof VerifiedTenantContext c))
-            throw AccountSettingsController.problem(HttpStatus.CONFLICT,"TENANT_REQUIRED","请选择有效租户");
-        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(
-            Arrays.stream(OrganizationCapability.values()).filter(cap -> authorization.allows(c.tenantId(),c.memberId(),cap)).toList());
-    }
     /** @return 当前租户的组织单元，不返回其他租户的数据 */
-    @EndpointOperation("organization.unit:read") @GetMapping("/units")
+    @com.appnexus.contracts.operation.BusinessObjectType(code="OrganizationUnit",nameZh="组织单元",nameEn="Organization Unit",category=com.appnexus.contracts.operation.BusinessObjectType.Category.MASTER_DATA,module="organization")
+ @com.appnexus.contracts.operation.OperationBinding(id="OrganizationUnit.listFlat",objectType="OrganizationUnit",operationCode="listFlat",pages={"organization/index"},nameZh="组织单元：查看平面列表",nameEn="Read organization units",policy="主体管理域、角色权限及业务用例约束由原执行器逐请求复核")
+ @EndpointOperation("organization.unit:read") @GetMapping("/units")
     ResponseEntity<List<OrganizationUnit>> list() {
         return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(units.findAll());
     }
     /** 创建 ID 由服务端生成；重名允许，提交期间客户端须防重复点击。 */
-    @EndpointOperation("organization.unit:create") @PostMapping("/units")
+    @com.appnexus.contracts.operation.OperationBinding(id="OrganizationUnit.createFlat",objectType="OrganizationUnit",operationCode="createFlat",pages={"organization/index"},nameZh="组织单元：新增平面组织",nameEn="Create organization units",policy="主体管理域、角色权限及业务用例约束由原执行器逐请求复核")
+ @EndpointOperation("organization.unit:create") @PostMapping("/units")
     ResponseEntity<OrganizationUnit> create(@RequestBody Name input) {
         var type=structure.types().stream().filter(value->value.code().equals("BUSINESS")).findFirst()
             .orElseGet(()->structure.createType("BUSINESS","业务组织"));
@@ -46,13 +41,15 @@ public class OrganizationController {
         return ResponseEntity.status(HttpStatus.CREATED).cacheControl(CacheControl.noStore()).body(unit);
     }
     /** 仅重命名当前租户目标；找不到时不暴露其他租户是否存在相同 ID。 */
-    @EndpointOperation("organization.unit:update") @PutMapping("/units/{id}")
+    @com.appnexus.contracts.operation.OperationBinding(id="OrganizationUnit.rename",objectType="OrganizationUnit",operationCode="rename",pages={"organization/index"},nameZh="组织单元：改名",nameEn="Update organization units",policy="主体管理域、角色权限及业务用例约束由原执行器逐请求复核")
+ @EndpointOperation("organization.unit:update") @PutMapping("/units/{id}")
     ResponseEntity<Void> rename(@PathVariable UUID id,@RequestBody Name input) {
         if (!units.rename(id,validName(input))) throw missing();
         return ResponseEntity.noContent().build();
     }
     /** 删除仅影响当前租户；重复删除返回 404。 */
-    @EndpointOperation("organization.unit:delete") @DeleteMapping("/units/{id}")
+    @com.appnexus.contracts.operation.OperationBinding(id="OrganizationUnit.delete",objectType="OrganizationUnit",operationCode="delete",pages={"organization/index"},nameZh="组织单元：删除",nameEn="Delete organization units",policy="主体管理域、角色权限及业务用例约束由原执行器逐请求复核")
+ @EndpointOperation("organization.unit:delete") @DeleteMapping("/units/{id}")
     ResponseEntity<Void> delete(@PathVariable UUID id) {
         try { if (!units.delete(id)) throw missing(); }
         catch(IllegalStateException assigned) { throw AccountSettingsController.problem(HttpStatus.CONFLICT,"ORGANIZATION_HAS_MEMBERS","请先解除成员组织归属再删除"); }

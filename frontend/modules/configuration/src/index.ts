@@ -29,3 +29,38 @@ export interface DictionaryManagementApi {
  items:(dictionaryId:string)=>Promise<DictionaryItem[]>;createItem:(dictionaryId:string,input:Omit<DictionaryItem,"id"|"dictionaryId"|"status"|"referenced"|"version"|"updatedAt">)=>Promise<DictionaryItem>;
  updateItem:(dictionaryId:string,itemId:string,input:Pick<DictionaryItem,"parentId"|"name"|"description"|"status"|"sortOrder"|"version">)=>Promise<DictionaryItem>;removeItem:(dictionaryId:string,itemId:string,version:number)=>Promise<void>;
 }
+
+/** 代码登记的只读功能快照；操作码不等同于按钮实例，也不表示当前主体已有权限。 */
+export interface FeatureRegistration {
+  /** 构建内页面契约，包含管理域与准入约束。 */
+  page: NavigationPage;
+  /** 页面实际登记的操作权限码；不从资源目录猜测或扩充。 */
+  operations: string[];
+}
+
+/** 后端从实际接口聚合的操作契约；权限表达式为 OR-of-AND，额外业务约束不由前端放行。 */
+export interface OperationDefinition {
+ /** 全局操作身份。 */
+ id:string;
+ /** 对象及对象内操作身份。 */
+ objectType:string; operationCode:string;
+ /** 页面登记标识。 */
+ pages:string[];
+ /** 操作名称。 */
+ nameZh:string; nameEn:string;
+ /** 每一项是 & 连接的 AND 权限，多项之间 OR。 */
+ permissions:string[];
+ /** 身份、对象归属和业务状态等附加约束。 */
+ policy:string;
+ /** 实际 HTTP 方法与路径。 */
+ endpoints:string[];
+ /** 展示准入策略；不替代实际业务执行授权。 */
+ eligibility:"PERMISSION"|"SELF"|"OBJECT";
+}
+
+/** 全模块对象元数据；configurable 只表示支持业务策略配置，不代表用户已获权。 */
+export interface ObjectDefinition {
+ code:string; nameZh:string; nameEn:string;
+ category:"MASTER_DATA"|"TRANSACTION"|"CONFIGURATION"|"LEDGER"|"SYSTEM";
+ module:string; configurable:boolean; operations:OperationDefinition[];
+}

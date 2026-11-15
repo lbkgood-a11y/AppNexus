@@ -1,0 +1,24 @@
+/* 全站 VxeTable 继承 Element Plus 语义变量；随浅色、深色及系统主题即时变化。 */
+html .vxe-table {
+  --vxe-ui-font-color: var(--el-text-color-primary);
+  --vxe-ui-table-font-color: var(--el-text-color-primary);
+  --vxe-ui-table-header-background-color: var(--el-fill-color-light);
+  --vxe-ui-table-body-background-color: var(--el-bg-color);
+  --vxe-ui-table-border-color: var(--el-border-color-lighter);
+  --vxe-ui-table-row-hover-background-color: var(--el-fill-color-light);
+  --vxe-ui-table-row-current-background-color: var(--el-color-primary-light-9);
+  --vxe-ui-layout-background-color: var(--el-bg-color);
+  font-family: inherit;
+}
+
+/* 单元格横向留白统一为 12px；不依赖旧 Element Plus 的 cell 样式，避免迁移后文字贴边。 */
+html .vxe-table .vxe-header--column > .vxe-cell,
+html .vxe-table .vxe-body--column > .vxe-cell,
+html .vxe-table .vxe-footer--column > .vxe-cell {
+  padding-left: 12px;
+  padding-right: 12px;
+}
+/* inner 保留横向行分隔并去掉外框；表头仍使用统一主题底色，拖动分隔标记由 VxeTable 提供。 */
+html .vxe-table.border--inner .vxe-table--header-wrapper {
+  background-color: var(--el-fill-color-light);
+}

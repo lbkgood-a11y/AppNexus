@@ -19,13 +19,19 @@ async function write<T>(path: string, data?: unknown, method:"post"|"put"="post"
 /** 只调用真实业务 API，不在浏览器推断或写入审批结果。 */
 export const leaveApi: LeaveApi = {
   timeline:id=>http.request('get','/api/leave-poc/'+encodeURIComponent(id)+'/timeline'),
-  availability:id=>http.request('get','/api/leave-poc/'+encodeURIComponent(id)+'/availability'),
+  /** 统一对象诊断只使用当前会话，不传入目标账号；归属与配置检查由业务提供者执行。 */
+  availability:async id=>Promise.all(['submit','print'].map(async operationCode=>{
+    const operationId='LeaveRequest.'+operationCode;
+    const checks=await http.request<{layer:string;status:string;reason:string}[]>('get','/api/operations/'+encodeURIComponent(operationId)+'/objects/'+encodeURIComponent(id)+'/diagnostics');
+    const blocked=checks.find(check=>check.status!=='READY'&&check.status!=='NOT_APPLICABLE');
+    return {operationCode,operationId,allowed:!blocked,reasonCode:blocked?.reason??'READY'};
+  })),
   actions:()=>http.request('get','/api/leave-poc/actions'),
   organizations: () => http.request("get", "/api/leave-poc/organizations"),
   list: () => http.request("get", "/api/leave-poc"),
   create: (input) => write("", input),
-  submit: (id,operationKey) => write("/" + encodeURIComponent(id) + "/submit",{operationKey}),
-  print:(id,operationKey)=>write('/'+encodeURIComponent(id)+'/print',{operationKey}),
+  submit: (id,operationId) => write("/" + encodeURIComponent(id) + "/submit",{operationId}),
+  print:(id,operationId)=>write('/'+encodeURIComponent(id)+'/print',{operationId}),
   update: (id,basisVersion,input)=>write('/'+encodeURIComponent(id),{basisVersion,input},'put'),
   cycles: id=>http.request('get','/api/leave-poc/'+encodeURIComponent(id)+'/cycles'),
   read: (id, taskId) =>

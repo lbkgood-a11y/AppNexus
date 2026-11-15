@@ -1,4 +1,8 @@
 <script setup lang="ts">
+import { VxeTable, VxeColumn } from "@appnexus/ui";
+import { setErrorFeedback } from "@appnexus/ui";
+import { AppPagination } from "@appnexus/ui";
+import { FloatingError } from "@appnexus/ui";
 import { onMounted, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { http, requestErrorMessage } from "@/utils/http";
@@ -16,7 +20,7 @@ async function load() {
   try {
     const result = await http.request<{ items: Entry[]; total: number }>("get", currentTenant.value ? "/api/audits" : "/bff/platform/audits", { params: { page: page.value, pageSize: 20 } });
     if (current !== generation) return; rows.value = result.items; total.value = result.total;
-  } catch (cause) { if (current === generation) error.value = requestErrorMessage(cause); }
+  } catch (cause) { if (current === generation) await setErrorFeedback(error, requestErrorMessage(cause)); }
   finally { if (current === generation) loading.value = false; }
 }
 onMounted(() => { void refreshDisplayFormat(); void load(); });
@@ -25,16 +29,16 @@ onMounted(() => { void refreshDisplayFormat(); void load(); });
   <section>
     <div class="audit-heading"><h1>{{ t("account.auditQuery") }}</h1><el-button :loading="loading" @click="load">{{ t("account.refresh") }}</el-button></div>
     <p class="audit-note">{{ t("account.auditHint") }}</p>
-    <el-alert v-if="error" :title="error" type="error" :closable="false" class="mb-4" />
-    <el-table :data="rows" v-loading="loading" :empty-text="t(error ? 'account.logsRetry' : 'account.noLogs')">
-      <el-table-column prop="source" :label="t('account.auditSource')" min-width="120" />
-      <el-table-column prop="action" :label="t('account.event')" min-width="200" />
-      <el-table-column prop="actor" :label="t('account.auditActor')" min-width="260" />
-      <el-table-column prop="target" :label="t('account.auditTarget')" min-width="220" />
-      <el-table-column :label="t('account.auditTrace')" min-width="260"><template #default="{ row }">{{ row.traceId || '—' }}</template></el-table-column>
-      <el-table-column :label="t('account.eventTime')" min-width="220"><template #default="{ row }">{{ displayInstant(row.occurredAt, locale) }}</template></el-table-column>
-    </el-table>
-    <div class="audit-pagination"><el-pagination :current-page="page" :page-size="20" :total="total" :disabled="loading || !!error" layout="total, prev, pager, next" @current-change="value => { page = value; load(); }" /></div>
+    <FloatingError v-if="error" :title="error" scope="error" type="error" :closable="false" class="mb-4" />
+    <vxe-table :column-config="{ resizable: true }"  :data="rows" :loading="loading" :empty-text="t(error ? 'account.logsRetry' : 'account.noLogs')" border="inner">
+      <vxe-column field="source" :title="t('account.auditSource')" min-width="120" />
+      <vxe-column field="action" :title="t('account.event')" min-width="200" />
+      <vxe-column field="actor" :title="t('account.auditActor')" min-width="260" />
+      <vxe-column field="target" :title="t('account.auditTarget')" min-width="220" />
+      <vxe-column :title="t('account.auditTrace')" min-width="260"><template #default="{ row }">{{ row.traceId || '—' }}</template></vxe-column>
+      <vxe-column :title="t('account.eventTime')" min-width="220"><template #default="{ row }">{{ displayInstant(row.occurredAt, locale) }}</template></vxe-column>
+    </vxe-table>
+    <div class="audit-pagination"><AppPagination :current-page="page" :page-size="20" :total="total" :disabled="loading || !!error" layout="total, prev, pager, next" @current-change="value => { page = value; load(); }" /></div>
   </section>
 </template>
 <style scoped>

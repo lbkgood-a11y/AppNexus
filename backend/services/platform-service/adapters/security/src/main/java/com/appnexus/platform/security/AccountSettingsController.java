@@ -30,6 +30,8 @@ public class AccountSettingsController {
     public record PasswordChange(String currentPassword, String newPassword) {}
 
     /** 查询当前账号的可展示资料。 */
+    @com.appnexus.contracts.operation.BusinessObjectType(code="AccountProfile",nameZh="个人资料",nameEn="Account Profile",category=com.appnexus.contracts.operation.BusinessObjectType.Category.SYSTEM,module="identity")
+ @com.appnexus.contracts.operation.OperationBinding(id="AccountProfile.read",objectType="AccountProfile",operationCode="read",pages={"account/profile"},nameZh="个人资料：查看",nameEn="View profile",eligibility=com.appnexus.contracts.operation.OperationBinding.Eligibility.SELF,policy="当前会话本人身份；写操作继续校验 CSRF、当前密码及所需二次验证")
     @GetMapping
     ResponseEntity<Profile> profile(Authentication auth) {
         var account = current(auth);
@@ -40,6 +42,7 @@ public class AccountSettingsController {
                 profile.emailVerified(), profile.phoneNumber(), profile.phoneVerified()));
     }
     /** 修改显示名称，不修改登录标识或认证版本。 */
+    @com.appnexus.contracts.operation.OperationBinding(id="AccountProfile.update",objectType="AccountProfile",operationCode="update",pages={"account/profile"},nameZh="个人资料：修改",nameEn="Update profile",eligibility=com.appnexus.contracts.operation.OperationBinding.Eligibility.SELF,policy="当前会话本人身份；写操作继续校验 CSRF、当前密码及所需二次验证")
     @PatchMapping
     ResponseEntity<Void> update(@RequestBody ProfileChange input, Authentication auth) {
         String name = input.displayName() == null ? "" : input.displayName().strip();
@@ -70,6 +73,7 @@ public class AccountSettingsController {
         return phone;
     }
     /** 校验当前密码后以版本条件原子更新；撤销全部旧授权，并注销当前会话。 */
+    @com.appnexus.contracts.operation.OperationBinding(id="AccountProfile.changePassword",objectType="AccountProfile",operationCode="changePassword",pages={"account/profile"},nameZh="个人资料：修改本人密码",nameEn="Change password",eligibility=com.appnexus.contracts.operation.OperationBinding.Eligibility.SELF,policy="当前会话本人身份；写操作继续校验 CSRF、当前密码及所需二次验证")
     @PostMapping("/password")
     ResponseEntity<Void> password(@RequestBody PasswordChange input, Authentication auth,
             HttpServletRequest request, HttpServletResponse response) {

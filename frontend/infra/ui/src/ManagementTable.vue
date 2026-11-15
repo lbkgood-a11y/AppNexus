@@ -1,5 +1,7 @@
 <script setup lang="ts" generic="Row extends object">
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
+import { VxeTable, VxeColumn } from "vxe-table";
+import AppPagination from "./AppPagination.vue";
+import { useSlots, computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { AppIcon } from "@appnexus/icons";
 import type { ManagementColumn } from "./types";
@@ -27,9 +29,51 @@ const props = withDefaults(defineProps<{
   headingLevel?: "h1" | "h2";
   /** 嵌入业务工作区时移除重复卡片边界；全屏模式仍生成独立表面。 */
   embedded?: boolean;
+  /** 树形表格稳定行标识字段；缺省为普通列表，业务方保证整树唯一。 */
+  rowKey?: string;
+  /** 树形表格展开行标识；缺省由用户交互维护，不改变业务数据。 */
+  expandedRowKeys?: string[];
+  /** 当前高亮行标识；缺省不启用行选中，须与 rowKey 配合使用。 */
+  currentRowKey?: string;
 }>(), { loading: false, busy: false, headingLevel: "h1", embedded: false });
-const emit = defineEmits<{ refresh: [] }>();
+/** 异步树数据渲染后同步展开与首行高亮；不依赖组件首次挂载时的数据快照。 */
+const tableRef = ref<{ setTreeExpand: (row: Row, expanded: boolean) => void; setCurrentRow: (row?: Row) => void }>();
+watch(() => [props.rows, props.expandedRowKeys, props.currentRowKey, tableRef.value], async () => {
+  await nextTick();
+  if (!props.rowKey || !tableRef.value) return;
+  const key = props.rowKey;
+  const visit = (rows: Row[]) => rows.forEach(row => {
+    const record = row as Record<string, unknown>;
+    if (props.expandedRowKeys) tableRef.value?.setTreeExpand(row, props.expandedRowKeys.includes(String(record[key])));
+    if (props.currentRowKey !== undefined && String(record[key]) === props.currentRowKey) tableRef.value?.setCurrentRow(row);
+    if (Array.isArray(record.children)) visit(record.children as Row[]);
+  });
+  visit(props.rows);
+}, { flush: "post" });
+/** 完整平面列表缺省本地分页；显式分页插槽和树数据由业务方保持原契约。 */
+const slots = useSlots();
+const localPage = ref(1);
+const localPageSize = ref(20);
+const localPagination = computed(() => !slots.pagination && !props.expandedRowKeys
+  && !props.rows.some(row => Array.isArray((row as Record<string, unknown>).children))
+  && (props.total === undefined || props.total === props.rows.length));
+const displayedRows = computed(() => localPagination.value
+  ? props.rows.slice((localPage.value - 1) * localPageSize.value, localPage.value * localPageSize.value)
+  : props.rows);
+/** 筛选及删除后修正页码，避免落在空页；容量改变回到第一页。 */
+watch(() => props.rows, () => { localPage.value = 1; });
+watch(localPageSize, () => { localPage.value = 1; });
+const emit = defineEmits<{ refresh: []; expandChange: [row: Row, expanded: boolean] }>();
+/** VxeTable 树展开事件统一转为业务行和展开状态，不改变服务端树数据。 */
+function handleExpandChange({ row, expanded }: { row: Row; expanded: boolean }) {
+  emit('expandChange', row, expanded);
+}
+
 defineSlots<{
+  /** 列表标题旁的对象说明入口，不接收行数据。 */
+  titleHelp?: () => unknown;
+  /** 主列表展开详情；仅展示已授权行，不改变行数据和业务分页。 */
+  expandContent?: (scope: { row: Row }) => unknown;
   actions?: () => unknown;
   before?: () => unknown;
   pagination?: () => unknown;
@@ -40,7 +84,7 @@ const fullscreenHost = ref<HTMLElement>();
 const tableRegion = ref<HTMLElement>();
 const fullscreen = ref(false);
 const tableHeight = ref<number>();
-const size = ref<"small" | "default" | "large">("default");
+const size = ref<"small" | "default" | "large">("small");
 const order = ref<string[]>([]);
 const hidden = ref<string[]>([]);
 const fixed = ref<Record<string, "left" | "right" | undefined>>({});
@@ -82,7 +126,16 @@ async function toggleFullscreen() {
   await nextTick(); measure();
 }
 /** 全屏时表体占据剩余高度，分页保持可见；普通布局不强制固定表格高度。 */
-function measure() { tableHeight.value = fullscreen.value ? tableRegion.value?.clientHeight : undefined; }
+function measure() {
+  const region = tableRegion.value;
+  // 仅在全屏或统一视口工作区内固定表高；弹窗及普通流式表格继续按内容布局。
+  // 只有直接父容器实际分配 flex 高度时才测量；流式包装层按自然高度渲染，避免测量与表高互相撑大。
+  const parent = region?.closest('.management-table')?.parentElement;
+  const allocated = parent && !parent.classList.contains('management-table-stack') && getComputedStyle(parent).display === 'flex';
+  const constrained = fullscreen.value || Boolean(allocated && region?.closest(".viewport-page-host .business-workspace, .viewport-page-host .tree-list-template, .viewport-page-host .standard-list-template"));
+  // 高度链尚未就绪时回退自然表高，禁止把瞬时 0px 写成 1px 导致表头和数据被裁切。
+  tableHeight.value = constrained && region && region.clientHeight >= 80 ? region.clientHeight : undefined;
+}
 watch(fullscreen,async()=>{await nextTick();measure();});
 let observer: ResizeObserver | undefined;
 onMounted(() => {
@@ -100,6 +153,8 @@ onBeforeUnmount(() => observer?.disconnect());
       <div class="management-toolbar">
         <div class="management-table-heading">
           <component :is="headingLevel" class="management-table-title">{{ title }}</component>
+          <!-- 对象级说明紧邻列表标题，避免混入查询字段或工具操作。 -->
+          <slot name="titleHelp" />
           <span v-if="total !== undefined" class="management-table-total">{{ t('management.totalRecords', { total }) }}</span>
         </div>
         <div class="management-toolbar-actions">
@@ -130,13 +185,14 @@ onBeforeUnmount(() => observer?.disconnect());
       </div>
       <slot name="before" />
       <div ref="tableRegion" class="management-table-region">
-        <el-table v-loading="loading" :data="rows" :size="size" :height="tableHeight" :header-cell-style="{background:'var(--el-fill-color-light)'}" :empty-text="emptyText || t('management.empty')">
-          <el-table-column v-for="column in visible" :key="column.key" :prop="column.prop" :label="column.label" :width="column.width" :min-width="column.minWidth || 140" :fixed="fixed[column.key]" :show-overflow-tooltip="column.key !== 'operations'">
+        <vxe-table :column-config="{ resizable: true }" ref="tableRef" @toggle-tree-expand="handleExpandChange" :row-config="{ keyField: rowKey, isCurrent: currentRowKey !== undefined }" :tree-config="rowKey ? { childrenField: 'children' } : undefined" :loading="loading" :data="displayedRows" :size="size === 'default' ? 'medium' : size" :height="tableHeight" :empty-text="emptyText || t('management.empty')" border="inner">
+          <vxe-column v-if="$slots.expandContent" type="expand" width="48"><template #content="{ row }"><slot name="expandContent" :row="row" /></template></vxe-column>
+          <vxe-column v-for="column in visible" :key="column.key" :field="column.prop" :title="column.label" :width="column.width" :min-width="column.minWidth || 140" :fixed="fixed[column.key]" :tree-node="!!rowKey && column.key === visible[0]?.key" :show-overflow="column.key !== 'operations'">
             <template #default="{ row }"><slot :name="column.key" :row="row">{{ column.prop ? (row[column.prop] ?? '—') : '—' }}</slot></template>
-          </el-table-column>
-        </el-table>
+          </vxe-column>
+        </vxe-table>
       </div>
-      <div v-if="$slots.pagination" class="management-pagination"><slot name="pagination" /></div>
+      <div v-if="$slots.pagination || localPagination" class="management-pagination"><slot name="pagination"><AppPagination v-model:current-page="localPage" v-model:page-size="localPageSize" :total="rows.length" :disabled="loading || busy" /></slot></div>
     </component>
   </section>
   </Teleport>
@@ -155,7 +211,7 @@ onBeforeUnmount(() => observer?.disconnect());
 .management-table-tools :deep(.el-button) { width: 34px; height: 32px; padding: 0; }
 .management-toolbar-actions :deep(.el-button + .el-button) { margin-left: 0; }
 .management-table-region { min-width: 0; }
-.management-pagination { display: flex; justify-content: flex-end; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--el-border-color-lighter); overflow-x: auto; }
+.management-pagination { flex-shrink: 0; min-height: 32px; display: flex; justify-content: flex-end; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--el-border-color-lighter); overflow-x: auto; }
 .management-column-heading { display: flex; justify-content: space-between; margin-bottom: 8px; }
 .management-column-row { display: flex; align-items: center; gap: 4px; }
 .management-column-row .el-checkbox { flex: 1; min-width: 0; margin-right: 0; }

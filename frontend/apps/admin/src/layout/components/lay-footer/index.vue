@@ -25,7 +25,13 @@ const TITLE = getConfig("Title");
   align-items: center;
   justify-content: center;
   width: 100%;
-  padding: 0 0 8px;
-  font-size: 14px;
+  /* 版权栏固定为 24px 紧凑高度，不参与内容区伸缩；文字使用全局辅助色。 */
+  box-sizing: border-box;
+  flex: 0 0 24px;
+  height: 24px;
+  padding: 0;
+  font-size: 12px;
+  line-height: 20px;
+  color: var(--el-text-color-secondary);
 }
 </style>

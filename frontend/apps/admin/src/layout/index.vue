@@ -159,7 +159,7 @@ const LayHeader = defineComponent({
 </script>
 
 <template>
-  <div ref="appWrapperRef" :class="['app-wrapper', set.classes]">
+  <div ref="appWrapperRef" :class="['app-wrapper', set.classes, { 'hide-page-banner': $storage.configure.hidePageBanner }]">
     <div
       v-show="
         set.device === 'mobile' &&
@@ -181,22 +181,16 @@ const LayHeader = defineComponent({
         pureSetting.hiddenSideBar ? 'main-hidden' : ''
       ]"
     >
-      <div v-if="set.fixedHeader">
+      <div v-if="set.fixedHeader" class="viewport-layout">
         <LayHeader />
         <!-- 主体内容 -->
         <LayContent :fixed-header="set.fixedHeader" />
       </div>
-      <el-scrollbar v-else>
-        <el-backtop
-          :title="t('buttons.pureBackTop')"
-          target=".main-container .el-scrollbar__wrap"
-        >
-          <BackTopIcon />
-        </el-backtop>
+      <div v-else class="viewport-layout">
         <LayHeader />
         <!-- 主体内容 -->
         <LayContent :fixed-header="set.fixedHeader" />
-      </el-scrollbar>
+      </div>
     </div>
     <!-- 系统设置 -->
     <LaySetting />
@@ -220,6 +214,12 @@ const LayHeader = defineComponent({
     top: 0;
   }
 }
+
+/* 应用壳占满动态视口；页面溢出交给内容区，不让 body 产生第二条滚动条。 */
+.app-wrapper { height:100dvh; overflow:hidden; }
+.main-container,.viewport-layout { height:100%; min-height:0; overflow:hidden; }
+.viewport-layout { display:flex; flex-direction:column; }
+.viewport-layout > :deep(.app-main-nofixed-header) { flex:1; min-height:0 !important; overflow:hidden; }
 
 .app-mask {
   position: absolute;

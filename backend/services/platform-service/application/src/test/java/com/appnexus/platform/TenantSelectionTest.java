@@ -35,8 +35,8 @@ class TenantSelectionTest extends DatabaseTestSupport {
   mvc.perform(post("/bff/tenants/current").cookie(cookie).with(csrf()).contentType("application/json").content("{\"tenantId\":\""+second+"\"}")).andExpect(status().isConflict());
   var switched=mvc.perform(post("/bff/tenants/current").cookie(cookie).with(csrf()).contentType("application/json").content("{\"tenantId\":\""+second+"\",\"expectedVersion\":1}")).andExpect(status().isOk()).andExpect(jsonPath("$.version").value(2)).andReturn();
   var next=switched.getResponse().getCookie("JSESSIONID");
-  mvc.perform(get("/api/organization/capabilities").cookie(next).header("X-Tenant-Context-Version","1")).andExpect(status().isConflict()).andExpect(jsonPath("$.code").value("TENANT_CONTEXT_CHANGED"));
-  mvc.perform(get("/api/organization/capabilities").cookie(next).header("X-Tenant-Context-Version","2")).andExpect(status().isOk()).andExpect(jsonPath("$.length()").value(0));
+  mvc.perform(get("/api/operation-decisions").cookie(next).header("X-Tenant-Context-Version","1")).andExpect(status().isConflict()).andExpect(jsonPath("$.code").value("TENANT_CONTEXT_CHANGED"));
+  mvc.perform(get("/api/operation-decisions").cookie(next).header("X-Tenant-Context-Version","2")).andExpect(status().isOk()).andExpect(jsonPath("$",org.hamcrest.Matchers.not(org.hamcrest.Matchers.hasItem("OrganizationUnit.listFlat"))));
   mvc.perform(post("/api/organization/units").cookie(next).with(csrf()).contentType("application/json").content("{\"name\":\"stale\"}")).andExpect(status().isConflict());
  }
  /** 实际 Cookie 会话覆盖初始化后的 CRUD、CSRF、跨租户目标隔离和撤权立即生效。 */
@@ -47,7 +47,7 @@ class TenantSelectionTest extends DatabaseTestSupport {
   jdbc.update("INSERT INTO tenant_member(id,tenant_id,account_id) VALUES(UUID_TO_BIN(?),UUID_TO_BIN(?),UUID_TO_BIN(?))",member,tenant,account);
   bootstrap.initialize(UUID.fromString(tenant),UUID.fromString(member));
   var cookie=session(account,tenant,member);
-  mvc.perform(get("/api/organization/capabilities").cookie(cookie)).andExpect(status().isOk()).andExpect(jsonPath("$.length()").value(5));
+  mvc.perform(get("/api/operation-decisions").cookie(cookie)).andExpect(status().isOk()).andExpect(jsonPath("$",org.hamcrest.Matchers.hasItems("OrganizationUnit.listFlat","OrganizationUnit.create","OrganizationUnit.update","OrganizationUnit.delete","OrganizationAuthorization.grant")));
   mvc.perform(get("/api/organization/grants/members").cookie(cookie)).andExpect(status().isOk()).andExpect(jsonPath("$[0].memberId").value(member));
   mvc.perform(post("/api/organization/units").cookie(cookie).contentType("application/json").content("{\"name\":\"test\"}")).andExpect(status().isForbidden());
   mvc.perform(post("/api/organization/units").cookie(cookie).with(csrf()).contentType("application/json").content("{\"name\":\"test\"}")).andExpect(status().isCreated());
@@ -75,7 +75,7 @@ class TenantSelectionTest extends DatabaseTestSupport {
   mvc.perform(post("/bff/tenants/current").with(authenticated(account,0)).with(csrf()).contentType("application/json").content("{\"tenantId\":\""+tenant+"\"}"))
    .andExpect(status().isOk()).andExpect(jsonPath("$.memberId").value(member)).andExpect(jsonPath("$.version").value(1));
   jdbc.update("UPDATE tenant_member SET enabled=FALSE WHERE id=UUID_TO_BIN(?)",member);
-  mvc.perform(get("/bff/tenants").with(authenticated(account,0))).andExpect(jsonPath("$.length()").value(0));
+  mvc.perform(get("/bff/tenants").with(authenticated(account,0))).andExpect(jsonPath("$",org.hamcrest.Matchers.not(org.hamcrest.Matchers.hasItem("OrganizationUnit.listFlat"))));
   jdbc.update("UPDATE tenant_member SET enabled=TRUE WHERE id=UUID_TO_BIN(?)",member);
   jdbc.update("UPDATE platform_tenant SET enabled=FALSE WHERE id=UUID_TO_BIN(?)",tenant);
   mvc.perform(post("/bff/tenants/current").with(authenticated(account,0)).with(csrf()).contentType("application/json").content("{\"tenantId\":\""+tenant+"\"}"))

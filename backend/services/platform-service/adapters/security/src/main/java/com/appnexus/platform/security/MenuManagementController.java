@@ -14,15 +14,10 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/bff/platform/menus")
 public class MenuManagementController {
     private final MenuManagement service;
+    private final com.appnexus.platform.configuration.PageOperationCatalog operationCatalog;
     private final com.appnexus.platform.authorization.AccessAuthorization authorization;
-    public MenuManagementController(MenuManagement service,com.appnexus.platform.authorization.AccessAuthorization authorization){this.service=service;this.authorization=authorization;}
-    /** 返回真实可执行操作用于按钮展示；写入仍由用例再次校验，失败不返回默认全部权限。 */
-    @EndpointOperation("configuration.menu:read") @GetMapping("/capabilities")
-    ResponseEntity<List<String>> capabilities(Authentication authentication){return result(()->{
-        service.list(actor(authentication));
-        var subject=com.appnexus.platform.authorization.AccessAuthorization.Subject.platform(actor(authentication));
-        return List.of("read","create","update","delete").stream().filter(action->authorization.hasPermission(subject,"configuration.menu:"+action)).toList();
-    });}
+    public MenuManagementController(MenuManagement service,com.appnexus.platform.authorization.AccessAuthorization authorization,com.appnexus.platform.configuration.PageOperationCatalog operationCatalog){this.service=service;this.authorization=authorization;this.operationCatalog=operationCatalog;}
+
 
     /** 更新请求显式携带乐观锁版本，禁止静默覆盖其他管理员的修改。 */
     public record Update(long version,UUID parentId,MenuManagement.Type type,String code,String titleZh,String titleEn,String path,String component,String icon,String permission,int sortOrder,boolean visible,boolean enabled,MenuManagement.Scope scope,String externalUrl){
@@ -32,16 +27,47 @@ public class MenuManagementController {
     public record Create(UUID parentId,MenuManagement.Type type,String code,String titleZh,String titleEn,String path,String component,String icon,String permission,int sortOrder,boolean visible,boolean enabled,MenuManagement.Scope scope,String externalUrl){
         MenuManagement.Command command(){return new MenuManagement.Command(parentId,type,code,titleZh,titleEn,path,component,icon,permission,sortOrder,visible,enabled,scope,externalUrl);}
     }
+    /**
+     * 构建内功能快照；操作码直接来自页面登记，不推断按钮名称或租户授权状态。
+     * @param page 代码登记的页面及最低访问约束
+     * @param operations 该页面明确登记的操作权限码，多个按钮可能共用同一权限
+     */
+    public record Feature(NavigationPages.Page page,List<String> operations) {}
+
+    /**
+     * 返回只读功能目录，复用菜单读取授权并复核平台身份；不接受租户或账号身份输入。
+     * @param authentication 服务端认证会话，不由客户端指定
+     * @return 无缓存的构建内页面与操作快照，不代表任何租户已获授权
+     */
+    @com.appnexus.contracts.operation.BusinessObjectType(code="NavigationMenu",nameZh="导航菜单",nameEn="Navigation Menu",category=com.appnexus.contracts.operation.BusinessObjectType.Category.CONFIGURATION,module="configuration")
+ @com.appnexus.contracts.operation.OperationBinding(id="NavigationMenu.features",objectType="NavigationMenu",operationCode="features",pages={"platform/features"},nameZh="导航菜单：查看功能目录",nameEn="Read menu configuration",policy="主体管理域、角色权限及业务用例约束由原执行器逐请求复核")
+ @EndpointOperation("configuration.menu:read") @GetMapping("/features")
+    ResponseEntity<List<Feature>> features(Authentication authentication){
+        return result(()->{service.list(actor(authentication));var pages=new ArrayList<>(NavigationPages.all());
+            // 个人中心属于固定自助路由，仅加入功能目录，不加入可配置的菜单页面选择目录。
+            pages.add(new NavigationPages.Page("account/profile","/account/profile","个人中心","Account profile",MenuManagement.Scope.AUTHENTICATED,null,NavigationPages.Gate.PERMISSION));
+            return pages.stream().map(page->new Feature(page,operationCatalog.permissions(page.key()))).toList();});
+    }
+
     /** 页面选择目录复用菜单管理授权，不允许通过输入路径注册任意组件。 */
-    @EndpointOperation("configuration.menu:read") @GetMapping("/pages")
+    @com.appnexus.contracts.operation.OperationBinding(id="NavigationMenu.pageOptions",objectType="NavigationMenu",operationCode="pageOptions",pages={"platform/menus"},nameZh="导航菜单：查看页面目录",nameEn="Read menu configuration",policy="主体管理域、角色权限及业务用例约束由原执行器逐请求复核")
+ @EndpointOperation("configuration.menu:read") @GetMapping("/pages")
     ResponseEntity<List<NavigationPages.Page>> pages(Authentication authentication){return result(()->{service.list(actor(authentication));return NavigationPages.all();});}
-    @EndpointOperation("configuration.menu:read") @GetMapping
+    /** 操作契约关联下方真实接口；仅供展示与一致性校验，主体、权限及业务约束仍由原用例执行。 */
+    @com.appnexus.contracts.operation.OperationBinding(id="NavigationMenu.list",objectType="NavigationMenu",operationCode="list",pages={"platform/menus"},nameZh="导航菜单：查看列表",nameEn="Read menu configuration",policy="主体管理域、角色权限及业务用例约束由原执行器逐请求复核")
+ @EndpointOperation("configuration.menu:read") @GetMapping
     ResponseEntity<List<MenuManagement.Menu>> list(Authentication authentication){return result(()->service.list(actor(authentication)));}
-    @EndpointOperation("configuration.menu:create") @PostMapping
+    /** 操作契约关联下方真实接口；仅供展示与一致性校验，主体、权限及业务约束仍由原用例执行。 */
+    @com.appnexus.contracts.operation.OperationBinding(id="NavigationMenu.create",objectType="NavigationMenu",operationCode="create",pages={"platform/menus"},nameZh="导航菜单：新增",nameEn="Create menu configuration",policy="主体管理域、角色权限及业务用例约束由原执行器逐请求复核")
+ @EndpointOperation("configuration.menu:create") @PostMapping
     ResponseEntity<MenuManagement.Menu> create(Authentication authentication,@RequestBody Create input){return result(()->service.create(actor(authentication),Objects.requireNonNull(input).command()));}
-    @EndpointOperation("configuration.menu:update") @PutMapping("/{id}")
+    /** 操作契约关联下方真实接口；仅供展示与一致性校验，主体、权限及业务约束仍由原用例执行。 */
+    @com.appnexus.contracts.operation.OperationBinding(id="NavigationMenu.update",objectType="NavigationMenu",operationCode="update",pages={"platform/menus"},nameZh="导航菜单：修改",nameEn="Edit menus (including status)",policy="主体管理域、角色权限及业务用例约束由原执行器逐请求复核")
+ @EndpointOperation("configuration.menu:update") @PutMapping("/{id}")
     ResponseEntity<MenuManagement.Menu> update(Authentication authentication,@PathVariable UUID id,@RequestBody Update input){return result(()->service.update(actor(authentication),id,input.version(),input.command()));}
-    @EndpointOperation("configuration.menu:delete") @DeleteMapping("/{id}")
+    /** 操作契约关联下方真实接口；仅供展示与一致性校验，主体、权限及业务约束仍由原用例执行。 */
+    @com.appnexus.contracts.operation.OperationBinding(id="NavigationMenu.delete",objectType="NavigationMenu",operationCode="delete",pages={"platform/menus"},nameZh="导航菜单：删除",nameEn="Delete menu configuration",policy="主体管理域、角色权限及业务用例约束由原执行器逐请求复核")
+ @EndpointOperation("configuration.menu:delete") @DeleteMapping("/{id}")
     ResponseEntity<Void> delete(Authentication authentication,@PathVariable UUID id,@RequestParam long version){return result(()->{service.delete(actor(authentication),id,version);return null;});}
     private UUID actor(Authentication authentication){return UUID.fromString(authentication.getName());}
     /** 错误使用稳定业务码；冲突不返回数据库约束名、SQL 或完整请求正文。 */

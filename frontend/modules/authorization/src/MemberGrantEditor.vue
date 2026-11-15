@@ -1,4 +1,8 @@
 <script setup lang="ts">
+import { VxeTable, VxeColumn } from "@appnexus/ui";
+import { setErrorFeedback } from "@appnexus/ui";
+import { FloatingError } from "@appnexus/ui";
+import { InfoHint } from "@appnexus/ui";
 import {computed,onMounted,ref} from "vue";
 import {ElMessage,ElMessageBox} from "element-plus";
 import {useI18n} from "vue-i18n";
@@ -23,12 +27,12 @@ function scope(id:string,type:DataScopeType){if(!draft.value)return;const suppor
 async function discard(){if(!changed.value&&!reason.value.trim())return true;try{await ElMessageBox.confirm(t("authorizationCenter.discard"),t("authorizationCenter.memberData"),{confirmButtonText:t("authorizationCenter.discardAction"),cancelButtonText:t("organization.cancel")});return true;}catch{return false;}}
 async function selectMember(id:string){if(busy.value||!(await discard()))return;member.value=id;await loadGrants();}
 async function selectRole(id:string){if(busy.value||!(await discard()))return;role.value=id;busy.value=true;try{await loadDraft();}finally{busy.value=false;}}
-async function loadGrants(){if(!props.api.grants||!member.value)return;busy.value=true;ready.value=false;error.value="";try{const value=await props.api.grants.get(member.value);grants.value=value.grants;version.value=value.authorityVersion;role.value=value.grants[0]?.roleId??"";await loadDraft();}catch(cause){error.value=props.errorText(cause);}finally{busy.value=false;}}
+async function loadGrants(){if(!props.api.grants||!member.value)return;busy.value=true;ready.value=false;error.value="";try{const value=await props.api.grants.get(member.value);grants.value=value.grants;version.value=value.authorityVersion;role.value=value.grants[0]?.roleId??"";await loadDraft();}catch(cause){await setErrorFeedback(error, props.errorText(cause));}finally{busy.value=false;}}
 /** 获取当前角色版本，仅用于并发与上限复核，不自动复制角色新增权限或范围。 */
-async function loadDraft(){ready.value=false;draft.value=undefined;reason.value="";baseline.value=undefined;const grant=grants.value.find(value=>value.roleId===role.value);if(!grant)return;try{const current=await props.authorizationApi.assignment(role.value);rolePermissionIds.value=current.permissionIds;draft.value=JSON.parse(JSON.stringify({...grant,permissionIds:grant.permissionIds.filter(id=>current.permissionIds.includes(id)),dataPolicies:grant.dataPolicies.filter(value=>current.permissionIds.includes(value.permissionId)),roleVersion:current.roleVersion}));baseline.value=JSON.stringify(draft.value);ready.value=true;}catch(cause){error.value=props.errorText(cause);}}
+async function loadDraft(){ready.value=false;draft.value=undefined;reason.value="";baseline.value=undefined;const grant=grants.value.find(value=>value.roleId===role.value);if(!grant)return;try{const current=await props.authorizationApi.assignment(role.value);rolePermissionIds.value=current.permissionIds;draft.value=JSON.parse(JSON.stringify({...grant,permissionIds:grant.permissionIds.filter(id=>current.permissionIds.includes(id)),dataPolicies:grant.dataPolicies.filter(value=>current.permissionIds.includes(value.permissionId)),roleVersion:current.roleVersion}));baseline.value=JSON.stringify(draft.value);ready.value=true;}catch(cause){await setErrorFeedback(error, props.errorText(cause));}}
 /** 完整单分支更新，失败关闭写入口并保留草稿；重读必须确认丢弃修改。 */
-async function save(){if(invalid.value||!draft.value||!props.api.grants||busy.value)return;busy.value=true;try{const value=await props.api.grants.replace(member.value,{grant:JSON.parse(JSON.stringify(draft.value)),version:version.value,reason:reason.value.trim()});grants.value=value.grants;version.value=value.authorityVersion;baseline.value=JSON.stringify(draft.value);reason.value="";ElMessage.success(t("authorizationCenter.saved"));}catch(cause){error.value=props.errorText(cause);ready.value=false;}finally{busy.value=false;}}
-async function initialize(){busy.value=true;try{const catalog:RoleItem[]=[];for(let page=1;;page++){const value=await props.roleApi.list({query:"",page,pageSize:100});catalog.push(...value.items);if(catalog.length>=value.total)break;if(!value.items.length)throw new Error(t("authorizationCenter.roleListChanged"));}roles.value=catalog;const members:AuthorizationSubject[]=[];for(let page=1;;page++){const value=await props.api.subjects(page,"");members.push(...value.items);if(members.length>=value.total)break;if(!value.items.length)throw new Error(t("authorizationCenter.roleListChanged"));}subjects.value=members;[permissions.value,metadata.value,organizations.value]=await Promise.all([props.authorizationApi.permissions(),props.authorizationApi.metadata(),props.authorizationApi.organizationOptions?.()??Promise.resolve([])]);}catch(cause){error.value=props.errorText(cause);}finally{busy.value=false;}}
+async function save(){if(invalid.value||!draft.value||!props.api.grants||busy.value)return;busy.value=true;try{const value=await props.api.grants.replace(member.value,{grant:JSON.parse(JSON.stringify(draft.value)),version:version.value,reason:reason.value.trim()});grants.value=value.grants;version.value=value.authorityVersion;baseline.value=JSON.stringify(draft.value);reason.value="";ElMessage.success(t("authorizationCenter.saved"));}catch(cause){await setErrorFeedback(error, props.errorText(cause));ready.value=false;}finally{busy.value=false;}}
+async function initialize(){busy.value=true;try{const catalog:RoleItem[]=[];for(let page=1;;page++){const value=await props.roleApi.list({query:"",page,pageSize:100});catalog.push(...value.items);if(catalog.length>=value.total)break;if(!value.items.length)throw new Error(t("authorizationCenter.roleListChanged"));}roles.value=catalog;const members:AuthorizationSubject[]=[];for(let page=1;;page++){const value=await props.api.subjects(page,"");members.push(...value.items);if(members.length>=value.total)break;if(!value.items.length)throw new Error(t("authorizationCenter.roleListChanged"));}subjects.value=members;[permissions.value,metadata.value,organizations.value]=await Promise.all([props.authorizationApi.permissions(),props.authorizationApi.metadata(),props.authorizationApi.organizationOptions?.()??Promise.resolve([])]);}catch(cause){await setErrorFeedback(error, props.errorText(cause));}finally{busy.value=false;}}
 onMounted(initialize);
 /** 页签切换保留组件草稿，离开整个路由由应用壳统一询问。 */
 defineExpose({ canLeave:async()=>!busy.value&&await discard() });
@@ -36,16 +40,16 @@ defineExpose({ canLeave:async()=>!busy.value&&await discard() });
 
 <template>
   <div v-loading="busy" class="member-grant-editor">
-    <el-alert :title="t('authorizationCenter.memberDataHint')" type="info" :closable="false" show-icon />
-    <el-alert v-if="error" :title="error" type="error" :closable="false"><el-button link :disabled="busy" @click="async()=>{if(await discard())await loadGrants();}">{{t('authorizationCenter.reload')}}</el-button></el-alert>
+    
+    <FloatingError v-if="error" :title="error" scope="error" type="error" :closable="false"><el-button link :disabled="busy" @click="async()=>{if(await discard())await loadGrants();}">{{t('authorizationCenter.reload')}}</el-button></FloatingError>
     <el-form class="member-grant-form" label-position="top" @submit.prevent="save">
-      <el-form-item :label="t('authorizationCenter.subject')"><el-select :model-value="member" filterable :disabled="busy" @change="selectMember"><el-option v-for="item in subjects" :key="item.id" :value="item.id" :label="item.name" /></el-select></el-form-item>
+      <el-form-item :label="t('authorizationCenter.subject')"><template #label>{{t('authorizationCenter.subject')}}<InfoHint :content="t('authorizationCenter.memberDataHint')" /></template><el-select :model-value="member" filterable :disabled="busy" @change="selectMember"><el-option v-for="item in subjects" :key="item.id" :value="item.id" :label="item.name" /></el-select></el-form-item>
       <el-form-item v-if="member" :label="t('authorizationCenter.subjectRoles')"><el-select :model-value="role" filterable :disabled="busy" @change="selectRole"><el-option v-for="grant in grants" :key="grant.roleId" :value="grant.roleId" :label="roles.find(item=>item.id===grant.roleId)?.name??t('authorizationCenter.unavailableRole')" /></el-select></el-form-item>
       <el-empty v-if="member&&!grants.length" :description="t('authorizationCenter.assignRoleFirst')" />
       <template v-if="draft">
-        <el-alert :title="t('authorizationCenter.roleCeilingHint')" type="info" :closable="false" class="member-reason" />
-        <el-table :data="permissionExplanation" class="member-reason"><el-table-column prop="name" :label="t('authorizationCenter.memberOperations')"/><el-table-column prop="code" label="Code"/><el-table-column prop="status" :label="t('document.state')"/></el-table>
-        <el-form-item :label="t('authorizationCenter.memberOperations')" class="member-reason"><el-checkbox-group v-model="draft.permissionIds" :disabled="!ready||busy"><el-checkbox v-for="item in availablePermissions" :key="item.id" :value="item.id">{{locale.startsWith('zh')?item.nameZh:item.nameEn}} · {{item.code}}</el-checkbox></el-checkbox-group></el-form-item>
+        
+        <vxe-table :column-config="{ resizable: true }"  :data="permissionExplanation" class="member-reason" border="inner"><vxe-column field="name" :title="t('authorizationCenter.memberOperations')"/><vxe-column field="code" title="Code"/><vxe-column field="status" :title="t('businessObject.state')"/></vxe-table>
+        <el-form-item :label="t('authorizationCenter.memberOperations')" class="member-reason"><template #label>{{t('authorizationCenter.memberOperations')}}<InfoHint :content="t('authorizationCenter.roleCeilingHint')" /></template><el-checkbox-group v-model="draft.permissionIds" :disabled="!ready||busy"><el-checkbox v-for="item in availablePermissions" :key="item.id" :value="item.id">{{locale.startsWith('zh')?item.nameZh:item.nameEn}} · {{item.code}}</el-checkbox></el-checkbox-group></el-form-item>
         <el-form-item class="member-scope-row" v-for="item in scoped" :key="item.id" :label="locale.startsWith('zh')?item.nameZh:item.nameEn">
           <div class="scope-inputs">
             <el-select :model-value="policy(item.id)?.scopeType" :disabled="!ready||busy" :placeholder="t('authorizationCenter.selectScope')" @change="value=>scope(item.id,value)"><el-option v-for="support in metadata.filter(value=>value.permissionId===item.id)" :key="support.scopeType" :value="support.scopeType" :label="t('authorizationCenter.scopes.'+support.scopeType)" /></el-select>
@@ -54,7 +58,7 @@ defineExpose({ canLeave:async()=>!busy.value&&await discard() });
         </el-form-item>
         <el-form-item :label="t('authorizationCenter.expiresAt')"><el-date-picker v-model="draft.expiresAt" type="datetime" value-format="YYYY-MM-DDTHH:mm:ssZ" clearable :disabled="!ready||busy" /></el-form-item>
         <el-form-item class="member-reason" :label="t('authorizationCenter.reason')" required><el-input v-model="reason" type="textarea" :maxlength="500" show-word-limit :disabled="!ready||busy" /></el-form-item>
-        <el-button v-operation="'@role:grant'" native-type="submit" type="primary" :loading="busy" :disabled="invalid">{{t('organization.save')}}</el-button>
+        <el-button v-operation="'MemberAuthorization.replace'" native-type="submit" type="primary" :loading="busy" :disabled="invalid">{{t('organization.save')}}</el-button>
       </template>
     </el-form>
   </div>

@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { setErrorFeedback } from "@appnexus/ui";
+import { FloatingError } from "@appnexus/ui";
 import { onMounted, onBeforeUnmount, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { ElMessage } from "element-plus";
@@ -17,7 +19,7 @@ const form = ref<{ validate: () => Promise<boolean> }>();
 async function load() {
   busy.value = true; error.value = "";
   try { status.value = await getMfaStatus(); }
-  catch (cause) { error.value = requestErrorMessage(cause); }
+  catch (cause) { await setErrorFeedback(error, requestErrorMessage(cause)); }
   finally { busy.value = false; }
 }
 /** 每次写入复核当前密码；提交后清空密码及验证码，绑定密钥不写日志或 URL。 */
@@ -37,7 +39,7 @@ async function submit(action: "enrollment" | "activation" | "step-up" | "disable
       if (action === "disable") await clearSession("expired");
       else { await load(); ElMessage.success(t("account.mfaStepUpSaved")); }
     }
-  } catch (cause) { error.value = requestErrorMessage(cause); }
+  } catch (cause) { await setErrorFeedback(error, requestErrorMessage(cause)); }
   finally { busy.value = false; password.value = ""; code.value = ""; }
 }
 onMounted(load);
@@ -47,7 +49,7 @@ onBeforeUnmount(() => { password.value = ""; code.value = ""; secret.value = "";
   <section class="mfa-settings" v-loading="busy">
     <h2>{{ t("account.mfaTitle") }}</h2>
     <p>{{ t("account.mfaHint") }}</p><el-alert v-if="status" :title="t(status.platformRequired?'account.mfaPlatformRequired':'account.mfaPlatformOptional')" type="info" :closable="false"/><el-descriptions :column="1" border><el-descriptions-item :label="t('account.mfaMethod')">{{t('account.mfaTotpDescription')}}</el-descriptions-item><el-descriptions-item :label="t('account.mfaRecoveryMethod')">{{t('account.mfaRecoveryDescription')}}</el-descriptions-item></el-descriptions>
-    <el-alert v-if="error" :title="error" type="error" :closable="false" show-icon />
+    <FloatingError v-if="error" :title="error" scope="error" type="error" :closable="false" show-icon />
     <el-button v-if="!status" :disabled="busy" @click="load">{{ t("account.retry") }}</el-button>
     <template v-if="status">
       <el-tag :type="status.enabled ? 'success' : 'info'">{{ t(status.enabled ? "account.enabled" : "account.mfaNotEnabled") }}</el-tag>
@@ -67,9 +69,9 @@ onBeforeUnmount(() => { password.value = ""; code.value = ""; secret.value = "";
         <el-form-item v-if="status.enabled" :label="t('account.mfaMethod')"><el-radio-group v-model="factorMode" @change="code=''"><el-radio value="totp">{{t('account.mfaTotp')}}</el-radio><el-radio value="recovery">{{t('account.mfaRecoveryMethod')}}</el-radio></el-radio-group></el-form-item><el-form-item v-if="secret || status.enabled" prop="code" :label="t('account.mfaCode')" :rules="[{ required: true, message: t('account.mfaCode'), trigger: 'blur' }]">
           <el-input v-model="code" :inputmode="!status.enabled||factorMode==='totp'?'numeric':'text'" autocomplete="one-time-code" :maxlength="32" :disabled="busy" />
         </el-form-item>
-        <el-button type="primary" native-type="submit" :loading="busy">{{ t(status.enabled ? "account.mfaStepUp" : secret ? "account.mfaActivate" : "account.mfaEnroll") }}</el-button>
+        <el-button v-operation="status.enabled ? 'AccountMfa.stepUp' : secret ? 'AccountMfa.activate' : 'AccountMfa.enroll'" type="primary" native-type="submit" :loading="busy">{{ t(status.enabled ? "account.mfaStepUp" : secret ? "account.mfaActivate" : "account.mfaEnroll") }}</el-button>
         <el-button v-if="secret" :disabled="busy" @click="secret='';password='';code=''">{{t('account.cancel')}}</el-button><el-popconfirm v-if="status.enabled" :title="t('account.mfaDisableConfirm')" :confirm-button-text="t('account.mfaDisable')" :cancel-button-text="t('account.cancel')" @confirm="submit('disable')">
-          <template #reference><el-button type="danger" :disabled="busy">{{ t("account.mfaDisable") }}</el-button></template>
+          <template #reference><el-button v-operation="'AccountMfa.disable'" type="danger" :disabled="busy">{{ t("account.mfaDisable") }}</el-button></template>
         </el-popconfirm>
       </el-form>
     </template>

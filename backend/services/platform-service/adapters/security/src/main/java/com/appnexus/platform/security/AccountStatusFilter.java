@@ -32,7 +32,7 @@ public final class AccountStatusFilter extends OncePerRequestFilter {
             if (auth.getAuthorities().stream().anyMatch(value -> value.getAuthority().equals("PARTNER_CLIENT"))) {
                 String path=request.getRequestURI().substring(request.getContextPath().length());
                 if(path.startsWith("/api/printing/agent/")||path.startsWith("/api/printing/external/")
-                    ||path.equals("/api/documents/integration/resolutions")&&request.getMethod().equals("POST"))chain.doFilter(request, response);
+                    ||path.equals("/api/business-objects/integration/resolutions")&&request.getMethod().equals("POST"))chain.doFilter(request, response);
                 else response.setStatus(401);
                 return;
             }

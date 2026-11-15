@@ -18,6 +18,38 @@ public class PrintOutputs {
     var data=mapper.valueToTree(input.data());
     return create(c,input.mode(),input.deviceId(),input.copies(),input,()->flow.submitSnapshot(c,rows.getFirst().get("id").toString(),input.sourceId(),data,input.mode().equals("SILENT")?"PRINTER":"PDF",input.deviceId(),input.copies()));
   }
+  /** 分层预检事实；瞬时离线不等于没有权限，也不保证后续任务执行成功。 */
+  public record TargetCheck(String layer,String status,String reason) {}
+  /**
+   * 本人打印单据的输出预检；不创建输出、任务或租约，PDF/预览不要求物理设备。
+   * @param c 可信租户及当前账号
+   * @param documentId 本人已保存单据 UUID，无权对象按不存在处理
+   * @param mode PREVIEW 或 SILENT；前者仅需要渲染依赖，后者还需目标队列
+   * @param deviceId SILENT 必填的本租户设备 UUID，PREVIEW 可省略
+   * @return 场景/模板、渲染节点及物理设备分层结果，不含业务正文或其他人的设备信息
+   */
+  public List<TargetCheck> preflight(PrintContext c,String documentId,String mode,String deviceId){
+    require(c,"print.job:submit");if(!Set.of("PREVIEW","SILENT").contains(mode))throw new PrintFailure("PRINT_INPUT_INVALID",400);
+    UUID.fromString(documentId);
+    var documents=jdbc.queryForList("SELECT BIN_TO_UUID(scene_id) scene FROM print_document WHERE tenant_id=UUID_TO_BIN(?) AND id=UUID_TO_BIN(?) AND created_by=UUID_TO_BIN(?)",c.tenantId(),documentId,c.actorId());
+    if(documents.isEmpty())throw new PrintFailure("PRINT_DOCUMENT_NOT_FOUND",404);
+    var checks=new ArrayList<TargetCheck>();
+    boolean scene=Boolean.TRUE.equals(jdbc.queryForObject("SELECT EXISTS(SELECT 1 FROM print_scene s JOIN print_template t ON t.tenant_id=s.tenant_id AND t.id=s.template_id JOIN print_template_version v ON v.tenant_id=t.tenant_id AND v.template_id=t.id AND v.version=t.published_version WHERE s.tenant_id=UUID_TO_BIN(?) AND s.id=UUID_TO_BIN(?) AND s.enabled=TRUE AND t.enabled=TRUE AND v.data_contract=s.data_contract)",Boolean.class,c.tenantId(),documents.getFirst().get("scene")));
+    checks.add(new TargetCheck("SCENE_TEMPLATE",scene?"READY":"BLOCKED",scene?"READY":"PRINT_TARGET_INVALID"));
+    if(!scene){checks.add(new TargetCheck("RENDERER","NOT_CHECKED","UPSTREAM_BLOCKED"));checks.add(new TargetCheck("DEVICE","NOT_CHECKED","UPSTREAM_BLOCKED"));return List.copyOf(checks);}
+    boolean renderer=Boolean.TRUE.equals(jdbc.queryForObject("SELECT EXISTS(SELECT 1 FROM print_agent_queue WHERE tenant_id=UUID_TO_BIN(?) AND seen_at>DATE_SUB(CURRENT_TIMESTAMP(6),INTERVAL 120 SECOND))",Boolean.class,c.tenantId()));
+    checks.add(new TargetCheck("RENDERER",renderer?"READY":"BLOCKED",renderer?"READY":"PRINT_AGENT_OFFLINE"));
+    if(mode.equals("PREVIEW"))checks.add(new TargetCheck("DEVICE","NOT_APPLICABLE","PREVIEW_NO_DEVICE_REQUIRED"));
+    else if(deviceId==null||deviceId.isBlank())checks.add(new TargetCheck("DEVICE","BLOCKED","PRINT_DEVICE_REQUIRED"));
+    else{
+      UUID.fromString(deviceId);
+      var devices=jdbc.queryForList("SELECT site_code,system_name FROM print_device WHERE tenant_id=UUID_TO_BIN(?) AND id=UUID_TO_BIN(?) AND enabled=TRUE",c.tenantId(),deviceId);
+      if(devices.isEmpty())checks.add(new TargetCheck("DEVICE","BLOCKED","PRINT_DEVICE_UNAVAILABLE"));
+      else{var device=devices.getFirst();boolean online=Boolean.TRUE.equals(jdbc.queryForObject("SELECT EXISTS(SELECT 1 FROM print_agent_queue WHERE tenant_id=UUID_TO_BIN(?) AND site_code=? AND queue_name=? AND seen_at>DATE_SUB(CURRENT_TIMESTAMP(6),INTERVAL 120 SECOND))",Boolean.class,c.tenantId(),device.get("site_code"),device.get("system_name")));checks.add(new TargetCheck("DEVICE",online?"READY":"BLOCKED",online?"READY":"PRINT_DEVICE_OFFLINE"));}
+    }
+    return List.copyOf(checks);
+  }
+
   private final JdbcTemplate jdbc;private final PrintPlatform platform;private final PrintRuntime runtime;private final PrintFlow flow;private final ObjectMapper mapper;
   public PrintOutputs(JdbcTemplate jdbc,PrintPlatform platform,PrintRuntime runtime,PrintFlow flow,ObjectMapper mapper){this.jdbc=jdbc;this.platform=platform;this.runtime=runtime;this.flow=flow;this.mapper=mapper;}
 

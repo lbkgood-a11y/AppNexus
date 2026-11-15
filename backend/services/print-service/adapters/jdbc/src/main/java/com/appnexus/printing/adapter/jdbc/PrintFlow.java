@@ -77,7 +77,7 @@ public class PrintFlow {
   public Map<String,Object> print(PrintContext c,String id,Output d){
     allow(c,"print.job:submit");
     var docs=jdbc.queryForList("SELECT BIN_TO_UUID(scene_id) scene_id,data_json FROM print_document WHERE tenant_id=UUID_TO_BIN(?) AND id=UUID_TO_BIN(?) AND created_by=UUID_TO_BIN(?)",c.tenantId(),uuid(id),c.actorId());
-    if(docs.isEmpty())throw new PrintFailure("PRINT_DOCUMENT_NOT_FOUND",404);
+    if(docs.isEmpty())throw new PrintFailure("PRINT_BUSINESS_OBJECT_NOT_FOUND",404);
     var doc=docs.getFirst();var scene=scene(c,doc.get("scene_id").toString());
     var template=jdbc.queryForList("SELECT v.data_contract FROM print_template t JOIN print_template_version v ON v.tenant_id=t.tenant_id AND v.template_id=t.id AND v.version=t.published_version WHERE t.tenant_id=UUID_TO_BIN(?) AND t.id=UUID_TO_BIN(?) AND t.enabled=TRUE",c.tenantId(),scene.get("template_id"));
     if(template.isEmpty()||!scene.get("data_contract").equals(template.getFirst().get("data_contract")))throw new PrintFailure("PRINT_SCENE_TEMPLATE_INVALID",409);

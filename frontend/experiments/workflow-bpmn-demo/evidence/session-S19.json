@@ -1,0 +1,82 @@
+{
+  "evidence": [
+    {
+      "name": "good",
+      "status": "PASS"
+    },
+    {
+      "name": "bad",
+      "status": "FAIL",
+      "error": "Error: DISPOSE_FAULT"
+    },
+    {
+      "name": "Adapter cache",
+      "status": "PASS"
+    },
+    {
+      "name": "Modeler",
+      "status": "PASS"
+    },
+    {
+      "name": "DOM",
+      "status": "PASS"
+    }
+  ],
+  "manager": {
+    "managerState": "IDLE",
+    "session": {
+      "identity": {
+        "sessionId": "6cdda6c3-9221-46df-93d4-b42dbd76ad09",
+        "generation": 1
+      },
+      "definitionId": "d",
+      "tenantId": "t",
+      "loadedRevision": 0,
+      "lifecycleState": "DISPOSED",
+      "saveState": "IDLE",
+      "reason": "FAULT",
+      "createdAt": 1794677981427,
+      "hasModeler": false,
+      "committedXml": null
+    },
+    "requests": []
+  },
+  "old": {
+    "identity": {
+      "sessionId": "6cdda6c3-9221-46df-93d4-b42dbd76ad09",
+      "generation": 1
+    },
+    "definitionId": "d",
+    "tenantId": "t",
+    "loadedRevision": 0,
+    "lifecycleState": "DISPOSED",
+    "saveState": "IDLE",
+    "reason": "FAULT",
+    "createdAt": 1794677981427,
+    "hasModeler": false,
+    "committedXml": null
+  },
+  "resources": [
+    {
+      "name": "good",
+      "status": "PASS"
+    },
+    {
+      "name": "bad",
+      "status": "FAIL",
+      "error": "Error: DISPOSE_FAULT"
+    },
+    {
+      "name": "Adapter cache",
+      "status": "PASS"
+    },
+    {
+      "name": "Modeler",
+      "status": "PASS"
+    },
+    {
+      "name": "DOM",
+      "status": "PASS"
+    }
+  ]
+}

@@ -9,14 +9,15 @@ import { buildNavigationMenus, safeNavigationUrl } from "./navigationModel";
 
 /** 显式构建内注册表；不接受路径模糊匹配、远程组件或服务端脚本。 */
 const pages = {
-  "platform/documents": {path:"/platform/documents",name:"PlatformDocumentManagement",component:()=>import("@/views/platform/documents.vue")},
-  "documents/index": {path:"/documents/workbench",name:"DocumentWorkbench",component:()=>import("@/views/documents/index.vue")},
+  "platform/business-objects": {path:"/platform/business-objects",name:"PlatformBusinessObjectManagement",component:()=>import("@/views/platform/business-objects.vue")},
+  "business-objects/index": {path:"/business-objects/workbench",name:"DocumentWorkbench",component:()=>import("@/views/business-objects/index.vue")},
   "workflow/leave": {path:"/workflow/leave",name:"LeaveRequests",component:()=>import("@/views/workflow/leave.vue")},
   "print/index": {path:"/print/management",name:"PrintManagement",component:()=>import("@/views/print/index.vue")},
   "workflow/designer": {path:"/workflow/designer",name:"WorkflowDesigner",component:()=>import("@/views/workflow/designer.vue")},
   "workflow/index": {path:"/workflow/center",name:"WorkflowCenter",component:()=>import("@/views/workflow/index.vue")},
   "platform/tenants": {path:"/platform/tenants",name:"PlatformTenantManagement",component:()=>import("@/views/platform/tenants.vue")},
   "platform/users": {path:"/platform/users",name:"PlatformUserManagement",component:()=>import("@/views/platform/users.vue")},
+  "platform/features": {path:"/platform/features",name:"PlatformFeatureCatalog",component:()=>import("@/views/platform/features.vue")},
   "platform/menus": {path:"/platform/menus",name:"PlatformMenuManagement",component:()=>import("@/views/platform/menus.vue")},
   "platform/roles": {path:"/platform/roles",name:"PlatformRoleManagement",component:()=>import("@/views/platform/roles.vue")},
   "platform/authorization": {path:"/platform/authorization",name:"PlatformAuthorizationCenter",component:()=>import("@/views/platform/authorization.vue")},

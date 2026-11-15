@@ -11,9 +11,9 @@ import org.springframework.mock.web.MockHttpServletRequest;
 /** 页面操作进入业务提交入口时必须匹配登记标识，错误操作不得产生业务副作用。 */
 class LeavePageOperationTest {
   @Test void commonActionAccessKeepsDenialReasonsSeparate(){
-    assertThat(com.appnexus.contracts.document.DocumentActionAccess.evaluate("confirm","Order.confirm",false,true,true).reasonCode()).isEqualTo("OPERATION_PERMISSION_MISSING");
-    assertThat(com.appnexus.contracts.document.DocumentActionAccess.evaluate("confirm","Order.confirm",true,false,true).reasonCode()).isEqualTo("PAGE_RELATION_DISABLED");
-    assertThat(com.appnexus.contracts.document.DocumentActionAccess.evaluate("confirm","Order.confirm",true,true,false).reasonCode()).isEqualTo("BUSINESS_STATE_DENIED");
+    assertThat(com.appnexus.contracts.businessobject.BusinessObjectOperationAccess.evaluate("confirm","Order.confirm",false,true,true).reasonCode()).isEqualTo("OPERATION_PERMISSION_MISSING");
+    assertThat(com.appnexus.contracts.businessobject.BusinessObjectOperationAccess.evaluate("confirm","Order.confirm",true,false,true).reasonCode()).isEqualTo("PAGE_RELATION_DISABLED");
+    assertThat(com.appnexus.contracts.businessobject.BusinessObjectOperationAccess.evaluate("confirm","Order.confirm",true,true,false).reasonCode()).isEqualTo("BUSINESS_STATE_DENIED");
   }
   private MockHttpServletRequest request() {
     var request=new MockHttpServletRequest("POST","/api/leave-poc/example/submit");
@@ -32,7 +32,7 @@ class LeavePageOperationTest {
     var service=mock(LeavePocService.class);var controller=new LeavePocController(service);
     var response=(ResponseEntity<?>)controller.submit(request(),"example",new LeavePocController.SubmitOperation("Order.submit"));
     assertThat(response.getStatusCode().value()).isEqualTo(400);
-    assertThat(((Map<?,?>)response.getBody()).get("code")).isEqualTo("DOCUMENT_PAGE_OPERATION_INVALID");
+    assertThat(((Map<?,?>)response.getBody()).get("code")).isEqualTo("BUSINESS_OBJECT_PAGE_OPERATION_INVALID");
     verifyNoInteractions(service);
   }
 }

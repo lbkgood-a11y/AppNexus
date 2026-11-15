@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { InfoHint } from "@appnexus/ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { ElMessage } from "element-plus";
@@ -113,7 +114,11 @@ function setOutcome(result: string, capability?: string) {
   <div class="business-configuration">
     <div class="business-configuration-form">
       <el-form label-position="top" :disabled="disabled">
-        <h2>{{ t("businessWorkflow.documentTitle") }}</h2>
+        <h2>{{ t("businessWorkflow.documentTitle") }}<InfoHint v-if="profile" :content="
+              locale.startsWith('en')
+                ? profile.descriptionEn
+                : profile.descriptionZh
+            " /></h2>
         <el-form-item :label="t('businessWorkflow.document')" required>
           <el-select
             :model-value="document?.capability"
@@ -139,15 +144,7 @@ function setOutcome(result: string, capability?: string) {
           :closable="false"
         />
         <template v-if="profile">
-          <el-alert
-            :title="
-              locale.startsWith('en')
-                ? profile.descriptionEn
-                : profile.descriptionZh
-            "
-            type="info"
-            :closable="false"
-          />
+          
           <el-form-item :label="t('workflow.name')" required
             ><el-input v-model="model.name" maxlength="100"
           /></el-form-item>
@@ -372,16 +369,12 @@ function setOutcome(result: string, capability?: string) {
       </el-form>
     </div>
     <aside v-if="profile" class="business-configuration-preview">
-      <h2>{{ t("businessWorkflow.overview") }}</h2>
+      <h2>{{ t("businessWorkflow.overview") }}<InfoHint :content="t('businessWorkflow.versionHint')" /></h2>
       <p>{{ t("businessWorkflow.overviewHint") }}</p>
       <div class="business-graph-scroll">
         <WorkflowCanvas :model="model" selected="" @select="() => {}" />
       </div>
-      <el-alert
-        :title="t('businessWorkflow.versionHint')"
-        type="info"
-        :closable="false"
-      />
+      
     </aside>
   </div>
 </template>

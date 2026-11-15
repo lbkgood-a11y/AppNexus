@@ -1,0 +1,774 @@
+[
+  {
+    "key": "[\"frontend/apps/admin/src/components/ReDialog/index.vue\",\"el-button\",\"\\n              () => {\\n                fullscreen = !fullscreen;\\n                eventsCallBack('fullscreenCallBack', { ...options, fullscreen }, index, true);\\n              }\\n            \",null,null,\"{ fullscreen = !fullscreen; eventsCallBack('fullscreenCallBack', { ...options, fullscreen }, index, true); } \\\">\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/apps/admin/src/components/ReDialog/index.vue\",\"el-button\",\"close\",null,null,\"\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/apps/admin/src/components/ReDialog/index.vue\",\"el-button\",null,null,\"\\n              btn.btnClick({\\n                dialog: { options, index },\\n                button: { btn, index: key }\\n              })\\n            \",\"{{ btn?.label }}\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/apps/admin/src/components/ReDialog/index.vue\",\"el-button\",\"\\n              btn.btnClick({\\n                dialog: { options, index },\\n                button: { btn, index: key }\\n              })\\n            \",null,null,\"{{ btn?.label }}\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/apps/admin/src/components/ReIcon/src/Select.vue\",\"el-button\",\"onClear\",null,null,\"清空\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/apps/admin/src/layout/components/lay-navbar/index.vue\",\"el-dropdown-item\",\"accountRouter.push('/account/profile')\",null,null,\"{{ t(\\\"account.title\\\") }}\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/apps/admin/src/layout/components/lay-navbar/index.vue\",\"el-dropdown-item\",\"logout\",null,null,\"{{ t(\\\"buttons.pureLoginOut\\\") }}\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/apps/admin/src/layout/components/lay-notice/index.vue\",\"el-button\",\"onWatchMore\",null,null,\"{{ t(\\\"buttons.pureWatchMore\\\") }}\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/apps/admin/src/layout/components/lay-notice/index.vue\",\"el-button\",\"onMarkAsRead\",null,null,\"{{ t(\\\"buttons.pureMarkAsRead\\\") }}\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/apps/admin/src/layout/components/lay-panel/index.vue\",\"el-button\",\"onReset\",null,null,\"{{ t(\\\"panel.pureClearCache\\\") }}\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/apps/admin/src/layout/components/lay-sidebar/NavHorizontal.vue\",\"el-dropdown-item\",\"accountRouter.push('/account/profile')\",null,null,\"{{ t(\\\"account.title\\\") }}\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/apps/admin/src/layout/components/lay-sidebar/NavHorizontal.vue\",\"el-dropdown-item\",\"logout\",null,null,\"{{ t(\\\"buttons.pureLoginOut\\\") }}\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/apps/admin/src/layout/components/lay-sidebar/NavMix.vue\",\"el-dropdown-item\",\"accountRouter.push('/account/profile')\",null,null,\"{{ t(\\\"account.title\\\") }}\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/apps/admin/src/layout/components/lay-sidebar/NavMix.vue\",\"el-dropdown-item\",\"logout\",null,null,\"{{ t(\\\"buttons.pureLoginOut\\\") }}\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/apps/admin/src/views/account/components/AccountSessions.vue\",\"el-button\",\"load\",null,null,\"{{ t(\\\"account.refresh\\\") }}\"]",
+    "reason": "查询、刷新或展示选择；读取接口继续执行原授权，不独立授予刷新按钮权限"
+  },
+  {
+    "key": "[\"frontend/apps/admin/src/views/account/components/AuditQuery.vue\",\"el-button\",\"load\",null,null,\"{{ t(\\\"account.refresh\\\") }}\"]",
+    "reason": "查询、刷新或展示选择；读取接口继续执行原授权，不独立授予刷新按钮权限"
+  },
+  {
+    "key": "[\"frontend/apps/admin/src/views/account/components/MultiFactorSettings.vue\",\"el-button\",\"load\",null,null,\"{{ t(\\\"account.retry\\\") }}\"]",
+    "reason": "查询、刷新或展示选择；读取接口继续执行原授权，不独立授予刷新按钮权限"
+  },
+  {
+    "key": "[\"frontend/apps/admin/src/views/account/components/MultiFactorSettings.vue\",\"el-button\",\"recovery = []\",null,null,\"{{ t(\\\"account.mfaRecoverySaved\\\") }}\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/apps/admin/src/views/account/components/MultiFactorSettings.vue\",\"el-button\",\"secret='';password='';code=''\",null,null,\"{{t('account.cancel')}}\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/apps/admin/src/views/account/components/SecurityLogs.vue\",\"el-button\",\"load\",null,null,\"{{ t(\\\"account.refresh\\\") }}\"]",
+    "reason": "查询、刷新或展示选择；读取接口继续执行原授权，不独立授予刷新按钮权限"
+  },
+  {
+    "key": "[\"frontend/apps/admin/src/views/account/components/TenantParameters.vue\",\"el-button\",\"load\",null,null,\"{{ t(\\\"account.retry\\\") }}\"]",
+    "reason": "查询、刷新或展示选择；读取接口继续执行原授权，不独立授予刷新按钮权限"
+  },
+  {
+    "key": "[\"frontend/apps/admin/src/views/account/index.vue\",\"el-button\",\"router.push('/welcome')\",null,null,\"‹ {{ t(\\\"account.back\\\") }}\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/apps/admin/src/views/account/index.vue\",\"el-button\",\"load\",null,null,\"{{ t(\\\"account.retry\\\") }}\"]",
+    "reason": "查询、刷新或展示选择；读取接口继续执行原授权，不独立授予刷新按钮权限"
+  },
+  {
+    "key": "[\"frontend/apps/admin/src/views/account/index.vue\",\"el-button\",\"editingPassword = !editingPassword\",null,null,\"{{ t(editingPassword ? \\\"account.cancel\\\" : \\\"account.modify\\\") }}\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/apps/admin/src/views/account/index.vue\",\"el-button\",\"editingPassword = false\",null,null,\"{{ t(\\\"account.cancel\\\") }}\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/apps/admin/src/views/error/403.vue\",\"el-button\",\"router.push('/')\",null,null,\"返回首页\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/apps/admin/src/views/error/404.vue\",\"el-button\",\"router.push('/')\",null,null,\"返回首页\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/apps/admin/src/views/error/500.vue\",\"el-button\",\"router.push('/')\",null,null,\"返回首页\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/apps/admin/src/views/login/PasswordRecoveryForm.vue\",\"el-button\",null,\"submit\",null,\"{{ t(stage === 'recover' ? 'account.recoveryStart' : 'account.recoveryComplete') }}\"]",
+    "reason": "登录/账号恢复认证流程，由认证系统处理，不是角色功能授权"
+  },
+  {
+    "key": "[\"frontend/apps/admin/src/views/login/PasswordRecoveryForm.vue\",\"el-button\",\"stage = 'complete'; error = ''; recoveryCode = ''\",null,null,\"{{ t(\\\"account.recoveryHaveTicket\\\") }}\"]",
+    "reason": "登录/账号恢复认证流程，由认证系统处理，不是角色功能授权"
+  },
+  {
+    "key": "[\"frontend/apps/admin/src/views/login/index.vue\",\"el-button\",null,\"submitLogin\",null,\"{{ t(\\\"platform.login\\\") }}\"]",
+    "reason": "登录/账号恢复认证流程，由认证系统处理，不是角色功能授权"
+  },
+  {
+    "key": "[\"frontend/apps/admin/src/views/login/index.vue\",\"el-button\",\"beginLogin\",null,null,\"{{ t(\\\"platform.continue\\\") }}\"]",
+    "reason": "登录/账号恢复认证流程，由认证系统处理，不是角色功能授权"
+  },
+  {
+    "key": "[\"frontend/apps/admin/src/views/login/index.vue\",\"el-button\",\"recovering = !recovering; password = ''; mfaCode = ''\",null,null,\"{{ t(recovering ? \\\"account.recoveryBack\\\" : \\\"account.recoveryTitle\\\") }}\"]",
+    "reason": "登录/账号恢复认证流程，由认证系统处理，不是角色功能授权"
+  },
+  {
+    "key": "[\"frontend/apps/admin/src/views/template-lab/index.vue\",\"el-button\",\"Object.assign(form,{name:'',code:'',description:''});dirty=false\",null,null,\"{{t('organization.cancel')}}\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/apps/admin/src/views/template-lab/index.vue\",\"el-button\",\"dirty=false\",null,null,\"{{t('organization.save')}}\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/apps/admin/src/views/tenant/index.vue\",\"el-button\",null,\"search()\",null,\"{{t('administration.search')}}\"]",
+    "reason": "查询、刷新或展示选择；读取接口继续执行原授权，不独立授予刷新按钮权限"
+  },
+  {
+    "key": "[\"frontend/apps/admin/src/views/tenant/index.vue\",\"el-button\",\"search(true)\",null,null,\"{{t('management.reset')}}\"]",
+    "reason": "查询、刷新或展示选择；读取接口继续执行原授权，不独立授予刷新按钮权限"
+  },
+  {
+    "key": "[\"frontend/apps/admin/src/views/tenant/index.vue\",\"el-button\",\"router.push('/platform/tenants')\",null,null,\"{{t('administration.tenantTitle')}}\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/apps/admin/src/views/tenant/index.vue\",\"el-button\",\"enter(row as TenantMembership)\",null,null,\"{{ t(\\\"tenant.enter\\\") }}\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/apps/admin/src/views/workflow/designer.vue\",\"el-button\",\"router.push('/business-objects/workbench')\",null,null,\"{{ $t('businessObject.returnWorkbench') }}\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/infra/ui/src/ManagedDialog.vue\",\"el-button\",\"toggleMaximize\",null,null,\"\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/infra/ui/src/ManagedDialog.vue\",\"el-button\",\"close\",null,null,\"\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/infra/ui/src/ManagementTable.vue\",\"el-button\",\"emit('refresh')\",null,null,\"\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/infra/ui/src/ManagementTable.vue\",\"el-button\",\"resetColumns\",null,null,\"{{ t('management.reset') }}\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/infra/ui/src/ManagementTable.vue\",\"el-button\",\"move(column.key, -1)\",null,null,\"\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/infra/ui/src/ManagementTable.vue\",\"el-button\",\"move(column.key, 1)\",null,null,\"\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/infra/ui/src/ManagementTable.vue\",\"el-button\",\"toggleFullscreen\",null,null,\"\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/infra/ui/src/templates/TreeListTemplate.vue\",\"el-button\",\"emit('update:collapsed', !collapsed)\",null,null,\"\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/infra/ui/src/templates/TreeListTemplate.vue\",\"el-button\",\"emit('update:collapsed', false)\",null,null,\"{{ treeLabel }}\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/modules/authorization/src/AuthorizationCenter.vue\",\"el-button\",\"load\",null,null,\"{{ t('account.retry') }}\"]",
+    "reason": "查询、刷新或展示选择；读取接口继续执行原授权，不独立授予刷新按钮权限"
+  },
+  {
+    "key": "[\"frontend/modules/authorization/src/AuthorizationCenter.vue\",\"el-button\",\"removeInvalidPermissions\",null,null,\"{{ t('invalidPermissionCleanup.remove') }}\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/modules/authorization/src/AuthorizationCenter.vue\",\"el-button\",\"applyFields\",null,null,\"{{t('authorizationCenter.applyFields',{count:fieldSelection.length})}}\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/modules/authorization/src/AuthorizationCenter.vue\",\"el-button\",\"activeTab='data';query='';onlySelected=true\",null,null,\"{{ t('authorizationCenter.pendingScopes', { count: incompleteCount }) }}\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/modules/authorization/src/MemberGrantEditor.vue\",\"el-button\",\"async()=>{if(await discard())await loadGrants();}\",null,null,\"{if(await discard())await loadGrants();}\\\">{{t('authorizationCenter.reload')}}\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/modules/authorization/src/PolicyTemplateActions.vue\",\"el-button\",\"load\",null,null,\"{{ t(\\\"account.retry\\\") }}\"]",
+    "reason": "查询、刷新或展示选择；读取接口继续执行原授权，不独立授予刷新按钮权限"
+  },
+  {
+    "key": "[\"frontend/modules/authorization/src/RoleManagement.vue\",\"el-button\",\"load\",null,null,\"{{t('account.retry')}}\"]",
+    "reason": "查询、刷新或展示选择；读取接口继续执行原授权，不独立授予刷新按钮权限"
+  },
+  {
+    "key": "[\"frontend/modules/authorization/src/RoleManagement.vue\",\"el-button\",null,\"search()\",null,\"{{t('administration.search')}}\"]",
+    "reason": "查询、刷新或展示选择；读取接口继续执行原授权，不独立授予刷新按钮权限"
+  },
+  {
+    "key": "[\"frontend/modules/authorization/src/RoleManagement.vue\",\"el-button\",\"search(true)\",null,null,\"{{t('management.reset')}}\"]",
+    "reason": "查询、刷新或展示选择；读取接口继续执行原授权，不独立授予刷新按钮权限"
+  },
+  {
+    "key": "[\"frontend/modules/authorization/src/RoleManagement.vue\",\"el-button\",\"dialog=''\",null,null,\"{{t('organization.cancel')}}\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/modules/authorization/src/RoleManagement.vue\",\"el-button\",\"dialog=''\",null,null,\"{{t('organization.cancel')}}\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/modules/authorization/src/RoleManagement.vue\",\"el-button\",\"dialog=''\",null,null,\"{{t('organization.cancel')}}\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/modules/authorization/src/SubjectAuthorization.vue\",\"el-button\",null,\"search()\",null,\"{{ t('authorizationCenter.search') }}\"]",
+    "reason": "查询、刷新或展示选择；读取接口继续执行原授权，不独立授予刷新按钮权限"
+  },
+  {
+    "key": "[\"frontend/modules/authorization/src/SubjectAuthorization.vue\",\"el-button\",\"search(true)\",null,null,\"{{ t('authorizationCenter.reset') }}\"]",
+    "reason": "查询、刷新或展示选择；读取接口继续执行原授权，不独立授予刷新按钮权限"
+  },
+  {
+    "key": "[\"frontend/modules/authorization/src/SubjectAuthorization.vue\",\"el-button\",\"loadList\",null,null,\"{{ t('account.retry') }}\"]",
+    "reason": "查询、刷新或展示选择；读取接口继续执行原授权，不独立授予刷新按钮权限"
+  },
+  {
+    "key": "[\"frontend/modules/authorization/src/SubjectAuthorization.vue\",\"el-button\",\"open(row)\",null,null,\"{{ t('authorizationCenter.configure') }}\"]",
+    "reason": "查询、刷新或展示选择；读取接口继续执行原授权，不独立授予刷新按钮权限"
+  },
+  {
+    "key": "[\"frontend/modules/authorization/src/SubjectAuthorization.vue\",\"el-button\",\"loadDetail\",null,null,\"{{ t('authorizationCenter.reload') }}\"]",
+    "reason": "查询、刷新或展示选择；读取接口继续执行原授权，不独立授予刷新按钮权限"
+  },
+  {
+    "key": "[\"frontend/modules/authorization/src/SubjectAuthorization.vue\",\"el-button\",\"async () => { if (await confirmDiscard()) await loadDetail(); }\",null,null,\"{ if (await confirmDiscard()) await loadDetail(); }\\\">{{ t('authorizationCenter.reload') }}\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/modules/configuration/src/DictionaryManagement.vue\",\"el-button\",\"loadDictionaries\",null,null,\"{{t('account.retry')}}\"]",
+    "reason": "查询、刷新或展示选择；读取接口继续执行原授权，不独立授予刷新按钮权限"
+  },
+  {
+    "key": "[\"frontend/modules/configuration/src/DictionaryManagement.vue\",\"el-button\",null,\"search()\",null,\"{{t('administration.search')}}\"]",
+    "reason": "查询、刷新或展示选择；读取接口继续执行原授权，不独立授予刷新按钮权限"
+  },
+  {
+    "key": "[\"frontend/modules/configuration/src/DictionaryManagement.vue\",\"el-button\",\"search(true)\",null,null,\"{{t('management.reset')}}\"]",
+    "reason": "查询、刷新或展示选择；读取接口继续执行原授权，不独立授予刷新按钮权限"
+  },
+  {
+    "key": "[\"frontend/modules/configuration/src/DictionaryManagement.vue\",\"el-button\",\"dictionaryDialog=''\",null,null,\"{{t('organization.cancel')}}\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/modules/configuration/src/DictionaryManagement.vue\",\"el-button\",\"itemDialog=''\",null,null,\"{{t('organization.cancel')}}\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/modules/configuration/src/FeatureCatalog.vue\",\"el-button\",null,\"search()\",null,\"{{ t('featureCatalog.search') }}\"]",
+    "reason": "查询、刷新或展示选择；读取接口继续执行原授权，不独立授予刷新按钮权限"
+  },
+  {
+    "key": "[\"frontend/modules/configuration/src/FeatureCatalog.vue\",\"el-button\",\"search(true)\",null,null,\"{{ t('featureCatalog.reset') }}\"]",
+    "reason": "查询、刷新或展示选择；读取接口继续执行原授权，不独立授予刷新按钮权限"
+  },
+  {
+    "key": "[\"frontend/modules/configuration/src/FeatureCatalog.vue\",\"el-button\",\"expandAll(true)\",null,null,\"{{ t('featureCatalog.expand') }}\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/modules/configuration/src/FeatureCatalog.vue\",\"el-button\",\"expandAll(false)\",null,null,\"{{ t('featureCatalog.collapse') }}\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/modules/configuration/src/MenuManagement.vue\",\"el-button\",\"selected=''\",null,null,\"{{t('menuManagement.all')}}\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/modules/configuration/src/MenuManagement.vue\",\"el-button\",\"load\",null,null,\"{{t('account.retry')}}\"]",
+    "reason": "查询、刷新或展示选择；读取接口继续执行原授权，不独立授予刷新按钮权限"
+  },
+  {
+    "key": "[\"frontend/modules/configuration/src/MenuManagement.vue\",\"el-button\",null,\"search()\",null,\"{{t('administration.search')}}\"]",
+    "reason": "查询、刷新或展示选择；读取接口继续执行原授权，不独立授予刷新按钮权限"
+  },
+  {
+    "key": "[\"frontend/modules/configuration/src/MenuManagement.vue\",\"el-button\",\"search(true)\",null,null,\"{{t('management.reset')}}\"]",
+    "reason": "查询、刷新或展示选择；读取接口继续执行原授权，不独立授予刷新按钮权限"
+  },
+  {
+    "key": "[\"frontend/modules/configuration/src/MenuManagement.vue\",\"el-button\",\"dialog=''\",null,null,\"{{t('organization.cancel')}}\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/modules/business-object/src/BusinessObjectManagement.vue\",\"el-button\",\"load\",null,null,\"{{t('businessObject.refresh')}}\"]",
+    "reason": "查询、刷新或展示选择；读取接口继续执行原授权，不独立授予刷新按钮权限"
+  },
+  {
+    "key": "[\"frontend/modules/business-object/src/BusinessObjectManagement.vue\",\"el-button\",null,\"applied=query;page=1\",null,\"{{t('businessObject.search')}}\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/modules/business-object/src/BusinessObjectManagement.vue\",\"el-button\",\"query='';applied='';page=1\",null,null,\"{{t('businessObject.reset')}}\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/modules/business-object/src/BusinessObjectManagement.vue\",\"el-button\",\"add\",null,null,\"{{t('businessObject.addBinding')}}\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/modules/business-object/src/BusinessObjectManagement.vue\",\"el-button\",\"open(selected)\",null,null,\"{{t('businessObject.reload')}}\"]",
+    "reason": "查询、刷新或展示选择；读取接口继续执行原授权，不独立授予刷新按钮权限"
+  },
+  {
+    "key": "[\"frontend/modules/business-object/src/BusinessObjectManagement.vue\",\"el-button\",\"b.conditions.splice(ci,1)\",null,null,\"{{t('businessObject.remove')}}\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/modules/business-object/src/BusinessObjectManagement.vue\",\"el-button\",\"b.conditions.push({field:'',operator:'EQ',value:''})\",null,null,\"{{t('businessObject.addCondition')}}\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/modules/business-object/src/BusinessObjectManagement.vue\",\"el-button\",\"bindings.splice(index,1)\",null,null,\"{{t('businessObject.removeBinding')}}\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/modules/business-object/src/BusinessObjectManagement.vue\",\"el-button\",\"dialog=false\",null,null,\"{{t('businessObject.close')}}\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/modules/organization/src/Management.vue\",\"el-button\",\"selectedTypeId = units.find(item => item.id === positionOrganizationId(row.positionId))?.typeId || ''; selectedUnitId = positionOrganizationId(row.positionId); workspaceView = 'structure'\",null,null,\"item.id === positionOrganizationId(row.positionId))?.typeId || ''; selectedUnitId = positionOrganizationId(row.positionId); workspaceView = 'structure'\\\">{{ labelUnit(positionOrganizationId(row.positionId)) }}\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/modules/organization/src/Management.vue\",\"el-button\",\"selectType(row.id); workspaceView = 'structure'\",null,null,\"{{ unitCount(row.id) }}\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/modules/organization/src/Management.vue\",\"el-button\",\"dialog = ''\",null,null,\"{{ t(\\\"organization.cancel\\\") }}\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/modules/print/src/PrintFlowWorkspace.vue\",\"el-button\",\"load\",null,null,\"{{t('account.retry')}}\"]",
+    "reason": "查询、刷新或展示选择；读取接口继续执行原授权，不独立授予刷新按钮权限"
+  },
+  {
+    "key": "[\"frontend/modules/print/src/PrintFlowWorkspace.vue\",\"el-button\",\"copySceneIdentifier(row.code)\",null,null,\"{{t('printing.flow.copy')}}\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/modules/print/src/PrintFlowWorkspace.vue\",\"el-button\",\"copySceneIdentifier(row.id)\",null,null,\"{{t('printing.flow.copy')}}\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/modules/print/src/PrintFlowWorkspace.vue\",\"el-button\",\"addContractField\",null,null,\"=50\\\" @click=\\\"addContractField\\\">{{t('printing.addField')}}\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/modules/print/src/PrintFlowWorkspace.vue\",\"el-button\",\"addColumn(row)\",null,null,\"=50\\\" @click=\\\"addColumn(row)\\\">{{t('printing.flow.addColumn')}}\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/modules/print/src/PrintFlowWorkspace.vue\",\"el-button\",\"row.columns.splice($index,1)\",null,null,\"{{t('printing.flow.removeLine')}}\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/modules/print/src/PrintFlowWorkspace.vue\",\"el-button\",\"contractForm.fields.splice($index,1)\",null,null,\"{{t('printing.flow.removeLine')}}\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/modules/print/src/PrintFlowWorkspace.vue\",\"el-button\",\"contractOpen=false\",null,null,\"{{t('organization.cancel')}}\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/modules/print/src/PrintFlowWorkspace.vue\",\"el-button\",\"copySceneIdentifier(sceneForm.id)\",null,null,\"{{t('printing.flow.copy')}}\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/modules/print/src/PrintFlowWorkspace.vue\",\"el-button\",\"sceneOpen=false\",null,null,\"{{t('organization.cancel')}}\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/modules/print/src/PrintFlowWorkspace.vue\",\"el-button\",\"addLine(field.key)\",null,null,\"=500\\\" @click=\\\"addLine(field.key)\\\">{{t('printing.flow.addLine')}}\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/modules/print/src/PrintFlowWorkspace.vue\",\"el-button\",\"data[field.key].splice($index,1)\",null,null,\"{{t('printing.flow.removeLine')}}\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/modules/print/src/PrintFlowWorkspace.vue\",\"el-button\",\"documentOpen=false\",null,null,\"{{t('organization.cancel')}}\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/modules/print/src/PrintFlowWorkspace.vue\",\"el-button\",\"outputOpen=false\",null,null,\"{{t('organization.cancel')}}\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/modules/print/src/PrintManagement.vue\",\"el-button\",\"load\",null,null,\"{{t('account.retry')}}\"]",
+    "reason": "查询、刷新或展示选择；读取接口继续执行原授权，不独立授予刷新按钮权限"
+  },
+  {
+    "key": "[\"frontend/modules/print/src/PrintManagement.vue\",\"el-button\",\"query=''\",null,null,\"{{t('management.reset')}}\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/modules/print/src/PrintManagement.vue\",\"el-button\",\"refreshCurrent\",null,null,\"{{t('printing.refresh')}}\"]",
+    "reason": "查询、刷新或展示选择；读取接口继续执行原授权，不独立授予刷新按钮权限"
+  },
+  {
+    "key": "[\"frontend/modules/print/src/PrintManagement.vue\",\"el-button\",\"loadContracts\",null,null,\"{{t('account.retry')}}\"]",
+    "reason": "查询、刷新或展示选择；读取接口继续执行原授权，不独立授予刷新按钮权限"
+  },
+  {
+    "key": "[\"frontend/modules/print/src/PrintManagement.vue\",\"el-button\",\"templateOpen=false\",null,null,\"{{t('organization.cancel')}}\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/modules/print/src/PrintManagement.vue\",\"el-button\",\"closeDesigner\",null,null,\"{{t('organization.cancel')}}\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/modules/print/src/PrintManagement.vue\",\"el-button\",\"deviceOpen=false\",null,null,\"{{t('organization.cancel')}}\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/modules/print/src/PrintManagement.vue\",\"el-button\",\"reprintOpen=false\",null,null,\"{{t('organization.cancel')}}\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/modules/print/src/PrintPreview.vue\",\"el-button\",\"refresh\",null,null,\"{{t('account.retry')}}\"]",
+    "reason": "查询、刷新或展示选择；读取接口继续执行原授权，不独立授予刷新按钮权限"
+  },
+  {
+    "key": "[\"frontend/modules/print/src/PrintPreview.vue\",\"el-button\",\"emit('close')\",null,null,\"{{t('organization.cancel')}}\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/modules/print/src/TemplateDesigner.vue\",\"el-button\",\"initialize\",null,null,\"{{t('account.retry')}}\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/modules/print/src/TemplateDesigner.vue\",\"el-button\",\"toggleTool('field')\",null,null,\"{{t('printing.businessField')}}\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/modules/print/src/TemplateDesigner.vue\",\"el-button\",\"toggleTool('text')\",null,null,\"{{t('printing.addText')}}\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/modules/print/src/TemplateDesigner.vue\",\"el-button\",\"toggleTool('paper')\",null,null,\"{{t('printing.pageSettings')}}\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/modules/print/src/TemplateDesigner.vue\",\"el-button\",\"insertField\",null,null,\"{{t('printing.addField')}}\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/modules/print/src/TemplateDesigner.vue\",\"el-button\",\"insertText\",null,null,\"{{t('printing.addText')}}\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/modules/print/src/TemplateDesigner.vue\",\"el-button\",\"applyPaper\",null,null,\"{{t('printing.applyPaper')}}\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/modules/print/src/TemplateDesigner.vue\",\"el-button\",\"useStarter\",null,null,\"{{t('printing.useStarter')}}\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/modules/print/src/TemplateDesigner.vue\",\"el-button\",\"toggleTool('field')\",null,null,\"{{t('printing.quickTools')}}\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/modules/print/src/TemplateDesigner.vue\",\"el-button\",\"action(()=>session!.undo())\",null,null,\"session!.undo())\\\">{{t('printing.undo')}}\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/modules/print/src/TemplateDesigner.vue\",\"el-button\",\"action(()=>session!.redo())\",null,null,\"session!.redo())\\\">{{t('printing.redo')}}\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/modules/print/src/TemplateDesigner.vue\",\"el-button\",\"action(async()=>{await capture()})\",null,null,\"{await capture()})\\\">{{t('printing.syncDesign')}}\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/modules/print/src/TemplateDesigner.vue\",\"el-button\",\"rotatePaper\",null,null,\"{{t('printing.rotatePaper')}}\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/modules/print/src/TemplateDesigner.vue\",\"el-button\",\"arrangePaper\",null,null,\"{{t('printing.autoArrange')}}\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/modules/print/src/TemplateDesigner.vue\",\"el-button\",\"preview\",null,null,\"{{t('printing.preview')}}\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/modules/print/src/TemplateDesigner.vue\",\"el-button\",\"design\",null,null,\"{{t('printing.backToDesign')}}\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/modules/tenant/src/Administration.vue\",\"el-button\",\"load\",null,null,\"{{t('account.retry')}}\"]",
+    "reason": "查询、刷新或展示选择；读取接口继续执行原授权，不独立授予刷新按钮权限"
+  },
+  {
+    "key": "[\"frontend/modules/tenant/src/Administration.vue\",\"el-button\",\"changeTab('tenants')\",null,null,\"{{t('management.backTenants')}}\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/modules/tenant/src/Administration.vue\",\"el-button\",\"load\",null,null,\"{{t('account.retry')}}\"]",
+    "reason": "查询、刷新或展示选择；读取接口继续执行原授权，不独立授予刷新按钮权限"
+  },
+  {
+    "key": "[\"frontend/modules/tenant/src/Administration.vue\",\"el-button\",\"filterExpanded=!filterExpanded\",null,null,\"\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/modules/tenant/src/Administration.vue\",\"el-button\",null,\"search()\",null,\"{{t('administration.search')}}\"]",
+    "reason": "查询、刷新或展示选择；读取接口继续执行原授权，不独立授予刷新按钮权限"
+  },
+  {
+    "key": "[\"frontend/modules/tenant/src/Administration.vue\",\"el-button\",\"search(true)\",null,null,\"{{t('management.reset')}}\"]",
+    "reason": "查询、刷新或展示选择；读取接口继续执行原授权，不独立授予刷新按钮权限"
+  },
+  {
+    "key": "[\"frontend/modules/tenant/src/Administration.vue\",\"el-button\",\"emit('enter',(row as DirectoryTenant).id)\",null,null,\"{{t('administration.enterOrganization')}}\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/modules/tenant/src/Administration.vue\",\"el-button\",\"dialog=''\",null,null,\"{{t('organization.cancel')}}\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/modules/tenant/src/Administration.vue\",\"el-button\",\"recoveryTicket=''\",null,null,\"{{t('account.mfaRecoverySaved')}}\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/modules/tenant/src/IntegrationClients.vue\",\"el-button\",\"load\",null,null,\"{{ t(\\\"account.retry\\\") }}\"]",
+    "reason": "查询、刷新或展示选择；读取接口继续执行原授权，不独立授予刷新按钮权限"
+  },
+  {
+    "key": "[\"frontend/modules/tenant/src/IntegrationClients.vue\",\"el-button\",\"secret = undefined\",null,null,\"{{ t(\\\"account.mfaRecoverySaved\\\") }}\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/modules/workflow/src/BusinessWorkflowConfiguration.vue\",\"el-button\",\"review.people.splice(index, 1)\",null,null,\"{{ t(\\\"workflow.remove\\\") }}\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/modules/workflow/src/BusinessWorkflowConfiguration.vue\",\"el-button\",\"review.people.push({ kind: 'MEMBER', reference: '' })\",null,null,\"{{ t(\\\"businessWorkflow.addApprover\\\") }}\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/modules/workflow/src/BusinessWorkflowConfiguration.vue\",\"el-button\",null,null,\"removeReview(review.id)\",\"{{ t(\\\"businessWorkflow.removeReview\\\") }}\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/modules/workflow/src/BusinessWorkflowConfiguration.vue\",\"el-button\",\"addReview(false)\",null,null,\"{{ t(\\\"businessWorkflow.addReview\\\") }}\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/modules/workflow/src/BusinessWorkflowConfiguration.vue\",\"el-button\",\"addReview(true)\",null,null,\"{{ t(\\\"businessWorkflow.addConditionalReview\\\") }}\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/modules/workflow/src/LeaveRequests.vue\",\"el-button\",\"load\",null,null,\"{{ t(\\\"management.refresh\\\") }}\"]",
+    "reason": "查询、刷新或展示选择；读取接口继续执行原授权，不独立授予刷新按钮权限"
+  },
+  {
+    "key": "[\"frontend/modules/workflow/src/LeaveRequests.vue\",\"el-button\",null,\"\\n          submitted = query;\\n          page = 1;\\n        \",null,\"{{ t(\\\"administration.search\\\") }}\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/modules/workflow/src/LeaveRequests.vue\",\"el-button\",\"\\n              query = '';\\n              submitted = '';\\n              page = 1;\\n            \",null,null,\"{{ t(\\\"management.reset\\\") }}\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/modules/workflow/src/LeaveRequests.vue\",\"el-button\",\"router.push('/workflow/designer')\",null,null,\"{{ t(\\\"leavePoc.configure\\\") }}\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/modules/workflow/src/LeaveRequests.vue\",\"el-button\",\"createOpen = false\",null,null,\"{{ t(\\\"leavePoc.cancel\\\") }}\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/modules/workflow/src/WorkflowCanvas.vue\",\"el-button\",\"emit('select', node.id)\",null,null,\"{{ node.name }} {{ t(\\\"workflow.kinds.\\\" + node.kind) }}\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/modules/workflow/src/WorkflowCanvas.vue\",\"el-button\",\"anchor(node.id, true)\",null,null,\"●\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/modules/workflow/src/WorkflowCanvas.vue\",\"el-button\",\"anchor(node.id, false)\",null,null,\"●\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/modules/workflow/src/WorkflowCenter.vue\",\"el-button\",\"load\",null,null,\"{{ t(\\\"account.retry\\\") }}\"]",
+    "reason": "查询、刷新或展示选择；读取接口继续执行原授权，不独立授予刷新按钮权限"
+  },
+  {
+    "key": "[\"frontend/modules/workflow/src/WorkflowCenter.vue\",\"el-button\",\"\\n                  query = '';\\n                  submitted = '';\\n                  page = 1;\\n                \",null,null,\"{{ t(\\\"management.reset\\\") }}\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/modules/workflow/src/WorkflowCenter.vue\",\"el-button\",\"contractDetail=contracts[Number(row.id)]\",null,null,\"{{t('workflow.contractFields')}}\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/modules/workflow/src/WorkflowCenter.vue\",\"el-button\",\"router.push({path:'/business-objects/workbench',query:{type:row.objectType}})\",null,null,\"{{t('workflow.configureBinding')}}\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/modules/workflow/src/WorkflowCenter.vue\",\"el-button\",\"businessRoute\",null,null,\"{{ t(\\\"workflow.openDocument\\\") }}\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/modules/workflow/src/WorkflowDesigner.vue\",\"el-button\",\"close\",null,null,\"{{ t(\\\"workflow.backToFlows\\\") }}\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/modules/workflow/src/WorkflowDesigner.vue\",\"el-button\",\"previewOpen = true\",null,null,\"{{ t(\\\"workflow.preview\\\") }}\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/modules/workflow/src/WorkflowDesigner.vue\",\"el-button\",\"\\n                model.nodes.some((n) => n.id === issue.split(':')[1])\\n                  ? selectNode(issue.split(':')[1])\\n                  : (inspector = 'flow')\\n              \",null,null,\"n.id === issue.split(':')[1]) ? selectNode(issue.split(':')[1]) : (inspector = 'flow') \\\" >{{ t(\\\"workflow.codes.\\\" + issue.split(\\\":\\\")[0], issue.split(\\\":\\\")[0]) }} {{ issue.split(\\\":\\\")[1] || \\\"\\\" }}\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/modules/workflow/src/WorkflowDesigner.vue\",\"el-button\",\"loadConfiguration\",null,null,\"{{ t(\\\"management.refresh\\\") }}\"]",
+    "reason": "查询、刷新或展示选择；读取接口继续执行原授权，不独立授予刷新按钮权限"
+  },
+  {
+    "key": "[\"frontend/modules/workflow/src/WorkflowDesigner.vue\",\"el-button\",\"add(value)\",null,null,\"n.kind === 'START')) \\\" :draggable=\\\"canEdit && !busy\\\" @dragstart=\\\"paletteDrag($event, value)\\\" @pointerdown=\\\"paletteBegin($event, value)\\\" @click=\\\"add(value)\\\" >{{ t(\\\"workflow.kinds.\\\" + value) }}\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/modules/workflow/src/WorkflowDesigner.vue\",\"el-button\",\"selectNode(n.id)\",null,null,\"{{ n.name }}\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/modules/workflow/src/WorkflowDesigner.vue\",\"el-button\",\"restore(undoStack, redoStack)\",null,null,\"{{ t(\\\"workflow.undoStructure\\\") }}\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/modules/workflow/src/WorkflowDesigner.vue\",\"el-button\",\"restore(redoStack, undoStack)\",null,null,\"{{ t(\\\"workflow.redoStructure\\\") }}\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/modules/workflow/src/WorkflowDesigner.vue\",\"el-button\",\"zoom = Math.max(0.5, zoom - 0.1)\",null,null,\"−\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/modules/workflow/src/WorkflowDesigner.vue\",\"el-button\",\"zoom = 1\",null,null,\"{{ Math.round(zoom * 100) }}%\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/modules/workflow/src/WorkflowDesigner.vue\",\"el-button\",\"zoom = Math.min(1.5, zoom + 0.1)\",null,null,\"= 1.5\\\" @click=\\\"zoom = Math.min(1.5, zoom + 0.1)\\\" :aria-label=\\\"t('workflow.zoomIn')\\\" >+\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/modules/workflow/src/WorkflowDesigner.vue\",\"el-button\",\"removeEdge(selectedEdge)\",null,null,\"= 0\\\" type=\\\"danger\\\" :disabled=\\\"!canEdit || busy\\\" @click=\\\"removeEdge(selectedEdge)\\\" >{{ t(\\\"workflow.deleteConnection\\\") }}\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/modules/workflow/src/WorkflowDesigner.vue\",\"el-button\",\"connect\",null,null,\"{{ t(\\\"workflow.addConnection\\\") }}\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/modules/workflow/src/WorkflowDesigner.vue\",\"el-button\",null,null,\"remove\",\"{{ t(\\\"workflow.removeNode\\\") }}\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/modules/workflow/src/WorkflowDesigner.vue\",\"el-button\",\"model.matches.splice(i, 1)\",null,null,\"{{ t(\\\"workflow.remove\\\") }}\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/modules/workflow/src/WorkflowDesigner.vue\",\"el-button\",\"model.matches.push({ field: '', value: '' })\",null,null,\"{{ t(\\\"workflow.addMatch\\\") }}\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/modules/workflow/src/WorkflowDesigner.vue\",\"el-button\",\"model.copies?.splice(i, 1)\",null,null,\"{{ t(\\\"workflow.remove\\\") }}\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/modules/workflow/src/WorkflowDesigner.vue\",\"el-button\",\"\\n                    (model.copies ??= []).push({\\n                      kind: 'LEADER',\\n                      reference: '',\\n                    })\\n                  \",null,null,\"{{ t(\\\"workflow.addPerson\\\") }}\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/modules/workflow/src/WorkflowDesigner.vue\",\"el-button\",\"node.people.splice(i, 1)\",null,null,\"{{ t(\\\"workflow.remove\\\") }}\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/modules/workflow/src/WorkflowDesigner.vue\",\"el-button\",\"\\n                        node.people.push({ kind: 'LEADER', reference: '' })\\n                      \",null,null,\"{{ t(\\\"workflow.addPerson\\\") }}\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/modules/workflow/src/WorkflowDesigner.vue\",\"el-button\",\"connect\",null,null,\"{{ t(\\\"workflow.addConnection\\\") }}\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/modules/workflow/src/WorkflowDesigner.vue\",\"el-button\",\"removeEdge(i)\",null,null,\"{{ t(\\\"workflow.remove\\\") }}\"]",
+    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
+  },
+  {
+    "key": "[\"frontend/modules/configuration/src/VxeDictionaryTable.vue\",\"el-button\",\"compact = !compact\",null,null,\"\"]",
+    "reason": "仅切换 compact 本地密度状态，不调用业务写接口、不改变权限"
+  },
+  {
+    "key": "[\"frontend/modules/configuration/src/VxeDictionaryTable.vue\",\"el-button\",\"emit('refresh')\",null,null,\"\"]",
+    "reason": "仅向已授权字典页委托刷新；实际读取继续经过原后端授权，不创建独立刷新权限"
+  },
+  {
+    "key": "[\"frontend/modules/print/src/TemplateDesigner.vue\",\"el-button\",\"workspace('copy')\",null,null,\"{{t('printWorkbench.copy')}}\"]",
+    "reason": "复制选中草稿元素到隔离会话内存，不访问系统剪贴板或业务接口"
+  },
+  {
+    "key": "[\"frontend/modules/print/src/TemplateDesigner.vue\",\"el-button\",\"workspace('paste')\",null,null,\"{{t('printWorkbench.paste')}}\"]",
+    "reason": "粘贴本次会话内草稿，服务端保存仍需 PrintTemplate.update"
+  },
+  {
+    "key": "[\"frontend/modules/print/src/TemplateDesigner.vue\",\"el-button\",\"deleteSelection\",null,null,\"{{t('printWorkbench.delete')}}\"]",
+    "reason": "删除选中草稿前确认并进入可撤销历史，不删除服务端模板"
+  },
+  {
+    "key": "[\"frontend/modules/print/src/TemplateDesigner.vue\",\"el-button\",\"workspace('zoom',(state?.zoom??1)-.1)\",null,null,\"−\"]",
+    "reason": "缩小隔离画布视图，不修改物理纸张与服务端模板"
+  },
+  {
+    "key": "[\"frontend/modules/print/src/TemplateDesigner.vue\",\"el-button\",\"workspace('zoom',(state?.zoom??1)+.1)\",null,null,\"=2\\\" :aria-label=\\\"t('printWorkbench.zoomIn')\\\" @click=\\\"workspace('zoom',(state?.zoom??1)+.1)\\\">+\"]",
+    "reason": "放大隔离画布视图，不修改物理纸张与服务端模板"
+  },
+  {
+    "key": "[\"frontend/modules/print/src/TemplateDesigner.vue\",\"el-button\",\"workspace('fit')\",null,null,\"{{t('printWorkbench.fit')}}\"]",
+    "reason": "按可用宽度适配本地画布视图，不调用业务接口"
+  },
+  {
+    "key": "[\"frontend/modules/print/src/TemplateDesigner.vue\",\"el-button\",\"workspace('align',tool.command)\",null,null,\"\"]",
+    "reason": "六个对齐按钮仅调用白名单命令修改隔离会话的选中草稿元素并进入撤销历史；不访问业务接口，服务端保存仍经 PrintTemplate.update 授权"
+  }
+]

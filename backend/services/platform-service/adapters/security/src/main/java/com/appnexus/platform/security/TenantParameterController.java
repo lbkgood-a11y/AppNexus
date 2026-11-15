@@ -18,7 +18,9 @@ public class TenantParameterController {
     /** 有效成员读取非敏感展示参数；不授予维护能力。 */
     @GetMapping ResponseEntity<List<TenantParameters.Parameter>> list(HttpServletRequest request){return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(parameters.list(context(request)));}
     /** 当前使用租户授权管理边界维护，不能通过通用配置任意修改安全参数。 */
-    @EndpointOperation("organization.permission:grant") @PutMapping("/{key}")
+    @com.appnexus.contracts.operation.BusinessObjectType(code="TenantParameter",nameZh="租户参数",nameEn="Tenant Parameter",category=com.appnexus.contracts.operation.BusinessObjectType.Category.CONFIGURATION,module="configuration")
+ @com.appnexus.contracts.operation.OperationBinding(id="TenantParameter.save",objectType="TenantParameter",operationCode="save",pages={"account/profile"},nameZh="租户参数：保存",nameEn="Grant organization permissions",policy="主体管理域、角色权限及业务用例约束由原执行器逐请求复核")
+ @EndpointOperation("organization.permission:grant") @PutMapping("/{key}")
     ResponseEntity<TenantParameters.Parameter> save(HttpServletRequest request,@PathVariable String key,@RequestBody Change input){return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(parameters.save(context(request),key,input.value(),input.version()));}
     private VerifiedTenantContext context(HttpServletRequest request){if(!(request.getAttribute(VerifiedTenantContext.class.getName()) instanceof VerifiedTenantContext value))throw AccountSettingsController.problem(HttpStatus.CONFLICT,"TENANT_REQUIRED","请选择有效租户");return value;}
 }

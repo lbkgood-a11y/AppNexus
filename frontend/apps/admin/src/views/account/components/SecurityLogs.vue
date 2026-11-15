@@ -1,4 +1,8 @@
 <script setup lang="ts">
+import { VxeTable, VxeColumn } from "@appnexus/ui";
+import { setErrorFeedback } from "@appnexus/ui";
+import { AppPagination } from "@appnexus/ui";
+import { FloatingError } from "@appnexus/ui";
 import { onMounted, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { getSecurityLogs, type SecurityLogEntry } from "@/api/account";
@@ -22,7 +26,7 @@ async function load() {
     if (current !== generation) return;
     rows.value = result.items; total.value = result.total;
   } catch (cause) {
-    if (current === generation) error.value = requestErrorMessage(cause);
+    if (current === generation) await setErrorFeedback(error, requestErrorMessage(cause));
   } finally { if (current === generation) loading.value = false; }
 }
 /** 时间点按当前语言及租户展示时区格式化，原 UTC 证据保留，禁止推断地理位置或设备。 */
@@ -36,19 +40,19 @@ onMounted(()=>{void refreshDisplayFormat();void load();});
     <div class="log-heading"><div><h1>{{ t("account.securityLogs") }}</h1>
       <p>{{ t("account.logsIntro") }}</p></div>
       <el-button :loading="loading" @click="load">{{ t("account.refresh") }}</el-button></div>
-    <el-alert v-if="error" :title="error" type="error" :closable="false" show-icon class="mb-4" />
-    <el-table v-loading="loading" :data="error ? [] : rows" :empty-text="error ? t('account.logsRetry') : t('account.noLogs')" class="security-table">
-      <el-table-column :label="t('account.event')" min-width="200">
+    <FloatingError v-if="error" :title="error" scope="error" type="error" :closable="false" show-icon class="mb-4" />
+    <vxe-table :column-config="{ resizable: true }"  :loading="loading" :data="error ? [] : rows" :empty-text="error ? t('account.logsRetry') : t('account.noLogs')" class="security-table" border="inner">
+      <vxe-column :title="t('account.event')" min-width="200">
         <template #default="{ row }">{{ t("account.events." + row.action) }}</template>
-      </el-table-column>
-      <el-table-column :label="t('account.result')" width="120">
+      </vxe-column>
+      <vxe-column :title="t('account.result')" width="120">
         <template #default="{ row }"><el-tag :type="['LOGIN_FAILED','MFA_FAILED','REFRESH_TOKEN_REPLAY'].includes(row.action) ? 'danger' : 'success'" effect="plain">{{ t(['LOGIN_FAILED','MFA_FAILED','REFRESH_TOKEN_REPLAY'].includes(row.action) ? 'account.failed' : 'account.success') }}</el-tag></template>
-      </el-table-column>
-      <el-table-column :label="t('account.eventTime')" min-width="220">
+      </vxe-column>
+      <vxe-column :title="t('account.eventTime')" min-width="220">
         <template #default="{ row }"><time :datetime="row.occurredAt" :title="row.occurredAt">{{ time(row.occurredAt) }}</time></template>
-      </el-table-column>
-    </el-table>
-    <div class="log-pagination"><el-pagination v-model:current-page="page" :page-size="pageSize" :total="total"
+      </vxe-column>
+    </vxe-table>
+    <div class="log-pagination"><AppPagination v-model:current-page="page" :page-size="pageSize" :total="total"
       :disabled="loading || Boolean(error)" layout="total, prev, pager, next" @current-change="load" /></div>
     <p class="log-note">{{ t("account.logsScope") }}</p>
   </section>

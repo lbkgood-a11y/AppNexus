@@ -128,6 +128,8 @@ const transitionMain = defineComponent({
               :view-style="{
                 display: 'flex',
                 flex: 'auto',
+                height: '100%',
+                'min-height': '0',
                 overflow: 'hidden',
                 'flex-direction': 'column'
               }"
@@ -138,7 +140,7 @@ const transitionMain = defineComponent({
               >
                 <BackTopIcon />
               </el-backtop>
-              <div class="grow">
+              <div class="grow viewport-page-host">
                 <transitionMain :route="route">
                   <keep-alive
                     v-if="isKeepAlive"
@@ -162,7 +164,7 @@ const transitionMain = defineComponent({
               </div>
               <LayFooter v-if="!hideFooter" />
             </el-scrollbar>
-            <div v-else class="grow">
+            <div v-else class="grow viewport-page-host">
               <transitionMain :route="route">
                 <keep-alive
                   v-if="isKeepAlive"
@@ -210,6 +212,18 @@ const transitionMain = defineComponent({
 }
 
 .main-content {
-  margin: 24px;
+  /* 全局内容区四周外边距统一为 12px，页面不重复叠加外围留白。 */
+  margin: 12px;
 }
+
+/* border-box 将模板头部预留纳入视口高度；保留内容区内部滚动，长表单不会被裁切。 */
+.app-main { box-sizing:border-box; height:100dvh; min-height:0; overflow:hidden; }
+.app-main > :deep(.el-scrollbar) { height:100%; min-height:0; }
+.viewport-page-host { min-height:0; overflow:auto; flex:1; }
+.app-main-nofixed-header { min-height:0; overflow:hidden; }
+.main-content { min-height:0; }
+.app-main > :deep(.el-scrollbar > .el-scrollbar__wrap) { height:100%; }
+/* 采用自适应工作台的页面独占剩余高度；普通页面仍在 host 内安全滚动。 */
+.viewport-page-host:has(> :is(.dictionary-sample,.business-workspace,.management-page,.page-template)) { display:flex; flex-direction:column; overflow:hidden; }
+.viewport-page-host > :is(.dictionary-sample,.business-workspace,.management-page,.page-template) { flex:1; min-height:0; }
 </style>

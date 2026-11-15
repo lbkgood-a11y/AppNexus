@@ -24,14 +24,15 @@ public final class NavigationPages {
     /** 返回已交付的真实页面，不包含模板演示、远程脚本或尚未集成的应用。 */
     public static List<Page> all() {
         return List.of(
-            platform("platform/documents","/platform/documents","单据管理","Document registry","tenant:read"),
-            tenant("documents/index","/documents/workbench","单据工作台","Document workbench","organization.permission:grant"),
+            platform("platform/business-objects","/platform/business-objects","业务对象目录","Business object catalog","business.object.catalog:manage"),
+            new Page("business-objects/index","/business-objects/workbench","业务配置","Business configuration",MenuManagement.Scope.TENANT,"business.object.configuration:manage",Gate.PERMISSION),
             new Page("workflow/leave","/workflow/leave","请假单 POC","Leave request POC",MenuManagement.Scope.TENANT,null,Gate.PERMISSION),
             new Page("workflow/designer","/workflow/designer","流程设计器","Workflow designer",MenuManagement.Scope.TENANT,"workflow:read",Gate.PERMISSION),
             new Page("workflow/index","/workflow/center","工作流中心","Workflow center",MenuManagement.Scope.TENANT,null,Gate.PERMISSION),
             new Page("print/index","/print/management","打印管理","Print management",MenuManagement.Scope.TENANT,"print.template:read",Gate.PERMISSION),
             platform("platform/tenants","/platform/tenants","租户管理","Tenants","tenant:read"),
             platform("platform/users","/platform/users","账号管理","Accounts","identity.account:read"),
+            platform("platform/features","/platform/features","功能清单","Feature catalog","configuration.menu:read"),
             platform("platform/menus","/platform/menus","菜单管理","Menus","configuration.menu:read"),
             platform("platform/roles","/platform/roles","平台角色","Platform roles","access.role:read"),
             platform("platform/authorization","/platform/authorization","授权中心","Authorization", "access.role:grant"),
@@ -44,33 +45,6 @@ public final class NavigationPages {
 
     /** 未知标识返回 null，由发布校验和运行时导航失败关闭。 */
     public static Page find(String key) { return all().stream().filter(page -> page.key().equals(key)).findFirst().orElse(null); }
-    /**
-     * 页面实际已接入操作码，不按资源整组展开；多个按钮可共享同一个业务操作权限。
-     * @param key 构建登记组件标识，不接受菜单标题或路径推断
-     * @return 精确权限码；未知页面不自动继承整个资源的操作
-     */
-    public static List<String> operations(String key) {
-        if(key==null)return List.of();
-        return switch(key){
-            case "platform/documents" -> List.of("tenant:read","tenant:update");
-            case "documents/index" -> List.of("organization.permission:grant");
-            // 业务页只登记真实执行操作，流程设计权归独立设计器；列表及详情打印共享同一权限。
-            case "workflow/leave" -> List.of("workflow:start","print.job:submit","print.job:read");
-            case "workflow/index" -> List.of("workflow:operate");
-            case "workflow/designer" -> List.of("workflow:read","workflow:edit","workflow:publish");
-            case "print/index" -> List.of("print.template:read","print.template:design","print.template:publish","print.device:manage","print.job:read","print.job:submit","print.job:reprint");
-            case "platform/roles" -> List.of("access.role:read","access.role:create","access.role:update","access.role:enable","access.role:delete");
-            case "platform/authorization" -> List.of("access.role:read","access.role:grant","identity.account:read");
-            case "roles/index" -> List.of("access.tenant.role:read","access.tenant.role:create","access.tenant.role:update","access.tenant.role:delete");
-            case "roles/authorization" -> List.of("access.tenant.role:read","access.tenant.role:grant","organization.permission:grant");
-            case "platform/menus" -> List.of("configuration.menu:read","configuration.menu:create","configuration.menu:update","configuration.menu:delete");
-            case "platform/users" -> List.of("identity.account:read","identity.account:create","identity.account:update","identity.account:enable","identity.account:revoke_sessions","identity.account:reset_password");
-            case "platform/tenants" -> List.of("tenant:read","tenant:create","tenant:update","tenant:enable","tenant.member:read","tenant.member:create","tenant.member:enable","tenant.member:remove","tenant.invitation:read","tenant.invitation:create","tenant.invitation:revoke","integration.client:read","integration.client:create","integration.client:update","integration.client:rotate_secret","identity.account:read");
-            case "organization/index" -> List.of("organization.unit:read","organization.unit:create","organization.unit:update","organization.unit:delete","organization.permission:grant");
-            case "configuration/dictionaries" -> List.of("configuration.dictionary:read","configuration.dictionary:create","configuration.dictionary:update","configuration.dictionary:delete","configuration.dictionary:item_create","configuration.dictionary:item_update","configuration.dictionary:item_delete");
-            default -> List.of();
-        };
-    }
     private static Page platform(String key,String path,String zh,String en,String permission) {
         return new Page(key,path,zh,en,MenuManagement.Scope.PLATFORM,permission,Gate.PLATFORM_ADMIN);
     }

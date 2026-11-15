@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { setErrorFeedback } from "@appnexus/ui";
+import { FloatingError } from "@appnexus/ui";
 import { computed, onMounted, reactive, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import AccountSessions from "./components/AccountSessions.vue";
@@ -67,7 +69,7 @@ async function load() {
     profile.value = await getProfile(); displayName.value = profile.value.displayName;
     email.value = profile.value.email || ""; phoneNumber.value = profile.value.phoneNumber || "";
   }
-  catch (cause) { error.value = requestErrorMessage(cause); }
+  catch (cause) { await setErrorFeedback(error, requestErrorMessage(cause)); }
   finally { loading.value = false; }
 }
 /** 服务端保存后刷新会话展示资料，使顶部导航名称立即一致。 */
@@ -78,7 +80,7 @@ async function save() {
     await saveProfile(displayName.value.trim(), email.value.trim(), phoneNumber.value.trim());
     await restoreSession(); await load();
     ElMessage.success(t("account.saved"));
-  } catch (cause) { error.value = requestErrorMessage(cause); }
+  } catch (cause) { await setErrorFeedback(error, requestErrorMessage(cause)); }
   finally { saving.value = false; }
 }
 /** 成功改密后清理本地展示状态并要求重新登录，不继续使用旧 Cookie。 */
@@ -90,7 +92,7 @@ async function submitPassword() {
     await changePassword(passwords.current, passwords.next);
     ElMessage.success(t("account.passwordSaved"));
     await clearSession("passwordChanged");
-  } catch (cause) { passwordError.value = requestErrorMessage(cause); }
+  } catch (cause) { await setErrorFeedback(passwordError, requestErrorMessage(cause)); }
   finally { changing.value = false; passwords.current = ""; passwords.next = ""; passwords.confirm = ""; }
 }
 onMounted(load);
@@ -113,7 +115,7 @@ onMounted(load);
     </aside></template>
 
     <div class="account-content" v-loading="loading">
-      <el-alert v-if="error" :title="error" type="error" :closable="false" show-icon class="mb-4" />
+      <FloatingError v-if="error" :title="error" scope="error" type="error" :closable="false" show-icon class="mb-4" />
       <el-button v-if="!profile && !loading" @click="load">{{ t("account.retry") }}</el-button>
 
       <section v-if="section === 'profile'" class="content-section">
@@ -135,7 +137,7 @@ onMounted(load);
             <el-input id="account-phone" v-model="phoneNumber" maxlength="16" autocomplete="tel" placeholder="+8613800000000" size="large" />
             <p class="field-hint"><el-tag size="small" :type="profile.phoneVerified ? 'success' : 'info'">{{ t(profile.phoneVerified ? "account.verified" : "account.unverified") }}</el-tag> {{ t("account.phoneHint") }}</p></div>
           <div class="account-field"><label>{{ t("account.id") }}</label><code>{{ profile.id }}</code></div>
-          <el-button type="primary" native-type="submit" :loading="saving" :disabled="loading || !displayName.trim()">{{ t("account.save") }}</el-button>
+          <el-button v-operation="'AccountProfile.update'" type="primary" native-type="submit" :loading="saving" :disabled="loading || !displayName.trim()">{{ t("account.save") }}</el-button>
         </form>
         <TenantInvitationAcceptance />
       </section>
@@ -163,14 +165,14 @@ onMounted(load);
         <div class="setting-row"><div><h2>{{ t("account.security") }}</h2><p>{{ t("account.passwordHint") }}</p></div>
           <el-button type="primary" link @click="editingPassword = !editingPassword">{{ t(editingPassword ? "account.cancel" : "account.modify") }}</el-button></div>
         <form v-if="editingPassword" class="password-form" @submit.prevent="submitPassword">
-          <el-alert v-if="passwordError" :title="passwordError" type="error" :closable="false" show-icon class="mb-4" />
+          <FloatingError v-if="passwordError" :title="passwordError" scope="passwordError" type="error" :closable="false" show-icon class="mb-4" />
           <div class="account-field"><label for="current-password">{{ t("account.currentPassword") }}</label>
             <el-input id="current-password" v-model="passwords.current" type="password" show-password autocomplete="current-password" maxlength="128" required size="large" /></div>
           <div class="account-field"><label for="new-password">{{ t("account.newPassword") }}</label>
             <el-input id="new-password" v-model="passwords.next" type="password" show-password autocomplete="new-password" minlength="12" maxlength="128" required size="large" /></div>
           <div class="account-field"><label for="confirm-password">{{ t("account.confirmPassword") }}</label>
             <el-input id="confirm-password" v-model="passwords.confirm" type="password" show-password autocomplete="new-password" minlength="12" maxlength="128" required size="large" /></div>
-          <el-button type="primary" native-type="submit" :loading="changing">{{ t("account.changePassword") }}</el-button>
+          <el-button v-operation="'AccountProfile.changePassword'" type="primary" native-type="submit" :loading="changing">{{ t("account.changePassword") }}</el-button>
           <el-button :disabled="changing" @click="editingPassword = false">{{ t("account.cancel") }}</el-button>
         </form>
         <div class="setting-row"><div><h2>{{ t("account.sessionProtection") }}</h2><p>{{ t("account.sessionHint") }}</p></div>
@@ -194,7 +196,8 @@ onMounted(load);
 .identity-text span { color: var(--el-text-color-secondary); overflow-wrap: anywhere; }
 .account-navigation { border-right: 0; }
 .account-navigation :deep(.el-menu-item) { gap: 11px; height: 44px; margin-bottom: 8px; border-radius: var(--el-border-radius-base); }
-.account-navigation :deep(.el-menu-item.is-active) { background: var(--el-color-primary); color: var(--el-color-white); }
+/* 沿用模板浅色选中背景，避免全局菜单强调色与实心主色背景重叠导致文字不可见。 */
+.account-navigation :deep(.el-menu-item.is-active) { background: var(--el-color-primary-light-9); color: var(--el-color-primary); }
 .account-content { padding: 44px clamp(24px, 4vw, 80px); min-width: 0; }
 .content-section { max-width: 1000px; margin: 0 auto; }
 h1 { margin: 0 0 10px; font-size: 23px; font-weight: 600; }

@@ -29,6 +29,7 @@ search:
   pureEmpty: 暂无搜索结果
   purePlaceholder: 搜索菜单（支持拼音搜索）
 panel:
+  hidePageBanner: 隐藏页面横幅
   pureSystemSet: 系统配置
   pureCloseSystemSet: 关闭配置
   pureClearCacheAndToLogin: 清空缓存并返回登录页
@@ -437,6 +438,8 @@ account:
     MFA_FAILED: 第二因子认证失败
     REFRESH_TOKEN_REPLAY: 检测到刷新凭证重放，已撤销设备授权
 management:
+  queryFor: "{name}查询"
+  queryConditions: 查询条件
   refresh: 刷新
   totalRecords: 共 {total} 条
   reset: 重置
@@ -748,6 +751,7 @@ welcome:
   description: 从左侧导航进入平台、租户和组织管理功能。
   empty: 选择一个业务模块开始工作
 dictionary:
+  visualSubtitle: 统一维护业务字典与选项，让基础数据清晰有序。
   configuration: 配置管理
   title: 字典管理
   types: 字典类型
@@ -928,7 +932,7 @@ authorizationCenter:
   replaceWarning: 将覆盖 {name} 的完整角色集合；移除角色会撤销该角色提供的权限，空集合表示撤销全部角色。
   reload: 重新加载
   effectivePermissions: 有效权限解释
-  explanationNote: 以下为已保存角色的权限贡献；不包含过渡期旧直授权，也不代表所有业务条件均已满足。
+  explanationNote: 以下为当前已保存角色与成员授权快照的权限贡献；业务状态、对象归属和实际执行仍须逐请求复核。
   noEffectivePermissions: 没有角色权限来源
   effective: 角色分支生效
   inactive: 未生效
@@ -962,16 +966,19 @@ authorizationCenter:
     ORGANIZATION_SUBTREE: 组织及下级
     ALL: 当前租户全部
 workflow:
+  queryPlaceholder: 输入对象类型、单据标识、节点或状态
+  contractCode: 数据契约编码
+  fieldCode: 字段编码
   contractSourceHint: 此处展示业务代码登记的审批数据契约，字段由业务适配器提供，不能在页面中直接修改。打印另支持新增租户自定义契约；已保存的打印契约同样不可原地修改。
   configureBinding: 配置单据策略
   contractFields: 契约字段
   contractType: 数据类型
   contractUnit: 单位
-  contractOrderHint: 流程发布后，请前往单据工作台配置行为绑定；从业务页面提交真实单据。
+  contractOrderHint: 流程发布后，请前往业务配置配置行为绑定；从业务页面提交真实单据。
   title: 工作流中心
   designer: 编排设计器
   name: 名称
-  objectType: 单据类型
+  objectType: 对象类型
   objectId: 单据标识
   purpose: 流程用途
   mode: 流程模式
@@ -1233,6 +1240,20 @@ workflow:
   deleteConnection: 删除选中连接
   dragHint: 从节点库拖入；拖动节点移动；从输出锚点拖到输入锚点串联。
 printing:
+  preflightHint: 依赖检查是当前瞬时状态，离线时任务可能排队；不代表后续一定执行成功。
+  preflightLayers:
+    SCENE_TEMPLATE: 场景与发布模板
+    RENDERER: 渲染节点
+    DEVICE: 实体打印设备
+  preflightReasons:
+    READY: 就绪
+    PRINT_TARGET_INVALID: 场景或发布模板失效
+    UPSTREAM_BLOCKED: 前置条件未通过，尚未检查
+    PRINT_AGENT_OFFLINE: 未发现近期在线渲染节点
+    PREVIEW_NO_DEVICE_REQUIRED: 预览/PDF 不需要实体设备
+    PRINT_DEVICE_REQUIRED: 请选择实体设备
+    PRINT_DEVICE_UNAVAILABLE: 设备不可用或不属于当前租户
+    PRINT_DEVICE_OFFLINE: 目标站点的设备队列未在线
   booleanTrue: 是
   booleanFalse: 否
   outputStages:
@@ -1562,9 +1583,17 @@ businessWorkflow:
     LE: 小于或等于
   removeReview: 移除此审批步骤
   removeConfirm: 移除此审批步骤及其独立条件（如有）？发布后影响新提交单据。
-document:
+businessObject:
+  catalogBoundary: 此处仅管理已声明审批、打印等可配置能力的对象；完整对象及操作登记请在“功能清单 → 按业务对象查看”查询。
+  category: 对象分类
+  categories:
+    MASTER_DATA: 主数据
+    TRANSACTION: 业务单据
+    CONFIGURATION: 配置
+    LEDGER: 台账
+    SYSTEM: 系统资源
   interactions: 交互契约
-  interactionCode: 契约编码
+  interoperationCode: 契约编码
   service: 目标服务
   completion: 完成方式
   reference: 能力引用
@@ -1583,13 +1612,23 @@ document:
     CONFIRMATION: 结果确认
     ASYNCHRONOUS: 异步完成
   events:
-    DOCUMENT_CREATED: 单据创建
+    BUSINESS_OBJECT_CREATED: 单据创建
     APPROVAL_STARTED: 审批发起
     APPROVAL_APPLIED: 审批结果已应用
     PRINT_DEVICE: 设备队列交付（非物理出纸）
     PRINT_OUTPUT: 打印输出
   actionAvailability: 当前操作可用性
   availability:
+    PRINT_UNAVAILABLE: 打印服务不可用
+    PRINT_TARGET_INVALID: 绑定打印场景或模板已失效
+    WORKFLOW_UNAVAILABLE: 审批服务不可用
+    WORKFLOW_TARGET_INVALID: 绑定审批流程已停用或不再兼容
+    TYPE_DISABLED: 对象类型未启用
+    TENANT_NOT_GRANTED: 当前租户未获对象授权
+    CONFIGURATION_NOT_PUBLISHED: 操作配置尚未发布
+    CONTRACT_CHANGED: 对象契约已变更，请重新发布
+    CONFIGURATION_NOT_MATCHED: 当前条件未匹配操作配置
+    CONFIGURATION_AMBIGUOUS: 当前条件匹配多个配置
     READY: 可执行（提交时重新校验）
     OPERATION_PERMISSION_MISSING: 缺少有效操作授权
     PAGE_RELATION_DISABLED: 平台页面关联未启用
@@ -1609,16 +1648,18 @@ document:
     WORKFLOW_VERSION: 兼容流程版本
     PRINT_SCENE: 兼容打印场景
     RENDERER_ONLINE: 渲染客户端在线
-  platformTitle: 单据管理
-  title: 单据工作台
-  code: 单据编码
+  basicInfo: 基本信息
+  tenantAuthorization: 租户授权
+  platformTitle: 业务对象目录
+  title: 业务配置
+  code: 对象编码
   name: 名称
   module: 所属模块
   contractVersion: 契约版本
   publishedVersion: 配置发布版本
   state: 状态
   operations: 操作
-  search: 单据查询
+  search: 对象查询
   refresh: 刷新
   reset: 重置
   enabled: 已启用
@@ -1626,8 +1667,8 @@ document:
   enable: 启用
   disable: 停用
   grants: 租户授权与契约
-  configure: 配置单据行为
-  empty: 暂无可管理的单据
+  configure: 配置对象操作
+  empty: 暂无可管理的业务对象
   field: 条件字段
   fieldType: 类型
   unit: 单位
@@ -1635,13 +1676,13 @@ document:
   authorize: 授权
   revoke: 收回配置权
   revokeConfirm: 收回后租户不能继续维护，已发布绑定保留。是否收回？
-  enableConfirm: 是否启用此单据类型？
+  enableConfirm: 是否启用此对象类型？
   disableConfirm: 停用后阻止新提交，已有流程继续完成。是否停用？
   saved: 草稿或授权已保存
   published: 绑定已发布
   required: 请填写绑定名称、发布流程及完整条件
-  inactiveHint: 此单据已授权但尚未启用，可维护配置；实际提交需平台管理员启用。
-  action: 单据行为
+  inactiveHint: 此对象已授权但尚未启用，可维护配置；实际提交需平台管理员启用。
+  action: 对象操作
   enableEntry: 启用入口
   disableEntry: 禁用入口
   controlReason: 请填写管控原因（1—200 字，不含敏感信息）
@@ -1653,9 +1694,9 @@ document:
   pageRelationConfirm: 保存后立即生效，移除的页面关联将禁止新操作，是否保存？
   pageOperation: 页面操作
   selectPageOperation: 请选择已接入的业务行为
-  noPageOperation: 此单据尚未登记可绑定的页面操作，请由业务开发人员接入。
+  noPageOperation: 此对象尚未登记可绑定的页面操作，请由业务开发人员接入。
   businessEndpoint: 业务处理接口
-  operationKey: 页面与 API 操作标识
+  operationId: 页面与 API 操作标识
   permission: 操作权限
   printScene: 打印场景
   submissionMode: 行为执行方式
@@ -1682,7 +1723,7 @@ document:
   publish: 保存并发布
   editLeave: 修改并重新提交
   cycleHistory: 审批历史
-  returnWorkbench: 返回单据工作台
+  returnWorkbench: 返回业务配置
   operators:
     EQ: 等于
     NE: 不等于
@@ -1692,23 +1733,23 @@ document:
     LE: 小于等于
   leaveConfiguration: 未保存的绑定修改不会保留，是否进入流程设计器？
   codes:
-    DOCUMENT_PRINT_SCENE_INVALID: 打印场景未启用或与业务投影契约不兼容，请重新选择。
-    DOCUMENT_PRINT_CONTRACT_REQUIRED: 此行为缺少打印投影契约。
-    DOCUMENT_PAGE_RELATION_INVALID: 页面操作与行为不兼容或重复，请重新选择。
-    DOCUMENT_PAGE_RELATION_DISABLED: 平台已移除此页面操作关联，请联系平台管理员。
-    DOCUMENT_PAGE_OPERATION_INVALID: 页面操作与单据行为不匹配，请重新选择。
-    DOCUMENT_CONTRACT_CHANGED: 单据契约已升级，请重新校验并发布绑定。
-    DOCUMENT_FLOW_NOT_BOUND: 未配置审批流程，请联系租户管理员。
-    DOCUMENT_FLOW_NOT_MATCHED: 没有匹配的审批绑定，请联系租户管理员。
-    DOCUMENT_FLOW_MATCH_CONFLICT: 审批绑定匹配冲突，请调整条件。
-    DOCUMENT_FLOW_INCOMPATIBLE: 流程已失效或与单据契约不兼容，请重新选择。
-    DOCUMENT_VERSION_CONFLICT: 配置已变化，请重新加载后修改。
-    DOCUMENT_TYPE_DISABLED: 单据类型未启用，请联系平台管理员。
-    DOCUMENT_IDEMPOTENCY_CONFLICT: 请求内容或审批依据已变化，请重新操作。
-    DOCUMENT_CONDITION_INVALID: 条件类型或比较方式不正确。
-    DOCUMENT_BINDINGS_INVALID: 请至少配置一条完整绑定。
-    DOCUMENT_NUMBER_INVALID: 数值条件必须为有效十进制数。
-    DOCUMENT_BOOLEAN_INVALID: 布尔条件只能填写 true 或 false。
+    BUSINESS_OBJECT_PRINT_SCENE_INVALID: 打印场景未启用或与业务投影契约不兼容，请重新选择。
+    BUSINESS_OBJECT_PRINT_CONTRACT_REQUIRED: 此行为缺少打印投影契约。
+    BUSINESS_OBJECT_PAGE_RELATION_INVALID: 页面操作与行为不兼容或重复，请重新选择。
+    BUSINESS_OBJECT_PAGE_RELATION_DISABLED: 平台已移除此页面操作关联，请联系平台管理员。
+    BUSINESS_OBJECT_PAGE_OPERATION_INVALID: 页面操作与对象操作不匹配，请重新选择。
+    BUSINESS_OBJECT_CONTRACT_CHANGED: 对象契约已升级，请重新校验并发布绑定。
+    BUSINESS_OBJECT_FLOW_NOT_BOUND: 未配置审批流程，请联系租户管理员。
+    BUSINESS_OBJECT_FLOW_NOT_MATCHED: 没有匹配的审批绑定，请联系租户管理员。
+    BUSINESS_OBJECT_FLOW_MATCH_CONFLICT: 审批绑定匹配冲突，请调整条件。
+    BUSINESS_OBJECT_FLOW_INCOMPATIBLE: 流程已失效或与对象契约不兼容，请重新选择。
+    BUSINESS_OBJECT_VERSION_CONFLICT: 配置已变化，请重新加载后修改。
+    BUSINESS_OBJECT_TYPE_DISABLED: 对象类型未启用，请联系平台管理员。
+    BUSINESS_OBJECT_IDEMPOTENCY_CONFLICT: 请求内容或审批依据已变化，请重新操作。
+    BUSINESS_OBJECT_CONDITION_INVALID: 条件类型或比较方式不正确。
+    BUSINESS_OBJECT_BINDINGS_INVALID: 请至少配置一条完整绑定。
+    BUSINESS_OBJECT_NUMBER_INVALID: 数值条件必须为有效十进制数。
+    BUSINESS_OBJECT_BOOLEAN_INVALID: 布尔条件只能填写 true 或 false。
 
 dataContractErrors:
   DATA_OBJECT_REQUIRED: 必须提供契约数据对象
@@ -1716,4 +1757,117 @@ dataContractErrors:
   DATA_FIELD_TYPE_INVALID: 字段类型不符合数据契约
   DATA_FIELD_UNKNOWN: 字段未在数据契约中声明
   DATA_CONTRACT_CHANGED: 数据契约已变更，请检查并重新发布配置
-  DOCUMENT_CONTROL_REASON_REQUIRED: 请填写有效的入口管控原因
+  BUSINESS_OBJECT_CONTROL_REASON_REQUIRED: 请填写有效的入口管控原因
+
+featureCatalog:
+  help: 功能清单说明
+  pageView: 按页面查看
+  objectView: 按业务对象查看
+  category: 对象分类
+  module: 所属模块
+  objectType: 对象编码
+  operationCode: 操作编码
+  operationId: 操作标识
+  endpoints: 实际接口
+  policy: 额外执行约束
+  title: 功能清单
+  hint: 展示代码登记的页面、操作标识、权限要求及实际接口。按钮引用操作标识；展示准入不代表对象状态或实际执行授权已通过。
+  name: 功能名称
+  type: 类型
+  permission: 权限码
+  path: 路由地址
+  component: 页面组件
+  gate: 访问约束
+  keyword: 功能查询
+  placeholder: 名称、权限码、路由或组件
+  scope: 管理域
+  search: 查询
+  reset: 重置
+  expand: 全部展开
+  collapse: 全部收起
+  types:
+    object: 业务对象
+    scope: 分类
+    page: 页面
+    operation: 操作
+  gates:
+    PLATFORM_ADMIN: 平台管理约束
+    TENANT_ADMIN: 租户管理约束
+    PERMISSION: 按权限校验
+
+invalidPermissionCleanup:
+  title: 角色包含失效权限
+  reason: 已停用或已不在当前可用权限目录
+  confirm: 确认从当前草稿移除上述失效权限及其数据策略？保存后生效。
+  remove: 移除失效权限
+
+operationDiagnostics:
+  dataScope: 数据范围
+  notApplicable: 此权限未要求数据范围
+  objectHint: 具体记录的归属与业务状态请在业务详情检查，不以功能授权替代。
+  pageAllowed: 页面可进入
+  pageDenied: 页面被阻断
+  menuVisible: 菜单可见
+  menuHidden: 菜单不可见
+  title: 用户操作权限诊断
+  search: 查找功能名称、操作标识或权限码
+  limits: 当前检查功能授权来源；账号/成员与页面准入按当前权威数据检查；具体对象和业务状态未检查。不能据此认定实际操作一定成功。
+  FUNCTION_GRANTED: 功能权限已具备
+  NOT_GRANTED: 功能权限不足
+  OBJECT_CHECK_REQUIRED: 需要本人或对象资格检查
+  missing: 未形成有效授权
+  reasons:
+    ACCOUNT_DISABLED: 账号停用或不可用
+    MEMBERSHIP_INACTIVE: 当前租户成员关系不可用
+    MENU_NOT_CONFIGURED: 未配置此页面菜单入口
+    MENU_DISABLED: 菜单已停用
+    ANCESTOR_DISABLED_OR_INVALID: 父目录停用、缺失或层级无效
+    PLATFORM_IDENTITY_REQUIRED: 缺少平台管理身份
+    TENANT_REQUIRED: 需要有效租户上下文
+    PAGE_PERMISSION_MISSING: 缺少页面基础权限
+    PAGE_REGISTRATION_MISMATCH: 菜单与代码页面登记不一致
+    TENANT_ADMIN_REQUIRED: 需要租户管理资格
+    EXTERNAL_URL_INVALID: 外链地址不合法
+    MENU_OR_ANCESTOR_HIDDEN: 菜单或父目录已隐藏
+
+printWorkbench:
+  alignment: 对齐
+  alignHint: 请先在画布中多选至少两个可对齐元素
+  canvasAids: 画布辅助
+  gridSettings: 网格设置
+  zoom: 画布缩放
+  orientation: 纸张方向
+  portrait: 纵向
+  landscape: 横向
+  quickTitle: 快速制作
+  quickSubtitle: 添加内容与配置纸张。
+  applyHint: 将当前纸张规格和尺寸应用到设计画布。
+  gridSpacing: 网格间距
+  more: 更多
+  sampleSettings: 示例数据
+  copy: 复制
+  paste: 粘贴
+  delete: 删除
+  deleteConfirm: 删除当前选中的元素？可通过撤销恢复。
+  unsaved: "未保存"
+  saved: "已保存"
+  edit: "编辑"
+  canvas: "画布"
+  layout: "布局"
+  preview: "示例预览"
+  grid: "网格"
+  ruler: "标尺"
+  align: "对齐选中元素"
+  panels: "{count} 个面板"
+  selected: "已选 {count} 个元素"
+  panHint: "中键拖动画布 · 滚轮滚动"
+  zoomOut: "缩小"
+  zoomIn: "放大"
+  fit: "适应画布"
+  alignments:
+    left: "左对齐"
+    right: "右对齐"
+    top: "顶部对齐"
+    bottom: "底部对齐"
+    vertical: "水平居中"
+    horizontal: "垂直居中"

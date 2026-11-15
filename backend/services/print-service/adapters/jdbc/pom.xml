@@ -5,6 +5,8 @@
   <parent><groupId>com.appnexus</groupId><artifactId>print-adapters</artifactId><version>0.1.0-SNAPSHOT</version><relativePath>../pom.xml</relativePath></parent>
   <artifactId>print-jdbc-adapter</artifactId>
   <dependencies>
+    <!-- 页面操作元数据经公开契约登记，不改变真实授权执行。 -->
+    <dependency><groupId>com.appnexus</groupId><artifactId>operation-contracts</artifactId><version>${project.version}</version></dependency>
     <!-- 发布校验与状态回归使用 JUnit/AssertJ；仅测试期生效，不进入运行产物。 -->
     <dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-test</artifactId><scope>test</scope></dependency>
     <dependency><groupId>com.appnexus</groupId><artifactId>print-core</artifactId><version>${project.version}</version></dependency>

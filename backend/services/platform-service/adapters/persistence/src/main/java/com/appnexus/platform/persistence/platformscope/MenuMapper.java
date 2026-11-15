@@ -7,8 +7,11 @@ import org.apache.ibatis.annotations.*;
 
 /** 平台菜单持久化 Mapper；所有表均为平台范围，不接受租户上下文或动态 SQL 片段。 */
 @Mapper
-@PlatformScoped(tables={"platform_menu","platform_menu_resource","platform_menu_audit","platform_administrator","platform_administrator_bootstrap","identity_account","access_permission"})
+@PlatformScoped(tables={"platform_menu","platform_menu_resource","platform_menu_audit","platform_administrator","platform_administrator_bootstrap","identity_account","access_permission","tenant_member"})
 public interface MenuMapper {
+    /** 仅供已授权诊断解析同租户成员对应账号，不接受跨租户成员查询。 */
+    @Select("SELECT BIN_TO_UUID(account_id) FROM tenant_member WHERE tenant_id=UUID_TO_BIN(#{tenant}) AND id=UUID_TO_BIN(#{member})")
+    String memberAccount(@Param("tenant") String tenant,@Param("member") String member);
     /** 每次读请求复核权威平台身份，菜单展示角色不能作为授权依据。 */
     @Select("SELECT EXISTS(SELECT 1 FROM platform_administrator p JOIN identity_account a ON a.id=p.account_id WHERE p.account_id=UUID_TO_BIN(#{actor}) AND p.enabled=TRUE AND a.enabled=TRUE)")
     boolean administrator(String actor);

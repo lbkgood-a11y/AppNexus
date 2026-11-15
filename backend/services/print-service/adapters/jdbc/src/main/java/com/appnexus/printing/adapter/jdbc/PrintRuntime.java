@@ -37,12 +37,7 @@ public class PrintRuntime {
     this.jdbc = jdbc; this.platform = platform; this.mapper = mapper; this.json = new PrintJson(mapper);
   }
 
-  /** 返回当前账号实际拥有的打印操作，用于前端改善体验；后端操作仍逐次复核。 */
-  public List<String> capabilities(PrintContext c) {
-    return Map.of("read","print.template:read","design","print.template:design","publish","print.template:publish",
-        "devices","print.device:manage","jobs","print.job:read","submit","print.job:submit","reprint","print.job:reprint","agent","print.agent:operate")
-        .entrySet().stream().filter(e -> platform.allowed(c,e.getValue())).map(Map.Entry::getKey).sorted().toList();
-  }
+
 
   /** 当前租户设计人员可见的字段元数据，不返回任何真实业务值，不代替业务字段授权。 */
   public List<Map<String,Object>> designContracts(PrintContext c){require(c,"print.template:design");return PrintDesignCatalog.contracts();}

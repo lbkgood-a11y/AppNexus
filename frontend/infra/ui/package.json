@@ -2,8 +2,14 @@
   "name": "@appnexus/ui",
   "private": true,
   "type": "module",
-  "exports": { ".": "./src/index.ts" },
-  "dependencies": { "@appnexus/icons": "workspace:*" },
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@appnexus/icons": "workspace:*",
+    "vxe-pc-ui": "^4.21.1",
+    "vxe-table": "^4.23.20"
+  },
   "peerDependencies": {
     "element-plus": "^2.13.6",
     "vue": "^3.5.31",

@@ -1,0 +1,11 @@
+{
+  "tracked_files_checked": 848,
+  "changed_since_baseline": [
+    "frontend/infra/ui/README.md",
+    "frontend/infra/ui/src/ManagementTable.vue",
+    "frontend/infra/ui/src/templates.css",
+    "frontend/modules/organization/src/Management.vue",
+    "frontend/modules/print/src/PrintFlowWorkspace.vue",
+    "frontend/modules/print/src/PrintManagement.vue"
+  ]
+}

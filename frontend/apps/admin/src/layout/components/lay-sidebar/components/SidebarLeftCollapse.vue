@@ -65,8 +65,12 @@ const toggleClick = () => {
   position: absolute;
   bottom: 0;
   width: 100%;
-  height: 40px;
-  line-height: 40px;
+  /* 桌面底部折叠区收紧至 28px，触控设备保留 44px 高度。 */
+  height: 28px;
+  line-height: 28px;
   box-shadow: 0 0 6px -3px var(--el-color-primary);
+}
+@media (pointer: coarse) {
+  .left-collapse { height: 44px; line-height: 44px; }
 }
 </style>

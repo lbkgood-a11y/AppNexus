@@ -20,7 +20,7 @@ defineSlots<{ actions?: () => unknown; meta?: () => unknown }>();
       <el-breadcrumb-item v-for="item in breadcrumbs" :key="item">{{ item }}</el-breadcrumb-item>
     </el-breadcrumb>
     <div class="page-header__main">
-      <div class="page-header__copy">
+      <div class="page-header__copy" data-page-banner>
         <div class="page-header__title-row"><h1>{{ title }}</h1><slot name="meta" /></div>
         <p v-if="description">{{ description }}</p>
       </div>

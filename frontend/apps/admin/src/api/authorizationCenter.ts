@@ -12,6 +12,7 @@ function subjectApi(base: string, subjects: SubjectAuthorizationApi["subjects"])
   const path = (id: string) => base + "/" + encodeURIComponent(id);
   return {
     subjects,
+    diagnostics:id=>http.request("get",path(id)+"/operation-diagnostics"),
     assignment: id => http.request<SubjectAssignment>("get", path(id) + "/roles"),
     effective: id => http.request<EffectivePermission[]>("get", path(id) + "/effective-permissions"),
     replace: async (id, input) => {

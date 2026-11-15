@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="UTF-8"><title>打印设计器本地验收夹具</title><style>html,body,#app{margin:0;height:100%;font-family:Arial,"Microsoft YaHei",sans-serif}#fixture-tools{position:fixed;top:0;left:320px;z-index:20;height:32px;display:flex;gap:8px;align-items:center;font-size:12px}#fixture-tools button{height:24px}</style></head><body><div id="fixture-tools"><span>本地验收夹具 · 无业务接口</span><button id="test-theme">切换深浅主题</button><button id="test-language">切换中英文</button></div><div id="app"></div><script type="module">
+import {createApp,h} from 'vue';
+import ElementPlus from 'element-plus';
+import {createI18n} from 'vue-i18n';
+import 'element-plus/dist/index.css';
+import 'element-plus/theme-chalk/dark/css-vars.css';
+import zh from './locales/zh-CN.yaml';
+import en from './locales/en.yaml';
+import TemplateDesigner from '../../modules/print/src/TemplateDesigner.vue';
+const i18n=createI18n({legacy:false,locale:'zh',messages:{zh,en}});
+const template={panels:[{index:0,width:210,height:297,paperType:'A4',printElements:[{options:{title:'验收元素 A',top:80,left:40,width:140,height:24,fontSize:12},printElementType:{type:'text',title:''}},{options:{title:'验收元素 B',top:150,left:230,width:140,height:24,fontSize:12},printElementType:{type:'text',title:''}}]}]};
+const app=createApp({render:()=>h(TemplateDesigner,{modelValue:template,name:'打印工具栏验收',language:i18n.global.locale.value==='en'?'en':'cn'})});
+app.use(ElementPlus).use(i18n).mount('#app');
+document.getElementById('test-theme').onclick=()=>document.documentElement.classList.toggle('dark');
+document.getElementById('test-language').onclick=()=>{i18n.global.locale.value=i18n.global.locale.value==='zh'?'en':'zh'};
+</script></body></html>

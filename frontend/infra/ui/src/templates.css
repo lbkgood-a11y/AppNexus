@@ -7,7 +7,7 @@
 .business-workspace__data { padding: 20px; background: var(--color-surface); }
 .business-workspace .el-tabs__header, .tree-list-template__navigation .el-tabs__header { margin: 0; }
 .business-workspace .el-tabs__content, .tree-list-template__navigation .el-tabs__content { display: none; }
-.business-workspace .el-tabs__item, .tree-list-template__navigation .el-tabs__item { height: 46px; padding: 0 18px; font-weight: 500; }
+.business-workspace .el-tabs__item, .tree-list-template__navigation .el-tabs__item { height: 44px; padding: 0 18px; font-weight: 500; }
 .business-workspace .el-tabs__item.is-active, .tree-list-template__navigation .el-tabs__item.is-active { font-weight: 600; }
 .page-header { padding: 4px 0; min-width: 0; }
 .page-header__breadcrumb { margin-bottom: 12px; }
@@ -91,3 +91,129 @@
   .page-header h1 { font-size: 20px; }
 }
 @media (prefers-reduced-motion: reduce) { .tree-list-template__toggle { transition: none; } }
+
+/* 全局业务表面参考字典页：紧凑横幅、独立筛选及中性数据卡，主题色仅用于轻装饰。 */
+.workspace-banner { position:relative; display:flex; align-items:center; gap:14px; padding:14px 20px; background:linear-gradient(115deg,var(--el-bg-color) 35%,var(--el-color-primary-light-9)); border-bottom:1px solid var(--el-border-color-lighter); }
+.workspace-banner-icon { display:grid; place-items:center; flex:none; width:44px; height:44px; border-radius:var(--app-card-radius, 8px); color:var(--el-color-primary); background:color-mix(in srgb,var(--el-color-primary) 10%,var(--el-bg-color)); }
+.workspace-banner h1 { margin:0; font-size:20px; line-height:26px; font-weight:600; color:var(--el-text-color-primary); }
+.workspace-banner p { margin:4px 0 0; font-size:13px; line-height:20px; color:var(--el-text-color-regular); }
+.business-workspace__search,.tree-list-template__search { padding:14px 20px; background:var(--el-bg-color); }
+.business-workspace__data,.tree-list-template__data { padding:12px 20px; }
+.business-workspace__context { padding:10px 0; }
+.business-workspace__navigation,.tree-list-template__navigation { background:var(--el-bg-color); }
+.tree-list-template__navigation:has(> .workspace-banner) { padding:0; }
+.tree-list-template__tree { padding:6px; }
+.tree-list-template__tree-header { min-height:44px; padding:6px 8px; }
+.tree-list-template__tree .el-menu { border:0; background:transparent; }
+.tree-list-template__tree .el-menu-item { height:44px; margin:4px 0; border-radius:6px; font-size:13px; }
+.tree-list-template__tree .el-menu-item.is-active { background:var(--el-color-primary-light-9); color:var(--el-color-primary); box-shadow:inset 2px 0 var(--el-color-primary); }
+.page-header { border:1px solid var(--el-border-color-lighter); border-radius:var(--app-card-radius, 8px); padding:14px 20px; background:var(--el-bg-color); }
+.template-search > .el-card__body,.template-data > .el-card__body { padding:12px 20px; }
+.template-pagination { margin-top:6px; padding-top:6px; }
+@media(max-width:760px){.workspace-banner{padding:12px 14px}.business-workspace__search,.business-workspace__data,.tree-list-template__search,.tree-list-template__data{padding:12px}.page-header{padding:12px 14px}}
+
+/* 统一管理页高度链：只约束应用内容区内的工作区，弹窗中的同名组件保持流式布局。 */
+.viewport-page-host > .management-page,
+.viewport-page-host > .page-template { display:flex; flex-direction:column; overflow:auto; gap:var(--app-section-gap,12px); }
+.viewport-page-host :is(.business-workspace,.tree-list-template,.standard-list-template) { display:flex; flex-direction:column; flex:1; min-height:0; overflow:hidden; }
+.viewport-page-host :is(.business-workspace,.tree-list-template,.standard-list-template) > :is(.workspace-banner,.business-workspace__navigation,.tree-list-template__navigation,.template-search,.page-header) { flex:none; }
+.viewport-page-host :is(.business-workspace__feedback,.business-workspace__search,.tree-list-template__feedback,.tree-list-template__search) { flex:none; max-height:35%; overflow:auto; }
+.viewport-page-host :is(.business-workspace__data,.tree-list-template__data,.template-data,.template-data > .el-card__body,.template-table) { display:flex; flex-direction:column; flex:1; min-height:0; overflow:auto; }
+.viewport-page-host :is(.tree-list-template__surface,.tree-list-template__surface > .el-card__body) { display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden; }
+.viewport-page-host .tree-list-template__layout { flex:1; min-height:0; overflow:hidden; }
+.viewport-page-host :is(.tree-list-template__aside,.tree-list-template__content) { display:flex;flex-direction:column;min-height:0;overflow:hidden; }
+.viewport-page-host .tree-list-template__tree { flex:1;min-height:0;overflow:auto; }
+/* 工作区分配剩余高度；流式包装层未提供高度时保留表格自然高度，避免零基准把表体裁成 0px。 */
+.viewport-page-host :is(.business-workspace,.tree-list-template,.standard-list-template) .management-table { flex:1;display:flex;flex-direction:column;min-height:0;overflow:hidden; }
+.viewport-page-host :is(.business-workspace,.tree-list-template,.standard-list-template) .management-table-surface,
+.viewport-page-host :is(.business-workspace,.tree-list-template,.standard-list-template) .management-table-surface > .el-card__body { flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden; }
+.viewport-page-host :is(.business-workspace,.tree-list-template,.standard-list-template) .management-table-region { flex:1 1 auto;min-height:0;overflow:hidden; }
+.viewport-page-host .management-toolbar,.viewport-page-host .management-pagination { flex:none; }
+
+/* 区块间距统一入口：用单侧留白分隔相邻区块，禁止上下 padding 重复累加。 */
+.business-workspace { border:0; background:transparent; gap:var(--app-section-gap,12px); }
+.business-workspace > .workspace-banner { border:1px solid var(--el-border-color-lighter);border-radius:var(--app-card-radius,8px); }
+.business-workspace > :is(.business-workspace__navigation,.business-workspace__feedback,.business-workspace__search,.business-workspace__data) { margin:0; padding:var(--app-section-gap,12px);border:1px solid var(--el-border-color-lighter);border-radius:var(--app-card-radius,8px);background:var(--el-bg-color); }
+.tree-list-template:not(.is-embedded) > .tree-list-template__surface { border:0;background:transparent; }
+.tree-list-template:not(.is-embedded) > .tree-list-template__surface > .el-card__body { gap:var(--app-section-gap,12px); }
+.tree-list-template:not(.is-embedded) .tree-list-template__navigation { border:1px solid var(--el-border-color-lighter);border-radius:var(--app-card-radius,8px);overflow:hidden; }
+.tree-list-template:not(.is-embedded) .tree-list-template__layout { border:1px solid var(--el-border-color-lighter);border-radius:var(--app-card-radius,8px);background:var(--el-bg-color); }
+.tree-list-template__header,.tree-list-template__search,.tree-list-template__data,.tree-list-template__feedback { padding:var(--app-section-gap,12px); }
+.tree-list-template__search { border-bottom:0; }
+.tree-list-template__data { padding-top:0; }
+.page-template,.card-grid-template__grid,.dashboard-template__statistics,.dashboard-template__charts,.detail-form-template__layout,.split-detail-template__layout { gap:var(--app-section-gap,12px); }
+
+/* 视口工作区必须具备确定高度；flex-basis 为零且祖先高度不确定会将筛选和表体压扁。 */
+.viewport-page-host > :is(.management-page,.page-template,.business-workspace) { height:calc(100% - 24px);flex:1 0 auto;box-sizing:border-box; }
+.viewport-page-host > .management-page > .business-workspace { flex:1 1 auto;height:100%; }
+/* 查询区按内容自然高度布局，不能依据未确定的父高计算百分比上限。 */
+.viewport-page-host :is(.business-workspace__search,.business-workspace__feedback) { max-height:none;flex:0 0 auto;overflow:visible; }
+/* 根管理容器使用零基准伸展，不能让内容高度反过来决定剩余视口高度。 */
+.viewport-page-host:has(> :is(.management-page,.business-workspace,.page-template)) { flex:1 1 0; }
+.viewport-page-host > :is(.management-page,.business-workspace,.page-template) { flex:1 1 0; }
+.viewport-page-host > .management-page > .business-workspace { flex:1 1 0; }
+/* 路由装配页可能额外包裹 main-content，补齐此层高度，不能只匹配业务组件为直接子级。 */
+.viewport-page-host:has(> .main-content > :is(.management-page,.business-workspace,.page-template)) { display:flex;flex-direction:column;overflow:hidden; }
+.viewport-page-host > .main-content:has(> :is(.management-page,.business-workspace,.page-template)) { display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden; }
+.viewport-page-host > .main-content > :is(.management-page,.business-workspace,.page-template) { display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden;gap:var(--app-section-gap,12px); }
+
+/* 条件插槽关闭后只剩注释节点；空反馈容器不保留边框、内边距或布局间距。 */
+.business-workspace > .business-workspace__feedback:empty,
+.tree-list-template__feedback:empty {
+  display: none;
+}
+
+/* 错误由公共浮层管理；反馈插槽没有实际元素时不占布局空间。 */
+.business-workspace > .business-workspace__feedback:not(:has(> *)),
+.tree-list-template__feedback:not(:has(> *)) { display: none; }
+
+/* 全局详情采用简洁分区与中性表面，复用既有模板和 Element Plus，不改变字段、权限或提交协议。 */
+:is(.detail-form-template,.split-detail-template,.tabbed-detail-template) { gap:var(--app-section-gap,12px); }
+:is(.detail-form-template__layout,.split-detail-template__layout) { gap:var(--app-section-gap,12px); align-items:start; }
+:is(.detail-form-template,.split-detail-template,.tabbed-detail-template) .el-card { border-radius:var(--app-card-radius,8px); box-shadow:none; min-width:0; }
+:is(.detail-form-template,.split-detail-template,.tabbed-detail-template) .el-card__header { padding:14px 20px; border-bottom:1px solid var(--el-border-color-lighter); font-size:15px; font-weight:600; }
+:is(.detail-form-template,.split-detail-template,.tabbed-detail-template) > .page-header { padding:20px; border:1px solid var(--el-border-color-lighter); border-radius:var(--app-card-radius,8px); background:var(--el-bg-color); }
+:is(.detail-form-template,.split-detail-template,.tabbed-detail-template) :is(.form-section h2,.form-section h3) { margin:0 0 16px; font-size:15px; font-weight:600; }
+.detail-form-template__actions { padding:12px 20px; background:var(--el-bg-color); backdrop-filter:none; flex-wrap:wrap; }
+.tabbed-detail-template__tabs > .el-card__body { padding-top:0; }
+.tabbed-detail-template__tabs .el-tabs__content { padding-top:16px; }
+/* 详情标签弱化、值区保持可读；长标识换行，表格和流程画布不受影响。 */
+:is(.detail-form-template,.split-detail-template,.tabbed-detail-template,.app-managed-dialog) .el-descriptions { --el-descriptions-item-bordered-label-background:var(--el-fill-color-light); }
+:is(.detail-form-template,.split-detail-template,.tabbed-detail-template,.app-managed-dialog) .el-descriptions__label { color:var(--el-text-color-secondary); font-weight:400; }
+:is(.detail-form-template,.split-detail-template,.tabbed-detail-template,.app-managed-dialog) .el-descriptions__content { color:var(--el-text-color-primary); overflow-wrap:anywhere; line-height:1.7; }
+:is(.detail-form-template,.split-detail-template,.tabbed-detail-template,.app-managed-dialog) .el-descriptions__table { table-layout:fixed; }
+@media(max-width:760px) {
+  :is(.detail-form-template,.split-detail-template,.tabbed-detail-template) > .page-header { padding:14px; }
+  :is(.detail-form-template,.split-detail-template,.tabbed-detail-template) .el-card__body { padding:14px; }
+  .detail-form-template__form :where(.el-form) { grid-template-columns:minmax(0,1fr); }
+  /* 移动端按字段顺序堆叠描述，避免桌面多列详情挤压值区；不隐藏任何字段。 */
+  :is(.detail-form-template,.split-detail-template,.tabbed-detail-template,.app-managed-dialog) .el-descriptions__table :is(tbody,tr) { display:block; width:100%; }
+  :is(.detail-form-template,.split-detail-template,.tabbed-detail-template,.app-managed-dialog) .el-descriptions__table :is(th,td) { display:block; width:auto; }
+}
+
+/* 管理工作区装配层也必须传递剩余高度；不能依赖页面根组件的名称或嵌套层数。 */
+@media (min-width: 761px) {
+  .viewport-page-host:has(.business-workspace, .tree-list-template, .standard-list-template),
+  .viewport-page-host :where(div, section, main):has(.business-workspace, .tree-list-template, .standard-list-template) {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+  }
+  /* 只对明确声明的纵向列表宿主传高；禁止改写树表 grid、左右分栏和业务详情布局。 */
+  .viewport-page-host .management-list-host {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+  }
+  .viewport-page-host :is(.business-workspace, .tree-list-template, .standard-list-template) .management-table-region {
+    flex: 1 1 0;
+    min-height: 80px;
+  }
+}
+
+/* 同一详情内的多张表按内容顺序滚动，不把每张表都强制分配为整个视口的剩余高度。 */
+.viewport-page-host .management-table-stack { overflow: auto; }
+.viewport-page-host .management-table-stack > .management-table { flex: none; overflow: visible; }
+.viewport-page-host .management-table-stack > .management-table .management-table-region { flex: none; min-height: 0; overflow: visible; }

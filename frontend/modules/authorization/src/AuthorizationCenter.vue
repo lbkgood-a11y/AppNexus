@@ -1,6 +1,8 @@
 <script setup lang="ts">
-import {computed,onMounted,onBeforeUnmount,ref,watch} from "vue";
-import {ElMessage,ElMessageBox} from "element-plus";
+import { setErrorFeedback } from "@appnexus/ui";
+import { InfoHint } from "@appnexus/ui";
+import {h,computed,onMounted,onBeforeUnmount,ref,watch} from "vue";
+import {ElButton,ElNotification,ElMessage,ElMessageBox} from "element-plus";
 import {useI18n} from "vue-i18n";
 import {BusinessWorkspace,ManagementTable,type ManagementColumn} from "@appnexus/ui";
 import MenuPermissionBranch from "./MenuPermissionBranch.vue";
@@ -46,6 +48,14 @@ const {t,locale,te}=useI18n();
 /** 已知资源显示业务名称，未知资源保留稳定标识，不猜测领域含义。 */
 function resourceLabel(resource:string){const key='authorizationCenter.resourceNames.'+resource.replaceAll('.','_');return te(key)?t(key):resource;}const roles=ref<RoleItem[]>([]),permissions=ref<PermissionItem[]>([]),metadata=ref<ScopeSupport[]>([]),organizations=ref<AuthorizationOption[]>([]);const roleId=ref(""),selected=ref<string[]>([]),policies=ref<Record<string,DataPolicy>>({}),version=ref(0),reason=ref(""),loading=ref(false),saving=ref(false),error=ref("");
 const selectedRole=computed(()=>roles.value.find(item=>item.id===roleId.value));
+/** 已选失效项独立展示，不受搜索或菜单关联过滤，移除必须显式确认并正常保存。 */
+const invalidPermissions=computed(()=>selected.value.filter(id=>!permissions.value.some(item=>item.id===id&&item.enabled)).map(id=>{const item=permissions.value.find(value=>value.id===id);return {id,name:item?label(item):id,code:item?.code??id};}));
+/** 只修改草稿并移除对应数据策略；保存仍受版本与审计约束。 */
+async function removeInvalidPermissions(){
+ try{await ElMessageBox.confirm(t('invalidPermissionCleanup.confirm'),t('invalidPermissionCleanup.title'),{type:'warning',confirmButtonText:t('invalidPermissionCleanup.remove'),cancelButtonText:t('organization.cancel')});}
+ catch{return;}
+ invalidPermissions.value.forEach(item=>toggle(item.id,false));
+}
 const grouped=computed(()=>Object.entries(permissions.value.filter(item=>(editorTab.value!=="data"||(selected.value.includes(item.id)&&supports(item.id).length>0))&&(!onlySelected.value||selected.value.includes(item.id))&&(!query.value.trim()||[label(item),item.code,item.resource].some(value=>value.toLowerCase().includes(query.value.trim().toLowerCase())))).reduce<Record<string,PermissionItem[]>>((all,item)=>{(all[item.resource]??=[]).push(item);return all;},{})));
 /** 菜单与资源视图编辑同一权限草稿，搜索与仅已选过滤作用于两种视图。 */
 const menuTree=computed(()=>menuPermissionTree(menus.value,grouped.value.flatMap(([,items])=>items),locale.value.startsWith('zh'),t('authorizationCenter.unlinkedPermissions')));
@@ -66,13 +76,31 @@ function supports(id:string){return metadata.value.filter(item=>item.permissionI
 function toggle(id:string,enabled:boolean){if(enabled){if(!selected.value.includes(id))selected.value.push(id);}else{selected.value=selected.value.filter(value=>value!==id);delete policies.value[id];}}
 function scopeChanged(permissionId:string,type:DataScopeType){const support=supports(permissionId).find(item=>item.scopeType===type);if(!support)return;policies.value[permissionId]={permissionId,scopeType:type,resourceType:support.resourceType,organizationIds:[]};}
 /** 角色切换后清除旧快照，过期响应不得写入新角色；读取失败时禁止覆盖保存。 */
-async function loadAssignment(){if(!roleId.value)return;const request=++requestVersion;loading.value=true;ready.value=false;error.value="";baseline.value=null;fieldSelection.value=[];fieldPolicies.value=[];selected.value=[];policies.value={};reason.value="";try{const value=await props.api.assignment(roleId.value);if(request!==requestVersion)return;selected.value=[...value.permissionIds];policies.value=Object.fromEntries(value.dataPolicies.map(item=>[item.permissionId,{...item,organizationIds:[...item.organizationIds]}]));version.value=value.roleVersion;fieldPolicies.value=[...(value.fieldPolicies??[])];baseline.value=snapshot();ready.value=true;}catch(cause){if(request===requestVersion)error.value=props.errorText(cause);}finally{if(request===requestVersion)loading.value=false;}}
+/**
+ * 错误使用浮动通知，不挤占工作区；持续显示直到关闭，并提供显式重试，避免自动重放写请求。
+ */
+watch(error, message => {
+  if (!message) return;
+  const notification = ElNotification({
+    type: "error",
+    duration: 0,
+    message: h("div", [
+      h("p", message),
+      h(ElButton, {
+        link: true,
+        type: "primary",
+        onClick: () => { notification.close(); void load(); }
+      }, () => t("account.retry"))
+    ])
+  });
+});
+async function loadAssignment(){if(!roleId.value)return;const request=++requestVersion;loading.value=true;ready.value=false;error.value="";baseline.value=null;fieldSelection.value=[];fieldPolicies.value=[];selected.value=[];policies.value={};reason.value="";try{const value=await props.api.assignment(roleId.value);if(request!==requestVersion)return;selected.value=[...value.permissionIds];policies.value=Object.fromEntries(value.dataPolicies.map(item=>[item.permissionId,{...item,organizationIds:[...item.organizationIds]}]));version.value=value.roleVersion;fieldPolicies.value=[...(value.fieldPolicies??[])];baseline.value=snapshot();ready.value=true;}catch(cause){if(request===requestVersion)await setErrorFeedback(error, props.errorText(cause));}finally{if(request===requestVersion)loading.value=false;}}
 /** 读取完整角色目录，避免超过每页 100 条后无法找到目标角色。 */
 async function loadRoles(){const result:RoleItem[]=[];for(let page=1;;page++){const value=await props.roleApi.list({query:"",status:"ENABLED",page,pageSize:100});result.push(...value.items);if(result.length>=value.total)return result;if(!value.items.length)throw new Error(t("authorizationCenter.roleListChanged"));}}
-async function load(){if(saving.value||!(await confirmDiscard()))return;loading.value=true;ready.value=false;error.value="";try{const [catalog,items,support,orgs,fields,navigation]=await Promise.all([loadRoles(),props.api.permissions(),props.api.metadata(),props.api.organizationOptions?.()??Promise.resolve([]),props.api.fields(),props.api.menus()]);menus.value=navigation;fieldCatalog.value=fields;roles.value=catalog;permissions.value=items;metadata.value=support;organizations.value=orgs;roleId.value=catalog.some(item=>item.id===roleId.value)?roleId.value:(catalog[0]?.id??"");if(roleId.value)await loadAssignment();else{baseline.value=null;fieldSelection.value=[];fieldPolicies.value=[];selected.value=[];policies.value={};reason.value="";}}catch(cause){error.value=props.errorText(cause);}finally{loading.value=false;}}
+async function load(){if(saving.value||!(await confirmDiscard()))return;loading.value=true;ready.value=false;error.value="";try{const [catalog,items,support,orgs,fields,navigation]=await Promise.all([loadRoles(),props.api.permissions(),props.api.metadata(),props.api.organizationOptions?.()??Promise.resolve([]),props.api.fields(),props.api.menus()]);menus.value=navigation;fieldCatalog.value=fields;roles.value=catalog;permissions.value=items;metadata.value=support;organizations.value=orgs;roleId.value=catalog.some(item=>item.id===roleId.value)?roleId.value:(catalog[0]?.id??"");if(roleId.value)await loadAssignment();else{baseline.value=null;fieldSelection.value=[];fieldPolicies.value=[];selected.value=[];policies.value={};reason.value="";}}catch(cause){await setErrorFeedback(error, props.errorText(cause));}finally{loading.value=false;}}
 const invalid=computed(()=>!ready.value||loading.value||!changed.value||incompleteCount.value>0||!reason.value.trim());
 /** 完整授权覆盖写影响全部角色成员；失败后要求重读版本，禁止盲目重试。 */
-async function save(){if(!roleId.value||invalid.value||saving.value)return;saving.value=true;error.value="";try{await ElMessageBox.confirm(t("authorizationCenter.roleReplaceWarning",{name:selectedRole.value?.name}),t("authorizationCenter.summary"),{confirmButtonText:t("organization.save"),cancelButtonText:t("organization.cancel"),type:"warning"});}catch{saving.value=false;return;}try{const value=await props.api.replace(roleId.value,{ids:[...selected.value],dataPolicies:Object.values(policies.value),fieldPolicies:fieldPolicies.value,version:version.value,reason:reason.value.trim()});selected.value=[...value.permissionIds];policies.value=Object.fromEntries(value.dataPolicies.map(item=>[item.permissionId,{...item,organizationIds:[...item.organizationIds]}]));version.value=value.roleVersion;fieldPolicies.value=[...(value.fieldPolicies??[])];baseline.value=snapshot();reason.value="";ElMessage.success(t("authorizationCenter.saved"));}catch(cause){error.value=props.errorText(cause);ready.value=false;}finally{saving.value=false;}}
+async function save(){if(!roleId.value||invalid.value||saving.value)return;saving.value=true;error.value="";try{await ElMessageBox.confirm(t("authorizationCenter.roleReplaceWarning",{name:selectedRole.value?.name}),t("authorizationCenter.summary"),{confirmButtonText:t("organization.save"),cancelButtonText:t("organization.cancel"),type:"warning"});}catch{saving.value=false;return;}try{const value=await props.api.replace(roleId.value,{ids:[...selected.value],dataPolicies:Object.values(policies.value),fieldPolicies:fieldPolicies.value,version:version.value,reason:reason.value.trim()});selected.value=[...value.permissionIds];policies.value=Object.fromEntries(value.dataPolicies.map(item=>[item.permissionId,{...item,organizationIds:[...item.organizationIds]}]));version.value=value.roleVersion;fieldPolicies.value=[...(value.fieldPolicies??[])];baseline.value=snapshot();reason.value="";ElMessage.success(t("authorizationCenter.saved"));}catch(cause){await setErrorFeedback(error, props.errorText(cause));ready.value=false;}finally{saving.value=false;}}
 onBeforeUnmount(()=>{++requestVersion;});
 onMounted(load);
 </script>
@@ -87,12 +115,11 @@ onMounted(load);
         <el-tab-pane :label="t('authorizationCenter.subjectRoles')" name="subjects" />
       </el-tabs>
     </template>
-    <template #feedback>
-      <el-alert v-if="error && isRoleTab" type="error" :title="error" :closable="false" show-icon>
-        <el-button link type="primary" :disabled="saving || loading" @click="load">{{ t('account.retry') }}</el-button>
-      </el-alert>
-    </template>
     <template #data>
+      <el-alert v-if="isRoleTab && invalidPermissions.length" type="warning" :closable="false" :title="t('invalidPermissionCleanup.title')">
+        <ul><li v-for="item in invalidPermissions" :key="item.id">{{ item.name }}（{{ item.code }}）：{{ t('invalidPermissionCleanup.reason') }}</li></ul>
+        <el-button :disabled="!ready || saving" @click="removeInvalidPermissions">{{ t('invalidPermissionCleanup.remove') }}</el-button>
+      </el-alert>
       <SubjectAuthorization ref="subjectEditor" v-show="activeTab === 'subjects'" :api="subjectApi" :role-api="roleApi" :error-text="errorText" />
       <MemberGrantEditor ref="memberEditor" v-if="subjectApi.grants" v-show="activeTab === 'memberData'" :api="subjectApi" :role-api="roleApi" :authorization-api="api" :error-text="errorText" />
       <div v-show="isRoleTab" v-loading="loading" class="authorization-grid">
@@ -104,9 +131,9 @@ onMounted(load);
           </el-select>
         </section>
         <section class="authorization-pane permission-pane">
-          <div class="editor-heading"><h2>{{ t(activeTab==='permissions'?'authorizationCenter.permissions':activeTab==='data'?'authorizationCenter.roleDefaultData':'authorizationCenter.fieldSecurity') }}</h2><el-tag v-if="changed" type="warning" effect="plain">{{t('authorizationCenter.unsavedChanges')}}</el-tag></div>
+          <div class="editor-heading"><h2>{{ t(activeTab==='permissions'?'authorizationCenter.permissions':activeTab==='data'?'authorizationCenter.roleDefaultData':'authorizationCenter.fieldSecurity') }}<InfoHint v-if="editorTab==='security'" :content="t('authorizationCenter.fieldSecurityHint')" /><InfoHint v-if="editorTab === 'data'" :content="t('authorizationCenter.dataPolicyHint')" /><InfoHint v-if="editorTab==='functions'" :content="t('authorizationCenter.menuFunctionHint')" /></h2><el-tag v-if="changed" type="warning" effect="plain">{{t('authorizationCenter.unsavedChanges')}}</el-tag></div>
           <template v-if="editorTab === 'security'">
-            <el-alert :title="t('authorizationCenter.fieldSecurityHint')" type="info" :closable="false" show-icon />
+            
             <el-empty v-if="!fieldCatalog.length" :description="t('authorizationCenter.noFieldCatalog')" />
             <el-form label-position="top" class="field-filter" @submit.prevent>
               <el-form-item :label="t('authorizationCenter.fieldResource')"><el-select v-model="fieldResource" clearable filterable><el-option v-for="resource in fieldResources" :key="resource" :value="resource" :label="resource" /></el-select></el-form-item>
@@ -134,9 +161,9 @@ onMounted(load);
             <el-form-item :label="t('authorizationCenter.permissionQuery')"><el-input v-model="query" clearable :maxlength="100" /></el-form-item>
             <el-checkbox v-model="onlySelected">{{ t('authorizationCenter.onlySelected') }}</el-checkbox>
           </el-form>
-          <el-alert v-if="editorTab === 'data'" :title="t('authorizationCenter.dataPolicyHint')" type="info" :closable="false" show-icon />
+          
           <el-radio-group v-if="editorTab==='functions'" v-model="functionView" class="function-view" :aria-label="t('authorizationCenter.functionView')"><el-radio-button value="menus">{{t('authorizationCenter.menuFunctions')}}</el-radio-button><el-radio-button value="resources">{{t('authorizationCenter.resourceView')}}</el-radio-button></el-radio-group>
-          <template v-if="editorTab==='functions'&&functionView==='menus'"><el-alert :title="t('authorizationCenter.menuFunctionHint')" type="info" :closable="false" class="mb-4" /><MenuPermissionBranch v-for="node in menuTree" :key="node.id" :node="node" :selected="selected" :disabled="!ready||saving" @toggle="toggleMenu" /></template>
+          <template v-if="editorTab==='functions'&&functionView==='menus'"><!-- 授权说明收束为可聚焦的提示入口，不占用整行说明区域。 --><MenuPermissionBranch v-for="node in menuTree" :key="node.id" :node="node" :selected="selected" :disabled="!ready||saving" @toggle="toggleMenu" /></template>
           <el-empty v-if="!grouped.length" :description="t(permissions.length ? 'authorizationCenter.noMatchingPermissions' : 'authorizationCenter.noPermissions')" />
           <div v-for="[resource,items] in (editorTab==='functions'&&functionView==='menus'?[]:grouped)" :key="resource" class="permission-group">
             <template v-if="editorTab === 'functions' || items.some(item => selected.includes(item.id) && supports(item.id).length)">
@@ -194,10 +221,12 @@ h2{font-size:var(--el-font-size-medium);margin:0;font-weight:600}
 .permission-group-heading{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px 16px;padding:10px 16px;background:var(--el-fill-color-lighter)}
 .permission-group h3{margin:0;font-size:14px;font-weight:600;overflow-wrap:anywhere;color:var(--el-text-color-regular)}
 .permission-items{padding:0 16px}
-.permission-items-functions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 24px}
+/* 功能清单桌面端统一四列，窄屏回退两列；字段与数据范围表单不受影响。 */
+.permission-items-functions{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0 16px}
 .permission-row{display:grid;grid-template-columns:minmax(180px,1fr) minmax(160px,1fr) minmax(180px,1.5fr);gap:16px;align-items:center;padding:12px 0;border-bottom:1px solid var(--el-border-color-lighter)}
 .permission-row:last-child{border-bottom:0}
-.permission-row.function-row{grid-template-columns:1fr}
+/* 仅压缩功能权限条目的上下留白，不改变字段和数据范围编辑表单。 */
+.permission-row.function-row{grid-template-columns:1fr;padding:4px 0}
 .permission-row :deep(.el-checkbox){max-width:100%;height:auto;min-height:40px;align-items:flex-start}
 .permission-row :deep(.el-checkbox__input){margin-top:4px}
 .permission-row :deep(.el-checkbox__label){display:flex;flex-direction:column;gap:4px;white-space:normal;overflow-wrap:anywhere}
@@ -212,7 +241,7 @@ h2{font-size:var(--el-font-size-medium);margin:0;font-weight:600}
 .save-form>.el-form-item{margin-bottom:0}
 .save-form>.el-alert{grid-column:1/-1;grid-row:1}
 .save-button{min-width:120px;align-self:end}
-@media(min-width:1400px){.permission-items-functions{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(min-width:701px) and (max-width:1100px){.permission-items-functions{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:1100px){.permission-row{grid-template-columns:minmax(0,1fr) minmax(160px,1fr)}.permission-row>.el-select:last-child{grid-column:2}.permission-row.function-row{grid-template-columns:1fr}}
 @media(max-width:700px){.authorization-pane{padding:16px}.role-context{align-items:stretch;flex-direction:column;gap:12px}.role-context>.el-select{width:100%}.permission-items-functions{grid-template-columns:1fr}.permission-group-heading{align-items:flex-start;flex-direction:column}.permission-filter{align-items:stretch;flex-direction:column}.permission-filter .el-form-item{max-width:none;min-width:0}.permission-row{grid-template-columns:1fr}.permission-row>.el-select:last-child{grid-column:auto}.save-form{grid-template-columns:1fr}.save-button{width:100%}.field-filter{flex-direction:column}.field-filter .el-form-item{min-width:0}:deep(.el-button){min-height:44px}}
 </style>

@@ -23,6 +23,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ActiveProfiles("local")
 @AutoConfigureMockMvc
 class MenuManagementTest extends DatabaseTestSupport {
+ @Autowired OperationRegistry operationRegistry;
  @Autowired MyBatisMenuManagement menus;
  @Autowired MyBatisPlatformAdministration administration;
  @Autowired JdbcTemplate jdbc;
@@ -33,6 +34,37 @@ class MenuManagementTest extends DatabaseTestSupport {
  @BeforeEach void initialize(){actor=UUID.fromString(jdbc.queryForObject("SELECT BIN_TO_UUID(id) FROM identity_account WHERE username='admin-test'",String.class));administration.initializeAdministrator("admin-test");}
  private MenuManagement.Command command(UUID parent,MenuManagement.Type type,String code){return new MenuManagement.Command(parent,type,code,"菜单","Menu",null,null,"ri/menu-line",null,10,true,true,MenuManagement.Scope.PLATFORM,type==MenuManagement.Type.EXTERNAL?"https://example.com/track":null);}
 
+
+ /** 功能清单向已授权平台主体返回代码快照，未登录请求不得读取。 */
+ @Test void featureCatalogUsesRegisteredOperationsAndRejectsUnauthenticatedReaders() throws Exception {
+  mvc.perform(get("/bff/platform/menus/features")).andExpect(status().isUnauthorized());
+  mvc.perform(get("/bff/platform/operation-catalog")).andExpect(status().isUnauthorized());
+  mvc.perform(get("/bff/platform/object-catalog")).andExpect(status().isUnauthorized());
+  mvc.perform(get("/bff/platform/object-catalog").with(authenticated(actor.toString(),0))).andExpect(status().isOk()).andExpect(header().string("Cache-Control","no-store"))
+   .andExpect(jsonPath("$[?(@.code == 'OrganizationUnit')].category").value("MASTER_DATA"))
+   .andExpect(jsonPath("$[?(@.code == 'OrganizationUnit')].configurable").value(false));
+  mvc.perform(get("/bff/platform/users/"+actor+"/operation-diagnostics")).andExpect(status().isUnauthorized());
+  mvc.perform(get("/bff/platform/users/"+actor+"/operation-diagnostics").with(authenticated(actor.toString(),0))).andExpect(status().isOk()).andExpect(header().string("Cache-Control","no-store")).andExpect(jsonPath("$[?(@.operation.id == 'Account.update')].data[0].resource").value("identity.account"));
+  mvc.perform(get("/bff/platform/operation-catalog").with(authenticated(actor.toString(),0))).andExpect(status().isOk()).andExpect(header().string("Cache-Control","no-store"));
+  mvc.perform(get("/bff/platform/menus/features").with(authenticated(actor.toString(),0)))
+    .andExpect(status().isOk()).andExpect(header().string("Cache-Control","no-store"))
+    .andExpect(jsonPath("$[?(@.page.key == 'platform/features')].operations[0]").value("configuration.menu:read"));
+ }
+
+ /** 隐藏不取消合法路由，停用才阻断；诊断与真实导航必须得出一致结果。 */
+ @Test void pageDiagnosticsSeparateVisibilityFromRuntimeAccess(){
+  String key="platform/features";
+  try{
+   jdbc.update("UPDATE platform_menu SET visible=FALSE WHERE component_key=?",key);
+   var hidden=navigation.inspect(actor,null,null).stream().filter(page->page.page().equals(key)).findFirst().orElseThrow();
+   assertThat(hidden.accessible()).isTrue();assertThat(hidden.visible()).isFalse();assertThat(hidden.reasons()).contains("MENU_OR_ANCESTOR_HIDDEN");
+   assertThat(navigation.current(actor,null,null,0).items()).extracting(MenuManagement.Menu::component).contains(key);
+   jdbc.update("UPDATE platform_menu SET enabled=FALSE WHERE component_key=?",key);
+   var disabled=navigation.inspect(actor,null,null).stream().filter(page->page.page().equals(key)).findFirst().orElseThrow();
+   assertThat(disabled.accessible()).isFalse();assertThat(disabled.reasons()).contains("MENU_DISABLED");
+   assertThat(navigation.current(actor,null,null,0).items()).extracting(MenuManagement.Menu::component).doesNotContain(key);
+  }finally{jdbc.update("UPDATE platform_menu SET enabled=TRUE,visible=TRUE WHERE component_key=?",key);}
+ }
 
  @Test void managesTreeWithOptimisticVersionAndAudit(){
   var root=menus.create(actor,command(null,MenuManagement.Type.DIRECTORY,"system"));
@@ -86,6 +118,10 @@ class MenuManagementTest extends DatabaseTestSupport {
   assertThat(navigation.current(ordinary,null,null,0).items()).extracting(MenuManagement.Menu::id).containsExactly(link.id());
   mvc.perform(get("/bff/navigation").with(authenticated(ordinary.toString(),0))).andExpect(status().isOk()).andExpect(header().string("Cache-Control","no-store"));
   mvc.perform(get("/bff/platform/menus/pages").with(authenticated(ordinary.toString(),0))).andExpect(status().isForbidden());
+  mvc.perform(get("/bff/platform/menus/features").with(authenticated(ordinary.toString(),0))).andExpect(status().isForbidden());
+  mvc.perform(get("/bff/platform/operation-catalog").with(authenticated(ordinary.toString(),0))).andExpect(status().isForbidden());
+  mvc.perform(get("/bff/platform/object-catalog").with(authenticated(ordinary.toString(),0))).andExpect(status().isForbidden());
+  mvc.perform(get("/bff/platform/users/"+actor+"/operation-diagnostics").with(authenticated(ordinary.toString(),0))).andExpect(status().isForbidden());
   mvc.perform(get("/bff/platform/authorization-navigation").with(authenticated(ordinary.toString(),0))).andExpect(status().isForbidden());
   mvc.perform(get("/bff/platform/authorization-navigation").with(authenticated(actor.toString(),0))).andExpect(status().isOk());
   mvc.perform(get("/bff/navigation")).andExpect(status().isUnauthorized());
@@ -104,10 +140,10 @@ class MenuManagementTest extends DatabaseTestSupport {
  @Test void documentRegistryBelongsToPlatformDirectory(){
   var items=navigation.current(actor,null,null,0).items();
   var parent=items.stream().filter(item->item.code().equals("builtin.navigation.platform")).findFirst().orElseThrow();
-  var document=items.stream().filter(item->item.component()!=null&&item.component().equals("platform/documents")).findFirst().orElseThrow();
+  var document=items.stream().filter(item->item.component()!=null&&item.component().equals("platform/business-objects")).findFirst().orElseThrow();
   assertThat(document.parentId()).isEqualTo(parent.id());
   assertThat(document.icon()).isEqualTo("ri/file-list-line");
-  assertThat(document.path()).isEqualTo("/platform/documents");
+  assertThat(document.path()).isEqualTo("/platform/business-objects");
  }
 
  /** 租户上下文决定入口域，权限撤销后的下一次快照立即移除组织页面。 */
@@ -120,12 +156,12 @@ class MenuManagementTest extends DatabaseTestSupport {
   UUID ownerMember=UUID.fromString(jdbc.queryForObject("SELECT BIN_TO_UUID(id) FROM tenant_member WHERE tenant_id=UUID_TO_BIN(?) AND account_id=UUID_TO_BIN(?)",String.class,tenant.id().toString(),owner.toString()));
   // 待办及本人单据入口可存在；不能把公共导航存在误判为获得组织或配置管理权。
   assertThat(navigation.current(account,tenant.id(),member,1).items()).extracting(MenuManagement.Menu::component)
-    .doesNotContain("organization/index","roles/index","documents/index","platform/documents");
+    .doesNotContain("organization/index","roles/index","business-objects/index","platform/business-objects");
   organizationGrants.grant(tenant.id(),member,ownerMember,com.appnexus.platform.authorization.OrganizationCapability.READ,null);
   assertThat(navigation.current(account,tenant.id(),member,1).items()).extracting(MenuManagement.Menu::component).contains("organization/index").doesNotContain("roles/index");
   organizationGrants.revoke(tenant.id(),member,ownerMember,com.appnexus.platform.authorization.OrganizationCapability.READ);
   assertThat(navigation.current(account,tenant.id(),member,1).items()).extracting(MenuManagement.Menu::component)
-    .doesNotContain("organization/index","roles/index","documents/index","platform/documents");
+    .doesNotContain("organization/index","roles/index","business-objects/index","platform/business-objects");
  }
 
  private MenuManagement.Command external(UUID parent,String code,String address,MenuManagement.Scope scope,int sort,boolean visible){
@@ -139,9 +175,9 @@ class MenuManagementTest extends DatabaseTestSupport {
   assertThat(nodes.stream().filter(item->item.titleZh().equals("授权中心")).findFirst().orElseThrow().operations())
    .contains("access.role:read","access.role:grant").doesNotContain("access.role:create","access.role:delete","access.role:enable");
   assertThat(nodes.stream().filter(item->item.permission()!=null&&item.permission().equals("configuration.menu:read")).findFirst().orElseThrow().operations())
-   .containsExactly("configuration.menu:read","configuration.menu:create","configuration.menu:update","configuration.menu:delete");
+   .containsExactlyInAnyOrder("configuration.menu:read","configuration.menu:create","configuration.menu:update","configuration.menu:delete");
   assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM access_permission WHERE enabled=TRUE AND code IN ('configuration.menu:enable','configuration.menu:publish')",Integer.class)).isZero();
-  for(var page:com.appnexus.platform.configuration.NavigationPages.all())for(String operation:com.appnexus.platform.configuration.NavigationPages.operations(page.key()))
+  for(var page:com.appnexus.platform.configuration.NavigationPages.all())for(String operation:operationRegistry.permissions(page.key()))
    assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM access_permission WHERE enabled=TRUE AND code=?",Integer.class,operation)).as(page.key()+" -> "+operation).isEqualTo(1);
  }
 }

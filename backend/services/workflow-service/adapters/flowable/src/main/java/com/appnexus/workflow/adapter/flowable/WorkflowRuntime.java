@@ -21,10 +21,10 @@ import org.springframework.transaction.support.TransactionTemplate;
  * 所有对象查询带租户；历史只向参与者或受权运维开放，不返回原始业务实体。
  */
 public final class WorkflowRuntime implements WorkflowResults, WorkflowTaskAccess, WorkflowStarter, WorkflowDefinitionCatalog {
-  private java.util.function.Supplier<com.appnexus.contracts.document.DocumentBindings> documentBindings;
+  private java.util.function.Supplier<com.appnexus.contracts.businessobject.BusinessObjectBindings> documentBindings;
 
   /** 由装配层设置延迟公开契约；避免业务、配置和引擎相互初始化，非浏览器配置点。 */
-  public void documentBindings(java.util.function.Supplier<com.appnexus.contracts.document.DocumentBindings> bindings) {
+  public void documentBindings(java.util.function.Supplier<com.appnexus.contracts.businessobject.BusinessObjectBindings> bindings) {
     this.documentBindings = bindings;
   }
 
@@ -39,7 +39,7 @@ public final class WorkflowRuntime implements WorkflowResults, WorkflowTaskAcces
   }
 
   @Override public String startBound(WorkflowContext c,String type,String object,long version,String organization,String purpose,String entry,String resolution) {
-    if(documentBindings==null)throw fail("DOCUMENT_BINDINGS_UNAVAILABLE",503);
+    if(documentBindings==null)throw fail("BUSINESS_OBJECT_BINDINGS_UNAVAILABLE",503);
     return String.valueOf(((Map<?,?>)startInternal(c,type,object,version,organization,purpose,entry,resolution)).get("id"));
   }
   private final ProcessEngine engine;
@@ -134,13 +134,7 @@ public final class WorkflowRuntime implements WorkflowResults, WorkflowTaskAcces
         && resolve(i, n).contains(c.actorId());
   }
 
-  /** 管理操作能力；普通处理任务只需有效成员及任务授权，不要求整个业务模块权限。 */
-  public List<String> capabilities(WorkflowContext c) {
-    requireActive(c);
-    return List.of("read", "edit", "publish", "start", "operate").stream()
-        .filter(a -> platform.allowed(c, "workflow:" + a))
-        .toList();
-  }
+
 
   /** 可配置能力不接受客户端动态注册；仅返回当前有权使用的能力元数据。 */
   public List<WorkflowBusiness.Capability> businesses(WorkflowContext c) {
@@ -154,14 +148,14 @@ public final class WorkflowRuntime implements WorkflowResults, WorkflowTaskAcces
 
   /** 数据契约身份来自业务声明；非单据能力不伪造契约。 */
   private com.appnexus.contracts.data.DataContract dataSchema(WorkflowBusiness business,String entry){
-    if(!(business instanceof com.appnexus.contracts.document.Documents.Provider provider))return null;
-    return provider.descriptor().actions().stream().flatMap(a->a.interaction().capabilities().stream()).filter(c->c.service()==com.appnexus.contracts.document.InteractionContract.Service.WORKFLOW&&c.reference().equals(entry)).findFirst().orElseThrow().schema();
+    if(!(business instanceof com.appnexus.contracts.businessobject.BusinessObjects.Provider provider))return null;
+    return provider.descriptor().operations().stream().flatMap(a->a.interaction().capabilities().stream()).filter(c->c.service()==com.appnexus.contracts.businessobject.InteractionContract.Service.WORKFLOW&&c.reference().equals(entry)).findFirst().orElseThrow().schema();
   }
 
   /** 在流程匹配和实例写入前验证业务快照；字符串传输按声明显式解码，缺失和非法值失败关闭。 */
   private void validateContractSnapshot(WorkflowBusiness business,String entry,Map<String,String> snapshot){
-    if(!(business instanceof com.appnexus.contracts.document.Documents.Provider provider))return;
-    var capability=provider.descriptor().actions().stream().flatMap(a->a.interaction().capabilities().stream()).filter(c->c.service()==com.appnexus.contracts.document.InteractionContract.Service.WORKFLOW&&c.reference().equals(entry)).findFirst().orElseThrow();
+    if(!(business instanceof com.appnexus.contracts.businessobject.BusinessObjects.Provider provider))return;
+    var capability=provider.descriptor().operations().stream().flatMap(a->a.interaction().capabilities().stream()).filter(c->c.service()==com.appnexus.contracts.businessobject.InteractionContract.Service.WORKFLOW&&c.reference().equals(entry)).findFirst().orElseThrow();
     var data=new HashMap<String,Object>();
     for(var field:capability.fields()){
       String value=snapshot.get(field.key());if(value==null)continue;
@@ -177,13 +171,13 @@ public final class WorkflowRuntime implements WorkflowResults, WorkflowTaskAcces
 
   /** 流程设计视图由统一单据行为声明投影生成，业务不再维护第二份工作流目录。 */
   private WorkflowBusinessProfile businessProfile(WorkflowBusiness business,String capability){
-    if(!(business instanceof com.appnexus.contracts.document.Documents.Provider provider))return null;
+    if(!(business instanceof com.appnexus.contracts.businessobject.BusinessObjects.Provider provider))return null;
     var d=provider.descriptor();
-    var a=d.actions().stream().filter(action->action.approval()!=null && action.approval().entry().equals(capability)).findFirst().orElse(null);
+    var a=d.operations().stream().filter(action->action.approval()!=null && action.approval().entry().equals(capability)).findFirst().orElse(null);
     if(a==null)return null;
     var contract=java.util.Objects.requireNonNull(a.approval(),"INTERACTION_WORKFLOW_CONTRACT_REQUIRED");
-    return new WorkflowBusinessProfile(d.typeCode(),contract.purpose(),d.nameZh(),d.nameEn(),"适用业务契约；触发策略在单据工作台配置。","Compatible business contract; configure triggers in the document workbench.",
-      a.interaction().capabilities().stream().filter(c->c.service()==com.appnexus.contracts.document.InteractionContract.Service.WORKFLOW).findFirst().orElseThrow().fields().stream().map(f->new WorkflowBusinessProfile.Field(f.key(),f.nameZh(),f.nameEn(),f.type(),f.unit(),f.unit())).toList(),
+    return new WorkflowBusinessProfile(d.objectType(),contract.purpose(),d.nameZh(),d.nameEn(),"适用业务契约；触发策略在单据工作台配置。","Compatible business contract; configure triggers in the document workbench.",
+      a.interaction().capabilities().stream().filter(c->c.service()==com.appnexus.contracts.businessobject.InteractionContract.Service.WORKFLOW).findFirst().orElseThrow().fields().stream().map(f->new WorkflowBusinessProfile.Field(f.key(),f.nameZh(),f.nameEn(),f.type(),f.unit(),f.unit())).toList(),
       contract.outcomes().stream().map(result->new WorkflowBusinessProfile.Outcome(result,contract.entry(),result,result)).toList(),
       contract.outcomes().contains("WITHDRAWN")?contract.entry():null);
   }
@@ -193,7 +187,7 @@ public final class WorkflowRuntime implements WorkflowResults, WorkflowTaskAcces
     require(c, "read");
     var documents = businesses(c).stream()
         .filter(b -> businessProfile(businesses.get(b.key()),b.key()) != null)
-        .map(b -> Map.of("capability", b.key(), "profile", businessProfile(businesses.get(b.key()),b.key()), "dataContract", ((com.appnexus.contracts.document.Documents.Provider)businesses.get(b.key())).descriptor().actions().stream().flatMap(a->a.interaction().capabilities().stream()).filter(cap->cap.service()==com.appnexus.contracts.document.InteractionContract.Service.WORKFLOW&&cap.reference().equals(b.key())).findFirst().orElseThrow().schema()))
+        .map(b -> Map.of("capability", b.key(), "profile", businessProfile(businesses.get(b.key()),b.key()), "dataContract", ((com.appnexus.contracts.businessobject.BusinessObjects.Provider)businesses.get(b.key())).descriptor().operations().stream().flatMap(a->a.interaction().capabilities().stream()).filter(cap->cap.service()==com.appnexus.contracts.businessobject.InteractionContract.Service.WORKFLOW&&cap.reference().equals(b.key())).findFirst().orElseThrow().schema()))
         .toList();
     return Map.of("documents", documents, "options", platform.configurationOptions(c));
   }
@@ -394,8 +388,8 @@ public final class WorkflowRuntime implements WorkflowResults, WorkflowTaskAcces
       String organization,
       String purpose,
       String entry) {
-    if(businesses.get(entry) instanceof com.appnexus.contracts.document.Documents.Provider)
-      throw fail("DOCUMENT_BINDING_REQUIRED",409);
+    if(businesses.get(entry) instanceof com.appnexus.contracts.businessobject.BusinessObjects.Provider)
+      throw fail("BUSINESS_OBJECT_BINDING_REQUIRED",409);
     return startInternal(c,objectType,objectId,objectVersion,organization,purpose,entry,null);
   }
 
@@ -441,7 +435,7 @@ public final class WorkflowRuntime implements WorkflowResults, WorkflowTaskAcces
                           Map.of())));
           validateContractSnapshot(business,entry,snapshot);
           var bound = resolution==null?null:documentBindings.get().verifyApproval(
-              new com.appnexus.contracts.document.Documents.Context(c.tenantId(),c.actorId(),c.requestId()),
+              new com.appnexus.contracts.businessobject.BusinessObjects.Context(c.tenantId(),c.actorId(),c.requestId()),
               resolution,objectType,objectId,objectVersion,snapshot,purpose,entry);
           var rows =
               jdbc.queryForList(

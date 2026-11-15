@@ -1,0 +1,29 @@
+{
+  "name": "DevHubWorkflow",
+  "uri": "urn:devhub:workflow:business:1",
+  "prefix": "devhub",
+  "xml": {"tagAlias": "lowerCase"},
+  "types": [
+    {"name": "WorkflowNode", "superClass": ["Element"], "properties": [
+      {"name": "kind", "type": "String", "isAttr": true},
+      {"name": "peopleJson", "type": "String"},
+      {"name": "completion", "type": "String", "isAttr": true},
+      {"name": "allowSelf", "type": "Boolean", "isAttr": true},
+      {"name": "capability", "type": "String", "isAttr": true},
+      {"name": "requiredJson", "type": "String"},
+      {"name": "inputJson", "type": "String"},
+      {"name": "retries", "type": "Integer", "isAttr": true},
+      {"name": "timeoutSeconds", "type": "Integer", "isAttr": true},
+      {"name": "join", "type": "String", "isAttr": true},
+      {"name": "separate", "type": "Boolean", "isAttr": true},
+      {"name": "positionJson", "type": "String"}
+    ]},
+    {"name": "WorkflowEdge", "superClass": ["Element"], "properties": [
+      {"name": "kind", "type": "String", "isAttr": true},
+      {"name": "field", "type": "String", "isAttr": true},
+      {"name": "value", "type": "String", "isAttr": true},
+      {"name": "defaultEdge", "type": "Boolean", "isAttr": true},
+      {"name": "operator", "type": "String", "isAttr": true}
+    ]}
+  ]
+}

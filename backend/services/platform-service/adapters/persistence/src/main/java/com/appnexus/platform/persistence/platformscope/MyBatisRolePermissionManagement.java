@@ -32,7 +32,7 @@ public class MyBatisRolePermissionManagement implements RolePermissionManagement
         if(before.equals(new LinkedHashSet<>(requested)))return new Assignment(Set.copyOf(before),current);
         if(!requested.isEmpty()){
             var locked=mapper.lockPermissions(scope(c),requested.stream().map(UUID::toString).toList());
-            if(locked.size()!=requested.size())throw error("PERMISSION_SCOPE_MISMATCH","权限不存在、已停用或不属于角色管理域");
+            if(locked.size()!=requested.size())throw invalidPermissions(scope(c),requested);
             if(!mapper.scopedPermissions(strings(requested)).isEmpty())throw error("DATA_SCOPE_REQUIRED","所选权限需要同时配置数据范围");
         }
         mapper.deletePermissions(roleId.toString());
@@ -53,7 +53,7 @@ public class MyBatisRolePermissionManagement implements RolePermissionManagement
         var c=context(context);requireAuthority(c);if(expectedRoleVersion<0)throw new IllegalArgumentException("角色版本无效");requiredReason(reason);
         var role=role(c,roleId);long current=version(role);if(current!=expectedRoleVersion)conflict();
         var requested=normalize(permissionIds);var requestedStrings=strings(requested);Objects.requireNonNull(dataPolicies);
-        if(!requested.isEmpty()&&mapper.lockPermissions(scope(c),requestedStrings).size()!=requested.size())throw error("PERMISSION_SCOPE_MISMATCH","权限不存在、已停用或不属于角色管理域");
+        if(!requested.isEmpty()&&mapper.lockPermissions(scope(c),requestedStrings).size()!=requested.size())throw invalidPermissions(scope(c),requested);
         var required=requested.isEmpty()?Set.<UUID>of():mapper.scopedPermissions(requestedStrings).stream().map(UUID::fromString).collect(java.util.stream.Collectors.toSet());
         var policies=normalizePolicies(c,requested,dataPolicies,required);
         var fieldsBefore=readFields(roleId);var readPoliciesForAudit=readPolicies(roleId);
@@ -85,6 +85,16 @@ public class MyBatisRolePermissionManagement implements RolePermissionManagement
         if(!seen.equals(required))throw error("DATA_SCOPE_REQUIRED","需要数据范围的权限必须且只能配置一项策略");return result.stream().sorted(java.util.Comparator.comparing(DataPolicy::permissionId)).toList();
     }
 
+    /** 保存失败列出具体同域权限；未知/跨域只显示请求标识，避免越权读取目录。 */
+    private RoleManagementException invalidPermissions(String scope,List<UUID> requested) {
+        var problems=new ArrayList<String>();
+        for(var id:requested){var row=mapper.permissionDetail(scope,id.toString());
+            if(row==null)problems.add(id+"：不存在或不属于当前管理域");
+            else if(!Boolean.TRUE.equals(row.get("enabled"))&&!Integer.valueOf(1).equals(row.get("enabled")))
+                problems.add(row.get("name_zh")+"（"+row.get("code")+"）：已停用");
+        }
+        return error("PERMISSION_SCOPE_MISMATCH",String.join("；",problems));
+    }
     private Assignment assignment(UUID roleId,long version){return new Assignment(mapper.permissions(roleId.toString()).stream().map(UUID::fromString).collect(java.util.stream.Collectors.toUnmodifiableSet()),version);}
     private Set<DataPolicy> readPolicies(UUID roleId){var grouped=new LinkedHashMap<UUID,DataPolicy>();for(var row:mapper.policies(roleId.toString())){var id=UUID.fromString((String)row.get("permission_id"));var current=grouped.get(id);var organizations=new LinkedHashSet<UUID>();if(current!=null)organizations.addAll(current.organizationIds());if(row.get("organization_id")!=null)organizations.add(UUID.fromString((String)row.get("organization_id")));grouped.put(id,new DataPolicy(id,com.appnexus.platform.authorization.DataScopeAuthorization.ScopeType.valueOf((String)row.get("scope_type")),(String)row.get("resource_type"),Set.copyOf(organizations)));}return Set.copyOf(grouped.values());}
     private Map<String,Object> role(RoleManagement.Context c,UUID id){Objects.requireNonNull(id);var row=mapper.lockRole(owner(c),id.toString());if(row==null)throw error("ROLE_SCOPE_NOT_FOUND","角色不存在");return row;}

@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { setErrorFeedback } from "@appnexus/ui";
+import { FloatingError } from "@appnexus/ui";
 import { onBeforeUnmount, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { http, requestErrorMessage } from "@/utils/http";
@@ -24,7 +26,7 @@ async function submit() {
       await http.request("post", "/login/recovery/completion", { data: { username: username.value, token: token.value, newPassword: password.value }, headers });
       token.value = ""; stage.value = "done";
     }
-  } catch (cause) { error.value = requestErrorMessage(cause); }
+  } catch (cause) { await setErrorFeedback(error, requestErrorMessage(cause)); }
   finally { busy.value = false; recoveryCode.value = ""; password.value = ""; confirm.value = ""; }
 }
 onBeforeUnmount(() => { recoveryCode.value = ""; token.value = ""; password.value = ""; confirm.value = ""; });
@@ -32,7 +34,7 @@ onBeforeUnmount(() => { recoveryCode.value = ""; token.value = ""; password.valu
 <template>
   <div>
     <el-alert :title="t(stage === 'done' ? 'account.recoveryDone' : 'account.recoveryHint')" :type="stage === 'done' ? 'success' : 'info'" :closable="false" class="mb-4" />
-    <el-alert v-if="error" :title="error" type="error" :closable="false" class="mb-4" />
+    <FloatingError v-if="error" :title="error" scope="error" type="error" :closable="false" class="mb-4" />
     <el-form v-if="stage !== 'done'" ref="form" :model="{ username, recoveryCode, token, password, confirm }" label-position="top" size="large" @submit.prevent="submit">
       <el-form-item prop="username" :label="t('platform.account')" :rules="[{ required: true, message: t('platform.account'), trigger: 'blur' }]"><el-input v-model="username" autocomplete="username" :maxlength="100" :disabled="busy" /></el-form-item>
       <el-form-item v-if="stage === 'recover'" prop="recoveryCode" :label="t('account.recoveryCode')" :rules="[{ required: true, pattern: /^[a-f0-9]{32}$/, message: t('account.recoveryCode'), trigger: 'blur' }]"><el-input v-model="recoveryCode" type="password" show-password :maxlength="32" :disabled="busy" autocomplete="off" /></el-form-item>

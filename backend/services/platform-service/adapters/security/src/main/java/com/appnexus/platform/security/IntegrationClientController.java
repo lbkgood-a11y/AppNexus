@@ -18,15 +18,24 @@ public class IntegrationClientController {
     public record Change(int version,boolean enabled,Set<String> scopes){}
     /** 轮换必须匹配当前版本，不能盲目覆盖另一管理员的更改。 */
     public record Rotation(int version){}
-    @EndpointOperation("integration.client:read") @GetMapping("/tenants/{tenant}/clients")
+    /** 操作契约关联下方真实接口；仅供展示与一致性校验，主体、权限及业务约束仍由原用例执行。 */
+    @com.appnexus.contracts.operation.BusinessObjectType(code="IntegrationClient",nameZh="集成客户端",nameEn="Integration Client",category=com.appnexus.contracts.operation.BusinessObjectType.Category.SYSTEM,module="identity")
+ @com.appnexus.contracts.operation.OperationBinding(id="IntegrationClient.list",objectType="IntegrationClient",operationCode="list",pages={"platform/tenants"},nameZh="集成客户端：查看列表",nameEn="Read integration clients",policy="主体管理域、角色权限及业务用例约束由原执行器逐请求复核")
+ @EndpointOperation("integration.client:read") @GetMapping("/tenants/{tenant}/clients")
     ResponseEntity<List<IntegrationClients.View>> list(Authentication auth,@PathVariable UUID tenant){return ok(clients.list(UUID.fromString(auth.getName()),tenant));}
-    @EndpointOperation("integration.client:create") @PostMapping("/tenants/{tenant}/clients")
+    /** 操作契约关联下方真实接口；仅供展示与一致性校验，主体、权限及业务约束仍由原用例执行。 */
+    @com.appnexus.contracts.operation.OperationBinding(id="IntegrationClient.create",objectType="IntegrationClient",operationCode="create",pages={"platform/tenants"},nameZh="集成客户端：新增",nameEn="Create integration clients",policy="主体管理域、角色权限及业务用例约束由原执行器逐请求复核")
+ @EndpointOperation("integration.client:create") @PostMapping("/tenants/{tenant}/clients")
     ResponseEntity<IntegrationClients.Created> create(Authentication auth,@PathVariable UUID tenant,@RequestBody Creation input){
         return ResponseEntity.status(HttpStatus.CREATED).cacheControl(CacheControl.noStore()).body(clients.create(UUID.fromString(auth.getName()),tenant,input.name(),input.scopes()));
     }
-    @EndpointOperation("integration.client:update") @PutMapping("/clients/{id}")
+    /** 操作契约关联下方真实接口；仅供展示与一致性校验，主体、权限及业务约束仍由原用例执行。 */
+    @com.appnexus.contracts.operation.OperationBinding(id="IntegrationClient.update",objectType="IntegrationClient",operationCode="update",pages={"platform/tenants"},nameZh="集成客户端：修改",nameEn="Update integration clients",policy="主体管理域、角色权限及业务用例约束由原执行器逐请求复核")
+ @EndpointOperation("integration.client:update") @PutMapping("/clients/{id}")
     ResponseEntity<IntegrationClients.View> update(Authentication auth,@PathVariable String id,@RequestBody Change input){return ok(clients.update(UUID.fromString(auth.getName()),id,input.version(),input.enabled(),input.scopes()));}
-    @EndpointOperation("integration.client:rotate_secret") @PostMapping("/clients/{id}/secret-rotation")
+    /** 操作契约关联下方真实接口；仅供展示与一致性校验，主体、权限及业务约束仍由原用例执行。 */
+    @com.appnexus.contracts.operation.OperationBinding(id="IntegrationClient.rotate",objectType="IntegrationClient",operationCode="rotate",pages={"platform/tenants"},nameZh="集成客户端：轮换密钥",nameEn="Rotate integration secrets",policy="主体管理域、角色权限及业务用例约束由原执行器逐请求复核")
+ @EndpointOperation("integration.client:rotate_secret") @PostMapping("/clients/{id}/secret-rotation")
     ResponseEntity<IntegrationClients.Created> rotate(Authentication auth,@PathVariable String id,@RequestBody Rotation input){return ok(clients.rotate(UUID.fromString(auth.getName()),id,input.version()));}
     private <T> ResponseEntity<T> ok(T value){return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(value);}
 }

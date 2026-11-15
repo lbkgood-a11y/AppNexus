@@ -1,0 +1,225 @@
+[
+  {
+    "file": "frontend/modules/organization/src/Management.vue",
+    "expression": "saveOperation",
+    "operations": [
+      "OrganizationType.create",
+      "OrganizationType.update",
+      "OrganizationUnit.create",
+      "OrganizationUnit.update",
+      "Position.create",
+      "Position.update",
+      "PositionAssignment.create",
+      "PositionAssignment.update",
+      "OrganizationUnit.move",
+      "OrganizationLeader.set",
+      "OrganizationRelation.create"
+    ],
+    "sources": [
+      "frontend/modules/organization/src/operationBinding.ts"
+    ],
+    "reason": "按当前表单对象、创建/更新及固定管理域选择真实操作；已核对各分支，不允许权限码或未知操作兜底"
+  },
+  {
+    "file": "frontend/modules/tenant/src/Administration.vue",
+    "expression": "tab==='users'?'Account.create':tab==='members'?'TenantMember.createManaged|TenantInvitation.invite':'Tenant.create'",
+    "operations": [
+      "Account.create",
+      "TenantMember.createManaged",
+      "TenantInvitation.invite",
+      "Tenant.create"
+    ],
+    "sources": [
+      "frontend/modules/tenant/src/Administration.vue"
+    ],
+    "reason": "按当前表单对象、创建/更新及固定管理域选择真实操作；已核对各分支，不允许权限码或未知操作兜底"
+  },
+  {
+    "file": "frontend/modules/tenant/src/Administration.vue",
+    "expression": "tab==='users'?'Account.setEnabled':tab==='tenants'?'Tenant.setEnabled':'TenantMember.setEnabledManaged'",
+    "operations": [
+      "Account.setEnabled",
+      "Tenant.setEnabled",
+      "TenantMember.setEnabledManaged"
+    ],
+    "sources": [
+      "frontend/modules/tenant/src/Administration.vue"
+    ],
+    "reason": "按当前表单对象、创建/更新及固定管理域选择真实操作；已核对各分支，不允许权限码或未知操作兜底"
+  },
+  {
+    "file": "frontend/modules/tenant/src/Administration.vue",
+    "expression": "dialog==='user'?'Account.create':dialog==='userEdit'?'Account.update':dialog==='tenant'?'Tenant.create':dialog==='tenantEdit'?'Tenant.update':inviteInstead?'TenantInvitation.invite':'TenantMember.createManaged'",
+    "operations": [
+      "Account.create",
+      "Account.update",
+      "Tenant.create",
+      "Tenant.update",
+      "TenantInvitation.invite",
+      "TenantMember.createManaged"
+    ],
+    "sources": [
+      "frontend/modules/tenant/src/Administration.vue"
+    ],
+    "reason": "按当前表单对象、创建/更新及固定管理域选择真实操作；已核对各分支，不允许权限码或未知操作兜底"
+  },
+  {
+    "file": "frontend/modules/configuration/src/DictionaryManagement.vue",
+    "expression": "dictionaryDialog==='create'?'BusinessDictionary.create':'BusinessDictionary.update'",
+    "operations": [
+      "BusinessDictionary.create",
+      "BusinessDictionary.update"
+    ],
+    "sources": [
+      "frontend/modules/configuration/src/DictionaryManagement.vue"
+    ],
+    "reason": "按当前表单对象、创建/更新及固定管理域选择真实操作；已核对各分支，不允许权限码或未知操作兜底"
+  },
+  {
+    "file": "frontend/modules/configuration/src/DictionaryManagement.vue",
+    "expression": "itemDialog==='create'?'DictionaryItem.create':'DictionaryItem.update'",
+    "operations": [
+      "DictionaryItem.create",
+      "DictionaryItem.update"
+    ],
+    "sources": [
+      "frontend/modules/configuration/src/DictionaryManagement.vue"
+    ],
+    "reason": "按当前表单对象、创建/更新及固定管理域选择真实操作；已核对各分支，不允许权限码或未知操作兜底"
+  },
+  {
+    "file": "frontend/modules/configuration/src/MenuManagement.vue",
+    "expression": "dialog==='edit'?'NavigationMenu.update':'NavigationMenu.create'",
+    "operations": [
+      "NavigationMenu.update",
+      "NavigationMenu.create"
+    ],
+    "sources": [
+      "frontend/modules/configuration/src/MenuManagement.vue"
+    ],
+    "reason": "按当前表单对象、创建/更新及固定管理域选择真实操作；已核对各分支，不允许权限码或未知操作兜底"
+  },
+  {
+    "file": "frontend/modules/business-object/src/BusinessObjectManagement.vue",
+    "expression": "platform ? 'BusinessObject.relationships' : 'BusinessObject.configuration'",
+    "operations": [
+      "BusinessObject.relationships",
+      "BusinessObject.configuration"
+    ],
+    "sources": [
+      "frontend/modules/business-object/src/BusinessObjectManagement.vue"
+    ],
+    "reason": "按当前表单对象、创建/更新及固定管理域选择真实操作；已核对各分支，不允许权限码或未知操作兜底"
+  },
+  {
+    "file": "frontend/modules/print/src/PrintManagement.vue",
+    "expression": "editing ? 'PrintTemplate.update' : 'PrintTemplate.create'",
+    "operations": [
+      "PrintTemplate.update",
+      "PrintTemplate.create"
+    ],
+    "sources": [
+      "frontend/modules/print/src/PrintManagement.vue"
+    ],
+    "reason": "按当前表单对象、创建/更新及固定管理域选择真实操作；已核对各分支，不允许权限码或未知操作兜底"
+  },
+  {
+    "file": "frontend/modules/print/src/PrintManagement.vue",
+    "expression": "editing ? 'PrintDevice.update' : 'PrintDevice.create'",
+    "operations": [
+      "PrintDevice.update",
+      "PrintDevice.create"
+    ],
+    "sources": [
+      "frontend/modules/print/src/PrintManagement.vue"
+    ],
+    "reason": "按当前表单对象、创建/更新及固定管理域选择真实操作；已核对各分支，不允许权限码或未知操作兜底"
+  },
+  {
+    "file": "frontend/modules/print/src/PrintFlowWorkspace.vue",
+    "expression": "sceneForm.id ? 'PrintScene.update' : 'PrintScene.create'",
+    "operations": [
+      "PrintScene.update",
+      "PrintScene.create"
+    ],
+    "sources": [
+      "frontend/modules/print/src/PrintFlowWorkspace.vue"
+    ],
+    "reason": "按当前表单对象、创建/更新及固定管理域选择真实操作；已核对各分支，不允许权限码或未知操作兜底"
+  },
+  {
+    "file": "frontend/modules/workflow/src/WorkflowCenter.vue",
+    "expression": "recoveryKind === 'withdraw' ? 'WorkflowInstance.withdraw' : recoveryKind === 'disable' ? 'WorkflowDefinition.disable' : recoveryKind === 'reassign' ? 'WorkflowTask.reassign' : 'WorkflowJob.retry'",
+    "operations": [
+      "WorkflowInstance.withdraw",
+      "WorkflowDefinition.disable",
+      "WorkflowTask.reassign",
+      "WorkflowJob.retry"
+    ],
+    "sources": [
+      "frontend/modules/workflow/src/WorkflowCenter.vue"
+    ],
+    "reason": "按当前表单对象、创建/更新及固定管理域选择真实操作；已核对各分支，不允许权限码或未知操作兜底"
+  },
+  {
+    "file": "frontend/modules/authorization/src/RoleManagement.vue",
+    "expression": "dialog==='create'?'@role:create':'@role:update'",
+    "operations": [
+      "@role:create",
+      "@role:update"
+    ],
+    "sources": [
+      "frontend/modules/authorization/src/RoleManagement.vue"
+    ],
+    "reason": "按当前表单对象、创建/更新及固定管理域选择真实操作；已核对各分支，不允许权限码或未知操作兜底"
+  },
+  {
+    "file": "frontend/modules/authorization/src/SubjectAuthorization.vue",
+    "expression": "subjectSaveOperation",
+    "operations": [
+      "AccountRoleAssignment.replace",
+      "MemberRoleAssignment.replace"
+    ],
+    "sources": [
+      "frontend/modules/authorization/src/SubjectAuthorization.vue"
+    ],
+    "reason": "按当前表单对象、创建/更新及固定管理域选择真实操作；已核对各分支，不允许权限码或未知操作兜底"
+  },
+  {
+    "file": "frontend/modules/authorization/src/PolicyTemplateActions.vue",
+    "expression": "templateSaveOperation",
+    "operations": [
+      "AuthorizationTemplate.savePlatform",
+      "AuthorizationTemplate.saveTenant"
+    ],
+    "sources": [
+      "frontend/modules/authorization/src/PolicyTemplateActions.vue"
+    ],
+    "reason": "按当前表单对象、创建/更新及固定管理域选择真实操作；已核对各分支，不允许权限码或未知操作兜底"
+  },
+  {
+    "file": "frontend/modules/authorization/src/PolicyTemplateActions.vue",
+    "expression": "templateApplyOperation",
+    "operations": [
+      "AuthorizationTemplate.applyPlatform",
+      "AuthorizationTemplate.applyTenant"
+    ],
+    "sources": [
+      "frontend/modules/authorization/src/PolicyTemplateActions.vue"
+    ],
+    "reason": "按当前表单对象、创建/更新及固定管理域选择真实操作；已核对各分支，不允许权限码或未知操作兜底"
+  },
+  {
+    "file": "frontend/apps/admin/src/views/account/components/MultiFactorSettings.vue",
+    "expression": "status.enabled ? 'AccountMfa.stepUp' : secret ? 'AccountMfa.activate' : 'AccountMfa.enroll'",
+    "operations": [
+      "AccountMfa.stepUp",
+      "AccountMfa.activate",
+      "AccountMfa.enroll"
+    ],
+    "sources": [
+      "frontend/apps/admin/src/views/account/components/MultiFactorSettings.vue"
+    ],
+    "reason": "按当前表单对象、创建/更新及固定管理域选择真实操作；已核对各分支，不允许权限码或未知操作兜底"
+  }
+]

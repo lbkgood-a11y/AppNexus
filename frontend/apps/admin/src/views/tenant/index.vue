@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { setErrorFeedback } from "@appnexus/ui";
+import { FloatingError } from "@appnexus/ui";
 import { useI18n } from "vue-i18n";
 import { computed,onMounted,ref } from "vue";
 import { BusinessWorkspace, ManagementTable, type ManagementColumn } from "@appnexus/ui";
@@ -21,16 +23,16 @@ async function load() {
  loading.value=true;error.value="";
  try {
   tenants.value=await getMyTenants();
-  platformAdministrator.value=(await administrationApi.access()).administrator;
+  platformAdministrator.value=(await administrationApi.operations()).includes("Tenant.list");
   if(tenants.value.length===1) await enter(tenants.value[0]);
- } catch(cause){error.value=requestErrorMessage(cause);}
+ } catch(cause){await setErrorFeedback(error, requestErrorMessage(cause));}
  finally{loading.value=false;}
 }
 /** 不携带成员标识或角色，服务端决定能否进入。 */
 async function enter(item:TenantMembership) {
  selecting.value=item.tenantId;
  try {await enterTenant(item.tenantId);}
- catch(cause){error.value=requestErrorMessage(cause);}
+ catch(cause){await setErrorFeedback(error, requestErrorMessage(cause));}
  finally{selecting.value="";}
 }
 onMounted(load);
@@ -38,7 +40,7 @@ onMounted(load);
 <template>
  <div class="management-page">
   <BusinessWorkspace :title="t('tenant.select')" :description="t('tenant.selectDescription')">
-   <template v-if="error" #feedback><el-alert :title="error" type="error" :closable="false" show-icon /></template>
+   <template v-if="error" #feedback><FloatingError :title="error" scope="error" type="error" :closable="false" show-icon /></template>
    <template v-if="tenants.length" #search><div class="management-filter"><div class="management-filter-header"><h2 class="management-filter-title">{{t('tenant.search')}}</h2></div><el-form inline @submit.prevent="search()"><el-form-item :label="t('tenant.name')"><el-input v-model="query" clearable :maxlength="100" :placeholder="t('management.keyword')" /></el-form-item><div class="management-filter-actions"><el-button native-type="submit" type="primary" :disabled="loading || Boolean(selecting)">{{t('administration.search')}}</el-button><el-button :disabled="loading || Boolean(selecting)" @click="search(true)">{{t('management.reset')}}</el-button></div></el-form></div></template>
    <template #data><ManagementTable embedded :title="t('tenant.availableList')" :total="filteredTenants.length" :rows="filteredTenants" :columns="columns" :loading="loading" :busy="Boolean(selecting)" :empty-text="t(submittedQuery?'management.noResults':'tenant.noMembership')" @refresh="load">
    <template #actions><el-button v-if="!tenants.length&&platformAdministrator" type="primary" @click="router.push('/platform/tenants')">{{t('administration.tenantTitle')}}</el-button></template>

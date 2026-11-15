@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { VxeTable, VxeColumn } from "@appnexus/ui";
 import { computed, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { DetailFormTemplate, PageHeader, VerticalSplitTemplate } from "@appnexus/ui";
@@ -26,7 +27,7 @@ const examples = computed(() => [
       <template #header><PageHeader :title="t('templateLab.vertical')" :description="t('templateLab.verticalDescription')" /></template>
       <template #master>
         <h2 class="lab-title">{{t('templateLab.master')}}</h2>
-        <el-table :data="examples" highlight-current-row @current-change="row=>selected=row?.id || ''"><el-table-column prop="name" :label="t('templateLab.name')" /><el-table-column prop="status" :label="t('administration.status')" /></el-table>
+        <vxe-table :column-config="{ resizable: true }"  :data="examples" :row-config="{ isCurrent: true }" @current-change="({ row })=>selected=row?.id || ''" border="inner"><vxe-column field="name" :title="t('templateLab.name')" /><vxe-column field="status" :title="t('administration.status')" /></vxe-table>
       </template>
       <template #detail><h2 class="lab-title">{{t('templateLab.detail')}}</h2><el-descriptions border><el-descriptions-item :label="t('templateLab.selected')">{{selected}}</el-descriptions-item></el-descriptions></template>
       <template #empty><el-empty :description="t('templateLab.selectMaster')" /></template>

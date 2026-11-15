@@ -1,0 +1,31 @@
+package com.appnexus.platform;
+
+import com.appnexus.contracts.businessobject.BusinessObjects;
+import com.appnexus.platform.configuration.NavigationPages;
+import java.util.*;
+import org.springframework.beans.factory.SmartInitializingSingleton;
+import org.springframework.context.annotation.*;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
+
+/** 装配级统一行为校验：所有业务提供者的页面、权限和真实 API 必须一致，避免只登记展示字符串。 */
+@Configuration(proxyBeanMethods=false)
+public class BusinessObjectIntegrationValidation {
+  /** 在 MVC 映射初始化后校验；缺失页面或处理接口阻止应用提供虚假的可配置入口。 */
+  @Bean public SmartInitializingSingleton validateDocumentIntegration(List<BusinessObjects.Provider> providers,
+      @Qualifier("requestMappingHandlerMapping") RequestMappingHandlerMapping mappings){
+    return ()->{for(var provider:providers)for(var action:provider.descriptor().operations()){
+      var pages=new ArrayList<BusinessObjects.PageOperation>();if(action.pageOperation()!=null)pages.add(action.pageOperation());
+      action.aliases().forEach(alias->pages.add(alias.pageOperation()));
+      for(var operation:pages){
+        var page=NavigationPages.find(operation.pageKey());
+        if(page==null||!page.path().equals(operation.pagePath()))throw new IllegalStateException("BUSINESS_OBJECT_PAGE_PERMISSION_REGISTRATION_INVALID:"+action.operationId());
+        boolean found=mappings.getHandlerMethods().keySet().stream().anyMatch(mapping->mapping.getPatternValues().contains(operation.apiPath())&&mapping.getMethodsCondition().getMethods().stream().anyMatch(method->method.name().equals(operation.method())));
+        if(!found)throw new IllegalStateException("BUSINESS_OBJECT_API_REGISTRATION_INVALID:"+action.operationId());
+        boolean bound=mappings.getHandlerMethods().entrySet().stream().anyMatch(entry->entry.getKey().getPatternValues().contains(operation.apiPath())&&java.util.Arrays.stream(entry.getValue().getMethod().getAnnotationsByType(com.appnexus.contracts.operation.OperationBinding.class)).anyMatch(binding->binding.reference()?binding.id().equals(action.operationId()):java.util.Arrays.asList(binding.pages()).contains(operation.pageKey())&&java.util.Arrays.asList(binding.permissions()).contains(action.permissionCode())));
+        if(!bound)throw new IllegalStateException("BUSINESS_OBJECT_OPERATION_BINDING_INVALID:"+action.operationId());
+
+      }
+    }};
+  }
+}

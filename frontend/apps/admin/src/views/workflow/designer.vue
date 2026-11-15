@@ -12,7 +12,7 @@ const route=useRoute(),router=useRouter();
 </script>
 <template>
   <div class="workflow-designer-page">
-  <el-button v-if="route.query.returnTo==='/documents/workbench'" text @click="router.push('/documents/workbench')">{{ $t('document.returnWorkbench') }}</el-button>
+  <el-button v-if="route.query.returnTo==='/business-objects/workbench'" text @click="router.push('/business-objects/workbench')">{{ $t('businessObject.returnWorkbench') }}</el-button>
   <WorkflowCenter
     workspace="designer"
     :api="workflowApi"

@@ -33,7 +33,7 @@ public class WorkflowEngineConfiguration {
       com.appnexus.contracts.workflow.WorkflowPlatform platform,
       java.util.List<com.appnexus.contracts.workflow.WorkflowBusiness> businesses,
       WorkflowBridge bridge,
-      org.springframework.beans.factory.ObjectProvider<com.appnexus.contracts.document.DocumentBindings> documents) {
+      org.springframework.beans.factory.ObjectProvider<com.appnexus.contracts.businessobject.BusinessObjectBindings> documents) {
     var runtime=workflowRuntime(engine,source,manager,platform,businesses,bridge);
     runtime.documentBindings(documents::getObject);
     return runtime;

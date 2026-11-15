@@ -25,27 +25,44 @@ function mount(code: string) {
   return element;
 }
 it("hides before capability proof and removes access after authority changes", async () => {
-  state.request.mockResolvedValue(["identity.account:revoke_sessions"]);
-  const element = mount("identity.account:revoke_sessions"); expect(element.style.display).toBe("none");
+  state.request.mockResolvedValue(["Account.revokeSessions"]);
+  const element = mount("Account.revokeSessions"); expect(element.style.display).toBe("none");
   await settle(); expect(element.style.display).toBe("");
   state.request.mockResolvedValue([]); window.dispatchEvent(new Event("appnexus:authority-changed"));
   await settle(); expect(element.style.display).toBe("none");
 });
 it("does not restore all buttons when capability read fails", async () => {
-  state.request.mockRejectedValue(new Error("unavailable")); const element = mount("identity.account:create");
+  state.request.mockRejectedValue(new Error("unavailable")); const element = mount("Account.create");
   await settle(); expect(element.style.display).toBe("none");
 });
 it("uses actual tenant role update permission for status and retains alternatives", async () => {
   vi.stubGlobal("location", { hash: "#/access/roles", pathname: "/" }); state.tenant.value = { tenantId: "tenant-a" };
-  state.request.mockResolvedValue(["access.tenant.role:update"]); const element = mount("@role:enable");
+  state.request.mockResolvedValue(["TenantRole.setStatus"]); const element = mount("@role:enable");
   await settle(); expect(element.style.display).toBe("");
-  expect(state.request).toHaveBeenCalledWith("get", "/api/operation-capabilities");
+  expect(state.request).toHaveBeenCalledWith("get", "/api/operation-decisions");
 });
 it("rejects a previous account's late capability response after logout", async () => {
   let resolve!: (codes: string[]) => void;
   state.request.mockImplementation(() => new Promise<string[]>(done => { resolve = done; }));
-  const element = mount("identity.account:create");
+  const element = mount("Account.create");
   window.dispatchEvent(new Event("appnexus:session-ended"));
-  resolve(["identity.account:create"]); await settle();
+  resolve(["Account.create"]); await settle();
   expect(element.style.display).toBe("none");
+});
+it("rejects unknown operation identities and retains OR alternatives", async () => {
+  state.request.mockResolvedValue(["NavigationMenu.create"]);
+  const element = mount("Unknown.operation|NavigationMenu.create");
+  await settle(); expect(element.style.display).toBe("");
+  state.request.mockResolvedValue(["configuration.menu:create"]);
+  window.dispatchEvent(new Event("appnexus:authority-changed"));
+  await settle(); expect(element.style.display).toBe("none");
+});
+it("reads self and tenant contexts separately on the account page", async () => {
+  vi.stubGlobal("location", { hash: "#/account/profile", pathname: "/" });
+  state.tenant.value = { tenantId: "tenant-a" };
+  state.request.mockImplementation((_method:string,path:string)=>Promise.resolve(path.startsWith('/bff/') ? ['AccountMfa.enroll'] : ['TenantParameter.save']));
+  const element = mount("AccountMfa.enroll");
+  await settle(); expect(element.style.display).toBe("");
+  expect(state.request).toHaveBeenCalledWith("get", "/bff/operation-decisions");
+  expect(state.request).toHaveBeenCalledWith("get", "/api/operation-decisions");
 });

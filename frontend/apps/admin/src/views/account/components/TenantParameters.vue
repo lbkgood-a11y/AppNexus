@@ -1,7 +1,10 @@
 <script setup lang="ts">
+import { setErrorFeedback } from "@appnexus/ui";
+import { FloatingError } from "@appnexus/ui";
 import { onMounted, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { http, requestErrorMessage } from "@/utils/http";
+import { operationGroups } from "@/api/operationGroups";
 import { currentTenant } from "@/utils/tenantContext";
 import { ElMessage } from "element-plus";
 import { refreshDisplayFormat } from "@/utils/displayFormat";
@@ -18,9 +21,10 @@ async function load() {
   try {
     const values = await http.request<Parameter[]>("get", "/api/configuration/parameters");
     rows.value = values;
-    const capability = await http.request<string[]>("get", "/api/organization/capabilities");
-    editable.value = capability.includes("GRANT");
-  } catch (cause) { error.value = requestErrorMessage(cause); }
+    // 参数编辑使用自身操作准入，不能借用组织授权权限；服务端仍逐请求校验写入。
+    const capability = await operationGroups("tenant", { SAVE: "TenantParameter.save" });
+    editable.value = capability.includes("SAVE");
+  } catch (cause) { await setErrorFeedback(error, requestErrorMessage(cause)); }
   finally { loading.value = false; }
 }
 /** 保存按当前版本执行，失败保留输入并要求重读，不能自动覆盖他人更改。 */
@@ -30,7 +34,7 @@ async function save(row: Parameter) {
     const csrf = await http.request<{ token: string; headerName: string }>("get", "/bff/csrf");
     const result = await http.request<Parameter>("put", "/api/configuration/parameters/" + encodeURIComponent(row.key), { data: { value: row.value, version: row.version }, headers: { [csrf.headerName]: csrf.token } });
     Object.assign(row, result); await refreshDisplayFormat(); ElMessage.success(t("account.saved"));
-  } catch (cause) { error.value = requestErrorMessage(cause); editable.value = false; }
+  } catch (cause) { await setErrorFeedback(error, requestErrorMessage(cause)); editable.value = false; }
   finally { saving.value = ""; }
 }
 onMounted(load);
@@ -38,10 +42,10 @@ onMounted(load);
 <template>
   <section v-if="currentTenant" class="tenant-parameters" v-loading="loading">
     <h2>{{ t("account.tenantParameters") }}</h2>
-    <el-alert v-if="error" :title="error" type="error" :closable="false"><el-button link @click="load">{{ t("account.retry") }}</el-button></el-alert>
+    <FloatingError v-if="error" :title="error" scope="error" type="error" :closable="false"><el-button link @click="load">{{ t("account.retry") }}</el-button></FloatingError>
     <el-form label-position="top">
       <el-form-item v-for="row in rows" :key="row.key" :label="t('account.parameters.' + row.key.replace('display.', ''))">
-        <div class="parameter-row"><el-input v-model="row.value" :maxlength="500" :disabled="!editable || loading || !!saving" /><el-button v-operation="'organization.permission:grant'" v-if="editable" :loading="saving === row.key" :disabled="loading || !!saving" @click="save(row)">{{ t("account.save") }}</el-button></div>
+        <div class="parameter-row"><el-input v-model="row.value" :maxlength="500" :disabled="!editable || loading || !!saving" /><el-button v-operation="'TenantParameter.save'" v-if="editable" :loading="saving === row.key" :disabled="loading || !!saving" @click="save(row)">{{ t("account.save") }}</el-button></div>
         <p>{{ t('account.parameterHints.' + row.key.replace('display.', '')) }}</p>
       </el-form-item>
     </el-form>

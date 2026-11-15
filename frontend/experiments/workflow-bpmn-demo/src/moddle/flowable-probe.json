@@ -1,0 +1,20 @@
+{
+  "name": "FlowableProbe",
+  "uri": "http://flowable.org/bpmn",
+  "prefix": "flowable",
+  "xml": {"tagAlias": "lowerCase"},
+  "types": [
+    {"name": "TaskListener", "extends": ["bpmn:UserTask"], "properties": [
+      {"name": "assignee", "type": "String", "isAttr": true},
+      {"name": "candidateUsers", "type": "String", "isAttr": true},
+      {"name": "candidateGroups", "type": "String", "isAttr": true}
+    ]},
+    {"name": "ServiceTask", "extends": ["bpmn:ServiceTask"], "properties": [
+      {"name": "delegateExpression", "type": "String", "isAttr": true},
+      {"name": "type", "type": "String", "isAttr": true}
+    ]},
+    {"name": "SequenceFlow", "extends": ["bpmn:SequenceFlow"], "properties": [
+      {"name": "skipExpression", "type": "String", "isAttr": true}
+    ]}
+  ]
+}

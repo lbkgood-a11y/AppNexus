@@ -42,6 +42,10 @@ public final class WorkflowController {
   /** 样本预演只计算路径，不创建实例、不调用业务能力。 */
   public record Preview(WorkflowModel model, Map<String, String> sample) {}
 
+  /** 操作契约关联下方真实接口；仅供展示与一致性校验，主体、权限及业务约束仍由原用例执行。 */
+
+  @com.appnexus.contracts.operation.BusinessObjectType(code="WorkflowDefinition",nameZh="流程定义",nameEn="Workflow Definition",category=com.appnexus.contracts.operation.BusinessObjectType.Category.CONFIGURATION,module="workflow")
+ @com.appnexus.contracts.operation.OperationBinding(id="WorkflowDefinition.preview",objectType="WorkflowDefinition",operationCode="preview",pages={"workflow/designer"},nameZh="流程定义：预演",nameEn="Preview workflow",permissions={"workflow:edit"},policy="原服务逐请求复核有效成员、功能权限、对象归属、版本与业务状态")
   @PostMapping("/preview")
   public Object preview(HttpServletRequest r, @RequestBody Preview p) {
     return reply(
@@ -50,11 +54,6 @@ public final class WorkflowController {
           if (!errors.isEmpty()) throw new WorkflowFailure("PREVIEW_INVALID_MODEL", 400);
           return com.appnexus.workflow.core.WorkflowPreview.trace(p.model(), p.sample());
         });
-  }
-
-  @GetMapping("/capabilities")
-  public Object capabilities(HttpServletRequest r) {
-    return reply(() -> runtime.capabilities(context(r)));
   }
 
   @GetMapping("/businesses")
@@ -68,36 +67,57 @@ public final class WorkflowController {
     return reply(() -> runtime.configuration(context(r)));
   }
 
+  /** 操作契约关联下方真实接口；仅供展示与一致性校验，主体、权限及业务约束仍由原用例执行。 */
+
+  @com.appnexus.contracts.operation.OperationBinding(id="WorkflowDefinition.list",objectType="WorkflowDefinition",operationCode="list",pages={"workflow/designer"},nameZh="流程定义：查看列表",nameEn="View definitions",permissions={"workflow:read"},policy="原服务逐请求复核有效成员、功能权限、对象归属、版本与业务状态")
   @GetMapping("/definitions")
   public Object definitions(HttpServletRequest r) {
     return reply(() -> runtime.definitions(context(r)));
   }
 
+  /** 操作契约关联下方真实接口；仅供展示与一致性校验，主体、权限及业务约束仍由原用例执行。 */
+
+  @com.appnexus.contracts.operation.OperationBinding(id="WorkflowDefinition.validate",objectType="WorkflowDefinition",operationCode="validate",pages={"workflow/designer"},nameZh="流程定义：校验",nameEn="Validate workflow",permissions={"workflow:edit"},policy="原服务逐请求复核有效成员、功能权限、对象归属、版本与业务状态")
   @PostMapping("/validate")
   public Object validate(HttpServletRequest r, @RequestBody WorkflowModel m) {
     return reply(() -> runtime.validate(context(r), m));
   }
 
+  /** 操作契约关联下方真实接口；仅供展示与一致性校验，主体、权限及业务约束仍由原用例执行。 */
+
+  @com.appnexus.contracts.operation.OperationBinding(id="WorkflowDefinition.save",objectType="WorkflowDefinition",operationCode="save",pages={"workflow/designer"},nameZh="流程定义：保存",nameEn="Save workflow",permissions={"workflow:edit"},policy="原服务逐请求复核有效成员、功能权限、对象归属、版本与业务状态")
   @PutMapping("/definitions/{id}")
   public Object save(HttpServletRequest r, @PathVariable String id, @RequestBody Draft d) {
     return reply(() -> runtime.save(context(r), id, d.revision(), d.model()));
   }
 
+  /** 操作契约关联下方真实接口；仅供展示与一致性校验，主体、权限及业务约束仍由原用例执行。 */
+
+  @com.appnexus.contracts.operation.OperationBinding(id="WorkflowDefinition.publish",objectType="WorkflowDefinition",operationCode="publish",pages={"workflow/designer"},nameZh="流程定义：发布",nameEn="Publish workflow",permissions={"workflow:publish"},policy="原服务逐请求复核有效成员、功能权限、对象归属、版本与业务状态")
   @PostMapping("/definitions/{id}/publish")
   public Object publish(HttpServletRequest r, @PathVariable String id, @RequestBody Version v) {
     return reply(() -> runtime.publish(context(r), id, v.revision()));
   }
 
+  /** 操作契约关联下方真实接口；仅供展示与一致性校验，主体、权限及业务约束仍由原用例执行。 */
+
+  @com.appnexus.contracts.operation.OperationBinding(id="WorkflowDefinition.disable",objectType="WorkflowDefinition",operationCode="disable",pages={"workflow/designer"},nameZh="流程定义：停用",nameEn="Disable workflow",permissions={"workflow:publish"},policy="原服务逐请求复核有效成员、功能权限、对象归属、版本与业务状态")
   @PostMapping("/definitions/{id}/disable")
   public Object disable(HttpServletRequest r, @PathVariable String id, @RequestBody Version v) {
     return reply(() -> runtime.disable(context(r), id, v.revision(), v.reason()));
   }
 
+  /** 操作契约关联下方真实接口；仅供展示与一致性校验，主体、权限及业务约束仍由原用例执行。 */
+
+  @com.appnexus.contracts.operation.OperationBinding(id="WorkflowDefinition.versions",objectType="WorkflowDefinition",operationCode="versions",pages={"workflow/designer"},nameZh="流程定义：查看版本",nameEn="View versions",permissions={"workflow:read"},policy="原服务逐请求复核有效成员、功能权限、对象归属、版本与业务状态")
   @GetMapping("/definitions/{id}/versions")
   public Object versions(HttpServletRequest r, @PathVariable String id) {
     return reply(() -> runtime.versions(context(r), id));
   }
 
+  /** 发起入口仅说明功能门槛；业务能力、对象事实和发布配置仍由运行时复核。 */
+  @com.appnexus.contracts.operation.BusinessObjectType(code="WorkflowInstance",nameZh="流程实例",nameEn="Workflow Instance",category=com.appnexus.contracts.operation.BusinessObjectType.Category.TRANSACTION,module="workflow")
+ @com.appnexus.contracts.operation.OperationBinding(id="WorkflowInstance.start",objectType="WorkflowInstance",operationCode="start",pages={"workflow/index"},nameZh="流程实例：发起",nameEn="Start workflow",permissions={"workflow:start"},policy="有效成员、业务能力、对象事实及发布策略必须同时通过，已接入业务对象的调用必须经绑定解析")
   @PostMapping("/instances")
   public Object start(HttpServletRequest r, @RequestBody Start s) {
     return reply(
@@ -117,26 +137,42 @@ public final class WorkflowController {
     return reply(() -> runtime.instances(context(r)));
   }
 
+  /** 操作契约关联下方真实接口；仅供展示与一致性校验，主体、权限及业务约束仍由原用例执行。 */
+
+  @com.appnexus.contracts.operation.OperationBinding(id="WorkflowInstance.withdraw",objectType="WorkflowInstance",operationCode="withdraw",pages={"workflow/index"},nameZh="流程实例：撤回",nameEn="Withdraw instance",eligibility=com.appnexus.contracts.operation.OperationBinding.Eligibility.OBJECT,permissions={},policy="有效成员与对象归属/任务处理资格由原业务用例验证；无权限码不表示无条件允许")
   @PostMapping("/instances/{id}/withdraw")
   public Object withdraw(HttpServletRequest r, @PathVariable String id, @RequestBody Recovery a) {
     return reply(() -> runtime.withdraw(context(r), id, a.reason()));
   }
 
+  /** 操作契约关联下方真实接口；仅供展示与一致性校验，主体、权限及业务约束仍由原用例执行。 */
+
+  @com.appnexus.contracts.operation.OperationBinding(id="WorkflowInstance.read",objectType="WorkflowInstance",operationCode="read",pages={"workflow/index"},nameZh="流程实例：查看",nameEn="View instance",eligibility=com.appnexus.contracts.operation.OperationBinding.Eligibility.OBJECT,permissions={},policy="有效成员与对象归属/任务处理资格由原业务用例验证；无权限码不表示无条件允许")
   @GetMapping("/instances/{id}")
   public Object detail(HttpServletRequest r, @PathVariable String id) {
     return reply(() -> runtime.detail(context(r), id));
   }
 
+  /** 操作契约关联下方真实接口；仅供展示与一致性校验，主体、权限及业务约束仍由原用例执行。 */
+
+  @com.appnexus.contracts.operation.BusinessObjectType(code="WorkflowTask",nameZh="流程任务",nameEn="Workflow Task",category=com.appnexus.contracts.operation.BusinessObjectType.Category.TRANSACTION,module="workflow")
+ @com.appnexus.contracts.operation.OperationBinding(id="WorkflowTask.list",objectType="WorkflowTask",operationCode="list",pages={"workflow/index"},nameZh="流程任务：查看列表",nameEn="View tasks",eligibility=com.appnexus.contracts.operation.OperationBinding.Eligibility.OBJECT,permissions={},policy="有效成员与对象归属/任务处理资格由原业务用例验证；无权限码不表示无条件允许")
   @GetMapping("/tasks")
   public Object tasks(HttpServletRequest r, @RequestParam(defaultValue = "todo") String view) {
     return reply(() -> runtime.tasks(context(r), view));
   }
 
+  /** 操作契约关联下方真实接口；仅供展示与一致性校验，主体、权限及业务约束仍由原用例执行。 */
+
+  @com.appnexus.contracts.operation.OperationBinding(id="WorkflowTask.read",objectType="WorkflowTask",operationCode="read",pages={"workflow/index"},nameZh="流程任务：查看",nameEn="View assigned task",eligibility=com.appnexus.contracts.operation.OperationBinding.Eligibility.OBJECT,permissions={},policy="有效成员与对象归属/任务处理资格由原业务用例验证；无权限码不表示无条件允许")
   @GetMapping("/tasks/{id}")
   public Object task(HttpServletRequest r, @PathVariable String id) {
     return reply(() -> runtime.task(context(r), id));
   }
 
+  /** 操作契约关联下方真实接口；仅供展示与一致性校验，主体、权限及业务约束仍由原用例执行。 */
+
+  @com.appnexus.contracts.operation.OperationBinding(id="WorkflowTask.complete",objectType="WorkflowTask",operationCode="complete",pages={"workflow/index"},nameZh="流程任务：处理",nameEn="Act on task",eligibility=com.appnexus.contracts.operation.OperationBinding.Eligibility.OBJECT,permissions={},policy="有效成员与对象归属/任务处理资格由原业务用例验证；无权限码不表示无条件允许")
   @PostMapping("/tasks/{id}/actions")
   public Object action(HttpServletRequest r, @PathVariable String id, @RequestBody TaskAction a) {
     return reply(
@@ -145,11 +181,18 @@ public final class WorkflowController {
                 context(r), id, a.action(), a.values(), a.comment() == null ? "" : a.comment()));
   }
 
+  /** 操作契约关联下方真实接口；仅供展示与一致性校验，主体、权限及业务约束仍由原用例执行。 */
+
+  @com.appnexus.contracts.operation.OperationBinding(id="WorkflowTask.reassign",objectType="WorkflowTask",operationCode="reassign",pages={"workflow/index"},nameZh="流程任务：转派",nameEn="Reassign task",permissions={"workflow:operate"},policy="原服务逐请求复核有效成员、功能权限、对象归属、版本与业务状态")
   @PostMapping("/tasks/{id}/reassign")
   public Object reassign(HttpServletRequest r, @PathVariable String id, @RequestBody Recovery a) {
     return reply(() -> runtime.reassign(context(r), id, a.actor(), a.reason()));
   }
 
+  /** 操作契约关联下方真实接口；仅供展示与一致性校验，主体、权限及业务约束仍由原用例执行。 */
+
+  @com.appnexus.contracts.operation.BusinessObjectType(code="WorkflowJob",nameZh="流程作业",nameEn="Workflow Job",category=com.appnexus.contracts.operation.BusinessObjectType.Category.LEDGER,module="workflow")
+ @com.appnexus.contracts.operation.OperationBinding(id="WorkflowJob.retry",objectType="WorkflowJob",operationCode="retry",pages={"workflow/index"},nameZh="流程作业：重试",nameEn="Retry job",permissions={"workflow:operate"},policy="原服务逐请求复核有效成员、功能权限、对象归属、版本与业务状态")
   @PostMapping("/jobs/{id}/retry")
   public Object retry(HttpServletRequest r, @PathVariable String id, @RequestBody Recovery a) {
     return reply(() -> runtime.retry(context(r), id, a.reason()));

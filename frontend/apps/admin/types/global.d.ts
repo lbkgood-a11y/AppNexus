@@ -138,6 +138,8 @@ declare global {
     grey?: boolean;
     weak?: boolean;
     hideTabs?: boolean;
+    /** 是否隐藏纯展示页面横幅，默认 false；仅影响界面，不影响授权。 */
+    hidePageBanner?: boolean;
     hideFooter?: boolean;
     sidebarStatus?: boolean;
     epThemeColor?: string;
@@ -179,7 +181,9 @@ declare global {
       grey?: boolean;
       weak?: boolean;
       hideTabs?: boolean;
-      hideFooter?: boolean;
+      /** 是否隐藏纯展示页面横幅，默认 false；仅影响界面，不影响授权。 */
+    hidePageBanner?: boolean;
+    hideFooter?: boolean;
       showLogo?: boolean;
       watermark?: boolean;
       watermarkText?: string;
