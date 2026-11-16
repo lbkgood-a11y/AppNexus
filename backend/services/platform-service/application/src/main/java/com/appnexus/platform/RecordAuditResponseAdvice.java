@@ -46,7 +46,7 @@ public final class RecordAuditResponseAdvice implements ResponseBodyAdvice<Objec
         for(String segment:declaration.path().split("\\."))if(!segment.isEmpty())node=node instanceof Map<?,?> map?map.get(segment):null;
         var rows=new ArrayList<Map<String,Object>>();collect(node,rows);
         var ids=rows.stream().map(row->identifier(row,declaration.id())).filter(Objects::nonNull).map(Object::toString).distinct().toList();
-        if(ids.isEmpty())return result;
+        if(ids.isEmpty())return json.valueToTree(result);
         Map<String,Map<String,Object>> audits=new HashMap<>();
         // 每批最多 200 条，适配完整树而不生成无限 IN 参数；只返回最小审计元数据。
         for(int offset=0;offset<ids.size();offset+=200){
@@ -63,7 +63,9 @@ public final class RecordAuditResponseAdvice implements ResponseBodyAdvice<Objec
         }
         rows.forEach(row->{Object id=identifier(row,declaration.id());if(id!=null){var audit=audits.get(id.toString().toLowerCase(Locale.ROOT));if(audit!=null)row.put("audit",audit);}});
         response.getHeaders().setCacheControl(CacheControl.noStore());
-        return result;
+        // 投影已将领域 DTO 转为 Map；返回 JSON 树，使消息转换器不再套用原 List<DTO>
+        // 的元素序列化器，否则非空集合会把 Map 强转成 DTO 并返回 500，审计字段也无法写出。
+        return json.valueToTree(result);
     }
 
     /** 只递归已授权对象列表和树形 children，禁止把任意业务 JSON 内的 id 当审计查询依据。 */

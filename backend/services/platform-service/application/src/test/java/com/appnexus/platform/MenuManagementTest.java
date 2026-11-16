@@ -31,6 +31,16 @@ class MenuManagementTest extends DatabaseTestSupport {
  @Autowired NavigationQuery navigation;
  @Autowired com.appnexus.platform.authorization.OrganizationGrantManagement organizationGrants;
  UUID actor;
+ /** 通过真实 MVC 转换器验证审计投影，避免仅直接调用 Advice 漏掉泛型集合序列化故障。 */
+ @Test void menuListSerializesAuditProjection() throws Exception {
+  var result=mvc.perform(get("/bff/platform/menus").with(authenticated(actor.toString(),0))).andReturn();
+  assertThat(result.getResolvedException()).isNull();
+  assertThat(result.getResponse().getStatus()).isEqualTo(200);
+  var rows=tools.jackson.databind.json.JsonMapper.builder().build().readTree(result.getResponse().getContentAsString());
+  assertThat(rows.isArray()).isTrue();
+  assertThat(rows.size()).isGreaterThan(0);
+  assertThat(rows.get(0).has("audit")).isTrue();
+ }
  @BeforeEach void initialize(){actor=UUID.fromString(jdbc.queryForObject("SELECT BIN_TO_UUID(id) FROM identity_account WHERE username='admin-test'",String.class));administration.initializeAdministrator("admin-test");}
  private MenuManagement.Command command(UUID parent,MenuManagement.Type type,String code){return new MenuManagement.Command(parent,type,code,"菜单","Menu",null,null,"ri/menu-line",null,10,true,true,MenuManagement.Scope.PLATFORM,type==MenuManagement.Type.EXTERNAL?"https://example.com/track":null);}
 

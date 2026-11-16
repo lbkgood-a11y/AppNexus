@@ -109,11 +109,11 @@ class GlobalRecordAuditTest extends DatabaseTestSupport {
             var method=new org.springframework.core.MethodParameter(getClass().getDeclaredMethod("auditedRows"),-1);
             var response=new org.springframework.http.server.ServletServerHttpResponse(new org.springframework.mock.web.MockHttpServletResponse());
             Object projected=advice.beforeBodyWrite(List.of(Map.of("id",id)),method,org.springframework.http.MediaType.APPLICATION_JSON,null,null,response);
-            var audit=(Map<?,?>)((Map<?,?>)((List<?>)projected).getFirst()).get("audit");
-            assertThat(audit.get("createdBy").toString()).isEqualToIgnoringCase(actor.toString());
+            var audit=((tools.jackson.databind.JsonNode)projected).get(0).get("audit");
+            assertThat(audit.get("createdBy").asString()).isEqualToIgnoringCase(actor.toString());
             request.setAttribute(com.appnexus.platform.tenant.VerifiedTenantContext.class.getName(),new com.appnexus.platform.tenant.VerifiedTenantContext(actor,UUID.randomUUID(),UUID.randomUUID(),1));
             projected=advice.beforeBodyWrite(List.of(Map.of("id",id)),method,org.springframework.http.MediaType.APPLICATION_JSON,null,null,response);
-            assertThat(((Map<?,?>)((List<?>)projected).getFirst()).containsKey("audit")).isFalse();
+            assertThat(((tools.jackson.databind.JsonNode)projected).get(0).has("audit")).isFalse();
         }finally{SecurityContextHolder.clearContext();}
     }
     /** 仅测试方法元数据，模拟模块构建内声明；不暴露 HTTP 测试入口。 */
