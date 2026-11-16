@@ -23,10 +23,10 @@ class BusinessObjectIntegrationTest {
   static final String TENANT="019a65d0-0060-7000-8000-000000000001", OTHER="019a65d0-0060-7000-8000-000000000002";
   static JdbcTemplate jdbc;static BusinessObjectService documents;static LeavePocService leave;static WorkflowRuntime runtime;static org.flowable.engine.ProcessEngine engine;
   static Context dc(String actor){return new Context(TENANT,actor,UUID.randomUUID().toString());}
-  static WorkflowContext wc(String actor){return new WorkflowContext(TENANT,actor,UUID.randomUUID().toString());}
+  static WorkflowContext wc(String actor){return new WorkflowContext(TENANT,actor,UUID.randomUUID().toString(),actor+"-person",LeavePocTest.ORG);}
   @BeforeAll static void setup() throws Exception {
     var source=new DriverManagerDataSource(MYSQL.getJdbcUrl(),MYSQL.getUsername(),MYSQL.getPassword());jdbc=new JdbcTemplate(source);
-    try(var connection=source.getConnection()){for(String name:List.of("V47__workflow_flowable_8.sql","V48__workflow_application.sql","V69__workflow_data_contract_snapshots.sql","V57__leave_poc.sql","V59__document_configuration.sql","V60__leave_approval_cycles.sql","V63__document_submission_strategy.sql","V64__leave_direct_submission.sql","V65__document_print_binding.sql","V66__document_page_relationships.sql","V68__document_entry_controls.sql","V67__explicit_interaction_bindings.sql")) {
+    try(var connection=source.getConnection()){for(String name:List.of("V47__workflow_flowable_8.sql","V48__workflow_application.sql","V69__workflow_data_contract_snapshots.sql","V57__leave_poc.sql","V59__document_configuration.sql","V60__leave_approval_cycles.sql","V63__document_submission_strategy.sql","V64__leave_direct_submission.sql","V65__document_print_binding.sql","V66__document_page_relationships.sql","V68__document_entry_controls.sql","V67__explicit_interaction_bindings.sql","V78__leave_personnel_identity.sql","V79__workflow_personnel_audit.sql")) {
       if(name.startsWith("V67")) {
         // 只在隔离测试库构造旧协议夹具，验证一次迁移后不会残留运行时双协议。
         jdbc.update("INSERT INTO doc_configuration(tenant_id,type_code,draft,published) VALUES('migration','MigrationFixture',?,?)",
@@ -49,6 +49,7 @@ class BusinessObjectIntegrationTest {
     }
     var tx=new DataSourceTransactionManager(source);
     WorkflowPlatform platform=new WorkflowPlatform(){
+      public boolean candidate(WorkflowContext c,String org,String kind,String reference){return resolve(c.tenantId(),org,kind,reference).contains(c.actorId());}
       public boolean active(String t,String a){return TENANT.equals(t)&&Set.of("applicant","leader","hr","manager").contains(a);}
       public boolean allowed(WorkflowContext c,String p){return active(c.tenantId(),c.actorId());}
       public List<Option> documentOrganizations(WorkflowContext c){return List.of(new Option(LeavePocTest.ORG,"组织"));}

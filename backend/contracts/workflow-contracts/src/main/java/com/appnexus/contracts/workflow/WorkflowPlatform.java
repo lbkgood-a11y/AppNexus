@@ -28,6 +28,15 @@ public interface WorkflowPlatform {
    */
   List<String> resolve(String tenantId, String organizationId, String kind, String reference);
 
+  /**
+   * 复核具体已选人员是否满足节点选人条件，不能仅凭同账号另一人员的岗位通过。
+   * @param context 实际账号与已选人员/组织的可信上下文
+   * @param organizationId 单据组织
+   * @param kind 节点固定选人类型
+   * @param reference 固定账号或岗位引用
+   * @return 默认拒绝，真实平台适配必须明确实现人员级判定
+   */
+  default boolean candidate(WorkflowContext context,String organizationId,String kind,String reference){return false;}
   /** 复核账号在租户内仍为有效成员；用于处理中授权和人员变动恢复。 */
   boolean active(String tenantId, String accountId);
 }

@@ -64,14 +64,15 @@ defineExpose({ canLeave:async()=>!busy.value&&await discard() });
   </div>
 </template>
 <style scoped>
+/* 页面外围留白引用全局内容与区块 Token，局部字段间距和触控高度按原交互保留。 */
 /* 上方选择授权对象，下方按操作配置范围；不同任务使用轻分隔而非额外卡片。 */
-.member-grant-editor{padding:20px;min-width:0}
-.member-grant-editor>.el-alert{margin-bottom:20px}
+.member-grant-editor{padding:var(--app-content-padding,12px);min-width:0}
+.member-grant-editor>.el-alert{margin-bottom:var(--app-section-gap,8px)}
 .member-grant-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 24px;align-items:start}
 .member-grant-editor .el-select{width:100%}
 .member-scope-row,.member-reason,.member-grant-form>.el-empty{grid-column:1/-1}
-.member-scope-row{padding:16px;background:var(--el-fill-color-lighter);border-radius:var(--el-border-radius-base)}
+.member-scope-row{padding:var(--app-content-padding,12px);background:var(--el-fill-color-lighter);border-radius:var(--el-border-radius-base)}
 .scope-inputs{display:grid;grid-template-columns:minmax(160px,1fr) minmax(0,2fr);gap:16px;width:100%}
 .member-grant-form>.el-button{justify-self:end;min-width:120px;grid-column:1/-1}
-@media(max-width:700px){.member-grant-editor{padding:16px}.member-grant-form,.scope-inputs{grid-template-columns:1fr}.member-grant-form>.el-button{width:100%;min-height:44px}}
+@media(max-width:700px){.member-grant-editor{padding:var(--app-content-padding,12px)}.member-grant-form,.scope-inputs{grid-template-columns:1fr}.member-grant-form>.el-button{width:100%;min-height:44px}}
 </style>

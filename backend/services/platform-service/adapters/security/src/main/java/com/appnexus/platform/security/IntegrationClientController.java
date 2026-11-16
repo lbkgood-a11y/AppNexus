@@ -21,7 +21,8 @@ public class IntegrationClientController {
     /** 操作契约关联下方真实接口；仅供展示与一致性校验，主体、权限及业务约束仍由原用例执行。 */
     @com.appnexus.contracts.operation.BusinessObjectType(code="IntegrationClient",nameZh="集成客户端",nameEn="Integration Client",category=com.appnexus.contracts.operation.BusinessObjectType.Category.SYSTEM,module="identity")
  @com.appnexus.contracts.operation.OperationBinding(id="IntegrationClient.list",objectType="IntegrationClient",operationCode="list",pages={"platform/tenants"},nameZh="集成客户端：查看列表",nameEn="Read integration clients",policy="主体管理域、角色权限及业务用例约束由原执行器逐请求复核")
- @EndpointOperation("integration.client:read") @GetMapping("/tenants/{tenant}/clients")
+ @EndpointOperation("integration.client:read") @com.appnexus.contracts.operation.RecordAuditSource(table="integration_client",binaryKey=false,managedTenant="tenant")
+ @GetMapping("/tenants/{tenant}/clients")
     ResponseEntity<List<IntegrationClients.View>> list(Authentication auth,@PathVariable UUID tenant){return ok(clients.list(UUID.fromString(auth.getName()),tenant));}
     /** 操作契约关联下方真实接口；仅供展示与一致性校验，主体、权限及业务约束仍由原用例执行。 */
     @com.appnexus.contracts.operation.OperationBinding(id="IntegrationClient.create",objectType="IntegrationClient",operationCode="create",pages={"platform/tenants"},nameZh="集成客户端：新增",nameEn="Create integration clients",policy="主体管理域、角色权限及业务用例约束由原执行器逐请求复核")

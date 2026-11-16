@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { AppPagination } from "@appnexus/ui";
+import { ManagedDialog, RecordAuditDetails, type RecordAudit } from "@appnexus/ui";
 import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { VxeTable, VxeColumn } from "vxe-table";
@@ -13,6 +14,8 @@ import "vxe-table/lib/style.css";
 
 /** 字典页局部试用虚拟表格；保留真实行数据及权限插槽，不承担请求、授权或写入职责。 */
 const props = defineProps<{
+  /** 是否嵌入工作区；默认 false。启用时去除重复边框和留白，全屏仍保留独立表面。 */
+  embedded?: boolean;
   /** 国际化列定义；沿用公共表格列契约，单位 px。 */
   columns: ManagementColumn[];
   /** 当前筛选后的真实字典条目，不在组件内生成演示数据。 */
@@ -28,6 +31,11 @@ const props = defineProps<{
 }>();
 const emit = defineEmits<{ refresh: [] }>();
 const { t, locale } = useI18n();
+/** 字典虚拟表格复用公共审计详情；仅读取原授权响应，不请求新接口或编辑审计值。 */
+const auditOpen=ref(false),selectedAudit=ref<RecordAudit>();
+const hasAudit=computed(()=>props.rows.some(row=>Boolean((row as unknown as {audit?:RecordAudit}).audit)));
+function showAudit(row:DictionaryItem){selectedAudit.value=(row as unknown as {audit?:RecordAudit}).audit;auditOpen.value=Boolean(selectedAudit.value);}
+watch(()=>props.rows,()=>{auditOpen.value=false;selectedAudit.value=undefined;});
 const size = ref<"small" | "default" | "large">("small");
 const fullscreen = ref(false);
 const fullscreenHost = ref<HTMLElement>();
@@ -82,7 +90,7 @@ watch(locale, value => {
 <template>
   <el-dialog v-model="fullscreen" :title="title" fullscreen append-to-body :show-close="false" class="dictionary-fullscreen-dialog"><div ref="fullscreenHost" class="dictionary-fullscreen-host" /></el-dialog>
   <Teleport :to="fullscreenHost || 'body'" :disabled="!fullscreen || !fullscreenHost">
-  <section :class="{ 'dictionary-grid-fullscreen': fullscreen }" class="dictionary-grid" :aria-label="title">
+  <section :class="{ 'dictionary-grid-fullscreen': fullscreen, 'is-embedded': embedded && !fullscreen }" class="dictionary-grid" :aria-label="title">
     <header class="dictionary-grid-toolbar">
       <div class="dictionary-grid-heading"><h2>{{ title }}</h2><span class="dictionary-grid-count">{{ t('management.totalRecords', { total: rows.length }) }}</span></div>
       <div class="dictionary-grid-actions"><slot name="actions" /><div class="management-table-tools">
@@ -114,11 +122,13 @@ watch(locale, value => {
       <VxeColumn v-for="column in visible" :key="column.key" :field="column.prop" :title="column.label" :width="column.width" :min-width="column.minWidth || 140" :fixed="fixed[column.key]" :show-overflow="column.key !== 'operations'">
         <template #default="{ row }"><slot :name="column.key" :row="row">{{ column.prop ? row[column.prop] ?? '—' : '—' }}</slot></template>
       </VxeColumn>
+      <VxeColumn v-if="hasAudit" :title="t('recordAudit.title')" :width="130" fixed="right"><template #default="{row}"><el-button v-if="row.audit" link type="primary" @click="showAudit(row)">{{t('recordAudit.view')}}</el-button></template></VxeColumn>
     </VxeTable>
     </div>
     <footer class="dictionary-grid-pagination"><AppPagination size="small" v-model:current-page="page" v-model:page-size="pageSize" :page-sizes="[10,20,50,100]" :total="rows.length" layout="total, sizes, prev, pager, next" background /></footer>
   </section>
   </Teleport>
+  <ManagedDialog v-model="auditOpen" :title="t('recordAudit.title')"><RecordAuditDetails v-if="selectedAudit" :audit="selectedAudit" /></ManagedDialog>
 </template>
 <style>
 /* 全屏弹窗仅承载同一表格，不产生额外实例或重复请求。 */
@@ -164,11 +174,13 @@ watch(locale, value => {
 
 /* 表格卡片与分页分开分配高度，防止页码被固定表体挤出可视区域。 */
 .dictionary-grid{padding:12px;border:1px solid var(--el-border-color-lighter);border-radius:var(--app-card-radius, 8px);background:var(--el-bg-color)}
-.dictionary-grid-toolbar{margin-bottom:12px}
+.dictionary-grid-toolbar{margin-bottom:var(--app-section-gap,8px)}
 .dictionary-grid-heading h2{font-size:15px}
 /* 分页使用组件 small 密度，桌面顶部间距 6px；移动端保留可触达的页码按钮。 */
 .dictionary-grid-pagination{flex:none;padding-top:6px;overflow-x:auto}
 .dictionary-grid-pagination :deep(.el-pagination){justify-content:flex-end}
 @media(max-width:600px){.dictionary-grid-pagination :deep(.el-pager li),.dictionary-grid-pagination :deep(.btn-prev),.dictionary-grid-pagination :deep(.btn-next){min-width:44px;height:44px}}
 .dictionary-grid :deep(.vxe-header--column){font-size:13px}
+/* 嵌入模式复用宿主工作区表面；全屏 Teleport 后恢复卡片边距与分页空间。 */
+.dictionary-grid.is-embedded { padding:0; border:0; border-radius:0; }
 </style>

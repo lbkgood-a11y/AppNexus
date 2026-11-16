@@ -56,8 +56,11 @@ import RiUserSettingsLine from "~icons/ri/user-settings-line?raw";
 
 import RiFlowChart from "~icons/ri/flow-chart?raw";
 import RiPrinterLine from "~icons/ri/printer-line?raw";
+import RiDatabase2Line from "~icons/ri/database-2-line?raw";
 
 const icons = [
+  // 主数据目录及五类菜单已配置此名称；必须注册本地 SVG，离线渲染器不会按名称自动下载图标。
+  ["ri/database-2-line", RiDatabase2Line],
   // 单据目录及工作台采用已登记的本地 SVG，不依赖运行时远程加载。
   ["ri/file-list-line", RiFileListLine],
   // 流程与打印菜单使用本地 SVG，避免配置了名称却未注册而显示空白。

@@ -7,9 +7,13 @@ import java.util.Objects;
  *
  * @param tenantId 租户唯一标识，必填；不得用于跨租户访问
  * @param actorId 实际操作者账号标识，必填；不得由浏览器声明后直接信任
+ * @param personId 已由会话验证的被代表人员 UUID；管理调用可空，不替换 actorId
+ * @param organizationId 该人员的当前业务组织 UUID；无人员时为空
  * @param requestId 请求幂等标识，必填；未来写入口须结合租户和操作类型持久化去重
  */
-public record WorkflowContext(String tenantId, String actorId, String requestId) {
+public record WorkflowContext(String tenantId, String actorId, String requestId,String personId,String organizationId) {
+  /** 管理和系统调用没有被代表人员；不得据此推断所有人员或合并身份。 */
+  public WorkflowContext(String tenantId,String actorId,String requestId){this(tenantId,actorId,requestId,null,null);}
   /**
    * 校验上下文完整性，不执行身份认证或幂等落库。
    *

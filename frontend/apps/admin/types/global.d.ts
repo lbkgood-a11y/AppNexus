@@ -178,6 +178,8 @@ declare global {
       themeMode?: string;
     };
     configure: {
+      /** 菜单颜色：auto（默认）跟随主题，light 浅色，dark 深色；仅影响应用壳展示。 */
+      menuColor?: "auto" | "light" | "dark";
       grey?: boolean;
       weak?: boolean;
       hideTabs?: boolean;

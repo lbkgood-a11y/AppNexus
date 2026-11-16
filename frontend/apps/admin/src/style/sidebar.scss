@@ -284,8 +284,10 @@
     }
   }
 
-  /* vertical 菜单折叠 */
-  .el-menu--vertical {
+  /* 导航配色仅作用应用壳及其 Teleport 浮层；业务分类也使用 el-menu，不能按组件类名全局着色。 */
+  .sidebar-container .el-menu--vertical,
+  .horizontal-header .el-menu--vertical,
+  .pure-scrollbar.el-menu--vertical {
     .el-menu--popup {
       background-color: var(--pure-theme-sub-menu-bg) !important;
 
@@ -348,6 +350,18 @@
         position: relative;
         z-index: 1;
       }
+
+      /* 纵向菜单的内容层级规则优先级更高，需在此恢复箭头绝对定位；距右侧 20px、以 14px 图标高度居中，保留组件展开旋转。 */
+      > .el-sub-menu__icon-arrow {
+        position: absolute;
+        top: 50%;
+        right: 20px;
+        width: 14px;
+        height: 14px;
+        margin-top: -7px;
+        margin-right: 0;
+        line-height: 14px;
+      }
     }
 
     .is-active {
@@ -383,8 +397,9 @@
     }
   }
 
-  /* horizontal 菜单 */
-  .el-menu--horizontal {
+  /* 横向导航同样限定应用壳范围，浮层通过既有 pure-scrollbar 标记保留导航配色。 */
+  .horizontal-header .el-menu--horizontal,
+  .pure-scrollbar.el-menu--horizontal {
     & > .el-sub-menu .el-sub-menu__icon-arrow {
       position: static !important;
       margin-top: 0;
@@ -710,7 +725,9 @@ body[layout="horizontal"] {
 
   @include merge-style($sideBarWidth);
 
-  .el-menu {
+  /* 悬浮文字色仅覆盖应用壳导航，避免污染业务工作区的菜单组件。 */
+  .horizontal-header .el-menu,
+  .pure-scrollbar .el-menu {
     --el-menu-hover-text-color: var(--pure-theme-menu-text) !important;
   }
 
@@ -733,7 +750,10 @@ body[layout="mix"] {
     width: 54px;
   }
 
-  .el-menu {
+  /* 混合布局的透明悬浮背景仅适用于导航，业务分类沿用 Element Plus 主题。 */
+  .sidebar-container .el-menu,
+  .horizontal-header .el-menu,
+  .pure-scrollbar .el-menu {
     --el-menu-hover-bg-color: transparent !important;
     --el-menu-hover-text-color: var(--pure-theme-menu-text) !important;
   }

@@ -212,8 +212,8 @@ const transitionMain = defineComponent({
 }
 
 .main-content {
-  /* 全局内容区四周外边距统一为 12px，页面不重复叠加外围留白。 */
-  margin: 12px;
+  /* 所有路由统一使用全局外边距，默认 8px；与公共模板高度计算共享同一变量。 */
+  margin: var(--app-page-gap, 8px);
 }
 
 /* border-box 将模板头部预留纳入视口高度；保留内容区内部滚动，长表单不会被裁切。 */

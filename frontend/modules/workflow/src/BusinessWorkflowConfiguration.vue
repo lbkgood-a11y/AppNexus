@@ -380,6 +380,7 @@ function setOutcome(result: string, capability?: string) {
 </template>
 
 <style scoped>
+/* 页面外围留白引用全局内容与区块 Token，局部字段间距和触控高度按原交互保留。 */
 .business-configuration {
   display: grid;
   grid-template-columns: minmax(320px, 1fr) minmax(320px, 1fr);
@@ -388,7 +389,7 @@ function setOutcome(result: string, capability?: string) {
 .business-configuration-form,
 .business-configuration-preview {
   min-width: 0;
-  padding: 24px;
+  padding:var(--app-content-padding,12px);
 }
 .business-configuration-preview {
   border-left: 1px solid var(--el-border-color-lighter);
@@ -410,7 +411,7 @@ function setOutcome(result: string, capability?: string) {
   margin-left: 0;
 }
 .business-rule {
-  padding: 16px;
+  padding:var(--app-content-padding,12px);
   margin: 0;
   display: grid;
   gap: 16px;

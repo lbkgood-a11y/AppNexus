@@ -62,6 +62,7 @@ public class TenantContextController {
             throw AccountSettingsController.problem(HttpStatus.CONFLICT,"TENANT_CONTEXT_CHANGED","租户上下文已变化，请刷新后重试");
         if(previous==null || !previous.equals(m.tenantId().toString())) {
             request.changeSessionId();
+            session.removeAttribute("appnexus.person");session.removeAttribute("appnexus.personOrganization");session.removeAttribute("appnexus.personTenant");
             session.setAttribute(TENANT,m.tenantId().toString());session.setAttribute(MEMBER,m.memberId().toString());
             session.setAttribute(VERSION,version+1);
         }

@@ -165,15 +165,16 @@ const subjectSaveOperation = computed(() => location.hash.includes('/platform/')
 </template>
 
 <style scoped>
+/* 页面外围留白引用全局内容与区块 Token，局部字段间距和触控高度按原交互保留。 */
 .subject-workspace { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(320px, 1fr); align-items: start; }
 .subject-directory { min-width: 0; }
-.subject-search { display: flex; flex-wrap: wrap; gap: 12px; padding: 20px; background: var(--el-fill-color-lighter); border-bottom: 1px solid var(--el-border-color-lighter); }
+.subject-search { display: flex; flex-wrap: wrap; gap: 12px; padding:var(--app-content-padding,12px); background: var(--el-fill-color-lighter); border-bottom: 1px solid var(--el-border-color-lighter); }
 .subject-search .el-form-item { margin-bottom: 0; margin-right: 0; }
 .subject-search .el-form-item:last-child { margin-left: auto; margin-right: 0; }
-.subject-editor { min-width: 0; padding: 20px; border-left: 1px solid var(--el-border-color); }
+.subject-editor { min-width: 0; padding:var(--app-content-padding,12px); border-left: 1px solid var(--el-border-color); }
 .subject-editor h2 { font-size: 16px; margin: 0 0 20px; }
 .subject-editor h2.explanation-heading { margin-top: 28px; padding-top: 20px; border-top: 1px solid var(--el-border-color-lighter); }
-.subject-editor .el-alert { margin-bottom: 16px; }
+.subject-editor .el-alert { margin-bottom:var(--app-section-gap,8px); }
 .role-select { width: 100%; }
 .permission-code { overflow-wrap: anywhere; margin-right: 12px; text-align: left; }
 .permission-source { display: flex; flex-wrap: wrap; gap: 8px 16px; padding: 8px 0; color: var(--el-text-color-regular); }

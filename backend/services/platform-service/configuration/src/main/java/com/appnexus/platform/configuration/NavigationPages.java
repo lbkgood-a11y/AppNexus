@@ -24,6 +24,12 @@ public final class NavigationPages {
     /** 返回已交付的真实页面，不包含模板演示、远程脚本或尚未集成的应用。 */
     public static List<Page> all() {
         return List.of(
+            new Page("organization/personnel","/organization/personnel","人员管理","Personnel",MenuManagement.Scope.TENANT,"masterdata.person:read",Gate.PERMISSION),
+            new Page("master-data/partner","/master-data/partner","客商管理","Business partners",MenuManagement.Scope.TENANT,"masterdata.partner:read",Gate.PERMISSION),
+            new Page("master-data/warehouse","/master-data/warehouse","仓库管理","Warehouses",MenuManagement.Scope.TENANT,"masterdata.warehouse:read",Gate.PERMISSION),
+            new Page("master-data/country-region","/master-data/country-region","国别地区","Countries and regions",MenuManagement.Scope.TENANT,"masterdata.countryregion:read",Gate.PERMISSION),
+            new Page("master-data/product","/master-data/product","商品管理","Products",MenuManagement.Scope.TENANT,"masterdata.product:read",Gate.PERMISSION),
+
             platform("platform/business-objects","/platform/business-objects","业务对象目录","Business object catalog","business.object.catalog:manage"),
             new Page("business-objects/index","/business-objects/workbench","业务配置","Business configuration",MenuManagement.Scope.TENANT,"business.object.configuration:manage",Gate.PERMISSION),
             new Page("workflow/leave","/workflow/leave","请假单 POC","Leave request POC",MenuManagement.Scope.TENANT,null,Gate.PERMISSION),

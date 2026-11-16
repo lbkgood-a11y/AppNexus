@@ -32,7 +32,8 @@ public class DictionaryManagementController {
  /** 操作契约关联下方真实接口；仅供展示与一致性校验，主体、权限及业务约束仍由原用例执行。 */
  @com.appnexus.contracts.operation.BusinessObjectType(code="BusinessDictionary",nameZh="业务字典",nameEn="Business Dictionary",category=com.appnexus.contracts.operation.BusinessObjectType.Category.MASTER_DATA,module="configuration")
  @com.appnexus.contracts.operation.OperationBinding(id="BusinessDictionary.list",objectType="BusinessDictionary",operationCode="list",pages={"configuration/dictionaries"},nameZh="业务字典：查看列表",nameEn="Read dictionaries and items",policy="主体管理域、角色权限及业务用例约束由原执行器逐请求复核")
- @EndpointOperation("configuration.dictionary:read") @GetMapping ResponseEntity<List<DictionaryManagement.Dictionary>> list(Authentication a,HttpServletRequest r){return ok(()->dictionaries.dictionaries(context(a,r)));}
+ @EndpointOperation("configuration.dictionary:read") @com.appnexus.contracts.operation.RecordAuditSource(table="tenant_dictionary")
+ @GetMapping ResponseEntity<List<DictionaryManagement.Dictionary>> list(Authentication a,HttpServletRequest r){return ok(()->dictionaries.dictionaries(context(a,r)));}
  /** 操作契约关联下方真实接口；仅供展示与一致性校验，主体、权限及业务约束仍由原用例执行。 */
  @com.appnexus.contracts.operation.OperationBinding(id="BusinessDictionary.create",objectType="BusinessDictionary",operationCode="create",pages={"configuration/dictionaries"},nameZh="业务字典：新增",nameEn="Create dictionaries",policy="主体管理域、角色权限及业务用例约束由原执行器逐请求复核")
  @EndpointOperation("configuration.dictionary:create") @PostMapping ResponseEntity<DictionaryManagement.Dictionary> create(Authentication a,HttpServletRequest r,@RequestBody DictionaryCreate input){return ok(()->dictionaries.createDictionary(context(a,r),Objects.requireNonNull(input).command()));}
@@ -44,7 +45,8 @@ public class DictionaryManagementController {
  @EndpointOperation("configuration.dictionary:delete") @DeleteMapping("/{dictionaryId}") ResponseEntity<Void> delete(Authentication a,HttpServletRequest r,@PathVariable UUID dictionaryId,@RequestParam long version){return empty(()->dictionaries.deleteDictionary(context(a,r),dictionaryId,version));}
  /** 操作契约关联下方真实接口；仅供展示与一致性校验，主体、权限及业务约束仍由原用例执行。 */
  @com.appnexus.contracts.operation.OperationBinding(id="BusinessDictionary.items",objectType="BusinessDictionary",operationCode="items",pages={"configuration/dictionaries"},nameZh="业务字典：查看字典项",nameEn="Read dictionaries and items",policy="主体管理域、角色权限及业务用例约束由原执行器逐请求复核")
- @EndpointOperation("configuration.dictionary:read") @GetMapping("/{dictionaryId}/items") ResponseEntity<List<DictionaryManagement.Item>> items(Authentication a,HttpServletRequest r,@PathVariable UUID dictionaryId){return ok(()->dictionaries.items(context(a,r),dictionaryId));}
+ @EndpointOperation("configuration.dictionary:read") @com.appnexus.contracts.operation.RecordAuditSource(table="tenant_dictionary_item")
+ @GetMapping("/{dictionaryId}/items") ResponseEntity<List<DictionaryManagement.Item>> items(Authentication a,HttpServletRequest r,@PathVariable UUID dictionaryId){return ok(()->dictionaries.items(context(a,r),dictionaryId));}
  /** 操作契约关联下方真实接口；仅供展示与一致性校验，主体、权限及业务约束仍由原用例执行。 */
  @com.appnexus.contracts.operation.OperationBinding(id="BusinessDictionary.lookup",objectType="BusinessDictionary",operationCode="lookup",pages={"configuration/dictionaries"},nameZh="业务字典：按编码查询",nameEn="Read dictionaries and items",policy="主体管理域、角色权限及业务用例约束由原执行器逐请求复核")
  @EndpointOperation("configuration.dictionary:read") @GetMapping("/lookup/{code}") ResponseEntity<List<DictionaryManagement.Item>> lookup(Authentication a,HttpServletRequest r,@PathVariable String code){return ResponseEntity.ok().cacheControl(org.springframework.http.CacheControl.noStore()).body(dictionaries.enabledItems(context(a,r),code));}

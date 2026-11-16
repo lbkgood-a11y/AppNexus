@@ -1,6 +1,6 @@
 /* 内容区沿用模板 main-content 外边距；这里只定义筛选、数据、范围选择三类内部排布。 */
 .management-page { display: grid; gap: 16px; min-width: 0; }
-.management-page .management-filter .el-card__body { padding: 16px 24px; }
+.management-page .management-filter .el-card__body { padding:var(--app-content-padding,8px); }
 /* 筛选类可用于容器或表单本身，两种组合共用靠右操作与响应式换行。 */
 .management-filter.el-form, .management-filter .el-form { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; }
 .management-filter .el-form-item { margin: 0; }
@@ -51,11 +51,11 @@
 .management-page-description,.page-header p { font-size:13px; line-height:20px; }
 .management-filter-title,.management-context h2 { font-size:15px; font-weight:600; }
 .management-filter-header { margin-bottom:8px; }
-.management-table-surface { border:1px solid var(--el-border-color-lighter); border-radius:var(--app-card-radius, 8px); background:var(--el-bg-color); padding:12px; }
+.management-table-surface { border:1px solid var(--el-border-color-lighter); border-radius:var(--app-card-radius, 8px); background:var(--el-bg-color); padding:var(--app-content-padding,8px); }
 /* el-card 自带 body 留白，取消外层重复 padding。 */
 .el-card.management-table-surface { padding:0; }
-.management-table-surface > .el-card__body { padding:12px; }
-.management-table .management-toolbar { margin-bottom:12px; }
+.management-table-surface > .el-card__body { padding:var(--app-content-padding,8px); }
+.management-table .management-toolbar { margin-bottom:var(--app-section-gap,8px); }
 .management-table .management-table-title { font-size:15px; }
 .management-table .management-table-total { font-size:12px; }
 .management-table .management-pagination { margin-top:6px; padding-top:6px; border-top:0; }
@@ -72,9 +72,9 @@
 }
 
 /* 公共表格 scoped 规则优先级更高，显式限定层级以确保统一密度生效。 */
-.management-table .management-table-surface { padding:12px; }
+.management-table .management-table-surface { padding:var(--app-content-padding,8px); }
 .management-table .el-card.management-table-surface { padding:0; }
-.management-table .management-table-surface > .el-card__body { padding:12px; }
+.management-table .management-table-surface > .el-card__body { padding:var(--app-content-padding,8px); }
 .management-table .management-toolbar .management-table-title { font-size:15px; }
 /* 嵌入数据区保留单层卡片，避免工作区与表格外框重复堆叠。 */
 .business-workspace__data > .management-table > div.management-table-surface { border:0; padding:0; }
@@ -102,6 +102,9 @@
 
 /* 嵌入工作区的表格即使经过业务包装层，也不重复生成卡片边界。 */
 .business-workspace__data .management-table:not(.is-fullscreen) > div.management-table-surface { border:0; padding:0; }
+/* 工作区已提供边框和内容边距；包含默认 el-card 表格时同样取消双层留白，最大化保留独立表面。 */
+:is(.business-workspace__data,.tree-list-template__data,.template-data) .management-table:not(.is-fullscreen) > .management-table-surface { border:0; padding:0; }
+:is(.business-workspace__data,.tree-list-template__data,.template-data) .management-table:not(.is-fullscreen) > .management-table-surface > .el-card__body { padding:0; }
 
 /* 异常浮层限定在视口内；长文案及补救操作在图层内部滚动，不撑开业务页面。 */
 .app-error-feedback {

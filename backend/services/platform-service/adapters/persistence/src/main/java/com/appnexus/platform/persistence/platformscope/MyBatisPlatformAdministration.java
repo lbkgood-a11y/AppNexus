@@ -13,12 +13,13 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class MyBatisPlatformAdministration implements PlatformAdministration {
     private final AdministrationMapper mapper;
+    private final com.appnexus.platform.organization.PersonnelExecution personnel;
     private final OrganizationAdministratorBootstrap bootstrap;
     private final FieldProtection protection;
     private final AccountSessionRevocationMapper revocations;
     public MyBatisPlatformAdministration(AdministrationMapper mapper,OrganizationAdministratorBootstrap bootstrap,FieldProtection protection,
-            AccountSessionRevocationMapper revocations) {
-        this.mapper=mapper; this.bootstrap=bootstrap;this.protection=protection;this.revocations=revocations;
+            AccountSessionRevocationMapper revocations,com.appnexus.platform.organization.PersonnelExecution personnel) {
+        this.mapper=mapper; this.bootstrap=bootstrap;this.protection=protection;this.revocations=revocations;this.personnel=personnel;
     }
     public boolean isAdministrator(UUID actor) { return mapper.administrator(actor.toString()); }
     /**
@@ -149,8 +150,7 @@ public class MyBatisPlatformAdministration implements PlatformAdministration {
         if(previous==null)throw new IllegalArgumentException("Member unavailable");
         if(mapper.manages(tenant.toString(),member.toString())&&mapper.activeManagerCount(tenant.toString())<=1)
             throw new IllegalArgumentException("Last active administrator cannot be removed");
-        mapper.removeMemberLeaders(tenant.toString(),member.toString());
-        mapper.endMemberAssignments(tenant.toString(),member.toString());
+        personnel.unlinkMember(tenant,member,actor);
         mapper.revokeMember(tenant.toString(),member.toString());
         mapper.revokeMemberRoles(tenant.toString(),member.toString());
         mapper.revokeMemberPermissions(tenant.toString(),member.toString());
@@ -169,8 +169,6 @@ public class MyBatisPlatformAdministration implements PlatformAdministration {
         if(previous==enabled) return;
         mapper.memberState(tenant.toString(),member.toString(),enabled);
         if(!enabled) {
-            mapper.removeMemberLeaders(tenant.toString(),member.toString());
-            mapper.endMemberAssignments(tenant.toString(),member.toString());
             mapper.revokeMember(tenant.toString(),member.toString());
             mapper.revokeMemberRoles(tenant.toString(),member.toString());
             mapper.revokeMemberPermissions(tenant.toString(),member.toString());

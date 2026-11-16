@@ -44,8 +44,12 @@ html:root {
   --color-danger: var(--el-color-danger);
   /* 内容卡片、业务工作区与模板表面统一跟随 Element Plus 基础圆角，主题调整时同步生效。 */
   --app-card-radius: 8px;
-  /* 业务区块间距，单位 px，默认 12px；影响公共模板与字典样板排布。 */
-  --app-section-gap: 12px;
+  /* 业务独立区块间距，单位 px，默认 8px；工作区内部使用分隔线，不叠加卡片间隙。 */
+  --app-section-gap: 8px;
+  /* 公共内容内边距，单位 px，默认 8px；压缩查询标题、列表工具栏和详情外围空白。 */
+  --app-content-padding: 8px;
+  /* 路由内容四周外边距，单位 px，默认 8px；同时用于剩余高度计算，避免页脚上方重复留白。 */
+  --app-page-gap: 8px;
   /* 分类栏默认宽度，单位 px，默认 220px；页面显式指定宽度时优先使用页面值。 */
   --app-category-width: 220px;
   --app-control-radius: 6px;
@@ -163,11 +167,34 @@ html[data-theme] {
 }
 .business-workspace__navigation,.tree-list-template__navigation { background:var(--el-bg-color); }
 
+/* 菜单颜色缺省 auto 沿用上方主题变量；显式选择仅覆盖模板导航变量，含折叠菜单浮层。 */
+html[data-theme][data-menu-color="light"] {
+  --pure-theme-menu-bg: #fff;
+  --pure-theme-sub-menu-bg: #fff;
+  --pure-theme-sidebar-logo: #fff;
+  --pure-theme-menu-text: #303133;
+  --pure-theme-sub-menu-active-text: var(--el-color-primary);
+  --pure-theme-menu-hover: #f0f2f5;
+  --pure-theme-menu-title-hover: var(--el-color-primary);
+}
+
+/* 深色菜单沿用模板默认导航底色；正文与状态采用高对比文字，避免受浅色页面文字变量影响。 */
+html[data-theme][data-menu-color="dark"] {
+  --pure-theme-menu-bg: #001529;
+  --pure-theme-sub-menu-bg: #001529;
+  --pure-theme-sidebar-logo: #002140;
+  --pure-theme-menu-text: #d9e1eb;
+  --pure-theme-sub-menu-active-text: #fff;
+  --pure-theme-menu-hover: #16334f;
+  --pure-theme-menu-title-hover: #fff;
+}
+
 /* 全局横幅开关仅作用显式标记的纯展示区域；导航、查询和业务操作不可随其隐藏。 */
 .hide-page-banner [data-page-banner] { display:none !important; }
 .hide-page-banner .tree-list-template__navigation:has([data-page-banner]) { display:none; }
 
 /* 非公共工作区页面共享卡片、表格及表单视觉；不改变设计器、画布和详情布局。 */
-.main-content .el-card { border-color:var(--el-border-color-lighter); border-radius:var(--app-card-radius); box-shadow:none; }
+/* 所有路由内的普通卡片共用内容密度；公共模板显式零内边距的布局仍优先，画布尺寸不受影响。 */
+.main-content .el-card { --el-card-padding:var(--app-content-padding,12px); border-color:var(--el-border-color-lighter); border-radius:var(--app-card-radius); box-shadow:none; }
 .main-content .el-form-item__label,.app-managed-dialog .el-form-item__label { font-size:13px; font-weight:500; color:var(--el-text-color-regular); }
 .hide-page-banner .page-header:not(:has(.page-header__actions > *)):not(:has(.el-breadcrumb)) { display:none; }

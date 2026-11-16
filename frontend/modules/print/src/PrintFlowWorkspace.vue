@@ -130,5 +130,5 @@ async function registerQueue(row:Record<string,unknown>){await run(async()=>{awa
 </template>
 
 <style scoped>
-.scene-identifier{user-select:text;overflow-wrap:anywhere;margin-inline-end:8px}.flow-workspace{padding:0;min-width:0}.flow-workspace header,header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:20px 0 12px}.flow-workspace>header:first-child{margin-top:0}h2,h3{margin:0;font-size:var(--el-font-size-medium)}footer{display:flex;justify-content:flex-end;gap:8px;margin-top:20px}.flow-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 16px}@media(max-width:700px){.flow-grid{grid-template-columns:1fr}header{flex-wrap:wrap}}
+.scene-identifier{user-select:text;overflow-wrap:anywhere;margin-inline-end:8px}.flow-workspace{padding:0;min-width:0}.flow-workspace header,header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:var(--app-section-gap,8px) 0}.flow-workspace>header:first-child{margin-top:0}h2,h3{margin:0;font-size:var(--el-font-size-medium)}footer{display:flex;justify-content:flex-end;gap:8px;margin-top:var(--app-section-gap,8px)}.flow-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 16px}@media(max-width:700px){.flow-grid{grid-template-columns:1fr}header{flex-wrap:wrap}}
 </style>

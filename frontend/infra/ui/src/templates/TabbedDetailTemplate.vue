@@ -1,5 +1,21 @@
 <script setup lang="ts">
-/** T06 Tab 多维详情模板：对象摘要与 Tab 内容分离，按需加载和状态保持由业务页控制。 */
-defineSlots<{ header?: () => unknown; summary: () => unknown; tabs: () => unknown }>();
+/**
+ * T06 多维详情模板；主数据样板按页头、分组表单、只读系统信息、明细页签组织。
+ * content 用于跨多个区块共享同一 el-form 实例，避免拆分后漏校验；旧 summary 插槽保持原调用方式。
+ * 模板不读取业务数据、不提供权限兜底，保存/取消、折叠和字段校验由页面管理。
+ */
+withDefaults(defineProps<{
+  /** 启用人员详情样板的布局密度，默认 false；后续主数据/基础数据详情应显式启用。 */
+  masterData?: boolean;
+}>(),{masterData:false});
+defineSlots<{header?:()=>unknown;summary?:()=>unknown;content?:()=>unknown;system?:()=>unknown;tabs:()=>unknown}>();
 </script>
-<template><div class="page-template tabbed-detail-template"><slot name="header" /><el-card shadow="never"><slot name="summary" /></el-card><el-card class="tabbed-detail-template__tabs" shadow="never"><slot name="tabs" /></el-card></div></template>
+<template>
+ <div class="page-template tabbed-detail-template" :class="{'master-data-detail':masterData}">
+  <slot name="header" />
+  <slot v-if="$slots.content" name="content" />
+  <el-card v-else shadow="never"><slot name="summary" /></el-card>
+  <el-card v-if="$slots.system" class="detail-system" shadow="never"><slot name="system" /></el-card>
+  <el-card class="tabbed-detail-template__tabs" shadow="never"><slot name="tabs" /></el-card>
+ </div>
+</template>

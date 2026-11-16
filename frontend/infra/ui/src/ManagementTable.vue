@@ -1,6 +1,8 @@
 <script setup lang="ts" generic="Row extends object">
 import { VxeTable, VxeColumn } from "vxe-table";
 import AppPagination from "./AppPagination.vue";
+import ManagedDialog from "./ManagedDialog.vue";
+import RecordAuditDetails, { type RecordAudit } from "./RecordAuditDetails.vue";
 import { useSlots, computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { AppIcon } from "@appnexus/icons";
@@ -80,6 +82,16 @@ defineSlots<{
   [name: string]: ((scope: { row: Row }) => unknown) | undefined;
 }>();
 const { t } = useI18n();
+/** 仅展示服务端原授权响应已携带的审计，不根据行 ID 发起额外查询。 */
+const selectedAudit = ref<RecordAudit>();
+const auditOpen = ref(false);
+const hasAudit = computed(() => props.rows.some(row => Boolean((row as Record<string, unknown>).audit)));
+/** 本地只读详情不触发业务写入，切换租户或列表时清理已选记录。 */
+function showAudit(row: Row) {
+  selectedAudit.value = (row as Record<string, unknown>).audit as RecordAudit | undefined;
+  auditOpen.value = Boolean(selectedAudit.value);
+}
+watch(() => props.rows, () => { auditOpen.value = false; selectedAudit.value = undefined; });
 const fullscreenHost = ref<HTMLElement>();
 const tableRegion = ref<HTMLElement>();
 const fullscreen = ref(false);
@@ -190,12 +202,16 @@ onBeforeUnmount(() => observer?.disconnect());
           <vxe-column v-for="column in visible" :key="column.key" :field="column.prop" :title="column.label" :width="column.width" :min-width="column.minWidth || 140" :fixed="fixed[column.key]" :tree-node="!!rowKey && column.key === visible[0]?.key" :show-overflow="column.key !== 'operations'">
             <template #default="{ row }"><slot :name="column.key" :row="row">{{ column.prop ? (row[column.prop] ?? '—') : '—' }}</slot></template>
           </vxe-column>
+          <vxe-column v-if="hasAudit" :title="t('recordAudit.title')" :width="130" fixed="right">
+            <template #default="{ row }"><el-button v-if="row.audit" link type="primary" @click="showAudit(row)">{{ t('recordAudit.view') }}</el-button><span v-else>—</span></template>
+          </vxe-column>
         </vxe-table>
       </div>
       <div v-if="$slots.pagination || localPagination" class="management-pagination"><slot name="pagination"><AppPagination v-model:current-page="localPage" v-model:page-size="localPageSize" :total="rows.length" :disabled="loading || busy" /></slot></div>
     </component>
   </section>
   </Teleport>
+  <ManagedDialog v-model="auditOpen" :title="t('recordAudit.title')"><RecordAuditDetails v-if="selectedAudit" :audit="selectedAudit" /></ManagedDialog>
 </template>
 
 <style scoped>

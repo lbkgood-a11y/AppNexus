@@ -93,6 +93,7 @@ public class WebSecurityConfiguration {
             org.springframework.security.oauth2.server.resource.introspection.OpaqueTokenIntrospector introspection,
             com.appnexus.platform.identity.AccountRepository accounts,SessionLifetime lifetime,
             com.appnexus.platform.tenant.TenantAccess tenants,
+            com.appnexus.platform.organization.PersonnelExecution personnel,
             com.appnexus.platform.authorization.OrganizationAuthorization organizationAuthorization)throws Exception{
         http.securityMatcher(request->request.getRequestURI().startsWith(request.getContextPath()+"/api/")&&request.getHeader("Authorization")!=null)
             .sessionManagement(session->session.sessionCreationPolicy(org.springframework.security.config.http.SessionCreationPolicy.STATELESS))
@@ -101,7 +102,7 @@ public class WebSecurityConfiguration {
             .oauth2ResourceServer(resource->resource.opaqueToken(token->token.introspector(introspection)))
             .authorizeHttpRequests(auth->auth.anyRequest().authenticated())
             .addFilterAfter(new AccountStatusFilter(accounts,lifetime),org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter.class)
-            .addFilterAfter(new TenantExecutionFilter(tenants,organizationAuthorization),AccountStatusFilter.class);
+            .addFilterAfter(new TenantExecutionFilter(tenants,organizationAuthorization,personnel),AccountStatusFilter.class);
         return http.build();
     }
     @Bean
@@ -111,6 +112,7 @@ public class WebSecurityConfiguration {
             ClientRegistrationRepository registrations,
             com.appnexus.platform.audit.SecurityLogRepository logs,
             com.appnexus.platform.tenant.TenantAccess tenantAccess,
+            com.appnexus.platform.organization.PersonnelExecution personnel,
             com.appnexus.platform.authorization.OrganizationAuthorization organizationAuthorization,
             org.springframework.data.redis.core.StringRedisTemplate redis,
             com.appnexus.platform.identity.AccountRepository accounts,
@@ -126,7 +128,7 @@ public class WebSecurityConfiguration {
                 org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter.class)
             .addFilterAfter(new AccountStatusFilter(accounts, lifetime),
                 org.springframework.security.web.authentication.AnonymousAuthenticationFilter.class)
-            .addFilterAfter(new TenantExecutionFilter(tenantAccess, organizationAuthorization), AccountStatusFilter.class)
+            .addFilterAfter(new TenantExecutionFilter(tenantAccess, organizationAuthorization,personnel), AccountStatusFilter.class)
             .addFilterAfter(new PlatformMfaFilter(requirePlatformMfa,mfa),AccountStatusFilter.class)
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/login", "/login/csrf", "/login/recovery", "/login/recovery/completion", "/error", "/oauth2/authorization/**", "/login/oauth2/code/**").permitAll()

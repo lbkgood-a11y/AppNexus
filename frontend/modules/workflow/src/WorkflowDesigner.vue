@@ -1024,6 +1024,7 @@ watch(
   </section>
 </template>
 <style scoped>
+/* 页面外围留白引用全局内容与区块 Token，局部字段间距和触控高度按原交互保留。 */
 .palette-ghost {
   position: fixed;
   z-index: 3000;
@@ -1050,7 +1051,7 @@ watch(
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 16px;
+  padding:var(--app-content-padding,12px);
   border-bottom: 1px solid var(--el-border-color-lighter);
   flex-wrap: wrap;
 }
@@ -1083,7 +1084,7 @@ watch(
   max-height: 1000px;
 }
 .designer-palette {
-  padding: 16px;
+  padding:var(--app-content-padding,12px);
   border-right: 1px solid var(--el-border-color-lighter);
   overflow: auto;
 }
@@ -1143,6 +1144,7 @@ watch(
   flex: 1;
   min-height: 250px;
   overflow: auto;
+  /* 画布坐标与连线命中依赖此安全区域，不按外围面板密度压缩。 */
   padding: 24px;
 }
 .canvas-footer {
@@ -1162,7 +1164,7 @@ watch(
   background: var(--el-bg-color);
 }
 .inspector-body {
-  padding: 16px;
+  padding:var(--app-content-padding,12px);
 }
 .definition-form,
 .node-form {

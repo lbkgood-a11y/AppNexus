@@ -64,6 +64,7 @@ const watermarkConfigs = reactive({
 });
 
 const settings = reactive({
+  menuColor: $storage.configure.menuColor ?? "auto",
   greyVal: $storage.configure.grey,
   weakVal: $storage.configure.weak,
   tabsVal: $storage.configure.hideTabs,
@@ -74,6 +75,19 @@ const settings = reactive({
   multiTagsCache: $storage.configure.multiTagsCache,
   stretch: $storage.configure.stretch
 });
+
+/** 菜单仅改变应用壳配色；缺省 auto 跟随全站主题，不改变业务主色。 */
+const menuColorOptions = computed<Array<OptionsType>>(() => [
+  { label: t("panel.menuColorAuto"), value: "auto" },
+  { label: t("panel.pureThemeModeLight"), value: "light" },
+  { label: t("panel.pureThemeModeDark"), value: "dark" }
+]);
+
+/** 即时保存展示偏好，复用模板本地存储，不涉及账号或授权数据。 */
+function menuColorChange({ option }: { option: OptionsType }) {
+  settings.menuColor = option.value as "auto" | "light" | "dark";
+  storageConfigureChange("menuColor", settings.menuColor);
+}
 
 const getThemeColorStyle = computed(() => {
   return color => {
@@ -372,6 +386,14 @@ onUnmounted(() => removeMatchMedia);
           </el-icon>
         </li>
       </ul>
+
+      <p :class="['mt-5!', pClass]">{{ t("panel.menuColor") }}</p>
+      <Segmented
+        resize
+        :modelValue="menuColorOptions.findIndex(item => item.value === settings.menuColor)"
+        :options="menuColorOptions"
+        @change="menuColorChange"
+      />
 
       <p :class="['mt-5!', pClass]">{{ t("panel.pureMenuLayout") }}</p>
       <ul class="pure-theme">

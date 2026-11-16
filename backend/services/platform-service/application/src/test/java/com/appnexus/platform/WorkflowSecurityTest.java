@@ -68,13 +68,13 @@ class WorkflowSecurityTest extends DatabaseTestSupport {
     mvc.perform(get("/api/operations/Unknown.read/objects/"+UUID.randomUUID()+"/diagnostics").cookie(cookie)).andExpect(status().isOk()).andExpect(jsonPath("$[0].status").value("NOT_CHECKED"));
     mvc.perform(get("/api/operations/LeaveRequest.submit/objects/"+UUID.randomUUID()+"/diagnostics").cookie(cookie)).andExpect(status().isNotFound()).andExpect(jsonPath("$.code").value("OBJECT_NOT_ACCESSIBLE"));
     // 请假原文与列表入口只允许本人；创建仍要求独立发起权限，CSRF 不可绕过。
-    mvc.perform(get("/api/leave-poc").cookie(cookie)).andExpect(status().isOk());
+    mvc.perform(get("/api/leave-poc").cookie(cookie)).andExpect(status().isConflict()).andExpect(jsonPath("$.code").value("PERSON_CONTEXT_REQUIRED"));
     mvc.perform(get("/api/workflow/configuration").cookie(cookie)).andExpect(status().isForbidden());
     mvc.perform(post("/api/leave-poc").cookie(cookie).contentType("application/json").content("{}"))
         .andExpect(status().isForbidden());
     mvc.perform(post("/api/leave-poc").cookie(cookie).with(csrf())
         .header("Idempotency-Key", UUID.randomUUID().toString()).contentType("application/json").content("{}"))
-        .andExpect(status().isForbidden());
+        .andExpect(status().isConflict()).andExpect(jsonPath("$.code").value("PERSON_CONTEXT_REQUIRED"));
     bootstrap.initialize(UUID.fromString(tenant), UUID.fromString(member));
     mvc.perform(get("/api/workflow/definitions").cookie(cookie)).andExpect(status().isOk());
     mvc.perform(get("/api/workflow/configuration").cookie(cookie)).andExpect(status().isOk())

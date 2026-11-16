@@ -8,7 +8,7 @@ import { useI18n } from "vue-i18n";
 import { AppIcon } from "@appnexus/icons";
 import { BusinessWorkspace, ManagedDialog, ManagementTable, TreeListTemplate } from "@appnexus/ui";
 import type { ManagementColumn } from "@appnexus/ui";
-import type { BusinessOption, OrganizationApi, OrganizationAssignment, OrganizationCapability, OrganizationDirectoryMember, OrganizationLeader, OrganizationPosition, OrganizationRelation, OrganizationTreeUnit, OrganizationType } from "./index";
+import type { BusinessOption, OrganizationApi, OrganizationAssignment, OrganizationCapability, OrganizationDirectoryPerson, OrganizationLeader, OrganizationPosition, OrganizationRelation, OrganizationTreeUnit, OrganizationType } from "./index";
 
 type WorkspaceView = "structure" | "assignments" | "relations" | "types";
 type DetailView = "positions" | "leaders" | "relations";
@@ -20,7 +20,7 @@ const { t } = useI18n();
 const capabilities = ref<OrganizationCapability[]>([]);
 const types = ref<OrganizationType[]>([]), units = ref<OrganizationTreeUnit[]>([]), relations = ref<OrganizationRelation[]>([]);
 const positions = ref<OrganizationPosition[]>([]), assignments = ref<OrganizationAssignment[]>([]), leaders = ref<OrganizationLeader[]>([]);
-const members = ref<OrganizationDirectoryMember[]>([]), relationTypes = ref<BusinessOption[]>([]);
+const members = ref<OrganizationDirectoryPerson[]>([]), relationTypes = ref<BusinessOption[]>([]);
 const loading = ref(false), saving = ref(false), error = ref(""), dialogError = ref("");
 const relationTypesError = ref("");
 const workspaceView = ref<WorkspaceView>("structure"), detailView = ref<DetailView>("positions"), dialog = ref<DialogKind>("");
@@ -29,7 +29,7 @@ const selectedTypeId = ref(""), selectedUnitId = ref(""), treeCollapsed = ref(fa
 const treeKeyword = ref(""), assignmentKeyword = ref(""), relationKeyword = ref(""), typeKeyword = ref("");
 const assignmentStatus = ref<"all" | "active" | "ended">("active");
 const code = ref(""), name = ref(""), typeId = ref(""), parentId = ref<string | null>(null);
-const sourceId = ref(""), targetId = ref(""), relationType = ref(""), memberId = ref(""), positionId = ref("");
+const sourceId = ref(""), targetId = ref(""), relationType = ref(""), personId = ref(""), positionId = ref("");
 const startsAt = ref(new Date()), endsAt = ref<Date | null>(null);
 
 const can = (value: OrganizationCapability) => capabilities.value.includes(value);
@@ -60,7 +60,7 @@ const filteredAssignments = computed(() => {
     const active = isActiveAssignment(item);
     if (assignmentStatus.value === "active" && !active) return false;
     if (assignmentStatus.value === "ended" && active) return false;
-    return !keyword || `${labelMember(item.memberId)} ${labelPosition(item.positionId)} ${labelUnit(positionOrganizationId(item.positionId))}`.toLocaleLowerCase().includes(keyword);
+    return !keyword || `${labelPerson(item.personId)} ${labelPosition(item.positionId)} ${labelUnit(positionOrganizationId(item.positionId))}`.toLocaleLowerCase().includes(keyword);
   });
 });
 const filteredRelations = computed(() => { const keyword = relationKeyword.value.trim().toLocaleLowerCase(); return relations.value.filter(item => !keyword || `${labelRelationType(item.relationType)} ${labelUnit(item.sourceId)} ${labelUnit(item.targetId)}`.toLocaleLowerCase().includes(keyword)); });
@@ -71,12 +71,12 @@ const positionColumns = computed<ManagementColumn[]>(() => [
   { key: "assignments", label: t("organization.assignments"), width: 120 }, { key: "status", label: t("organization.status"), width: 110 }, { key: "operations", label: t("tenant.operation"), width: 190, fixed: "right" }
 ]);
 const assignmentColumns = computed<ManagementColumn[]>(() => [
-  { key: "member", label: t("organization.member"), minWidth: 160 }, { key: "position", label: t("organization.positionName"), minWidth: 150 },
+  { key: "member", label: t("organization.person"), minWidth: 160 }, { key: "position", label: t("organization.positionName"), minWidth: 150 },
   { key: "organization", label: t("organization.name"), minWidth: 170 }, { key: "period", label: t("organization.assignmentPeriod"), minWidth: 250 },
   { key: "status", label: t("organization.status"), width: 110 }, { key: "operations", label: t("tenant.operation"), width: 120, fixed: "right" }
 ]);
 const leaderColumns = computed<ManagementColumn[]>(() => [
-  { key: "member", label: t("organization.member"), minWidth: 160 }, { key: "position", label: t("organization.positionName"), minWidth: 160 },
+  { key: "member", label: t("organization.person"), minWidth: 160 }, { key: "position", label: t("organization.positionName"), minWidth: 160 },
   { key: "period", label: t("organization.assignmentPeriod"), minWidth: 240 }, { key: "operations", label: t("tenant.operation"), width: 140, fixed: "right" }
 ]);
 const relationColumns = computed<ManagementColumn[]>(() => [
@@ -96,7 +96,7 @@ async function load() {
     capabilities.value = await props.api.capabilities();
     if (!can("READ")) return;
     [types.value, units.value, relations.value, positions.value, assignments.value, leaders.value, members.value] = await Promise.all([
-      props.api.types(), props.api.treeUnits(), props.api.relations(), props.api.positions(), props.api.assignments(), props.api.leaders(), props.api.directoryMembers()
+      props.api.types(), props.api.treeUnits(), props.api.relations(), props.api.positions(), props.api.assignments(), props.api.leaders(), props.api.directoryPersons()
     ]);
     await loadRelationTypes();
     ensureSelection();
@@ -126,7 +126,7 @@ function open(kind: DialogKind, row?: OrganizationType | OrganizationTreeUnit | 
   typeId.value = row && "typeId" in row ? row.typeId : selectedTypeId.value || types.value.find(item => item.enabled)?.id || "";
   parentId.value = row && "parentId" in row ? row.parentId : selectedUnitId.value || null;
   sourceId.value = kind === "relation" || kind === "position" ? selectedUnitId.value : ""; targetId.value = "";
-  relationType.value = relationTypes.value[0]?.value || ""; memberId.value = "";
+  relationType.value = relationTypes.value[0]?.value || ""; personId.value = "";
   positionId.value = kind === "assignment" && row && "organizationId" in row ? row.id : "";
   startsAt.value = new Date(); endsAt.value = null;
 }
@@ -138,7 +138,7 @@ async function save() {
   if (dialog.value === "move" && selected.value) await write(() => props.api.moveTreeUnit(selected.value!.id, parentId.value, (selected.value as OrganizationTreeUnit).version));
   if (dialog.value === "relation") await write(() => props.api.createRelation({ relationType: relationType.value, sourceId: sourceId.value, targetId: targetId.value }));
   if (dialog.value === "position") await write(() => selected.value ? props.api.updatePosition(selected.value.id, { name: name.value.trim(), enabled: (selected.value as OrganizationPosition).enabled, version: (selected.value as OrganizationPosition).version }) : props.api.createPosition({ organizationId: sourceId.value, code: code.value.trim(), name: name.value.trim() }));
-  if (dialog.value === "assignment") await write(() => props.api.createAssignment({ memberId: memberId.value, positionId: positionId.value, startsAt: startsAt.value.toISOString(), endsAt: endsAt.value?.toISOString() || null }));
+  if (dialog.value === "assignment") await write(() => props.api.createAssignment({ personId: personId.value, positionId: positionId.value, startsAt: startsAt.value.toISOString(), endsAt: endsAt.value?.toISOString() || null }));
   if (dialog.value === "leader") {
     const assignment = activeAssignments.value.find(item => item.id === targetId.value), position = positions.value.find(item => item.id === assignment?.positionId);
     if (!assignment || !position || position.organizationId !== selectedUnitId.value) { dialogError.value = t("organization.invalidLeader"); return; }
@@ -150,7 +150,7 @@ function validateDialog() {
   if (requiresName && !name.value.trim()) dialogError.value = t("organization.invalidName");
   else if (requiresCode && !code.value.trim()) dialogError.value = t("organization.invalidCode");
   else if (dialog.value === "relation" && (!relationType.value || !sourceId.value || !targetId.value || sourceId.value === targetId.value)) dialogError.value = t("organization.invalidRelation");
-  else if (dialog.value === "assignment" && (!memberId.value || !positionId.value || (endsAt.value && endsAt.value <= startsAt.value))) dialogError.value = t("organization.invalidAssignment");
+  else if (dialog.value === "assignment" && (!personId.value || !positionId.value || (endsAt.value && endsAt.value <= startsAt.value))) dialogError.value = t("organization.invalidAssignment");
   else if (dialog.value === "leader" && !targetId.value) dialogError.value = t("organization.invalidLeader"); else dialogError.value = "";
   return !dialogError.value;
 }
@@ -160,11 +160,11 @@ async function toggleUnit(row: OrganizationTreeUnit) {
   await write(() => props.api.updateTreeUnit(row.id, { name: row.name, enabled: !row.enabled, version: row.version }));
 }
 async function endAssignment(row: OrganizationAssignment) {
-  await ElMessageBox.confirm(t("organization.confirmEndAssignment", { member: labelMember(row.memberId), position: labelPosition(row.positionId) }), t("organization.endAssignment"), { type: "warning", confirmButtonText: t("organization.endAssignment") });
+  await ElMessageBox.confirm(t("organization.confirmEndAssignment", { member: labelPerson(row.personId), position: labelPosition(row.positionId) }), t("organization.endAssignment"), { type: "warning", confirmButtonText: t("organization.endAssignment") });
   await write(() => props.api.updateAssignment(row.id, { endsAt: new Date().toISOString(), enabled: false, version: row.version }));
 }
 async function removeLeader(row: OrganizationLeader) {
-  await ElMessageBox.confirm(t("organization.confirmRemoveLeader", { member: labelMember(assignmentMemberId(row.assignmentId)) }), t("organization.removeLeader"), { type: "warning", confirmButtonText: t("organization.removeLeader") });
+  await ElMessageBox.confirm(t("organization.confirmRemoveLeader", { member: labelPerson(assignmentPersonId(row.assignmentId)) }), t("organization.removeLeader"), { type: "warning", confirmButtonText: t("organization.removeLeader") });
   await write(() => props.api.setLeader({ organizationId: row.organizationId, assignmentId: row.assignmentId, selected: false }));
 }
 async function removeRelation(row: OrganizationRelation) {
@@ -173,11 +173,11 @@ async function removeRelation(row: OrganizationRelation) {
 }
 function isActiveAssignment(item: OrganizationAssignment) { const now = Date.now(); return item.enabled && new Date(item.startsAt).getTime() <= now && (!item.endsAt || new Date(item.endsAt).getTime() > now); }
 function labelUnit(id: string) { return units.value.find(item => item.id === id)?.name || "—"; }
-function labelMember(id: string) { return members.value.find(item => item.id === id)?.displayName || id || "—"; }
+function labelPerson(id: string) { return members.value.find(item => item.id === id)?.displayName || id || "—"; }
 function labelPosition(id: string) { return positions.value.find(item => item.id === id)?.name || "—"; }
 function labelRelationType(value: string) { return relationTypes.value.find(item => item.value === value)?.name || value; }
 function positionOrganizationId(id: string) { return positions.value.find(item => item.id === id)?.organizationId || ""; }
-function assignmentMemberId(id: string) { return assignments.value.find(item => item.id === id)?.memberId || ""; }
+function assignmentPersonId(id: string) { return assignments.value.find(item => item.id === id)?.personId || ""; }
 function assignmentPositionId(id: string) { return assignments.value.find(item => item.id === id)?.positionId || ""; }
 function assignmentCount(id: string) { return assignments.value.filter(item => item.positionId === id && isActiveAssignment(item)).length; }
 function unitCount(id: string) { return units.value.filter(item => item.typeId === id).length; }
@@ -216,15 +216,15 @@ watch(tree, nodes => {
             <div v-if="selectedUnit" class="organization-detail" :class="{ 'management-table-stack': detailView === 'positions' }">
               <el-tabs v-model="detailView"><el-tab-pane :label="t('organization.positionsAndAssignments')" name="positions" /><el-tab-pane :label="t('organization.leaders')" name="leaders" /><el-tab-pane :label="t('organization.relations')" name="relations" /></el-tabs>
               <ManagementTable v-if="detailView === 'positions'" embedded heading-level="h2" :title="t('organization.positions')" :rows="selectedPositions" :columns="positionColumns" :loading="loading" :busy="saving" @refresh="load"><template #actions><el-button v-operation="'Position.create'" v-if="can('CREATE') && selectedUnit.enabled" type="primary" @click="open('position')">{{ t("organization.createPosition") }}</el-button></template><template #assignments="{ row }">{{ assignmentCount(row.id) }}</template><template #status="{ row }"><el-tag :type="row.enabled ? 'success' : 'info'">{{ t(row.enabled ? "organization.enabled" : "organization.disabled") }}</el-tag></template><template #operations="{ row }"><el-button v-operation="'Position.update'" v-if="can('UPDATE')" link type="primary" @click="open('position', row)">{{ t("organization.edit") }}</el-button><el-button v-operation="'PositionAssignment.update'" v-if="can('CREATE') && row.enabled" link type="primary" @click="open('assignment', row)">{{ t("organization.createAssignment") }}</el-button></template></ManagementTable>
-              <ManagementTable v-if="detailView === 'positions'" class="organization-secondary-table" embedded heading-level="h2" :title="t('organization.currentAssignments')" :rows="selectedAssignments" :columns="assignmentColumns" :loading="loading" :busy="saving" @refresh="load"><template #member="{ row }">{{ labelMember(row.memberId) }}</template><template #position="{ row }">{{ labelPosition(row.positionId) }}</template><template #organization>{{ selectedUnit.name }}</template><template #period="{ row }">{{ formatDate(row.startsAt) }} — {{ formatDate(row.endsAt) }}</template><template #status="{ row }"><el-tag :type="isActiveAssignment(row) ? 'success' : 'info'">{{ t(isActiveAssignment(row) ? "organization.active" : "organization.ended") }}</el-tag></template><template #operations="{ row }"><el-button v-operation="'PositionAssignment.update'" v-if="can('UPDATE') && isActiveAssignment(row)" link type="danger" @click="endAssignment(row)">{{ t("organization.endAssignment") }}</el-button></template></ManagementTable>
-              <ManagementTable v-else-if="detailView === 'leaders'" embedded heading-level="h2" :title="t('organization.leaders')" :rows="selectedLeaders" :columns="leaderColumns" :loading="loading" :busy="saving" @refresh="load"><template #actions><el-button v-operation="'OrganizationLeader.set'" v-if="can('UPDATE') && selectedUnit.enabled" type="primary" @click="open('leader')">{{ t("organization.setLeader") }}</el-button></template><template #member="{ row }">{{ labelMember(assignmentMemberId(row.assignmentId)) }}</template><template #position="{ row }">{{ labelPosition(assignmentPositionId(row.assignmentId)) }}</template><template #period="{ row }"><template v-if="assignments.find(item => item.id === row.assignmentId)">{{ formatDate(assignments.find(item => item.id === row.assignmentId)!.startsAt) }} — {{ formatDate(assignments.find(item => item.id === row.assignmentId)!.endsAt) }}</template></template><template #operations="{ row }"><el-button v-operation="'OrganizationLeader.set'" v-if="can('UPDATE')" link type="danger" @click="removeLeader(row)">{{ t("organization.removeLeader") }}</el-button></template></ManagementTable>
+              <ManagementTable v-if="detailView === 'positions'" class="organization-secondary-table" embedded heading-level="h2" :title="t('organization.currentAssignments')" :rows="selectedAssignments" :columns="assignmentColumns" :loading="loading" :busy="saving" @refresh="load"><template #member="{ row }">{{ labelPerson(row.personId) }}</template><template #position="{ row }">{{ labelPosition(row.positionId) }}</template><template #organization>{{ selectedUnit.name }}</template><template #period="{ row }">{{ formatDate(row.startsAt) }} — {{ formatDate(row.endsAt) }}</template><template #status="{ row }"><el-tag :type="isActiveAssignment(row) ? 'success' : 'info'">{{ t(isActiveAssignment(row) ? "organization.active" : "organization.ended") }}</el-tag></template><template #operations="{ row }"><el-button v-operation="'PositionAssignment.update'" v-if="can('UPDATE') && isActiveAssignment(row)" link type="danger" @click="endAssignment(row)">{{ t("organization.endAssignment") }}</el-button></template></ManagementTable>
+              <ManagementTable v-else-if="detailView === 'leaders'" embedded heading-level="h2" :title="t('organization.leaders')" :rows="selectedLeaders" :columns="leaderColumns" :loading="loading" :busy="saving" @refresh="load"><template #actions><el-button v-operation="'OrganizationLeader.set'" v-if="can('UPDATE') && selectedUnit.enabled" type="primary" @click="open('leader')">{{ t("organization.setLeader") }}</el-button></template><template #member="{ row }">{{ labelPerson(assignmentPersonId(row.assignmentId)) }}</template><template #position="{ row }">{{ labelPosition(assignmentPositionId(row.assignmentId)) }}</template><template #period="{ row }"><template v-if="assignments.find(item => item.id === row.assignmentId)">{{ formatDate(assignments.find(item => item.id === row.assignmentId)!.startsAt) }} — {{ formatDate(assignments.find(item => item.id === row.assignmentId)!.endsAt) }}</template></template><template #operations="{ row }"><el-button v-operation="'OrganizationLeader.set'" v-if="can('UPDATE')" link type="danger" @click="removeLeader(row)">{{ t("organization.removeLeader") }}</el-button></template></ManagementTable>
               <ManagementTable v-else-if="detailView === 'relations'" embedded heading-level="h2" :title="t('organization.relatedRelations')" :rows="selectedRelations" :columns="relationColumns" :loading="loading" :busy="saving" @refresh="load"><template #actions><el-button v-operation="'OrganizationRelation.create'" v-if="can('CREATE') && selectedUnit.enabled" type="primary" @click="open('relation')">{{ t("organization.createRelation") }}</el-button></template><template #source="{ row }">{{ labelUnit(row.sourceId) }}</template><template #direction="{ row }"><span class="relation-direction"><AppIcon name="arrowRight" :size="16" />{{ labelRelationType(row.relationType) }}</span></template><template #target="{ row }">{{ labelUnit(row.targetId) }}</template><template #operations="{ row }"><el-button v-operation="'OrganizationRelation.delete'" v-if="can('DELETE')" link type="danger" @click="removeRelation(row)">{{ t("organization.delete") }}</el-button></template></ManagementTable>
             </div>
             <el-empty v-else :description="t('organization.selectUnitHint')" />
           </template>
         </TreeListTemplate>
 
-        <section v-else-if="workspaceView === 'assignments'" class="organization-list-view"><div class="organization-filter"><el-input v-model="assignmentKeyword" clearable :placeholder="t('organization.searchAssignmentPlaceholder')" /><el-select v-model="assignmentStatus"><el-option :label="t('organization.allStatuses')" value="all" /><el-option :label="t('organization.active')" value="active" /><el-option :label="t('organization.ended')" value="ended" /></el-select></div><ManagementTable embedded :title="t('organization.assignmentManagement')" :rows="filteredAssignments" :columns="assignmentColumns" :loading="loading" :busy="saving" @refresh="load"><template #actions><el-button v-operation="'PositionAssignment.create'" v-if="can('CREATE')" type="primary" @click="open('assignment')">{{ t("organization.createAssignment") }}</el-button></template><template #member="{ row }">{{ labelMember(row.memberId) }}</template><template #position="{ row }">{{ labelPosition(row.positionId) }}</template><template #organization="{ row }"><el-button link type="primary" @click="selectedTypeId = units.find(item => item.id === positionOrganizationId(row.positionId))?.typeId || ''; selectedUnitId = positionOrganizationId(row.positionId); workspaceView = 'structure'">{{ labelUnit(positionOrganizationId(row.positionId)) }}</el-button></template><template #period="{ row }">{{ formatDate(row.startsAt) }} — {{ formatDate(row.endsAt) }}</template><template #status="{ row }"><el-tag :type="isActiveAssignment(row) ? 'success' : 'info'">{{ t(isActiveAssignment(row) ? "organization.active" : "organization.ended") }}</el-tag></template><template #operations="{ row }"><el-button v-operation="'PositionAssignment.update'" v-if="can('UPDATE') && isActiveAssignment(row)" link type="danger" @click="endAssignment(row)">{{ t("organization.endAssignment") }}</el-button></template></ManagementTable></section>
+        <section v-else-if="workspaceView === 'assignments'" class="organization-list-view"><div class="organization-filter"><el-input v-model="assignmentKeyword" clearable :placeholder="t('organization.searchAssignmentPlaceholder')" /><el-select v-model="assignmentStatus"><el-option :label="t('organization.allStatuses')" value="all" /><el-option :label="t('organization.active')" value="active" /><el-option :label="t('organization.ended')" value="ended" /></el-select></div><ManagementTable embedded :title="t('organization.assignmentManagement')" :rows="filteredAssignments" :columns="assignmentColumns" :loading="loading" :busy="saving" @refresh="load"><template #actions><el-button v-operation="'PositionAssignment.create'" v-if="can('CREATE')" type="primary" @click="open('assignment')">{{ t("organization.createAssignment") }}</el-button></template><template #member="{ row }">{{ labelPerson(row.personId) }}</template><template #position="{ row }">{{ labelPosition(row.positionId) }}</template><template #organization="{ row }"><el-button link type="primary" @click="selectedTypeId = units.find(item => item.id === positionOrganizationId(row.positionId))?.typeId || ''; selectedUnitId = positionOrganizationId(row.positionId); workspaceView = 'structure'">{{ labelUnit(positionOrganizationId(row.positionId)) }}</el-button></template><template #period="{ row }">{{ formatDate(row.startsAt) }} — {{ formatDate(row.endsAt) }}</template><template #status="{ row }"><el-tag :type="isActiveAssignment(row) ? 'success' : 'info'">{{ t(isActiveAssignment(row) ? "organization.active" : "organization.ended") }}</el-tag></template><template #operations="{ row }"><el-button v-operation="'PositionAssignment.update'" v-if="can('UPDATE') && isActiveAssignment(row)" link type="danger" @click="endAssignment(row)">{{ t("organization.endAssignment") }}</el-button></template></ManagementTable></section>
         <section v-else-if="workspaceView === 'relations'" class="organization-list-view"><div class="organization-filter"><el-input v-model="relationKeyword" clearable :placeholder="t('organization.searchRelationPlaceholder')" /></div><ManagementTable embedded :title="t('organization.relations')" :rows="filteredRelations" :columns="relationColumns" :loading="loading" :busy="saving" @refresh="load"><template #actions><el-button v-operation="'OrganizationRelation.create'" v-if="can('CREATE')" type="primary" @click="open('relation')">{{ t("organization.createRelation") }}</el-button></template><template #source="{ row }">{{ labelUnit(row.sourceId) }}</template><template #direction="{ row }"><span class="relation-direction"><AppIcon name="arrowRight" :size="16" />{{ labelRelationType(row.relationType) }}</span></template><template #target="{ row }">{{ labelUnit(row.targetId) }}</template><template #operations="{ row }"><el-button v-operation="'OrganizationRelation.delete'" v-if="can('DELETE')" link type="danger" @click="removeRelation(row)">{{ t("organization.delete") }}</el-button></template></ManagementTable></section>
         <section v-else class="organization-list-view"><div class="organization-filter"><el-input v-model="typeKeyword" clearable :placeholder="t('organization.searchTypePlaceholder')" /></div><ManagementTable embedded :title="t('organization.types')" :rows="filteredTypes" :columns="typeColumns" :loading="loading" :busy="saving" @refresh="load"><template #actions><el-button v-operation="'OrganizationType.create'" v-if="can('CREATE')" type="primary" @click="open('type')">{{ t("organization.createType") }}</el-button></template><template #unitCount="{ row }"><el-button link type="primary" @click="selectType(row.id); workspaceView = 'structure'">{{ unitCount(row.id) }}</el-button></template><template #status="{ row }"><el-tag :type="row.enabled ? 'success' : 'info'">{{ t(row.enabled ? "organization.enabled" : "organization.disabled") }}</el-tag></template><template #operations="{ row }"><el-button v-operation="'OrganizationType.update'" v-if="can('UPDATE')" link type="primary" @click="open('type', row)">{{ t("organization.edit") }}</el-button><el-button v-operation="'OrganizationType.update'" v-if="can('UPDATE')" link :type="row.enabled ? 'danger' : 'primary'" @click="toggleType(row)">{{ t(row.enabled ? "organization.disable" : "organization.enable") }}</el-button></template></ManagementTable></section>
       </template>
@@ -238,8 +238,8 @@ watch(tree, nodes => {
         <el-form-item v-if="dialog === 'unit' || dialog === 'move'" :label="t('organization.parent')"><el-select v-model="parentId" clearable :placeholder="t('organization.tenantRoot')"><el-option v-for="item in units.filter(value => value.enabled && value.typeId === (selected && 'typeId' in selected ? selected.typeId : typeId) && value.id !== selected?.id)" :key="item.id" :label="item.name" :value="item.id" /></el-select></el-form-item>
         <template v-if="dialog === 'relation'"><el-form-item :label="t('organization.relationType')" required><el-select v-model="relationType"><el-option v-for="item in relationTypes" :key="item.value" :label="item.name" :value="item.value" /></el-select></el-form-item><el-form-item :label="t('organization.source')" required><el-select v-model="sourceId" filterable><el-option v-for="item in units.filter(value => value.enabled)" :key="item.id" :label="item.name" :value="item.id" /></el-select></el-form-item><el-form-item :label="t('organization.target')" required><el-select v-model="targetId" filterable><el-option v-for="item in units.filter(value => value.enabled && value.id !== sourceId)" :key="item.id" :label="item.name" :value="item.id" /></el-select></el-form-item></template>
         <el-form-item v-if="dialog === 'position' && !selected" :label="t('organization.name')" required><el-select v-model="sourceId" filterable><el-option v-for="item in units.filter(value => value.enabled)" :key="item.id" :label="item.name" :value="item.id" /></el-select></el-form-item>
-        <template v-if="dialog === 'assignment'"><el-form-item :label="t('organization.member')" required><el-select v-model="memberId" filterable><el-option v-for="item in members" :key="item.id" :label="item.displayName" :value="item.id" /></el-select></el-form-item><el-form-item :label="t('organization.positionName')" required><el-select v-model="positionId" filterable><el-option v-for="item in positions.filter(value => value.enabled)" :key="item.id" :label="labelUnit(item.organizationId) + ' · ' + item.name" :value="item.id" /></el-select></el-form-item><el-form-item :label="t('organization.startsAt')" required><el-date-picker v-model="startsAt" type="datetime" /></el-form-item><el-form-item :label="t('organization.endsAt')"><el-date-picker v-model="endsAt" type="datetime" clearable /></el-form-item></template>
-        <el-form-item v-if="dialog === 'leader'" :label="t('organization.assignments')" required><el-select v-model="targetId" filterable><el-option v-for="item in activeAssignments.filter(value => positionOrganizationId(value.positionId) === selectedUnitId)" :key="item.id" :label="labelMember(item.memberId) + ' · ' + labelPosition(item.positionId)" :value="item.id" /></el-select></el-form-item>
+        <template v-if="dialog === 'assignment'"><el-form-item :label="t('organization.person')" required><el-select v-model="personId" filterable><el-option v-for="item in members" :key="item.id" :label="item.displayName" :value="item.id" /></el-select></el-form-item><el-form-item :label="t('organization.positionName')" required><el-select v-model="positionId" filterable><el-option v-for="item in positions.filter(value => value.enabled)" :key="item.id" :label="labelUnit(item.organizationId) + ' · ' + item.name" :value="item.id" /></el-select></el-form-item><el-form-item :label="t('organization.startsAt')" required><el-date-picker v-model="startsAt" type="datetime" /></el-form-item><el-form-item :label="t('organization.endsAt')"><el-date-picker v-model="endsAt" type="datetime" clearable /></el-form-item></template>
+        <el-form-item v-if="dialog === 'leader'" :label="t('organization.assignments')" required><el-select v-model="targetId" filterable><el-option v-for="item in activeAssignments.filter(value => positionOrganizationId(value.positionId) === selectedUnitId)" :key="item.id" :label="labelPerson(item.personId) + ' · ' + labelPosition(item.positionId)" :value="item.id" /></el-select></el-form-item>
         <div class="management-form-actions"><el-button @click="dialog = ''">{{ t("organization.cancel") }}</el-button><el-button v-operation="saveOperation" type="primary" native-type="submit" :loading="saving">{{ t("organization.save") }}</el-button></div>
       </el-form>
     </ManagedDialog>
@@ -247,12 +247,13 @@ watch(tree, nodes => {
 </template>
 
 <style scoped>
+/* 页面外围留白引用全局内容与区块 Token，局部字段间距和触控高度按原交互保留。 */
 /* 复用字典左树右表的 220px 分类区、紧凑留白和主题选中态，组织层级仍使用真实树组件。 */
-.organization-management :deep(.tree-list-template__layout) { padding: var(--app-section-gap, 12px); }
+
 .organization-management :deep(.tree-list-template__tree-header) { padding: 6px 8px; min-height: 44px; }
 .organization-management :deep(.tree-list-template__tree) { padding: 6px; }
-.organization-management :deep(.tree-list-template__data) { padding: 0 0 0 var(--app-section-gap, 12px); }
-.organization-management :deep(.tree-list-template__header) { padding: 8px 0 12px 12px; }
+
+
 .organization-management :deep(.el-tree-node__content) { min-height: 36px; border-radius: var(--el-border-radius-small); font-size: 13px; }
 .organization-management :deep(.el-tree--highlight-current .el-tree-node.is-current > .el-tree-node__content) { background: var(--el-color-primary-light-9); color: var(--el-color-primary); box-shadow: inset 2px 0 var(--el-color-primary); }
 .organization-detail { gap: var(--app-section-gap, 12px); }
@@ -279,12 +280,12 @@ watch(tree, nodes => {
 .organization-unit-actions :deep(.el-button + .el-button) { margin-left: 0; }
 .organization-detail > .el-tabs { margin-bottom: 8px; }
 .organization-secondary-table { margin-top: 0; padding-top: var(--app-section-gap, 12px); border-top: 1px solid var(--el-border-color-lighter); }
-.organization-list-view { min-width: 0; padding: 20px; }
-.organization-filter { display: flex; justify-content: flex-end; gap: 12px; margin-bottom: 16px; padding: 16px; border: 1px solid var(--el-border-color-lighter); border-radius: var(--el-border-radius-base); background: var(--el-fill-color-extra-light); }
+.organization-list-view { min-width: 0; padding:var(--app-content-padding,12px); }
+.organization-filter { display: flex; justify-content: flex-end; gap: 12px; margin-bottom:var(--app-section-gap,8px); padding:var(--app-content-padding,12px); border: 1px solid var(--el-border-color-lighter); border-radius: var(--el-border-radius-base); background: var(--el-fill-color-extra-light); }
 .organization-filter .el-input { width: min(360px, 100%); }
 .organization-filter .el-select { width: 160px; }
 .relation-direction { gap: 6px; color: var(--el-text-color-secondary); }
-.organization-dialog-error { margin-bottom: 16px; }
+.organization-dialog-error { margin-bottom:var(--app-section-gap,8px); }
 .organization-management :deep(.el-select), .organization-management :deep(.el-date-editor) { width: 100%; }
 :global(.organization-danger-item) { color: var(--el-color-danger); }
 @media (max-width: 760px) {
@@ -292,6 +293,6 @@ watch(tree, nodes => {
   .organization-unit-actions { justify-content: flex-start; }
   .organization-unit-actions > .el-button { flex: 1; }
   .organization-filter .el-input, .organization-filter .el-select { width: 100%; }
-  .organization-list-view { padding: 16px; }
+  .organization-list-view { padding:var(--app-content-padding,12px); }
 }
 </style>

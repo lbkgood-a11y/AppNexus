@@ -78,13 +78,20 @@ html.dark {
 
   .navbar,
   .tags-view,
-  .contextmenu,
+  .contextmenu {
+    background: var(--el-bg-color) !important;
+  }
+
+  /* 导航独立配色在深色页面同样生效，避免页面背景覆盖菜单偏好。 */
   .sidebar-container,
   .horizontal-header,
-  .sidebar-logo-container,
   .horizontal-header .el-sub-menu__title,
   .horizontal-header .submenu-title-noDropdown {
-    background: var(--el-bg-color) !important;
+    background: var(--pure-theme-menu-bg) !important;
+  }
+
+  .sidebar-logo-container {
+    background: var(--pure-theme-sidebar-logo) !important;
   }
 
   .app-main,

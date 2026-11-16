@@ -3,6 +3,8 @@ export { default as ManagementTable } from "./ManagementTable.vue";
 export { default as PageHeader } from "./PageHeader.vue";
 export { default as BusinessWorkspace } from "./BusinessWorkspace.vue";
 export { default as ManagedDialog } from "./ManagedDialog.vue";
+export { default as RecordAuditDetails } from "./RecordAuditDetails.vue";
+export type { RecordAudit } from "./RecordAuditDetails.vue";
 export { default as StandardListTemplate } from "./templates/StandardListTemplate.vue";
 export { default as TreeListTemplate } from "./templates/TreeListTemplate.vue";
 export { default as VerticalSplitTemplate } from "./templates/VerticalSplitTemplate.vue";

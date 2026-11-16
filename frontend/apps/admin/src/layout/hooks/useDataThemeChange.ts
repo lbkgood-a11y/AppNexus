@@ -35,6 +35,10 @@ export function useDataThemeChange() {
   const dataTheme = ref<boolean>($storage?.layout?.darkMode);
   const themeMode = ref<string>($storage?.layout?.themeMode ?? "system");
   const body = document.documentElement as HTMLElement;
+  /** 复用模板偏好源；旧缓存缺省跟随主题，切换深浅主题不会覆盖独立菜单选择。 */
+  watch(() => $storage.configure?.menuColor, value => {
+    body.setAttribute("data-menu-color", value === "light" || value === "dark" ? value : "auto");
+  }, { immediate: true });
   // 多个导航/设置组件持有各自的 ref，随公共偏好同步，避免切换入口之间显示旧状态。
   watch(() => $storage?.layout?.darkMode, value => { dataTheme.value = Boolean(value); });
   watch(() => $storage?.layout?.themeMode, value => { themeMode.value = value; });

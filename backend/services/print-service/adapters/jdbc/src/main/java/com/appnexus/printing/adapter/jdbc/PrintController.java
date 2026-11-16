@@ -47,14 +47,16 @@ public final class PrintController {
   /** 操作契约关联下方真实接口；仅供展示与一致性校验，主体、权限及业务约束仍由原用例执行。 */
   @com.appnexus.contracts.operation.BusinessObjectType(code="PrintScene",nameZh="打印场景",nameEn="Print Scene",category=com.appnexus.contracts.operation.BusinessObjectType.Category.CONFIGURATION,module="print")
  @com.appnexus.contracts.operation.OperationBinding(id="PrintScene.list",objectType="PrintScene",operationCode="list",pages={"print/index"},nameZh="打印场景：查看列表",nameEn="View scenes",permissions={"print.job:submit"},policy="原服务逐请求复核有效成员、功能权限、对象归属、版本与业务状态")
-  @GetMapping("/scenes") public Object scenes(HttpServletRequest r){return reply(()->flow.scenes(context(r)));}
+  @com.appnexus.contracts.operation.RecordAuditSource(table="print_scene")
+ @GetMapping("/scenes") public Object scenes(HttpServletRequest r){return reply(()->flow.scenes(context(r)));}
   /** 操作契约关联下方真实接口；仅供展示与一致性校验，主体、权限及业务约束仍由原用例执行。 */
   @com.appnexus.contracts.operation.OperationBinding(id="PrintScene.create",objectType="PrintScene",operationCode="create",pages={"print/index"},nameZh="打印场景：新增",nameEn="Create scene",permissions={"print.template:publish"},policy="原服务逐请求复核有效成员、功能权限、对象归属、版本与业务状态")
   @PostMapping("/scenes") public Object createScene(HttpServletRequest r,@RequestBody PrintFlow.Scene d){return reply(()->flow.saveScene(context(r),null,d));}
   /** 操作契约关联下方真实接口；仅供展示与一致性校验，主体、权限及业务约束仍由原用例执行。 */
   @com.appnexus.contracts.operation.OperationBinding(id="PrintScene.update",objectType="PrintScene",operationCode="update",pages={"print/index"},nameZh="打印场景：修改",nameEn="Save scene",permissions={"print.template:publish"},policy="原服务逐请求复核有效成员、功能权限、对象归属、版本与业务状态")
   @PutMapping("/scenes/{id}") public Object saveScene(HttpServletRequest r,@PathVariable String id,@RequestBody PrintFlow.Scene d){return reply(()->flow.saveScene(context(r),id,d));}
-  @GetMapping("/documents") public Object documents(HttpServletRequest r){return reply(()->flow.documents(context(r)));}
+  @com.appnexus.contracts.operation.RecordAuditSource(table="print_document")
+ @GetMapping("/documents") public Object documents(HttpServletRequest r){return reply(()->flow.documents(context(r)));}
   /** 操作契约关联下方真实接口；仅供展示与一致性校验，主体、权限及业务约束仍由原用例执行。 */
   @com.appnexus.contracts.operation.BusinessObjectType(code="PrintDocument",nameZh="打印单据",nameEn="Print Document",category=com.appnexus.contracts.operation.BusinessObjectType.Category.TRANSACTION,module="print")
  @com.appnexus.contracts.operation.OperationBinding(id="PrintDocument.create",objectType="PrintDocument",operationCode="create",pages={"print/index"},nameZh="打印单据：新增",nameEn="Create print document",permissions={"print.job:submit"},policy="原服务逐请求复核有效成员、功能权限、对象归属、版本与业务状态")
@@ -70,10 +72,12 @@ public final class PrintController {
   /** 操作契约关联下方真实接口；仅供展示与一致性校验，主体、权限及业务约束仍由原用例执行。 */
   @com.appnexus.contracts.operation.BusinessObjectType(code="PrintTemplate",nameZh="打印模板",nameEn="Print Template",category=com.appnexus.contracts.operation.BusinessObjectType.Category.CONFIGURATION,module="print")
  @com.appnexus.contracts.operation.OperationBinding(id="PrintTemplate.list",objectType="PrintTemplate",operationCode="list",pages={"print/index"},nameZh="打印模板：查看列表",nameEn="View templates",permissions={"print.template:read"},policy="原服务逐请求复核有效成员、功能权限、对象归属、版本与业务状态")
-  @GetMapping("/templates") public Object templates(HttpServletRequest r){return reply(()->runtime.templates(context(r)));}
+  @com.appnexus.contracts.operation.RecordAuditSource(table="print_template")
+ @GetMapping("/templates") public Object templates(HttpServletRequest r){return reply(()->runtime.templates(context(r)));}
   /** 操作契约关联下方真实接口；仅供展示与一致性校验，主体、权限及业务约束仍由原用例执行。 */
   @com.appnexus.contracts.operation.OperationBinding(id="PrintTemplate.read",objectType="PrintTemplate",operationCode="read",pages={"print/index"},nameZh="打印模板：查看",nameEn="View template",permissions={"print.template:read"},policy="原服务逐请求复核有效成员、功能权限、对象归属、版本与业务状态")
-  @GetMapping("/templates/{id}") public Object template(HttpServletRequest r,@PathVariable String id){return reply(()->runtime.template(context(r),id));}
+  @com.appnexus.contracts.operation.RecordAuditSource(table="print_template")
+ @GetMapping("/templates/{id}") public Object template(HttpServletRequest r,@PathVariable String id){return reply(()->runtime.template(context(r),id));}
   /** 操作契约关联下方真实接口；仅供展示与一致性校验，主体、权限及业务约束仍由原用例执行。 */
   @com.appnexus.contracts.operation.OperationBinding(id="PrintTemplate.create",objectType="PrintTemplate",operationCode="create",pages={"print/index"},nameZh="打印模板：新增",nameEn="Create template",permissions={"print.template:design"},policy="原服务逐请求复核有效成员、功能权限、对象归属、版本与业务状态")
   @PostMapping("/templates") public Object create(HttpServletRequest r,@RequestBody PrintRuntime.TemplateDraft d){return reply(()->runtime.saveTemplate(context(r),null,d));}
@@ -91,7 +95,8 @@ public final class PrintController {
   @PostMapping("/templates/{id}/restore") public Object restore(HttpServletRequest r,@PathVariable String id,@RequestBody Map<String,Long> body){return reply(()->runtime.restoreVersion(context(r),id,Math.toIntExact(body.getOrDefault("version",0L)),body.getOrDefault("revision",-1L)));}
   /** 操作契约关联下方真实接口；仅供展示与一致性校验，主体、权限及业务约束仍由原用例执行。 */
   @com.appnexus.contracts.operation.OperationBinding(id="PrintDevice.list",objectType="PrintDevice",operationCode="list",pages={"print/index"},nameZh="打印设备：查看列表",nameEn="View devices",permissions={"print.device:manage"},policy="原服务逐请求复核有效成员、功能权限、对象归属、版本与业务状态")
-  @GetMapping("/devices") public Object devices(HttpServletRequest r){return reply(()->runtime.devices(context(r)));}
+  @com.appnexus.contracts.operation.RecordAuditSource(table="print_device")
+ @GetMapping("/devices") public Object devices(HttpServletRequest r){return reply(()->runtime.devices(context(r)));}
   /** 操作契约关联下方真实接口；仅供展示与一致性校验，主体、权限及业务约束仍由原用例执行。 */
   @com.appnexus.contracts.operation.OperationBinding(id="PrintDevice.create",objectType="PrintDevice",operationCode="create",pages={"print/index"},nameZh="打印设备：新增",nameEn="Create device",permissions={"print.device:manage"},policy="原服务逐请求复核有效成员、功能权限、对象归属、版本与业务状态")
   @PostMapping("/devices") public Object createDevice(HttpServletRequest r,@RequestBody PrintRuntime.DeviceDraft d){return reply(()->runtime.saveDevice(context(r),null,d));}
@@ -101,7 +106,8 @@ public final class PrintController {
   /** 操作契约关联下方真实接口；仅供展示与一致性校验，主体、权限及业务约束仍由原用例执行。 */
   @com.appnexus.contracts.operation.BusinessObjectType(code="PrintJob",nameZh="打印任务",nameEn="Print Job",category=com.appnexus.contracts.operation.BusinessObjectType.Category.LEDGER,module="print")
  @com.appnexus.contracts.operation.OperationBinding(id="PrintJob.list",objectType="PrintJob",operationCode="list",pages={"print/index"},nameZh="打印任务：查看列表",nameEn="View print jobs",permissions={"print.job:read"},policy="原服务逐请求复核有效成员、功能权限、对象归属、版本与业务状态")
-  @GetMapping("/jobs") public Object jobs(HttpServletRequest r){return reply(()->runtime.jobs(context(r)));}
+  @com.appnexus.contracts.operation.RecordAuditSource(table="print_job")
+ @GetMapping("/jobs") public Object jobs(HttpServletRequest r){return reply(()->runtime.jobs(context(r)));}
   /** 人员不得通过任意 JSON 快照绕过契约；正式输出统一从已保存单据或业务适配入口提交。 */
   @PostMapping("/jobs") public Object submit(HttpServletRequest r,@RequestBody PrintRuntime.JobDraft d){return problem(400,"PRINT_USE_SCENE_REQUIRED");}
   /** 操作契约关联下方真实接口；仅供展示与一致性校验，主体、权限及业务约束仍由原用例执行。 */

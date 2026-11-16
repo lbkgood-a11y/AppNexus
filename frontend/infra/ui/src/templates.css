@@ -93,9 +93,12 @@
 @media (prefers-reduced-motion: reduce) { .tree-list-template__toggle { transition: none; } }
 
 /* 全局业务表面参考字典页：紧凑横幅、独立筛选及中性数据卡，主题色仅用于轻装饰。 */
-.workspace-banner { position:relative; display:flex; align-items:center; gap:14px; padding:14px 20px; background:linear-gradient(115deg,var(--el-bg-color) 35%,var(--el-color-primary-light-9)); border-bottom:1px solid var(--el-border-color-lighter); }
-.workspace-banner-icon { display:grid; place-items:center; flex:none; width:44px; height:44px; border-radius:var(--app-card-radius, 8px); color:var(--el-color-primary); background:color-mix(in srgb,var(--el-color-primary) 10%,var(--el-bg-color)); }
-.workspace-banner h1 { margin:0; font-size:20px; line-height:26px; font-weight:600; color:var(--el-text-color-primary); }
+/* 全局横幅以字典样板为基准：主题渐变、44px 图标和轻装饰；仅展示业务身份，不承载必需操作。 */
+.workspace-banner { position:relative; isolation:isolate; overflow:hidden; display:flex; align-items:center; gap:14px; padding:14px 20px; background:linear-gradient(115deg,var(--el-bg-color) 35%,var(--el-color-primary-light-9)); border-bottom:1px solid var(--el-border-color-lighter); }
+.workspace-banner::after { content:""; position:absolute; right:48px; width:40px; height:40px; border:10px solid color-mix(in srgb,var(--el-color-primary) 12%,transparent); transform:rotate(30deg); z-index:-1; pointer-events:none; box-shadow:40px 18px 0 color-mix(in srgb,var(--el-color-primary) 6%,transparent); }
+.workspace-banner > div { min-width:0; }
+.workspace-banner-icon { display:grid; place-items:center; flex:none; width:44px; height:44px; border-radius:var(--app-card-radius,8px); color:var(--el-color-primary); background:color-mix(in srgb,var(--el-color-primary) 10%,var(--el-bg-color)); }
+.workspace-banner h1 { margin:0; font-size:20px; line-height:26px; font-weight:600; color:var(--el-text-color-primary); overflow-wrap:anywhere; }
 .workspace-banner p { margin:4px 0 0; font-size:13px; line-height:20px; color:var(--el-text-color-regular); }
 .business-workspace__search,.tree-list-template__search { padding:14px 20px; background:var(--el-bg-color); }
 .business-workspace__data,.tree-list-template__data { padding:12px 20px; }
@@ -107,10 +110,10 @@
 .tree-list-template__tree .el-menu { border:0; background:transparent; }
 .tree-list-template__tree .el-menu-item { height:44px; margin:4px 0; border-radius:6px; font-size:13px; }
 .tree-list-template__tree .el-menu-item.is-active { background:var(--el-color-primary-light-9); color:var(--el-color-primary); box-shadow:inset 2px 0 var(--el-color-primary); }
-.page-header { border:1px solid var(--el-border-color-lighter); border-radius:var(--app-card-radius, 8px); padding:14px 20px; background:var(--el-bg-color); }
-.template-search > .el-card__body,.template-data > .el-card__body { padding:12px 20px; }
+.page-header { border:1px solid var(--el-border-color-lighter); border-radius:var(--app-card-radius, 8px); padding:var(--app-content-padding,8px); background:var(--el-bg-color); }
+.template-search > .el-card__body,.template-data > .el-card__body { padding:var(--app-content-padding,8px); }
 .template-pagination { margin-top:6px; padding-top:6px; }
-@media(max-width:760px){.workspace-banner{padding:12px 14px}.business-workspace__search,.business-workspace__data,.tree-list-template__search,.tree-list-template__data{padding:12px}.page-header{padding:12px 14px}}
+@media(max-width:760px){.workspace-banner{padding:12px 14px;gap:10px}.workspace-banner-icon{width:40px;height:40px}.workspace-banner::after{display:none}.business-workspace__search,.business-workspace__data,.tree-list-template__search,.tree-list-template__data{padding:12px}.page-header{padding:var(--app-content-padding,8px)}}
 
 /* 统一管理页高度链：只约束应用内容区内的工作区，弹窗中的同名组件保持流式布局。 */
 .viewport-page-host > .management-page,
@@ -130,21 +133,25 @@
 .viewport-page-host :is(.business-workspace,.tree-list-template,.standard-list-template) .management-table-region { flex:1 1 auto;min-height:0;overflow:hidden; }
 .viewport-page-host .management-toolbar,.viewport-page-host .management-pagination { flex:none; }
 
-/* 区块间距统一入口：用单侧留白分隔相邻区块，禁止上下 padding 重复累加。 */
-.business-workspace { border:0; background:transparent; gap:var(--app-section-gap,12px); }
-.business-workspace > .workspace-banner { border:1px solid var(--el-border-color-lighter);border-radius:var(--app-card-radius,8px); }
-.business-workspace > :is(.business-workspace__navigation,.business-workspace__feedback,.business-workspace__search,.business-workspace__data) { margin:0; padding:var(--app-section-gap,12px);border:1px solid var(--el-border-color-lighter);border-radius:var(--app-card-radius,8px);background:var(--el-bg-color); }
-.tree-list-template:not(.is-embedded) > .tree-list-template__surface { border:0;background:transparent; }
-.tree-list-template:not(.is-embedded) > .tree-list-template__surface > .el-card__body { gap:var(--app-section-gap,12px); }
-.tree-list-template:not(.is-embedded) .tree-list-template__navigation { border:1px solid var(--el-border-color-lighter);border-radius:var(--app-card-radius,8px);overflow:hidden; }
-.tree-list-template:not(.is-embedded) .tree-list-template__layout { border:1px solid var(--el-border-color-lighter);border-radius:var(--app-card-radius,8px);background:var(--el-bg-color); }
-.tree-list-template__header,.tree-list-template__search,.tree-list-template__data,.tree-list-template__feedback { padding:var(--app-section-gap,12px); }
-.tree-list-template__search { border-bottom:0; }
-.tree-list-template__data { padding-top:0; }
+/* 同一对象共享连续表面，内部仅用分隔线分区，消除多张卡片之间的镂空与重复边界。 */
+.business-workspace { border:1px solid var(--el-border-color-lighter); background:var(--el-bg-color); gap:0; }
+.business-workspace > .workspace-banner { border-bottom:1px solid var(--el-border-color-lighter);border-radius:0; }
+.business-workspace > :is(.business-workspace__navigation,.business-workspace__feedback,.business-workspace__search,.business-workspace__data) { margin:0; padding:var(--app-content-padding,8px);border:0;border-radius:0;background:var(--el-bg-color); }
+.business-workspace > :is(.business-workspace__navigation,.business-workspace__search) { border-bottom:1px solid var(--el-border-color-lighter); }
+/* 页签自身提供点击高度，导航容器不再叠加上下留白。 */
+.business-workspace > .business-workspace__navigation { padding-block:0; }
+.business-workspace__context:last-child { border-bottom:0; }
+.tree-list-template:not(.is-embedded) > .tree-list-template__surface { border:1px solid var(--el-border-color-lighter);background:var(--el-bg-color); }
+.tree-list-template:not(.is-embedded) > .tree-list-template__surface > .el-card__body { gap:0; }
+.tree-list-template:not(.is-embedded) .tree-list-template__navigation { border-bottom:1px solid var(--el-border-color-lighter);border-radius:0;overflow:hidden; }
+.tree-list-template:not(.is-embedded) .tree-list-template__layout { border:0;border-radius:0;background:var(--el-bg-color); }
+.tree-list-template__header,.tree-list-template__search,.tree-list-template__data,.tree-list-template__feedback { padding:var(--app-content-padding,8px); }
+.tree-list-template__search { border-bottom:1px solid var(--el-border-color-lighter); }
+.tree-list-template__data { padding-top:var(--app-content-padding,8px); }
 .page-template,.card-grid-template__grid,.dashboard-template__statistics,.dashboard-template__charts,.detail-form-template__layout,.split-detail-template__layout { gap:var(--app-section-gap,12px); }
 
 /* 视口工作区必须具备确定高度；flex-basis 为零且祖先高度不确定会将筛选和表体压扁。 */
-.viewport-page-host > :is(.management-page,.page-template,.business-workspace) { height:calc(100% - 24px);flex:1 0 auto;box-sizing:border-box; }
+.viewport-page-host > :is(.management-page,.page-template,.business-workspace) { height:calc(100% - 2 * var(--app-page-gap,8px));flex:1 0 auto;box-sizing:border-box; }
 .viewport-page-host > .management-page > .business-workspace { flex:1 1 auto;height:100%; }
 /* 查询区按内容自然高度布局，不能依据未确定的父高计算百分比上限。 */
 .viewport-page-host :is(.business-workspace__search,.business-workspace__feedback) { max-height:none;flex:0 0 auto;overflow:visible; }
@@ -171,20 +178,22 @@
 :is(.detail-form-template,.split-detail-template,.tabbed-detail-template) { gap:var(--app-section-gap,12px); }
 :is(.detail-form-template__layout,.split-detail-template__layout) { gap:var(--app-section-gap,12px); align-items:start; }
 :is(.detail-form-template,.split-detail-template,.tabbed-detail-template) .el-card { border-radius:var(--app-card-radius,8px); box-shadow:none; min-width:0; }
-:is(.detail-form-template,.split-detail-template,.tabbed-detail-template) .el-card__header { padding:14px 20px; border-bottom:1px solid var(--el-border-color-lighter); font-size:15px; font-weight:600; }
-:is(.detail-form-template,.split-detail-template,.tabbed-detail-template) > .page-header { padding:20px; border:1px solid var(--el-border-color-lighter); border-radius:var(--app-card-radius,8px); background:var(--el-bg-color); }
-:is(.detail-form-template,.split-detail-template,.tabbed-detail-template) :is(.form-section h2,.form-section h3) { margin:0 0 16px; font-size:15px; font-weight:600; }
-.detail-form-template__actions { padding:12px 20px; background:var(--el-bg-color); backdrop-filter:none; flex-wrap:wrap; }
+:is(.detail-form-template,.split-detail-template,.tabbed-detail-template) .el-card__header { padding:var(--app-content-padding,8px); border-bottom:1px solid var(--el-border-color-lighter); font-size:15px; font-weight:600; }
+:is(.detail-form-template,.split-detail-template,.tabbed-detail-template) > .page-header { padding:var(--app-content-padding,8px); border:1px solid var(--el-border-color-lighter); border-radius:var(--app-card-radius,8px); background:var(--el-bg-color); }
+/* 详情与标准列表保持相同内容边缘；只作用于公共模板，不压缩专用画布或弹层。 */
+:is(.detail-form-template,.split-detail-template,.tabbed-detail-template) .el-card__body { padding:var(--app-content-padding,8px); }
+:is(.detail-form-template,.split-detail-template,.tabbed-detail-template) :is(.form-section h2,.form-section h3) { margin:0 0 var(--app-section-gap,8px); font-size:15px; font-weight:600; }
+.detail-form-template__actions { padding:var(--app-content-padding,8px); background:var(--el-bg-color); backdrop-filter:none; flex-wrap:wrap; }
 .tabbed-detail-template__tabs > .el-card__body { padding-top:0; }
-.tabbed-detail-template__tabs .el-tabs__content { padding-top:16px; }
+.tabbed-detail-template__tabs .el-tabs__content { padding-top:var(--app-section-gap,8px); }
 /* 详情标签弱化、值区保持可读；长标识换行，表格和流程画布不受影响。 */
 :is(.detail-form-template,.split-detail-template,.tabbed-detail-template,.app-managed-dialog) .el-descriptions { --el-descriptions-item-bordered-label-background:var(--el-fill-color-light); }
 :is(.detail-form-template,.split-detail-template,.tabbed-detail-template,.app-managed-dialog) .el-descriptions__label { color:var(--el-text-color-secondary); font-weight:400; }
 :is(.detail-form-template,.split-detail-template,.tabbed-detail-template,.app-managed-dialog) .el-descriptions__content { color:var(--el-text-color-primary); overflow-wrap:anywhere; line-height:1.7; }
 :is(.detail-form-template,.split-detail-template,.tabbed-detail-template,.app-managed-dialog) .el-descriptions__table { table-layout:fixed; }
 @media(max-width:760px) {
-  :is(.detail-form-template,.split-detail-template,.tabbed-detail-template) > .page-header { padding:14px; }
-  :is(.detail-form-template,.split-detail-template,.tabbed-detail-template) .el-card__body { padding:14px; }
+  :is(.detail-form-template,.split-detail-template,.tabbed-detail-template) > .page-header { padding:var(--app-content-padding,8px); }
+  :is(.detail-form-template,.split-detail-template,.tabbed-detail-template) .el-card__body { padding:var(--app-content-padding,8px); }
   .detail-form-template__form :where(.el-form) { grid-template-columns:minmax(0,1fr); }
   /* 移动端按字段顺序堆叠描述，避免桌面多列详情挤压值区；不隐藏任何字段。 */
   :is(.detail-form-template,.split-detail-template,.tabbed-detail-template,.app-managed-dialog) .el-descriptions__table :is(tbody,tr) { display:block; width:100%; }
@@ -217,3 +226,68 @@
 .viewport-page-host .management-table-stack { overflow: auto; }
 .viewport-page-host .management-table-stack > .management-table { flex: none; overflow: visible; }
 .viewport-page-host .management-table-stack > .management-table .management-table-region { flex: none; min-height: 0; overflow: visible; }
+
+/* 统一左右详情由子面板提供内容边距，父卡片仅负责边框，禁止重复累加。 */
+.split-detail-template.is-unified .split-detail-template__surface > .el-card__body { padding:0; }
+
+/* 横幅容器只保留一条分隔线；对象上下文位于查询区之外，不随折叠或隐藏横幅消失。 */
+.tree-list-template__navigation > .workspace-banner { border-bottom:0; }
+.viewport-page-host .tree-list-template__header { flex:none; }
+/* 嵌入树表只复用宿主工作区外框，内部查询和表体仍各自保留一层全局内容边距。 */
+.tree-list-template.is-embedded > .tree-list-template__surface { padding:0; border:0; border-radius:0; }
+.business-workspace__data:has(> .tree-list-template.is-embedded) { padding:0; }
+
+/* 主数据/基础数据详情样板（人员首用）：显式启用，不将普通业务列表或专用画布改成详情布局。
+   区块间距继承 --app-section-gap（默认 8px），内容留白 16px、字段列距 24px，单位均 px。
+   1440 桌面四列，1024 窄屏两列，600 以下单列；参数只影响展示，不参与身份或业务授权。 */
+.master-data-detail {display:flex;flex-direction:column;gap:var(--app-section-gap,8px);min-width:0;}
+.master-data-detail > .page-header {position:sticky;top:0;z-index:2;border:0;background:var(--el-bg-color-page);padding:8px 4px;}
+.master-data-detail .page-header__copy {display:flex;align-items:center;gap:12px;}
+.master-data-detail .page-header__title-row {flex-wrap:wrap;}
+.master-data-detail .page-header h1 {font-size:20px;}
+.master-data-detail .detail-profile-form {display:flex;flex-direction:column;gap:var(--app-section-gap,8px);}
+.master-data-detail .detail-section > .el-card__header {padding:10px 16px;}
+.master-data-detail .detail-section > .el-card__body {padding:16px;}
+.master-data-detail .detail-section-heading {display:flex;align-items:center;justify-content:space-between;min-height:24px;gap:8px;}
+.master-data-detail :is(.detail-section-heading h2,.detail-section-title) {display:flex;align-items:center;gap:8px;margin:0;font-size:15px;font-weight:600;color:var(--el-text-color-primary);}
+.master-data-detail :is(.detail-section-heading h2,.detail-section-title)::before {content:'';width:3px;height:16px;flex:none;border-radius:var(--el-border-radius-small);background:var(--el-color-primary);}
+.master-data-detail .detail-section-heading > .el-button {min-height:28px;padding:4px;}
+.master-data-detail .detail-identity-layout {display:grid;grid-template-columns:80px minmax(0,1fr);gap:24px;align-items:start;}
+.master-data-detail .detail-identity-mark {display:flex;justify-content:center;padding-top:4px;}
+.master-data-detail .detail-identity-mark .el-avatar {background:var(--el-color-primary-light-9);color:var(--el-color-primary);font-size:26px;font-weight:600;}
+.master-data-detail .detail-field-grid {display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0 24px;min-width:0;}
+.master-data-detail .detail-field-grid .el-form-item {margin-bottom:14px;min-width:0;}
+.master-data-detail .detail-field-grid .el-form-item__label {padding-bottom:4px;line-height:20px;font-size:13px;color:var(--el-text-color-regular);}
+.master-data-detail .detail-field-grid :is(.el-date-editor,.el-select) {width:100%;min-width:0;}
+.master-data-detail .detail-field-wide {grid-column:span 2;}
+.master-data-detail .detail-code-value {display:inline-block;padding:0 10px;border-radius:var(--el-border-radius-base);background:var(--el-color-primary-light-9);color:var(--el-color-primary);overflow-wrap:anywhere;}
+.master-data-detail .detail-readonly-field {display:flex;flex-direction:column;gap:6px;min-width:0;padding:4px 0 14px;}
+.master-data-detail .detail-readonly-field > span {color:var(--el-text-color-secondary);font-size:13px;}
+.master-data-detail .detail-readonly-field > strong {font-weight:400;overflow-wrap:anywhere;line-height:1.6;}
+.master-data-detail .detail-system {background:color-mix(in srgb,var(--el-bg-color) 96%,var(--el-color-primary) 4%);}
+.master-data-detail .detail-system > .el-card__body {padding:12px 16px;}
+.master-data-detail .detail-audit-grid {display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;margin-top:14px;}
+.master-data-detail .detail-audit-item {display:flex;align-items:center;gap:10px;min-width:0;}
+.master-data-detail .detail-audit-item > svg {flex:none;color:var(--el-text-color-secondary);}
+.master-data-detail .detail-audit-item > div {display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;min-width:0;font-size:12px;}
+.master-data-detail .detail-audit-item span {color:var(--el-text-color-secondary);}
+.master-data-detail .detail-audit-item strong {font-weight:400;color:var(--el-text-color-primary);overflow-wrap:anywhere;}
+.master-data-detail .tabbed-detail-template__tabs > .el-card__body {padding:0 12px 12px;}
+.master-data-detail .tabbed-detail-template__tabs > .el-card__body > .el-tabs > .el-tabs__header {margin:0 0 8px;}
+.master-data-detail .tabbed-detail-template__tabs .management-table {border:0;}
+@media(max-width:1100px){
+ .master-data-detail .detail-field-grid,.master-data-detail .detail-audit-grid {grid-template-columns:repeat(2,minmax(0,1fr));}
+ .master-data-detail .detail-identity-layout {grid-template-columns:64px minmax(0,1fr);gap:16px;}
+}
+@media(max-width:600px){
+ .master-data-detail > .page-header {position:static;}
+ .master-data-detail .page-header__main {gap:8px;}
+ .master-data-detail .page-header__actions {width:100%;}
+ .master-data-detail .page-header__actions .el-button {min-height:44px;}
+ .master-data-detail .detail-field-grid,.master-data-detail .detail-audit-grid {grid-template-columns:minmax(0,1fr);}
+ .master-data-detail .detail-field-wide {grid-column:auto;}
+ .master-data-detail .detail-identity-layout {grid-template-columns:minmax(0,1fr);gap:12px;}
+ .master-data-detail .detail-identity-mark {justify-content:flex-start;}
+ .master-data-detail .detail-section-heading > .el-button {min-height:44px;min-width:44px;}
+ .master-data-detail .detail-section > .el-card__body {padding:12px;}
+}

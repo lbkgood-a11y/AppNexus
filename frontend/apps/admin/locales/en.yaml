@@ -29,6 +29,8 @@ search:
   pureEmpty: Empty
   purePlaceholder: Search Menu
 panel:
+  menuColor: Menu color
+  menuColorAuto: Follow theme
   hidePageBanner: Hide page banners
   pureSystemSet: System Configs
   pureCloseSystemSet: Close System Configs
@@ -523,6 +525,7 @@ tenant:
   operation: Action
   enter: Enter
 organization:
+  person: "Person"
   structure: Organization structure
   assignmentManagement: Assignment management
   types: Organization types
@@ -590,7 +593,7 @@ organization:
   primaryOrganization: Primary organization
   unassigned: Unassigned
   saveAssignment: Save organization assignment
-  title: Organization management
+  title: Organization and personnel
   description: Manage organization types, independent trees, relations, positions,
     assignments and leaders. Permissions belong to the access center.
   unitSearch: Organization search
@@ -844,6 +847,7 @@ dictionary:
   status: Status
   sortOrder: Sort Order
   itemQuery: Item Search
+  keywordLabel: Keyword
   queryPlaceholder: Name, code, value, or description
   emptyTypes: No dictionaries
   emptyItems: No dictionary items
@@ -1986,3 +1990,22 @@ printWorkbench:
     bottom: "Align bottom"
     vertical: "Center horizontally"
     horizontal: "Center vertically"
+
+# 主数据五类档案页面文案；不包含权限或业务配置。
+masterData: {"title": "Master data", "person": "Personnel", "partner": "Business partners", "warehouse": "Warehouses", "country-region": "Countries and regions", "product": "Products", "description": "Maintain tenant master records with separate permissions for editing and status changes.", "keyword": "Keyword", "code": "Code", "name": "Name", "status": "Status", "all": "All", "enabled": "Enabled", "disabled": "Disabled", "search": "Search", "reset": "Reset", "create": "Create", "edit": "Edit", "enable": "Enable", "disable": "Disable", "actions": "Actions", "save": "Save", "cancel": "Cancel", "saved": "Saved successfully", "statusSaved": "Status updated", "required": "This field is required", "codeRule": "Use 1–64 letters, numbers, dots, underscores or hyphens", "countryRule": "Enter a two-letter uppercase code", "alpha3Rule": "Enter a three-letter uppercase code", "numericRule": "Enter a three-digit code", "emailRule": "Enter a valid email address", "noPermission": "You do not have permission to view these records", "unavailable": "Data is unavailable. Please retry.", "retry": "Reload", "empty": "No matching records", "confirmDisable": "Disable “{name}” for new business references? Historical records are retained.", "confirmEnable": "Enable “{name}” for business selection?", "confirmTitle": "Change record status", "codeHint": "Codes cannot change after creation and must be unique within this tenant and record type.", "scopeHint": "Tenant public records only. Company usage, company attributes and system extensions are maintained separately.", "countryHint": "Use ISO 3166-1 codes. This is an enterprise-maintained directory; the system does not supply the full standard dataset.", "personHint": "Personnel records are separate from login accounts and organization assignments and do not grant access.", "fields": {"englishName": "English name", "phone": "Phone", "email": "Email", "partnerType": "Partner type", "creditCode": "Registration number", "contactName": "Contact", "address": "Address", "alpha3Code": "Alpha-3 code", "numericCode": "Numeric code", "specification": "Specification", "unit": "Base unit", "barcode": "Barcode"}, "partnerTypes": {"CUSTOMER": "Customer", "SUPPLIER": "Supplier", "BOTH": "Customer and supplier"}, "codes": {"MASTER_DATA_DENIED": "You do not have permission for this master data operation.", "MASTER_DATA_INPUT_INVALID": "Check the code, name and required fields.", "MASTER_DATA_CODE_CONFLICT": "This code already exists. Check whether the record was already created.", "MASTER_DATA_CHANGED": "The record has changed or is unavailable. Keep your input and reload to verify."}}
+
+# 人员档案字段、明细及多对多关联文案；不包含配置或真实人员数据。
+personnel: {"title": "Personnel profile", "basic": "Basic information", "system": "System information", "code": "Personnel code", "name": "Chinese name", "createdName": "Created by", "createdAt": "Created at", "updatedName": "Modified by", "updatedAt": "Modified at", "unknownHistory": "Not recorded for historical data", "back": "Back to list", "new": "Create personnel", "details": "Profile details", "assignments": "Linked tenant accounts", "organizationId": "Organization", "positionId": "Position", "memberId": "Tenant account", "organizationName": "Organization", "userName": "Linked user", "active": "Active link", "inactive": "Unavailable link", "addDetail": "Add detail", "editDetail": "Edit detail", "deleteDetail": "Delete detail", "addAssignment": "Link account", "editAssignment": "Edit account link", "unassign": "Remove link", "confirmDelete": "Delete this {section} detail? The personnel record will be retained.", "confirmUnassign": "Remove the link with “{name}”? This user will no longer represent this person through this link.", "dirty": "Save or discard changes to the basic profile before editing details or links.", "saveFirst": "Save the personnel record before adding details or organization users.", "discard": "Discard unsaved changes and return to the list?", "discardAction": "Discard changes", "reloadWarning": "Reloading discards unsaved input. Continue?", "assignmentHint": "Link active accounts in this tenant. Organizations and positions belong to people, not accounts. Links grant no business permissions.", "organizationHint": "Personnel affiliations and appointments are the sole source of business organization. Maintain primary affiliation and validity separately.", "required": "This field is required", "dateRange": "End date cannot precede start date", "birthFuture": "Date of birth cannot be in the future", "status": "Record status", "employmentStatus": "Employment status", "retry": "Reload", "readOnly": "Read-only profile", "saved": "Saved successfully", "all": "All", "enabled": "Enabled", "disabled": "Disabled", "latestLoadFailed": "Saved, but the latest profile could not be loaded. Reload to verify before submitting again.", "fields": {"englishName": "English name", "gender": "Gender", "birthDate": "Date of birth", "ethnicity": "Ethnicity", "nativePlace": "Native place", "politicalStatus": "Political affiliation", "identityType": "Identity document type", "identityNumber": "Identity document number", "phone": "Phone", "email": "Email", "workNature": "Employment type", "bloodType": "Blood type", "emergencyContact": "Emergency contact", "emergencyPhone": "Emergency phone", "maritalStatus": "Marital status", "hobbies": "Interests and skills", "skillLevel": "Skill level", "educationLevel": "Highest education", "employmentStatus": "Employment status", "remarks": "Remarks", "certificateType": "Certificate type", "certificateNumber": "Certificate number", "certificateStatus": "Certificate status", "passedOn": "Passed on", "startsOn": "Start date", "endsOn": "End date", "trainingName": "Training name", "provider": "Provider", "result": "Result", "awardName": "Award", "issuer": "Issuing authority", "awardedOn": "Award date", "contactType": "Contact type", "contactValue": "Contact value", "addressType": "Address type", "countryRegion": "Country or region", "province": "Province or state", "city": "City", "address": "Address", "postalCode": "Postal code", "employer": "Employer", "department": "Department", "jobTitle": "Job title", "recordType": "Record type", "reason": "Reason", "recordedOn": "Record date", "school": "School", "major": "Major", "degree": "Degree", "isPrimary": "Primary organization", "enabled": "Relationship enabled"}, "sections": {"organizations": "Organizations", "positions": "Positions", "certificates": "Certificates", "training": "Training", "awards": "Awards", "contacts": "Contact methods", "addresses": "Addresses", "workHistory": "Work history", "rewardsPenalties": "Rewards and penalties", "education": "Education history"}, "choices": {"MALE": "Male", "FEMALE": "Female", "OTHER": "Other", "UNDISCLOSED": "Undisclosed", "NATIONAL_ID": "National ID", "PASSPORT": "Passport", "FULL_TIME": "Full-time", "PART_TIME": "Part-time", "CONTRACT": "Contract", "INTERN": "Intern", "A": "A", "B": "B", "AB": "AB", "O": "O", "UNKNOWN": "Unknown", "SINGLE": "Single", "MARRIED": "Married", "DIVORCED": "Divorced", "WIDOWED": "Widowed", "ACTIVE": "Employed", "PROBATION": "Probation", "LEAVE": "Left employment", "RETIRED": "Retired", "VALID": "Valid", "EXPIRED": "Expired", "REVOKED": "Revoked", "PENDING": "Pending", "REWARD": "Reward", "PENALTY": "Penalty", "PRIMARY": "Primary school", "JUNIOR_HIGH": "Junior high school", "SENIOR_HIGH": "High school", "VOCATIONAL": "Vocational school", "ASSOCIATE": "Associate degree", "BACHELOR": "Bachelor degree", "MASTER": "Master degree", "DOCTOR": "Doctoral degree", "JUNIOR": "Junior", "INTERMEDIATE": "Intermediate", "SENIOR": "Senior", "TECHNICIAN": "Technician", "SENIOR_TECHNICIAN": "Senior technician", "true": "Yes", "false": "No"}, "codes": {"PERSON_NOT_FOUND": "Personnel record is unavailable.", "PERSON_USER_UNAVAILABLE": "The account is unavailable in this tenant.", "PERSON_USER_DUPLICATE": "This organization and user link already exists.", "PERSON_ORGANIZATION_UNAVAILABLE": "The organization or position is unavailable in this tenant.", "PERSON_CONTEXT_REQUIRED": "Select a valid personnel identity and business organization."}, "profileDetails": "Additional information", "collapseDetails": "Collapse additional information", "expandDetails": "Expand additional information"}
+
+# 人员身份模型：组织任职使用人员，不再使用账号成员。
+identityModel: {"person": "Person", "select": "Select personnel identity", "none": "No personnel identity", "empty": "No personnel and organization is available. Contact an administrator."}
+
+recordAudit:
+  title: Audit information
+  view: View audit
+  createdBy: Created by
+  createdAt: Created at
+  updatedBy: Last modified by
+  updatedAt: Last modified at
+  unknown: Not recorded
+  unknownActor: System execution or not recorded

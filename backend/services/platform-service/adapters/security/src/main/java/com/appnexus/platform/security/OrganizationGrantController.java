@@ -7,6 +7,7 @@ import java.util.*;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
 /** 组织授权管理入口；仅有 GRANT 能力的当前租户成员可操作，管理能力本身不可通过本接口委派。 */
+@com.appnexus.contracts.operation.BusinessObjectType(code="OrganizationAuthorization",nameZh="组织授权",nameEn="Organization authorization",category=com.appnexus.contracts.operation.BusinessObjectType.Category.CONFIGURATION,module="authorization")
 @RestController
 @EndpointPolicy(EndpointPolicy.Domain.TENANT_BUSINESS)
 @RequestMapping("/api/organization/grants")
@@ -18,18 +19,6 @@ public class OrganizationGrantController {
     }
     /** 只接受目标成员、操作和可选到期时间；操作者与租户由服务端验证上下文决定。 */
     public record Change(UUID memberId, OrganizationCapability capability, Instant expiresAt) {}
-    /** 主要组织 UUID，null 清空；不修改成员的操作能力或租户归属。 */
-    public record Organization(UUID organizationId) {}
-    /** 组织归属管理沿用 GRANT 权限；目标成员和组织均复核同租户。 */
-    @com.appnexus.contracts.operation.BusinessObjectType(code="OrganizationAuthorization",nameZh="组织授权",nameEn="Organization Authorization",category=com.appnexus.contracts.operation.BusinessObjectType.Category.CONFIGURATION,module="authorization")
- @com.appnexus.contracts.operation.OperationBinding(id="OrganizationAuthorization.assignOrganization",objectType="OrganizationAuthorization",operationCode="assignOrganization",pages={"organization/index"},nameZh="组织授权：设置成员组织",nameEn="Grant organization permissions",policy="主体管理域、角色权限及业务用例约束由原执行器逐请求复核")
- @EndpointOperation("organization.permission:grant") @PutMapping("/members/{memberId}/organization")
-    ResponseEntity<Void> assign(@PathVariable UUID memberId,@RequestBody Organization input,HttpServletRequest request) {
-        var c=requireAuthority(request);
-        try { grants.assignOrganization(c.tenantId(),memberId,c.memberId(),input.organizationId());return ResponseEntity.noContent().build(); }
-        catch(SecurityException denied){throw AccountSettingsController.problem(HttpStatus.FORBIDDEN,"GRANT_DENIED","无授权管理权限");}
-        catch(IllegalArgumentException invalid){throw AccountSettingsController.problem(HttpStatus.BAD_REQUEST,"INVALID_GRANT","成员或组织不属于当前有效租户");}
-    }
     /** 选择器只向有管理权限的成员返回当前租户的有效成员。 */
     @com.appnexus.contracts.operation.OperationBinding(id="OrganizationAuthorization.memberOptions",objectType="OrganizationAuthorization",operationCode="memberOptions",pages={"organization/index"},nameZh="组织授权：查看成员选项",nameEn="Grant organization permissions",policy="主体管理域、角色权限及业务用例约束由原执行器逐请求复核")
  @EndpointOperation("organization.permission:grant") @GetMapping("/members")

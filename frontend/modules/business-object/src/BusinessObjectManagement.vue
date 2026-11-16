@@ -196,9 +196,10 @@ onMounted(async()=>{await load();const type=router.currentRoute.value.query.type
   </div>
 </template>
 <style scoped>
+/* 页面外围留白引用全局内容与区块 Token，局部字段间距和触控高度按原交互保留。 */
 .business-object-search{margin-left:auto;display:flex;gap:8px} .el-form--inline{display:flex;flex-wrap:wrap} .el-pagination{justify-content:flex-end;margin-top:16px}
-.business-object-binding{margin-top:16px;padding:16px;border:1px solid var(--el-border-color);border-radius:var(--el-border-radius-base)}
-.business-object-condition{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}.business-object-condition>*{flex:1;min-width:100px}.el-descriptions{margin-bottom:16px}
+.business-object-binding{margin-top:16px;padding:var(--app-content-padding,12px);border:1px solid var(--el-border-color);border-radius:var(--el-border-radius-base)}
+.business-object-condition{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}.business-object-condition>*{flex:1;min-width:100px}.el-descriptions{margin-bottom:var(--app-section-gap,8px)}
 /* 弹窗内容自然滚动，各分区不套用主列表撑高规则；主题与边框继承 Element Plus。 */
 .object-contract-sections{display:flex;flex-direction:column;gap:8px}
 .object-contract-section{flex:none}

@@ -18,7 +18,8 @@ public class TaskManagementController {
     private final JdbcTemplate jdbc;
     public TaskManagementController(ReliableEvents events,PlatformAdministration platform,JdbcTemplate jdbc){this.events=events;this.platform=platform;this.jdbc=jdbc;}
     /** 最近任务最多 50 条；平台级运维入口，不提供租户普通成员访问。 */
-    @EndpointOperation("platform.task:read") @GetMapping
+    @EndpointOperation("platform.task:read") @com.appnexus.contracts.operation.RecordAuditSource(table="platform_outbox",tenant=false)
+ @GetMapping
     ResponseEntity<List<ReliableEvents.Task>> list(Authentication auth){require(auth);return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(events.tasks(50));}
     /** 人工确认故障已排除后恢复；已完成或运行中任务不能被重置覆盖。 */
     @EndpointOperation("platform.task:retry") @PostMapping("/{id}/retry") @Transactional

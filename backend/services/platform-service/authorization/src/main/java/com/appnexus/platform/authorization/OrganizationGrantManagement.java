@@ -4,9 +4,7 @@ import java.util.*;
 /** 组织能力授权生命周期端口；查询调用层及变更适配器必须校验调用者具备 GRANT 管理能力。 */
 public interface OrganizationGrantManagement {
     /** 可授权成员摘要，不返回账号凭据或其他租户资料。 */
-    record Member(UUID memberId, String displayName, UUID organizationId, String organizationName) {}
-    /** 主要组织归属仅由同租户 GRANT 管理者维护；null 清空归属，不改变操作授权。 */
-    void assignOrganization(UUID tenantId, UUID targetMemberId, UUID operatorMemberId, UUID organizationId);
+    record Member(UUID memberId, String displayName) {}
     /** @param tenantId 已验证的当前租户；调用层必须校验 GRANT，不能开放成员目录给普通用户 */
     List<Member> members(UUID tenantId);
     record Grant(UUID memberId, OrganizationCapability capability, UUID grantedBy, Instant grantedAt, Instant expiresAt) {}

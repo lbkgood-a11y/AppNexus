@@ -41,7 +41,8 @@ public final class BusinessObjectController {
   });}
   /** 平台业务对象目录，包含未激活代码声明。 */
   @com.appnexus.contracts.operation.OperationBinding(id="BusinessObject.catalog",objectType="BusinessObject",operationCode="catalog",pages={"platform/business-objects"},nameZh="业务对象配置：查看目录",nameEn="View document registry",permissions={"business.object.catalog:manage"},policy="原服务逐请求复核有效成员、功能权限、对象归属、版本与业务状态")
-  @GetMapping("/bff/platform/business-objects")
+  @com.appnexus.contracts.operation.RecordAuditSource(table="business_object_type",key="object_type",id="descriptor.objectType",binaryKey=false,tenant=false)
+ @GetMapping("/bff/platform/business-objects")
   public Object catalog(HttpServletRequest r) {return reply(()->service.catalog(context(r,true),true));}
   /** 平台统一查看工作流及打印投影与驱动协议，不重复定义服务专属业务契约。 */
   @GetMapping("/bff/platform/interaction-contracts")
@@ -60,7 +61,8 @@ public final class BusinessObjectController {
   public Object grant(HttpServletRequest r,@PathVariable String type,@PathVariable String tenant,@RequestBody State input) {return reply(()->{service.grant(context(r,true),type,tenant,input.enabled());return Map.of();});}
   /** 租户管理角色可见的已授权业务对象。 */
   @com.appnexus.contracts.operation.OperationBinding(id="BusinessObject.tenantCatalog",objectType="BusinessObject",operationCode="tenantCatalog",pages={"business-objects/index"},nameZh="业务对象配置：查看已开放对象",nameEn="View document workbench",permissions={"business.object.configuration:manage"},policy="原服务逐请求复核有效成员、功能权限、对象归属、版本与业务状态")
-  @GetMapping("/api/business-objects")
+  @com.appnexus.contracts.operation.RecordAuditSource(table="business_object_type",key="object_type",id="descriptor.objectType",binaryKey=false,tenant=false)
+ @GetMapping("/api/business-objects")
   public Object tenantCatalog(HttpServletRequest r) {return reply(()->service.catalog(context(r,false),false));}
   /** 静态配置及瞬时渲染依赖检查，不能代替执行时校验。 */
   @com.appnexus.contracts.operation.OperationBinding(id="BusinessObject.readiness",objectType="BusinessObject",operationCode="readiness",pages={"business-objects/index"},nameZh="业务对象配置：检查配置就绪",nameEn="Check readiness",permissions={"business.object.configuration:manage"},policy="原服务逐请求复核有效成员、功能权限、对象归属、版本与业务状态")

@@ -6,7 +6,7 @@ import java.util.*;
 import org.apache.ibatis.annotations.*;
 
 /** 组织领域受控 SQL；所有方法都显式绑定已验证租户，执行门禁复核表白名单。 */
-@TenantAggregateScoped(tables={"tenant_organization_type","tenant_organization_unit","tenant_organization_relation","tenant_organization_position","tenant_organization_assignment","tenant_organization_leader","tenant_member","identity_account"},statements={"types","createType","updateType","typeUsage","units","lockUnits","createUnit","updateUnit","moveUnit","impact","relations","createRelation","deleteRelation","positions","createPosition","updatePosition","positionUsage","assignments","createAssignment","updateAssignment","removeAssignmentLeaders","leaders","addLeader","removeLeader","members"})
+@TenantAggregateScoped(tables={"tenant_organization_type","tenant_organization_unit","tenant_organization_relation","tenant_organization_position","tenant_person_position","tenant_person_leader"},statements={"types","createType","updateType","typeUsage","units","lockUnits","createUnit","updateUnit","moveUnit","impact","relations","createRelation","deleteRelation","positions","createPosition","updatePosition","positionUsage","assignments","createAssignment","updateAssignment","removeAssignmentLeaders","leaders","addLeader","removeLeader"})
 @Mapper
 public interface OrganizationDomainMapper {
  List<Map<String,Object>> types(@Param("__verifiedTenant") byte[] tenant);
@@ -27,11 +27,10 @@ public interface OrganizationDomainMapper {
  int updatePosition(@Param("__verifiedTenant") byte[] tenant,@Param("id") String id,@Param("name") String name,@Param("enabled") boolean enabled,@Param("version") long version);
  int positionUsage(@Param("__verifiedTenant") byte[] tenant,@Param("id") String id);
  List<Map<String,Object>> assignments(@Param("__verifiedTenant") byte[] tenant);
- int createAssignment(@Param("__verifiedTenant") byte[] tenant,@Param("id") String id,@Param("memberId") String memberId,@Param("positionId") String positionId,@Param("startsAt") Instant startsAt,@Param("endsAt") Instant endsAt);
+ int createAssignment(@Param("__verifiedTenant") byte[] tenant,@Param("id") String id,@Param("personId") String personId,@Param("positionId") String positionId,@Param("startsAt") Instant startsAt,@Param("endsAt") Instant endsAt);
  int updateAssignment(@Param("__verifiedTenant") byte[] tenant,@Param("id") String id,@Param("endsAt") Instant endsAt,@Param("enabled") boolean enabled,@Param("version") long version);
  int removeAssignmentLeaders(@Param("__verifiedTenant") byte[] tenant,@Param("id") String id);
  List<Map<String,Object>> leaders(@Param("__verifiedTenant") byte[] tenant);
  int addLeader(@Param("__verifiedTenant") byte[] tenant,@Param("organizationId") String organizationId,@Param("assignmentId") String assignmentId);
  int removeLeader(@Param("__verifiedTenant") byte[] tenant,@Param("organizationId") String organizationId,@Param("assignmentId") String assignmentId);
- List<Map<String,Object>> members(@Param("__verifiedTenant") byte[] tenant);
 }

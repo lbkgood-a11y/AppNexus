@@ -23,7 +23,8 @@ const { t } = useI18n();
 <style scoped>
 /* 标题和折叠按钮固定在同一行；标题在收起后保留，表单使用完整可用宽度。 */
 .search-panel { min-width: 0; }
-.search-panel__header { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:8px; }
+/* 标题与条件之间只保留 4px，不通过缩小折叠按钮命中区换取紧凑高度。 */
+.search-panel__header { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:4px; }
 .search-panel.is-collapsed .search-panel__header { margin-bottom:0; }
 .search-panel__content { min-width:0; }
 .search-panel__header .is-collapsed { transform:rotate(-90deg); }

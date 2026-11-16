@@ -42,12 +42,14 @@ class WorkflowRuntimeTest {
       ScriptUtils.executeSqlScript(
           connection, new ClassPathResource("db/migration/V48__workflow_application.sql"));
       ScriptUtils.executeSqlScript(connection,new ClassPathResource("db/migration/V69__workflow_data_contract_snapshots.sql"));
+      ScriptUtils.executeSqlScript(connection,new ClassPathResource("db/migration/V79__workflow_personnel_audit.sql"));
     }
     var bridge = new WorkflowBridge();
     var manager = new DataSourceTransactionManager(source);
     engine = new WorkflowEngineConfiguration().workflowProcessEngine(source, manager, bridge);
     WorkflowPlatform platform =
         new WorkflowPlatform() {
+          public boolean candidate(WorkflowContext c,String org,String kind,String reference){return resolve(c.tenantId(),org,kind,reference).contains(c.actorId());}
           public boolean allowed(WorkflowContext c, String p) {
             return active(c.tenantId(), c.actorId());
           }

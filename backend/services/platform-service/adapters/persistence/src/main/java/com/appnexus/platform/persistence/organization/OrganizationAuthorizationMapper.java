@@ -2,28 +2,18 @@ package com.appnexus.platform.persistence.organization;
 import org.apache.ibatis.annotations.*;
 import com.appnexus.platform.persistence.PlatformScoped;
 /** 仅查询授权存在性，不读取授权人或其他租户的授权详情。 */
-@PlatformScoped(tables={"organization_capability_grant","organization_grant_audit","tenant_member","platform_tenant","organization_administrator_bootstrap","identity_account","tenant_member_primary_organization","tenant_organization_unit","platform_administration_audit","access_member_permission","access_permission","access_role","access_role_permission","access_role_data_policy","access_permission_scope_type","access_member_role","access_member_authorization","access_member_authorization_permission","access_effective_tenant_permission"})
+@PlatformScoped(tables={"organization_capability_grant","organization_grant_audit","tenant_member","platform_tenant","organization_administrator_bootstrap","identity_account","tenant_person_organization","tenant_person_position","tenant_organization_position","tenant_organization_unit","platform_administration_audit","access_member_permission","access_permission","access_role","access_role_permission","access_role_data_policy","access_permission_scope_type","access_member_role","access_member_authorization","access_member_authorization_permission","access_effective_tenant_permission"})
 @Mapper
 public interface OrganizationAuthorizationMapper {
     /** 初始化必须同时锁定有效账号和成员，禁止为已停用账号建立首个管理授权。 */
     @Select("SELECT BIN_TO_UUID(m.id) FROM tenant_member m JOIN identity_account a ON a.id=m.account_id WHERE m.tenant_id=UUID_TO_BIN(#{tenant}) AND m.id=UUID_TO_BIN(#{member}) AND m.enabled=TRUE AND a.enabled=TRUE FOR UPDATE")
     String lockBootstrapMember(@Param("tenant") String tenant,@Param("member") String member);
-    /** 仅返回当前租户有效成员的必要展示资料；调用层先检查 GRANT。 */
-    @Select("SELECT BIN_TO_UUID(m.id) member_id,a.display_name,BIN_TO_UUID(o.id) organization_id,o.name organization_name FROM tenant_member m JOIN identity_account a ON a.id=m.account_id LEFT JOIN tenant_member_primary_organization p ON p.tenant_id=m.tenant_id AND p.member_id=m.id LEFT JOIN tenant_organization_unit o ON o.tenant_id=p.tenant_id AND o.id=p.organization_id WHERE m.tenant_id=UUID_TO_BIN(#{tenant}) AND m.enabled=TRUE AND a.enabled=TRUE ORDER BY a.display_name,m.id")
+    /** 账号成员只提供授权目录摘要，无直接组织归属。 */
+    @Select("SELECT BIN_TO_UUID(m.id) member_id,a.display_name FROM tenant_member m JOIN identity_account a ON a.id=m.account_id WHERE m.tenant_id=UUID_TO_BIN(#{tenant}) AND m.enabled=TRUE AND m.removed_at IS NULL AND a.enabled=TRUE ORDER BY a.display_name,m.id")
     java.util.List<java.util.Map<String,Object>> members(String tenant);
-    /** 目标组织在同一租户锁内校验，不允许通过组织 UUID 建立跨租户关联。 */
-    @Select("SELECT BIN_TO_UUID(id) FROM tenant_organization_unit WHERE tenant_id=UUID_TO_BIN(#{tenant}) AND id=UUID_TO_BIN(#{organization}) FOR UPDATE")
-    String lockOrganization(@Param("tenant") String tenant,@Param("organization") String organization);
-    /** 删除前在租户行锁下检查归属；有成员归属时拒绝删除，避免产生悬空引用。 */
-    @Select("SELECT EXISTS(SELECT 1 FROM tenant_member_primary_organization WHERE tenant_id=UUID_TO_BIN(#{tenant}) AND organization_id=UUID_TO_BIN(#{organization}))")
+    /** 组织删除保护检查人员归属及岗位任职，不能删除仍被人员使用的组织。 */
+    @Select("SELECT EXISTS(SELECT 1 FROM tenant_person_organization WHERE tenant_id=UUID_TO_BIN(#{tenant}) AND organization_id=UUID_TO_BIN(#{organization})) OR EXISTS(SELECT 1 FROM tenant_person_position a JOIN tenant_organization_position p ON p.tenant_id=a.tenant_id AND p.id=a.position_id WHERE a.tenant_id=UUID_TO_BIN(#{tenant}) AND p.organization_id=UUID_TO_BIN(#{organization}))")
     boolean organizationAssigned(@Param("tenant") String tenant,@Param("organization") String organization);
-    @Insert("INSERT INTO tenant_member_primary_organization(tenant_id,member_id,organization_id) VALUES(UUID_TO_BIN(#{tenant}),UUID_TO_BIN(#{member}),UUID_TO_BIN(#{organization})) ON DUPLICATE KEY UPDATE organization_id=VALUES(organization_id)")
-    void assignOrganization(@Param("tenant") String tenant,@Param("member") String member,@Param("organization") String organization);
-    @Delete("DELETE FROM tenant_member_primary_organization WHERE tenant_id=UUID_TO_BIN(#{tenant}) AND member_id=UUID_TO_BIN(#{member})")
-    void clearOrganization(@Param("tenant") String tenant,@Param("member") String member);
-    /** 组织归属变更使用平台格式的账号审计；操作者账号由已锁定的租户成员反查，不信任客户端。 */
-    @Insert("INSERT INTO platform_administration_audit(actor_account_id,action,target_id,tenant_id) SELECT account_id,'MEMBER_ORGANIZATION_CHANGED',UUID_TO_BIN(#{target}),tenant_id FROM tenant_member WHERE tenant_id=UUID_TO_BIN(#{tenant}) AND id=UUID_TO_BIN(#{actor})")
-    void auditOrganization(@Param("tenant") String tenant,@Param("actor") String actor,@Param("target") String target);
     /** 租户行锁内读取一次性标记；标记永久保留，不因撤权重新初始化。 */
     @Select("SELECT BIN_TO_UUID(member_id) FROM organization_administrator_bootstrap WHERE tenant_id=UUID_TO_BIN(#{tenant})")
     String bootstrapMember(String tenant);

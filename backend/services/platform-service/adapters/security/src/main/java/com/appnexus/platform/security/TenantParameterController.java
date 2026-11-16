@@ -16,7 +16,8 @@ public class TenantParameterController {
     /** 修改明确受控配置，version 首次 -1、后续为当前版本。 */
     public record Change(String value,int version){}
     /** 有效成员读取非敏感展示参数；不授予维护能力。 */
-    @GetMapping ResponseEntity<List<TenantParameters.Parameter>> list(HttpServletRequest request){return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(parameters.list(context(request)));}
+    @com.appnexus.contracts.operation.RecordAuditSource(table="tenant_parameter",key="parameter_key",id="key",binaryKey=false)
+ @GetMapping ResponseEntity<List<TenantParameters.Parameter>> list(HttpServletRequest request){return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(parameters.list(context(request)));}
     /** 当前使用租户授权管理边界维护，不能通过通用配置任意修改安全参数。 */
     @com.appnexus.contracts.operation.BusinessObjectType(code="TenantParameter",nameZh="租户参数",nameEn="Tenant Parameter",category=com.appnexus.contracts.operation.BusinessObjectType.Category.CONFIGURATION,module="configuration")
  @com.appnexus.contracts.operation.OperationBinding(id="TenantParameter.save",objectType="TenantParameter",operationCode="save",pages={"account/profile"},nameZh="租户参数：保存",nameEn="Grant organization permissions",policy="主体管理域、角色权限及业务用例约束由原执行器逐请求复核")

@@ -770,5 +770,53 @@
   {
     "key": "[\"frontend/modules/print/src/TemplateDesigner.vue\",\"el-button\",\"workspace('align',tool.command)\",null,null,\"\"]",
     "reason": "六个对齐按钮仅调用白名单命令修改隔离会话的选中草稿元素并进入撤销历史；不访问业务接口，服务端保存仍经 PrintTemplate.update 授权"
+  },
+  {
+    "key": "[\"frontend/modules/master-data/src/Management.vue\",\"el-button\",\"reset\",null,null,\"{{t('masterData.reset')}}\"]",
+    "reason": "仅重置筛选并读取、显式重新读取，或关闭未提交的本地草稿；不调用业务写接口，读取由后端独立鉴权。"
+  },
+  {
+    "key": "[\"frontend/modules/master-data/src/Management.vue\",\"el-button\",\"retry\",null,null,\"{{t('masterData.retry')}}\"]",
+    "reason": "仅重置筛选并读取、显式重新读取，或关闭未提交的本地草稿；不调用业务写接口，读取由后端独立鉴权。"
+  },
+  {
+    "key": "[\"frontend/modules/master-data/src/Management.vue\",\"el-button\",\"open=false\",null,null,\"{{t('masterData.cancel')}}\"]",
+    "reason": "仅重置筛选并读取、显式重新读取，或关闭未提交的本地草稿；不调用业务写接口，读取由后端独立鉴权。"
+  },
+  {
+    "key": "[\"frontend/modules/organization/src/personnel/PersonnelEditor.vue\",\"el-button\",\"reload\",null,null,\"{{t('personnel.retry')}}\"]",
+    "reason": "只读重载，存在草稿时确认放弃；不会提交保存，读取仍由后端鉴权。"
+  },
+  {
+    "key": "[\"frontend/modules/organization/src/personnel/PersonnelEditor.vue\",\"el-button\",\"back\",null,null,\"{{t('personnel.back')}}\"]",
+    "reason": "返回列表；未保存时确认丢弃本地草稿，不调用业务写接口。"
+  },
+  {
+    "key": "[\"frontend/modules/organization/src/personnel/PersonnelEditor.vue\",\"el-button\",\"dialog=false\",null,null,\"{{t('masterData.cancel')}}\"]",
+    "reason": "关闭本地明细或关联草稿，不调用写接口。"
+  },
+  {
+    "key": "[\"frontend/modules/organization/src/personnel/PersonnelManagement.vue\",\"el-button\",\"reset\",null,null,\"{{t('masterData.reset')}}\"]",
+    "reason": "清空本地筛选并重新读取；无业务写入。"
+  },
+  {
+    "key": "[\"frontend/modules/organization/src/personnel/PersonnelManagement.vue\",\"el-button\",\"load\",null,null,\"{{t('personnel.retry')}}\"]",
+    "reason": "只读重新加载，API 执行权限复核；不自动重放写请求。"
+  },
+  {
+    "key": "[\"frontend/apps/admin/src/components/PersonnelIdentity/index.vue\",\"el-button\",\"open=false\",null,null,\"{{t('organization.cancel')}}\"]",
+    "reason": "关闭尚未提交的人员身份选择弹窗，不写服务端选择或业务数据。"
+  },
+  {
+    "key": "[\"frontend/infra/ui/src/ManagementTable.vue\",\"el-button\",\"showAudit(row)\",null,null,\"{{ t('recordAudit.view') }}\"]",
+    "reason": "只读展示当前已授权响应中的 audit 四字段；不请求 API、不执行业务写入，切换列表清空详情"
+  },
+  {
+    "key": "[\"frontend/modules/configuration/src/VxeDictionaryTable.vue\",\"el-button\",\"showAudit(row)\",null,null,\"{{t('recordAudit.view')}}\"]",
+    "reason": "只读展示当前字典条目授权响应中的 audit；无 API 调用及业务副作用，切换数据清空详情"
+  },
+  {
+    "key": "[\"frontend/modules/organization/src/personnel/PersonnelEditor.vue\",\"el-button\",\"detailsExpanded=!detailsExpanded\",null,null,\"\"]",
+    "reason": "仅通过 v-show 折叠详细资料，不卸载表单、不改变字段、不触发请求；无业务写入，保存仍校验同一完整表单。"
   }
 ]

@@ -221,5 +221,151 @@
       "frontend/apps/admin/src/views/account/components/MultiFactorSettings.vue"
     ],
     "reason": "按当前表单对象、创建/更新及固定管理域选择真实操作；已核对各分支，不允许权限码或未知操作兜底"
+  },
+  {
+    "file": "frontend/modules/master-data/src/Management.vue",
+    "expression": "operation.list",
+    "operations": [
+      "BusinessPartner.list",
+      "Warehouse.list",
+      "CountryRegion.list",
+      "Product.list"
+    ],
+    "sources": [
+      "frontend/modules/master-data/src/index.ts",
+      "frontend/modules/master-data/src/Management.vue"
+    ],
+    "reason": "五类固定档案通过构建内映射选择对应真实操作，保存按创建或编辑分支执行；后端逐请求鉴权和校验版本。"
+  },
+  {
+    "file": "frontend/modules/master-data/src/Management.vue",
+    "expression": "operation.create",
+    "operations": [
+      "BusinessPartner.create",
+      "Warehouse.create",
+      "CountryRegion.create",
+      "Product.create"
+    ],
+    "sources": [
+      "frontend/modules/master-data/src/index.ts",
+      "frontend/modules/master-data/src/Management.vue"
+    ],
+    "reason": "五类固定档案通过构建内映射选择对应真实操作，保存按创建或编辑分支执行；后端逐请求鉴权和校验版本。"
+  },
+  {
+    "file": "frontend/modules/master-data/src/Management.vue",
+    "expression": "operation.update",
+    "operations": [
+      "BusinessPartner.update",
+      "Warehouse.update",
+      "CountryRegion.update",
+      "Product.update"
+    ],
+    "sources": [
+      "frontend/modules/master-data/src/index.ts",
+      "frontend/modules/master-data/src/Management.vue"
+    ],
+    "reason": "五类固定档案通过构建内映射选择对应真实操作，保存按创建或编辑分支执行；后端逐请求鉴权和校验版本。"
+  },
+  {
+    "file": "frontend/modules/master-data/src/Management.vue",
+    "expression": "operation.setStatus",
+    "operations": [
+      "BusinessPartner.setStatus",
+      "Warehouse.setStatus",
+      "CountryRegion.setStatus",
+      "Product.setStatus"
+    ],
+    "sources": [
+      "frontend/modules/master-data/src/index.ts",
+      "frontend/modules/master-data/src/Management.vue"
+    ],
+    "reason": "五类固定档案通过构建内映射选择对应真实操作，保存按创建或编辑分支执行；后端逐请求鉴权和校验版本。"
+  },
+  {
+    "file": "frontend/modules/master-data/src/Management.vue",
+    "expression": "saveOperation",
+    "operations": [
+      "BusinessPartner.create",
+      "BusinessPartner.update",
+      "Warehouse.create",
+      "Warehouse.update",
+      "CountryRegion.create",
+      "CountryRegion.update",
+      "Product.create",
+      "Product.update"
+    ],
+    "sources": [
+      "frontend/modules/master-data/src/index.ts",
+      "frontend/modules/master-data/src/Management.vue"
+    ],
+    "reason": "五类固定档案通过构建内映射选择对应真实操作，保存按创建或编辑分支执行；后端逐请求鉴权和校验版本。"
+  },
+  {
+    "file": "frontend/modules/organization/src/personnel/PersonnelEditor.vue",
+    "expression": "saveOperation",
+    "operations": [
+      "Person.create",
+      "Person.update"
+    ],
+    "sources": [
+      "frontend/modules/organization/src/personnel/PersonnelEditor.vue",
+      "frontend/modules/organization/src/personnel/personnel.ts"
+    ],
+    "reason": "人员基础表单按创建/编辑选择；固定明细和组织用户关联分别调用真实端点；后端独立校验分类、租户、权限与人员版本。"
+  },
+  {
+    "file": "frontend/modules/organization/src/personnel/PersonnelEditor.vue",
+    "expression": "isAssignment?'Person.assign':'Person.createDetail'",
+    "operations": [
+      "Person.assign",
+      "Person.createDetail"
+    ],
+    "sources": [
+      "frontend/modules/organization/src/personnel/PersonnelEditor.vue",
+      "frontend/modules/organization/src/personnel/personnel.ts"
+    ],
+    "reason": "人员基础表单按创建/编辑选择；固定明细和组织用户关联分别调用真实端点；后端独立校验分类、租户、权限与人员版本。"
+  },
+  {
+    "file": "frontend/modules/organization/src/personnel/PersonnelEditor.vue",
+    "expression": "isAssignment?'Person.updateAssignment':'Person.updateDetail'",
+    "operations": [
+      "Person.updateAssignment",
+      "Person.updateDetail"
+    ],
+    "sources": [
+      "frontend/modules/organization/src/personnel/PersonnelEditor.vue",
+      "frontend/modules/organization/src/personnel/personnel.ts"
+    ],
+    "reason": "人员基础表单按创建/编辑选择；固定明细和组织用户关联分别调用真实端点；后端独立校验分类、租户、权限与人员版本。"
+  },
+  {
+    "file": "frontend/modules/organization/src/personnel/PersonnelEditor.vue",
+    "expression": "isAssignment?'Person.unassign':'Person.deleteDetail'",
+    "operations": [
+      "Person.unassign",
+      "Person.deleteDetail"
+    ],
+    "sources": [
+      "frontend/modules/organization/src/personnel/PersonnelEditor.vue",
+      "frontend/modules/organization/src/personnel/personnel.ts"
+    ],
+    "reason": "人员基础表单按创建/编辑选择；固定明细和组织用户关联分别调用真实端点；后端独立校验分类、租户、权限与人员版本。"
+  },
+  {
+    "file": "frontend/modules/organization/src/personnel/PersonnelEditor.vue",
+    "expression": "detailOperation",
+    "operations": [
+      "Person.assign",
+      "Person.updateAssignment",
+      "Person.createDetail",
+      "Person.updateDetail"
+    ],
+    "sources": [
+      "frontend/modules/organization/src/personnel/PersonnelEditor.vue",
+      "frontend/modules/organization/src/personnel/personnel.ts"
+    ],
+    "reason": "人员基础表单按创建/编辑选择；固定明细和组织用户关联分别调用真实端点；后端独立校验分类、租户、权限与人员版本。"
   }
 ]

@@ -22,19 +22,10 @@ class OrganizationGrantManagementTest extends DatabaseTestSupport {
  @Autowired JdbcTemplate jdbc;
  @Autowired MockMvc mvc;
  @Autowired com.appnexus.platform.persistence.organization.OrganizationAdministratorBootstrap bootstrap;
- /** 主要组织归属与能力独立，同租户关联成功、跨租户组织拒绝。 */
- @Test void primaryOrganizationIsTenantScopedAndAudited() {
-  UUID tenant=tenant(),actor=member(tenant),target=member(tenant),organization=UUID.randomUUID(),foreign=UUID.randomUUID();
-  authority(tenant,actor);
-  UUID type=type(tenant),foreignTenant=tenant(),foreignType=type(foreignTenant);
-  jdbc.update("INSERT INTO tenant_organization_unit(tenant_id,id,code,type_id,name) VALUES(UUID_TO_BIN(?),UUID_TO_BIN(?),?,UUID_TO_BIN(?),'Primary')",tenant.toString(),organization.toString(),"ORG-"+organization,type.toString());
-  jdbc.update("INSERT INTO tenant_organization_unit(tenant_id,id,code,type_id,name) VALUES(UUID_TO_BIN(?),UUID_TO_BIN(?),?,UUID_TO_BIN(?),'Foreign')",foreignTenant.toString(),foreign.toString(),"ORG-"+foreign,foreignType.toString());
-  grants.assignOrganization(tenant,target,actor,organization);
-  assertThat(jdbc.queryForObject("SELECT BIN_TO_UUID(organization_id) FROM tenant_member_primary_organization WHERE tenant_id=UUID_TO_BIN(?) AND member_id=UUID_TO_BIN(?)",String.class,tenant.toString(),target.toString())).isEqualTo(organization.toString());
-  assertThatThrownBy(()->grants.assignOrganization(tenant,target,actor,foreign)).isInstanceOf(IllegalArgumentException.class);
-  assertThat(authorization.allows(tenant,target,OrganizationCapability.READ)).isFalse();
-  grants.assignOrganization(tenant,target,actor,null);
-  assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM tenant_member_primary_organization WHERE tenant_id=UUID_TO_BIN(?)",Integer.class,tenant.toString())).isZero();
+ /** 旧账号组织写入口已移除，账号授权目录不再携带组织归属。 */
+ @Test void accountOrganizationWriteProtocolIsRemoved(){
+  assertThat(Arrays.stream(OrganizationGrantManagement.class.getMethods()).map(java.lang.reflect.Method::getName)).doesNotContain("assignOrganization");
+  assertThat(Arrays.stream(OrganizationGrantManagement.Member.class.getRecordComponents()).map(java.lang.reflect.RecordComponent::getName)).containsExactly("memberId","displayName");
  }
  private UUID tenant() {
   UUID id=UUID.randomUUID();

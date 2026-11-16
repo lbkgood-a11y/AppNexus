@@ -173,6 +173,7 @@ public final class LeavePocService implements WorkflowBusiness, com.appnexus.con
    */
   public Map<String, Object> create(WorkflowContext c, Input input) {
     requireStart(c);
+    if(c.personId()==null||!Objects.equals(c.organizationId(),input.organizationId()))throw new com.appnexus.contracts.businessobject.BusinessObjects.Rejection(409,"PERSON_CONTEXT_REQUIRED");
     int count = days(input);
     UUID.fromString(input.organizationId());
     UUID.fromString(c.requestId());
@@ -184,12 +185,12 @@ public final class LeavePocService implements WorkflowBusiness, com.appnexus.con
       String id = UUID.randomUUID().toString();
       // 唯一键序列化并发重放；ON DUPLICATE 不更新依据或状态。
       jdbc.update("INSERT INTO leave_poc_request(tenant_id,id,applicant,organization_id,leave_type,"
-          + "start_date,end_date,days,reason,create_key) VALUES(?,?,?,?,?,?,?,?,?,?)"
+          + "start_date,end_date,days,reason,create_key,person_id) VALUES(?,?,?,?,?,?,?,?,?,?,?)"
           + " ON DUPLICATE KEY UPDATE id=id", c.tenantId(), id, c.actorId(), input.organizationId(),
-          input.leaveType(), input.startDate(), input.endDate(), count, input.reason().trim(), c.requestId());
+          input.leaveType(), input.startDate(), input.endDate(), count, input.reason().trim(), c.requestId(),c.personId());
       var row = jdbc.queryForMap("SELECT * FROM leave_poc_request WHERE tenant_id=? AND applicant=? AND create_key=?",
           c.tenantId(), c.actorId(), c.requestId());
-      if (!input.organizationId().equals(row.get("organization_id"))
+      if (!Objects.equals(c.personId(),row.get("person_id"))||!input.organizationId().equals(row.get("organization_id"))
           || !input.leaveType().equals(row.get("leave_type"))
           || !input.startDate().toString().equals(row.get("start_date").toString())
           || !input.endDate().toString().equals(row.get("end_date").toString())
@@ -202,8 +203,8 @@ public final class LeavePocService implements WorkflowBusiness, com.appnexus.con
   /** 本人最近 100 张单据；不因工作流管理员权限开放全租户请假原文。 */
   public List<Map<String, Object>> list(WorkflowContext c) {
     active(c);
-    return jdbc.queryForList("SELECT * FROM leave_poc_request WHERE tenant_id=? AND applicant=? ORDER BY created_at DESC LIMIT 100",
-        c.tenantId(), c.actorId()).stream().map(LeavePocService::calendarDates).toList();
+    return jdbc.queryForList("SELECT * FROM leave_poc_request WHERE tenant_id=? AND applicant=? AND (person_id=? OR person_id IS NULL) ORDER BY created_at DESC LIMIT 100",
+        c.tenantId(), c.actorId(),c.personId()).stream().map(LeavePocService::calendarDates).toList();
   }
 
   /**
@@ -213,7 +214,7 @@ public final class LeavePocService implements WorkflowBusiness, com.appnexus.con
   public Map<String, Object> read(WorkflowContext c, String id, String taskId) {
     active(c);
     var row = row(c, id, false);
-    if (!c.actorId().equals(row.get("applicant")) && !permitted(c, row, taskId))
+    if ((!c.actorId().equals(row.get("applicant"))||(row.get("person_id")!=null&&!Objects.equals(c.personId(),row.get("person_id")))) && !permitted(c, row, taskId))
       throw new SecurityException("LEAVE_ACCESS_DENIED");
     return row;
   }
@@ -225,6 +226,7 @@ public final class LeavePocService implements WorkflowBusiness, com.appnexus.con
     return tx.execute(s -> {
       var row = row(c, id, true);
       if (!c.actorId().equals(row.get("applicant"))) throw new SecurityException("LEAVE_ACCESS_DENIED");
+      if(!Objects.equals(c.personId(),row.get("person_id"))||!Objects.equals(c.organizationId(),row.get("organization_id")))throw new com.appnexus.contracts.businessobject.BusinessObjects.Rejection(409,"PERSON_CONTEXT_REQUIRED");
       if (!"DRAFT".equals(row.get("state"))) return row;
       jdbc.update("UPDATE leave_poc_request SET state='SUBMITTED' WHERE tenant_id=? AND id=?", c.tenantId(), id);
       long basis=((Number)row.get("basis_version")).longValue();
@@ -325,7 +327,7 @@ public final class LeavePocService implements WorkflowBusiness, com.appnexus.con
         return new Result(false, Map.of());
       }
       if (!"SUBMITTED".equals(row.get("state"))) throw new IllegalArgumentException("LEAVE_STATE_CONFLICT");
-      jdbc.update("INSERT INTO leave_poc_delivery VALUES(?,?,?,?,?)", i.context().tenantId(),
+      jdbc.update("INSERT INTO leave_poc_delivery(tenant_id,invocation_id,object_id,instance_id,result) VALUES(?,?,?,?,?)", i.context().tenantId(),
           i.invocationId(), i.objectId(), ref.instanceId(), ref.result());
       jdbc.update("UPDATE leave_poc_request SET state=? WHERE tenant_id=? AND id=?", ref.result(), i.context().tenantId(), i.objectId());
       return new Result(false, Map.of());

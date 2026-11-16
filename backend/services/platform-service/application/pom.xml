@@ -8,6 +8,8 @@
   </parent>
   <artifactId>platform-application</artifactId>
   <dependencies>
+    <!-- 主数据服务仅在组合层装配，领域模块只使用公开契约。 -->
+    <dependency><groupId>com.appnexus</groupId><artifactId>master-data-service</artifactId><version>${project.version}</version></dependency>
     <!-- 页面操作元数据经公开契约登记，不改变真实授权执行。 -->
     <dependency><groupId>com.appnexus</groupId><artifactId>operation-contracts</artifactId><version>${project.version}</version></dependency>
     <!-- 单据服务仅通过公开契约集成，业务执行仍归业务模块。 -->

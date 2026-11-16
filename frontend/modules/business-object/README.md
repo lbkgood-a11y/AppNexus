@@ -1,5 +1,7 @@
 # 业务对象管理前端
 
+package.json 的 dependencies 中，`@appnexus/ui` 提供公共业务组件，`@appnexus/icons` 提供页面使用的统一语义图标；两者均为必填的本地工作区依赖，`workspace:*` 跟随当前仓库版本，无外部版本默认值，修改后须同步锁文件并重新安装依赖。
+
 平台目录与租户流程绑定复用 BusinessWorkspace、ManagementTable、ManagedDialog、Element Plus 表单，不新增 UI 库。平面类型目录采用标准列表，复杂绑定在统一弹窗中按流程及条件组合编辑。详情契约只读，不动态生成业务表单。
 
 租户以业务行为选择策略，列表/详情入口共用 canonical operationId；旧别名由后端读取时规范化。工作台是条件、服务与流程/打印场景绑定的唯一维护入口。

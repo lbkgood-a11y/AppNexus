@@ -7,7 +7,10 @@ const {parse}=require('@vue/compiler-sfc');
 const {baseParse}=require('@vue/compiler-dom');
 const files=[];
 function walk(dir){for(const item of fs.readdirSync(dir,{withFileTypes:true})){if(['node_modules','dist','.git'].includes(item.name))continue;const f=path.join(dir,item.name);if(item.isDirectory())walk(f);else if(f.endsWith('.vue'))files.push(f);}}
-walk('frontend');const rows=[];
+walk('frontend');
+// 例外与动态声明使用仓库相对 POSIX 路径；Windows 分隔符只作路径规范化，不能改变授权覆盖结果。
+for(let index=0;index<files.length;index++)files[index]=files[index].replaceAll('\\','/');
+const rows=[];
 for(const file of files){const source=fs.readFileSync(file,'utf8');const template=parse(source).descriptor.template;if(!template)continue;const ast=baseParse(template.content);function visit(node, submit, confirm){if(node.type===1){const props=node.props.filter(p=>p.type===7);const directive=name=>props.find(p=>p.name===name)?.exp?.content;submit=props.find(p=>p.name==='on'&&p.arg?.content==='submit')?.exp?.content??submit;confirm=props.find(p=>p.name==='on'&&p.arg?.content==='confirm')?.exp?.content??confirm;const click=props.find(p=>p.name==='on'&&p.arg?.content==='click')?.exp?.content;if(['el-button','el-switch','el-checkbox','el-link','el-dropdown-item'].includes(node.tag)){rows.push({file,line:template.loc.start.line+node.loc.start.line-1,tag:node.tag,text:template.content.slice(node.loc.start.offset,node.loc.end.offset).replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').trim(),operation:directive('operation')??null,condition:directive('if')??null,disabled:props.find(p=>p.name==='bind'&&p.arg?.content==='disabled')?.exp?.content??null,click:click??null,submit:node.props.some(p=>p.type===6&&p.name==='native-type'&&p.value?.content==='submit')?submit??null:null,confirm:confirm??null});}}for(const child of node.children??[])visit(child,submit,confirm);}visit(ast);}
 const ids=new Set();
 function java(dir){for(const entry of fs.readdirSync(dir,{withFileTypes:true})){if(entry.name==='target')continue;const f=path.join(dir,entry.name);if(entry.isDirectory())java(f);else if(f.endsWith('.java'))for(const match of fs.readFileSync(f,'utf8').matchAll(/OperationBinding\(id="([^"]+)"/g))ids.add(match[1]);}}

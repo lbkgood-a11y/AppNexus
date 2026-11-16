@@ -78,7 +78,8 @@ onBeforeUnmount(() => { password.value = ""; code.value = ""; secret.value = "";
   </section>
 </template>
 <style scoped>
-.mfa-settings { padding: 24px 0; display: grid; gap: 16px; }
+/* 页面外围留白引用全局内容与区块 Token，局部字段间距和触控高度按原交互保留。 */
+.mfa-settings { padding:var(--app-content-padding,12px) 0; display: grid; gap: 16px; }
 .mfa-settings h2 { font-size: 16px; font-weight: 500; }
 .mfa-settings p { color: var(--el-text-color-secondary); line-height: 1.8; }
 .mfa-settings form { max-width: 520px; }

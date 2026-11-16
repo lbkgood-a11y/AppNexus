@@ -16,19 +16,7 @@ public class MyBatisOrganizationGrantManagement implements OrganizationGrantMana
     }
     public List<Member> members(UUID tenant) {
         return mapper.members(tenant.toString()).stream().map(row -> new Member(
-            UUID.fromString((String)row.get("member_id")), (String)row.get("display_name"),
-            row.get("organization_id")==null?null:UUID.fromString((String)row.get("organization_id")),(String)row.get("organization_name"))).toList();
-    }
-    /** 归属与能力独立；成员及组织必须属于当前租户，写入和审计原子提交。 */
-    @Transactional
-    public void assignOrganization(UUID tenant,UUID target,UUID actor,UUID organization) {
-        lockAndAuthorize(tenant,target,actor);
-        if(organization==null) mapper.clearOrganization(tenant.toString(),target.toString());
-        else {
-            if(mapper.lockOrganization(tenant.toString(),organization.toString())==null) throw new IllegalArgumentException("Organization unavailable");
-            mapper.assignOrganization(tenant.toString(),target.toString(),organization.toString());
-        }
-        mapper.auditOrganization(tenant.toString(),actor.toString(),target.toString());
+            UUID.fromString((String)row.get("member_id")), (String)row.get("display_name"))).toList();
     }
     public List<Grant> list(UUID tenant,UUID target) {
         requireMember(tenant,target);

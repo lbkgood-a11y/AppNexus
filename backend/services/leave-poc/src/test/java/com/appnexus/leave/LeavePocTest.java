@@ -23,17 +23,18 @@ class LeavePocTest {
   static final String ORG = "019a65d0-0057-7000-8000-000000000001";
   static JdbcTemplate jdbc;
   static boolean leaderMissing;
+  static boolean organizationUnavailable;
   static LeavePocService service;
   static WorkflowRuntime runtime;
   static org.flowable.engine.ProcessEngine engine;
-  static WorkflowContext c(String actor) { return new WorkflowContext("019a65d0-0061-7000-8000-000000000001", actor, UUID.randomUUID().toString()); }
+  static WorkflowContext c(String actor) { return new WorkflowContext("019a65d0-0061-7000-8000-000000000001", actor, UUID.randomUUID().toString(),actor+"-person",ORG); }
 
   @BeforeAll
   static void setup() throws Exception {
     var source = new DriverManagerDataSource(MYSQL.getJdbcUrl(), MYSQL.getUsername(), MYSQL.getPassword());
     jdbc = new JdbcTemplate(source);
     try (var connection = source.getConnection()) {
-      for (String file : List.of("V47__workflow_flowable_8.sql", "V48__workflow_application.sql","V69__workflow_data_contract_snapshots.sql", "V57__leave_poc.sql", "V59__document_configuration.sql", "V60__leave_approval_cycles.sql", "V63__document_submission_strategy.sql", "V64__leave_direct_submission.sql", "V65__document_print_binding.sql", "V66__document_page_relationships.sql","V68__document_entry_controls.sql", "V67__explicit_interaction_bindings.sql"))
+      for (String file : List.of("V47__workflow_flowable_8.sql", "V48__workflow_application.sql","V69__workflow_data_contract_snapshots.sql", "V57__leave_poc.sql", "V59__document_configuration.sql", "V60__leave_approval_cycles.sql", "V63__document_submission_strategy.sql", "V64__leave_direct_submission.sql", "V65__document_print_binding.sql", "V66__document_page_relationships.sql","V68__document_entry_controls.sql", "V67__explicit_interaction_bindings.sql","V78__leave_personnel_identity.sql","V79__workflow_personnel_audit.sql"))
         ScriptUtils.executeSqlScript(connection, new ClassPathResource("db/migration/" + file));
     }
     // 切片集成库只包含业务相关表；执行 V73 中这些表对应的全部改名和 JSON 转换。
@@ -45,10 +46,12 @@ class LeavePocTest {
     }
     var manager = new DataSourceTransactionManager(source);
     WorkflowPlatform platform = new WorkflowPlatform() {
+      /** 测试平台显式核验节点选人；正式平台的人员任职判定由集成测试覆盖。 */
+      public boolean candidate(WorkflowContext c,String org,String kind,String reference){return resolve(c.tenantId(),org,kind,reference).contains(c.actorId());}
       public boolean allowed(WorkflowContext c, String p) { return active(c.tenantId(), c.actorId()); }
       public boolean active(String t, String a) { return t.equals("019a65d0-0061-7000-8000-000000000001") && Set.of("applicant", "leader", "hr").contains(a); }
       public List<WorkflowPlatform.Option> documentOrganizations(WorkflowContext c) {
-        return active(c.tenantId(), c.actorId()) ? List.of(new WorkflowPlatform.Option(ORG, "测试组织")) : List.of();
+        return !organizationUnavailable&&active(c.tenantId(), c.actorId()) ? List.of(new WorkflowPlatform.Option(ORG, "测试组织")) : List.of();
       }
       public List<String> resolve(String t, String o, String k, String r) {
         if (!t.equals("019a65d0-0061-7000-8000-000000000001") || !ORG.equals(o)) return List.of();
@@ -152,14 +155,19 @@ class LeavePocTest {
     assertThat(runtime.tasks(c("leader"), "todo")).noneMatch(t -> id.equals(t.get("object_id")));
   }
 
-  @Test void organizationMembershipIsCheckedOnlyWhenSubmittingApproval(){
+  /** 新模型创建时必须与已选人员组织一致；提交仍复核实时归属，撤销归属不能靠旧草稿继续审批。 */
+  @Test void selectedOrganizationIsCheckedAtCreationAndRecheckedAtApproval(){
     var base=input(2);
-    var draft=new LeavePocService.Input(UUID.randomUUID().toString(),base.leaveType(),base.startDate(),base.endDate(),base.reason());
-    String id=service.create(c("applicant"),draft).get("id").toString();
-    assertThat(service.update(c("applicant"),id,0,draft).get("state")).isEqualTo("DRAFT");
-    assertThatThrownBy(()->service.submit(c("applicant"),id)).hasMessage("LEAVE_ORGANIZATION_UNAVAILABLE");
-    assertThat(service.read(c("applicant"),id,null).get("state")).isEqualTo("DRAFT");
-    assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM wf_instance WHERE object_id=?",Integer.class,id)).isZero();
+    var forged=new LeavePocService.Input(UUID.randomUUID().toString(),base.leaveType(),base.startDate(),base.endDate(),base.reason());
+    assertThatThrownBy(()->service.create(c("applicant"),forged)).hasMessage("PERSON_CONTEXT_REQUIRED");
+    String id=service.create(c("applicant"),base).get("id").toString();
+    assertThat(service.update(c("applicant"),id,0,base).get("state")).isEqualTo("DRAFT");
+    organizationUnavailable=true;
+    try{
+      assertThatThrownBy(()->service.submit(c("applicant"),id)).hasMessage("LEAVE_ORGANIZATION_UNAVAILABLE");
+      assertThat(service.read(c("applicant"),id,null).get("state")).isEqualTo("DRAFT");
+      assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM wf_instance WHERE object_id=?",Integer.class,id)).isZero();
+    }finally{organizationUnavailable=false;}
   }
 
   @Test void missingLeaderAllowsDraftButApprovalRollsBack(){

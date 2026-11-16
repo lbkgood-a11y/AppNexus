@@ -131,7 +131,8 @@ public final class WorkflowRuntime implements WorkflowResults, WorkflowTaskAcces
             ? capability.equals(n.capability()) && b.capability().inputs().contains(field)
             : (capability.equals(n.capability()) || capability.equals(model.entryCapability()))
                 && b.capability().outputs().contains(field))
-        && resolve(i, n).contains(c.actorId());
+        && resolve(i, n).contains(c.actorId())
+        && n.people().stream().anyMatch(p->platform.candidate(c,str(i,"organization_id"),p.kind(),p.reference()));
   }
 
 
@@ -650,7 +651,7 @@ public final class WorkflowRuntime implements WorkflowResults, WorkflowTaskAcces
               || !"OPEN".equals(t.get("state"))
               || !c.actorId().equals(t.get("actor"))) throw fail("TASK_NOT_ACTIVE", 409);
           var n = definition(i).node(str(t, "node_id"));
-          if (!resolve(i, n).contains(c.actorId())) throw fail("TASK_ASSIGNMENT_EXPIRED", 403);
+          if (!resolve(i, n).contains(c.actorId())||n.people().stream().noneMatch(p->platform.candidate(c,str(i,"organization_id"),p.kind(),p.reference()))) throw fail("TASK_ASSIGNMENT_EXPIRED", 403);
           if (n.kind() == Kind.REVIEW && !Set.of("APPROVE", "REJECT").contains(action)
               || n.kind() == Kind.HANDLE && !Set.of("SAVE", "SUBMIT").contains(action))
             throw fail("ACTION_INVALID", 400);
@@ -1299,7 +1300,7 @@ public final class WorkflowRuntime implements WorkflowResults, WorkflowTaskAcces
 
   private Object mutate(WorkflowContext c, String fingerprint, Supplier<Object> work) {
     UUID.fromString(c.requestId());
-    String hash = hash(fingerprint);
+    String hash = hash(Objects.toString(c.personId(),"")+"|"+Objects.toString(c.organizationId(),"")+"|"+fingerprint);
     return tx.execute(
         s -> {
           jdbc.update(
@@ -1356,17 +1357,9 @@ public final class WorkflowRuntime implements WorkflowResults, WorkflowTaskAcces
     audit(c, null, action, id, "");
   }
 
-  private void audit(
-      WorkflowContext c, String instance, String action, String target, String detail) {
-    jdbc.update(
-        "INSERT INTO wf_audit(tenant_id,instance_id,actor,action,target,detail)"
-            + " VALUES(?,?,?,?,?,?)",
-        c.tenantId(),
-        instance,
-        c.actorId(),
-        action,
-        target,
-        detail);
+  /** 审计记录真实执行账号和已选业务人员，不把流程分配账号解释为人员唯一身份。 */
+  private void audit(WorkflowContext c,String instance,String action,String target,String detail){
+    jdbc.update("INSERT INTO wf_audit(tenant_id,instance_id,actor,action,target,detail,person_id,business_organization_id) VALUES(?,?,?,?,?,?,?,?)",c.tenantId(),instance,c.actorId(),action,target,detail,c.personId(),c.organizationId());
   }
 
   private static String hash(String value) {

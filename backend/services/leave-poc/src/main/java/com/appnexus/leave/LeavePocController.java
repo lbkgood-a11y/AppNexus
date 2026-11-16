@@ -18,7 +18,8 @@ public final class LeavePocController {
 
   /** 本人最近 100 张单据；无数据返回空列表。 */
   @com.appnexus.contracts.operation.OperationBinding(id="LeaveRequest.list",objectType="LeaveRequest",operationCode="list",pages={"workflow/leave"},nameZh="查看请假列表",nameEn="View leave requests",eligibility=com.appnexus.contracts.operation.OperationBinding.Eligibility.OBJECT,permissions={},policy="有效成员与对象归属/任务处理资格由原业务用例验证；无权限码不表示无条件允许")
-  @GetMapping
+  @com.appnexus.contracts.operation.RecordAuditSource(table="leave_poc_request",binaryKey=false,binaryTenant=false)
+ @GetMapping
   public Object list(HttpServletRequest r) { return reply(() -> service.list(context(r))); }
 
   /** 申请人有效任职组织目录；仅返回名称及 ID，不能声明任意组织归属。 */
@@ -45,7 +46,8 @@ public final class LeavePocController {
 
   /** 单据原文；taskId 仅是授权查询参数，不能替代可信身份。 */
   @com.appnexus.contracts.operation.OperationBinding(id="LeaveRequest.read",objectType="LeaveRequest",operationCode="read",pages={"workflow/leave"},nameZh="查看请假单",nameEn="View leave request",eligibility=com.appnexus.contracts.operation.OperationBinding.Eligibility.OBJECT,permissions={},policy="有效成员与对象归属/任务处理资格由原业务用例验证；无权限码不表示无条件允许")
-  @GetMapping("/{id}")
+  @com.appnexus.contracts.operation.RecordAuditSource(table="leave_poc_request",binaryKey=false,binaryTenant=false)
+ @GetMapping("/{id}")
   public Object read(HttpServletRequest r, @PathVariable String id,
       @RequestParam(required = false) String taskId) {
     return reply(() -> service.read(context(r), id, taskId));
@@ -82,7 +84,7 @@ public final class LeavePocController {
       throw new SecurityException("TENANT_REQUIRED");
     String key = r.getHeader("Idempotency-Key");
     if (!r.getMethod().equals("GET")) UUID.fromString(key);
-    return new WorkflowContext(c.tenantId(), c.actorId(), key == null ? c.requestId() : key);
+    return new WorkflowContext(c.tenantId(), c.actorId(), key == null ? c.requestId() : key,c.personId(),c.organizationId());
   }
 
   private Object reply(Supplier<Object> action) {

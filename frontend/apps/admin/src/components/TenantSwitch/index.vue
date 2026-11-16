@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import PersonnelIdentity from "@/components/PersonnelIdentity/index.vue";
 import {ref} from "vue";
 import {useI18n} from "vue-i18n";
 import {ElMessageBox} from "element-plus";
@@ -20,6 +21,7 @@ async function select(id:string){
 }
 </script>
 <template>
+ <PersonnelIdentity />
  <el-dropdown v-if="availableTenants.length>1" trigger="click" @command="select">
   <el-button text class="tenant-switch" :loading="switching" :title="currentTenant?.name" :aria-label="t('tenant.switch')"><AppIcon class="tenant-switch-icon" name="organization" :size="18"/><span class="tenant-name">{{currentTenant?.name??t('tenant.select')}}</span></el-button>
   <template #dropdown><el-dropdown-menu><el-dropdown-item v-for="tenant in availableTenants" :key="tenant.tenantId" :command="tenant.tenantId" :disabled="switching||tenant.tenantId===currentTenant?.tenantId">{{tenant.name}}</el-dropdown-item></el-dropdown-menu></template>

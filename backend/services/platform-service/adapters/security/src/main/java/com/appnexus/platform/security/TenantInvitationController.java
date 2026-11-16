@@ -18,7 +18,8 @@ public class TenantInvitationController {
     /** 操作契约关联下方真实接口；仅供展示与一致性校验，主体、权限及业务约束仍由原用例执行。 */
     @com.appnexus.contracts.operation.BusinessObjectType(code="TenantInvitation",nameZh="租户邀请",nameEn="Tenant Invitation",category=com.appnexus.contracts.operation.BusinessObjectType.Category.SYSTEM,module="tenant")
  @com.appnexus.contracts.operation.OperationBinding(id="TenantInvitation.list",objectType="TenantInvitation",operationCode="list",pages={"platform/tenants"},nameZh="租户邀请：查看列表",nameEn="Read invitations",policy="主体管理域、角色权限及业务用例约束由原执行器逐请求复核")
- @EndpointOperation("tenant.invitation:read") @GetMapping("/bff/platform/tenants/{tenant}/invitations")
+ @EndpointOperation("tenant.invitation:read") @com.appnexus.contracts.operation.RecordAuditSource(table="tenant_invitation",managedTenant="tenant")
+ @GetMapping("/bff/platform/tenants/{tenant}/invitations")
     ResponseEntity<List<TenantInvitations.View>> list(Authentication auth,@PathVariable UUID tenant){return ok(invitations.list(UUID.fromString(auth.getName()),tenant));}
     /** 操作契约关联下方真实接口；仅供展示与一致性校验，主体、权限及业务约束仍由原用例执行。 */
     @com.appnexus.contracts.operation.OperationBinding(id="TenantInvitation.invite",objectType="TenantInvitation",operationCode="invite",pages={"platform/tenants"},nameZh="租户邀请：发送邀请",nameEn="Invite tenant members",policy="主体管理域、角色权限及业务用例约束由原执行器逐请求复核")

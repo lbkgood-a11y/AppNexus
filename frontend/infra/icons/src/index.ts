@@ -7,6 +7,8 @@ import CollapsePanel from "~icons/ri/sidebar-fold-line";
 import ExpandPanel from "~icons/ri/sidebar-unfold-line";
 import Folder from "~icons/ri/folder-3-line";
 import Layers from "~icons/ri/stack-line";
+// 系统信息时间采用现有 Remix Icon 本地 SVG，统一语义入口避免业务深层导入。
+import History from "~icons/ri/time-line";
 import User from "~icons/ri/user-3-line";
 import Lock from "~icons/ri/lock-2-line";
 import Sun from "~icons/ri/sun-line";
@@ -40,7 +42,7 @@ import AlignVerticalCenter from "~icons/ri/align-item-vertical-center-line";
 
 /** 平台语义图标映射；统一采用 Remix Icon 线性图标，由构建插件按需生成本地 SVG，不请求外部图标服务。 */
 export const platformIcons = {
-  information: Information, edit: Edit, delete: Delete, folderAdd: FolderAdd, collapsePanel: CollapsePanel, expandPanel: ExpandPanel, folder: Folder, layers: Layers, user: User, lock: Lock, sun: Sun, moon: Moon, monitor: Monitor,
+  history: History, information: Information, edit: Edit, delete: Delete, folderAdd: FolderAdd, collapsePanel: CollapsePanel, expandPanel: ExpandPanel, folder: Folder, layers: Layers, user: User, lock: Lock, sun: Sun, moon: Moon, monitor: Monitor,
   globe: Globe, arrowRight: ArrowRight, shield: Shield, home: Home,
   settings: Settings, search: Search, logout: Logout, organization: Organization,
   refresh: Refresh, density: Density, fullscreen: Fullscreen, fullscreenExit: FullscreenExit,

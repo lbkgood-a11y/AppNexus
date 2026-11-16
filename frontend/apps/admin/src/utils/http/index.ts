@@ -2,6 +2,9 @@ import Axios, { type AxiosRequestConfig } from "axios";
 import { i18n } from "@/plugins/i18n";
 import type { RequestMethods, PureHttpRequestConfig } from "./types";
 import {currentTenant,beginTenantWrite,reloadTenant} from "@/utils/tenantContext";
+/** 仅用于陈旧请求保护的内存选择，不作为服务端授权；租户切换与组件卸载会清空。 */
+let personnelSelection:{personId:string;organizationId:string}|undefined;
+window.addEventListener("appnexus:person-selected",((event:CustomEvent)=>{personnelSelection=event.detail;}) as EventListener);
 const client = Axios.create({ timeout: 10000, withCredentials: true });
 /**
  * 提取安全的请求错误文案；不输出请求正文、密码、Token 或服务端堆栈。
@@ -17,6 +20,7 @@ export function requestErrorMessage(error: unknown): string {
     const securityCode=error.response?.data?.code;
     if(typeof securityCode==='string'&&["MFA_STEP_UP_REQUIRED","MFA_ENROLLMENT_REQUIRED","MFA_CHALLENGE_INVALID","MFA_UNAVAILABLE","PASSWORD_RECOVERY_INVALID"].includes(securityCode))return t("account.errors."+securityCode);
     if (status === 401) return "";
+    if(['PERSON_CONTEXT_REQUIRED','PERSON_CONTEXT_CHANGED','PERSON_CONTEXT_INVALID'].includes(securityCode))return t("personnel.codes.PERSON_CONTEXT_REQUIRED");
     if (status === 403) return t("account.forbidden");
     if (status === 429) return t("account.rateLimited");
     const code=error.response?.data?.code;
@@ -26,6 +30,8 @@ export function requestErrorMessage(error: unknown): string {
       const field=error.response?.data?.field;
       return t("dataContractErrors."+code)+(typeof field==='string'?` (${field.slice(0,120)})`:'');
     }
+    if(typeof code==='string'&&(i18n.global.te as (key:string)=>boolean)("personnel.codes."+code))return t("personnel.codes."+code);
+    if(typeof code==='string'&&(i18n.global.te as (key:string)=>boolean)("masterData.codes."+code))return t("masterData.codes."+code);
     if(typeof code==='string'&&(i18n.global.te as (key:string)=>boolean)("businessObject.codes."+code))return t("businessObject.codes."+code);
     if(typeof code==='string'&&(i18n.global.te as (key:string)=>boolean)("printing.codes."+code))return t("printing.codes."+code);
     if(typeof code==='string'&&(i18n.global.te as (key:string)=>boolean)("workflow.codes."+code))return t("workflow.codes."+code);
@@ -46,7 +52,8 @@ class PureHttp {
     const tenant=currentTenant.value;
     const business=url.startsWith("/api/");
     if(business&&tenant)request.headers={...request.headers,"X-Tenant-Context-Version":String(tenant.version)};
-    const finish=business&&!['get','head','options'].includes(method)?beginTenantWrite():undefined;
+    if(business&&personnelSelection)request.headers={...request.headers,"X-Person-Id":personnelSelection.personId,"X-Person-Organization":personnelSelection.organizationId};
+    const finish=business&&url!=="/api/master-data/person/identity"&&!['get','head','options'].includes(method)?beginTenantWrite():undefined;
     config?.beforeRequestCallback?.(request);
     let response;
     try { response = await client.request(request); }

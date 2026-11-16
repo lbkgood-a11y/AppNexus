@@ -1,0 +1,18 @@
+{
+  "name": "@appnexus/master-data",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./management": "./src/Management.vue"
+  },
+  "dependencies": {
+    "@appnexus/ui": "workspace:*"
+  },
+  "peerDependencies": {
+    "vue": "^3.5.31",
+    "element-plus": "^2.13.6",
+    "vue-i18n": "^11.3.0",
+    "vue-router": "^5.0.4"
+  }
+}

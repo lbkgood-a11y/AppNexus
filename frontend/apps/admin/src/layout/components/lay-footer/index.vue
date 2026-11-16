@@ -25,10 +25,10 @@ const TITLE = getConfig("Title");
   align-items: center;
   justify-content: center;
   width: 100%;
-  /* 版权栏固定为 24px 紧凑高度，不参与内容区伸缩；文字使用全局辅助色。 */
+  /* 版权栏固定为 20px，单位 px，与文字行高一致；不额外增加上下留白或参与内容区伸缩。 */
   box-sizing: border-box;
-  flex: 0 0 24px;
-  height: 24px;
+  flex: 0 0 20px;
+  height: 20px;
   padding: 0;
   font-size: 12px;
   line-height: 20px;

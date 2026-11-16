@@ -55,7 +55,8 @@ public class MenuManagementController {
     ResponseEntity<List<NavigationPages.Page>> pages(Authentication authentication){return result(()->{service.list(actor(authentication));return NavigationPages.all();});}
     /** 操作契约关联下方真实接口；仅供展示与一致性校验，主体、权限及业务约束仍由原用例执行。 */
     @com.appnexus.contracts.operation.OperationBinding(id="NavigationMenu.list",objectType="NavigationMenu",operationCode="list",pages={"platform/menus"},nameZh="导航菜单：查看列表",nameEn="Read menu configuration",policy="主体管理域、角色权限及业务用例约束由原执行器逐请求复核")
- @EndpointOperation("configuration.menu:read") @GetMapping
+ @EndpointOperation("configuration.menu:read") @com.appnexus.contracts.operation.RecordAuditSource(table="platform_menu",tenant=false)
+ @GetMapping
     ResponseEntity<List<MenuManagement.Menu>> list(Authentication authentication){return result(()->service.list(actor(authentication)));}
     /** 操作契约关联下方真实接口；仅供展示与一致性校验，主体、权限及业务约束仍由原用例执行。 */
     @com.appnexus.contracts.operation.OperationBinding(id="NavigationMenu.create",objectType="NavigationMenu",operationCode="create",pages={"platform/menus"},nameZh="导航菜单：新增",nameEn="Create menu configuration",policy="主体管理域、角色权限及业务用例约束由原执行器逐请求复核")

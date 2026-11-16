@@ -26,9 +26,9 @@ export const platformSubjectAuthorizationApi = subjectApi("/bff/platform/users",
   const result = await administrationApi.users(page, query);
   return { total: result.total, items: result.items.map(item => ({ id: item.id, name: item.displayName, detail: item.username, enabled: item.enabled })) };
 });
-/** 复用租户组织成员目录；该接口返回完整受控列表，在客户端仅做展示筛选与每页 20 条切片。 */
+/** 使用授权中心自己的租户账号目录；该接口返回完整受控列表，在客户端仅做展示筛选与每页 20 条切片。 */
 export const tenantSubjectAuthorizationApi = subjectApi("/api/access/members", async (page, query) => {
-  const members = await organizationApi.directoryMembers();
+  const members = (await http.request<{memberId:string;displayName:string}[]>("get","/api/access/member-options")).map(item=>({id:item.memberId,displayName:item.displayName}));
   const matched = members.filter(item => item.displayName.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase()));
   return { total: matched.length, items: matched.slice((page - 1) * 20, page * 20).map(item => ({ id: item.id, name: item.displayName })) };
 });

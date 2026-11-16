@@ -13,6 +13,7 @@ import {
   BusinessWorkspace,
   ManagedDialog,
   ManagementTable,
+  RecordAuditDetails,
   type ManagementColumn,
 } from "@appnexus/ui";
 import WorkflowDesigner from "./WorkflowDesigner.vue";
@@ -423,7 +424,7 @@ async function recover() {
           ><el-descriptions-item :label="t('workflow.state')">{{
             t("workflow.states." + selectedTask.task.state)
           }}</el-descriptions-item></el-descriptions
-        ><el-button
+        ><RecordAuditDetails v-if="selectedTask.task.audit" :audit="selectedTask.task.audit" /><el-button
           v-if="selectedTask.business.route"
           class="business-link"
           @click="businessRoute"
@@ -497,6 +498,7 @@ async function recover() {
             }}</el-descriptions-item
           ></el-descriptions
         >
+        <RecordAuditDetails v-if="detail.instance.audit" :audit="detail.instance.audit" />
         <h3>{{ t("workflow.tasks") }}</h3>
         <vxe-table :column-config="{ resizable: true }"  :data="detail.tasks"
            border="inner"><vxe-column

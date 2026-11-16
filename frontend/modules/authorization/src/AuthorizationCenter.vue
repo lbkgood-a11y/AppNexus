@@ -204,18 +204,19 @@ onMounted(load);
   </BusinessWorkspace>
 </template>
 <style scoped>
+/* 页面外围留白引用全局内容与区块 Token，局部字段间距和触控高度按原交互保留。 */
 /* 角色上下文、配置内容和提交区纵向排列，避免三栏在模板侧栏内争抢宽度。 */
-.function-view{margin-bottom:16px}
+.function-view{margin-bottom:var(--app-section-gap,8px)}
 .authorization-grid{display:flex;flex-direction:column;min-width:0}
-.authorization-pane{min-width:0;padding:20px;background:var(--el-bg-color)}
+.authorization-pane{min-width:0;padding:var(--app-content-padding,12px);background:var(--el-bg-color)}
 .authorization-pane+.authorization-pane{border-top:1px solid var(--el-border-color-lighter)}
 h2{font-size:var(--el-font-size-medium);margin:0;font-weight:600}
 .role-context{display:flex;align-items:center;justify-content:space-between;gap:24px;background:var(--el-fill-color-lighter)}
 .role-context-label{display:flex;flex-direction:column;gap:6px;min-width:0}
 .role-context-label span{color:var(--el-text-color-secondary);font-size:var(--el-font-size-small)}
 .role-context>.el-select{width:360px;max-width:100%;flex-shrink:0}
-.editor-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:20px}
-.permission-filter{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;padding:16px;background:var(--el-fill-color-lighter);margin-bottom:20px;border-radius:var(--el-border-radius-base)}
+.editor-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:var(--app-section-gap,8px)}
+.permission-filter{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;padding:var(--app-content-padding,12px);background:var(--el-fill-color-lighter);margin-bottom:var(--app-section-gap,8px);border-radius:var(--el-border-radius-base)}
 .permission-filter .el-form-item{margin:0;flex:1;max-width:520px;min-width:200px}
 .permission-group{margin-top:16px;border:1px solid var(--el-border-color-lighter);border-radius:var(--el-border-radius-base);overflow:hidden}
 .permission-group-heading{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px 16px;padding:10px 16px;background:var(--el-fill-color-lighter)}
@@ -232,10 +233,10 @@ h2{font-size:var(--el-font-size-medium);margin:0;font-weight:600}
 .permission-row :deep(.el-checkbox__label){display:flex;flex-direction:column;gap:4px;white-space:normal;overflow-wrap:anywhere}
 .permission-row strong{font-weight:500}
 .permission-row span,.permission-code{font-size:12px;color:var(--el-text-color-secondary);overflow-wrap:anywhere}
-.field-filter{display:flex;flex-wrap:wrap;gap:16px;padding:16px;background:var(--el-fill-color-lighter);margin:16px 0;border-radius:var(--el-border-radius-base)}
+.field-filter{display:flex;flex-wrap:wrap;gap:16px;padding:var(--app-content-padding,12px);background:var(--el-fill-color-lighter);margin:16px 0;border-radius:var(--el-border-radius-base)}
 .field-filter .el-form-item{min-width:160px;flex:1;margin-bottom:0}
 .field-bulk-mode{width:150px}
-.save-summary{display:flex;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:16px}
+.save-summary{display:flex;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:var(--app-section-gap,8px)}
 .save-summary>span{color:var(--el-text-color-secondary)}
 .save-form{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px 24px;align-items:end}
 .save-form>.el-form-item{margin-bottom:0}
@@ -243,5 +244,5 @@ h2{font-size:var(--el-font-size-medium);margin:0;font-weight:600}
 .save-button{min-width:120px;align-self:end}
 @media(min-width:701px) and (max-width:1100px){.permission-items-functions{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:1100px){.permission-row{grid-template-columns:minmax(0,1fr) minmax(160px,1fr)}.permission-row>.el-select:last-child{grid-column:2}.permission-row.function-row{grid-template-columns:1fr}}
-@media(max-width:700px){.authorization-pane{padding:16px}.role-context{align-items:stretch;flex-direction:column;gap:12px}.role-context>.el-select{width:100%}.permission-items-functions{grid-template-columns:1fr}.permission-group-heading{align-items:flex-start;flex-direction:column}.permission-filter{align-items:stretch;flex-direction:column}.permission-filter .el-form-item{max-width:none;min-width:0}.permission-row{grid-template-columns:1fr}.permission-row>.el-select:last-child{grid-column:auto}.save-form{grid-template-columns:1fr}.save-button{width:100%}.field-filter{flex-direction:column}.field-filter .el-form-item{min-width:0}:deep(.el-button){min-height:44px}}
+@media(max-width:700px){.authorization-pane{padding:var(--app-content-padding,12px)}.role-context{align-items:stretch;flex-direction:column;gap:12px}.role-context>.el-select{width:100%}.permission-items-functions{grid-template-columns:1fr}.permission-group-heading{align-items:flex-start;flex-direction:column}.permission-filter{align-items:stretch;flex-direction:column}.permission-filter .el-form-item{max-width:none;min-width:0}.permission-row{grid-template-columns:1fr}.permission-row>.el-select:last-child{grid-column:auto}.save-form{grid-template-columns:1fr}.save-button{width:100%}.field-filter{flex-direction:column}.field-filter .el-form-item{min-width:0}:deep(.el-button){min-height:44px}}
 </style>

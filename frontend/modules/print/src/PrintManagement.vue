@@ -135,7 +135,8 @@ async function reprint(){if(!reason.value.trim())return;await run(async()=>{awai
 </template>
 
 <style scoped>
-.print-management{min-width:0}.print-search,.print-panel{padding:0}.print-search :deep(.el-form){display:flex;align-items:flex-start;gap:12px}.print-search-actions{display:flex;gap:8px;margin-left:auto}.print-toolbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}.print-toolbar h2{margin:0;font-size:16px}.print-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 16px}.dialog-buttons{display:flex;justify-content:flex-end;gap:8px;margin-top:20px}
+/* 页面外围留白引用全局内容与区块 Token，局部字段间距和触控高度按原交互保留。 */
+.print-management{min-width:0}.print-search,.print-panel{padding:0}.print-search :deep(.el-form){display:flex;align-items:flex-start;gap:12px}.print-search-actions{display:flex;gap:8px;margin-left:auto}.print-toolbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}.print-toolbar h2{margin:0;font-size:16px}.print-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 16px}.dialog-buttons{display:flex;justify-content:flex-end;gap:8px;margin-top:var(--app-section-gap,8px)}
 @media(max-width:760px){.print-grid{grid-template-columns:1fr}.print-search :deep(.el-form){display:block}.print-search-actions{justify-content:flex-end}.print-panel{padding:0}}
 </style>
 

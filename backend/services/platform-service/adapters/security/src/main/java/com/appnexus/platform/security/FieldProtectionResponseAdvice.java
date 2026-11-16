@@ -14,6 +14,7 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyAdvice;
 
 /** 全站响应统一脱敏入口；业务 Controller 无需逐个调用算法，可信身份缺失或处理失败时拒绝输出。 */
 @RestControllerAdvice(basePackages="com.appnexus.platform")
+@org.springframework.core.annotation.Order(0)
 public final class FieldProtectionResponseAdvice implements ResponseBodyAdvice<Object> {
     private final FieldProtection protection;
     private final HttpServletRequest request;

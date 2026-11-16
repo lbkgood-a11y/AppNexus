@@ -81,11 +81,12 @@ onMounted(()=>{void refreshDisplayFormat();void load();});
   </section>
 </template>
 <style scoped>
-.session-heading { display: flex; justify-content: space-between; gap: 16px; margin-bottom: 24px; }
+/* 页面外围留白引用全局内容与区块 Token，局部字段间距和触控高度按原交互保留。 */
+.session-heading { display: flex; justify-content: space-between; gap: 16px; margin-bottom:var(--app-section-gap,8px); }
 .session-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .session-actions :deep(.el-button + .el-button) { margin-left: 0; }
 @media (max-width: 800px) { .session-heading { flex-wrap: wrap; } }
 h1 { font-size: 23px; font-weight: 600; margin: 0 0 10px; }
 p { color: var(--el-text-color-secondary); font-size: 13px; line-height: 1.8; }
-.session-note { margin-top: 24px; }
+.session-note { margin-top:var(--app-section-gap,8px); }
 </style>

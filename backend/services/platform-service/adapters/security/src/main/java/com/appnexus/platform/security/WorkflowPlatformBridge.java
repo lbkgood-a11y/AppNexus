@@ -13,12 +13,13 @@ public final class WorkflowPlatformBridge implements WorkflowPlatform {
   private final AccessAuthorization access;
   private final TenantAccess tenants;
   private final JdbcTemplate jdbc;
+  private final com.appnexus.platform.organization.PersonnelExecution personnel;
 
   public WorkflowPlatformBridge(
-      AccessAuthorization access, TenantAccess tenants, JdbcTemplate jdbc) {
+      AccessAuthorization access, TenantAccess tenants, JdbcTemplate jdbc,com.appnexus.platform.organization.PersonnelExecution personnel) {
     this.access = access;
     this.tenants = tenants;
-    this.jdbc = jdbc;
+    this.jdbc = jdbc;this.personnel=personnel;
   }
 
   /** 流程查看人员使用最小配置目录；所有查询强制当前租户且只含有效成员/组织/岗位。 */
@@ -44,14 +45,11 @@ public final class WorkflowPlatformBridge implements WorkflowPlatform {
   @Override
   public List<WorkflowPlatform.Option> documentOrganizations(WorkflowContext c) {
     if (!active(c.tenantId(), c.actorId())) throw new SecurityException("WORKFLOW_ORGANIZATION_DENIED");
-    return jdbc.query("SELECT DISTINCT BIN_TO_UUID(u.id) id,u.name FROM tenant_organization_assignment a"
-        + " JOIN tenant_member m ON m.tenant_id=a.tenant_id AND m.id=a.member_id"
-        + " JOIN tenant_organization_position p ON p.tenant_id=a.tenant_id AND p.id=a.position_id"
-        + " JOIN tenant_organization_unit u ON u.tenant_id=p.tenant_id AND u.id=p.organization_id"
-        + " WHERE a.tenant_id=UUID_TO_BIN(?) AND m.account_id=UUID_TO_BIN(?) AND m.enabled=TRUE AND m.removed_at IS NULL"
-        + " AND a.enabled=TRUE AND p.enabled=TRUE AND u.enabled=TRUE AND a.starts_at<=CURRENT_TIMESTAMP(6)"
-        + " AND (a.ends_at IS NULL OR a.ends_at>CURRENT_TIMESTAMP(6)) ORDER BY u.name,id",
-        (r, n) -> new WorkflowPlatform.Option(r.getString("id"), r.getString("name")), c.tenantId(), c.actorId());
+    // 只消费已选择人员的组织，禁止合并同账号关联的其他人员身份。
+    if(c.personId()==null||c.organizationId()==null)return List.of();
+    var memberships=tenants.available(UUID.fromString(c.actorId())).stream().filter(m->m.tenantId().toString().equals(c.tenantId())).toList();
+    if(memberships.isEmpty()||!personnel.allowed(UUID.fromString(c.tenantId()),memberships.getFirst().memberId(),UUID.fromString(c.personId()),UUID.fromString(c.organizationId())))return List.of();
+    return jdbc.query("SELECT BIN_TO_UUID(id) id,name FROM tenant_organization_unit WHERE tenant_id=UUID_TO_BIN(?) AND id=UUID_TO_BIN(?) AND enabled=TRUE",(rs,n)->new WorkflowPlatform.Option(rs.getString("id"),rs.getString("name")),c.tenantId(),c.organizationId());
   }
 
   @Override
@@ -82,33 +80,19 @@ public final class WorkflowPlatformBridge implements WorkflowPlatform {
                     permission));
   }
 
+  /** 岗位及负责人按当前人员核验，不把同账号所有人员的任职合并；固定账号节点保持账号语义。 */
+  @Override public boolean candidate(WorkflowContext c,String organization,String kind,String reference){
+    if(c.personId()==null||c.organizationId()==null||!active(c.tenantId(),c.actorId()))return false;
+    var member=tenants.available(UUID.fromString(c.actorId())).stream().filter(m->m.tenantId().toString().equals(c.tenantId())).findFirst();if(member.isEmpty())return false;
+    if(kind.equals("MEMBER"))return c.actorId().equalsIgnoreCase(reference)&&personnel.allowed(UUID.fromString(c.tenantId()),member.get().memberId(),UUID.fromString(c.personId()),UUID.fromString(c.organizationId()));
+    if(!c.organizationId().equalsIgnoreCase(organization))return false;
+    return personnel.routeCandidate(UUID.fromString(c.tenantId()),member.get().memberId(),UUID.fromString(c.personId()),UUID.fromString(organization),kind,reference);
+  }
   @Override
   public List<String> resolve(String tenant, String organization, String kind, String reference) {
     if (kind.equals("MEMBER")) return active(tenant, reference) ? List.of(reference) : List.of();
     UUID.fromString(tenant);
     UUID.fromString(organization);
-    String sql =
-        "SELECT DISTINCT BIN_TO_UUID(m.account_id) actor FROM tenant_organization_assignment a JOIN"
-            + " tenant_member m ON m.tenant_id=a.tenant_id AND m.id=a.member_id JOIN"
-            + " tenant_organization_position p ON p.tenant_id=a.tenant_id AND p.id=a.position_id"
-            + " JOIN tenant_organization_unit u ON u.tenant_id=p.tenant_id AND"
-            + " u.id=p.organization_id "
-            + (kind.equals("LEADER")
-                ? "JOIN tenant_organization_leader l ON l.tenant_id=a.tenant_id AND"
-                      + " l.assignment_id=a.id AND l.organization_id=p.organization_id "
-                : "")
-            + "WHERE a.tenant_id=UUID_TO_BIN(?) AND p.organization_id=UUID_TO_BIN(?) AND"
-            + " a.enabled=TRUE AND p.enabled=TRUE AND u.enabled=TRUE AND m.enabled=TRUE AND"
-            + " a.starts_at<=CURRENT_TIMESTAMP(6) AND (a.ends_at IS NULL OR"
-            + " a.ends_at>CURRENT_TIMESTAMP(6))";
-    List<String> actors;
-    if (kind.equals("LEADER")) actors = jdbc.queryForList(sql, String.class, tenant, organization);
-    else if (kind.equals("POSITION")) {
-      UUID.fromString(reference);
-      actors =
-          jdbc.queryForList(
-              sql + " AND p.id=UUID_TO_BIN(?)", String.class, tenant, organization, reference);
-    } else return List.of();
-    return actors.stream().filter(a -> active(tenant, a)).toList();
+    return personnel.resolveAccounts(UUID.fromString(tenant),UUID.fromString(organization),kind,reference).stream().filter(a->active(tenant,a)).toList();
   }
 }

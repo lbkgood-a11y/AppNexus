@@ -58,10 +58,11 @@ onMounted(()=>{void refreshDisplayFormat();void load();});
   </section>
 </template>
 <style scoped>
-.log-heading { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 24px; }
+/* 页面外围留白引用全局内容与区块 Token，局部字段间距和触控高度按原交互保留。 */
+.log-heading { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom:var(--app-section-gap,8px); }
 h1 { margin: 0 0 10px; font-size: 23px; font-weight: 600; }
 p { color: var(--el-text-color-secondary); font-size: 13px; line-height: 1.8; }
 .security-table { width: 100%; }
-.log-pagination { display: flex; justify-content: flex-end; margin-top: 20px; overflow-x: auto; }
-.log-note { margin-top: 24px; }
+.log-pagination { display: flex; justify-content: flex-end; margin-top:var(--app-section-gap,8px); overflow-x: auto; }
+.log-note { margin-top:var(--app-section-gap,8px); }
 </style>

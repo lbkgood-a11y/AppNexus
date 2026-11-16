@@ -33,7 +33,8 @@ async function accept() {
   </section>
 </template>
 <style scoped>
-.invitation-acceptance { margin-top: 24px; max-width: 520px; }
+/* 页面外围留白引用全局内容与区块 Token，局部字段间距和触控高度按原交互保留。 */
+.invitation-acceptance { margin-top:var(--app-section-gap,8px); max-width: 520px; }
 .invitation-acceptance h2 { font-size: 16px; font-weight: 500; margin-bottom: 12px; }
-.invitation-acceptance p { color: var(--el-text-color-secondary); line-height: 1.8; margin-bottom: 16px; }
+.invitation-acceptance p { color: var(--el-text-color-secondary); line-height: 1.8; margin-bottom:var(--app-section-gap,8px); }
 </style>

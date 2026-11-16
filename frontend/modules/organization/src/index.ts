@@ -9,15 +9,15 @@ export interface OrganizationType { id: string; code: string; name: string; enab
 export interface OrganizationTreeUnit extends OrganizationUnit { code: string; typeId: string; parentId: string | null; enabled: boolean; version: number }
 export interface OrganizationRelation { id: string; relationType: string; sourceId: string; targetId: string; version: number }
 export interface OrganizationPosition { id: string; organizationId: string; code: string; name: string; enabled: boolean; version: number }
-export interface OrganizationAssignment { id: string; memberId: string; positionId: string; startsAt: string; endsAt: string | null; enabled: boolean; version: number }
+export interface OrganizationAssignment { id: string; personId: string; positionId: string; startsAt: string; endsAt: string | null; enabled: boolean; version: number }
 export interface OrganizationLeader { organizationId: string; assignmentId: string }
-export interface OrganizationDirectoryMember { id: string; displayName: string }
+export interface OrganizationDirectoryPerson { id: string; displayName: string }
 export interface OrganizationImpact { children: number; relations: number; positions: number; activeAssignments: number; leaders: number }
 export interface BusinessOption { value: string; name: string }
 /** 授权选择器成员摘要；仅 GRANT 持有者可读取。 */
-export interface OrganizationMember { memberId: string; displayName: string; organizationId: string|null; organizationName: string|null }
+export interface OrganizationMember { memberId: string; displayName: string }
 /** 有效组织授权，到期时间为空表示永久有效，撤销后立即影响后续请求。 */
-export interface OrganizationGrant { memberId: string; capability: OrganizationCapability; expiresAt: string | null }
+export interface OrganizationGrant { personId: string; capability: OrganizationCapability; expiresAt: string | null }
 /** 领域页面依赖的请求端口，由应用壳注入 HTTP、CSRF 和会话处理。 */
 export interface OrganizationApi {
   capabilities(): Promise<OrganizationCapability[]>;
@@ -36,10 +36,14 @@ export interface OrganizationApi {
   createPosition(input: { organizationId: string; code: string; name: string }): Promise<OrganizationPosition>;
   updatePosition(id: string, input: { name: string; enabled: boolean; version: number }): Promise<OrganizationPosition>;
   assignments(): Promise<OrganizationAssignment[]>;
-  createAssignment(input: { memberId: string; positionId: string; startsAt: string; endsAt: string | null }): Promise<OrganizationAssignment>;
+  createAssignment(input: { personId: string; positionId: string; startsAt: string; endsAt: string | null }): Promise<OrganizationAssignment>;
   updateAssignment(id: string, input: { endsAt: string | null; enabled: boolean; version: number }): Promise<OrganizationAssignment>;
   leaders(): Promise<OrganizationLeader[]>;
   setLeader(input: { organizationId: string; assignmentId: string; selected: boolean }): Promise<void>;
-  directoryMembers(): Promise<OrganizationDirectoryMember[]>;
+  directoryPersons(): Promise<OrganizationDirectoryPerson[]>;
   dictionary(code:string):Promise<BusinessOption[]>;
 }
+
+/** 组织与人员统一公开人员档案契约，账号登录与租户访问仍由身份模块负责。 */
+export type {PersonnelApi,PersonnelProfile,PersonnelCatalog,PersonnelDetail,PersonnelAssignment} from "./personnel/personnel";
+export type {PersonnelRow,PersonnelInput} from "./personnel/types";

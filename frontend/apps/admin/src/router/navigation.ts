@@ -9,6 +9,12 @@ import { buildNavigationMenus, safeNavigationUrl } from "./navigationModel";
 
 /** 显式构建内注册表；不接受路径模糊匹配、远程组件或服务端脚本。 */
 const pages = {
+  "organization/personnel": {path:"/organization/personnel",name:"OrganizationPersonnel",component:()=>import("@/views/organization/personnel.vue")},
+  "master-data/partner": {path:"/master-data/partner",name:"MasterDataBusinessPartner",component:()=>import("@/views/master-data/partner.vue")},
+  "master-data/warehouse": {path:"/master-data/warehouse",name:"MasterDataWarehouse",component:()=>import("@/views/master-data/warehouse.vue")},
+  "master-data/country-region": {path:"/master-data/country-region",name:"MasterDataCountryRegion",component:()=>import("@/views/master-data/country-region.vue")},
+  "master-data/product": {path:"/master-data/product",name:"MasterDataProduct",component:()=>import("@/views/master-data/product.vue")},
+
   "platform/business-objects": {path:"/platform/business-objects",name:"PlatformBusinessObjectManagement",component:()=>import("@/views/platform/business-objects.vue")},
   "business-objects/index": {path:"/business-objects/workbench",name:"DocumentWorkbench",component:()=>import("@/views/business-objects/index.vue")},
   "workflow/leave": {path:"/workflow/leave",name:"LeaveRequests",component:()=>import("@/views/workflow/leave.vue")},

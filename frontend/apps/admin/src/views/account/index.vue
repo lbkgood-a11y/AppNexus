@@ -183,12 +183,13 @@ onMounted(load);
   </SplitDetailTemplate>
 </template>
 <style scoped>
+/* 页面外围留白引用全局内容与区块 Token，局部字段间距和触控高度按原交互保留。 */
 /* 个人中心采用独立内容导航，保留平台外层布局；所有颜色复用全局主题变量。 */
 /* 外层直接复用首页 el-card：外边距交给模板 main-content，边框和圆角由组件统一提供。 */
-.account-sidebar { padding: 18px 14px; }
+.account-sidebar { padding:var(--app-content-padding,12px); }
 .back-button { display: flex; align-items: center; gap: 9px; padding: 4px 12px; color: var(--el-text-color-secondary); background: transparent; border: 0; cursor: pointer; font-size: 20px; }
 .back-button span { font-size: 13px; }
-.sidebar-identity { display: flex; align-items: center; gap: 12px; margin: 28px 12px; }
+.sidebar-identity { display: flex; align-items: center; gap: 12px; margin:var(--app-content-padding,12px) 0; }
 .identity-avatar, .profile-avatar { display: grid; place-items: center; flex-shrink: 0; border-radius: 50%; color: var(--el-color-primary); background: var(--el-color-primary-light-9); }
 .identity-avatar { width: 48px; height: 48px; }
 .identity-text { min-width: 0; display: grid; gap: 6px; font-size: 13px; }
@@ -198,24 +199,24 @@ onMounted(load);
 .account-navigation :deep(.el-menu-item) { gap: 11px; height: 44px; margin-bottom: 8px; border-radius: var(--el-border-radius-base); }
 /* 沿用模板浅色选中背景，避免全局菜单强调色与实心主色背景重叠导致文字不可见。 */
 .account-navigation :deep(.el-menu-item.is-active) { background: var(--el-color-primary-light-9); color: var(--el-color-primary); }
-.account-content { padding: 44px clamp(24px, 4vw, 80px); min-width: 0; }
-.content-section { max-width: 1000px; margin: 0 auto; }
+.account-content { padding:var(--app-content-padding,12px); min-width: 0; }
+.content-section { min-width:0; margin:0; }
 h1 { margin: 0 0 10px; font-size: 23px; font-weight: 600; }
-.section-intro { margin-bottom: 34px; color: var(--el-text-color-secondary); font-size: 13px; line-height: 1.8; }
+.section-intro { margin-bottom:var(--app-section-gap,8px); color: var(--el-text-color-secondary); font-size: 13px; line-height: 1.8; }
 .profile-form { max-width: 760px; }
-.profile-summary { display: flex; align-items: center; gap: 18px; margin-bottom: 32px; }
+.profile-summary { display: flex; align-items: center; gap: 18px; margin-bottom:var(--app-section-gap,8px); }
 .profile-avatar { width: 76px; height: 76px; }
 .profile-summary strong { font-size: 16px; font-weight: 500; }
 .profile-summary p, .field-hint { color: var(--el-text-color-secondary); font-size: 12px; line-height: 1.7; margin-top: 8px; }
-.account-field { margin-bottom: 26px; }
+.account-field { margin-bottom:16px; }
 .account-field label { display: block; margin-bottom: 10px; font-size: 14px; }
 .account-field code { color: var(--el-text-color-secondary); font-size: 12px; overflow-wrap: anywhere; }
 .required { color: var(--el-color-danger); }
-.setting-row { display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: 25px 0; border-bottom: 1px solid var(--el-border-color-lighter); }
+.setting-row { display: flex; align-items: center; justify-content: space-between; gap: 24px; padding:var(--app-content-padding,12px) 0; border-bottom: 1px solid var(--el-border-color-lighter); }
 .setting-row h2 { font-size: 15px; font-weight: 500; margin: 0 0 8px; }
 .setting-row p { color: var(--el-text-color-secondary); font-size: 13px; line-height: 1.8; max-width: 650px; }
 .language-select { width: 150px; flex-shrink: 0; }
-.preference-note { display: flex; align-items: center; gap: 9px; color: var(--el-text-color-secondary); font-size: 12px; margin-top: 25px; line-height: 1.8; }
-.password-form { max-width: 520px; padding: 28px 0; }
-@media (max-width: 800px) { .account-sidebar { border-right: 0; border-bottom: 1px solid var(--el-border-color-lighter); } .sidebar-identity { margin: 15px 12px; } .account-navigation { display: flex; flex-wrap: wrap; gap: 6px; } .account-navigation :deep(.el-menu-item) { padding: 0 12px; margin-bottom: 0; } .account-content { padding: 28px 20px; } .setting-row { flex-wrap: wrap; gap: 14px; } }
+.preference-note { display: flex; align-items: center; gap: 9px; color: var(--el-text-color-secondary); font-size: 12px; margin-top:var(--app-section-gap,8px); line-height: 1.8; }
+.password-form { max-width: 520px; padding:var(--app-content-padding,12px) 0; }
+@media (max-width: 800px) { .account-sidebar { border-right: 0; border-bottom: 1px solid var(--el-border-color-lighter); } .sidebar-identity { margin:var(--app-content-padding,12px) 0; } .account-navigation { display: flex; flex-wrap: wrap; gap: 6px; } .account-navigation :deep(.el-menu-item) { padding: 0 12px; margin-bottom: 0; } .account-content { padding:var(--app-content-padding,12px); } .setting-row { flex-wrap: wrap; gap: 14px; } }
 </style>

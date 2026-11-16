@@ -1,6 +1,6 @@
 import {operationGroups} from "./operationGroups";
 import { http } from "@/utils/http";
-import type { OrganizationApi, OrganizationCapability, OrganizationType, OrganizationTreeUnit, OrganizationImpact, OrganizationRelation, OrganizationPosition, OrganizationAssignment, OrganizationLeader, OrganizationDirectoryMember, BusinessOption } from "@appnexus/organization";
+import type { OrganizationApi, OrganizationCapability, OrganizationType, OrganizationTreeUnit, OrganizationImpact, OrganizationRelation, OrganizationPosition, OrganizationAssignment, OrganizationLeader, OrganizationDirectoryPerson, BusinessOption } from "@appnexus/organization";
 
 /** 所有写操作取当前会话 CSRF，不缓存凭据；租户和操作者不进入客户端参数。 */
 async function mutate(method: "post" | "put" | "delete", path: string, data?: object) {
@@ -29,6 +29,6 @@ export const organizationApi: OrganizationApi = {
   ,updateAssignment: (id,input) => mutate("put", "/domain/assignments/"+encodeURIComponent(id), input) as Promise<OrganizationAssignment>
   ,leaders: () => http.request<OrganizationLeader[]>("get", "/api/organization/domain/leaders")
   ,setLeader: input => mutate("put", "/domain/leaders", input) as Promise<void>
-  ,directoryMembers: () => http.request<OrganizationDirectoryMember[]>("get", "/api/organization/domain/members")
+  ,directoryPersons: () => http.request<OrganizationDirectoryPerson[]>("get", "/api/organization/domain/persons")
   ,dictionary: code => http.request<BusinessOption[]>("get","/api/configuration/dictionaries/lookup/"+encodeURIComponent(code))
 };

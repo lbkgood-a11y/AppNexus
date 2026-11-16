@@ -70,7 +70,8 @@ public final class WorkflowController {
   /** 操作契约关联下方真实接口；仅供展示与一致性校验，主体、权限及业务约束仍由原用例执行。 */
 
   @com.appnexus.contracts.operation.OperationBinding(id="WorkflowDefinition.list",objectType="WorkflowDefinition",operationCode="list",pages={"workflow/designer"},nameZh="流程定义：查看列表",nameEn="View definitions",permissions={"workflow:read"},policy="原服务逐请求复核有效成员、功能权限、对象归属、版本与业务状态")
-  @GetMapping("/definitions")
+  @com.appnexus.contracts.operation.RecordAuditSource(table="wf_definition",binaryKey=false,binaryTenant=false)
+ @GetMapping("/definitions")
   public Object definitions(HttpServletRequest r) {
     return reply(() -> runtime.definitions(context(r)));
   }
@@ -132,7 +133,8 @@ public final class WorkflowController {
                 s.entryCapability()));
   }
 
-  @GetMapping("/instances")
+  @com.appnexus.contracts.operation.RecordAuditSource(table="wf_instance",binaryKey=false,binaryTenant=false)
+ @GetMapping("/instances")
   public Object instances(HttpServletRequest r) {
     return reply(() -> runtime.instances(context(r)));
   }
@@ -148,7 +150,8 @@ public final class WorkflowController {
   /** 操作契约关联下方真实接口；仅供展示与一致性校验，主体、权限及业务约束仍由原用例执行。 */
 
   @com.appnexus.contracts.operation.OperationBinding(id="WorkflowInstance.read",objectType="WorkflowInstance",operationCode="read",pages={"workflow/index"},nameZh="流程实例：查看",nameEn="View instance",eligibility=com.appnexus.contracts.operation.OperationBinding.Eligibility.OBJECT,permissions={},policy="有效成员与对象归属/任务处理资格由原业务用例验证；无权限码不表示无条件允许")
-  @GetMapping("/instances/{id}")
+  @com.appnexus.contracts.operation.RecordAuditSource(table="wf_instance",binaryKey=false,binaryTenant=false,path="instance")
+ @GetMapping("/instances/{id}")
   public Object detail(HttpServletRequest r, @PathVariable String id) {
     return reply(() -> runtime.detail(context(r), id));
   }
@@ -165,7 +168,8 @@ public final class WorkflowController {
   /** 操作契约关联下方真实接口；仅供展示与一致性校验，主体、权限及业务约束仍由原用例执行。 */
 
   @com.appnexus.contracts.operation.OperationBinding(id="WorkflowTask.read",objectType="WorkflowTask",operationCode="read",pages={"workflow/index"},nameZh="流程任务：查看",nameEn="View assigned task",eligibility=com.appnexus.contracts.operation.OperationBinding.Eligibility.OBJECT,permissions={},policy="有效成员与对象归属/任务处理资格由原业务用例验证；无权限码不表示无条件允许")
-  @GetMapping("/tasks/{id}")
+  @com.appnexus.contracts.operation.RecordAuditSource(table="wf_task",binaryKey=false,binaryTenant=false,path="task")
+ @GetMapping("/tasks/{id}")
   public Object task(HttpServletRequest r, @PathVariable String id) {
     return reply(() -> runtime.task(context(r), id));
   }
@@ -210,7 +214,7 @@ public final class WorkflowController {
       }
     }
     return new WorkflowContext(
-        c.tenantId(), c.actorId(), id == null ? UUID.randomUUID().toString() : id);
+        c.tenantId(), c.actorId(), id == null ? UUID.randomUUID().toString() : id,c.personId(),c.organizationId());
   }
 
   private Object reply(Supplier<Object> action) {

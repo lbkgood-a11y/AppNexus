@@ -38,7 +38,8 @@ public class PlatformAdministrationController {
     /** 页码默认 1，每页默认 20、范围 1–100；查询词最长 100 字符。 */
     @com.appnexus.contracts.operation.BusinessObjectType(code="Account",nameZh="账号",nameEn="Account",category=com.appnexus.contracts.operation.BusinessObjectType.Category.SYSTEM,module="identity")
  @com.appnexus.contracts.operation.OperationBinding(id="Account.list",objectType="Account",operationCode="list",pages={"platform/users","platform/tenants","platform/authorization"},nameZh="账号：查看列表",nameEn="Read accounts",policy="主体管理域、角色权限及业务用例约束由原执行器逐请求复核")
- @EndpointOperation("identity.account:read") @GetMapping("/users")
+ @EndpointOperation("identity.account:read") @com.appnexus.contracts.operation.RecordAuditSource(table="identity_account",tenant=false,path="items")
+ @GetMapping("/users")
     ResponseEntity<PlatformAdministration.Page<PlatformAdministration.User>> users(Authentication auth,@RequestParam(defaultValue="1") int page,@RequestParam(defaultValue="20") int size,@RequestParam(defaultValue="") String query) {
         return ok(() -> service.users(actor(auth),page,size,query));
     }
@@ -81,7 +82,8 @@ public class PlatformAdministrationController {
     /** 平台租户目录分页，不读取租户内业务数据。 */
     @com.appnexus.contracts.operation.BusinessObjectType(code="Tenant",nameZh="租户",nameEn="Tenant",category=com.appnexus.contracts.operation.BusinessObjectType.Category.SYSTEM,module="tenant")
  @com.appnexus.contracts.operation.OperationBinding(id="Tenant.list",objectType="Tenant",operationCode="list",pages={"platform/tenants"},nameZh="租户：查看列表",nameEn="Read tenants",policy="主体管理域、角色权限及业务用例约束由原执行器逐请求复核")
- @EndpointOperation("tenant:read") @GetMapping("/tenants")
+ @EndpointOperation("tenant:read") @com.appnexus.contracts.operation.RecordAuditSource(table="platform_tenant",tenant=false,path="items")
+ @GetMapping("/tenants")
     ResponseEntity<PlatformAdministration.Page<PlatformAdministration.Tenant>> tenants(Authentication auth,@RequestParam(defaultValue="1") int page,@RequestParam(defaultValue="20") int size,@RequestParam(defaultValue="") String query) {
         return ok(() -> service.tenants(actor(auth),page,size,query));
     }
@@ -105,11 +107,13 @@ public class PlatformAdministrationController {
     }
     /** 操作契约关联下方真实接口；仅供展示与一致性校验，主体、权限及业务约束仍由原用例执行。 */
     @com.appnexus.contracts.operation.OperationBinding(id="TenantMember.listManaged",objectType="TenantMember",operationCode="listManaged",pages={"platform/tenants"},nameZh="租户成员：查看列表（平台代管）",nameEn="Read tenant members",policy="主体管理域、角色权限及业务用例约束由原执行器逐请求复核")
- @EndpointOperation("tenant.member:read") @GetMapping("/tenants/{tenant}/members")
+ @EndpointOperation("tenant.member:read") @com.appnexus.contracts.operation.RecordAuditSource(table="tenant_member",id="memberId",path="items",managedTenant="tenant")
+ @GetMapping("/tenants/{tenant}/members")
     ResponseEntity<PlatformAdministration.Page<PlatformAdministration.Member>> members(Authentication auth,@PathVariable UUID tenant,@RequestParam(defaultValue="1") int page,@RequestParam(defaultValue="20") int size,@RequestParam(defaultValue="") String query) {
         return ok(() -> service.members(actor(auth),tenant,page,size,query));
     }
     /** 操作契约关联下方真实接口；仅供展示与一致性校验，主体、权限及业务约束仍由原用例执行。 */
+    @com.appnexus.contracts.operation.BusinessObjectType(code="TenantMember",nameZh="租户成员",nameEn="Tenant member",category=com.appnexus.contracts.operation.BusinessObjectType.Category.SYSTEM,module="tenant")
     @com.appnexus.contracts.operation.OperationBinding(id="TenantMember.createManaged",objectType="TenantMember",operationCode="createManaged",pages={"platform/tenants"},nameZh="租户成员：新增（平台代管）",nameEn="Add tenant members",policy="主体管理域、角色权限及业务用例约束由原执行器逐请求复核")
  @EndpointOperation("tenant.member:create") @PostMapping("/tenants/{tenant}/members")
     ResponseEntity<Void> addMember(Authentication auth,@PathVariable UUID tenant,@RequestBody NewMember input) {
