@@ -429,7 +429,7 @@ async function recover() {
           class="business-link"
           @click="businessRoute"
           >{{ t("workflow.openDocument") }}</el-button
-        ><el-form label-position="top"
+        ><el-form class="business-border-label-form" label-position="top"
           ><el-form-item
             v-for="field in selectedTask.business.inputs || []"
             :key="field"
@@ -437,7 +437,7 @@ async function recover() {
             :required="selectedTask.node.required?.includes(field)"
             ><el-input v-model="values[field]" maxlength="2000" /></el-form-item
         ></el-form>
-        <el-form label-position="top"
+        <el-form class="business-border-label-form" label-position="top"
           ><el-form-item :label="t('workflow.comment')"
             ><el-input
               v-model="comment"
@@ -600,7 +600,7 @@ async function recover() {
         :title="error" scope="error"
         type="error"
         :closable="false"
-      /><el-form label-position="top" @submit.prevent="recover"
+      /><el-form class="business-border-label-form" label-position="top" @submit.prevent="recover"
         ><el-form-item
           v-if="recoveryKind === 'reassign'"
           :label="t('workflow.actor')"

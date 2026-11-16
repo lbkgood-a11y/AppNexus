@@ -72,6 +72,7 @@ const settings = reactive({
   tagsStyle: $storage.configure.tagsStyle,
   hideFooter: $storage.configure.hideFooter,
   hidePageBanner: $storage.configure.hidePageBanner ?? false,
+  sectionGap: $storage.configure.sectionGap ?? 8,
   multiTagsCache: $storage.configure.multiTagsCache,
   stretch: $storage.configure.stretch
 });
@@ -140,6 +141,11 @@ const hidePageBannerChange = () => {
   storageConfigureChange("hidePageBanner", settings.hidePageBanner);
 };
 
+/** 列表和详情共用区块间距，单位 px；0–24，步进 2，缺省 8；仅保存本机展示偏好。 */
+function sectionGapChange(value:number|undefined){
+  const gap=typeof value==="number"&&Number.isInteger(value)&&value>=0&&value<=24&&value%2===0?value:8;
+  settings.sectionGap=gap;storageConfigureChange("sectionGap",gap);
+}
 /** 标签页持久化设置 */
 const multiTagsCacheChange = () => {
   const multiTagsCache = settings.multiTagsCache;
@@ -527,6 +533,10 @@ onUnmounted(() => removeMatchMedia);
         <li>
           <span class="dark:text-white">{{ t('panel.hidePageBanner') }}</span>
           <el-switch v-model="settings.hidePageBanner" inline-prompt :active-text="t('buttons.pureOpenText')" :inactive-text="t('buttons.pureCloseText')" @change="hidePageBannerChange" />
+        </li>
+        <li class="flex items-center justify-between mt-4">
+          <span class="dark:text-white">{{t('panel.sectionGap')}}</span>
+          <el-input-number v-model="settings.sectionGap" :min="0" :max="24" :step="2" step-strictly controls-position="right" :aria-label="t('panel.sectionGap')" style="width:110px" @change="sectionGapChange" />
         </li>
         <li>
           <span class="dark:text-white">{{ t("panel.pureHiddenTags") }}</span>

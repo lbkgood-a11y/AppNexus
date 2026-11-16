@@ -123,7 +123,7 @@ const subjectSaveOperation = computed(() => location.hash.includes('/platform/')
         <h2>{{ subject.name }}</h2>
         <el-alert v-if="subject.enabled === false" type="warning" :title="t('authorizationCenter.subjectDisabled')" :closable="false" />
         <FloatingError v-if="detailError" type="error" :title="detailError" scope="detailError" :closable="false" show-icon><el-button link :disabled="saving" @click="loadDetail">{{ t('authorizationCenter.reload') }}</el-button></FloatingError>
-        <el-form ref="form" :model="{ reason }" :rules="rules" label-position="top" @submit.prevent="save">
+        <el-form class="business-border-label-form" ref="form" :model="{ reason }" :rules="rules" label-position="top" @submit.prevent="save">
           <el-form-item :label="t('authorizationCenter.subjectRoles')">
             <el-select v-model="selected" multiple filterable :disabled="!ready || saving || detailLoading" class="role-select">
               <el-option v-for="role in roles" :key="role.id" :value="role.id" :label="role.name + ' (' + role.code + ')'" :disabled="role.status !== 'ENABLED'" />

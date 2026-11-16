@@ -42,7 +42,7 @@ defineExpose({ canLeave:async()=>!busy.value&&await discard() });
   <div v-loading="busy" class="member-grant-editor">
     
     <FloatingError v-if="error" :title="error" scope="error" type="error" :closable="false"><el-button link :disabled="busy" @click="async()=>{if(await discard())await loadGrants();}">{{t('authorizationCenter.reload')}}</el-button></FloatingError>
-    <el-form class="member-grant-form" label-position="top" @submit.prevent="save">
+    <el-form class="business-border-label-form member-grant-form" label-position="top" @submit.prevent="save">
       <el-form-item :label="t('authorizationCenter.subject')"><template #label>{{t('authorizationCenter.subject')}}<InfoHint :content="t('authorizationCenter.memberDataHint')" /></template><el-select :model-value="member" filterable :disabled="busy" @change="selectMember"><el-option v-for="item in subjects" :key="item.id" :value="item.id" :label="item.name" /></el-select></el-form-item>
       <el-form-item v-if="member" :label="t('authorizationCenter.subjectRoles')"><el-select :model-value="role" filterable :disabled="busy" @change="selectRole"><el-option v-for="grant in grants" :key="grant.roleId" :value="grant.roleId" :label="roles.find(item=>item.id===grant.roleId)?.name??t('authorizationCenter.unavailableRole')" /></el-select></el-form-item>
       <el-empty v-if="member&&!grants.length" :description="t('authorizationCenter.assignRoleFirst')" />

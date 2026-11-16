@@ -312,7 +312,7 @@ onMounted(async () => {
     width="min(640px, calc(100vw - 32px))"
   >
     <FloatingError v-if="formError" :title="formError" scope="formError" type="error" :closable="false" />
-    <el-form ref="form" :model="input" :rules="rules" label-position="top">
+    <el-form class="business-border-label-form" ref="form" :model="input" :rules="rules" label-position="top">
       <el-form-item :label="t('leavePoc.organization')" prop="organizationId"
         ><el-select v-model="input.organizationId" filterable
           ><el-option

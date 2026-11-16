@@ -29,6 +29,7 @@ search:
   pureEmpty: 暂无搜索结果
   purePlaceholder: 搜索菜单（支持拼音搜索）
 panel:
+  sectionGap: "区块间距（px）"
   hidePageBanner: 隐藏页面横幅
   pureSystemSet: 系统配置
   pureCloseSystemSet: 关闭配置

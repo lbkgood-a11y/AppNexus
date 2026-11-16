@@ -29,6 +29,7 @@ search:
   pureEmpty: Empty
   purePlaceholder: Search Menu
 panel:
+  sectionGap: "Section spacing (px)"
   menuColor: Menu color
   menuColorAuto: Follow theme
   hidePageBanner: Hide page banners

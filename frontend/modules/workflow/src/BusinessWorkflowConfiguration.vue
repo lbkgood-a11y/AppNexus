@@ -113,7 +113,7 @@ function setOutcome(result: string, capability?: string) {
 <template>
   <div class="business-configuration">
     <div class="business-configuration-form">
-      <el-form label-position="top" :disabled="disabled">
+      <el-form class="business-border-label-form" label-position="top" :disabled="disabled">
         <h2>{{ t("businessWorkflow.documentTitle") }}<InfoHint v-if="profile" :content="
               locale.startsWith('en')
                 ? profile.descriptionEn

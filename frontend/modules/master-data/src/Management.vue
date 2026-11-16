@@ -120,7 +120,7 @@ onMounted(load);
         <template #pagination><AppPagination v-model:current-page="page" v-model:page-size="size" :total="total" :disabled="loading||busy" @current-change="load" @size-change="search" /></template>
       </ManagementTable>
       <ManagedDialog v-model="open" :title="t('masterData.'+(editingId?'edit':'create'))+' · '+title" :busy="busy" @closed="form?.clearValidate()">
-        <el-form ref="form" :model="draft" :rules="rules" label-position="top" @submit.prevent="save">
+        <el-form class="business-border-label-form" ref="form" :model="draft" :rules="rules" label-position="top" @submit.prevent="save">
           <el-form-item :label="t('masterData.code')" prop="code"><template #label>{{t('masterData.code')}}<InfoHint :content="t('masterData.codeHint')" /></template><el-input v-model="draft.code" maxlength="64" :disabled="!!editingId||busy" /></el-form-item>
           <el-form-item :label="t('masterData.name')" prop="name"><el-input v-model="draft.name" maxlength="200" :disabled="busy" /></el-form-item>
           <el-form-item v-for="field in fields" :key="field" :label="t('masterData.fields.'+field)" :prop="'attributes.'+field">

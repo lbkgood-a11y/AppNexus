@@ -226,4 +226,20 @@ const transitionMain = defineComponent({
 /* 采用自适应工作台的页面独占剩余高度；普通页面仍在 host 内安全滚动。 */
 .viewport-page-host:has(> :is(.dictionary-sample,.business-workspace,.management-page,.page-template)) { display:flex; flex-direction:column; overflow:hidden; }
 .viewport-page-host > :is(.dictionary-sample,.business-workspace,.management-page,.page-template) { flex:1; min-height:0; }
+/* 长详情使用壳内唯一滚动容器；本地 scoped 规则须覆盖列表宿主 overflow:hidden，
+   否则公共模板的低优先级覆盖无效，底部数据和分页仍会被固定视口裁切。 */
+.viewport-page-host:has(.master-data-detail) {
+  display:block;
+  overflow-y:auto;
+  overflow-x:hidden;
+}
+.viewport-page-host:has(.master-data-detail) > .main-content {
+  /* 标题压缩后短详情填满内容区，底部只保留全局页面边距；内容超高仍自然滚动。 */
+  display:flex;
+  flex-direction:column;
+  height:auto;
+  min-height:calc(100% - 2 * var(--app-page-gap,8px));
+  flex:none;
+  overflow:visible;
+}
 </style>

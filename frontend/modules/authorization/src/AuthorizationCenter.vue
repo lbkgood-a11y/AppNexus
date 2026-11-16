@@ -135,7 +135,7 @@ onMounted(load);
           <template v-if="editorTab === 'security'">
             
             <el-empty v-if="!fieldCatalog.length" :description="t('authorizationCenter.noFieldCatalog')" />
-            <el-form label-position="top" class="field-filter" @submit.prevent>
+            <el-form label-position="top" class="business-border-label-form field-filter" @submit.prevent>
               <el-form-item :label="t('authorizationCenter.fieldResource')"><el-select v-model="fieldResource" clearable filterable><el-option v-for="resource in fieldResources" :key="resource" :value="resource" :label="resource" /></el-select></el-form-item>
               <el-form-item :label="t('authorizationCenter.fieldKind')"><el-select v-model="fieldKind" clearable><el-option v-for="kind in fieldKinds" :key="kind" :value="kind" :label="t('authorizationCenter.fieldKinds.'+kind)" /></el-select></el-form-item>
               <el-form-item :label="t('authorizationCenter.fieldSearch')"><el-input v-model="fieldQuery" clearable :maxlength="100" /></el-form-item>
@@ -157,7 +157,7 @@ onMounted(load);
             </ManagementTable>
           </template>
           <template v-else>
-          <el-form label-position="top" class="permission-filter" @submit.prevent>
+          <el-form label-position="top" class="business-border-label-form permission-filter" @submit.prevent>
             <el-form-item :label="t('authorizationCenter.permissionQuery')"><el-input v-model="query" clearable :maxlength="100" /></el-form-item>
             <el-checkbox v-model="onlySelected">{{ t('authorizationCenter.onlySelected') }}</el-checkbox>
           </el-form>
@@ -193,7 +193,7 @@ onMounted(load);
           <div class="save-summary"><h2>{{ t('authorizationCenter.summary') }}</h2><span>{{ selectedRole?.name || '—' }}</span><el-tag effect="plain">{{ t('authorizationCenter.selectedCount') }} · {{ selected.length }}</el-tag></div>
           <PolicyTemplateActions :api="props.api" :role-id="roleId" :version="version" :busy="saving || loading || !ready" :dirty="changed" :reason="reason" :error-text="props.errorText" @applied="loadAssignment" />
           <el-button v-if="incompleteCount" link type="warning" @click="activeTab='data';query='';onlySelected=true">{{ t('authorizationCenter.pendingScopes', { count: incompleteCount }) }}</el-button>
-          <el-form class="save-form" label-position="top" @submit.prevent="save">
+          <el-form class="business-border-label-form save-form" label-position="top" @submit.prevent="save">
             <el-form-item :label="t('authorizationCenter.reason')" required><el-input v-model="reason" type="textarea" :rows="2" :maxlength="500" show-word-limit :disabled="!ready || saving" /></el-form-item>
             <el-alert v-if="incompleteCount" type="warning" :title="t('authorizationCenter.incomplete')" :closable="false" show-icon />
             <el-button v-operation="'@role:grant'" class="save-button" type="primary" native-type="submit" :loading="saving" :disabled="invalid">{{ t('organization.save') }}</el-button>

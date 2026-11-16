@@ -184,7 +184,7 @@ onBeforeUnmount(()=>{recoveryTicket.value="";form.password="";invitation.value=u
   </template>
   <ManagedDialog :model-value="Boolean(dialog)" :title="t(dialog==='user'?'administration.createUser':dialog==='userEdit'?'administration.editUser':dialog==='tenantEdit'?'administration.editTenant':dialog==='member'?'administration.addMember':'administration.createTenant')" width="min(560px, calc(100vw - 32px))" :busy="saving" @update:model-value="value=>{if(!value)dialog=''}" @closed="clearPassword">
    <FloatingError v-if="error" :title="error" scope="error" type="error" :closable="false" class="mb-4" />
-   <el-form ref="formRef" :model="form" label-position="top" @submit.prevent="save">
+   <el-form class="business-border-label-form" ref="formRef" :model="form" label-position="top" @submit.prevent="save">
     <template v-if="dialog==='user'||dialog==='userEdit'">
      <el-form-item prop="username" :label="t('administration.username')" :rules="dialog==='user'?[{required:true,pattern:/^[A-Za-z0-9][A-Za-z0-9._@-]{0,99}$/,message:t('administration.invalidUsername'),trigger:'blur'}]:[]"><el-input v-model="form.username" :disabled="saving||dialog==='userEdit'" :maxlength="100" autocomplete="off" /></el-form-item>
      <el-form-item prop="displayName" :label="t('administration.displayName')" :rules="nameRules"><el-input v-model="form.displayName" :disabled="saving" :maxlength="100" /></el-form-item>

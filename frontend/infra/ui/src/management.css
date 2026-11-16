@@ -136,3 +136,22 @@
 .app-managed-dialog .app-dialog-actions .el-button + .el-button { margin-inline-start:0; }
 .app-managed-dialog .el-dialog__body :is(.management-form-actions,.actions) { border-top:1px solid var(--el-border-color-lighter); margin-top:16px; padding-top:12px; display:flex; justify-content:flex-end; flex-wrap:wrap; gap:8px; }
 .app-managed-dialog .el-dialog__body :is(.management-form-actions,.actions) .el-button + .el-button { margin-inline-start:0; }
+
+/* 普通业务表单统一嵌入边框标签：显式标记避免影响登录、安全验证、画布及查询行。
+   data-form-style="special" 可在表单或特殊字段显式退出。保持原列布局及校验模型；
+   标签恒显、控件默认最小高 36px、底间距 14px，错误时 24px，单位 px，不缩小正文。 */
+.business-border-label-form:not([data-form-style="special"]) > .el-form-item:has(.el-input,.el-select,.el-textarea,.el-date-editor):not([data-form-style="special"]),
+.business-border-label-form:not([data-form-style="special"]) .el-form-item:has(.el-input,.el-select,.el-textarea,.el-date-editor):not([data-form-style="special"]) {
+ position:relative;display:block;padding-top:8px;margin-bottom:14px;
+}
+.business-border-label-form:not([data-form-style="special"]) .el-form-item:has(.el-input,.el-select,.el-textarea,.el-date-editor):not([data-form-style="special"]) > .el-form-item__label {
+ position:absolute;z-index:1;top:0;left:9px;height:auto;line-height:16px;max-width:calc(100% - 18px);
+ margin:0;padding:0 4px;font-size:12px;font-weight:400;background:var(--el-bg-color);color:var(--el-text-color-regular);
+}
+.business-border-label-form .el-form-item:has(.el-input,.el-select,.el-textarea,.el-date-editor) > .el-form-item__content {margin-left:0!important;min-height:36px;}
+.business-border-label-form :is(.el-input__wrapper,.el-select__wrapper) {min-height:36px;box-sizing:border-box;}
+.business-border-label-form .el-form-item:focus-within > .el-form-item__label {color:var(--el-color-primary);}
+.business-border-label-form .el-form-item.is-error {margin-bottom:24px;}
+.business-border-label-form .el-form-item.is-error > .el-form-item__label {color:var(--el-color-danger);}
+.business-border-label-form .el-form-item__error {line-height:16px;white-space:normal;}
+@media(max-width:600px){.business-border-label-form :is(.el-input__wrapper,.el-select__wrapper){min-height:40px;}}

@@ -39,6 +39,12 @@ export function useDataThemeChange() {
   watch(() => $storage.configure?.menuColor, value => {
     body.setAttribute("data-menu-color", value === "light" || value === "dark" ? value : "auto");
   }, { immediate: true });
+  /** 区块间距为全站显示偏好：单位 px，默认 8，范围 0–24 的偶数；非法旧值回退默认。
+   * 列表与详情共享同一变量，不改变卡片内部字段间距、权限或业务参数。 */
+  watch(() => $storage.configure?.sectionGap, value => {
+    const gap=typeof value==="number"&&Number.isInteger(value)&&value>=0&&value<=24&&value%2===0?value:8;
+    body.style.setProperty("--app-section-gap",`${gap}px`);
+  },{immediate:true});
   // 多个导航/设置组件持有各自的 ref，随公共偏好同步，避免切换入口之间显示旧状态。
   watch(() => $storage?.layout?.darkMode, value => { dataTheme.value = Boolean(value); });
   watch(() => $storage?.layout?.themeMode, value => { themeMode.value = value; });

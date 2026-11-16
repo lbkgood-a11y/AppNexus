@@ -140,6 +140,8 @@ declare global {
     hideTabs?: boolean;
     /** 是否隐藏纯展示页面横幅，默认 false；仅影响界面，不影响授权。 */
     hidePageBanner?: boolean;
+    /** 列表与详情区块间距，单位 px，默认 8，范围 0–24、步进 2；本机显示偏好。 */
+    sectionGap?: number;
     hideFooter?: boolean;
     sidebarStatus?: boolean;
     epThemeColor?: string;
@@ -185,6 +187,8 @@ declare global {
       hideTabs?: boolean;
       /** 是否隐藏纯展示页面横幅，默认 false；仅影响界面，不影响授权。 */
     hidePageBanner?: boolean;
+    /** 列表与详情区块间距，单位 px，默认 8，范围 0–24、步进 2；本机显示偏好。 */
+    sectionGap?: number;
     hideFooter?: boolean;
       showLogo?: boolean;
       watermark?: boolean;

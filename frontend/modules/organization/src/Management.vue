@@ -232,7 +232,7 @@ watch(tree, nodes => {
 
     <ManagedDialog :model-value="Boolean(dialog)" :title="t('organization.' + dialog + 'Dialog')" width="min(600px, calc(100vw - 32px))" :busy="saving" @update:model-value="value => { if (!value) dialog = '' }">
       <FloatingError v-if="dialogError" class="organization-dialog-error" :title="dialogError" scope="dialogError" type="error" show-icon :closable="false" />
-      <el-form label-position="top" @submit.prevent="save">
+      <el-form class="business-border-label-form" label-position="top" @submit.prevent="save">
         <template v-if="['type', 'unit', 'position'].includes(dialog)"><el-form-item v-if="!selected" :label="t('organization.code')" required><el-input v-model="code" maxlength="50" show-word-limit /></el-form-item><el-form-item :label="dialog === 'position' ? t('organization.positionName') : t('organization.name')" required><el-input v-model="name" maxlength="100" show-word-limit /></el-form-item></template>
         <el-form-item v-if="dialog === 'unit' && !selected" :label="t('organization.type')" required><el-select v-model="typeId"><el-option v-for="item in types.filter(value => value.enabled)" :key="item.id" :label="item.name" :value="item.id" /></el-select></el-form-item>
         <el-form-item v-if="dialog === 'unit' || dialog === 'move'" :label="t('organization.parent')"><el-select v-model="parentId" clearable :placeholder="t('organization.tenantRoot')"><el-option v-for="item in units.filter(value => value.enabled && value.typeId === (selected && 'typeId' in selected ? selected.typeId : typeId) && value.id !== selected?.id)" :key="item.id" :label="item.name" :value="item.id" /></el-select></el-form-item>

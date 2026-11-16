@@ -291,3 +291,123 @@
  .master-data-detail .detail-section-heading > .el-button {min-height:44px;min-width:44px;}
  .master-data-detail .detail-section > .el-card__body {padding:12px;}
 }
+
+/* 人员样板在真实应用壳中只允许最外层纵向滚动：卡片不能参与剩余高度压缩。
+   普通列表的 flex 高度链不适用于长详情；表格全屏仍保留自身的视口布局。
+   缩小展示留白而不改变控件尺寸，100% 缩放下所有区块保持完整可达。 */
+.viewport-page-host:has(.master-data-detail) {overflow-y:auto;overflow-x:hidden;display:block;}
+.viewport-page-host .main-content:has(.master-data-detail),
+.viewport-page-host .personnel-editor:has(.master-data-detail) {display:block;flex:none;min-height:0;overflow:visible;}
+.viewport-page-host .master-data-detail {flex:none;height:auto;min-height:0;overflow:visible;}
+.master-data-detail > *, .master-data-detail .detail-profile-form > .el-card {flex-shrink:0;}
+.master-data-detail > .el-card {overflow:visible;}
+.master-data-detail .detail-section > .el-card__header {padding:6px 12px;}
+.master-data-detail .detail-section > .el-card__body {padding:10px 12px 2px;}
+.master-data-detail .detail-field-grid .el-form-item {margin-bottom:10px;}
+.master-data-detail .detail-field-grid .el-form-item__label {line-height:18px;padding-bottom:2px;}
+.master-data-detail .detail-system > .el-card__body {padding:8px 12px;}
+.master-data-detail .detail-audit-grid {margin-top:8px;gap:8px 16px;}
+.master-data-detail .tabbed-detail-template__tabs > .el-card__body {overflow:visible;}
+.master-data-detail .management-table:not(.is-fullscreen),
+.master-data-detail .management-table:not(.is-fullscreen) .management-table-region {flex:none;height:auto;min-height:0;overflow:visible;}
+
+/* 详情内部各层自然增高，尤其覆盖路由 main-content 的列表固定高度；
+   table surface 和 body 不能留下独立裁切，纵向统一交由应用壳滚动。 */
+.viewport-page-host .main-content:has(.master-data-detail) {height:auto;max-height:none;}
+.viewport-page-host .master-data-detail .tabbed-detail-template__tabs,
+.viewport-page-host .master-data-detail .tabbed-detail-template__tabs > .el-card__body,
+.viewport-page-host .master-data-detail .management-table:not(.is-fullscreen),
+.viewport-page-host .master-data-detail .management-table:not(.is-fullscreen) > .management-table-surface {
+ height:auto;max-height:none;flex:0 0 auto;overflow:visible;
+}
+
+/* 六列试排：以实际详情内容宽度而非浏览器宽度判断，侧栏和固定页宽会占用可用空间。
+   内容至少 1320px 才使用六列（每列约 200px），720–1319px 四列，480–719px 两列，
+   小于 480px 单列；单位 px。仅调整列数/列距，不缩小字号、控件或隐藏字段。 */
+.master-data-detail .detail-profile-form {container-type:inline-size;}
+.master-data-detail .detail-field-grid {column-gap:16px;}
+@container (min-width:1320px) {
+ .master-data-detail .detail-field-grid {grid-template-columns:repeat(6,minmax(0,1fr));}
+}
+@container (min-width:720px) and (max-width:1319px) {
+ .master-data-detail .detail-field-grid {grid-template-columns:repeat(4,minmax(0,1fr));}
+}
+@container (min-width:480px) and (max-width:719px) {
+ .master-data-detail .detail-field-grid {grid-template-columns:repeat(2,minmax(0,1fr));}
+}
+@container (max-width:479px) {
+ .master-data-detail .detail-field-grid {grid-template-columns:minmax(0,1fr);}
+ .master-data-detail .detail-field-wide {grid-column:auto;}
+}
+
+/* 边框嵌入标签试用：只对显式声明的主数据表单生效，标签一直可见，保留原生 label/for 和必填标记。
+   每项顶部预留 8px、控件最小高度 36px、底部 14px（校验时 24px），单位 px；
+   不移动真实输入区域，不缩放文字，不影响弹窗、查询和登录表单。背景继承主题卡片，适配深浅色。 */
+.master-data-detail .detail-border-label-form .detail-field-grid > .el-form-item {
+ position:relative;display:block;padding-top:8px;margin-bottom:14px;
+}
+.master-data-detail .detail-border-label-form .detail-field-grid > .el-form-item > .el-form-item__label {
+ position:absolute;z-index:1;top:0;left:9px;max-width:calc(100% - 18px);
+ height:auto;min-height:16px;line-height:16px;margin:0;padding:0 4px;
+ font-size:12px;background:var(--el-bg-color);color:var(--el-text-color-regular);
+ white-space:normal;overflow-wrap:anywhere;pointer-events:auto;
+}
+.master-data-detail .detail-border-label-form .el-form-item__content {min-height:36px;line-height:36px;}
+.master-data-detail .detail-border-label-form :is(.el-input__wrapper,.el-select__wrapper) {min-height:36px;box-sizing:border-box;}
+.master-data-detail .detail-border-label-form .el-textarea__inner {min-height:36px;line-height:24px;padding-top:6px;padding-bottom:4px;}
+.master-data-detail .detail-border-label-form .detail-code-value {
+ display:flex;align-items:center;width:100%;min-height:36px;padding:0 11px;box-sizing:border-box;
+ background:var(--el-fill-color-light);box-shadow:0 0 0 1px var(--el-border-color) inset;color:var(--el-text-color-primary);
+}
+.master-data-detail .detail-border-label-form .el-form-item:focus-within > .el-form-item__label {color:var(--el-color-primary);}
+.master-data-detail .detail-border-label-form .el-form-item.is-error {margin-bottom:24px;}
+.master-data-detail .detail-border-label-form .el-form-item.is-error > .el-form-item__label {color:var(--el-color-danger);}
+.master-data-detail .detail-border-label-form .el-form-item__error {line-height:16px;padding-top:2px;white-space:normal;}
+/* 英文长标签和放大字体可换行；表单不靠固定行高裁切标签。 */
+.master-data-detail .detail-border-label-form .el-form-item:has(> .el-form-item__label:empty) {padding-top:0;}
+@media(max-width:600px){
+ .master-data-detail .detail-border-label-form :is(.el-input__wrapper,.el-select__wrapper,.detail-code-value) {min-height:40px;}
+}
+
+/* 详情页头只容纳一行标题和标准按钮，移除重复上下留白；底部沿用全局 8px 页面间距。
+   短详情由最后明细卡片填充剩余空间，长详情不收缩、不裁切，继续由宿主自然滚动。 */
+.master-data-detail > .page-header {padding:0 4px;}
+.master-data-detail .page-header__main {min-height:32px;gap:12px;}
+.master-data-detail .page-header__actions {gap:8px;}
+.viewport-page-host:has(.master-data-detail) > .main-content {
+ display:flex;flex-direction:column;min-height:calc(100% - 2 * var(--app-page-gap,8px));
+ box-sizing:border-box;margin-bottom:var(--app-page-gap,8px);
+}
+.viewport-page-host .main-content > .personnel-editor:has(.master-data-detail) {display:flex;flex-direction:column;flex:1;}
+.viewport-page-host .personnel-editor > .master-data-detail {flex:1;}
+.viewport-page-host .master-data-detail > .tabbed-detail-template__tabs {flex:1 0 auto;margin-bottom:0;}
+/* 明细卡片的剩余高度继续传递至表格表面，分页靠底；表体保持自然高度，
+   避免长详情被固定高度裁切或产生第二条纵向滚动条。全屏沿用公共表格布局。 */
+.viewport-page-host .master-data-detail > .tabbed-detail-template__tabs {display:flex;flex-direction:column;}
+.viewport-page-host .master-data-detail > .tabbed-detail-template__tabs > .el-card__body {
+ display:flex;flex-direction:column;flex:1 0 auto;
+}
+.viewport-page-host .master-data-detail .tabbed-detail-template__tabs .management-table:not(.is-fullscreen) {
+ display:flex;flex-direction:column;flex:1 0 auto;
+}
+.viewport-page-host .master-data-detail .tabbed-detail-template__tabs .management-table:not(.is-fullscreen) > .management-table-surface {
+ flex:1 0 auto;
+}
+.viewport-page-host .master-data-detail .tabbed-detail-template__tabs .management-table:not(.is-fullscreen) > .management-table-surface > .management-pagination {
+ margin-top:auto;
+}
+@media(max-width:600px){.master-data-detail .page-header__main {gap:4px;}}
+
+/* 区块间距只作用于区块之间的真实间隔；内容 padding、导航高度和边框不随参数改变。
+   宿主显示页面底色，使间隔与详情卡片间隔语义一致，不在白色区块内插入空白。
+   默认 8px，0px 时自然贴合；隐藏/空插槽不占位置，嵌入树表不重复增加间距。 */
+.business-workspace {row-gap:var(--app-section-gap,8px);background:var(--el-bg-color-page);}
+.business-workspace > :is(.business-workspace__navigation,.business-workspace__feedback,.business-workspace__search,.business-workspace__data) {
+ margin:0;padding:var(--app-content-padding,8px);background:var(--el-bg-color);
+}
+.business-workspace > .business-workspace__navigation {padding-block:0;}
+.business-workspace > .business-workspace__data:has(> .tree-list-template.is-embedded) {padding:0;}
+.tree-list-template__content {row-gap:var(--app-section-gap,8px);background:var(--el-bg-color-page);}
+.tree-list-template__content > :is(.tree-list-template__header,.tree-list-template__feedback,.tree-list-template__search,.tree-list-template__data) {
+ margin:0;padding:var(--app-content-padding,8px);background:var(--el-bg-color);
+}

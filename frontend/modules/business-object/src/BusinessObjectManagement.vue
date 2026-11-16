@@ -155,7 +155,7 @@ onMounted(async()=>{await load();const type=router.currentRoute.value.query.type
         </el-card>
         <el-card shadow="never" class="object-contract-section">
           <template #header><h3>{{t('businessObject.tenantAuthorization')}}<el-tag size="small" type="info">{{grants.length}}</el-tag></h3></template>
-        <el-form label-position="top" class="object-grant-form"><el-form-item :label="t('businessObject.tenant')"><el-select v-model="tenant" filterable><el-option v-for="v in tenants" :key="v.id" :label="v.name" :value="v.id"/></el-select></el-form-item><el-button v-operation="'BusinessObject.grant'" type="primary" :disabled="!tenant" :loading="busy" @click="grant(tenant,true)">{{t('businessObject.authorize')}}</el-button></el-form>
+        <el-form label-position="top" class="business-border-label-form object-grant-form"><el-form-item :label="t('businessObject.tenant')"><el-select v-model="tenant" filterable><el-option v-for="v in tenants" :key="v.id" :label="v.name" :value="v.id"/></el-select></el-form-item><el-button v-operation="'BusinessObject.grant'" type="primary" :disabled="!tenant" :loading="busy" @click="grant(tenant,true)">{{t('businessObject.authorize')}}</el-button></el-form>
         <vxe-table size="small" :min-height="0" :column-config="{ resizable: true }"  :data="grants" border="inner"><vxe-column :title="t('businessObject.tenant')"><template #default="{row}">{{tenants.find(v=>v.id===row.tenant_id)?.name||row.tenant_id}}</template></vxe-column><vxe-column :title="t('businessObject.state')"><template #default="{row}">{{t(row.enabled?'businessObject.enabled':'businessObject.disabled')}}</template></vxe-column><vxe-column :title="t('businessObject.operations')"><template #default="{row}"><el-button v-operation="'BusinessObject.grant'" link :disabled="busy" @click="grant(row.tenant_id,!row.enabled)">{{t(row.enabled?'businessObject.revoke':'businessObject.authorize')}}</el-button></template></vxe-column></vxe-table>
       </el-card>
       </template>
@@ -167,7 +167,7 @@ onMounted(async()=>{await load();const type=router.currentRoute.value.query.type
         <p>{{t('businessObject.publishedVersion')}}: {{published}}</p>
         <el-button :disabled="busy" @click="add">{{t('businessObject.addBinding')}}</el-button><el-button :disabled="busy" @click="open(selected)">{{t('businessObject.reload')}}</el-button>
         <el-empty v-if="bindings.some(b=>b.operationCode&&b.service==='WORKFLOW'&&!(workflows[b.operationCode]?.length))" :description="t('businessObject.noWorkflow')" />
-        <el-form v-for="(b,index) in bindings" :key="b.id" :ref="form=>bindForm(b.id,form)" :model="b" :rules="bindingRules" label-position="top" class="business-object-binding">
+        <el-form v-for="(b,index) in bindings" :key="b.id" :ref="form=>bindForm(b.id,form)" :model="b" :rules="bindingRules" label-position="top" class="business-border-label-form business-object-binding">
           <el-form-item :label="t('businessObject.bindingName')" prop="name"><el-input v-model="b.name" maxlength="100"/></el-form-item>
           <el-form-item :label="t('businessObject.action')" prop="operationId">
             <el-select :model-value="b.operationId" :placeholder="t('businessObject.selectPageOperation')" filterable @update:model-value="selectPageOperation(b,selected,$event)">

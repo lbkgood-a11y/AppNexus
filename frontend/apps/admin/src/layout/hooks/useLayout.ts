@@ -39,6 +39,8 @@ export function useLayout() {
         weak: $config?.Weak ?? false,
         hideTabs: $config?.HideTabs ?? false,
         hidePageBanner: false,
+        // 列表/详情区块间距，单位 px；默认 8，0–24 偶数，仅展示偏好。
+        sectionGap: 8,
         hideFooter: $config.HideFooter ?? true,
         showLogo: $config?.ShowLogo ?? true,
         watermark: $config?.Watermark ?? false,

@@ -133,7 +133,7 @@ onBeforeUnmount(()=>window.removeEventListener("beforeunload",beforeUnload));
    </PageHeader></template>
    <template #content>
     <el-result v-if="failed" icon="error" :title="t('masterData.unavailable')"><template #extra><el-button :disabled="busy" @click="reload">{{t('personnel.retry')}}</el-button></template></el-result>
-    <el-form v-else ref="form" :model="draft" :rules="rules" label-position="top" :disabled="!editable||busy" class="detail-profile-form" @submit.prevent="save">
+    <el-form v-else ref="form" :model="draft" :rules="rules" label-position="top" :disabled="!editable||busy" class="detail-profile-form detail-border-label-form" @submit.prevent="save">
      <el-card v-for="group in profileGroups" :key="group.key" shadow="never" class="detail-section" :body-style="group.key==='details'&&!detailsExpanded?{padding:'0'}:undefined">
       <template #header><div class="detail-section-heading"><h2>{{group.title}}</h2><el-button v-if="group.key==='details'" text :aria-label="t(detailsExpanded?'personnel.collapseDetails':'personnel.expandDetails')" :aria-expanded="detailsExpanded" aria-controls="personnel-profile-details" @click="detailsExpanded=!detailsExpanded"><AppIcon :name="detailsExpanded?'arrowUp':'arrowDown'" :size="18" /></el-button></div></template>
       <div v-show="group.key==='basic'||detailsExpanded" :id="group.key==='details'?'personnel-profile-details':undefined" :class="{'detail-identity-layout':group.key==='basic'}">
@@ -182,7 +182,7 @@ onBeforeUnmount(()=>window.removeEventListener("beforeunload",beforeUnload));
    </template>
   </TabbedDetailTemplate>
   <ManagedDialog v-model="dialog" :title="t(isAssignment?(detailId?'personnel.editAssignment':'personnel.addAssignment'):(detailId?'personnel.editDetail':'personnel.addDetail'))" :busy="busy">
-   <el-form ref="detailForm" :model="values" :rules="detailRules" label-position="top" :disabled="busy" @submit.prevent="saveDetail">
+   <el-form class="business-border-label-form" ref="detailForm" :model="values" :rules="detailRules" label-position="top" :disabled="busy" @submit.prevent="saveDetail">
     <el-form-item v-for="field in dialogFields" :key="field" :label="label(field)" :prop="field">
      <el-date-picker v-if="isDate(field)" v-model="values[field]" type="date" value-format="YYYY-MM-DD" format="YYYY-MM-DD" />
      <el-select v-else-if="['organizationId','positionId','memberId'].includes(field)||personnelChoices[field]" v-model="values[field]" filterable clearable @change="field==='organizationId'&&changeOrganization()"><el-option v-for="option in options(field)" :key="option.value" :value="option.value" :label="option.label" /></el-select>

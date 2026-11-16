@@ -72,7 +72,7 @@ onBeforeUnmount(() => { secret.value = undefined; name.value = ""; createVisible
     </template>
   </BusinessWorkspace>
   <ManagedDialog v-model="createVisible" :title="t('administration.createClient')" width="560px" :busy="saving" :close-on-click-modal="false">
-      <el-form ref="form" :model="{ name }" label-position="top" @submit.prevent="create">
+      <el-form class="business-border-label-form" ref="form" :model="{ name }" label-position="top" @submit.prevent="create">
         <el-form-item prop="name" :label="t('administration.clientName')" :rules="[{ required: true, whitespace: true, max: 100, message: t('administration.invalidName'), trigger: 'blur' }]"><el-input v-model="name" :maxlength="100" :disabled="saving || loading" /></el-form-item>
         <el-form-item :label="t('administration.clientPurpose')"><el-select style="width: 100%" v-model="purpose" :disabled="saving||loading"><el-option value="document" :label="t('administration.documentClient')"/><el-option value="dictionary" :label="t('administration.dictionaryClient')"/><el-option value="print" :label="t('administration.printClient')"/><el-option value="externalPrint" :label="t('administration.externalPrintClient')"/></el-select></el-form-item><el-form-item v-if="purpose==='dictionary'"><el-checkbox v-model="allowReferences" :disabled="saving || loading">{{ t("administration.allowReferences") }}</el-checkbox></el-form-item>
         <el-form-item><el-button v-operation="'IntegrationClient.create'" type="primary" native-type="submit" :loading="saving" :disabled="loading || !!error">{{ t("administration.createClient") }}</el-button></el-form-item>
