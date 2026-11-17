@@ -27,7 +27,7 @@ class PersonDataServiceTest {
   }
   @Test void revokedOrMissingPermissionNeverTouchesDatabase(){
     var jdbc=mock(JdbcTemplate.class);var access=mock(AccessAuthorization.class);
-    var service=new PersonDataService(jdbc,access,mock(PlatformTransactionManager.class));
+    var service=new PersonDataService(jdbc,access,mock(PlatformTransactionManager.class),mock(com.appnexus.platform.configuration.BusinessValueCatalog.class));
     var c=new VerifiedTenantContext(UUID.randomUUID(),UUID.randomUUID(),UUID.randomUUID(),1);
     for(var kind:Kind.values()){
       assertThatThrownBy(()->service.list(c,kind,"",null,1,20)).isInstanceOf(Rejection.class);

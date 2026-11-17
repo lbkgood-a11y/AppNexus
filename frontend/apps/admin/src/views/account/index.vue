@@ -6,7 +6,6 @@ import { useRoute, useRouter } from "vue-router";
 import AccountSessions from "./components/AccountSessions.vue";
 import SecurityLogs from "./components/SecurityLogs.vue";
 import MultiFactorSettings from "./components/MultiFactorSettings.vue";
-import TenantParameters from "./components/TenantParameters.vue";
 import AuditQuery from "./components/AuditQuery.vue";
 import TenantInvitationAcceptance from "./components/TenantInvitationAcceptance.vue";
 import ThemeToggle from "@/components/ThemeToggle/index.vue";
@@ -153,7 +152,6 @@ onMounted(load);
           </el-select>
         </div>
         <div class="preference-note"><AppIcon name="monitor" :size="17" /><span>{{ t("account.preferenceScope") }}</span></div>
-        <TenantParameters />
       </section>
 
       <AccountSessions v-else-if="section === 'sessions'" class="content-section" />

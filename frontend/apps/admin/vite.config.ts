@@ -24,10 +24,13 @@ export default async ({ mode }: ConfigEnv): Promise<UserConfigExport> => {
       port: VITE_PORT,
       host: "0.0.0.0",
       // 本地跨域代理 https://cn.vitejs.dev/config/server-options.html#server-proxy
-      proxy: Object.fromEntries(
+      proxy: {
+        // 高德要求 _AMapService 为一级路由；转发到已有 /api 入口，保留服务端租户与权限过滤器。
+        "/_AMapService": { target: "http://localhost:8080", changeOrigin: false, rewrite: path => "/api/maps" + path },
+        ...Object.fromEntries(
         ["/api", "/bff", "/oauth2", "/login", "/userinfo", "/connect", "/.well-known"]
           .map(path => [path, { target: "http://localhost:8080", changeOrigin: false }])
-      ),
+      )},
       // 预热文件以提前转换和缓存结果，降低启动期间的初始页面加载时长并防止转换瀑布
       warmup: {
         clientFiles: ["./index.html", "./src/{views,components}/*"]

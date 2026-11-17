@@ -22,7 +22,7 @@ public class PartnerDictionaryController {
     public record Page(List<Item> items,long total,int page,int pageSize){}
     /**
      * 读取当前客户端固定租户下启用的字典项；查询与计数使用相同双表租户谓词。
-     * @param code 2–64 位小写字母、数字或下划线，不接受 SQL 表达式
+     * @param code 1–64 位小写英文语义码，以字母开头、单词间单个下划线；禁止 UUID、哈希和 SQL 表达式
      * @param page 页码从 1 开始，最大 100000，缺省 1
      * @param pageSize 每页 1–100 条，缺省 20
      * @param auth 已完成不透明 Token 验证的集成身份；普通用户 Token 被接口面门禁拒绝
@@ -33,7 +33,7 @@ public class PartnerDictionaryController {
             @RequestParam(defaultValue="20") int pageSize,BearerTokenAuthentication auth){
         if(auth.getAuthorities().stream().noneMatch(value->value.getAuthority().equals("SCOPE_dictionaries:read")))
             throw AccountSettingsController.problem(HttpStatus.FORBIDDEN,"PARTNER_SCOPE_REQUIRED","客户端未获得此操作授权");
-        if(!code.matches("[a-z][a-z0-9_]{1,63}")||page<1||page>100000||pageSize<1||pageSize>100)
+        if(!com.appnexus.platform.configuration.DictionaryValueStandard.validCode(code)||page<1||page>100000||pageSize<1||pageSize>100)
             throw AccountSettingsController.problem(HttpStatus.BAD_REQUEST,"INVALID_PARTNER_QUERY","查询参数不正确");
         String tenant=(String)auth.getTokenAttributes().get("tenantId");
         try{

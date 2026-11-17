@@ -142,6 +142,8 @@ declare global {
     hidePageBanner?: boolean;
     /** 列表与详情区块间距，单位 px，默认 8，范围 0–24、步进 2；本机显示偏好。 */
     sectionGap?: number;
+    /** 权限检查间隔，单位秒；默认 0 关闭，启用时为 30–3600 整数；仅本机偏好，不改变服务端鉴权。 */
+    operationRefreshSeconds?: number;
     hideFooter?: boolean;
     sidebarStatus?: boolean;
     epThemeColor?: string;
@@ -189,6 +191,8 @@ declare global {
     hidePageBanner?: boolean;
     /** 列表与详情区块间距，单位 px，默认 8，范围 0–24、步进 2；本机显示偏好。 */
     sectionGap?: number;
+    /** 权限检查间隔，单位秒；默认 0 关闭，启用时为 30–3600 整数；仅本机偏好，不改变服务端鉴权。 */
+    operationRefreshSeconds?: number;
     hideFooter?: boolean;
       showLogo?: boolean;
       watermark?: boolean;

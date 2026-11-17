@@ -15,7 +15,9 @@ import static org.assertj.core.api.Assertions.*;
 /** 参数默认值、租户隔离、受权维护及并发版本在真实数据库上验证。 */
 @SpringBootTest
 @ActiveProfiles("local")
+@org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 class TenantParameterTest extends DatabaseTestSupport {
+    @Autowired org.springframework.test.web.servlet.MockMvc mvc;
     @Autowired TenantParameters parameters;
     @Autowired MyBatisPlatformAdministration administration;
     @Autowired JdbcTemplate jdbc;
@@ -35,11 +37,35 @@ class TenantParameterTest extends DatabaseTestSupport {
         assertThatThrownBy(()->parameters.save(a,"display.page-size","101",-1)).isInstanceOf(org.springframework.web.ErrorResponseException.class);
         assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM tenant_parameter_audit WHERE tenant_id=UUID_TO_BIN(?)",Integer.class,a.tenantId().toString())).isEqualTo(2);
     }
+    /** 地图公开配置只在本租户可见；外部代理地址和安全密钥参数不在白名单。 */
+    @Test void mapParametersRemainTenantScoped(){
+        var a=context();var b=context();
+        parameters.save(a,"map.amap-service-host","/api/maps/_AMapService",-1);
+        assertThat(parameters.list(b).stream().filter(value->value.key().equals("map.amap-service-host")).findFirst().orElseThrow().value()).isEqualTo("/api/maps/_AMapService");
+        assertThatThrownBy(()->parameters.save(a,"map.amap-service-host","https://example.com",0)).isInstanceOf(org.springframework.web.ErrorResponseException.class);
+        assertThatThrownBy(()->parameters.save(a,"map.amap-key","invalid",-1)).isInstanceOf(org.springframework.web.ErrorResponseException.class);
+        assertThatThrownBy(()->parameters.save(a,"map.security-secret","forbidden",-1)).isInstanceOf(org.springframework.web.ErrorResponseException.class);
+    }
+    /** 真实过滤器链验证匿名及普通成员不能消耗地图代理；有仓库权限的成员得到受控缺配置提示。 */
+    @Test void proxyRequiresSessionTenantAndWarehousePermission() throws Exception {
+        mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get("/api/maps/_AMapService/configuration")).andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().isUnauthorized());
+        var owner=context();UUID ordinary=account();administration.addMember(actor,owner.tenantId(),ordinary);
+        UUID member=UUID.fromString(jdbc.queryForObject("SELECT BIN_TO_UUID(id) FROM tenant_member WHERE tenant_id=UUID_TO_BIN(?) AND account_id=UUID_TO_BIN(?)",String.class,owner.tenantId().toString(),ordinary.toString()));
+        mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get("/api/maps/_AMapService/configuration").cookie(proxySession(ordinary,owner.tenantId(),member))).andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().isForbidden());
+        mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get("/api/maps/_AMapService/configuration").cookie(proxySession(owner.accountId(),owner.tenantId(),owner.memberId()))).andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().isServiceUnavailable());
+    }
+    /** 测试会话仍走真实成员和权限验证，不用请求头指定租户身份。 */
+    private jakarta.servlet.http.Cookie proxySession(UUID account,UUID tenant,UUID member){
+        var value=sessionRepository.createSession();var security=org.springframework.security.core.context.SecurityContextHolder.createEmptyContext();
+        security.setAuthentication(org.springframework.security.authentication.UsernamePasswordAuthenticationToken.authenticated(org.springframework.security.core.userdetails.User.withUsername(account.toString()).password("").authorities("ACCOUNT").build(),null,List.of(new org.springframework.security.core.authority.SimpleGrantedAuthority("ACCOUNT"))));
+        value.setAttribute("SPRING_SECURITY_CONTEXT",security);value.setAttribute("appnexus.credentialVersion",0L);value.setAttribute("appnexus.tenant",tenant.toString());value.setAttribute("appnexus.member",member.toString());value.setAttribute("appnexus.tenantVersion",1L);sessionRepository.save(value);
+        return new jakarta.servlet.http.Cookie("JSESSIONID",Base64.getEncoder().encodeToString(value.getId().getBytes(java.nio.charset.StandardCharsets.UTF_8)));
+    }
     @Test void ordinaryMemberCannotMaintainAndInactiveContextIsRejected(){
         var owner=context();UUID account=account();administration.addMember(actor,owner.tenantId(),account);
         UUID member=UUID.fromString(jdbc.queryForObject("SELECT BIN_TO_UUID(id) FROM tenant_member WHERE tenant_id=UUID_TO_BIN(?) AND account_id=UUID_TO_BIN(?)",String.class,owner.tenantId().toString(),account.toString()));
         var ordinary=new VerifiedTenantContext(account,owner.tenantId(),member,1);
-        assertThat(parameters.list(ordinary)).hasSize(3);
+        assertThat(parameters.list(ordinary)).hasSize(5);
         assertThatThrownBy(()->parameters.save(ordinary,"display.currency","USD",-1)).isInstanceOf(org.springframework.web.ErrorResponseException.class);
         assertThatThrownBy(()->parameters.list(new VerifiedTenantContext(account,UUID.randomUUID(),member,1))).isInstanceOf(org.springframework.web.ErrorResponseException.class);
         administration.setTenantEnabled(actor,owner.tenantId(),false);

@@ -329,3 +329,18 @@ BusinessWorkspace、TreeListTemplate、StandardListTemplate 的 search 插槽统
 ### 区块间距语义纠正
 
 用户明确区块间距调整的是两个独立区域之间的细小间隔，不能放大白色内容内部空白、导航留白或边框。撤销上次相邻内容 margin-top 与清除 padding 的处理。BusinessWorkspace 和树表右侧内容容器使用 row-gap:var(--app-section-gap)，宿主以页面底色呈现间隔；各区块保留固定 --app-content-padding，导航上下 padding 为 0，边框粗细不变。该项覆盖前述“连续列表区块间距接入补齐”的错误实现说明。
+
+### 人员编码超长展示
+
+人员详情已保存编码改为单行省略，超出字段宽度显示省略号；复用 Element Plus Tooltip，悬停或键盘聚焦可查看完整值，浮层长编码允许换行并限制为视口以内。仅调整只读展示，不改变编码值、校验或提交契约，不新增组件。类型检查和生产构建结果以本次交付记录为准；真实页面浏览器验收尚未执行。
+
+
+### 展开、收起与下拉图标统一（2026-11-17）
+
+按用户要求，分区展开／收起统一使用 @appnexus/icons 的 AppIcon：已展开时使用 arrowUp 表达可收起，已收起时使用 arrowDown 表达可展开，尺寸18px；禁止以“展开／收起”文字按钮或 Unicode 箭头代替。按钮保留国际化 aria-label、状态 aria-expanded 和必要的 aria-controls，悬停保留提示文字。功能目录整体展开／收起采用同一方向语义。左右面板继续使用现有 collapsePanel／expandPanel，方向跟随左右位置；模板原生树、菜单、折叠组件保留组件原有图标适配，不替换上游实现。下拉工具栏使用 arrowDown，禁止拼接 ▾ 等字符。
+
+本次同步客商详情、人员详情、公共查询区、功能目录和打印设计器；隔离打印 iframe 通过 Vue render 序列化公共本地图标，保持原 CSP，不增加外部资源或图标库。只调整图标与可访问名称，不改变业务操作、请求、筛选及草稿状态。
+
+### 独立左树右表横幅间距补齐（2026-11-17）
+
+业务字典与菜单管理共用 TreeListTemplate。独立模板卡片 body 原有 gap:0，导致横幅与下层分栏不响应 configure.sectionGap；现统一使用 --app-section-gap（默认 8px，范围 0–24px），间隔使用页面底色。保持横幅和内容内部 padding、边框及嵌入模式不变；隐藏横幅后由布局自然消除间隔。源码检查已确认两页复用同一修复入口，真实浏览器显示效果尚未验收。

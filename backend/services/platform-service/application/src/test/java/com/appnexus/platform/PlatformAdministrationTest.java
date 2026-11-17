@@ -49,6 +49,8 @@ class PlatformAdministrationTest extends DatabaseTestSupport {
   UUID administrator=user(),request=UUID.randomUUID();
   var tenant=service.createTenant(actor,request,"Managed Tenant",administrator);
   assertThat(service.createTenant(actor,request,"Managed Tenant",administrator).id()).isEqualTo(tenant.id());
+  // 真正开通执行器必须同步发布初始化事件，重复请求不能重复目录或伪造管理员为操作者。
+  assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM md_subdivision WHERE tenant_id=UUID_TO_BIN(?) AND created_by=UUID_TO_BIN(?) AND updated_by=UUID_TO_BIN(?)",Integer.class,tenant.id().toString(),actor.toString(),actor.toString())).isEqualTo(8224);
   assertThat(service.members(actor,tenant.id(),1,20,"").items()).hasSize(1);
   assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM organization_capability_grant WHERE tenant_id=UUID_TO_BIN(?)",Integer.class,tenant.id().toString())).isZero();
   assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM tenant_member WHERE tenant_id=UUID_TO_BIN(?) AND account_id=UUID_TO_BIN(?)",Integer.class,tenant.id().toString(),actor.toString())).isZero();

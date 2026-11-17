@@ -8,7 +8,7 @@ withDefaults(defineProps<{
   /** 启用人员详情样板的布局密度，默认 false；后续主数据/基础数据详情应显式启用。 */
   masterData?: boolean;
 }>(),{masterData:false});
-defineSlots<{header?:()=>unknown;summary?:()=>unknown;content?:()=>unknown;system?:()=>unknown;tabs:()=>unknown}>();
+defineSlots<{header?:()=>unknown;summary?:()=>unknown;content?:()=>unknown;system?:()=>unknown;tabs?:()=>unknown}>();
 </script>
 <template>
  <div class="page-template tabbed-detail-template" :class="{'master-data-detail':masterData}">
@@ -16,6 +16,6 @@ defineSlots<{header?:()=>unknown;summary?:()=>unknown;content?:()=>unknown;syste
   <slot v-if="$slots.content" name="content" />
   <el-card v-else shadow="never"><slot name="summary" /></el-card>
   <el-card v-if="$slots.system" class="detail-system" shadow="never"><slot name="system" /></el-card>
-  <el-card class="tabbed-detail-template__tabs" shadow="never"><slot name="tabs" /></el-card>
+  <el-card v-if="$slots.tabs" class="tabbed-detail-template__tabs" shadow="never"><slot name="tabs" /></el-card>
  </div>
 </template>

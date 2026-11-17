@@ -6,6 +6,7 @@ const path=(_kind:"person",id?:string)=>"/api/master-data/person"+(id?"/"+encode
 async function mutate<T>(method:"post"|"put"|"delete",url:string,data:object):Promise<T>{const csrf=await http.request<{headerName:string;token:string}>("get","/bff/csrf");return http.request<T>(method,url,{data,headers:{[csrf.headerName]:csrf.token}});}
 /** 人员专用真实 API；ID 与固定分类经路径编码，不从客户端接收租户、操作者或权限码。 */
 export const personnelApi:PersonnelApi={
+  geographyDirectory:()=>http.request("get",path("person")+"/options",{params:{geography:true}}),
   operations:()=>http.request<string[]>("get","/api/operation-decisions"),
   list:(_kind,query)=>http.request("get",path("person"),{params:query}),
   create:(_kind,input)=>mutate("post",path("person"),input),

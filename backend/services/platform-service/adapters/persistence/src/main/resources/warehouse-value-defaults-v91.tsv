@@ -1,0 +1,5 @@
+# 仓库分类稳定值；只补缺失，不覆盖租户维护。
+warehouse_type	仓库类型	PHYSICAL	实体仓库
+warehouse_type	仓库类型	VIRTUAL	虚拟仓库
+warehouse_operating_mode	仓库经营模式	SELF_OPERATED	自管
+warehouse_operating_mode	仓库经营模式	OUTSOURCED	委外

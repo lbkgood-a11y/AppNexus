@@ -28,6 +28,7 @@ class PersonnelIntegrationTest extends DatabaseTestSupport {
   private Fixture fixture(){
     UUID tenant=UUID.randomUUID(),account=UUID.randomUUID(),member=UUID.randomUUID(),userAccount=UUID.randomUUID(),userMember=UUID.randomUUID(),type=UUID.randomUUID(),org=UUID.randomUUID(),position=UUID.randomUUID();
     jdbc.update("INSERT INTO platform_tenant(id,name) VALUES(UUID_TO_BIN(?),'人员测试租户')",tenant.toString());
+    com.appnexus.platform.persistence.configuration.StandardDictionaryDefaults.seed(jdbc,tenant,null);
     for(var pair:List.of(Map.entry(account,member),Map.entry(userAccount,userMember))){
       jdbc.update("INSERT INTO identity_account(id,username,display_name,password_hash) VALUES(UUID_TO_BIN(?),?,'人员测试用户','unused')",pair.getKey().toString(),"person-"+pair.getKey());
       jdbc.update("INSERT INTO tenant_member(id,tenant_id,account_id) VALUES(UUID_TO_BIN(?),UUID_TO_BIN(?),UUID_TO_BIN(?))",pair.getValue().toString(),tenant.toString(),pair.getKey().toString());
@@ -113,6 +114,9 @@ class PersonnelIntegrationTest extends DatabaseTestSupport {
       for(String field:section.required)values.put(field,"测试明细");
       if(section.fields.contains("organizationId"))values.put("organizationId",f.org());
       if(section.fields.contains("positionId"))values.put("positionId",f.position());
+      if(section==PersonnelSchema.Section.CERTIFICATES)values.put("certificateType","VOCATIONAL_QUALIFICATION");
+      if(section==PersonnelSchema.Section.CONTACTS)values.put("contactType","PHONE");
+      if(section==PersonnelSchema.Section.ADDRESSES)values.put("addressType","HOME");
       if(section==PersonnelSchema.Section.REWARDSPENALTIES)values.put("recordType","REWARD");
       if(section.fields.contains("startsOn")){values.put("startsOn","2020-01-01");values.put("endsOn","2021-01-01");}
       String detail=personnel.saveDetail(f.admin(),id,section.code,null,new PersonnelService.DetailInput(version(f,id),values)).get("id");
@@ -127,13 +131,13 @@ class PersonnelIntegrationTest extends DatabaseTestSupport {
     assertThat(personnel.read(f.admin(),id).details()).isEmpty();
     assertThatThrownBy(()->master.update(f.admin(),Kind.PERSON,id,new Input("PERSON-1","测试",Map.of("birthDate","9999-01-01"),version(f,id)))).hasMessage("MASTER_DATA_INPUT_INVALID");
     long current=version(f,id);
-    assertThatThrownBy(()->personnel.saveDetail(f.admin(),id,"contacts",null,new PersonnelService.DetailInput(current,Map.of("contactType","电话","contactValue","x","tenantId","forged")))).hasMessage("MASTER_DATA_INPUT_INVALID");
+    assertThatThrownBy(()->personnel.saveDetail(f.admin(),id,"contacts",null,new PersonnelService.DetailInput(current,Map.of("contactType","PHONE","contactValue","x","tenantId","forged")))).hasMessage("MASTER_DATA_INPUT_INVALID");
     assertThat(version(f,id)).isEqualTo(current);
     assertThatThrownBy(()->personnel.saveDetail(f.admin(),id,"training",null,new PersonnelService.DetailInput(current,Map.of("trainingName","测试","startsOn","2024-02-30")))).hasMessage("MASTER_DATA_INPUT_INVALID");
     assertThatThrownBy(()->personnel.saveDetail(f.admin(),id,"training",null,new PersonnelService.DetailInput(current,Map.of("trainingName","测试","startsOn","2024-05-01","endsOn","2024-01-01")))).hasMessage("MASTER_DATA_INPUT_INVALID");
     var other=fixture();
     assertThatThrownBy(()->personnel.read(other.admin(),id)).hasMessage("PERSON_NOT_FOUND");
-    assertThatThrownBy(()->personnel.saveDetail(other.admin(),id,"contacts",null,new PersonnelService.DetailInput(current,Map.of("contactType","电话","contactValue","x")))).hasMessage("MASTER_DATA_CHANGED");
+    assertThatThrownBy(()->personnel.saveDetail(other.admin(),id,"contacts",null,new PersonnelService.DetailInput(current,Map.of("contactType","PHONE","contactValue","x")))).hasMessage("MASTER_DATA_CHANGED");
     assertThatThrownBy(()->personnel.saveDetail(f.admin(),id,"organizations",null,new PersonnelService.DetailInput(current,Map.of("organizationId",other.org())))).hasMessage("PERSON_ORGANIZATION_UNAVAILABLE");
     assertThat(personnel.read(f.admin(),id).audit().updatedBy()).isEqualToIgnoringCase(f.admin().accountId().toString());
   }

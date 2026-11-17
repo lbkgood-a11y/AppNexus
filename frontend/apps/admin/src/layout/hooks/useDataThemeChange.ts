@@ -1,3 +1,4 @@
+import { setOperationRefreshSeconds } from "@/directives/operation";
 import { ref, watch } from "vue";
 import { getConfig } from "@/config";
 import { useLayout } from "./useLayout";
@@ -32,6 +33,8 @@ export function useDataThemeChange() {
   ]);
 
   const { $storage } = useGlobal<GlobalPropertiesApi>();
+  /** 权限轮询默认关闭；只读本机偏好，改变后立即调整共享定时器。 */
+  watch(() => $storage.configure?.operationRefreshSeconds, setOperationRefreshSeconds, { immediate: true });
   const dataTheme = ref<boolean>($storage?.layout?.darkMode);
   const themeMode = ref<string>($storage?.layout?.themeMode ?? "system");
   const body = document.documentElement as HTMLElement;

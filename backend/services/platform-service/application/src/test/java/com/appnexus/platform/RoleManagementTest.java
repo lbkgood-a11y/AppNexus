@@ -66,11 +66,11 @@ class RoleManagementTest extends DatabaseTestSupport {
   var empty=subjectRoles.memberRoles(c,member);subjectRoles.replaceMemberRoles(c,member,empty.authorityVersion(),java.util.Set.of(role.id()),"审核新增字典操作");
   var created=mvc.perform(post("/api/configuration/dictionaries").cookie(cookie).with(csrf()).contentType("application/json").content("{\"code\":\"test_dictionary\",\"name\":\"Test\",\"sortOrder\":100}")).andExpect(status().isOk()).andReturn();
   String dictionaryId=jdbc.queryForObject("SELECT BIN_TO_UUID(id) FROM tenant_dictionary WHERE tenant_id=UUID_TO_BIN(?) AND code='test_dictionary'",String.class,tenant.id().toString());
-  // 非空集合必须经过真实消息转换器，并保留授权后附加的只读审计字段。
+  /** 租户已有标准预置字典，按本次新建 ID 验证消息转换及审计，不能假设其排序为首项。 */
   mvc.perform(get("/api/configuration/dictionaries").cookie(cookie)).andExpect(status().isOk())
-   .andExpect(jsonPath("$[0].id").value(dictionaryId))
-   .andExpect(jsonPath("$[0].audit.createdBy").value(account.toString()));
-  mvc.perform(post("/api/configuration/dictionaries/"+dictionaryId+"/items").cookie(cookie).with(csrf()).contentType("application/json").content("{\"code\":\"item_one\",\"value\":\"one\",\"name\":\"One\",\"sortOrder\":100}")).andExpect(status().isForbidden());
+   .andExpect(jsonPath("$[?(@.id == '"+dictionaryId+"')].code").value(org.hamcrest.Matchers.contains("test_dictionary")))
+   .andExpect(jsonPath("$[?(@.id == '"+dictionaryId+"')].audit.createdBy").value(org.hamcrest.Matchers.contains(account.toString())));
+  mvc.perform(post("/api/configuration/dictionaries/"+dictionaryId+"/items").cookie(cookie).with(csrf()).contentType("application/json").content("{\"code\":\"item_one\",\"value\":\"ONE\",\"name\":\"One\",\"sortOrder\":100}")).andExpect(status().isForbidden());
   var current=subjectRoles.memberRoles(c,member);subjectRoles.replaceMemberRoles(c,member,current.authorityVersion(),java.util.Set.of(),"撤销字典权限");
   mvc.perform(get("/api/configuration/dictionaries").cookie(cookie)).andExpect(status().isForbidden());
  }

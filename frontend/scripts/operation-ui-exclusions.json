@@ -16,10 +16,6 @@
     "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
   },
   {
-    "key": "[\"frontend/apps/admin/src/components/ReIcon/src/Select.vue\",\"el-button\",\"onClear\",null,null,\"清空\"]",
-    "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
-  },
-  {
     "key": "[\"frontend/apps/admin/src/layout/components/lay-navbar/index.vue\",\"el-dropdown-item\",\"accountRouter.push('/account/profile')\",null,null,\"{{ t(\\\"account.title\\\") }}\"]",
     "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
   },
@@ -77,10 +73,6 @@
   },
   {
     "key": "[\"frontend/apps/admin/src/views/account/components/SecurityLogs.vue\",\"el-button\",\"load\",null,null,\"{{ t(\\\"account.refresh\\\") }}\"]",
-    "reason": "查询、刷新或展示选择；读取接口继续执行原授权，不独立授予刷新按钮权限"
-  },
-  {
-    "key": "[\"frontend/apps/admin/src/views/account/components/TenantParameters.vue\",\"el-button\",\"load\",null,null,\"{{ t(\\\"account.retry\\\") }}\"]",
     "reason": "查询、刷新或展示选择；读取接口继续执行原授权，不独立授予刷新按钮权限"
   },
   {
@@ -296,11 +288,11 @@
     "reason": "查询、刷新或展示选择；读取接口继续执行原授权，不独立授予刷新按钮权限"
   },
   {
-    "key": "[\"frontend/modules/configuration/src/FeatureCatalog.vue\",\"el-button\",\"expandAll(true)\",null,null,\"{{ t('featureCatalog.expand') }}\"]",
+    "key": "[\"frontend/modules/configuration/src/FeatureCatalog.vue\",\"el-button\",\"expandAll(true)\",null,null,\"\"]",
     "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
   },
   {
-    "key": "[\"frontend/modules/configuration/src/FeatureCatalog.vue\",\"el-button\",\"expandAll(false)\",null,null,\"{{ t('featureCatalog.collapse') }}\"]",
+    "key": "[\"frontend/modules/configuration/src/FeatureCatalog.vue\",\"el-button\",\"expandAll(false)\",null,null,\"\"]",
     "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
   },
   {
@@ -818,5 +810,97 @@
   {
     "key": "[\"frontend/modules/organization/src/personnel/PersonnelEditor.vue\",\"el-button\",\"detailsExpanded=!detailsExpanded\",null,null,\"\"]",
     "reason": "仅通过 v-show 折叠详细资料，不卸载表单、不改变字段、不触发请求；无业务写入，保存仍校验同一完整表单。"
+  },
+  {
+    "key": "[\"frontend/modules/master-data/src/PartnerEditor.vue\",\"el-button\",\"reload\",null,null,\"{{t('masterData.retry')}}\"]",
+    "reason": "主动重新读取已授权档案，未保存时确认；无业务写入"
+  },
+  {
+    "key": "[\"frontend/modules/master-data/src/PartnerEditor.vue\",\"el-button\",\"back\",null,null,\"{{t('partner.back')}}\"]",
+    "reason": "仅返回列表，离开前确认草稿；无业务写入"
+  },
+  {
+    "key": "[\"frontend/modules/master-data/src/PartnerEditor.vue\",\"el-button\",\"expanded=!expanded\",null,null,\"\"]",
+    "reason": "仅折叠详细资料，保留草稿与校验；无请求"
+  },
+  {
+    "key": "[\"frontend/modules/master-data/src/PartnerEditor.vue\",\"el-button\",\"dialog=false\",null,null,\"{{t('masterData.cancel')}}\"]",
+    "reason": "取消局部明细编辑，不触发 API 写入"
+  },
+  {
+    "key": "[\"frontend/infra/ui/src/SearchPanel.vue\",\"el-button\",\"expanded = !expanded\",null,null,\"\"]",
+    "reason": "公共查询区仅切换 v-show 折叠状态，保留表单与筛选条件，不触发读取或业务写入；图标按钮有独立无障碍名称。"
+  },
+  {
+    "key": "[\"frontend/modules/master-data/src/WarehouseEditor.vue\",\"el-button\",\"reload\",null,null,\"{{t('masterData.retry')}}\"]",
+    "reason": "确认草稿后只读重新获取原权限下的仓库及字典；不重放写入。"
+  },
+  {
+    "key": "[\"frontend/modules/master-data/src/WarehouseEditor.vue\",\"el-button\",\"back\",null,null,\"{{t('partner.back')}}\"]",
+    "reason": "确认未保存草稿后返回列表；无服务端写入。"
+  },
+  {
+    "key": "[\"frontend/modules/master-data/src/WarehouseEditor.vue\",\"el-button\",\"expanded[group]=!expanded[group]\",null,null,\"\"]",
+    "reason": "仅折叠分组，保留字段草稿与校验，无请求或业务写入。"
+  },
+  {
+    "key": "[\"frontend/modules/master-data/src/WarehouseEditor.vue\",\"el-button\",\"mapOpen=true\",null,null,\"{{t('warehouseMap.pick')}}\"]",
+    "reason": "仅打开地图选点弹窗，不写入服务端；确认仅修改草稿，原 Warehouse.create/update 保存执行授权。"
+  },
+  {
+    "key": "[\"frontend/modules/master-data/src/WarehouseMapPicker.vue\",\"el-button\",\"initialize\",null,null,\"{{ t('warehouseMap.retry') }}\"]",
+    "reason": "仅重新读取当前租户公开配置并加载官方地图，不写业务数据。"
+  },
+  {
+    "key": "[\"frontend/modules/master-data/src/WarehouseMapPicker.vue\",\"el-button\",\"emit('close')\",null,null,\"{{ t('masterData.cancel') }}\"]",
+    "reason": "仅关闭地图，丢弃未确认坐标，不写入服务端。"
+  },
+  {
+    "key": "[\"frontend/modules/master-data/src/WarehouseMapPicker.vue\",\"el-button\",\"confirm\",null,null,\"{{ t('warehouseMap.confirm') }}\"]",
+    "reason": "仅成对回填仓库草稿经纬度，不写入服务端；原保存操作独立授权。"
+  },
+  {
+    "key": "[\"frontend/apps/admin/src/components/ReIcon/src/Select.vue\",\"el-button\",\"selectIcon(name)\",null,null,\"\"]",
+    "reason": "仅选择或清空菜单表单中的图标草稿，不调用业务接口；持久化由菜单保存操作统一鉴权。"
+  },
+  {
+    "key": "[\"frontend/apps/admin/src/components/ReIcon/src/Select.vue\",\"el-button\",\"selectIcon('')\",null,null,\"{{ t('iconPicker.clear') }}\"]",
+    "reason": "仅选择或清空菜单表单中的图标草稿，不调用业务接口；持久化由菜单保存操作统一鉴权。"
+  },
+  {
+    "key": "[\"frontend/apps/admin/src/views/configuration/components/TenantParameters.vue\",\"el-button\",\"load\",null,null,\"{{ t('account.retry') }}\"]",
+    "reason": "重新读取当前租户受权配置，不写入业务数据。"
+  },
+  {
+    "key": "[\"frontend/apps/admin/src/views/configuration/components/TenantParameters.vue\",\"el-button\",\"auditRow = row\",null,null,\"{{ t('tenantParameterEditor.audit') }}\"]",
+    "reason": "仅展开已授权参数自带的只读审计，不查询其他账号或记录。"
+  },
+  {
+    "key": "[\"frontend/apps/admin/src/views/configuration/components/TenantParameters.vue\",\"el-button\",\"resetTheme\",null,null,\"{{ t('tenantParameterEditor.reset') }}\"]",
+    "reason": "仅还原当前主题本地草稿，不调用写入接口。"
+  },
+  {
+    "key": "[\"frontend/modules/master-data/src/WarehouseMapPicker.vue\",\"el-button\",\"search\",null,null,\"{{t('warehouseMap.search')}}\"]",
+    "reason": "地点查询仅调用高德公开查询，不写入业务数据；已有地图权限由代理复核。"
+  },
+  {
+    "key": "[\"frontend/modules/master-data/src/WarehouseMapPicker.vue\",\"el-button\",\"locate(row)\",null,null,\"{{row.name}} · {{row.address}}\"]",
+    "reason": "候选地点仅定位地图并修改坐标草稿；仓库保存独立授权。"
+  },
+  {
+    "key": "[\"frontend/modules/master-data/src/product/CatalogManagement.vue\",\"el-button\",\"dialog=false\",null,null,\"{{t('masterData.cancel')}}\"]",
+    "reason": "只关闭当前本地配置表单，不调用API、不发布配置、不修改业务记录；保存按钮单独绑定真实操作。"
+  },
+  {
+    "key": "[\"frontend/modules/master-data/src/product/ProductEditor.vue\",\"el-button\",\"close\",null,null,\"{{t('productV1.back')}}\"]",
+    "reason": "确认放弃本地未保存输入后返回列表，不调用业务写接口。"
+  },
+  {
+    "key": "[\"frontend/modules/master-data/src/product/ProductEditor.vue\",\"el-button\",\"cancelMigration\",null,null,\"{{t('masterData.cancel')}}\"]",
+    "reason": "仅取消本地迁移草稿并读取当前商品，不执行迁移，不推进版本。"
+  },
+  {
+    "key": "[\"frontend/modules/master-data/src/product/ProductEditor.vue\",\"el-button\",\"previewOpen=false\",null,null,\"{{t('masterData.cancel')}}\"]",
+    "reason": "只关闭预览确认框，不取消已提交请求，不修改商品。"
   }
 ]

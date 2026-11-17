@@ -58,8 +58,28 @@ import RiFlowChart from "~icons/ri/flow-chart?raw";
 import RiPrinterLine from "~icons/ri/printer-line?raw";
 import RiDatabase2Line from "~icons/ri/database-2-line?raw";
 
+import RiContactsLine from "~icons/ri/contacts-line?raw";
+import RiStore2Line from "~icons/ri/store-2-line?raw";
+import RiGlobalLine from "~icons/ri/global-line?raw";
+import RiMapPin2Line from "~icons/ri/map-pin-2-line?raw";
+import RiShoppingBag3Line from "~icons/ri/shopping-bag-3-line?raw";
+import RiNodeTree from "~icons/ri/node-tree?raw";
+import RiRulerLine from "~icons/ri/ruler-line?raw";
+import RiListSettingsLine from "~icons/ri/list-settings-line?raw";
+import RiLayoutGridLine from "~icons/ri/layout-grid-line?raw";
+
 const icons = [
-  // 主数据目录及五类菜单已配置此名称；必须注册本地 SVG，离线渲染器不会按名称自动下载图标。
+  // 主数据子菜单按业务语义区分，全部注册为本地 Remix Icon，兼容离线导航与图标选择器。
+  ["ri/contacts-line", RiContactsLine],
+  ["ri/store-2-line", RiStore2Line],
+  ["ri/global-line", RiGlobalLine],
+  ["ri/map-pin-2-line", RiMapPin2Line],
+  ["ri/shopping-bag-3-line", RiShoppingBag3Line],
+  ["ri/node-tree", RiNodeTree],
+  ["ri/ruler-line", RiRulerLine],
+  ["ri/list-settings-line", RiListSettingsLine],
+  ["ri/layout-grid-line", RiLayoutGridLine],
+  // 主数据目录保留数据库图标；子菜单使用独立业务图标，不依赖远程下载。
   ["ri/database-2-line", RiDatabase2Line],
   // 单据目录及工作台采用已登记的本地 SVG，不依赖运行时远程加载。
   ["ri/file-list-line", RiFileListLine],
@@ -121,3 +141,6 @@ const icons = [
 icons.forEach(([name, icon]) => {
   addIcon(name as string, getSvgInfo(icon as string));
 });
+
+/** 已注册的本地图标名称；选择器仅提供导航离线渲染器可显示的图标。 */
+export const offlineIconNames: readonly string[] = icons.map(([name]) => name as string);

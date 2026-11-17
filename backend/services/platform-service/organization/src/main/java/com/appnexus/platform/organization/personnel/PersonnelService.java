@@ -4,6 +4,7 @@ import com.appnexus.platform.authorization.AccessAuthorization;
 import com.appnexus.platform.organization.PersonnelDirectory;
 import com.appnexus.platform.tenant.VerifiedTenantContext;
 import java.util.*;
+import com.appnexus.platform.configuration.BusinessValueCatalog;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -13,6 +14,7 @@ import static com.appnexus.platform.organization.personnel.PersonnelSchema.*;
 
 /** 人员详情、十类明细和账号人员关联；真实执行账号与被代表人员始终分别保存，不冒充登录身份。 */
 public final class PersonnelService {
+  private final BusinessValueCatalog dictionaries;
   private final JdbcTemplate jdbc;
   private final AccessAuthorization access;
   private final PersonnelDirectory directory;
@@ -22,8 +24,9 @@ public final class PersonnelService {
    * @param jdbc 主数据源
    * @param access 公开授权端口
    * @param directory 组织公开目录
+   * @param dictionaries 字典公开端口；不回退前端硬编码选项
    * @param manager 宿主事务管理器 */
-  public PersonnelService(JdbcTemplate jdbc,AccessAuthorization access,PersonnelDirectory directory,PlatformTransactionManager manager){this.jdbc=jdbc;this.access=access;this.directory=directory;this.tx=new TransactionTemplate(manager);}
+  public PersonnelService(JdbcTemplate jdbc,AccessAuthorization access,PersonnelDirectory directory,PlatformTransactionManager manager,BusinessValueCatalog dictionaries){this.dictionaries=dictionaries;this.jdbc=jdbc;this.access=access;this.directory=directory;this.tx=new TransactionTemplate(manager);}
   /**
    * 全量详情输入仅保存固定字段；父档案版本用于所有明细写入，避免不同页签并发覆盖。
    *
@@ -52,7 +55,16 @@ public final class PersonnelService {
   /**
    * @param c 可信请求上下文
    * @return 组织、岗位及有效账号人员目录；仅供分配及明细选择 */
-  public PersonnelDirectory.Catalog options(VerifiedTenantContext c){require(c,"read");return directory.catalog(c.tenantId());}
+  public Options options(VerifiedTenantContext c){require(c,"read");var base=directory.catalog(c.tenantId());return new Options(base.organizations(),base.positions(),base.users(),dictionaryOptions(c));}
+  /** 字典只控制状态名称及启用，不扩展真实在职/证书/奖惩状态机。 */
+  private Map<String,List<BusinessValueCatalog.Option>> dictionaryOptions(VerifiedTenantContext c){
+    var options=new HashMap<>(dictionaries.options(c.tenantId(),BusinessValueCatalog.PERSON));
+    var fixed=Map.of("employmentStatus",Set.of("ACTIVE","PROBATION","LEAVE","RETIRED"),"certificateStatus",Set.of("VALID","EXPIRED","REVOKED","PENDING"),"recordType",Set.of("REWARD","PENALTY"));
+    fixed.forEach((field,allowed)->options.computeIfPresent(field,(key,rows)->rows.stream().map(row->new BusinessValueCatalog.Option(row.value(),row.name(),row.enabled()&&allowed.contains(row.value()))).toList()));
+    return options;
+  }
+  /** 只读人员目录和字典，不需要字典维护权限。 */
+  public record Options(List<PersonnelDirectory.Organization> organizations,List<PersonnelDirectory.Position> positions,List<PersonnelDirectory.User> users,Map<String,List<BusinessValueCatalog.Option>> dictionaries){}
   /**
    *
    * @param c 可信请求上下文
@@ -102,6 +114,9 @@ public final class PersonnelService {
     String key=id==null?UUID.randomUUID().toString():id;
     return tx.execute(status->{
       bump(c,person,input.version());
+      var previous=Map.<String,String>of();
+      if(id!=null){var old=jdbc.queryForList("SELECT content FROM md_person_detail WHERE tenant_id=UUID_TO_BIN(?) AND person_id=UUID_TO_BIN(?) AND id=UUID_TO_BIN(?) AND section_code=?",String.class,c.tenantId().toString(),person,id,section.code);if(!old.isEmpty())previous=decode(old.getFirst());}
+      if(!dictionaries.reference(c.tenantId(),c.accountId(),"PersonDetail",person+":"+key,BusinessValueCatalog.PERSON,values,previous))throw invalid();
       if(section==Section.ORGANIZATIONS||section==Section.POSITIONS){
         if(!directory.saveAffiliation(c.tenantId(),uuid(person),section.code,uuid(key),id==null,values))throw changed();
         return Map.of("id",key);

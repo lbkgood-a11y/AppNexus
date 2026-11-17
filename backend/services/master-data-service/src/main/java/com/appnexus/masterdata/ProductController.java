@@ -15,10 +15,10 @@ public final class ProductController {
   /**
    * @param service 负责真实授权和事务的主数据服务 */
   public ProductController(MasterDataService service){this.service=service;}
-  /** 查询商品管理；真实鉴权、租户与并发校验由同一业务执行器负责。 */
+  /** options 缺省 false，为 true 时只读商品计量单位字典；查询商品管理；真实鉴权、租户与并发校验由同一业务执行器负责。 */
   @OperationBinding(id="Product.list",objectType="Product",operationCode="list",pages={"master-data/product"},nameZh="查询商品管理",nameEn="list Products",permissions={"masterdata.product:read"},policy="可信租户有效成员、独立功能权限、编码约束与版本校验")
   @GetMapping("")
-  public Object list(HttpServletRequest r,@RequestParam(defaultValue="") String keyword,@RequestParam(required=false) Boolean enabled,@RequestParam(defaultValue="1") int page,@RequestParam(defaultValue="20") int size) {return service.list(context(r),Kind.PRODUCT,keyword,enabled,page,size);}
+  public Object list(HttpServletRequest r,@RequestParam(defaultValue="") String keyword,@RequestParam(required=false) Boolean enabled,@RequestParam(defaultValue="1") int page,@RequestParam(defaultValue="20") int size,@RequestParam(defaultValue="false") boolean options) {if(options)return service.dictionaryOptions(context(r),Kind.PRODUCT);return service.list(context(r),Kind.PRODUCT,keyword,enabled,page,size);}
   /** 新增商品管理；真实鉴权、租户与并发校验由同一业务执行器负责。 */
   @OperationBinding(id="Product.create",objectType="Product",operationCode="create",pages={"master-data/product"},nameZh="新增商品管理",nameEn="create Products",permissions={"masterdata.product:create"},policy="可信租户有效成员、独立功能权限、编码约束与版本校验")
   @PostMapping("")

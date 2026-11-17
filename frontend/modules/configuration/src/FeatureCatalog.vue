@@ -102,7 +102,7 @@ onMounted(refresh);
     </template>
     <template #data>
       <ManagementTable embedded :title="t('featureCatalog.title')" :rows="rows" :columns="columns" :loading="loading" row-key="id" :expanded-row-keys="expandedKeys" :current-row-key="rows[0]?.id" @refresh="refresh" @expand-change="updateExpansion"><template #titleHelp><InfoHint :content="t('featureCatalog.hint')" /></template>
-        <template #actions><el-button @click="expandAll(true)">{{ t('featureCatalog.expand') }}</el-button><el-button @click="expandAll(false)">{{ t('featureCatalog.collapse') }}</el-button></template>
+        <template #actions><el-button text :title="t('featureCatalog.expand')" :aria-label="t('featureCatalog.expand')" @click="expandAll(true)"><AppIcon name="arrowDown" :size="18" /></el-button><el-button text :title="t('featureCatalog.collapse')" :aria-label="t('featureCatalog.collapse')" @click="expandAll(false)"><AppIcon name="arrowUp" :size="18" /></el-button></template>
         <template #title="{row}">{{ row.type === 'scope' ? t('menuManagement.scopes.' + row.title) : row.title }}</template>
         <template #category="{row}">{{ row.category ? t('businessObject.categories.'+row.category) : '—' }}</template>
         <template #type="{row}"><el-tag :type="row.type === 'operation' ? 'warning' : row.type === 'scope' ? 'primary' : 'info'">{{ t('featureCatalog.types.' + row.type) }}</el-tag></template>

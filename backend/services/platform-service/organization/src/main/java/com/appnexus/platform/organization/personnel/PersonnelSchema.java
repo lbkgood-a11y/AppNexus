@@ -32,18 +32,9 @@ public final class PersonnelSchema {
    * @return 分类；未知值返回 400，不访问数据库 */
     public static Section parse(String code){return Arrays.stream(values()).filter(s->s.code.equals(code)).findFirst().orElseThrow(PersonnelSchema::invalid);}
   }
-  /** 基础下拉取值是固定业务状态，空值允许未采集；不把停用标志与在职状态混为一谈。 */
+  /** 可配置分类由业务字典端口校验；此处仅约束真实固定业务状态，空值允许未采集；不把停用标志与在职状态混为一谈。 */
   public static void validateProfile(Map<String,String> values){
-    choice(values,"gender",Set.of("MALE","FEMALE","OTHER","UNDISCLOSED"));
-    choice(values,"identityType",Set.of("NATIONAL_ID","PASSPORT","OTHER"));
-    choice(values,"bloodType",Set.of("A","B","AB","O","UNKNOWN"));
-    choice(values,"workNature",Set.of("FULL_TIME","PART_TIME","CONTRACT","INTERN","OTHER"));
-    choice(values,"maritalStatus",Set.of("SINGLE","MARRIED","DIVORCED","WIDOWED","UNDISCLOSED"));
     choice(values,"employmentStatus",Set.of("ACTIVE","PROBATION","LEAVE","RETIRED"));
-    choice(values,"skillLevel",Set.of("JUNIOR","INTERMEDIATE","SENIOR","TECHNICIAN","SENIOR_TECHNICIAN"));
-    choice(values,"educationLevel",Set.of("PRIMARY","JUNIOR_HIGH","SENIOR_HIGH","VOCATIONAL","ASSOCIATE","BACHELOR","MASTER","DOCTOR","OTHER"));
-    choice(values,"educationLevel",Set.of("PRIMARY","JUNIOR_HIGH","SENIOR_HIGH","VOCATIONAL","ASSOCIATE","BACHELOR","MASTER","DOCTOR","OTHER"));
-    choice(values,"skillLevel",Set.of("JUNIOR","INTERMEDIATE","SENIOR","TECHNICIAN","SENIOR_TECHNICIAN"));
     String birth=values.get("birthDate");if(!birth.isEmpty()&&date(birth).isAfter(LocalDate.now(ZoneOffset.UTC)))throw invalid();
   }
   /**
@@ -69,10 +60,8 @@ public final class PersonnelSchema {
       result.put(field,value);
     }
     if(!result.getOrDefault("startsOn","").isEmpty()&&!result.getOrDefault("endsOn","").isEmpty()&&date(result.get("endsOn")).isBefore(date(result.get("startsOn"))))throw invalid();
-    if(section==Section.EDUCATION)choice(result,"educationLevel",Set.of("PRIMARY","JUNIOR_HIGH","SENIOR_HIGH","VOCATIONAL","ASSOCIATE","BACHELOR","MASTER","DOCTOR","OTHER"));
     if(section==Section.CERTIFICATES)choice(result,"certificateStatus",Set.of("VALID","EXPIRED","REVOKED","PENDING"));
     if(section==Section.REWARDSPENALTIES)choice(result,"recordType",Set.of("REWARD","PENALTY"));
-    if(section==Section.EDUCATION)choice(result,"educationLevel",Set.of("PRIMARY","JUNIOR_HIGH","SENIOR_HIGH","VOCATIONAL","ASSOCIATE","BACHELOR","MASTER","DOCTOR","OTHER"));
     return result;
   }
   /** 固定枚举允许空表示尚未采集；非空未知值拒绝，不自动猜测。 */

@@ -360,6 +360,9 @@ importers:
 
   modules/master-data:
     dependencies:
+      '@appnexus/icons':
+        specifier: workspace:*
+        version: link:../../infra/icons
       '@appnexus/ui':
         specifier: workspace:*
         version: link:../../infra/ui

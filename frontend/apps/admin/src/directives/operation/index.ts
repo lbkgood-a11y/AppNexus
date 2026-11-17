@@ -8,6 +8,16 @@ let pending: Promise<void> | undefined;
 let consumers = 0;
 let timer: ReturnType<typeof setInterval> | undefined;
 let generation = 0;
+let refreshSeconds = 0;
+/**
+ * 设置本机权限检查间隔；只影响按钮展示，业务 API 始终由后端鉴权。
+ * @param seconds 间隔秒数；0（默认）关闭轮询，启用范围为 30–3600 的整数，非法值回退 0；立即重建共享定时器。
+ */
+export function setOperationRefreshSeconds(seconds: unknown): void {
+  refreshSeconds = typeof seconds === "number" && Number.isInteger(seconds) && seconds >= 30 && seconds <= 3600 ? seconds : 0;
+  clearInterval(timer); timer = undefined;
+  if (consumers > 0 && refreshSeconds > 0) timer = setInterval(() => { void refresh(); }, refreshSeconds * 1000);
+}
 const cleanup = new WeakMap<HTMLElement, () => void>();
 const values = new WeakMap<HTMLElement, string>();
 /** 当前展示域只用于选择受权能力查询，不作为服务端租户来源。 */
@@ -16,10 +26,11 @@ function context() {
   if(path.startsWith("/account")) return `account:${currentTenant.value?.tenantId ?? "none"}`;
   return path.startsWith("/platform") ? "platform" : `tenant:${currentTenant.value?.tenantId ?? "none"}`;
 }
-/** 主动刷新不沿用旧授权；并发按钮共用一次请求，30 秒及焦点恢复复核，点击前仍由 API 验证。 */
+/** 同一上下文复核期间保留按钮，避免布局闪动；失败默认隐藏，上下文变化立即失效，API 始终复核权限。 */
 async function refresh() {
   if (pending) return pending;
-  const expected = context(); const epoch = generation; snapshot.value = undefined;
+  const expected = context(); const epoch = generation;
+  if (snapshot.value?.context !== expected) snapshot.value = undefined;
   pending = (async () => {
     try {
       // 个人中心同时包含本人操作与租户参数；分别读取真实管理域，不把平台权限代入租户。
@@ -56,7 +67,7 @@ export const operation: Directive<HTMLElement, string> = {
       element.style.display = snapshot.value?.context === current && allowed ? original : "none";
     });
     cleanup.set(element, stop);
-    if (consumers++ === 0) { timer = setInterval(() => { void refresh(); }, 30000); window.addEventListener("focus", refresh); window.addEventListener("hashchange", refresh); window.addEventListener("appnexus:authority-changed", refresh); window.addEventListener("appnexus:session-ended", reset); }
+    if (consumers++ === 0) { setOperationRefreshSeconds(refreshSeconds); window.addEventListener("focus", refresh); window.addEventListener("hashchange", refresh); window.addEventListener("appnexus:authority-changed", refresh); window.addEventListener("appnexus:session-ended", reset); }
     void refresh();
   },
   updated(element, binding) { if (values.get(element) !== binding.value) { values.set(element, binding.value); void refresh(); } },

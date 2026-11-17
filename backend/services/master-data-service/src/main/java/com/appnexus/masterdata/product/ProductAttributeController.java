@@ -1,0 +1,25 @@
+package com.appnexus.masterdata.product;
+import com.appnexus.contracts.operation.*;import com.appnexus.masterdata.MasterData.Rejection;import com.appnexus.platform.tenant.VerifiedTenantContext;import jakarta.servlet.http.HttpServletRequest;import org.springframework.web.bind.annotation.*;import static com.appnexus.masterdata.product.ProductAttributeService.*;
+/** 商品属性管理固定接口；修订发布后不可原地覆盖。 */
+@RestController @RequestMapping("/api/master-data/product-attribute")
+@BusinessObjectType(code="ProductAttribute",nameZh="商品属性",nameEn="Product attributes",category=BusinessObjectType.Category.MASTER_DATA,module="master-data")
+public final class ProductAttributeController {
+ private final ProductAttributeService service; public ProductAttributeController(ProductAttributeService service){this.service=service;}
+ @RecordAuditSource(table="md_product_attribute_group") @GetMapping("/groups") @OperationBinding(id="ProductAttribute.listGroups",objectType="ProductAttribute",operationCode="listGroups",nameZh="查询属性分组",nameEn="List attribute groups",pages={"master-data/product-attribute"},permissions={"masterdata.productattribute:read"},policy="可信租户有效成员、独立功能权限、领域校验及商品聚合版本") public Object groups(HttpServletRequest r){return service.groups(ctx(r));}
+ @PostMapping("/groups") @OperationBinding(id="ProductAttribute.createGroup",objectType="ProductAttribute",operationCode="createGroup",nameZh="新增属性分组",nameEn="Create attribute group",pages={"master-data/product-attribute"},permissions={"masterdata.productattribute:create"},policy="可信租户有效成员、独立功能权限、领域校验及商品聚合版本") public Object createGroup(HttpServletRequest r,@RequestBody GroupInput i){return service.createGroup(ctx(r),i);}
+ @RecordAuditSource(table="md_product_attribute") @GetMapping("") @OperationBinding(id="ProductAttribute.list",objectType="ProductAttribute",operationCode="list",nameZh="查询商品属性",nameEn="List product attributes",pages={"master-data/product-attribute"},permissions={"masterdata.productattribute:read"},policy="可信租户有效成员、独立功能权限、领域校验及商品聚合版本") public Object attributes(HttpServletRequest r){return service.attributes(ctx(r));}
+ @PostMapping("") @OperationBinding(id="ProductAttribute.create",objectType="ProductAttribute",operationCode="create",nameZh="新增商品属性",nameEn="Create product attribute",pages={"master-data/product-attribute"},permissions={"masterdata.productattribute:create"},policy="可信租户有效成员、独立功能权限、领域校验及商品聚合版本") public Object create(HttpServletRequest r,@RequestBody AttributeInput i){return service.createAttribute(ctx(r),i);}
+ @PostMapping("/{id}/revisions") @OperationBinding(id="ProductAttribute.createRevision",objectType="ProductAttribute",operationCode="createRevision",nameZh="新增属性修订",nameEn="Create attribute revision",pages={"master-data/product-attribute"},permissions={"masterdata.productattribute:update"},policy="可信租户有效成员、独立功能权限、领域校验及商品聚合版本") public Object revision(HttpServletRequest r,@PathVariable String id,@RequestBody RevisionInput i){return service.createRevision(ctx(r),id,i);}
+ @PostMapping("/revisions/{id}/publish") @OperationBinding(id="ProductAttribute.publishRevision",objectType="ProductAttribute",operationCode="publishRevision",nameZh="发布属性修订",nameEn="Publish attribute revision",pages={"master-data/product-attribute"},permissions={"masterdata.productattribute:publish"},policy="可信租户有效成员、独立功能权限、领域校验及商品聚合版本") public Object publish(HttpServletRequest r,@PathVariable String id,@RequestParam long version){service.publishRevision(ctx(r),id,version);return java.util.Map.of("ok",true);}
+ @PostMapping("/revisions/{id}/options") @OperationBinding(id="ProductAttribute.createOption",objectType="ProductAttribute",operationCode="createOption",nameZh="新增属性选项",nameEn="Create attribute option",pages={"master-data/product-attribute"},permissions={"masterdata.productattribute:update"},policy="可信租户有效成员、独立功能权限、领域校验及商品聚合版本") public Object option(HttpServletRequest r,@PathVariable String id,@RequestBody OptionInput i){return service.createOption(ctx(r),id,i);}
+
+ /** 读取属性固定修订列表。 */
+ @GetMapping("/{id}/revisions")
+ @OperationBinding(id="ProductAttribute.readRevisions",objectType="ProductAttribute",operationCode="readRevisions",nameZh="查看属性修订",nameEn="Read attribute revisions",pages={"master-data/product-attribute"},permissions={"masterdata.productattribute:read"},policy="可信租户及独立读取权")
+ public Object revisions(HttpServletRequest r,@PathVariable String id){return service.revisions(ctx(r),id);}
+ /** 读取固定修订枚举选项。 */
+ @GetMapping("/revisions/{id}/options")
+ @OperationBinding(id="ProductAttribute.readOptions",objectType="ProductAttribute",operationCode="readOptions",nameZh="查看属性选项",nameEn="Read attribute options",pages={"master-data/product-attribute"},permissions={"masterdata.productattribute:read"},policy="可信租户及独立读取权")
+ public Object options(HttpServletRequest r,@PathVariable String id){return service.options(ctx(r),id);}
+ private static VerifiedTenantContext ctx(HttpServletRequest r){Object v=r.getAttribute(VerifiedTenantContext.class.getName());if(!(v instanceof VerifiedTenantContext c))throw new Rejection(403,"MASTER_DATA_DENIED");return c;}
+}

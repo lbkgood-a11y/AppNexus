@@ -174,11 +174,11 @@ async function design(){await action(async()=>{await session.value!.design();mod
           </span>
         </el-tooltip>
       </div>
-      <el-dropdown v-if="mode==='design'" trigger="click" @command="canvasCommand"><el-button text :disabled="!ready">{{t('printWorkbench.canvas')}} ▾</el-button><template #dropdown><el-dropdown-menu>
+      <el-dropdown v-if="mode==='design'" trigger="click" @command="canvasCommand"><el-button text :disabled="!ready">{{t('printWorkbench.canvas')}} <AppIcon name="arrowDown" :size="18" /></el-button><template #dropdown><el-dropdown-menu>
         <el-dropdown-item command="paper">{{t('printing.pageSettings')}}</el-dropdown-item>
         <el-dropdown-item command="rotate">{{t('printing.rotatePaper')}}</el-dropdown-item>
       </el-dropdown-menu></template></el-dropdown>
-      <el-dropdown v-if="mode==='design'" trigger="click" @command="moreCommand"><el-button text :disabled="!ready">{{t('printWorkbench.more',english?'More':'更多')}} ▾</el-button><template #dropdown><el-dropdown-menu>
+      <el-dropdown v-if="mode==='design'" trigger="click" @command="moreCommand"><el-button text :disabled="!ready">{{t('printWorkbench.more',english?'More':'更多')}} <AppIcon name="arrowDown" :size="18" /></el-button><template #dropdown><el-dropdown-menu>
         <el-dropdown-item command="field">{{t('printing.businessField')}}</el-dropdown-item><el-dropdown-item command="text">{{t('printing.addText')}}</el-dropdown-item><el-dropdown-item command="arrange">{{t('printing.autoArrange')}}</el-dropdown-item><el-dropdown-item command="sync">{{t('printing.syncDesign')}}</el-dropdown-item>
       </el-dropdown-menu></template></el-dropdown>
       <div class="toolbar-preview">

@@ -4,12 +4,12 @@ import { nextTick, type DirectiveBinding, type ObjectDirective, type VNode } fro
 const state = vi.hoisted(() => ({ request: vi.fn(), tenant: { value: undefined as { tenantId: string } | undefined } }));
 vi.mock("@/utils/http", () => ({ http: { request: state.request } }));
 vi.mock("@/utils/tenantContext", () => ({ currentTenant: state.tenant }));
-import { operation } from "./index";
+import { operation, setOperationRefreshSeconds } from "./index";
 
 let release: (() => void) | undefined;
 /** 无浏览器凭据或真实 API 的指令生命周期验证，重点检查默认拒绝和撤权后响应。 */
 beforeEach(() => {
-  vi.useFakeTimers(); state.request.mockReset(); state.tenant.value = undefined;
+  vi.useFakeTimers(); setOperationRefreshSeconds(0); state.request.mockReset(); state.tenant.value = undefined;
   vi.stubGlobal("window", new EventTarget()); vi.stubGlobal("location", { hash: "#/platform/users", pathname: "/" });
 });
 afterEach(() => { release?.(); release = undefined; vi.useRealTimers(); vi.unstubAllGlobals(); });
@@ -65,4 +65,31 @@ it("reads self and tenant contexts separately on the account page", async () => 
   await settle(); expect(element.style.display).toBe("");
   expect(state.request).toHaveBeenCalledWith("get", "/bff/operation-decisions");
   expect(state.request).toHaveBeenCalledWith("get", "/api/operation-decisions");
+});
+
+/** 验证默认关闭、自定义间隔立即生效与关闭后的请求停止。 */
+it("polls only when explicitly enabled", async () => {
+  state.request.mockResolvedValue(["Account.create"]);
+  const element = mount("Account.create"); await settle();
+  const initial = state.request.mock.calls.length;
+  await vi.advanceTimersByTimeAsync(120000);
+  expect(state.request).toHaveBeenCalledTimes(initial);
+  setOperationRefreshSeconds(60);
+  await vi.advanceTimersByTimeAsync(60000);
+  expect(state.request).toHaveBeenCalledTimes(initial + 1);
+  expect(element.style.display).toBe("");
+  setOperationRefreshSeconds(0);
+  await vi.advanceTimersByTimeAsync(120000);
+  expect(state.request).toHaveBeenCalledTimes(initial + 1);
+});
+/** 同域复核保留展示，确认读取失败后默认拒绝，不降低 API 的鉴权要求。 */
+it("preserves buttons during recheck and hides on failure", async () => {
+  state.request.mockResolvedValue(["Account.create"]);
+  const element = mount("Account.create"); await settle();
+  let reject!: (error: Error) => void;
+  state.request.mockImplementation(() => new Promise((_resolve, fail) => { reject = fail; }));
+  window.dispatchEvent(new Event("focus")); await settle();
+  expect(element.style.display).toBe("");
+  reject(new Error("unavailable")); await settle();
+  expect(element.style.display).toBe("none");
 });

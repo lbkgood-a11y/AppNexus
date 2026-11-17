@@ -367,5 +367,148 @@
       "frontend/modules/organization/src/personnel/personnel.ts"
     ],
     "reason": "人员基础表单按创建/编辑选择；固定明细和组织用户关联分别调用真实端点；后端独立校验分类、租户、权限与人员版本。"
+  },
+  {
+    "file": "frontend/modules/master-data/src/PartnerEditor.vue",
+    "expression": "operation",
+    "operations": [
+      "BusinessPartner.create",
+      "BusinessPartner.update"
+    ],
+    "sources": [
+      "frontend/modules/master-data/src/PartnerEditor.vue"
+    ],
+    "reason": "客商页头保存按是否已有客商 UUID 选择新增或编辑；联系人及银行账户仅编辑本地草稿，真实写入统一由同一聚合操作与父版本控制。"
+  },
+  {
+    "file": "frontend/modules/master-data/src/WarehouseEditor.vue",
+    "expression": "operation",
+    "operations": [
+      "Warehouse.create",
+      "Warehouse.update"
+    ],
+    "sources": [
+      "frontend/modules/master-data/src/WarehouseEditor.vue"
+    ],
+    "reason": "仓库保存按服务端档案标识选择创建或编辑，后端独立校验租户、权限和版本。"
+  },
+  {
+    "file": "frontend/modules/master-data/src/product/CatalogManagement.vue",
+    "expression": "operation.list",
+    "operations": [
+      "ProductUnit.list",
+      "ProductCategory.list",
+      "ProductAttribute.list",
+      "ProductTemplate.list"
+    ],
+    "sources": [
+      "frontend/modules/master-data/src/product/CatalogManagement.vue"
+    ],
+    "reason": "已逐分支核对四类商品配置的真实Controller操作；空映射分支由对应v-if排除，服务端仍独立鉴权。"
+  },
+  {
+    "file": "frontend/modules/master-data/src/product/CatalogManagement.vue",
+    "expression": "operation.create",
+    "operations": [
+      "ProductUnit.create",
+      "ProductCategory.create",
+      "ProductAttribute.create",
+      "ProductTemplate.create"
+    ],
+    "sources": [
+      "frontend/modules/master-data/src/product/CatalogManagement.vue"
+    ],
+    "reason": "已逐分支核对四类商品配置的真实Controller操作；空映射分支由对应v-if排除，服务端仍独立鉴权。"
+  },
+  {
+    "file": "frontend/modules/master-data/src/product/CatalogManagement.vue",
+    "expression": "operation.update",
+    "operations": [
+      "ProductUnit.update",
+      "ProductCategory.update"
+    ],
+    "sources": [
+      "frontend/modules/master-data/src/product/CatalogManagement.vue"
+    ],
+    "reason": "已逐分支核对四类商品配置的真实Controller操作；空映射分支由对应v-if排除，服务端仍独立鉴权。"
+  },
+  {
+    "file": "frontend/modules/master-data/src/product/CatalogManagement.vue",
+    "expression": "operation.status",
+    "operations": [
+      "ProductUnit.setStatus",
+      "ProductCategory.setStatus"
+    ],
+    "sources": [
+      "frontend/modules/master-data/src/product/CatalogManagement.vue"
+    ],
+    "reason": "已逐分支核对四类商品配置的真实Controller操作；空映射分支由对应v-if排除，服务端仍独立鉴权。"
+  },
+  {
+    "file": "frontend/modules/master-data/src/product/CatalogManagement.vue",
+    "expression": "operation.readVersions",
+    "operations": [
+      "ProductAttribute.readRevisions",
+      "ProductTemplate.readVersions"
+    ],
+    "sources": [
+      "frontend/modules/master-data/src/product/CatalogManagement.vue"
+    ],
+    "reason": "已逐分支核对四类商品配置的真实Controller操作；空映射分支由对应v-if排除，服务端仍独立鉴权。"
+  },
+  {
+    "file": "frontend/modules/master-data/src/product/CatalogManagement.vue",
+    "expression": "operation.newVersion",
+    "operations": [
+      "ProductAttribute.createRevision",
+      "ProductTemplate.createVersion"
+    ],
+    "sources": [
+      "frontend/modules/master-data/src/product/CatalogManagement.vue"
+    ],
+    "reason": "已逐分支核对四类商品配置的真实Controller操作；空映射分支由对应v-if排除，服务端仍独立鉴权。"
+  },
+  {
+    "file": "frontend/modules/master-data/src/product/CatalogManagement.vue",
+    "expression": "operation.publish",
+    "operations": [
+      "ProductAttribute.publishRevision",
+      "ProductTemplate.publish"
+    ],
+    "sources": [
+      "frontend/modules/master-data/src/product/CatalogManagement.vue"
+    ],
+    "reason": "已逐分支核对四类商品配置的真实Controller操作；空映射分支由对应v-if排除，服务端仍独立鉴权。"
+  },
+  {
+    "file": "frontend/modules/master-data/src/product/CatalogManagement.vue",
+    "expression": "saveOperation",
+    "operations": [
+      "ProductUnit.create",
+      "ProductUnit.update",
+      "ProductCategory.create",
+      "ProductCategory.update",
+      "ProductCategory.publishConfiguration",
+      "ProductAttribute.create",
+      "ProductAttribute.createRevision",
+      "ProductTemplate.create",
+      "ProductTemplate.createVersion"
+    ],
+    "sources": [
+      "frontend/modules/master-data/src/product/CatalogManagement.vue"
+    ],
+    "reason": "已逐分支核对四类商品配置的真实Controller操作；空映射分支由对应v-if排除，服务端仍独立鉴权。"
+  },
+  {
+    "file": "frontend/modules/master-data/src/product/ProductEditor.vue",
+    "expression": "saveOperation",
+    "operations": [
+      "ProductV1.create",
+      "ProductV1.update"
+    ],
+    "sources": [
+      "frontend/modules/master-data/src/product/ProductEditor.vue"
+    ],
+    "reason": "未保存新建只提交ProductV1.create；已有商品仅普通资料/原定义值更新走ProductV1.update，结构迁移另绑预览执行操作。"
   }
 ]

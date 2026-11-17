@@ -1,266 +1,79 @@
 <script setup lang="ts">
-import { IconJson } from "@/components/ReIcon/data";
-import { cloneDeep, isAllEmpty } from "@pureadmin/utils";
-import { ref, computed, CSSProperties, watch } from "vue";
-import Search from "~icons/ri/search-eye-line";
+import { computed, ref, watch } from "vue";
+import { useI18n } from "vue-i18n";
+import { offlineIconNames } from "./offlineIcon";
+import IconifyIconOffline from "./iconifyIconOffline";
 
-type ParameterCSSProperties = (item?: string) => CSSProperties | undefined;
-
-defineOptions({
-  name: "IconSelect"
-});
-
-const inputValue = defineModel({ type: String });
-
-const iconList = ref(IconJson);
-const icon = ref();
-const currentActiveType = ref("ep:");
-// 深拷贝图标数据，前端做搜索
-const copyIconList = cloneDeep(iconList.value);
-const totalPage = ref(0);
-// 每页显示35个图标
-const pageSize = ref(35);
-const currentPage = ref(1);
-
-// 搜索条件
+/** 模板图标选择器：仅选择已注册本地图标，以斜杠名称保持菜单 API 与导航渲染契约。 */
+defineOptions({ name: "IconSelect" });
+/** 保存期间禁用输入、弹层与清空；默认允许选择。 */
+const props = defineProps<{ disabled?: boolean }>();
+const inputValue = defineModel<string>({ default: "" });
+const { t } = useI18n();
+const visible = ref(false);
 const filterValue = ref("");
-
-const tabsList = [
-  {
-    label: "Element Plus",
-    name: "ep:"
-  },
-  {
-    label: "Remix Icon",
-    name: "ri:"
-  },
-  {
-    label: "Font Awesome 5 Solid",
-    name: "fa-solid:"
-  }
-];
-
-const pageList = computed(() =>
-  copyIconList[currentActiveType.value]
-    .filter(i => i.includes(filterValue.value))
-    .slice(
-      (currentPage.value - 1) * pageSize.value,
-      currentPage.value * pageSize.value
-    )
-);
-
-const iconItemStyle = computed((): ParameterCSSProperties => {
-  return item => {
-    if (inputValue.value === currentActiveType.value + item) {
-      return {
-        borderColor: "var(--el-color-primary)",
-        color: "var(--el-color-primary)"
-      };
-    }
-  };
-});
-
-function setVal() {
-  currentActiveType.value = inputValue.value.substring(
-    0,
-    inputValue.value.indexOf(":") + 1
-  );
-  icon.value = inputValue.value.substring(inputValue.value.indexOf(":") + 1);
-}
-
-function onBeforeEnter() {
-  if (isAllEmpty(icon.value)) return;
-  setVal();
-  // 寻找当前图标在第几页
-  const curIconIndex = copyIconList[currentActiveType.value].findIndex(
-    i => i === icon.value
-  );
-  currentPage.value = Math.ceil((curIconIndex + 1) / pageSize.value);
-}
-
-function onAfterLeave() {
+const currentPage = ref(1);
+/** 每页显示 35 个图标，限制弹层高度；搜索后回到第一页。 */
+const pageSize = 35;
+const filtered = computed(() => offlineIconNames.filter(name =>
+  name.toLowerCase().includes(filterValue.value.trim().toLowerCase())
+));
+const pageList = computed(() => filtered.value.slice(
+  (currentPage.value - 1) * pageSize, currentPage.value * pageSize
+));
+const preview = computed(() => offlineIconNames.includes(inputValue.value) ? inputValue.value : "ri/search-line");
+watch(filterValue, () => { currentPage.value = 1; });
+watch(() => props.disabled, disabled => { if (disabled) visible.value = false; });
+/** 每次打开重新定位已有图标；未知历史值保留原文，索引缺省时显示第一页。 */
+function openPicker() {
   filterValue.value = "";
+  currentPage.value = Math.max(1, Math.floor(offlineIconNames.indexOf(inputValue.value) / pageSize) + 1);
 }
-
-function handleClick({ props }) {
-  currentPage.value = 1;
-  currentActiveType.value = props.name;
+/** 选择或清空只修改表单草稿，实际持久化仍由菜单保存流程执行。 */
+function selectIcon(value: string) {
+  if (props.disabled) return;
+  inputValue.value = value;
+  visible.value = false;
 }
-
-function onChangeIcon(item) {
-  icon.value = item;
-  inputValue.value = currentActiveType.value + item;
-}
-
-function onCurrentChange(page) {
-  currentPage.value = page;
-}
-
-function onClear() {
-  icon.value = "";
-  inputValue.value = "";
-}
-
-watch(
-  () => pageList.value,
-  () =>
-    (totalPage.value = copyIconList[currentActiveType.value].filter(i =>
-      i.includes(filterValue.value)
-    ).length),
-  { immediate: true }
-);
-watch(
-  () => inputValue.value,
-  val => val && setVal(),
-  { immediate: true }
-);
-watch(
-  () => filterValue.value,
-  () => (currentPage.value = 1)
-);
 </script>
 
 <template>
-  <div class="selector">
-    <el-input v-model="inputValue" disabled>
-      <template #append>
-        <el-popover
-          :width="350"
-          trigger="click"
-          popper-class="pure-popper"
-          :popper-options="{
-            placement: 'auto'
-          }"
-          @before-enter="onBeforeEnter"
-          @after-leave="onAfterLeave"
-        >
-          <template #reference>
-            <div class="w-10 h-8 cursor-pointer flex-c">
-              <IconifyIconOffline v-if="!icon" :icon="Search" />
-              <IconifyIconOnline v-else :icon="inputValue" />
-            </div>
-          </template>
-
-          <el-input
-            v-model="filterValue"
-            class="px-2 pt-2"
-            placeholder="搜索图标"
-            clearable
-          />
-
-          <el-tabs v-model="currentActiveType" @tab-click="handleClick">
-            <el-tab-pane
-              v-for="(pane, index) in tabsList"
-              :key="index"
-              :label="pane.label"
-              :name="pane.name"
-            >
-              <el-scrollbar height="220px">
-                <ul class="flex flex-wrap px-2! ml-2!">
-                  <li
-                    v-for="(item, key) in pageList"
-                    :key="key"
-                    :title="item"
-                    class="icon-item p-2 cursor-pointer mr-2 mt-1 flex-c border border-[#e5e7eb]"
-                    :style="iconItemStyle(item)"
-                    @click="onChangeIcon(item)"
-                  >
-                    <IconifyIconOnline
-                      :icon="currentActiveType + item"
-                      width="20px"
-                      height="20px"
-                    />
-                  </li>
-                </ul>
-                <el-empty
-                  v-show="pageList.length === 0"
-                  :description="`${filterValue} 图标不存在`"
-                  :image-size="60"
-                />
-              </el-scrollbar>
-            </el-tab-pane>
-          </el-tabs>
-
-          <div
-            class="w-full h-9 flex items-center overflow-auto border-t border-[#e5e7eb]"
-          >
-            <el-pagination
-              class="flex-auto ml-2"
-              :total="totalPage"
-              :current-page="currentPage"
-              :page-size="pageSize"
-              :pager-count="5"
-              layout="pager"
-              background
-              size="small"
-              @current-change="onCurrentChange"
-            />
-            <el-button
-              class="justify-end mx-2!"
-              type="danger"
-              size="small"
-              text
-              bg
-              @click="onClear"
-            >
-              清空
+  <el-input :model-value="inputValue" readonly :disabled="disabled" class="icon-selector">
+    <template #append>
+      <el-popover v-model:visible="visible" :disabled="disabled" :width="350" trigger="click"
+        popper-class="menu-icon-picker" @before-enter="openPicker">
+        <template #reference>
+          <el-button :disabled="disabled" :aria-label="t('iconPicker.choose')" :title="t('iconPicker.choose')">
+            <IconifyIconOffline :icon="preview" width="18" height="18" aria-hidden="true" />
+          </el-button>
+        </template>
+        <el-input v-model="filterValue" :placeholder="t('iconPicker.search')" :aria-label="t('iconPicker.search')" clearable />
+        <el-scrollbar height="220px">
+          <div class="icon-grid">
+            <el-button v-for="name in pageList" :key="name" :title="name" :aria-label="name"
+              :aria-pressed="inputValue === name" :type="inputValue === name ? 'primary' : 'default'"
+              :disabled="disabled" @click="selectIcon(name)">
+              <IconifyIconOffline :icon="name" width="20" height="20" aria-hidden="true" />
             </el-button>
           </div>
-        </el-popover>
-      </template>
-    </el-input>
-  </div>
+          <el-empty v-if="!filtered.length" :description="t('iconPicker.empty')" :image-size="60" />
+        </el-scrollbar>
+        <div class="icon-picker-footer">
+          <el-pagination v-model:current-page="currentPage" :total="filtered.length" :page-size="pageSize"
+            :pager-count="5" layout="pager" size="small" />
+          <el-button text :disabled="disabled || !inputValue" @click="selectIcon('')">{{ t('iconPicker.clear') }}</el-button>
+        </div>
+      </el-popover>
+    </template>
+  </el-input>
 </template>
 
-<style lang="scss" scoped>
-.icon-item {
-  &:hover {
-    color: var(--el-color-primary);
-    border-color: var(--el-color-primary);
-    transform: scaleX(1.05);
-    transition: all 0.4s;
-  }
-}
-
-:deep(.el-tabs__nav-next) {
-  font-size: 15px;
-  line-height: 32px;
-  box-shadow: -5px 0 5px -6px #ccc;
-}
-
-:deep(.el-tabs__nav-prev) {
-  font-size: 15px;
-  line-height: 32px;
-  box-shadow: 5px 0 5px -6px #ccc;
-}
-
-:deep(.el-input-group__append) {
-  padding: 0;
-}
-
-:deep(.el-tabs__item) {
-  height: 30px;
-  font-size: 12px;
-  font-weight: normal;
-  line-height: 30px;
-}
-
-:deep(.el-tabs__header),
-:deep(.el-tabs__nav-wrap) {
-  position: static;
-  margin: 0;
-  box-shadow: 0 2px 5px rgb(0 0 0 / 6%);
-}
-
-:deep(.el-tabs__nav-wrap::after) {
-  height: 0;
-}
-
-:deep(.el-tabs__nav-wrap) {
-  padding: 0 24px;
-}
-
-:deep(.el-tabs__content) {
-  margin-top: 4px;
-}
+<style scoped>
+.icon-selector { width: 100%; }
+.icon-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; padding: 8px 0; }
+.icon-grid .el-button { margin: 0; padding: 8px; min-width: 0; height: 36px; }
+.icon-picker-footer { display: flex; align-items: center; justify-content: space-between; border-top: 1px solid var(--el-border-color-light); }
+</style>
+<style>
+.menu-icon-picker.el-popover { max-width: calc(100vw - 24px); }
 </style>

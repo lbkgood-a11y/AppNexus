@@ -13,7 +13,13 @@ const pages = {
   "master-data/partner": {path:"/master-data/partner",name:"MasterDataBusinessPartner",component:()=>import("@/views/master-data/partner.vue")},
   "master-data/warehouse": {path:"/master-data/warehouse",name:"MasterDataWarehouse",component:()=>import("@/views/master-data/warehouse.vue")},
   "master-data/country-region": {path:"/master-data/country-region",name:"MasterDataCountryRegion",component:()=>import("@/views/master-data/country-region.vue")},
+  "master-data/subdivision": {path:"/master-data/subdivision",name:"MasterDataSubdivision",component:()=>import("@/views/master-data/subdivision.vue")},
   "master-data/product": {path:"/master-data/product",name:"MasterDataProduct",component:()=>import("@/views/master-data/product.vue")},
+  "master-data/product-v1": {path:"/master-data/product-v1",name:"MasterDataProductV1",component:()=>import("@/views/master-data/product-v1.vue")},
+  "master-data/product-category": {path:"/master-data/product-category",name:"MasterDataProductCategory",component:()=>import("@/views/master-data/product-category.vue")},
+  "master-data/product-unit": {path:"/master-data/product-unit",name:"MasterDataProductUnit",component:()=>import("@/views/master-data/product-unit.vue")},
+  "master-data/product-attribute": {path:"/master-data/product-attribute",name:"MasterDataProductAttribute",component:()=>import("@/views/master-data/product-attribute.vue")},
+  "master-data/product-template": {path:"/master-data/product-template",name:"MasterDataProductTemplate",component:()=>import("@/views/master-data/product-template.vue")},
 
   "platform/business-objects": {path:"/platform/business-objects",name:"PlatformBusinessObjectManagement",component:()=>import("@/views/platform/business-objects.vue")},
   "business-objects/index": {path:"/business-objects/workbench",name:"DocumentWorkbench",component:()=>import("@/views/business-objects/index.vue")},
@@ -30,6 +36,7 @@ const pages = {
   "organization/index": {path:"/organization/manage",name:"OrganizationManagement",component:()=>import("@/views/organization/index.vue")},
   "roles/index": {path:"/access/roles",name:"TenantRoleManagement",component:()=>import("@/views/roles/index.vue")},
   "roles/authorization": {path:"/access/authorization",name:"TenantAuthorizationCenter",component:()=>import("@/views/roles/authorization.vue")},
+  "configuration/parameters": {path:"/configuration/parameters",name:"TenantParameters",component:()=>import("@/views/configuration/parameters.vue")},
   "configuration/dictionaries": {path:"/configuration/dictionaries",name:"DictionaryManagement",component:()=>import("@/views/configuration/dictionaries.vue")}
 };
 let generation=0;

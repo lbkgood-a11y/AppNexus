@@ -9,6 +9,15 @@ async function mutate<T>(method:"post"|"put"|"delete",url:string,data:object):Pr
 }
 /** 真实后端适配器；操作入口来自统一准入，读取及写入仍在业务服务复核。 */
 export const masterDataApi:MasterDataApi={
+  geographyDirectory:kind=>http.request("get",path(kind),{params:{geography:true}}),
+  readPartner:async id=>{const result=await http.request<{rows:import("@appnexus/master-data").MasterDataRow[]}>("get",path("partner"),{params:{id,page:1,size:1}});if(!result.rows[0])throw new Error("MASTER_DATA_CHANGED");return result.rows[0];},
+  productOptions:()=>http.request("get",path("product"),{params:{options:true}}),
+  readWarehouse:async id=>{const result=await http.request<{rows:import("@appnexus/master-data").MasterDataRow[]}>("get",path("warehouse"),{params:{id,page:1,size:1}});if(!result.rows[0])throw new Error("MASTER_DATA_CHANGED");return result.rows[0];},
+  warehouseMapConfig:()=>http.request("get","/api/maps/_AMapService/configuration"),
+  warehouseOptions:()=>http.request("get",path("warehouse"),{params:{options:true}}),
+  partnerOptions:()=>http.request("get",path("partner"),{params:{options:true}}),
+  geographyOptions:(kind,query)=>http.request("get",path(kind),{params:{standards:true,...query}}),
+  geographyTree:(kind,query)=>http.request("get",path(kind),{params:{tree:true,...query}}),
   operations:()=>http.request<string[]>("get","/api/operation-decisions"),
   list:(kind,query)=>http.request("get",path(kind),{params:query}),
   create:(kind,input)=>mutate("post",path(kind),input),

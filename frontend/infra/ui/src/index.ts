@@ -25,6 +25,9 @@ export { default as FloatingError } from "./FloatingError.vue";
 export { reportError, clearErrorFeedback, setErrorFeedback } from "./errorFeedback";
 
 export { default as AppPagination } from "./AppPagination.vue";
+export { default as GeographyPicker } from "./GeographyPicker.vue";
+export { geographyPath, geographyTree } from "./geography";
+export type { GeographyNode, GeographySelection } from "./geography";
 
 /** 全站表格公开入口；领域模块经此入口使用 VxeTable，不依赖应用壳。 */
 export { VxeTable, VxeColumn } from "vxe-table";

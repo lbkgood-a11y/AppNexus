@@ -35,11 +35,20 @@ public interface DictionaryManagement {
                 String description, Status status, int sortOrder, boolean referenced,
                 long version, Instant updatedAt) {}
 
-    /** @param code 2–64 位小写字母、数字或下划线 @param sortOrder 排序值 0–9999 */
+    /**
+     * 新建租户字典，编码永久占用且创建后不可修改。
+     * @param code 1–64 位小写英文语义码，以字母开头，单词间单个下划线，禁止 UUID 或哈希
+     * @param sortOrder 排序值 0–9999，无单位，数值越小越靠前
+     */
     record CreateDictionary(String code, String name, String description, int sortOrder) {}
     /** 字典编码不可修改；状态变化也通过本编辑命令显式提交。 */
     record UpdateDictionary(String name, String description, Status status, int sortOrder, long version) {}
-    /** @param value 1–100 字符稳定业务值 @param parentId 可空的同字典上级项 */
+    /**
+     * 新建字典项；编码与业务值分别唯一，不以内部 ID 代替业务含义。
+     * @param code 同字典内永久唯一的 1–64 位小写英文语义码
+     * @param value 1–100 位大写英文语义码或标准数字码，保留前导零；禁止 UUID、哈希和空白
+     * @param parentId 可空的同字典上级项，空表示根项，不能跨租户或字典
+     */
     record CreateItem(UUID parentId, String code, String value, String name, String description, int sortOrder) {}
     /** 字典项编码和值不可修改；parentId 变化必须保持无环层级。 */
     record UpdateItem(UUID parentId, String name, String description, Status status, int sortOrder, long version) {}

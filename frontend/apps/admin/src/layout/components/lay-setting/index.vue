@@ -73,9 +73,23 @@ const settings = reactive({
   hideFooter: $storage.configure.hideFooter,
   hidePageBanner: $storage.configure.hidePageBanner ?? false,
   sectionGap: $storage.configure.sectionGap ?? 8,
+  operationRefreshSeconds: $storage.configure.operationRefreshSeconds ?? 0,
   multiTagsCache: $storage.configure.multiTagsCache,
   stretch: $storage.configure.stretch
 });
+
+const preferenceSections = computed(() => [
+  { key: "appearance", label: t("panel.preferenceAppearance"), target: "preference-appearance" },
+  { key: "layout", label: t("panel.preferenceLayout"), target: "preference-layout" },
+  { key: "interface", label: t("panel.preferenceInterface"), target: "preference-interface" }
+] as const);
+const activePreferenceSection = ref<(typeof preferenceSections.value)[number]["key"]>("appearance");
+
+/** 将偏好导航定位到对应分区，保留抽屉滚动容器并避免改变设置即时生效行为。 */
+function scrollToPreferenceSection(section: (typeof preferenceSections.value)[number]) {
+  activePreferenceSection.value = section.key;
+  document.getElementById(section.target)?.scrollIntoView({ behavior: "smooth", block: "start" });
+}
 
 /** 菜单仅改变应用壳配色；缺省 auto 跟随全站主题，不改变业务主色。 */
 const menuColorOptions = computed<Array<OptionsType>>(() => [
@@ -145,6 +159,11 @@ const hidePageBannerChange = () => {
 function sectionGapChange(value:number|undefined){
   const gap=typeof value==="number"&&Number.isInteger(value)&&value>=0&&value<=24&&value%2===0?value:8;
   settings.sectionGap=gap;storageConfigureChange("sectionGap",gap);
+}
+/** 权限检查单位秒；0 默认关闭，30–3600 启用；非法输入关闭，设置仅保存到当前浏览器。 */
+function operationRefreshChange(value:number|undefined){
+  const seconds=typeof value==="number"&&Number.isInteger(value)&&value>=30&&value<=3600?value:0;
+  settings.operationRefreshSeconds=seconds;storageConfigureChange("operationRefreshSeconds",seconds);
 }
 /** 标签页持久化设置 */
 const multiTagsCacheChange = () => {
@@ -350,13 +369,27 @@ onBeforeMount(() => {
   });
 });
 
-onUnmounted(() => removeMatchMedia);
+onUnmounted(removeMatchMedia);
 </script>
 
 <template>
   <LayPanel>
     <div class="p-5">
-      <p :class="pClass">{{ t("panel.pureThemeMode") }}</p>
+      <div class="preference-nav" role="tablist" :aria-label="t('panel.preferences')">
+        <el-button
+          v-for="section in preferenceSections"
+          :key="section.key"
+          class="preference-nav__item"
+          :type="activePreferenceSection === section.key ? 'primary' : 'default'"
+          :plain="activePreferenceSection !== section.key"
+          size="small"
+          role="tab"
+          :aria-selected="activePreferenceSection === section.key"
+          @click="scrollToPreferenceSection(section)"
+        >{{ section.label }}</el-button>
+      </div>
+
+      <p id="preference-appearance" :class="pClass">{{ t("panel.pureThemeMode") }}</p>
       <Segmented
         resize
         class="select-none"
@@ -401,7 +434,7 @@ onUnmounted(() => removeMatchMedia);
         @change="menuColorChange"
       />
 
-      <p :class="['mt-5!', pClass]">{{ t("panel.pureMenuLayout") }}</p>
+      <p id="preference-layout" :class="['mt-5!', pClass]">{{ t("panel.pureMenuLayout") }}</p>
       <ul class="pure-theme">
         <li
           ref="verticalRef"
@@ -485,7 +518,7 @@ onUnmounted(() => removeMatchMedia);
         </button>
       </span>
 
-      <p :class="['mt-5!', pClass]">{{ t("panel.pureTagsStyle") }}</p>
+      <p id="preference-interface" :class="['mt-5!', pClass]">{{ t("panel.pureTagsStyle") }}</p>
       <Segmented
         resize
         class="select-none"
@@ -530,6 +563,10 @@ onUnmounted(() => removeMatchMedia);
         {{ t("panel.pureInterfaceDisplay") }}
       </p>
       <ul class="setting">
+        <li class="flex items-center justify-between mt-4">
+          <el-tooltip :content="t('panel.operationRefreshHint')"><span class="dark:text-white">{{t('panel.operationRefreshSeconds')}}</span></el-tooltip>
+          <el-input-number v-model="settings.operationRefreshSeconds" :min="0" :max="3600" :step="30" controls-position="right" :aria-label="t('panel.operationRefreshSeconds')" style="width:110px" @change="operationRefreshChange" />
+        </li>
         <li>
           <span class="dark:text-white">{{ t('panel.hidePageBanner') }}</span>
           <el-switch v-model="settings.hidePageBanner" inline-prompt :active-text="t('buttons.pureOpenText')" :inactive-text="t('buttons.pureCloseText')" @change="hidePageBannerChange" />
@@ -727,5 +764,23 @@ onUnmounted(() => removeMatchMedia);
     padding: 3px 0;
     font-size: 14px;
   }
+}
+
+.preference-nav {
+  position: sticky;
+  top: -1px;
+  z-index: 2;
+  display: flex;
+  gap: 6px;
+  padding: 0 0 12px;
+  background: var(--el-bg-color);
+  border-bottom: 1px solid var(--el-border-color-lighter);
+}
+
+.preference-nav__item {
+  flex: 1;
+  min-width: 0;
+  padding-right: 6px;
+  padding-left: 6px;
 }
 </style>

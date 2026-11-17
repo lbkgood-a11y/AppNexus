@@ -29,6 +29,11 @@ search:
   pureEmpty: Empty
   purePlaceholder: Search Menu
 panel:
+  preferenceAppearance: Appearance
+  preferenceLayout: Layout
+  preferenceInterface: Interface
+  operationRefreshSeconds: "Permission check interval (s)"
+  operationRefreshHint: "Default 0 disables polling; use 30–3600 seconds to enable. Values 1–29 disable polling. Saved in this browser only; checks button permissions without refreshing business data. APIs always enforce authorization."
   sectionGap: "Section spacing (px)"
   menuColor: Menu color
   menuColorAuto: Follow theme
@@ -304,12 +309,17 @@ account:
   auditActor: Actor ID
   auditTarget: Target ID
   auditTrace: Trace ID
-  tenantParameters: Current tenant display parameters
+  tenantParameterScope: Applies to all members of the current tenant. Authorized tenant administrators maintain these values. Switching tenants loads the target tenant settings.
+  tenantParameters: Tenant system parameters
   parameters:
+    map_amap-key: "AMap Web Key"
+    map_amap-service-host: "AMap security proxy path"
     time-zone: Display time zone
     currency: Default display currency
     page-size: Suggested page size
   parameterHints:
+    map_amap-key: "Public, domain-restricted AMap JS API 2.0 Web Key. Empty disables maps. Never enter a server secret. Reopen the map after saving."
+    map_amap-service-host: "Fixed path /api/maps/_AMapService. The deployment administrator must configure the matching server-side security secret file."
     time-zone: IANA time zone, default Asia/Shanghai. Affects instant display only,
       preserving business dates and UTC storage.
     currency: ISO 4217 code, default CNY. Does not convert amounts or change the
@@ -828,6 +838,9 @@ welcome:
   description: Use the navigation to open platform, tenant and organization management.
   empty: Choose a business module to get started
 dictionary:
+  typeQuery: Search dictionaries
+  typeQueryPlaceholder: Name, code, or description
+  noMatchingTypes: No matching dictionaries
   visualSubtitle: Manage business dictionaries and options in one organized workspace.
   configuration: Configuration
   title: Dictionary Management
@@ -856,7 +869,10 @@ dictionary:
   saved: Dictionary saved
   deleted: Dictionary deleted
   required: Enter 1–100 characters
-  invalidCode: Use 2–64 lowercase letters, digits, or underscores, starting with a letter
+  invalidCode: Use a meaningful code of 1–64 lowercase letters or digits, with single underscores between words; UUIDs and hashes are not allowed
+  invalidValue: Use 1–100 uppercase letters or digits, with single underscores between words, or a numeric standard code; no UUIDs, hashes or whitespace
+  codeHint: e.g. customer, full_time
+  valueHint: e.g. CUSTOMER, CNY, 01; preserve leading zeros
   confirmDeleteType: Delete this dictionary? A non-empty dictionary cannot be deleted.
   confirmDeleteItem: Delete this item? Items with children or references cannot be deleted.
   statuses:
@@ -1993,10 +2009,10 @@ printWorkbench:
     horizontal: "Center vertically"
 
 # 主数据五类档案页面文案；不包含权限或业务配置。
-masterData: {"title": "Master data", "person": "Personnel", "partner": "Business partners", "warehouse": "Warehouses", "country-region": "Countries and regions", "product": "Products", "description": "Maintain tenant master records with separate permissions for editing and status changes.", "keyword": "Keyword", "code": "Code", "name": "Name", "status": "Status", "all": "All", "enabled": "Enabled", "disabled": "Disabled", "search": "Search", "reset": "Reset", "create": "Create", "edit": "Edit", "enable": "Enable", "disable": "Disable", "actions": "Actions", "save": "Save", "cancel": "Cancel", "saved": "Saved successfully", "statusSaved": "Status updated", "required": "This field is required", "codeRule": "Use 1–64 letters, numbers, dots, underscores or hyphens", "countryRule": "Enter a two-letter uppercase code", "alpha3Rule": "Enter a three-letter uppercase code", "numericRule": "Enter a three-digit code", "emailRule": "Enter a valid email address", "noPermission": "You do not have permission to view these records", "unavailable": "Data is unavailable. Please retry.", "retry": "Reload", "empty": "No matching records", "confirmDisable": "Disable “{name}” for new business references? Historical records are retained.", "confirmEnable": "Enable “{name}” for business selection?", "confirmTitle": "Change record status", "codeHint": "Codes cannot change after creation and must be unique within this tenant and record type.", "scopeHint": "Tenant public records only. Company usage, company attributes and system extensions are maintained separately.", "countryHint": "Use ISO 3166-1 codes. This is an enterprise-maintained directory; the system does not supply the full standard dataset.", "personHint": "Personnel records are separate from login accounts and organization assignments and do not grant access.", "fields": {"englishName": "English name", "phone": "Phone", "email": "Email", "partnerType": "Partner type", "creditCode": "Registration number", "contactName": "Contact", "address": "Address", "alpha3Code": "Alpha-3 code", "numericCode": "Numeric code", "specification": "Specification", "unit": "Base unit", "barcode": "Barcode"}, "partnerTypes": {"CUSTOMER": "Customer", "SUPPLIER": "Supplier", "BOTH": "Customer and supplier"}, "codes": {"MASTER_DATA_DENIED": "You do not have permission for this master data operation.", "MASTER_DATA_INPUT_INVALID": "Check the code, name and required fields.", "MASTER_DATA_CODE_CONFLICT": "This code already exists. Check whether the record was already created.", "MASTER_DATA_CHANGED": "The record has changed or is unavailable. Keep your input and reload to verify."}}
+masterData: {"title": "Master data", "person": "Personnel", "partner": "Business partners", "warehouse": "Warehouses", "country-region": "Countries and regions", "product": "Products", "description": "Maintain tenant master records with separate permissions for editing and status changes.", "keyword": "Keyword", "code": "Code", "name": "Name", "status": "Status", "all": "All", "enabled": "Enabled", "disabled": "Disabled", "search": "Search", "reset": "Reset", "create": "Create", "edit": "Edit", "enable": "Enable", "disable": "Disable", "actions": "Actions", "save": "Save", "cancel": "Cancel", "saved": "Saved successfully", "statusSaved": "Status updated", "required": "This field is required", "codeRule": "Use 1–64 letters, numbers, dots, underscores or hyphens", "countryRule": "Enter a two-letter uppercase code", "alpha3Rule": "Enter a three-letter uppercase code", "numericRule": "Enter a three-digit code", "emailRule": "Enter a valid email address", "noPermission": "You do not have permission to view these records", "unavailable": "Data is unavailable. Please retry.", "retry": "Reload", "empty": "No matching records", "confirmDisable": "Disable “{name}” for new business references? Historical records are retained.", "confirmEnable": "Enable “{name}” for business selection?", "confirmTitle": "Change record status", "codeHint": "Codes cannot change after creation and must be unique within this tenant and record type.", "scopeHint": "Tenant public records only. Company usage, company attributes and system extensions are maintained separately.", "countryHint": "Select a parent continent and enter a custom country code, or search standard codes to fill details. Codes cannot change after creation. Standard alpha-3 and numeric codes must match; leading zeros are preserved.", "personHint": "Personnel records are separate from login accounts and organization assignments and do not grant access.", "fields": {"englishName": "English name", "phone": "Phone", "email": "Email", "partnerType": "Partner type", "creditCode": "Registration number", "contactName": "Contact", "address": "Address", "alpha3Code": "Alpha-3 code", "numericCode": "Numeric code", "specification": "Specification", "unit": "Base unit", "barcode": "Barcode", "countryCode": "Country code", "subdivisionType": "Subdivision type", "parentCode": "Parent ISO code"}, "partnerTypes": {"CUSTOMER": "Customer", "SUPPLIER": "Supplier", "BOTH": "Customer and supplier"}, "codes": {"MASTER_DATA_DENIED": "You do not have permission for this master data operation.", "MASTER_DATA_INPUT_INVALID": "Check the code, name and required fields.", "MASTER_DATA_CODE_CONFLICT": "This code already exists. Check whether the record was already created.", "MASTER_DATA_CHANGED": "The record has changed or is unavailable. Keep your input and reload to verify."}, "subdivision": "Administrative subdivisions", "selectGeography": "Search standard codes", "geographyUnavailable": "Standard codes are unavailable. Reload; if this persists, update and restart the backend."}
 
 # 人员档案字段、明细及多对多关联文案；不包含配置或真实人员数据。
-personnel: {"title": "Personnel profile", "basic": "Basic information", "system": "System information", "code": "Personnel code", "name": "Chinese name", "createdName": "Created by", "createdAt": "Created at", "updatedName": "Modified by", "updatedAt": "Modified at", "unknownHistory": "Not recorded for historical data", "back": "Back to list", "new": "Create personnel", "details": "Profile details", "assignments": "Linked tenant accounts", "organizationId": "Organization", "positionId": "Position", "memberId": "Tenant account", "organizationName": "Organization", "userName": "Linked user", "active": "Active link", "inactive": "Unavailable link", "addDetail": "Add detail", "editDetail": "Edit detail", "deleteDetail": "Delete detail", "addAssignment": "Link account", "editAssignment": "Edit account link", "unassign": "Remove link", "confirmDelete": "Delete this {section} detail? The personnel record will be retained.", "confirmUnassign": "Remove the link with “{name}”? This user will no longer represent this person through this link.", "dirty": "Save or discard changes to the basic profile before editing details or links.", "saveFirst": "Save the personnel record before adding details or organization users.", "discard": "Discard unsaved changes and return to the list?", "discardAction": "Discard changes", "reloadWarning": "Reloading discards unsaved input. Continue?", "assignmentHint": "Link active accounts in this tenant. Organizations and positions belong to people, not accounts. Links grant no business permissions.", "organizationHint": "Personnel affiliations and appointments are the sole source of business organization. Maintain primary affiliation and validity separately.", "required": "This field is required", "dateRange": "End date cannot precede start date", "birthFuture": "Date of birth cannot be in the future", "status": "Record status", "employmentStatus": "Employment status", "retry": "Reload", "readOnly": "Read-only profile", "saved": "Saved successfully", "all": "All", "enabled": "Enabled", "disabled": "Disabled", "latestLoadFailed": "Saved, but the latest profile could not be loaded. Reload to verify before submitting again.", "fields": {"englishName": "English name", "gender": "Gender", "birthDate": "Date of birth", "ethnicity": "Ethnicity", "nativePlace": "Native place", "politicalStatus": "Political affiliation", "identityType": "Identity document type", "identityNumber": "Identity document number", "phone": "Phone", "email": "Email", "workNature": "Employment type", "bloodType": "Blood type", "emergencyContact": "Emergency contact", "emergencyPhone": "Emergency phone", "maritalStatus": "Marital status", "hobbies": "Interests and skills", "skillLevel": "Skill level", "educationLevel": "Highest education", "employmentStatus": "Employment status", "remarks": "Remarks", "certificateType": "Certificate type", "certificateNumber": "Certificate number", "certificateStatus": "Certificate status", "passedOn": "Passed on", "startsOn": "Start date", "endsOn": "End date", "trainingName": "Training name", "provider": "Provider", "result": "Result", "awardName": "Award", "issuer": "Issuing authority", "awardedOn": "Award date", "contactType": "Contact type", "contactValue": "Contact value", "addressType": "Address type", "countryRegion": "Country or region", "province": "Province or state", "city": "City", "address": "Address", "postalCode": "Postal code", "employer": "Employer", "department": "Department", "jobTitle": "Job title", "recordType": "Record type", "reason": "Reason", "recordedOn": "Record date", "school": "School", "major": "Major", "degree": "Degree", "isPrimary": "Primary organization", "enabled": "Relationship enabled"}, "sections": {"organizations": "Organizations", "positions": "Positions", "certificates": "Certificates", "training": "Training", "awards": "Awards", "contacts": "Contact methods", "addresses": "Addresses", "workHistory": "Work history", "rewardsPenalties": "Rewards and penalties", "education": "Education history"}, "choices": {"MALE": "Male", "FEMALE": "Female", "OTHER": "Other", "UNDISCLOSED": "Undisclosed", "NATIONAL_ID": "National ID", "PASSPORT": "Passport", "FULL_TIME": "Full-time", "PART_TIME": "Part-time", "CONTRACT": "Contract", "INTERN": "Intern", "A": "A", "B": "B", "AB": "AB", "O": "O", "UNKNOWN": "Unknown", "SINGLE": "Single", "MARRIED": "Married", "DIVORCED": "Divorced", "WIDOWED": "Widowed", "ACTIVE": "Employed", "PROBATION": "Probation", "LEAVE": "Left employment", "RETIRED": "Retired", "VALID": "Valid", "EXPIRED": "Expired", "REVOKED": "Revoked", "PENDING": "Pending", "REWARD": "Reward", "PENALTY": "Penalty", "PRIMARY": "Primary school", "JUNIOR_HIGH": "Junior high school", "SENIOR_HIGH": "High school", "VOCATIONAL": "Vocational school", "ASSOCIATE": "Associate degree", "BACHELOR": "Bachelor degree", "MASTER": "Master degree", "DOCTOR": "Doctoral degree", "JUNIOR": "Junior", "INTERMEDIATE": "Intermediate", "SENIOR": "Senior", "TECHNICIAN": "Technician", "SENIOR_TECHNICIAN": "Senior technician", "true": "Yes", "false": "No"}, "codes": {"PERSON_NOT_FOUND": "Personnel record is unavailable.", "PERSON_USER_UNAVAILABLE": "The account is unavailable in this tenant.", "PERSON_USER_DUPLICATE": "This organization and user link already exists.", "PERSON_ORGANIZATION_UNAVAILABLE": "The organization or position is unavailable in this tenant.", "PERSON_CONTEXT_REQUIRED": "Select a valid personnel identity and business organization."}, "profileDetails": "Additional information", "collapseDetails": "Collapse additional information", "expandDetails": "Expand additional information"}
+personnel: {"view": "View", "title": "Personnel profile", "basic": "Basic information", "system": "System information", "code": "Personnel code", "name": "Chinese name", "createdName": "Created by", "createdAt": "Created at", "updatedName": "Modified by", "updatedAt": "Modified at", "unknownHistory": "Not recorded for historical data", "back": "Back to list", "new": "Create personnel", "details": "Profile details", "assignments": "Linked tenant accounts", "organizationId": "Organization", "positionId": "Position", "memberId": "Tenant account", "organizationName": "Organization", "userName": "Linked user", "active": "Active link", "inactive": "Unavailable link", "addDetail": "Add detail", "editDetail": "Edit detail", "deleteDetail": "Delete detail", "addAssignment": "Link account", "editAssignment": "Edit account link", "unassign": "Remove link", "confirmDelete": "Delete this {section} detail? The personnel record will be retained.", "confirmUnassign": "Remove the link with “{name}”? This user will no longer represent this person through this link.", "dirty": "Save or discard changes to the basic profile before editing details or links.", "saveFirst": "Save the personnel record before adding details or organization users.", "discard": "Discard unsaved changes and return to the list?", "discardAction": "Discard changes", "reloadWarning": "Reloading discards unsaved input. Continue?", "assignmentHint": "Link active accounts in this tenant. Organizations and positions belong to people, not accounts. Links grant no business permissions.", "organizationHint": "Personnel affiliations and appointments are the sole source of business organization. Maintain primary affiliation and validity separately.", "required": "This field is required", "dateRange": "End date cannot precede start date", "birthFuture": "Date of birth cannot be in the future", "status": "Record status", "employmentStatus": "Employment status", "retry": "Reload", "readOnly": "Read-only profile", "saved": "Saved successfully", "all": "All", "enabled": "Enabled", "disabled": "Disabled", "latestLoadFailed": "Saved, but the latest profile could not be loaded. Reload to verify before submitting again.", "fields": {"englishName": "English name", "gender": "Gender", "birthDate": "Date of birth", "ethnicity": "Ethnicity", "nativePlace": "Native place", "politicalStatus": "Political affiliation", "identityType": "Identity document type", "identityNumber": "Identity document number", "phone": "Phone", "email": "Email", "workNature": "Employment type", "bloodType": "Blood type", "emergencyContact": "Emergency contact", "emergencyPhone": "Emergency phone", "maritalStatus": "Marital status", "hobbies": "Interests and skills", "skillLevel": "Skill level", "educationLevel": "Highest education", "employmentStatus": "Employment status", "remarks": "Remarks", "certificateType": "Certificate type", "certificateNumber": "Certificate number", "certificateStatus": "Certificate status", "passedOn": "Passed on", "startsOn": "Start date", "endsOn": "End date", "trainingName": "Training name", "provider": "Provider", "result": "Result", "awardName": "Award", "issuer": "Issuing authority", "awardedOn": "Award date", "contactType": "Contact type", "contactValue": "Contact value", "addressType": "Address type", "countryRegion": "Country or region", "province": "Province or state", "city": "City", "address": "Address", "postalCode": "Postal code", "employer": "Employer", "department": "Department", "jobTitle": "Job title", "recordType": "Record type", "reason": "Reason", "recordedOn": "Record date", "school": "School", "major": "Major", "degree": "Degree", "isPrimary": "Primary organization", "enabled": "Relationship enabled"}, "sections": {"organizations": "Organizations", "positions": "Positions", "certificates": "Certificates", "training": "Training", "awards": "Awards", "contacts": "Contact methods", "addresses": "Addresses", "workHistory": "Work history", "rewardsPenalties": "Rewards and penalties", "education": "Education history"}, "choices": {"MALE": "Male", "FEMALE": "Female", "OTHER": "Other", "UNDISCLOSED": "Undisclosed", "NATIONAL_ID": "National ID", "PASSPORT": "Passport", "FULL_TIME": "Full-time", "PART_TIME": "Part-time", "CONTRACT": "Contract", "INTERN": "Intern", "A": "A", "B": "B", "AB": "AB", "O": "O", "UNKNOWN": "Unknown", "SINGLE": "Single", "MARRIED": "Married", "DIVORCED": "Divorced", "WIDOWED": "Widowed", "ACTIVE": "Employed", "PROBATION": "Probation", "LEAVE": "Left employment", "RETIRED": "Retired", "VALID": "Valid", "EXPIRED": "Expired", "REVOKED": "Revoked", "PENDING": "Pending", "REWARD": "Reward", "PENALTY": "Penalty", "PRIMARY": "Primary school", "JUNIOR_HIGH": "Junior high school", "SENIOR_HIGH": "High school", "VOCATIONAL": "Vocational school", "ASSOCIATE": "Associate degree", "BACHELOR": "Bachelor degree", "MASTER": "Master degree", "DOCTOR": "Doctoral degree", "JUNIOR": "Junior", "INTERMEDIATE": "Intermediate", "SENIOR": "Senior", "TECHNICIAN": "Technician", "SENIOR_TECHNICIAN": "Senior technician", "true": "Yes", "false": "No"}, "codes": {"PERSON_NOT_FOUND": "Personnel record is unavailable.", "PERSON_USER_UNAVAILABLE": "The account is unavailable in this tenant.", "PERSON_USER_DUPLICATE": "This organization and user link already exists.", "PERSON_ORGANIZATION_UNAVAILABLE": "The organization or position is unavailable in this tenant.", "PERSON_CONTEXT_REQUIRED": "Select a valid personnel identity and business organization."}, "profileDetails": "Additional information", "collapseDetails": "Collapse additional information", "expandDetails": "Expand additional information"}
 
 # 人员身份模型：组织任职使用人员，不再使用账号成员。
 identityModel: {"person": "Person", "select": "Select personnel identity", "none": "No personnel identity", "empty": "No personnel and organization is available. Contact an administrator."}
@@ -2010,3 +2026,278 @@ recordAudit:
   updatedAt: Last modified at
   unknown: Not recorded
   unknownActor: System execution or not recorded
+
+# 客商主数据详情与聚合明细文案。
+partner:
+  new: "New business partner"
+  view: "View"
+  back: "Back to list"
+  basic: "Basic information"
+  additional: "Additional information"
+  system: "System information"
+  contacts: "Contacts"
+  bankAccounts: "Bank accounts"
+  commonName: "Common name"
+  yes: "Yes"
+  no: "No"
+  collapse: "Collapse"
+  expand: "Expand"
+  add: "Add"
+  remove: "Delete"
+  apply: "Apply to draft"
+  atomicHint: "Contact and bank account changes are submitted with Save at the top. Up to 100 rows per section."
+  discard: "Discard unsaved changes and leave or reload?"
+  discardAction: "Discard changes"
+  removeConfirm: "Delete this row? The deletion takes effect when you save the business partner."
+  uniqueDefault: "Only one default contact, default bank account and basic account is allowed. Update the existing row first."
+  capitalRule: "Enter a non-negative amount with up to 18 integer and 6 decimal digits, in ten-thousands."
+  currencyRule: "Enter a three-letter uppercase ISO 4217 currency code."
+  cnapsRule: "CNAPS must contain 12 digits."
+  swiftRule: "Enter an 8- or 11-character SWIFT code."
+  futureDate: "Establishment date cannot be in the future."
+  refreshFailed: "Saved successfully. Reload the latest record before continuing to edit."
+  fields:
+    shortName: "Short name"
+    chineseName: "Chinese name"
+    englishName: "English name"
+    partnerType: "Partner roles"
+    registeredPlace: "Place of registration"
+    countryRegion: "Country / region"
+    nature: "Ownership type"
+    listed: "Listed company"
+    creditCode: "Unified social credit code"
+    customerLevel: "Customer level"
+    address: "Address"
+    legalRepresentative: "Legal representative"
+    legalId: "Legal representative ID"
+    controller: "Actual controller"
+    establishedOn: "Established on"
+    registeredCurrency: "Registered currency"
+    registeredCapital: "Registered capital (10,000 units)"
+    taxNumber: "Tax number"
+    organizationCode: "Organization certificate code"
+    productsServices: "Products / services"
+    staffSize: "Staff size"
+    fax: "Fax"
+    remarks: "Remarks"
+    contactName: "Contact name"
+    phone: "Phone"
+    contactType: "Contact type"
+    isDefault: "Default"
+    email: "Email"
+    taxAccount: "Tax account"
+    basicAccount: "Basic account"
+    bankName: "Bank name"
+    accountNumber: "Account number"
+    accountAlias: "Account alias"
+    currency: "Currency"
+    cnaps: "CNAPS code"
+    swiftCode: "SWIFT code"
+  roles:
+    CUSTOMER: "Customer"
+    SUPPLIER: "Supplier"
+    DEBTOR: "Debt seller"
+    PRINCIPAL: "Principal"
+    SERVICE_PROVIDER: "Service provider"
+    OTHER: "Other"
+    CARGO_OWNER: "Cargo owner"
+
+warehouseProfile:
+  new: "New warehouse"
+  basic: "Basic information"
+  property: "Ownership and qualifications"
+  numberRule: "Enter valid numbers (up to 6 decimals); coordinates must be paired and within range"
+  fields:
+    contactName: "Contact name"
+    phone: "Phone"
+    address: "Address"
+    shortCode: "Short code"
+    shortName: "Short name"
+    warehouseType: "Warehouse type"
+    totalArea: "Total area (m²)"
+    capacity: "Capacity (t)"
+    logisticsOrganization: "Logistics organization"
+    contactTitle: "Contact title"
+    email: "Email"
+    longitude: "Longitude"
+    latitude: "Latitude"
+    region: "Region"
+    builtOn: "Built on"
+    openedOn: "Opened on"
+    introduction: "Introduction"
+    structureDescription: "Structure description"
+    operatingMode: "Operating mode"
+    billAddress: "Weighbridge warehouse address"
+    remarks: "Remarks"
+    partner: "Partner"
+    owner: "Owner"
+    ownershipCertificate: "Ownership certificate"
+    personalGuarantee: "Personal guarantee"
+    wholeLease: "Whole lease"
+    leaseChainDescription: "Lease chain description"
+    subleaseDescription: "Sublease description"
+    otherStorageDescription: "Other storage description"
+    pledgee: "Unloading party"
+
+warehouseMap:
+  search: "Search"
+  searchPlaceholder: "Search place, address or warehouse"
+  searchEmpty: "No locations found. Try a more specific address."
+  searchFailed: "Location search failed. Please retry."
+  proxyMissing: "The server has no security secret for this Web Key. Contact the deployment administrator."
+  pick: "Pick on map"
+  title: "Select warehouse location"
+  hint: "Zoom, pan and click the warehouse location. Coordinates use AMap GCJ-02 (degrees). Confirm to fill the form, then save the warehouse."
+  empty: "Click the map to select a location"
+  confirm: "Use coordinates"
+  retry: "Retry"
+  configuration: "Map is not configured. Ask the administrator to configure the AMap Web Key and security proxy."
+  unavailable: "Map failed to load. Check your connection and AMap domain authorization, then retry."
+
+iconPicker:
+  choose: Choose icon
+  search: Search icon names
+  empty: No matching icons
+  clear: Clear icon
+
+tenantParameterEditor:
+  themes: "Parameter themes"
+  tenant: "Current tenant"
+  scope: "Maintained by tenant administrators; applies to this tenant"
+  selectTenant: "Select the tenant to manage first"
+  denied: "No permission to maintain tenant parameters"
+  adminOnly: "This page is for tenant administrators with parameter maintenance permission."
+  unavailable: "Parameters unavailable. Reload to try again."
+  audit: "View record audit"
+  save: "Save current theme"
+  reset: "Discard changes"
+  pending: "{count} unsaved changes"
+  partialSave: "{count} values were saved. Remaining changes were not saved. Reload and review the values."
+  invalidCurrency: "Select a valid ISO 4217 currency code"
+  invalidTimeZone: "Select a valid IANA time zone"
+  invalidPageSize: "Enter an integer between 10 and 100"
+  invalidMapKey: "Enter a 32-digit hexadecimal public Web Key, or leave empty to disable"
+  regional:
+    title: "Region and display"
+    description: "Configure the display currency and time zone shared by the tenant."
+  lists:
+    title: "List settings"
+    description: "Configure default display preferences for business lists."
+  maps:
+    title: "Map services"
+    description: "Configure AMap for warehouse locations and other map selection tasks."
+
+geography: {country: "Select country or region", region: "Select administrative area", loading: "Loading areas", empty: "No areas available. Reload to retry.", legacy: "Historical or unavailable value"}
+
+# 标准目录的区划类型采用中英双语；仅供展示，提交保留标准原值。
+subdivisionTypes: {"Administration": "行政管理区（Administration）", "Administrative atoll": "行政环礁（Administrative atoll）", "Administrative precinct": "行政分区（Administrative precinct）", "Administrative region": "行政区（Administrative region）", "Administrative territory": "行政领地（Administrative territory）", "Arctic region": "北极地区（Arctic region）", "Area": "地区（Area）", "Autonomous city": "自治市（Autonomous city）", "Autonomous city in north africa": "北非自治市（Autonomous city in north africa）", "Autonomous community": "自治共同体（Autonomous community）", "Autonomous district": "自治地区（Autonomous district）", "Autonomous municipality": "自治市镇（Autonomous municipality）", "Autonomous province": "自治省（Autonomous province）", "Autonomous region": "自治区（Autonomous region）", "Autonomous republic": "自治共和国（Autonomous republic）", "Autonomous sector": "自治专区（Autonomous sector）", "Autonomous territorial unit": "自治领土单位（Autonomous territorial unit）", "Borough": "自治镇区（Borough）", "Canton": "州（Canton）", "Capital": "首都（Capital）", "Capital city": "首都市（Capital city）", "Capital district": "首都区（Capital district）", "Capital territory": "首都领地（Capital territory）", "Chain (of islands)": "列岛（Chain (of islands)）", "City": "市（City）", "City corporation": "市政法人区（City corporation）", "City municipality": "城市市镇（City municipality）", "City with county rights": "县级市（City with county rights）", "Commune": "公社（Commune）", "Council area": "议会区（Council area）", "Country": "构成国（Country）", "County": "县（County）", "Decentralized regional entity": "地方分权区域实体（Decentralized regional entity）", "Department": "省级行政区（Department）", "Dependency": "属地（Dependency）", "District": "区（District）", "District municipality": "区级市镇（District municipality）", "District with special status": "特殊地位区（District with special status）", "Districts under republic administration": "共和国直辖区（Districts under republic administration）", "Division": "专区（Division）", "Economic prefecture": "经济州（Economic prefecture）", "Emirate": "酋长国（Emirate）", "Entity": "实体（Entity）", "European collectivity": "欧洲集体行政区（European collectivity）", "Federal capital territory": "联邦首都领地（Federal capital territory）", "Federal dependency": "联邦属地（Federal dependency）", "Federal district": "联邦区（Federal district）", "Federal entity": "联邦实体（Federal entity）", "Federal territory": "联邦领地（Federal territory）", "Free municipal consortium": "自由市镇联合体（Free municipal consortium）", "Geographical entity": "地理实体（Geographical entity）", "Geographical region": "地理区域（Geographical region）", "Geographical unit": "地理单元（Geographical unit）", "Governorate": "省（Governorate）", "Group of islands (20 inhabited islands)": "岛群（Group of islands (20 inhabited islands)）", "Indigenous region": "原住民地区（Indigenous region）", "Island": "岛（Island）", "Island council": "岛议会区（Island council）", "Islands, groups of islands": "岛及岛群（Islands, groups of islands）", "Land": "州（Land）", "Local council": "地方议会区（Local council）", "London borough": "伦敦自治市（London borough）", "Metropolitan administration": "都市行政区（Metropolitan administration）", "Metropolitan city": "都市市（Metropolitan city）", "Metropolitan collectivity with special status": "特殊地位本土集体行政区（Metropolitan collectivity with special status）", "Metropolitan department": "本土省（Metropolitan department）", "Metropolitan district": "都市区（Metropolitan district）", "Metropolitan region": "都市大区（Metropolitan region）", "Municipality": "市镇（Municipality）", "Oblast": "州（Oblast）", "Outlying area": "边远地区（Outlying area）", "Overseas collectivity": "海外集体行政区（Overseas collectivity）", "Overseas collectivity with special status": "特殊地位海外集体行政区（Overseas collectivity with special status）", "Overseas departmental collectivity": "海外省级集体行政区（Overseas departmental collectivity）", "Overseas territory": "海外领地（Overseas territory）", "Overseas unique territorial collectivity": "海外单一领土集体行政区（Overseas unique territorial collectivity）", "Pakistan administered area": "巴基斯坦管辖地区（Pakistan administered area）", "Parish": "教区（Parish）", "Popularate": "民众区（Popularate）", "Prefecture": "州（Prefecture）", "Province": "省（Province）", "Quarter": "街区（Quarter）", "Rayon": "区（Rayon）", "Region": "大区（Region）", "Regional state": "区域州（Regional state）", "Republic": "共和国（Republic）", "Rural municipality": "乡村市镇（Rural municipality）", "Self-governed part": "自治部分（Self-governed part）", "Special administrative city": "特别行政市（Special administrative city）", "Special administrative region": "特别行政区（Special administrative region）", "Special city": "特别市（Special city）", "Special island authority": "特别岛屿行政区（Special island authority）", "Special municipality": "特别市镇（Special municipality）", "Special region": "特别区（Special region）", "Special self-governing city": "特别自治市（Special self-governing city）", "Special self-governing province": "特别自治省（Special self-governing province）", "State": "州（State）", "State city": "州级市（State city）", "Territorial unit": "领土单位（Territorial unit）", "Territory": "领地（Territory）", "Town": "镇（Town）", "Town council": "镇议会区（Town council）", "Two-tier county": "两级制县（Two-tier county）", "Union territory": "中央直辖区（Union territory）", "Unitary authority": "单一管理区（Unitary authority）", "Urban community": "城市共同体（Urban community）", "Urban municipality": "城市市镇（Urban municipality）", "Voivodship": "省（Voivodship）", "Ward": "街道区（Ward）", "地级行政区": "地级行政区（Prefecture-level administrative division）", "县级行政区": "县级行政区（County-level administrative division）"}
+
+# 地理维护左树与层级编码展示文案。
+geographyHierarchy: {"title": "Geographic hierarchy", "all": "All regions", "code": "Hierarchy code", "standardCode": "Standard code", "more": "Load more…", "parentCode": "Parent hierarchy code", "invalidTree": "Invalid geographic tree response. Loading stopped. Update and restart the backend, then reload."}
+
+productCatalog:
+  unit: "Units"
+  category: "Product categories"
+  attribute: "Product attributes"
+  template: "Attribute templates"
+  description: "Manage product configuration and fixed published versions. Specifications, SKUs and unit conversion are excluded."
+  dimension: "Dimension code"
+  precision: "Decimal places"
+  purpose: "Purpose"
+  parent: "Parent"
+  children: "Children"
+  configuration: "Publish configuration"
+  versions: "Version history"
+  newVersion: "New draft version"
+  publish: "Publish"
+  publishWarning: "Published content cannot be edited. Existing products will not upgrade automatically. Publish?"
+  dataType: "Data type"
+  versionNote: "Version notes"
+  required: "Required to enable"
+  serviceUnitRequired: "Require a base unit for services"
+  BASIC: "Basic attributes"
+  QUALITY: "Product quality attributes"
+  EXTENSION: "Extended attributes"
+  TEXT: "Text"
+  INTEGER: "Integer"
+  DECIMAL: "Decimal"
+  BOOLEAN: "Boolean"
+  DATE: "Date"
+  SINGLE_SELECT: "Single choice"
+  MULTI_SELECT: "Multiple choices"
+  optionCode: "Option code"
+  optionLabel: "Option label"
+  addOption: "Add draft option"
+
+productV1:
+  title: "Product records V1"
+  create: "New product draft"
+  details: "Details / maintain"
+  descriptionHint: "Unified products without variants, fixed configuration versions and typed attributes. Isolated validation entry; legacy products are unchanged."
+  basic: "Basic information"
+  back: "Back to list"
+  shortName: "Short name"
+  categoryId: "Category"
+  categoryConfigId: "Published category configuration"
+  baseUnitId: "Base unit"
+  productForm: "Product form"
+  brand: "Brand"
+  origin: "Origin"
+  description: "Description"
+  reason: "Reason for structure change"
+  structure: "Structure completeness"
+  PHYSICAL: "Physical product"
+  SERVICE: "Service"
+  NONE: "No variants (no SKU created)"
+  DRAFT: "Draft"
+  ENABLED: "Enabled"
+  DISABLED: "Disabled"
+  INCOMPLETE: "Incomplete"
+  COMPLETE: "Complete"
+  LEGACY_PENDING: "Legacy structure pending"
+  yes: "Yes"
+  no: "No"
+  requiredToEnable: "Required to enable"
+  scaleHint: "At most {scale} decimal places. Excess precision is rejected, never rounded silently."
+  completion: "Complete these before enabling"
+  attribute: "Product attribute"
+  discard: "Discard unsaved changes?"
+  discardAction: "Discard changes"
+  categoryChange: "Changing category configuration removes current attribute inputs. You can enter them again; saved historical values remain in history."
+  changeCategory: "Change category"
+  migrate: "Migrate structure"
+  preview: "Preview structure migration"
+  previewNotice: "The complete target replaces the current structure. Preview again if source version or target eligibility changes. Preview does not write the product."
+  confirmDropped: "Confirm removing {count} current attribute values; history is retained"
+  resultUnknown: "The write result is unconfirmed. Read the latest product or manually recover the same idempotent request. No automatic retry occurs."
+  verify: "Verify latest result"
+  retrySame: "Recover same request"
+  execute: "Execute migration"
+  expires: "Preview expires"
+  target: "Target configuration"
+  resultReloaded: "A newer product was loaded. Check history and the latest result; nothing was resubmitted."
+  resultUnconfirmed: "The version has not changed yet. The request may still be running; verify later or recover manually."
+  version: "Product version"
+  structureVersion: "Structure revision"
+  fixedVersion: "Fixed configuration r{version}"
+  noConfiguration: "No configuration bound. Draft can be saved but cannot be enabled."
+  confirmEnable: "Validate the fixed configuration, unit and all required attributes, then enable this product?"
+  confirmDisable: "Disabling preserves all data and history and allows explicit structure migration. Continue?"
+  archive: "Archive draft"
+  restore: "Restore draft"
+  archived: "Archived"
+  archiveHint: "Archiving preserves code and history but prevents editing and enabling. The draft can be restored. Continue?"
+  restoreHint: "Restore the draft with its original configuration without upgrading. Continue?"
+  legacySpecification: "Legacy specification (read only)"
+  history: "Change history"
+  event: "Operation"
+  before: "Before"
+  after: "After"
+  snapshotUnsupported: "Details for this snapshot version are unavailable"
+  event_CREATE: "Draft created"
+  event_UPDATE: "Product updated"
+  event_STATUS: "Status changed"
+  event_ARCHIVE: "Draft archived"
+  event_RESTORE: "Draft restored"
+  event_STRUCTURE: "Structure migrated"
+  optionChanged: "The selected category option changed. Search again before selecting."

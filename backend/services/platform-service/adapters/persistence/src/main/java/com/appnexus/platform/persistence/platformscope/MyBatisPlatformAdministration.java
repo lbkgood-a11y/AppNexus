@@ -12,14 +12,16 @@ import org.springframework.transaction.annotation.Transactional;
 /** 平台开通用例；授权复核、目录写入及追加审计同事务，不读取或修改组织业务数据。 */
 @Service
 public class MyBatisPlatformAdministration implements PlatformAdministration {
+    private final org.springframework.jdbc.core.JdbcTemplate jdbc;
     private final AdministrationMapper mapper;
     private final com.appnexus.platform.organization.PersonnelExecution personnel;
     private final OrganizationAdministratorBootstrap bootstrap;
     private final FieldProtection protection;
     private final AccountSessionRevocationMapper revocations;
-    public MyBatisPlatformAdministration(AdministrationMapper mapper,OrganizationAdministratorBootstrap bootstrap,FieldProtection protection,
-            AccountSessionRevocationMapper revocations,com.appnexus.platform.organization.PersonnelExecution personnel) {
-        this.mapper=mapper; this.bootstrap=bootstrap;this.protection=protection;this.revocations=revocations;this.personnel=personnel;
+    private final org.springframework.context.ApplicationEventPublisher events;
+    public MyBatisPlatformAdministration(org.springframework.jdbc.core.JdbcTemplate jdbc,AdministrationMapper mapper,OrganizationAdministratorBootstrap bootstrap,FieldProtection protection,
+            AccountSessionRevocationMapper revocations,com.appnexus.platform.organization.PersonnelExecution personnel,org.springframework.context.ApplicationEventPublisher events) {
+        this.jdbc=jdbc;this.mapper=mapper; this.bootstrap=bootstrap;this.protection=protection;this.revocations=revocations;this.personnel=personnel;this.events=events;
     }
     public boolean isAdministrator(UUID actor) { return mapper.administrator(actor.toString()); }
     /**
@@ -101,6 +103,10 @@ public class MyBatisPlatformAdministration implements PlatformAdministration {
         if(mapper.lockAccount(administrator.toString())==null) throw new IllegalArgumentException("Active administrator account required");
         UUID tenant=com.fasterxml.uuid.Generators.timeBasedEpochGenerator().generate(),member=com.fasterxml.uuid.Generators.timeBasedEpochGenerator().generate();
         mapper.createTenant(tenant.toString(),name);
+        // 与租户开通同事务初始化业务字典；使用真实开通账号，不复制其他租户定制。
+        com.appnexus.platform.persistence.configuration.StandardDictionaryDefaults.seed(jdbc,tenant,actor);
+        // 模块通过公开事件参与同一开通事务；地理数据失败必须回滚租户，避免空目录租户被交付。
+        events.publishEvent(new com.appnexus.platform.tenant.TenantProvisioned(tenant,actor));
         mapper.addMember(member.toString(),tenant.toString(),administrator.toString());
         bootstrap.initialize(tenant,member);
         mapper.rememberCreation(request.toString(),tenant.toString(),actor.toString(),administrator.toString(),name);

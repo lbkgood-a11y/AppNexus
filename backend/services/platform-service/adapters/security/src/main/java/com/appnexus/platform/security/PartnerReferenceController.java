@@ -24,7 +24,7 @@ public class PartnerReferenceController {
     /**
      * 原子登记外部引用；重复同键同参数返回相同结果，不重复增加引用记录。
      * @param key Idempotency-Key，16–128 位字母数字及 ._:-，作用域为当前客户端和本操作
-     * @param input 字典编码 2–64 字符、项业务值 1–100 字符、引用键 1–200 字符
+     * @param input 字典编码 1–64 字符、项业务值 1–100 字符、引用键 1–200 字符
      * @param auth 权威机密客户端身份，必须具备 dictionary-references:write scope
      * @return 201 和稳定对外引用标识；相同幂等请求返回相同标识
      */
@@ -32,7 +32,7 @@ public class PartnerReferenceController {
     @Transactional
     ResponseEntity<Reference> create(@RequestHeader("Idempotency-Key") String key,@RequestBody Creation input,BearerTokenAuthentication auth){
         require(auth);
-        if(!key.matches("[A-Za-z0-9._:-]{16,128}")||input.dictionaryCode()==null||!input.dictionaryCode().matches("[a-z][a-z0-9_]{1,63}")||
+        if(!key.matches("[A-Za-z0-9._:-]{16,128}")||!com.appnexus.platform.configuration.DictionaryValueStandard.validCode(input.dictionaryCode())||
                 !valid(input.itemValue(),100)||!valid(input.referenceKey(),200))throw problem(HttpStatus.BAD_REQUEST,"INVALID_PARTNER_INPUT","引用登记参数不正确");
         String client=(String)auth.getTokenAttributes().get("clientId"),tenant=(String)auth.getTokenAttributes().get("tenantId");
         // 与客户端授权更改共享权威行锁，避免 scope 校验后撤权与写入并发交错。

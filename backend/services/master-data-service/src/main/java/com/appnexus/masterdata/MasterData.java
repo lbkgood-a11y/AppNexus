@@ -11,9 +11,10 @@ public final class MasterData {
    * 人员不承载账号凭据和任职授权，仓库不承载库存，商品不承载公司价格。
    */
   public enum Kind {
-    PARTNER("partner", "BusinessPartner", List.of("partnerType", "creditCode", "contactName", "phone", "address")),
-    WAREHOUSE("warehouse", "Warehouse", List.of("address", "contactName", "phone")),
-    COUNTRY_REGION("country-region", "CountryRegion", List.of("englishName", "alpha3Code", "numericCode")),
+    PARTNER("partner", "BusinessPartner", List.of("partnerType", "creditCode", "contactName", "phone", "address", "registeredPlace", "countryRegion", "nature", "listed", "chineseName", "englishName", "shortName", "customerLevel", "legalRepresentative", "legalId", "controller", "establishedOn", "registeredCurrency", "registeredCapital", "taxNumber", "organizationCode", "productsServices", "staffSize", "fax", "remarks")),
+    WAREHOUSE("warehouse", "Warehouse", List.of("shortCode","shortName","warehouseType","totalArea","capacity","logisticsOrganization","contactName","contactTitle","phone","email","longitude","latitude","region","address","builtOn","openedOn","introduction","structureDescription","operatingMode","billAddress","remarks","partner","owner","ownershipCertificate","personalGuarantee","wholeLease","leaseChainDescription","subleaseDescription","otherStorageDescription","pledgee")),
+    COUNTRY_REGION("country-region", "CountryRegion", List.of("englishName", "alpha3Code", "numericCode", "parentCode")),
+    SUBDIVISION("subdivision", "Subdivision", List.of("countryCode", "subdivisionType", "parentCode")),
     PRODUCT("product", "Product", List.of("specification", "unit", "barcode"));
 
     /** 固定路由片段，不接受客户端自由扩展。 */
@@ -40,15 +41,28 @@ public final class MasterData {
   /**
    * 档案输入；编码创建后不可修改，停用通过单独操作，避免编辑权限隐式获得启停权。
    *
-   * @param code 租户内同类唯一编码，1–64 个 ASCII 字母、数字、点、下划线或短横线；国别地区为两个大写字母
+   * @param code 租户内同类唯一编码，1–64 个 ASCII 字母、数字、点、下划线或短横线；国别和区划允许自定义编码，创建后不可修改
    *
    * @param name 中文或业务名称，去除首尾空白后 1–200 字符，必填
    *
    * @param attributes 固定领域字段；缺省为全空文本，单项最长 500 字符，邮箱最长 200 字符
    *
+   * @param contacts 客商联系人，最多100条；null 保留已有明细，空列表清空；非客商不得传入
+   * @param bankAccounts 客商银行账户，最多100条；null 保留已有明细，空列表清空；审计只读
    * @param version 修改时必须传当前非负版本；新建使用 0，不影响新建结果
    */
-  public record Input(String code,String name,Map<String,String> attributes,long version) {}
+  public record Input(String code,String name,Map<String,String> attributes,long version,List<DetailInput> contacts,List<DetailInput> bankAccounts) {
+    /** 非客商调用与历史内部调用不传明细时保留原明细；空列表表示明确清空。 */
+    public Input(String code,String name,Map<String,String> attributes,long version){this(code,name,attributes,version,null,null);}
+  }
+  /**
+   * 明细写入只接收父对象下的标识及白名单字段；不接收审计或租户。
+   * @param id 新增为空，修改为当前客商下真实 UUID；不能移动其他客商或租户的明细
+   * @param values 固定白名单文本，单值最长 500 字符；布尔值为 true/false，邮箱最长 200 字符
+   */
+  public record DetailInput(String id,Map<String,String> values) {}
+  /** 已授权客商明细，审计来自数据库可信账号及 UTC 时间。 */
+  public record Detail(String id,Map<String,String> values,Audit audit) {}
   /**
    * 显式启停命令；停用仅阻止未来引用，不删除历史资料。
    *
@@ -58,7 +72,9 @@ public final class MasterData {
    */
   public record Status(Boolean enabled,long version) {}
   /** 已授权档案；version 为乐观锁版本，不接受客户端覆盖。 */
-  public record Row(String id,String code,String name,Map<String,String> attributes,boolean enabled,long version,Audit audit) {
+  public record Row(String id,String code,String name,Map<String,String> attributes,boolean enabled,long version,Audit audit,List<Detail> contacts,List<Detail> bankAccounts) {
+    /** 非客商摘要没有关联明细。 */
+    public Row(String id,String code,String name,Map<String,String> attributes,boolean enabled,long version,Audit audit){this(id,code,name,attributes,enabled,version,audit,List.of(),List.of());}
     /** 内部摘要未读取审计时显式为空；不构造历史事实。 */
     public Row(String id,String code,String name,Map<String,String> attributes,boolean enabled,long version){this(id,code,name,attributes,enabled,version,null);}
   }

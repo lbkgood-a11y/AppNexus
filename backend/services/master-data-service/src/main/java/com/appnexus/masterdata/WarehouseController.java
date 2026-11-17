@@ -15,11 +15,11 @@ public final class WarehouseController {
   /**
    * @param service 负责真实授权和事务的主数据服务 */
   public WarehouseController(MasterDataService service){this.service=service;}
-  /** 查询仓库管理；真实鉴权、租户与并发校验由同一业务执行器负责。 */
+  /** 查询仓库管理；id缺省分页，传UUID查询已授权详情；options默认false，true只返回本租户字典，仍复核仓库读取权限。 */
   @OperationBinding(id="Warehouse.list",objectType="Warehouse",operationCode="list",pages={"master-data/warehouse"},nameZh="查询仓库管理",nameEn="list Warehouses",permissions={"masterdata.warehouse:read"},policy="可信租户有效成员、独立功能权限、编码约束与版本校验")
   @GetMapping("")
-  public Object list(HttpServletRequest r,@RequestParam(defaultValue="") String keyword,@RequestParam(required=false) Boolean enabled,@RequestParam(defaultValue="1") int page,@RequestParam(defaultValue="20") int size) {return service.list(context(r),Kind.WAREHOUSE,keyword,enabled,page,size);}
-  /** 新增仓库管理；真实鉴权、租户与并发校验由同一业务执行器负责。 */
+  public Object list(HttpServletRequest r,@RequestParam(defaultValue="") String keyword,@RequestParam(required=false) Boolean enabled,@RequestParam(defaultValue="1") int page,@RequestParam(defaultValue="20") int size,@RequestParam(required=false) String id,@RequestParam(defaultValue="false") boolean options,@RequestParam(defaultValue="false") boolean geography) {if(geography)return service.geographyCatalog(context(r),Kind.WAREHOUSE);if(options)return service.warehouseOptions(context(r));return service.list(context(r),Kind.WAREHOUSE,keyword,enabled,page,size,id);}
+  /** 新增仓库管理；geography 默认 false，为 true 返回本租户地理摘要，仍复核当前业务读取权。真实鉴权、租户与并发校验由同一业务执行器负责。 */
   @OperationBinding(id="Warehouse.create",objectType="Warehouse",operationCode="create",pages={"master-data/warehouse"},nameZh="新增仓库管理",nameEn="create Warehouses",permissions={"masterdata.warehouse:create"},policy="可信租户有效成员、独立功能权限、编码约束与版本校验")
   @PostMapping("")
   public Object create(HttpServletRequest r,@RequestBody Input input) {return service.create(context(r),Kind.WAREHOUSE,input);}

@@ -13,10 +13,12 @@ import static com.appnexus.platform.organization.personnel.PersonData.*;
 public final class PersonController {
   private final PersonDataService service;
   private final PersonnelService personnel;
+  private final com.appnexus.platform.configuration.GeographyCatalog geography;
   /**
    * @param service 负责真实授权和事务的主数据服务
-   * @param personnel 人员详情、十类明细和组织用户多对多关联服务 */
-  public PersonController(PersonDataService service,PersonnelService personnel){this.service=service;this.personnel=personnel;}
+   * @param personnel 人员详情、十类明细和组织用户多对多关联服务
+   * @param geography 地理目录公开端口；读取前复核人员权限 */
+  public PersonController(PersonDataService service,PersonnelService personnel,com.appnexus.platform.configuration.GeographyCatalog geography){this.service=service;this.personnel=personnel;this.geography=geography;}
   /** 查询人员管理；真实鉴权、租户与并发校验由同一业务执行器负责。 */
   @OperationBinding(id="Person.list",objectType="Person",operationCode="list",pages={"organization/personnel"},nameZh="查询人员管理",nameEn="list Personnel",permissions={"masterdata.person:read"},policy="可信租户有效成员、独立功能权限、编码约束与版本校验")
   @GetMapping("")
@@ -39,10 +41,10 @@ public final class PersonController {
   @GetMapping("/{id}")
   public Object read(HttpServletRequest r,@PathVariable String id){return personnel.read(context(r),id);}
 
-  /** 读取人员关联目录；复用可信租户、独立权限和父档案版本，不扩大账号任职或业务权限。 */
+  /** 读取人员关联目录；geography 默认 false，true 在相同人员权限下返回本租户地理摘要。复用可信租户、独立权限和父档案版本，不扩大账号任职或业务权限。 */
   @OperationBinding(id="Person.options",objectType="Person",operationCode="options",pages={"organization/personnel"},nameZh="读取人员关联目录",nameEn="Read personnel directory",permissions={"masterdata.person:read"},policy="当前有效成员、独立人员权限、同租户档案及版本约束；账号关联每次复核可信租户有效成员")
   @GetMapping("/options")
-  public Object options(HttpServletRequest r){return personnel.options(context(r));}
+  public Object options(HttpServletRequest r,@RequestParam(defaultValue="false") boolean geography){var c=context(r);var options=personnel.options(c);return geography?this.geography.nodes(c.tenantId()):options;}
 
   /** 新增人员明细；复用可信租户、独立权限和父档案版本，不扩大账号任职或业务权限。 */
   @OperationBinding(id="Person.createDetail",objectType="Person",operationCode="createDetail",pages={"organization/personnel"},nameZh="新增人员明细",nameEn="Create personnel detail",permissions={"masterdata.person:detail_create"},policy="当前有效成员、独立人员权限、同租户档案及版本约束；账号关联每次复核可信租户有效成员")

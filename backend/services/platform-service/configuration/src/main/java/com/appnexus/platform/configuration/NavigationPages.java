@@ -28,7 +28,13 @@ public final class NavigationPages {
             new Page("master-data/partner","/master-data/partner","客商管理","Business partners",MenuManagement.Scope.TENANT,"masterdata.partner:read",Gate.PERMISSION),
             new Page("master-data/warehouse","/master-data/warehouse","仓库管理","Warehouses",MenuManagement.Scope.TENANT,"masterdata.warehouse:read",Gate.PERMISSION),
             new Page("master-data/country-region","/master-data/country-region","国别地区","Countries and regions",MenuManagement.Scope.TENANT,"masterdata.countryregion:read",Gate.PERMISSION),
+            new Page("master-data/subdivision","/master-data/subdivision","行政区划","Subdivisions",MenuManagement.Scope.TENANT,"masterdata.subdivision:read",Gate.PERMISSION),
             new Page("master-data/product","/master-data/product","商品管理","Products",MenuManagement.Scope.TENANT,"masterdata.product:read",Gate.PERMISSION),
+            new Page("master-data/product-v1","/master-data/product-v1","商品档案V1验证","Product V1 validation",MenuManagement.Scope.TENANT,"masterdata.product:read",Gate.PERMISSION),
+            new Page("master-data/product-category","/master-data/product-category","商品分类","Product categories",MenuManagement.Scope.TENANT,"masterdata.productcategory:read",Gate.PERMISSION),
+            new Page("master-data/product-unit","/master-data/product-unit","计量单位","Product units",MenuManagement.Scope.TENANT,"masterdata.productunit:read",Gate.PERMISSION),
+            new Page("master-data/product-attribute","/master-data/product-attribute","属性管理","Product attributes",MenuManagement.Scope.TENANT,"masterdata.productattribute:read",Gate.PERMISSION),
+            new Page("master-data/product-template","/master-data/product-template","属性模板","Product templates",MenuManagement.Scope.TENANT,"masterdata.producttemplate:read",Gate.PERMISSION),
 
             platform("platform/business-objects","/platform/business-objects","业务对象目录","Business object catalog","business.object.catalog:manage"),
             new Page("business-objects/index","/business-objects/workbench","业务配置","Business configuration",MenuManagement.Scope.TENANT,"business.object.configuration:manage",Gate.PERMISSION),
@@ -45,6 +51,7 @@ public final class NavigationPages {
             new Page("organization/index","/organization/manage","组织管理","Organizations",MenuManagement.Scope.TENANT,"organization.unit:read",Gate.PERMISSION),
             tenant("roles/index","/access/roles","租户角色","Tenant roles","access.tenant.role:read"),
             tenant("roles/authorization","/access/authorization","授权中心","Authorization","access.tenant.role:grant"),
+            new Page("configuration/parameters","/configuration/parameters","租户参数","Tenant parameters",MenuManagement.Scope.TENANT,"configuration.parameter:save",Gate.PERMISSION),
             new Page("configuration/dictionaries","/configuration/dictionaries","业务字典","Dictionaries",MenuManagement.Scope.TENANT,"configuration.dictionary:read",Gate.PERMISSION)
         );
     }

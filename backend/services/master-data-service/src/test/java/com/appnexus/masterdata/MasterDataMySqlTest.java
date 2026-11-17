@@ -47,24 +47,41 @@ class MasterDataMySqlTest {
             ScriptUtils.executeSqlScript(connection,new ByteArrayResource((statement+";").getBytes(StandardCharsets.UTF_8)));
         }
       }
-      assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM access_permission",Integer.class)).isEqualTo(24);
-      assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM access_role_permission",Integer.class)).isEqualTo(24);
+      try(var connection=source.getConnection()){ScriptUtils.executeSqlScript(connection,new ClassPathResource("db/migration/V87__partner_profile_details.sql"));}
+      try(var connection=source.getConnection()){ScriptUtils.executeSqlScript(connection,new ClassPathResource("db/migration/V90__warehouse_profile.sql"));}
+      try(var connection=source.getConnection()){ScriptUtils.executeSqlScript(connection,new ClassPathResource("db/migration/V92__international_subdivisions.sql"));}
+      try(var connection=source.getConnection()){ScriptUtils.executeSqlScript(connection,new ClassPathResource("db/migration/V107__editable_geography_parent.sql"));}
+      assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM access_permission",Integer.class)).isEqualTo(28);
+      assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM access_role_permission",Integer.class)).isEqualTo(28);
       var c=new VerifiedTenantContext(UUID.randomUUID(),UUID.randomUUID(),UUID.randomUUID(),1);
       var other=new VerifiedTenantContext(UUID.randomUUID(),UUID.randomUUID(),UUID.randomUUID(),1);
       var revoked=new java.util.concurrent.atomic.AtomicBoolean(false);
       AccessAuthorization access=(subject,permission)->!revoked.get()&&jdbc.queryForObject("SELECT COUNT(*) FROM access_permission WHERE code=?",Integer.class,permission)==1;
-      var service=new MasterDataService(jdbc,access,new DataSourceTransactionManager(source));
+      var catalog=org.mockito.Mockito.mock(com.appnexus.platform.configuration.BusinessValueCatalog.class);
+      org.mockito.Mockito.when(catalog.reference(org.mockito.ArgumentMatchers.any(),org.mockito.ArgumentMatchers.any(),org.mockito.ArgumentMatchers.anyString(),org.mockito.ArgumentMatchers.anyString(),org.mockito.ArgumentMatchers.anyMap(),org.mockito.ArgumentMatchers.anyMap(),org.mockito.ArgumentMatchers.anyMap())).thenReturn(true);
+      var service=new MasterDataService(jdbc,access,new DataSourceTransactionManager(source),catalog);
       for(var kind:Kind.values()){
         Map<String,String> attrs=switch(kind){
           case PARTNER->Map.of("partnerType","BOTH");
-          case PRODUCT->Map.of("unit","件");
+          case PRODUCT->Map.of("unit","PIECE");
           case COUNTRY_REGION->Map.of("alpha3Code","CHN","numericCode","156");
           default->Map.of();
         };
-        var input=new Input(kind==Kind.COUNTRY_REGION?"CN":"CODE-1","原始资料",attrs,0);
+        var input=new Input(kind==Kind.COUNTRY_REGION?"CN":kind==Kind.SUBDIVISION?"US-CA":"CODE-1","原始资料",attrs,0);
         String id=service.create(c,kind,input).get("id");
         assertThat(service.list(c,kind,"",null,1,20).total()).isEqualTo(1);
         assertThat(service.list(other,kind,"",null,1,20).total()).isZero();
+        if(kind==Kind.SUBDIVISION){
+          assertThat(service.list(c,kind,"",null,1,20,null,"continent:NA").rows().getFirst().attributes()).containsEntry("hierarchyCode","NA-US-CA").containsEntry("parentHierarchyCode","NA-US");
+          assertThat(service.list(c,kind,"NA-US-CA",true,1,20,null,"US").total()).isEqualTo(1);
+          assertThat(service.list(c,kind,"NA-US-CA",true,1,20,null,"CN").total()).isZero();
+          assertThat(service.list(c,kind,"",null,1,20,null,"CN").total()).isZero();
+          assertThat(service.list(other,kind,"",null,1,20,null,"US").total()).isZero();
+        }
+        if(kind==Kind.COUNTRY_REGION){
+          assertThat(service.list(c,kind,"",null,1,20,null,"continent:AS").rows().getFirst().attributes()).containsEntry("hierarchyCode","AS-CN").containsEntry("parentHierarchyCode","AS");
+          assertThat(service.list(c,kind,"",null,1,20,null,"continent:EU").total()).isZero();
+        }
         // 同编码允许存在于不同租户，但同 ID 不能读取或覆盖。
         service.create(other,kind,input);
         assertThatThrownBy(()->service.update(other,kind,id,input)).isInstanceOf(Rejection.class);
@@ -83,6 +100,46 @@ class MasterDataMySqlTest {
         assertThat(service.list(c,kind,"",false,1,20).rows().getFirst().version()).isEqualTo(2);
         assertThatThrownBy(()->service.setStatus(c,kind,id,new Status(true,1))).isInstanceOf(Rejection.class);
       }
+      // 自定义节点、跨国移动和后代同步使用真实事务，拒绝循环及外租户父级后不推进审计。
+      String customCountry=service.create(c,Kind.COUNTRY_REGION,new Input("CUSTOM_COUNTRY","自定义国别",Map.of("parentCode","continent:AS"),0)).get("id");
+      String city=service.create(c,Kind.SUBDIVISION,new Input("LOCAL_CITY","本地城市",Map.of("parentCode","CN-FJ"),0)).get("id");
+      String county=service.create(c,Kind.SUBDIVISION,new Input("LOCAL_COUNTY","本地县",Map.of("parentCode","LOCAL_CITY"),0)).get("id");
+      var before=service.list(c,Kind.SUBDIVISION,"",null,1,1,city).rows().getFirst();
+      assertThatThrownBy(()->service.update(c,Kind.SUBDIVISION,city,new Input("LOCAL_CITY","循环",Map.of("parentCode","LOCAL_COUNTY"),0))).isInstanceOf(Rejection.class);
+      assertThat(service.list(c,Kind.SUBDIVISION,"",null,1,1,city).rows().getFirst().audit()).isEqualTo(before.audit());
+      assertThatThrownBy(()->service.create(other,Kind.SUBDIVISION,new Input("CROSS","跨租户",Map.of("parentCode","LOCAL_CITY"),0))).isInstanceOf(Rejection.class);
+      service.update(c,Kind.SUBDIVISION,city,new Input("LOCAL_CITY","已移动城市",Map.of("parentCode","CUSTOM_COUNTRY"),0));
+      var child=service.list(c,Kind.SUBDIVISION,"",null,1,1,county).rows().getFirst();
+      assertThat(child.attributes()).containsEntry("countryCode","CUSTOM_COUNTRY").containsEntry("parentHierarchyCode","AS-CUSTOM_COUNTRY-LOCAL_CITY").containsEntry("parentName","已移动城市");
+      assertThat(child.version()).isEqualTo(1);assertThat(child.audit().updatedBy()).isEqualTo(c.accountId().toString());
+      assertThat(service.list(c,Kind.SUBDIVISION,"",null,1,20,null,"CUSTOM_COUNTRY").rows()).extracting(Row::code).containsExactlyInAnyOrder("LOCAL_CITY","LOCAL_COUNTY");
+      assertThat(service.list(c,Kind.SUBDIVISION,"LOCAL",null,1,20,null,"CN-FJ").total()).isZero();
+      assertThatThrownBy(()->service.update(c,Kind.SUBDIVISION,county,new Input("LOCAL_COUNTY","过期",Map.of("parentCode","US"),0))).isInstanceOf(Rejection.class);
+      assertThat(((GeographyHierarchy.Page)service.geographyTree(c,Kind.SUBDIVISION,"CUSTOM_COUNTRY",1,50)).rows()).extracting(GeographyHierarchy.Node::code).containsExactly("LOCAL_CITY");
+      var summary=new JdbcGeographyCatalog(jdbc).nodes(c.tenantId());
+      assertThat(summary.stream().filter(n->n.code().equals("LOCAL_CITY")).findFirst().orElseThrow().parentCode()).isEqualTo("CUSTOM_COUNTRY");
+      service.update(c,Kind.COUNTRY_REGION,customCountry,new Input("CUSTOM_COUNTRY","移动国别",Map.of("parentCode","continent:EU"),0));
+      assertThat(service.list(c,Kind.SUBDIVISION,"EU-CUSTOM_COUNTRY",null,1,20).total()).isEqualTo(2);
+      // 明细作为聚合与父版本同事务保存；真实数据库证明审计不可伪造且外客商明细不能冒用。
+      var contact=new DetailInput(null,Map.of("contactType","BUSINESS","contactName","测试联系人","phone","01000000000","address","测试地址","isDefault","true"));
+      var bank=new DetailInput(null,Map.of("taxAccount","false","basicAccount","true","isDefault","true","bankName","测试银行","accountNumber","000123","currency","CNY"));
+      String partner=service.create(c,Kind.PARTNER,new Input("DETAIL","聚合",Map.of("partnerType","CUSTOMER,CARGO_OWNER"),0,List.of(contact),List.of(bank))).get("id");
+      var profile=service.list(c,Kind.PARTNER,"",null,1,1,partner).rows().getFirst();
+      assertThat(profile.contacts()).hasSize(1);assertThat(profile.bankAccounts()).hasSize(1);
+      assertThat(profile.bankAccounts().getFirst().values().get("accountNumber")).isEqualTo("000123");
+      assertThat(profile.contacts().getFirst().audit().createdBy()).isEqualTo(c.accountId().toString());
+      assertThat(service.list(other,Kind.PARTNER,"",null,1,1,partner).rows()).isEmpty();
+      var foreign=new DetailInput(UUID.randomUUID().toString(),contact.values());
+      assertThatThrownBy(()->service.update(c,Kind.PARTNER,partner,new Input("DETAIL","不应提交",Map.of("partnerType","CUSTOMER"),0,List.of(foreign),List.of()))).isInstanceOf(Rejection.class);
+      var unchanged=service.list(c,Kind.PARTNER,"",null,1,1,partner).rows().getFirst();
+      assertThat(unchanged.version()).isZero();assertThat(unchanged.name()).isEqualTo("聚合");assertThat(unchanged.bankAccounts()).hasSize(1);
+      service.update(c,Kind.PARTNER,partner,new Input("DETAIL","完成",Map.of("partnerType","CUSTOMER"),0,List.of(new DetailInput(profile.contacts().getFirst().id(),contact.values())),List.of()));
+      var changed=service.list(c,Kind.PARTNER,"",null,1,1,partner).rows().getFirst();
+      assertThat(changed.contacts().getFirst().audit()).isEqualTo(profile.contacts().getFirst().audit());
+      assertThat(changed.bankAccounts()).isEmpty();
+      assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM md_partner_bank_account WHERE partner_id=UUID_TO_BIN(?) AND deleted=TRUE AND updated_by=UUID_TO_BIN(?)",Integer.class,partner,c.accountId().toString())).isEqualTo(1);assertThat(changed.audit().createdAt()).isEqualTo(profile.audit().createdAt());
+      assertThatThrownBy(()->service.update(c,Kind.PARTNER,partner,new Input("DETAIL","陈旧",Map.of("partnerType","CUSTOMER"),0,List.of(),List.of()))).isInstanceOf(Rejection.class);
+      assertThat(service.list(c,Kind.PARTNER,"",null,1,1,partner).rows().getFirst().contacts()).hasSize(1);
       revoked.set(true);
       assertThatThrownBy(()->service.list(c,Kind.PARTNER,"",null,1,20)).isInstanceOf(Rejection.class).hasMessage("MASTER_DATA_DENIED");
     }

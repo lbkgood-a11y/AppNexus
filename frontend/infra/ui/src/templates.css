@@ -142,7 +142,9 @@
 .business-workspace > .business-workspace__navigation { padding-block:0; }
 .business-workspace__context:last-child { border-bottom:0; }
 .tree-list-template:not(.is-embedded) > .tree-list-template__surface { border:1px solid var(--el-border-color-lighter);background:var(--el-bg-color); }
-.tree-list-template:not(.is-embedded) > .tree-list-template__surface > .el-card__body { gap:0; }
+/* 独立树表横幅与下层分栏共用全局区块间距，默认 8px、范围 0–24px；
+   页面底色仅显露区域间隔，不扩大横幅或内容 padding，隐藏横幅时不留空隙。 */
+.tree-list-template:not(.is-embedded) > .tree-list-template__surface > .el-card__body { gap:var(--app-section-gap,8px);background:var(--el-bg-color-page); }
 .tree-list-template:not(.is-embedded) .tree-list-template__navigation { border-bottom:1px solid var(--el-border-color-lighter);border-radius:0;overflow:hidden; }
 .tree-list-template:not(.is-embedded) .tree-list-template__layout { border:0;border-radius:0;background:var(--el-bg-color); }
 .tree-list-template__header,.tree-list-template__search,.tree-list-template__data,.tree-list-template__feedback { padding:var(--app-content-padding,8px); }
@@ -260,7 +262,8 @@
 .master-data-detail .detail-field-grid .el-form-item__label {padding-bottom:4px;line-height:20px;font-size:13px;color:var(--el-text-color-regular);}
 .master-data-detail .detail-field-grid :is(.el-date-editor,.el-select) {width:100%;min-width:0;}
 .master-data-detail .detail-field-wide {grid-column:span 2;}
-.master-data-detail .detail-code-value {display:inline-block;padding:0 10px;border-radius:var(--el-border-radius-base);background:var(--el-color-primary-light-9);color:var(--el-color-primary);overflow-wrap:anywhere;}
+/* 只读编码按字段宽度单行省略，完整值由调用处的 Element Plus Tooltip 提供，不截断业务数据。 */
+.master-data-detail .detail-code-value {display:block;min-width:0;max-width:100%;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;padding:0 10px;border-radius:var(--el-border-radius-base);background:var(--el-color-primary-light-9);color:var(--el-color-primary);}
 .master-data-detail .detail-readonly-field {display:flex;flex-direction:column;gap:6px;min-width:0;padding:4px 0 14px;}
 .master-data-detail .detail-readonly-field > span {color:var(--el-text-color-secondary);font-size:13px;}
 .master-data-detail .detail-readonly-field > strong {font-weight:400;overflow-wrap:anywhere;line-height:1.6;}
@@ -356,7 +359,7 @@
 .master-data-detail .detail-border-label-form :is(.el-input__wrapper,.el-select__wrapper) {min-height:36px;box-sizing:border-box;}
 .master-data-detail .detail-border-label-form .el-textarea__inner {min-height:36px;line-height:24px;padding-top:6px;padding-bottom:4px;}
 .master-data-detail .detail-border-label-form .detail-code-value {
- display:flex;align-items:center;width:100%;min-height:36px;padding:0 11px;box-sizing:border-box;
+ display:block;width:100%;min-height:36px;padding:0 11px;box-sizing:border-box;
  background:var(--el-fill-color-light);box-shadow:0 0 0 1px var(--el-border-color) inset;color:var(--el-text-color-primary);
 }
 .master-data-detail .detail-border-label-form .el-form-item:focus-within > .el-form-item__label {color:var(--el-color-primary);}

@@ -3,6 +3,7 @@ package com.appnexus.platform.organization.personnel;
 import com.appnexus.platform.authorization.AccessAuthorization;
 import com.appnexus.platform.tenant.VerifiedTenantContext;
 import java.util.*;
+import com.appnexus.platform.configuration.BusinessValueCatalog;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -14,15 +15,17 @@ import static com.appnexus.platform.organization.personnel.PersonData.*;
  * 仅表名和列名取自构建内白名单；业务值全部使用绑定参数，禁止任意 SQL 或动态对象执行。
  */
 public final class PersonDataService {
+  private final BusinessValueCatalog dictionaries;
   private final JdbcTemplate jdbc;
   private final AccessAuthorization access;
   private final TransactionTemplate transaction;
   /**
    * @param jdbc 宿主数据源
    * @param access 公开授权端口
+   * @param dictionaries 字典公开端口；不回退前端硬编码选项
    * @param manager 宿主事务管理器 */
-  public PersonDataService(JdbcTemplate jdbc,AccessAuthorization access,PlatformTransactionManager manager) {
-    this.jdbc=jdbc;this.access=access;this.transaction=new TransactionTemplate(manager);
+  public PersonDataService(JdbcTemplate jdbc,AccessAuthorization access,PlatformTransactionManager manager,BusinessValueCatalog dictionaries) {
+    this.dictionaries=dictionaries;this.jdbc=jdbc;this.access=access;this.transaction=new TransactionTemplate(manager);
   }
 
   /**
@@ -78,6 +81,7 @@ public final class PersonDataService {
         jdbc.update("INSERT INTO "+kind.table()+"(id,tenant_id,code,name,"+String.join(",",kind.fields.stream().map(kind::column).toList())+") VALUES(UUID_TO_BIN(?),UUID_TO_BIN(?),?,?,"+String.join(",",Collections.nCopies(kind.fields.size(),"?"))+")",args.toArray());
         // 审计主体来自可信会话；四个字段均在同一事务内写入，系统任务可通过 NULL 表达未知主体。
         jdbc.update("UPDATE "+kind.table()+" SET created_by=UUID_TO_BIN(?),created_at=CURRENT_TIMESTAMP(6),updated_by=UUID_TO_BIN(?),updated_at=CURRENT_TIMESTAMP(6) WHERE tenant_id=UUID_TO_BIN(?) AND id=UUID_TO_BIN(?)",c.accountId().toString(),c.accountId().toString(),c.tenantId().toString(),id);
+        dictionaryReferences(c,id,values,Map.of());
         return Map.of("id",id);
       });
     } catch(DuplicateKeyException e){throw new Rejection(409,"MASTER_DATA_CODE_CONFLICT");}
@@ -95,10 +99,12 @@ public final class PersonDataService {
   public void update(VerifiedTenantContext c,Kind kind,String id,Input input) {
     require(c,kind,"update");uuid(id);var values=validate(kind,input);
     transaction.executeWithoutResult(status->{
+      var previous=previousValues(c,id);
       var args=new ArrayList<Object>(List.of(input.name().trim()));args.addAll(values.values());
       args.add(c.tenantId().toString());args.add(id);args.add(input.version());args.add(input.code().trim());
       int count=jdbc.update("UPDATE "+kind.table()+" SET name=?,"+String.join(",",kind.fields.stream().map(f->kind.column(f)+"=?").toList())+",version=version+1 WHERE tenant_id=UUID_TO_BIN(?) AND id=UUID_TO_BIN(?) AND version=? AND code=?",args.toArray());
       if(count!=1)throw new Rejection(409,"MASTER_DATA_CHANGED");
+      dictionaryReferences(c,id,values,previous);
       audit(c,kind,id);
     });
   }
@@ -141,6 +147,17 @@ public final class PersonDataService {
     }
     return values;
   }
+
+  /** 旧值只从已授权父对象读取，供停用项保持不变时放行；事务中仍需父版本成功。 */
+  private Map<String,String> previousValues(VerifiedTenantContext c,String id){
+    var fields=Kind.PERSON.fields;var rows=jdbc.query("SELECT "+String.join(",",fields.stream().map(Kind.PERSON::column).toList())+" FROM md_person WHERE tenant_id=UUID_TO_BIN(?) AND id=UUID_TO_BIN(?)",(r,n)->{var result=new HashMap<String,String>();for(String field:fields)result.put(field,r.getString(Kind.PERSON.column(field)));return result;},c.tenantId().toString(),id);
+    return rows.isEmpty()?Map.of():rows.getFirst();
+  }
+  /** 字典校验与引用在业务写事务内执行；未知新值拒绝，已有停用值可保留。 */
+  private void dictionaryReferences(VerifiedTenantContext c,String id,Map<String,String> values,Map<String,String> previous){
+    if(!dictionaries.reference(c.tenantId(),c.accountId(),"Person",id,BusinessValueCatalog.PERSON,values,previous))throw invalid();
+  }
+
   /** 更新人员档案的最后修改主体；时间由数据库生成，避免客户端时钟漂移。 */
   private void audit(VerifiedTenantContext c,Kind kind,String id){jdbc.update("UPDATE "+kind.table()+" SET updated_by=UUID_TO_BIN(?),updated_at=CURRENT_TIMESTAMP(6) WHERE tenant_id=UUID_TO_BIN(?) AND id=UUID_TO_BIN(?)",c.accountId().toString(),c.tenantId().toString(),id);}
   private static void uuid(String id){try{if(!UUID.fromString(id).toString().equalsIgnoreCase(id))throw invalid();}catch(IllegalArgumentException|NullPointerException e){throw invalid();}}

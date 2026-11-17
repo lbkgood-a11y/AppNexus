@@ -39,6 +39,9 @@ foreach ($name in @("APP_DATABASE_PASSWORD", "APP_DATABASE_ROOT_PASSWORD", "APP_
 # 首次平台管理员登录名默认 admin；仅在数据库尚未初始化时创建账号并授予平台身份，不作为重置入口。
 if (-not $env:APP_BOOTSTRAP_USERNAME) { $env:APP_BOOTSTRAP_USERNAME = "admin" }
 $secrets["APP_BOOTSTRAP_USERNAME"] = $env:APP_BOOTSTRAP_USERNAME
+# 高德安全密钥目录：本机默认 .local/amap-secrets；只存按公开 Web Key 命名的 jscode 文件，不生成或猜测密钥，缺文件时代理返回503。生产须使用服务账号专属的安全目录。
+if (-not $env:APP_AMAP_SECRET_DIRECTORY) { $env:APP_AMAP_SECRET_DIRECTORY = Join-Path $localDirectory "amap-secrets" }
+$secrets["APP_AMAP_SECRET_DIRECTORY"] = $env:APP_AMAP_SECRET_DIRECTORY
 $secrets | ConvertTo-Json | Set-Content -LiteralPath $environmentFile
 # MySQL 使用本机 3307 端口和 UTC 时间语义，与 Compose 的端口映射保持一致。
 $env:APP_DATABASE_URL = "jdbc:mysql://localhost:3307/appnexus?preserveInstants=true&connectionTimeZone=UTC&forceConnectionTimeZoneToSession=true"
