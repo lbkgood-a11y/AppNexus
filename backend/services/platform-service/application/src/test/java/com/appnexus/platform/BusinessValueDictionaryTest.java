@@ -20,6 +20,8 @@ class BusinessValueDictionaryTest extends DatabaseTestSupport {
  @Autowired BusinessValueCatalog catalog;
  @Autowired DictionaryManagement management;
  @Autowired MasterDataService master;
+ @Autowired com.appnexus.masterdata.product.ProductCatalogService productCatalog;
+ @Autowired com.appnexus.masterdata.product.ProductV1Service products;
  @Autowired PlatformTransactionManager manager;
  @Autowired com.appnexus.platform.persistence.organization.OrganizationAdministratorBootstrap bootstrap;
  private VerifiedTenantContext tenant(){
@@ -37,8 +39,9 @@ class BusinessValueDictionaryTest extends DatabaseTestSupport {
   assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM tenant_dictionary WHERE tenant_id=UUID_TO_BIN(?)",Integer.class,c.tenantId().toString())).isEqualTo(25);
   var dictionary=management.dictionaries(context).stream().filter(row->row.code().equals("partner_type")).findFirst().orElseThrow();
   var option=management.createItem(context,dictionary.id(),new DictionaryManagement.CreateItem(null,"custom_role","CUSTOM_ROLE","自定义客商类型",null,1));
-  master.create(c,MasterData.Kind.PRODUCT,new MasterData.Input("UNIT","商品单位",Map.of("unit","PIECE"),0));
-  assertThatThrownBy(()->master.create(c,MasterData.Kind.PRODUCT,new MasterData.Input("BADUNIT","非法商品单位",Map.of("unit","未知新单位"),0))).isInstanceOf(MasterData.Rejection.class);
+  var productUnit=productCatalog.createUnit(c,new com.appnexus.masterdata.product.CatalogData.UnitInput("PIECE","件","COUNT",0,0));
+  products.create(c,new com.appnexus.masterdata.product.ProductV1Service.Input("UNIT","商品单位",null,null,null,"PHYSICAL",productUnit.id(),null,null,null,null));
+  assertThatThrownBy(()->products.create(c,new com.appnexus.masterdata.product.ProductV1Service.Input("BADUNIT","非法商品单位",null,null,null,"PHYSICAL",UUID.randomUUID().toString(),null,null,null,null))).isInstanceOf(MasterData.Rejection.class);
   var attributes=Map.of("partnerType","CUSTOM_ROLE","nature","PRIVATE");
   String id=master.create(c,MasterData.Kind.PARTNER,new MasterData.Input("DYNAMIC","动态字典客商",attributes,0)).get("id");
   assertThat(catalog.options(c.tenantId(),BusinessValueCatalog.PARTNER).get("partnerType")).anyMatch(row->row.value().equals("CUSTOM_ROLE")&&row.enabled());

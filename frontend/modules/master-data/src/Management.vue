@@ -8,8 +8,11 @@ import { ElMessage, ElMessageBox, type FormInstance, type FormRules, type LoadFu
 import { BusinessWorkspace, TreeListTemplate, ManagementTable, ManagedDialog, RecordAuditDetails, AppPagination, InfoHint, FloatingError, setErrorFeedback, type ManagementColumn } from "@appnexus/ui";
 import { masterDataFields, masterDataOperations, type MasterDataApi, type MasterDataKind, type MasterDataRow, type MasterDataInput } from "./index";
 
-/** 五类档案复用现有工作区、表格和弹窗；表单差异来自固定字段契约，不构建平行 UI 体系。 */
-const props=defineProps<{kind:MasterDataKind;api:MasterDataApi;errorText:(error:unknown)=>string}>();
+/** 主数据档案复用现有工作区、表格和弹窗；表单差异来自固定字段契约，不构建平行 UI 体系。 */
+const props=defineProps<{kind:MasterDataKind;api:MasterDataApi;errorText:(error:unknown)=>string;
+  /** 库区或库位的直属上级编码，必填；名称仅展示，不参与授权或写入。 */
+  storageParent?:{code:string;name:string;enabled:boolean}}>();
+const emit=defineEmits<{changed:[]}>();
 const {t,te}=useI18n();
 /** 区划类型仅做中英双语展示；未知标准类型原样保留，不改变提交及校验原值。 */
 function subdivisionTypeLabel(value?:string){
@@ -17,6 +20,10 @@ function subdivisionTypeLabel(value?:string){
   const key="subdivisionTypes."+value;
   return te(key)?t(key):value;
 }
+/** 库区/库位只读详情与编辑共用弹窗；查看不授予写权限。 */
+const storageReadonly=ref(false);
+const isStorage=computed(()=>props.kind==="storage-area"||props.kind==="storage-location");
+const areaTypes=["RECEIVING","WORK","GOOD","DEFECTIVE","PACKAGING","VIRTUAL","FINISHED"];
 const isGeography=computed(()=>props.kind==="country-region"||props.kind==="subdivision");
 /** 左树只加载展开层，每次最多 50 条；更多节点通过显式按钮续载，不一次获取完整目录。 */
 type NavigationNode=import("./index").GeographyNavigationNode & {moreParent?:string;nextPage?:number};
@@ -124,12 +131,11 @@ function selectGeography(code:string){
   draft.code=entry.code;draft.name=entry.name;
   for(const field of fields.value)if(field!=="parentCode")draft.attributes[field]=entry.attributes[field]??(field==="englishName"?entry.name:"");
 }
-const productUnits=ref<import("./index").DictionaryOption[]>([]);
 const partnerOptions=ref<import("./index").DictionaryOption[]>([]);
 const operation=computed(()=>masterDataOperations[props.kind]);
 const fields=computed(()=>masterDataFields[props.kind]);
 /** 上级统一放在表单首项选择，避免与只读列重复展示。 */
-const visibleFields=computed(()=>fields.value.filter(field=>!isGeography.value||field!=="parentCode"));
+const visibleFields=computed(()=>fields.value.filter(field=>(!isGeography.value&&!isStorage.value)||field!=="parentCode"));
 const title=computed(()=>t("masterData."+props.kind));
 const rows=ref<MasterDataRow[]>([]),total=ref(0),page=ref(1),size=ref(20);
 const keyword=ref(""),status=ref("all"),loading=ref(false),busy=ref(false),failed=ref(false),ready=ref(false);
@@ -148,7 +154,6 @@ const partnerId=ref("");
 const editingAudit=computed(()=>rows.value.find(row=>row.id===editingId.value)?.audit);
 const draft=reactive<MasterDataInput>({code:"",name:"",attributes:{},version:0});
 /** 已有停用单位保留名称，历史未收录值只读保留，禁止作为其他记录的新选择。 */
-const productUnitOptions=computed(()=>{const current=draft.attributes.unit??"";return [...productUnits.value.filter(row=>row.enabled||row.value===current),...(!current||productUnits.value.some(row=>row.value===current)?[]:[{value:current,name:current,enabled:false}])];});
 const saveOperation=computed(()=>editingId.value?operation.value.update:operation.value.create);
 const canRead=computed(()=>operations.value.includes(operation.value.list));
 const columns=computed<ManagementColumn[]>(()=>[
@@ -164,12 +169,12 @@ const rules=computed<FormRules>(()=>{
   const required={required:true,message:t("masterData.required"),trigger:"blur"};
   const result:FormRules={code:[required,{pattern:/^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/,message:t("masterData.codeRule"),trigger:"blur"}],name:[required]};
   if(props.kind==="partner")result["attributes.partnerType"]=[required];
-  if(props.kind==="product")result["attributes.unit"]=[required];
   if(props.kind==="country-region"){
     result["attributes.alpha3Code"]=[{pattern:/^[A-Z]{3}$/,message:t("masterData.alpha3Rule"),trigger:"blur"}];
     result["attributes.numericCode"]=[{pattern:/^[0-9]{3}$/,message:t("masterData.numericRule"),trigger:"blur"}];
   }
   if(isGeography.value)result["attributes.parentCode"]=[{required:true,message:t("masterData.required"),trigger:"change"}];
+  if(isStorage.value)result["attributes.capacity"]=[{pattern:/^(?:[0-9]{1,18}(?:\.[0-9]{1,6})?)?$/,message:t("storageHierarchy.capacityRule"),trigger:"blur"}];
   return result;
 });
 /** 查询失败保留上次行数据并显示原区域故障状态；重新获取实时准入，避免撤权后继续展示旧资料。 */
@@ -180,9 +185,9 @@ async function load(){
     operations.value=await props.api.operations();ready.value=true;
     if(!canRead.value){rows.value=[];total.value=0;return;}
     if(props.kind==="partner")partnerOptions.value=(await props.api.partnerOptions()).partnerType??[];
-    if(props.kind==="product")productUnits.value=(await props.api.productOptions()).unit??[];
     if(props.kind==="warehouse")warehouseOptions.value=await props.api.warehouseOptions();
-    const result=await props.api.list(props.kind,{keyword:keyword.value,enabled:status.value==="all"?undefined:status.value==="enabled",page:page.value,size:size.value,...(isGeography.value?{scope:treeScope.value}:{})});
+    if(isStorage.value&&!props.storageParent?.code){rows.value=[];total.value=0;return;}
+    const result=await props.api.list(props.kind,{keyword:keyword.value,enabled:status.value==="all"?undefined:status.value==="enabled",page:page.value,size:size.value,...(isGeography.value?{scope:treeScope.value}:isStorage.value?{scope:props.storageParent?.code}:{})});
     rows.value=result.rows;total.value=result.total;
   }catch(e){
     failed.value=true;
@@ -200,6 +205,7 @@ function reset(){keyword.value="";status.value="all";search();}
 function edit(row?:MasterDataRow,mode:"view"|"edit"="edit"){
   if(props.kind==="partner"){partnerId.value=row?.id??"";partnerEditorMode.value=mode;partnerEditor.value=true;return;}
   if(props.kind==="warehouse"){partnerId.value=row?.id??"";warehouseEditorMode.value=mode;warehouseEditor.value=true;return;}
+  storageReadonly.value=isStorage.value&&mode==="view";
   editingId.value=row?.id??"";draft.code=row?.code??"";draft.name=row?.name??"";draft.version=row?.version??0;
   draft.attributes=Object.fromEntries(fields.value.map(key=>[key,row?.attributes[key]??""]));
   if(isGeography.value){
@@ -214,17 +220,18 @@ function edit(row?:MasterDataRow,mode:"view"|"edit"="edit"){
     editingHierarchy.value={code:row?.attributes.hierarchyCode??"",parentCode,parentHierarchyCode};
     parentRevision.value++;
   }
+  if(isStorage.value)draft.attributes.parentCode=row?.attributes.parentCode??props.storageParent?.code??"";
   error.value="";open.value=true;
 
 }
 /** 保存成功才关闭；失败保留草稿，409 通过公共浮层提供重新读取入口，不自动覆盖输入。 */
 async function save(){
-  if(busy.value||!(await form.value?.validate().catch(()=>false)))return;
+  if(storageReadonly.value||busy.value||!(await form.value?.validate().catch(()=>false)))return;
   busy.value=true;
   try{
     const input={...draft,attributes:{...draft.attributes}};
     if(editingId.value)await props.api.update(props.kind,editingId.value,input);else await props.api.create(props.kind,input);
-    open.value=false;ElMessage.success(t("masterData.saved"));busy.value=false;if(isGeography.value)retryTree();await load();
+    open.value=false;emit("changed");ElMessage.success(t("masterData.saved"));busy.value=false;if(isGeography.value)retryTree();await load();
   }catch(e){await setErrorFeedback(error,props.errorText(e));}finally{busy.value=false;}
 }
 /** 启停先确认对象及后果；使用所选行版本，失败不乐观改变表格状态。 */
@@ -232,7 +239,7 @@ async function toggle(row:MasterDataRow){
   if(busy.value)return;
   try{await ElMessageBox.confirm(t("masterData."+(row.enabled?"confirmDisable":"confirmEnable"),{name:row.name}),t("masterData.confirmTitle"),{type:row.enabled?"warning":"info",confirmButtonText:t("masterData."+(row.enabled?"disable":"enable")),cancelButtonText:t("masterData.cancel")});}catch{return;}
   busy.value=true;
-  try{await props.api.setStatus(props.kind,row.id,{enabled:!row.enabled,version:row.version});ElMessage.success(t("masterData.statusSaved"));busy.value=false;await load();}
+  try{await props.api.setStatus(props.kind,row.id,{enabled:!row.enabled,version:row.version});emit("changed");ElMessage.success(t("masterData.statusSaved"));busy.value=false;await load();}
   catch(e){await setErrorFeedback(error,props.errorText(e));}finally{busy.value=false;}
 }
 /** 发生冲突后重新读取列表，保留当前编辑草稿，用户可取消后重新打开最新档案。 */
@@ -253,6 +260,7 @@ onMounted(load);
       </el-tree>
     </template>
     <template v-if="isGeography" #header><span>{{treeScopeName||t('geographyHierarchy.all')}}</span></template>
+    <template v-if="$slots.navigation" #navigation><slot name="navigation" /></template>
     <template #search>
       <el-form inline @submit.prevent="search">
         <el-form-item :label="t('masterData.keyword')"><el-input v-model="keyword" maxlength="200" clearable /></el-form-item>
@@ -272,50 +280,51 @@ onMounted(load);
           <InfoHint :content="t('masterData.scopeHint')" />
           <InfoHint v-if="kind==='country-region'" :content="t('masterData.countryHint')" />
         </template>
-        <template #actions><el-button v-operation="operation.create" type="primary" :disabled="loading||busy" @click="edit()">{{t('masterData.create')}}</el-button></template>
-        <template v-for="field in visibleFields" :key="field" #[field]="{row}">{{kind==='warehouse'?(warehouseOptions[field]?.find(option=>option.value===row.attributes[field])?.name||row.attributes[field]||'—'):field==='partnerType'?(row.attributes[field]==='BOTH'?['CUSTOMER','SUPPLIER']:row.attributes[field].split(',')).map((value:string)=>partnerOptions.find(option=>option.value===value)?.name??value).join(' / '):field==='unit'?(productUnits.find(option=>option.value===row.attributes[field])?.name??(row.attributes[field]||'—')):field==='subdivisionType'?subdivisionTypeLabel(row.attributes[field]):row.attributes[field]||'—'}}</template>
+        <template #actions><el-button v-operation="operation.create" type="primary" :disabled="loading||busy||(isStorage&&(!storageParent?.code||!storageParent.enabled))" @click="edit()">{{t('masterData.create')}}</el-button></template>
+        <template v-for="field in visibleFields" :key="field" #[field]="{row}">{{kind==='warehouse'?(warehouseOptions[field]?.find(option=>option.value===row.attributes[field])?.name||row.attributes[field]||'—'):field==='partnerType'?(row.attributes[field]==='BOTH'?['CUSTOMER','SUPPLIER']:row.attributes[field].split(',')).map((value:string)=>partnerOptions.find(option=>option.value===value)?.name??value).join(' / '):field==='subdivisionType'?subdivisionTypeLabel(row.attributes[field]):field==='areaType'?(row.attributes[field]?t('storageHierarchy.types.'+row.attributes[field]):'—'):row.attributes[field]||'—'}}</template>
         <template #name="{row}">{{isGeography?(row.attributes.displayName||row.name):row.name}}</template>
         <template #hierarchyCode="{row}">{{row.attributes.hierarchyCode||row.code}}</template>
         <template #parentHierarchyCode="{row}">{{row.attributes.parentHierarchyCode||'—'}}</template>
         <template #status="{row}"><el-tag :type="row.enabled?'success':'info'">{{t('masterData.'+(row.enabled?'enabled':'disabled'))}}</el-tag></template>
         <template #operations="{row}">
-          <el-button v-if="kind==='partner'||kind==='warehouse'" v-operation="operation.list" link type="primary" :disabled="busy||loading" @click="edit(row,'view')">{{t('partner.view')}}</el-button>
+          <el-button v-if="kind==='partner'||kind==='warehouse'||isStorage" v-operation="operation.list" link type="primary" :disabled="busy||loading" @click="edit(row,'view')">{{t('partner.view')}}</el-button>
           <el-button v-operation="operation.update" link type="primary" :disabled="busy||loading" @click="edit(row,'edit')">{{t('masterData.edit')}}</el-button>
           <el-button v-operation="operation.setStatus" link :type="row.enabled?'danger':'primary'" :disabled="busy||loading" @click="toggle(row)">{{t('masterData.'+(row.enabled?'disable':'enable'))}}</el-button>
         </template>
         <template #pagination><AppPagination v-model:current-page="page" v-model:page-size="size" :total="total" :disabled="loading||busy" @current-change="load" @size-change="search" /></template>
       </ManagementTable>
-      <ManagedDialog v-model="open" :title="t('masterData.'+(editingId?'edit':'create'))+' · '+title" :busy="busy" @closed="form?.clearValidate()">
+      <ManagedDialog v-model="open" :title="(storageReadonly?t('partner.view'):t('masterData.'+(editingId?'edit':'create')))+' · '+title" :busy="busy" @closed="form?.clearValidate()">
         <!-- 地理编码约束移至标题；阻止指针事件冒泡，避免提示按钮触发标题栏拖动。 -->
         <template v-if="isGeography" #title>
           <span class="info-hint-title">{{t('masterData.'+(editingId?'edit':'create'))+' · '+title}}<span @pointerdown.stop><InfoHint :content="t('masterData.codeHint')" /></span></span>
         </template>
         <el-form class="business-border-label-form" ref="form" :model="draft" :rules="rules" label-position="top" @submit.prevent="save">
+          <el-form-item v-if="isStorage" :label="t(kind==='storage-area'?'storageHierarchy.warehouse':'storageHierarchy.area')"><span>{{storageParent?.name}} · {{draft.attributes.parentCode}}</span></el-form-item>
           <el-form-item v-if="isGeography" :label="t('geographyHierarchy.parentCode')" prop="attributes.parentCode">
-            <el-tree-select :key="parentRevision" v-model="draft.attributes.parentCode" :cache-data="parentCache" lazy :load="loadParents" :props="{label:'label',isLeaf:'leaf',disabled:'disabled'}" node-key="code" check-strictly :disabled="busy" style="width:100%" @change="changeParent" />
+            <el-tree-select :key="parentRevision" v-model="draft.attributes.parentCode" :cache-data="parentCache" lazy :load="loadParents" :props="{label:'label',isLeaf:'leaf',disabled:'disabled'}" node-key="code" check-strictly :disabled="busy||storageReadonly" style="width:100%" @change="changeParent" />
           </el-form-item>
           <el-form-item v-if="isGeography&&editingId" :label="t('geographyHierarchy.code')"><span>{{currentHierarchy||'—'}}</span></el-form-item>
           <el-form-item :label="t('masterData.code')" prop="code">
             <template #label>{{t('masterData.code')}}<InfoHint :content="t('masterData.codeHint')" /></template>
-            <span v-if="editingId">{{draft.code}}</span><el-input v-else v-model="draft.code" maxlength="64" :disabled="busy">
+            <span v-if="editingId">{{draft.code}}</span><el-input v-else v-model="draft.code" maxlength="64" :disabled="busy||storageReadonly">
               <template v-if="isGeography" #suffix><el-popover trigger="click" placement="bottom-end" :width="320" @show="searchGeography('')">
-                <template #reference><el-button text :disabled="busy">{{t('masterData.selectGeography')}}</el-button></template>
-                <el-select :model-value="draft.code" filterable remote :remote-method="searchGeography" :loading="geographyLoading" :placeholder="t('masterData.selectGeography')" style="width:100%" :disabled="busy" @change="selectGeography">
+                <template #reference><el-button text :disabled="busy||storageReadonly">{{t('masterData.selectGeography')}}</el-button></template>
+                <el-select :model-value="draft.code" filterable remote :remote-method="searchGeography" :loading="geographyLoading" :placeholder="t('masterData.selectGeography')" style="width:100%" :disabled="busy||storageReadonly" @change="selectGeography">
                   <el-option v-for="entry in geography" :key="entry.code" :value="entry.code" :label="entry.code+' · '+(entry.attributes.displayName||entry.name)" />
                   <template #footer><el-pagination v-model:current-page="geographyPage" small layout="prev, pager, next" :pager-count="5" :page-size="20" :total="geographyTotal" :disabled="geographyLoading" @current-change="loadGeography" /></template>
                 </el-select>
               </el-popover></template>
             </el-input>
           </el-form-item>
-          <el-form-item :label="t('masterData.name')" prop="name"><el-input v-model="draft.name" maxlength="200" :disabled="busy" /></el-form-item>
+          <el-form-item :label="t('masterData.name')" prop="name"><el-input v-model="draft.name" maxlength="200" :disabled="busy||storageReadonly" /></el-form-item>
           <el-form-item v-for="field in visibleFields" :key="field" :label="t('masterData.fields.'+field)" :prop="'attributes.'+field">
-            <el-select v-if="field==='unit'" v-model="draft.attributes[field]" filterable clearable :disabled="busy"><el-option v-for="option in productUnitOptions" :key="option.value" :value="option.value" :label="option.name" :disabled="!option.enabled" /></el-select>
-            <span v-else-if="isGeography&&field==='countryCode'">{{draft.attributes[field]||'—'}}</span>
-            <el-input v-else v-model="draft.attributes[field]" :maxlength="field==='unit'?32:field==='email'?200:500" :disabled="busy" />
+            <span v-if="isGeography&&field==='countryCode'">{{draft.attributes[field]||'—'}}</span>
+            <el-select v-else-if="field==='areaType'" v-model="draft.attributes[field]" clearable :disabled="busy||storageReadonly"><el-option v-for="value in areaTypes" :key="value" :value="value" :label="t('storageHierarchy.types.'+value)" /></el-select>
+            <el-input v-else v-model="draft.attributes[field]" :type="field==='remarks'?'textarea':'text'" :maxlength="field==='email'?200:500" :disabled="busy||storageReadonly" />
           </el-form-item>
         </el-form>
         <RecordAuditDetails v-if="editingId && editingAudit" :audit="editingAudit" />
-        <template #footer><el-button :disabled="busy" @click="open=false">{{t('masterData.cancel')}}</el-button><el-button v-operation="saveOperation" type="primary" :loading="busy" :disabled="isGeography&&!draft.attributes.parentCode" @click="save">{{t('masterData.save')}}</el-button></template>
+        <template #footer><el-button :disabled="busy" @click="open=false">{{t('masterData.cancel')}}</el-button><el-button v-if="!storageReadonly" v-operation="saveOperation" type="primary" :loading="busy" :disabled="isGeography&&!draft.attributes.parentCode" @click="save">{{t('masterData.save')}}</el-button></template>
       </ManagedDialog>
     </template>
   </component>

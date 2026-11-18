@@ -141,13 +141,13 @@ public final class ProductCatalogService {
    */
   public Configuration publish(VerifiedTenantContext c,String id,Publish input){
     require(c,"productcategory","publish");uuid(id);
-    if(input==null||input.templates()==null||!input.templates().keySet().equals(PURPOSES)||input.templates().get("SPEC")!=null||input.serviceUnitRequired()==null||input.version()<0)throw invalid("PRODUCT_CONFIG_SLOTS_INVALID");
+    if(input==null||input.templates()==null||!input.templates().keySet().equals(PURPOSES)||input.serviceUnitRequired()==null||input.version()<0)throw invalid("PRODUCT_CONFIG_SLOTS_INVALID");
     return integrity(()->tx.execute(status->{
       lockTree(c);var all=readTree(c);var category=all.get(id);
       if(category==null||category.version()!=input.version())throw changed();
       if(!category.enabled())throw invalid("PRODUCT_CATEGORY_DISABLED");
       var selected=new LinkedHashMap<String,String>();var attributes=new HashSet<String>();
-      for(String purpose:List.of("BASIC","QUALITY","EXTENSION")){
+      for(String purpose:List.of("BASIC","SPEC","QUALITY","EXTENSION")){
         String versionId=input.templates().get(purpose);if(versionId==null)continue;uuid(versionId);
         var versions=jdbc.queryForList("SELECT tv.state,t.purpose,t.enabled FROM md_product_template_version tv JOIN md_product_template t ON t.tenant_id=tv.tenant_id AND t.id=tv.template_id WHERE tv.tenant_id=UUID_TO_BIN(?) AND tv.id=UUID_TO_BIN(?) FOR UPDATE",tenant(c),versionId);
         if(versions.size()!=1||!"PUBLISHED".equals(versions.getFirst().get("state"))||!purpose.equals(versions.getFirst().get("purpose"))||!Boolean.TRUE.equals(versions.getFirst().get("enabled")))throw invalid("PRODUCT_TEMPLATE_NOT_PUBLISHED");

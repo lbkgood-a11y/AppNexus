@@ -35,12 +35,12 @@ public final class CatalogData {
    */
   public record Status(Boolean enabled,long version) {}
   /**
-   * 发布不可变配置；当前切片只接收四个明确空槽，不创建假模板。
-   * @param templates 必须恰有BASIC/SPEC/QUALITY/EXTENSION四键，当前均为NULL；缺失不表示沿用旧值
+   * 发布不可变完整四槽配置；空槽明确NULL，非空固定已发布模板版本，不创建假模板。
+   * @param templates 必须恰有BASIC/SPEC/QUALITY/EXTENSION四键，SPEC在V1必须NULL；缺失不表示沿用旧值
    * @param serviceUnitRequired 服务单位是否必填，必填；false允许服务无单位
    * @param version 当前分类版本；发布成功推进分类version
    */
   public record Publish(Map<String,String> templates,Boolean serviceUnitRequired,long version) {}
-  /** 发布配置只读结果；四槽明确为空，原路径与审计永久保留。 */
+  /** 发布配置只读结果；四槽显式版本或NULL，原路径与审计永久保留。 */
   public record Configuration(String id,String categoryId,long revision,String path,boolean serviceUnitRequired,Map<String,String> templates,Audit audit) {}
 }

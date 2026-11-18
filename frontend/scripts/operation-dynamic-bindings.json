@@ -425,7 +425,9 @@
     "expression": "operation.update",
     "operations": [
       "ProductUnit.update",
-      "ProductCategory.update"
+      "ProductCategory.update",
+      "ProductAttribute.update",
+      "ProductTemplate.update"
     ],
     "sources": [
       "frontend/modules/master-data/src/product/CatalogManagement.vue"
@@ -437,7 +439,9 @@
     "expression": "operation.status",
     "operations": [
       "ProductUnit.setStatus",
-      "ProductCategory.setStatus"
+      "ProductCategory.setStatus",
+      "ProductAttribute.setStatus",
+      "ProductTemplate.setStatus"
     ],
     "sources": [
       "frontend/modules/master-data/src/product/CatalogManagement.vue"
@@ -492,7 +496,11 @@
       "ProductAttribute.create",
       "ProductAttribute.createRevision",
       "ProductTemplate.create",
-      "ProductTemplate.createVersion"
+      "ProductTemplate.createVersion",
+      "ProductAttribute.update",
+      "ProductTemplate.update",
+      "ProductAttribute.updateRevision",
+      "ProductTemplate.updateVersion"
     ],
     "sources": [
       "frontend/modules/master-data/src/product/CatalogManagement.vue"
@@ -503,12 +511,38 @@
     "file": "frontend/modules/master-data/src/product/ProductEditor.vue",
     "expression": "saveOperation",
     "operations": [
-      "ProductV1.create",
-      "ProductV1.update"
+      "Product.create",
+      "Product.update"
     ],
     "sources": [
       "frontend/modules/master-data/src/product/ProductEditor.vue"
     ],
-    "reason": "未保存新建只提交ProductV1.create；已有商品仅普通资料/原定义值更新走ProductV1.update，结构迁移另绑预览执行操作。"
+    "reason": "未保存新建只提交Product.create；已有商品仅普通资料/原定义值更新走Product.update，结构迁移另绑预览执行操作。"
+  },
+  {
+    "file": "frontend/modules/master-data/src/product/ProductStructure.vue",
+    "expression": "type==='specification'?'Product.createSpecification':type==='sku'?'Product.createSku':'Product.addComponent'",
+    "operations": [
+      "Product.createSpecification",
+      "Product.createSku",
+      "Product.addComponent"
+    ],
+    "sources": [
+      "frontend/modules/master-data/src/product/ProductStructure.vue"
+    ],
+    "reason": "仅规格新增、显式SKU新增和组合关系新增三个固定命令；每个分支由同一弹窗kind选择，后端仍独立鉴权和父CAS。"
+  },
+  {
+    "file": "frontend/modules/master-data/src/product/ProductStructure.vue",
+    "expression": "kind==='specification'?'Product.createSpecification':kind==='sku'?'Product.createSku':'Product.addComponent'",
+    "operations": [
+      "Product.createSpecification",
+      "Product.createSku",
+      "Product.addComponent"
+    ],
+    "sources": [
+      "frontend/modules/master-data/src/product/ProductStructure.vue"
+    ],
+    "reason": "仅规格新增、显式SKU新增和组合关系新增三个固定命令；每个分支由同一弹窗kind选择，后端仍独立鉴权和父CAS。"
   }
 ]

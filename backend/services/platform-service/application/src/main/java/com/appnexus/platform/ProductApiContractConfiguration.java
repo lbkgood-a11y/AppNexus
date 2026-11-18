@@ -1,6 +1,6 @@
 package com.appnexus.platform;
 
-import com.appnexus.masterdata.product.ProductV1Controller;
+import com.appnexus.masterdata.product.*;
 import org.springdoc.core.customizers.GlobalOperationCustomizer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -11,21 +11,26 @@ public class ProductApiContractConfiguration {
     /** 每个真实HTTP方法映射唯一OpenAPI名称，结构预览与执行绝不复用同一个operationId。 */
     @Bean GlobalOperationCustomizer productOperationNames(){
         return (operation,handler)->{
-            if(handler.getBeanType()!=ProductV1Controller.class)return operation;
+            var extension=java.util.Map.<Class<?>,String>of(ProductImageController.class,"productImage",ProductUnitConversionController.class,"productUnitConversion",ProductStructureController.class,"productStructure",ProductApprovalController.class,"productApproval");
+            if(extension.containsKey(handler.getBeanType())){String method=handler.getMethod().getName();operation.setOperationId(extension.get(handler.getBeanType())+Character.toUpperCase(method.charAt(0))+method.substring(1));return operation;}
+            if(handler.getBeanType()!=ProductController.class)return operation;
             String id=switch(handler.getMethod().getName()){
-                case "list" -> "productV1List";
-                case "read" -> "productV1Read";
-                case "create" -> "productV1CreateDraft";
-                case "update" -> "productV1Update";
-                case "status" -> "productV1SetStatus";
-                case "archive" -> "productV1ArchiveDraft";
-                case "restore" -> "productV1RestoreDraft";
-                case "changes" -> "productV1ReadChanges";
-                case "preview" -> "productV1PreviewStructureMigration";
-                case "migrate" -> "productV1MigrateStructure";
-                case "options" -> "productV1ReadOptions";
-                case "configuration" -> "productV1ReadConfiguration";
-                case "configurations" -> "productV1ListConfigurations";
+                case "list" -> "productList";
+                case "read" -> "productRead";
+                case "create" -> "productCreateDraft";
+                case "update" -> "productUpdate";
+                case "status" -> "productSetStatus";
+                case "archive" -> "productArchiveDraft";
+                case "restore" -> "productRestoreDraft";
+                case "changes" -> "productReadChanges";
+                case "preview" -> "productPreviewStructureMigration";
+                case "migrate" -> "productMigrateStructure";
+                case "options" -> "productReadOptions";
+                case "configuration" -> "productReadConfiguration";
+                case "stage" -> "productStageLegacy";
+                case "reconcile" -> "productReconcileLegacy";
+                case "reviewLegacy" -> "productReviewLegacySpecification";
+                case "configurations" -> "productListConfigurations";
                 default -> throw new IllegalStateException("PRODUCT_OPENAPI_OPERATION_UNREGISTERED");
             };
             operation.setOperationId(id);

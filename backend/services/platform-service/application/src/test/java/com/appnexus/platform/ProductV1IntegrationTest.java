@@ -50,17 +50,41 @@ class ProductV1IntegrationTest extends DatabaseTestSupport {
    .contentType("application/json").content(json.writeValueAsString(Map.of("tenantId",tenant.toString())))).andReturn().getResponse();
   assertThat(selected.getStatus()).isEqualTo(200);
   var cookie=selected.getCookie("JSESSIONID");
-  var detail=mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get("/api/master-data/product-v1/"+id).cookie(cookie)).andReturn().getResponse();
+  // 列表已授权行才投影记录审计，供公共ManagementTable显示审计查询，不增加自由表查询入口。
+  var listing=mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get("/api/master-data/product").cookie(cookie)).andReturn().getResponse();
+  assertThat(listing.getStatus()).isEqualTo(200);
+  assertThat(listing.getHeader("Cache-Control")).contains("no-store");
+  var listed=json.readTree(listing.getContentAsString()).path("rows").get(0).path("audit");
+  assertThat(listed.path("createdBy").asText()).isEqualTo(account.toString());
+  assertThat(listed.path("createdAt").asText()).isNotBlank();
+  // 真实HTTP图片链路：原始二进制、CSRF、受权读取和父CAS，不以模拟上传代替接口验收。
+  String imageProduct=(String)products.create(admin,new ProductV1Service.Input("HTTP-IMAGE","图片接口",null,null,null,null,null,null,null,null,null)).get("id");
+  var bytes=new java.io.ByteArrayOutputStream();javax.imageio.ImageIO.write(new java.awt.image.BufferedImage(2,2,java.awt.image.BufferedImage.TYPE_INT_RGB),"png",bytes);
+  assertThat(mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/api/master-data/product/"+imageProduct+"/images?version=0").cookie(cookie).contentType("image/png").content(bytes.toByteArray())).andReturn().getResponse().getStatus()).isEqualTo(403);
+  var uploaded=mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/api/master-data/product/"+imageProduct+"/images?version=0").cookie(cookie).with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf()).contentType("image/png").content(bytes.toByteArray())).andReturn().getResponse();assertThat(uploaded.getStatus()).isEqualTo(200);String image=json.readTree(uploaded.getContentAsString()).path("id").asText();
+  var imageRead=mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get("/api/master-data/product/"+imageProduct+"/images/"+image+"/content").cookie(cookie)).andReturn().getResponse();assertThat(imageRead.getStatus()).isEqualTo(200);assertThat(imageRead.getHeader("X-Content-Type-Options")).isEqualTo("nosniff");assertThat(imageRead.getHeader("Cache-Control")).contains("no-store");assertThat(imageRead.getContentAsByteArray()).isNotEmpty();
+  var detail=mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get("/api/master-data/product/"+id).cookie(cookie)).andReturn().getResponse();
   assertThat(detail.getStatus()).isEqualTo(200);assertThat(detail.getHeader("Cache-Control")).contains("no-store");
-  assertThat(mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get("/api/master-data/product-v1/"+id)).andReturn().getResponse().getStatus()).isEqualTo(401);
-  assertThat(mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put("/api/master-data/product-v1/"+id+"/status").cookie(cookie).contentType("application/json").content(json.writeValueAsString(Map.of("status","DISABLED","version",1)))).andReturn().getResponse().getStatus()).isEqualTo(403);
+  assertThat(mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get("/api/master-data/product/"+id)).andReturn().getResponse().getStatus()).isEqualTo(401);
+  assertThat(mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put("/api/master-data/product/"+id+"/status").cookie(cookie).contentType("application/json").content(json.writeValueAsString(Map.of("status","DISABLED","version",1)))).andReturn().getResponse().getStatus()).isEqualTo(403);
   assertThat(products.read(admin,id).get("status")).isEqualTo("ENABLED");
   var ordinarySession=mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/bff/tenants/current")
    .with(authenticated(ordinaryAccount.toString(),0)).with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf())
    .contentType("application/json").content(json.writeValueAsString(Map.of("tenantId",tenant.toString())))).andReturn().getResponse();
   assertThat(ordinarySession.getStatus()).isEqualTo(200);
-  assertThat(mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get("/api/master-data/product-v1/"+id).cookie(ordinarySession.getCookie("JSESSIONID"))).andReturn().getResponse().getStatus()).isEqualTo(403);
-  products.updateStatus(admin,id,new ProductV1Service.Status("DISABLED",1));
+  assertThat(mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get("/api/master-data/product/"+id).cookie(ordinarySession.getCookie("JSESSIONID"))).andReturn().getResponse().getStatus()).isEqualTo(403);
+  String oldId=UUID.randomUUID().toString();
+  String original="  legacy specification 0005  ";
+  jdbc.update("INSERT INTO md_product(id,tenant_id,code,name,barcode,specification,unit,enabled,version,created_by,created_at,updated_by,updated_at) VALUES(UUID_TO_BIN(?),UUID_TO_BIN(?),'OLD-PRODUCT','旧商品','000099',?,'历史单位',TRUE,2,NULL,NULL,NULL,NULL)",oldId,tenant.toString(),original);
+  var staged=products.stageLegacy(admin,oldId);
+  assertThat(staged.get("legacySpecificationOriginal")).isEqualTo(original);
+  assertThat(staged.get("createdAt")).isNull();assertThat(staged.get("updatedAt")).isNull();
+  assertThatThrownBy(()->products.stageLegacy(ordinary,oldId)).hasMessage("MASTER_DATA_DENIED");
+  products.reviewLegacySpecification(admin,oldId,new ProductV1Service.LegacyReview("DEFERRED_SPEC","保留真实规格",2L));
+  assertThat(products.read(admin,oldId).get("legacySpecificationOriginal")).isEqualTo(original);
+  assertThat(products.read(admin,oldId).get("structureState")).isEqualTo("LEGACY_PENDING");
+  assertThat(mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put("/api/master-data/product/"+id+"/status").cookie(cookie).with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf()).contentType("application/json").content(json.writeValueAsString(Map.of("status","DISABLED","version",1)))).andReturn().getResponse().getStatus()).isEqualTo(200);
+  assertThat(mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put("/api/master-data/product/"+id+"/status").cookie(cookie).with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf()).contentType("application/json").content(json.writeValueAsString(Map.of("status","ENABLED")))).andReturn().getResponse().getStatus()).isEqualTo(400);
   var migration=new ProductV1Service.Migration(2L,0L,config.id(),category.id(),config.id(),"SERVICE",null,List.of(),List.of(),"验证宿主持久签名迁移",null);
   var preview=products.previewStructure(admin,id,migration);
   String key=UUID.randomUUID().toString();
@@ -74,7 +98,7 @@ class ProductV1IntegrationTest extends DatabaseTestSupport {
  }
 
  @Test void installedProductOperationsReferenceRealPermissionsAndPages(){
-  var types=Set.of("ProductUnit","ProductCategory","ProductAttribute","ProductTemplate","ProductV1");
+  var types=Set.of("ProductUnit","ProductCategory","ProductAttribute","ProductTemplate","Product");
   var operations=registry.all().stream().filter(o->types.contains(o.objectType())).toList();
   assertThat(operations).isNotEmpty();
   assertThat(operations.stream().map(o->o.id()).distinct().count()).isEqualTo(operations.size());

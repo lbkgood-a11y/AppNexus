@@ -22,11 +22,19 @@ class ProductCatalogMySqlTest {
    mysql.start();
    var source=new DriverManagerDataSource(mysql.getJdbcUrl()+"?connectionTimeZone=UTC&forceConnectionTimeZoneToSession=true",mysql.getUsername(),mysql.getPassword());
    var jdbc=new JdbcTemplate(source);
-   for(String name:List.of("V97__product_catalog_foundation.sql","V98__product_attribute_templates.sql","V99__product_attribute_templates.sql","V100__product_category_template_binding.sql","V101__product_v1_master.sql","V103__product_value_integrity.sql","V106__product_structure_requests.sql")){
+   for(String name:List.of("V97__product_catalog_foundation.sql","V98__product_attribute_templates.sql","V99__product_attribute_templates.sql","V100__product_category_template_binding.sql","V101__product_v1_master.sql","V103__product_value_integrity.sql","V106__product_structure_requests.sql","V108__product_legacy_preservation.sql","V110__product_custom_choices.sql","V112__product_integrity_hardening.sql","V113__product_unit_conversion.sql","V114__product_images.sql","V116__product_specifications_components.sql","V117__product_approval.sql")){
     // 权限/菜单真实迁移由组合应用验证；此测试只执行同文件完整DDL，不伪造业务约束。
     String sql=new String(new ClassPathResource("db/migration/"+name).getInputStream().readAllBytes(),StandardCharsets.UTF_8).split("INSERT INTO access_permission")[0];
     try(var conn=source.getConnection()){ScriptUtils.executeSqlScript(conn,new ByteArrayResource(sql.getBytes(StandardCharsets.UTF_8)));}
    }
+   try(var migrationConnection=source.getConnection()){new db.migration.V115__product_extended_modes().migrate(new org.flywaydb.core.api.migration.Context(){public org.flywaydb.core.api.configuration.Configuration getConfiguration(){return null;}public java.sql.Connection getConnection(){return migrationConnection;}});}
+   // 复用历史DDL中md_product及审计补列的原始语句，不伪造旧字段类型。
+   String oldSql=new String(new ClassPathResource("db/migration/V75__master_data.sql").getInputStream().readAllBytes(),StandardCharsets.UTF_8);
+   oldSql=oldSql.substring(oldSql.indexOf("CREATE TABLE md_product ("));oldSql=oldSql.substring(0,oldSql.indexOf(";")+1);
+   String oldAudit=new String(new ClassPathResource("db/migration/V83__global_record_audit.sql").getInputStream().readAllBytes(),StandardCharsets.UTF_8);
+   String quote=String.valueOf((char)96);
+   oldAudit=oldAudit.substring(oldAudit.indexOf("ALTER TABLE "+quote+"md_product"+quote));oldAudit=oldAudit.substring(0,oldAudit.indexOf(";")+1);
+   try(var conn=source.getConnection()){ScriptUtils.executeSqlScript(conn,new ByteArrayResource((oldSql+oldAudit).getBytes(StandardCharsets.UTF_8)));}
    var c=new VerifiedTenantContext(UUID.randomUUID(),UUID.randomUUID(),UUID.randomUUID(),1);
    var other=new VerifiedTenantContext(UUID.randomUUID(),UUID.randomUUID(),UUID.randomUUID(),1);
    AccessAuthorization allow=(subject,permission)->true;
@@ -36,6 +44,21 @@ class ProductCatalogMySqlTest {
    assertThat(unit.audit().createdBy()).isEqualTo(c.accountId().toString());
    assertThatThrownBy(()->service.updateUnit(other,unit.id(),new UnitInput("KG","伪造","MASS",3,0))).isInstanceOf(Rejection.class);
    assertThatThrownBy(()->jdbc.update("UPDATE md_product_unit SET precision_scale=13 WHERE tenant_id=UUID_TO_BIN(?)",c.tenantId().toString())).isInstanceOf(org.springframework.dao.DataAccessException.class);
+   // 精确直连换算必须真实落库：跨租户、跨维度、重复关系、反向系数和CAS反向验收。
+   var gram=service.createUnit(c,new UnitInput("G","克","MASS",3,0));
+   var kilogram=unit;
+   var hour=service.createUnit(c,new UnitInput("HOUR","小时","TIME",2,0));
+   var conversion=new ProductUnitConversionService(jdbc,allow,new DataSourceTransactionManager(source));
+   @SuppressWarnings("unchecked") var converted=(Map<String,String>)conversion.create(c,new ProductUnitConversionService.Input(gram.id(),kilogram.id(),"0.001"));
+   assertThat(conversion.calculate(c,converted.get("id"),"1234.5").toString()).contains("1.2345","1.235");
+   assertThatThrownBy(()->conversion.create(c,new ProductUnitConversionService.Input(gram.id(),hour.id(),"1"))).isInstanceOf(Rejection.class);
+   assertThatThrownBy(()->conversion.create(c,new ProductUnitConversionService.Input(gram.id(),kilogram.id(),"2"))).isInstanceOf(Rejection.class);
+   assertThatThrownBy(()->conversion.create(c,new ProductUnitConversionService.Input(kilogram.id(),gram.id(),"999"))).isInstanceOf(Rejection.class);
+   assertThatThrownBy(()->conversion.calculate(other,converted.get("id"),"1")).isInstanceOf(Rejection.class);
+   assertThatThrownBy(()->conversion.create(c,new ProductUnitConversionService.Input(gram.id(),kilogram.id(),"0.0000000000001"))).isInstanceOf(Rejection.class);
+   conversion.status(c,converted.get("id"),new ProductUnitConversionService.Status(false,0L));
+   assertThatThrownBy(()->conversion.calculate(c,converted.get("id"),"1")).isInstanceOf(Rejection.class);
+   assertThatThrownBy(()->conversion.status(c,converted.get("id"),new ProductUnitConversionService.Status(true,0L))).isInstanceOf(Rejection.class);
    var parent=service.createCategory(c,new CategoryInput("ROOT","根",null,0));
    var child=service.createCategory(c,new CategoryInput("CHILD","子",parent.id(),0));
    assertThatThrownBy(()->service.updateCategory(c,parent.id(),new CategoryInput("ROOT","循环",child.id(),0))).isInstanceOf(Rejection.class);
@@ -61,7 +84,7 @@ class ProductCatalogMySqlTest {
    assertThatThrownBy(()->attributes.createAttribute(c,new ProductAttributeService.AttributeInput("brand",null,0))).isInstanceOf(Rejection.class);
    var templates=new ProductTemplateService(jdbc,allow,manager);
    var templateId=templates.create(c,new ProductTemplateService.TemplateInput("BASIC","基础","BASIC",0)).get("id");
-   var templateVersionId=templates.createVersion(c,templateId,new ProductTemplateService.VersionInput("",List.of(new ProductTemplateService.ItemInput(attributeId,revisionId,null,null,true,false,false,0)),0)).get("id");
+   var templateVersionId=templates.createVersion(c,templateId,new ProductTemplateService.VersionInput("",List.of(new ProductTemplateService.ItemInput(attributeId,revisionId,null,null,true,true,true,0)),0)).get("id");
    templates.publish(c,templateVersionId,1);
    assertThatThrownBy(()->templates.publish(c,templateVersionId,2)).isInstanceOf(Rejection.class);
    slots.put("BASIC",templateVersionId);
@@ -77,11 +100,78 @@ class ProductCatalogMySqlTest {
     public boolean verify(String token,String binding){return validProof.get()&&Objects.equals(tokens.get(token),binding);}
    };
    var products=new ProductV1Service(jdbc,allow,manager,proofs);
+   // 图片真实解码重编码、父CAS和历史同事务；跨租户、非法内容和旧版本均拒绝。
+   var imageProduct=products.create(c,new ProductV1Service.Input("IMAGE","图片测试",null,null,null,null,null,null,null,null,null));
+   String imageProductId=(String)imageProduct.get("id");
+   var images=new ProductImageService(jdbc,allow,manager,products);
+   var png=new java.io.ByteArrayOutputStream();javax.imageio.ImageIO.write(new java.awt.image.BufferedImage(2,2,java.awt.image.BufferedImage.TYPE_INT_RGB),"png",png);
+   @SuppressWarnings("unchecked") var uploaded=(Map<String,Object>)images.upload(c,imageProductId,0,png.toByteArray());
+   assertThat(images.content(c,imageProductId,(String)uploaded.get("id")).bytes()).isNotEmpty();
+   assertThatThrownBy(()->images.content(other,imageProductId,(String)uploaded.get("id"))).isInstanceOf(Rejection.class);
+   assertThatThrownBy(()->images.upload(c,imageProductId,1,"not an image".getBytes(StandardCharsets.UTF_8))).isInstanceOf(Rejection.class);
+   assertThatThrownBy(()->images.detach(c,imageProductId,(String)uploaded.get("id"),0)).isInstanceOf(Rejection.class);
+   images.detach(c,imageProductId,(String)uploaded.get("id"),1);
+   assertThatThrownBy(()->images.content(c,imageProductId,(String)uploaded.get("id"))).isInstanceOf(Rejection.class);
+   assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM md_product_v1_change WHERE tenant_id=UUID_TO_BIN(?) AND product_id=UUID_TO_BIN(?)",Integer.class,c.tenantId().toString(),imageProductId)).isEqualTo(3);
+   // 自定义规格不会自动生成SKU；SKU归属不可改且退出规格保留身份。
+   var structural=products.create(c,new ProductV1Service.Input("STRUCTURE","结构测试",null,parent.id(),config.id(),"SERVICE",null,null,null,null,null));String structuralId=(String)structural.get("id");
+   var move=new ProductV1Service.Migration(0L,0L,config.id(),parent.id(),config.id(),"SERVICE",null,List.of(),List.of(),"采用自定义规格",null,"CUSTOM",List.of());
+   var movePreview=products.previewStructure(c,structuralId,move);products.migrateStructure(c,structuralId,new ProductV1Service.MigrationCommand(move,(String)movePreview.get("previewToken")),UUID.randomUUID().toString());
+   var structures=new ProductStructureService(jdbc,allow,manager,products);
+   @SuppressWarnings("unchecked") var spec=(Map<String,String>)structures.createSpecification(c,structuralId,new ProductStructureService.Specification("按图加工","图纸A-01",List.of(),1L));
+   assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM md_product_sku WHERE tenant_id=UUID_TO_BIN(?) AND product_id=UUID_TO_BIN(?)",Integer.class,c.tenantId().toString(),structuralId)).isZero();
+   structures.createSku(c,structuralId,new ProductStructureService.Sku(spec.get("id"),"STRUCTURE-SKU",2L));
+   assertThatThrownBy(()->structures.createSku(c,structuralId,new ProductStructureService.Sku(spec.get("id"),"STRUCTURE-SKU",3L))).isInstanceOf(Rejection.class);
+   assertThatThrownBy(()->structures.read(other,structuralId)).isInstanceOf(Rejection.class);
+   var retire=new ProductV1Service.Migration(3L,1L,config.id(),parent.id(),config.id(),"SERVICE",null,List.of(),List.of(),"显式退出规格",null,"NONE",List.of(spec.get("id")));
+   var retirePreview=products.previewStructure(c,structuralId,retire);products.migrateStructure(c,structuralId,new ProductV1Service.MigrationCommand(retire,(String)retirePreview.get("previewToken")),UUID.randomUUID().toString());
+   assertThat(jdbc.queryForObject("SELECT retired_at IS NOT NULL FROM md_product_specification WHERE id=UUID_TO_BIN(?)",Boolean.class,spec.get("id"))).isTrue();
+   assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM md_product_sku WHERE code='STRUCTURE-SKU'",Integer.class)).isEqualTo(1);
+   // 组合数量、父子归属和自引用保护；组成不触发自动库存拆装。
+   var componentProduct=products.create(c,new ProductV1Service.Input("PART","组成品",null,parent.id(),config.id(),"PHYSICAL",unit.id(),null,null,null,null));String componentId=(String)componentProduct.get("id");products.updateStatus(c,componentId,new ProductV1Service.Status("ENABLED",0));
+   var composite=products.create(c,new ProductV1Service.Input("KIT","组合品",null,parent.id(),config.id(),"COMPOSITE",unit.id(),null,null,null,null));String compositeId=(String)composite.get("id");
+   assertThatThrownBy(()->products.updateStatus(c,compositeId,new ProductV1Service.Status("ENABLED",0))).hasMessage("PRODUCT_COMPLETION_REQUIRED");
+   structures.addComponent(c,compositeId,new ProductStructureService.Component(componentId,"2.000",1L,0L));
+   assertThatThrownBy(()->structures.addComponent(c,compositeId,new ProductStructureService.Component(compositeId,"1",1L,1L))).isInstanceOf(Rejection.class);
+   products.updateStatus(c,compositeId,new ProductV1Service.Status("ENABLED",1));
+   // 审批适配器契约：用测试端口模拟可靠终态，数据库、快照冻结和幂等仍为真实MySQL事务；不冒充真实引擎全流程。
+   var approvalProduct=products.create(c,new ProductV1Service.Input("APPROVAL","待审核",null,parent.id(),config.id(),"SERVICE",null,null,null,null,null));String approvalProductId=(String)approvalProduct.get("id"),approvalOrg=UUID.randomUUID().toString();
+   var workflowPlatform=org.mockito.Mockito.mock(com.appnexus.contracts.workflow.WorkflowPlatform.class);org.mockito.Mockito.when(workflowPlatform.active(org.mockito.ArgumentMatchers.anyString(),org.mockito.ArgumentMatchers.anyString())).thenReturn(true);org.mockito.Mockito.when(workflowPlatform.allowed(org.mockito.ArgumentMatchers.any(),org.mockito.ArgumentMatchers.anyString())).thenReturn(true);org.mockito.Mockito.when(workflowPlatform.documentOrganizations(org.mockito.ArgumentMatchers.any())).thenReturn(List.of(new com.appnexus.contracts.workflow.WorkflowPlatform.Option(approvalOrg,"测试组织")));
+   var starterPort=org.mockito.Mockito.mock(com.appnexus.contracts.workflow.WorkflowStarter.class);org.mockito.Mockito.when(starterPort.startBound(org.mockito.ArgumentMatchers.any(),org.mockito.ArgumentMatchers.anyString(),org.mockito.ArgumentMatchers.anyString(),org.mockito.ArgumentMatchers.anyLong(),org.mockito.ArgumentMatchers.anyString(),org.mockito.ArgumentMatchers.anyString(),org.mockito.ArgumentMatchers.anyString(),org.mockito.ArgumentMatchers.anyString())).thenReturn("test-instance");
+   var taskPort=org.mockito.Mockito.mock(com.appnexus.contracts.workflow.WorkflowTaskAccess.class);
+   var bindingPort=org.mockito.Mockito.mock(com.appnexus.contracts.businessobject.BusinessObjectBindings.class);org.mockito.Mockito.when(bindingPort.resolveOperation(org.mockito.ArgumentMatchers.any(),org.mockito.ArgumentMatchers.anyString(),org.mockito.ArgumentMatchers.anyString(),org.mockito.ArgumentMatchers.anyString(),org.mockito.ArgumentMatchers.anyLong(),org.mockito.ArgumentMatchers.anyMap())).thenAnswer(invocation->new com.appnexus.contracts.businessobject.BusinessObjects.Resolution("test-resolution",c.tenantId().toString(),"ProductApproval",invocation.getArgument(3),invocation.getArgument(4),1,"test-definition",1,invocation.getArgument(5),"submit","WORKFLOW","","product.approval"));
+   var starterFactory=new org.springframework.beans.factory.support.StaticListableBeanFactory();starterFactory.addBean("starter",starterPort);var taskFactory=new org.springframework.beans.factory.support.StaticListableBeanFactory();taskFactory.addBean("tasks",taskPort);var bindingFactory=new org.springframework.beans.factory.support.StaticListableBeanFactory();bindingFactory.addBean("bindings",bindingPort);
+   var approvals=new ProductApprovalService(jdbc,manager,products,workflowPlatform,starterFactory.getBeanProvider(com.appnexus.contracts.workflow.WorkflowStarter.class),taskFactory.getBeanProvider(com.appnexus.contracts.workflow.WorkflowTaskAccess.class),bindingFactory.getBeanProvider(com.appnexus.contracts.businessobject.BusinessObjectBindings.class));
+   var workflowContext=new com.appnexus.contracts.workflow.WorkflowContext(c.tenantId().toString(),c.accountId().toString(),UUID.randomUUID().toString());
+   @SuppressWarnings("unchecked") var submitted=(Map<String,Object>)approvals.submit(c,workflowContext,approvalProductId,0,approvalOrg);String requestId=(String)submitted.get("id");
+   assertThat(approvals.submit(c,workflowContext,approvalProductId,0,approvalOrg)).isEqualTo(submitted);
+   assertThatThrownBy(()->products.update(c,approvalProductId,new ProductV1Service.Update("修改冻结正文",null,null,null,null,List.of(),1))).hasMessage("PRODUCT_APPROVAL_IN_PROGRESS");
+   var badResult=new com.appnexus.contracts.workflow.WorkflowBusiness.Invocation("delivery",workflowContext,"ProductApproval",requestId,approvalOrg,1,"EXECUTE","delivery",new com.appnexus.contracts.workflow.WorkflowBusiness.Reference("wrong-instance","test-definition",1,null,"APPROVAL","APPROVED"),null,Map.of());
+   assertThatThrownBy(()->approvals.execute(badResult)).isInstanceOf(SecurityException.class);
+   var goodResult=new com.appnexus.contracts.workflow.WorkflowBusiness.Invocation("delivery",workflowContext,"ProductApproval",requestId,approvalOrg,1,"EXECUTE","delivery",new com.appnexus.contracts.workflow.WorkflowBusiness.Reference("test-instance","test-definition",1,null,"APPROVAL","APPROVED"),null,Map.of());
+   approvals.execute(goodResult);approvals.execute(goodResult);
+   assertThat(products.read(c,approvalProductId).get("status")).isEqualTo("DRAFT");
+   products.updateStatus(c,approvalProductId,new ProductV1Service.Status("ENABLED",1));
+   // 标准SPEC模板固定修订，标准组合重复拒绝且不自动建立SKU。
+   var specAttribute=attributes.createAttribute(c,new ProductAttributeService.AttributeInput("diameter",null,0)).get("id");
+   var specRevision=attributes.createRevision(c,specAttribute,new ProductAttributeService.RevisionInput("直径","DECIMAL",unit.id(),2,"{}",0)).get("id");attributes.publishRevision(c,specRevision,1);
+   var specTemplate=templates.create(c,new ProductTemplateService.TemplateInput("SPEC","规格","SPEC",0)).get("id");
+   var specVersion=templates.createVersion(c,specTemplate,new ProductTemplateService.VersionInput("规格1",List.of(new ProductTemplateService.ItemInput(specAttribute,specRevision,null,null,true,false,false,0)),0)).get("id");templates.publish(c,specVersion,1);
+   var specSlots=new LinkedHashMap<String,String>();for(String purpose:List.of("BASIC","SPEC","QUALITY","EXTENSION"))specSlots.put(purpose,null);specSlots.put("SPEC",specVersion);
+   var specConfig=service.publish(c,parent.id(),new Publish(specSlots,false,3));
+   String specItem=jdbc.queryForObject("SELECT BIN_TO_UUID(id) FROM md_product_template_item WHERE template_version_id=UUID_TO_BIN(?)",String.class,specVersion);
+   var standard=products.create(c,new ProductV1Service.Input("STANDARD","标准品",null,parent.id(),specConfig.id(),"SERVICE",null,null,null,null,null));String standardId=(String)standard.get("id");
+   var standardMove=new ProductV1Service.Migration(0L,0L,specConfig.id(),parent.id(),specConfig.id(),"SERVICE",null,List.of(),List.of(),"开启标准规格",null,"STANDARD",List.of());var standardPreview=products.previewStructure(c,standardId,standardMove);products.migrateStructure(c,standardId,new ProductV1Service.MigrationCommand(standardMove,(String)standardPreview.get("previewToken")),UUID.randomUUID().toString());
+   structures.createSpecification(c,standardId,new ProductStructureService.Specification("直径12","",List.of(new ProductStructureService.SpecValue(specItem,"12.00")),1L));
+   assertThatThrownBy(()->structures.createSpecification(c,standardId,new ProductStructureService.Specification("重复","",List.of(new ProductStructureService.SpecValue(specItem,"12")),2L))).isInstanceOf(Rejection.class);
+   assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM md_product_sku WHERE product_id=UUID_TO_BIN(?)",Integer.class,standardId)).isZero();
    var draft=products.create(c,new ProductV1Service.Input("P1","草稿",null,null,null,null,null,null,null,null,null));
    assertThat(draft.get("structureState")).isEqualTo("INCOMPLETE");
    assertThat(draft.get("createdBy")).isEqualTo(c.accountId().toString());
    assertThat(draft.get("updatedBy")).isEqualTo(c.accountId().toString());
    String draftId=(String)draft.get("id");
+   assertThatThrownBy(()->products.updateStatus(c,draftId,new ProductV1Service.Status("ENABLED",(Long)null))).isInstanceOf(Rejection.class);
+   assertThatThrownBy(()->products.archive(c,draftId,new ProductV1Service.Version((Long)null),true)).isInstanceOf(Rejection.class);
    assertThatThrownBy(()->products.updateStatus(c,draftId,new ProductV1Service.Status("ENABLED",0))).hasMessage("PRODUCT_COMPLETION_REQUIRED");
    products.archive(c,draftId,new ProductV1Service.Version(0),true);
    assertThatThrownBy(()->products.updateStatus(c,draftId,new ProductV1Service.Status("ENABLED",1))).isInstanceOf(Rejection.class);
@@ -92,6 +182,16 @@ class ProductCatalogMySqlTest {
    var complete=products.create(c,new ProductV1Service.Input("P2","服务",null,parent.id(),bound.id(),"SERVICE",null,null,null,null,List.of(new ProductV1Service.Value(itemId,null,List.of(optionId)))));
    assertThat(complete.get("structureState")).isEqualTo("COMPLETE");
    String productId=(String)complete.get("id");products.updateStatus(c,productId,new ProductV1Service.Status("ENABLED",0));
+   var jsonFilters=new tools.jackson.databind.ObjectMapper();
+   String filter=jsonFilters.writeValueAsString(List.of(new ProductV1Service.AttributeFilter(itemId,"eq",List.of(optionId))));
+   var filtered=(Map<?,?>)products.list(c,"","",null,null,null,false,1,20,bound.id(),filter);
+   assertThat(((Number)filtered.get("total")).longValue()).isEqualTo(1);
+   assertThatThrownBy(()->products.list(c,"","",null,null,null,false,1,20,config.id(),filter)).isInstanceOf(Rejection.class);
+   assertThatThrownBy(()->products.list(c,"","",null,null,null,false,1,20,null,filter)).isInstanceOf(Rejection.class);
+   String tooMany=jsonFilters.writeValueAsString(java.util.Collections.nCopies(4,new ProductV1Service.AttributeFilter(itemId,"eq",List.of(optionId))));
+   assertThatThrownBy(()->products.list(c,"","",null,null,null,false,1,20,bound.id(),tooMany)).isInstanceOf(Rejection.class);
+   var customProduct=products.create(c,new ProductV1Service.Input("CUSTOM","自定义值",null,parent.id(),bound.id(),"SERVICE",null,null,null,null,List.of(new ProductV1Service.Value(itemId,null,List.of(),List.of("特殊材质")))));
+   assertThat(customProduct.get("choices").toString()).contains("特殊材质");
    var previous=products.read(c,productId);
    assertThatThrownBy(()->products.update(c,productId,new ProductV1Service.Update("不完整",null,null,null,null,List.of(),1))).hasMessage("PRODUCT_COMPLETION_REQUIRED");
    assertThat(products.read(c,productId)).isEqualTo(previous);
@@ -122,7 +222,7 @@ class ProductCatalogMySqlTest {
    assertThat(((Number)products.read(c,productId).get("version")).longValue()).isEqualTo(4);
    validProof.set(true);
    var preview=products.previewStructure(c,productId,migration);
-   assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM md_product_structure_request",Integer.class)).isZero();
+   assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM md_product_structure_request WHERE product_id=UUID_TO_BIN(?)",Integer.class,productId)).isZero();
    String token=(String)preview.get("previewToken"),key=UUID.randomUUID().toString();
    var command=new ProductV1Service.MigrationCommand(migration,token);
    try(var executor=java.util.concurrent.Executors.newFixedThreadPool(2)){
@@ -131,7 +231,7 @@ class ProductCatalogMySqlTest {
     assertThat(results.stream().filter(f->{try{return Boolean.TRUE.equals(f.get().get("replayed"));}catch(Exception e){throw new RuntimeException(e);}}).count()).isEqualTo(1);
    }
    assertThat(((Number)products.read(c,productId).get("version")).longValue()).isEqualTo(5);
-   assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM md_product_structure_request",Integer.class)).isEqualTo(1);
+   assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM md_product_structure_request WHERE product_id=UUID_TO_BIN(?)",Integer.class,productId)).isEqualTo(1);
    validProof.set(false);
    assertThat(products.migrateStructure(c,productId,command,key).get("replayed")).isEqualTo(true);
    validProof.set(true);
@@ -146,7 +246,7 @@ class ProductCatalogMySqlTest {
    jdbc.execute("ALTER TABLE md_product_v1_change ADD CONSTRAINT ck_test_history_failure CHECK(to_version<>6 OR event_type<>'STRUCTURE')");
    assertThatThrownBy(()->products.migrateStructure(c,productId,nextCommand,nextKey)).isInstanceOf(RuntimeException.class);
    assertThat(products.read(c,productId)).isEqualTo(beforeFailure);
-   assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM md_product_structure_request",Integer.class)).isEqualTo(1);
+   assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM md_product_structure_request WHERE product_id=UUID_TO_BIN(?)",Integer.class,productId)).isEqualTo(1);
    jdbc.execute("ALTER TABLE md_product_v1_change DROP CHECK ck_test_history_failure");
    products.migrateStructure(c,productId,nextCommand,nextKey);
    assertThat(((Number)products.read(c,productId).get("version")).longValue()).isEqualTo(6);
@@ -154,6 +254,63 @@ class ProductCatalogMySqlTest {
    assertThatThrownBy(()->products.migrateStructure(c,productId,nextCommand,nextKey)).hasMessage("PRODUCT_IDEMPOTENCY_WINDOW_EXPIRED");
    var noPermission=new ProductV1Service(jdbc,(subject,permission)->false,manager,proofs);
    assertThatThrownBy(()->noPermission.migrateStructure(c,productId,command,key)).hasMessage("MASTER_DATA_DENIED");
+
+   String legacyId=UUID.randomUUID().toString(),original="  旧规格\n直径 00.50  ";
+   jdbc.update("INSERT INTO md_product(id,tenant_id,code,name,specification,unit,barcode,enabled,version) VALUES(UUID_TO_BIN(?),UUID_TO_BIN(?),'LEGACY','旧商品',?,'旧单位','0000123',TRUE,7)",legacyId,c.tenantId().toString(),original);
+   var legacy=products.stageLegacy(c,legacyId);
+   assertThat(legacy.get("id")).isEqualTo(legacyId);assertThat(legacy.get("legacySpecificationOriginal")).isEqualTo(original);
+   assertThat(legacy.get("barcode")).isEqualTo("0000123");assertThat(legacy.get("structureState")).isEqualTo("LEGACY_PENDING");
+   assertThat(legacy.get("createdAt")).isNull();assertThat(legacy.get("updatedAt")).isNull();
+   assertThatThrownBy(()->products.stageLegacy(c,legacyId)).hasMessage("PRODUCT_LEGACY_ALREADY_STAGED");
+   assertThatThrownBy(()->products.stageLegacy(other,legacyId)).isInstanceOf(Rejection.class);
+   products.reviewLegacySpecification(c,legacyId,new ProductV1Service.LegacyReview("DEFERRED_SPEC","需要真实规格",7L));
+   assertThat(products.read(c,legacyId).get("structureState")).isEqualTo("LEGACY_PENDING");
+   assertThatThrownBy(()->products.reviewLegacySpecification(c,legacyId,new ProductV1Service.LegacyReview("CONFIRMED_NONE","旧版本确认",7L))).isInstanceOf(Rejection.class);
+   products.updateStatus(c,legacyId,new ProductV1Service.Status("DISABLED",8));
+   var blockedLegacyChange=new ProductV1Service.Migration(9L,0L,null,parent.id(),config.id(),"SERVICE",null,List.of(),List.of(),"迁移旧档","CONFIRMED_NONE");
+   assertThatThrownBy(()->products.previewStructure(c,legacyId,blockedLegacyChange)).hasMessage("PRODUCT_LEGACY_SPEC_REQUIRED");
+   products.reviewLegacySpecification(c,legacyId,new ProductV1Service.LegacyReview("CONFIRMED_NONE","人工核实无需规格",9L));
+   var legacyChange=new ProductV1Service.Migration(10L,0L,null,parent.id(),config.id(),"SERVICE",null,List.of(),List.of(),"迁移旧档","CONFIRMED_NONE");
+   var legacyPreview=products.previewStructure(c,legacyId,legacyChange);
+   products.migrateStructure(c,legacyId,new ProductV1Service.MigrationCommand(legacyChange,(String)legacyPreview.get("previewToken")),UUID.randomUUID().toString());
+   assertThat(products.read(c,legacyId).get("legacySpecificationOriginal")).isEqualTo(original);
+   assertThat(products.read(c,legacyId).get("status")).isEqualTo("DISABLED");assertThat(products.read(c,legacyId).get("structureState")).isEqualTo("COMPLETE");
+   var reconciliation=(Map<?,?>)products.reconcileLegacy(c,1,20);
+   assertThat(((List<Map<String,Object>>)reconciliation.get("rows")).getFirst().get("result")).isEqualTo("MATCHED");
+   jdbc.update("UPDATE md_product SET name='旧入口再次修改',version=version+1 WHERE id=UUID_TO_BIN(?)",legacyId);
+   reconciliation=(Map<?,?>)products.reconcileLegacy(c,1,20);
+   assertThat(((List<Map<String,Object>>)reconciliation.get("rows")).getFirst().get("result")).isEqualTo("SOURCE_CHANGED");
+   // 配置草稿修改/退役不改旧商品解释，分组名称由服务端固定快照。
+   var groupId=attributes.createGroup(c,new ProductAttributeService.GroupInput("G","原分组",0)).get("id");
+   attributes.updateGroup(c,groupId,new ProductAttributeService.GroupInput("G","新分组",0));
+   attributes.setStatus(c,groupId,new Status(false,1),true);
+   var decimalAttribute=attributes.createAttribute(c,new ProductAttributeService.AttributeInput("heat",null,0)).get("id");
+   var decimalRevision=attributes.createRevision(c,decimalAttribute,new ProductAttributeService.RevisionInput("热值","DECIMAL",unit.id(),2,"{\"min\":\"1.00\",\"max\":\"9.99\"}",0)).get("id");
+   attributes.updateRevision(c,decimalRevision,new ProductAttributeService.RevisionInput("热值","DECIMAL",unit.id(),2,"{\"min\":\"1.00\",\"max\":\"9.99\"}",1));
+   attributes.publishRevision(c,decimalRevision,2);
+   assertThatThrownBy(()->attributes.updateRevision(c,decimalRevision,new ProductAttributeService.RevisionInput("错误修改","TEXT",null,null,"{}",3))).isInstanceOf(Rejection.class);
+   var multi=templates.create(c,new ProductTemplateService.TemplateInput("MULTI","多属性","QUALITY",0)).get("id");
+   var multiVersion=templates.createVersion(c,multi,new ProductTemplateService.VersionInput("两项",List.of(new ProductTemplateService.ItemInput(attributeId,revisionId,null,null,true,false,true,0),new ProductTemplateService.ItemInput(decimalAttribute,decimalRevision,null,null,true,true,false,1)),0)).get("id");
+   templates.updateVersion(c,multiVersion,new ProductTemplateService.VersionInput("两项确认",List.of(new ProductTemplateService.ItemInput(attributeId,revisionId,null,null,true,false,true,0),new ProductTemplateService.ItemInput(decimalAttribute,decimalRevision,null,null,true,true,false,1)),1));
+   templates.publish(c,multiVersion,2);
+   assertThatThrownBy(()->templates.updateVersion(c,multiVersion,new ProductTemplateService.VersionInput("不能改",List.of(),3))).isInstanceOf(Rejection.class);
+   templates.retire(c,multiVersion,3);
+   assertThat(templates.versions(c,multi).toString()).contains("RETIRED");
+   templates.status(c,multi,new Status(false,4));
+   attributes.retireRevision(c,decimalRevision,3);
+   assertThat(attributes.revisions(c,decimalAttribute).toString()).contains("RETIRED");
+   assertThat(products.read(c,productId).get("values").toString()).contains("材质");
+
+   var cutover=new db.migration.V111__product_single_writer_cutover();
+   var flywayContext=org.mockito.Mockito.mock(org.flywaydb.core.api.migration.Context.class);
+   try(var conn=source.getConnection()){
+    org.mockito.Mockito.when(flywayContext.getConnection()).thenReturn(conn);
+    assertThatThrownBy(()->cutover.migrate(flywayContext)).hasMessage("PRODUCT_CUTOVER_SOURCE_CHANGED_OR_UNRECONCILED");
+   }
+   assertThat(products.read(c,legacyId).get("legacySpecificationOriginal")).isEqualTo(original);
+   jdbc.update("UPDATE md_product SET name='旧商品',version=7 WHERE id=UUID_TO_BIN(?)",legacyId);
+   try(var conn=source.getConnection()){org.mockito.Mockito.when(flywayContext.getConnection()).thenReturn(conn);cutover.migrate(flywayContext);}
+   assertThat(products.read(c,legacyId).get("legacySpecificationOriginal")).isEqualTo(original);
 
    assertThat(jdbc.queryForList("SELECT t.table_name FROM information_schema.tables t LEFT JOIN information_schema.columns c ON c.table_schema=t.table_schema AND c.table_name=t.table_name AND c.column_name IN ('created_by','created_at','updated_by','updated_at') WHERE t.table_schema=DATABASE() AND t.table_type='BASE TABLE' GROUP BY t.table_name HAVING COUNT(c.column_name)<>4",String.class)).isEmpty();
   }

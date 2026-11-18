@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import Management from "@appnexus/master-data/management";
-import { masterDataApi } from "@/api/masterData";
-import { requestErrorMessage } from "@/utils/http";
-/** Product 应用装配；复用统一工作区并注入真实 API。 */
+import ProductManagement from "@appnexus/master-data/product";
+import {productV1Api} from "@/api/productV1";
+import {requestErrorMessage} from "@/utils/http";
+/** 正式商品入口；Flyway切换迁移先保留并校验全部旧商品，未对账不能启动。 */
 </script>
-<template><Management kind="product" :api="masterDataApi" :error-text="requestErrorMessage" /></template>
+<template><ProductManagement :api="productV1Api" :error-text="requestErrorMessage"/></template>

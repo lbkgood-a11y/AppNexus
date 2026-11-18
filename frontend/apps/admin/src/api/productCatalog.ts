@@ -9,6 +9,10 @@ async function write<T>(method:"post"|"put",url:string,data:object):Promise<T>{
  return http.request<T>(method,url,{data,headers:{[csrf.headerName]:csrf.token}});
 }
 export const productCatalogApi:ProductCatalogApi={
+ conversions:()=>http.request("get",path("unit")+"/conversions"),
+ createConversion:data=>write("post",path("unit")+"/conversions",data),
+ conversionStatus:(id,data)=>write("put",path("unit")+"/conversions/"+encodeURIComponent(id)+"/status",data),
+ calculateConversion:(id,quantity)=>http.request("get",path("unit")+"/conversions/"+encodeURIComponent(id)+"/calculate",{params:{quantity}}),
  operations:()=>http.request("get","/api/operation-decisions"),
  list:async(kind,query)=>{
  const result=await http.request<{rows:CatalogRow[];total:number}|CatalogRow[]>("get",path(kind),{params:query});
@@ -22,7 +26,17 @@ export const productCatalogApi:ProductCatalogApi={
  status:(kind,id,data)=>write("put",path(kind)+"/"+encodeURIComponent(id)+"/status",data),
  versions:(kind,id)=>http.request("get",path(kind)+"/"+encodeURIComponent(id)+(kind==="attribute"?"/revisions":"/versions")),
  publishVersion:(kind,id,version)=>write("post",path(kind)+(kind==="attribute"?"/revisions/":"/versions/")+encodeURIComponent(id)+"/publish?version="+version,{}),
+ options:id=>http.request("get",path("attribute")+"/revisions/"+encodeURIComponent(id)+"/options"),
+ items:id=>http.request("get",path("template")+"/versions/"+encodeURIComponent(id)+"/items"),
+ updateRevision:(id,data)=>write("put",path("attribute")+"/revisions/"+encodeURIComponent(id),data),
+ updateVersion:(id,data)=>write("put",path("template")+"/versions/"+encodeURIComponent(id),data),
  createRevision:(id,data)=>write("post",path("attribute")+"/"+encodeURIComponent(id)+"/revisions",data),
  createVersion:(id,data)=>write("post",path("template")+"/"+encodeURIComponent(id)+"/versions",data),
+ groups:()=>http.request("get",path("attribute")+"/groups"),
+ createGroup:data=>write("post",path("attribute")+"/groups",data),
+ updateGroup:(id,data)=>write("put",path("attribute")+"/groups/"+encodeURIComponent(id),data),
+ groupStatus:(id,data)=>write("put",path("attribute")+"/groups/"+encodeURIComponent(id)+"/status",data),
+ retireVersion:(kind,id,version)=>write("post",path(kind)+(kind==="attribute"?"/revisions/":"/versions/")+encodeURIComponent(id)+"/retire?version="+version,{}),
+ configuration:(id,config)=>http.request("get",path("category")+"/"+encodeURIComponent(id)+"/configurations/"+encodeURIComponent(config)),
  publishConfiguration:(id,data)=>write("post",path("category")+"/"+encodeURIComponent(id)+"/configurations",data)
 };

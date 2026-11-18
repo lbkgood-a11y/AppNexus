@@ -26,11 +26,11 @@ public final class NavigationPages {
         return List.of(
             new Page("organization/personnel","/organization/personnel","人员管理","Personnel",MenuManagement.Scope.TENANT,"masterdata.person:read",Gate.PERMISSION),
             new Page("master-data/partner","/master-data/partner","客商管理","Business partners",MenuManagement.Scope.TENANT,"masterdata.partner:read",Gate.PERMISSION),
+            new Page("master-data/storage","/master-data/storage","库区与库位","Storage areas and locations",MenuManagement.Scope.TENANT,"masterdata.storagearea:read",Gate.PERMISSION),
             new Page("master-data/warehouse","/master-data/warehouse","仓库管理","Warehouses",MenuManagement.Scope.TENANT,"masterdata.warehouse:read",Gate.PERMISSION),
             new Page("master-data/country-region","/master-data/country-region","国别地区","Countries and regions",MenuManagement.Scope.TENANT,"masterdata.countryregion:read",Gate.PERMISSION),
             new Page("master-data/subdivision","/master-data/subdivision","行政区划","Subdivisions",MenuManagement.Scope.TENANT,"masterdata.subdivision:read",Gate.PERMISSION),
             new Page("master-data/product","/master-data/product","商品管理","Products",MenuManagement.Scope.TENANT,"masterdata.product:read",Gate.PERMISSION),
-            new Page("master-data/product-v1","/master-data/product-v1","商品档案V1验证","Product V1 validation",MenuManagement.Scope.TENANT,"masterdata.product:read",Gate.PERMISSION),
             new Page("master-data/product-category","/master-data/product-category","商品分类","Product categories",MenuManagement.Scope.TENANT,"masterdata.productcategory:read",Gate.PERMISSION),
             new Page("master-data/product-unit","/master-data/product-unit","计量单位","Product units",MenuManagement.Scope.TENANT,"masterdata.productunit:read",Gate.PERMISSION),
             new Page("master-data/product-attribute","/master-data/product-attribute","属性管理","Product attributes",MenuManagement.Scope.TENANT,"masterdata.productattribute:read",Gate.PERMISSION),

@@ -12,6 +12,9 @@ const client = Axios.create({ timeout: 10000, withCredentials: true });
  */
 export function requestErrorMessage(error: unknown): string {
   const t = i18n.global.t as (key: string) => string;
+  const productCode=(error as {response?:{data?:{code?:string}}})?.response?.data?.code;
+  if(productCode&&productCode.startsWith("PRODUCT_")){const key="productErrors."+productCode;const message=t(key);if(message!==key)return message;}
+
   // 主动取消及陈旧租户响应不向用户报告失败；会话失效由生命周期统一提示。
   if (Axios.isCancel(error)) return "";
   if(error instanceof Error&&(i18n.global.te as (key:string)=>boolean)("printing.codes."+error.message))return t("printing.codes."+error.message);

@@ -51,8 +51,9 @@ class MasterDataMySqlTest {
       try(var connection=source.getConnection()){ScriptUtils.executeSqlScript(connection,new ClassPathResource("db/migration/V90__warehouse_profile.sql"));}
       try(var connection=source.getConnection()){ScriptUtils.executeSqlScript(connection,new ClassPathResource("db/migration/V92__international_subdivisions.sql"));}
       try(var connection=source.getConnection()){ScriptUtils.executeSqlScript(connection,new ClassPathResource("db/migration/V107__editable_geography_parent.sql"));}
-      assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM access_permission",Integer.class)).isEqualTo(28);
-      assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM access_role_permission",Integer.class)).isEqualTo(28);
+      try(var connection=source.getConnection()){ScriptUtils.executeSqlScript(connection,new ClassPathResource("db/migration/V118__storage_hierarchy.sql"));}
+      assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM access_permission",Integer.class)).isEqualTo(36);
+      assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM access_role_permission",Integer.class)).isEqualTo(36);
       var c=new VerifiedTenantContext(UUID.randomUUID(),UUID.randomUUID(),UUID.randomUUID(),1);
       var other=new VerifiedTenantContext(UUID.randomUUID(),UUID.randomUUID(),UUID.randomUUID(),1);
       var revoked=new java.util.concurrent.atomic.AtomicBoolean(false);
@@ -60,10 +61,14 @@ class MasterDataMySqlTest {
       var catalog=org.mockito.Mockito.mock(com.appnexus.platform.configuration.BusinessValueCatalog.class);
       org.mockito.Mockito.when(catalog.reference(org.mockito.ArgumentMatchers.any(),org.mockito.ArgumentMatchers.any(),org.mockito.ArgumentMatchers.anyString(),org.mockito.ArgumentMatchers.anyString(),org.mockito.ArgumentMatchers.anyMap(),org.mockito.ArgumentMatchers.anyMap(),org.mockito.ArgumentMatchers.anyMap())).thenReturn(true);
       var service=new MasterDataService(jdbc,access,new DataSourceTransactionManager(source),catalog);
+      verifyStorageHierarchy(service,jdbc);
       for(var kind:Kind.values()){
+        // 通用档案测试先前已停用上级；恢复父级后才能验证下一级的独立写入。
+        if(kind==Kind.STORAGE_AREA)jdbc.update("UPDATE md_warehouse SET enabled=TRUE WHERE tenant_id=UUID_TO_BIN(?)",c.tenantId().toString());
+        if(kind==Kind.STORAGE_LOCATION)jdbc.update("UPDATE md_storage_area SET enabled=TRUE WHERE tenant_id=UUID_TO_BIN(?)",c.tenantId().toString());
         Map<String,String> attrs=switch(kind){
           case PARTNER->Map.of("partnerType","BOTH");
-          case PRODUCT->Map.of("unit","PIECE");
+          case STORAGE_AREA,STORAGE_LOCATION->Map.of("parentCode","CODE-1");
           case COUNTRY_REGION->Map.of("alpha3Code","CHN","numericCode","156");
           default->Map.of();
         };
@@ -143,5 +148,32 @@ class MasterDataMySqlTest {
       revoked.set(true);
       assertThatThrownBy(()->service.list(c,Kind.PARTNER,"",null,1,20)).isInstanceOf(Rejection.class).hasMessage("MASTER_DATA_DENIED");
     }
+  }
+  /** 真实外键、事务及审计的正反向验证；使用独立租户，不污染通用档案回归数据。 */
+  private void verifyStorageHierarchy(MasterDataService service,JdbcTemplate jdbc){
+    var tenant=new VerifiedTenantContext(UUID.randomUUID(),UUID.randomUUID(),UUID.randomUUID(),1);
+    var foreign=new VerifiedTenantContext(UUID.randomUUID(),UUID.randomUUID(),UUID.randomUUID(),1);
+    String warehouse=service.create(tenant,Kind.WAREHOUSE,new Input("W","测试仓库",Map.of(),0)).get("id");
+    var areaInput=new Input("A","测试库区",Map.of("parentCode","W","areaType","GOOD","capacity","0.125"),0);
+    assertThatThrownBy(()->service.create(foreign,Kind.STORAGE_AREA,areaInput)).isInstanceOf(Rejection.class);
+    String area=service.create(tenant,Kind.STORAGE_AREA,areaInput).get("id");
+    String location=service.create(tenant,Kind.STORAGE_LOCATION,new Input("L","测试库位",Map.of("parentCode","A"),0)).get("id");
+    assertThatThrownBy(()->service.create(tenant,Kind.STORAGE_LOCATION,new Input("BAD","错误层级",Map.of("parentCode","W"),0))).isInstanceOf(Rejection.class);
+    var before=service.list(tenant,Kind.STORAGE_AREA,"",true,1,20,null,"W").rows().getFirst();
+    assertThat(before.audit().createdBy()).isEqualTo(tenant.accountId().toString());
+    assertThat(before.audit().createdAt()).isNotBlank();
+    assertThat(service.list(tenant,Kind.STORAGE_LOCATION,"",true,1,20,null,"W").total()).isZero();
+    assertThat(service.list(tenant,Kind.STORAGE_LOCATION,"",true,1,20,null,"A").total()).isEqualTo(1);
+    assertThatThrownBy(()->service.setStatus(tenant,Kind.WAREHOUSE,warehouse,new Status(false,0))).hasMessage("STORAGE_ACTIVE_CHILDREN");
+    assertThatThrownBy(()->service.setStatus(tenant,Kind.STORAGE_AREA,area,new Status(false,0))).hasMessage("STORAGE_ACTIVE_CHILDREN");
+    assertThat(service.list(tenant,Kind.STORAGE_AREA,"",null,1,20).rows().getFirst().audit()).isEqualTo(before.audit());
+    service.create(tenant,Kind.WAREHOUSE,new Input("W2","另一仓库",Map.of(),0));
+    assertThatThrownBy(()->service.update(tenant,Kind.STORAGE_AREA,area,new Input("A","禁止移动",Map.of("parentCode","W2"),0))).hasMessage("MASTER_DATA_CHANGED");
+    service.setStatus(tenant,Kind.STORAGE_LOCATION,location,new Status(false,0));
+    service.setStatus(tenant,Kind.STORAGE_AREA,area,new Status(false,0));
+    service.setStatus(tenant,Kind.WAREHOUSE,warehouse,new Status(false,0));
+    assertThatThrownBy(()->service.setStatus(tenant,Kind.STORAGE_LOCATION,location,new Status(true,1))).isInstanceOf(Rejection.class);
+    assertThatThrownBy(()->service.create(tenant,Kind.STORAGE_AREA,new Input("A2","停用父级",Map.of("parentCode","W"),0))).isInstanceOf(Rejection.class);
+    assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM md_storage_area WHERE tenant_id=UUID_TO_BIN(?)",Long.class,foreign.tenantId().toString())).isZero();
   }
 }

@@ -22,11 +22,11 @@ class MasterDataServiceTest {
     assertThatThrownBy(()->service.list(context,Kind.SUBDIVISION,"",null,1,20,null,"CN-FJ")).isInstanceOf(Rejection.class);
     verifyNoInteractions(jdbc);
   }
-  @Test void validatesAllFiveKindsAndRejectsUnknownFields(){
+  @Test void validatesAllKindsAndRejectsUnknownFields(){
     for(var kind:Kind.values()){
       var fields=new HashMap<String,String>();
+      if(kind==Kind.STORAGE_AREA||kind==Kind.STORAGE_LOCATION)fields.put("parentCode","PARENT");
       if(kind==Kind.PARTNER)fields.put("partnerType","BOTH");
-      if(kind==Kind.PRODUCT)fields.put("unit","PIECE");
       if(kind==Kind.COUNTRY_REGION){fields.put("alpha3Code","CHN");fields.put("numericCode","156");}
       var input=new Input(kind==Kind.COUNTRY_REGION?"CN":kind==Kind.SUBDIVISION?"US-CA":"TEST-1","样本",fields,0);
       assertThat(MasterDataService.validate(kind,input)).hasSize(kind.fields.size());
@@ -47,7 +47,6 @@ class MasterDataServiceTest {
   }
   @Test void rejectsInvalidCountryAndMissingUnit(){
     assertThatThrownBy(()->MasterDataService.validate(Kind.COUNTRY_REGION,new Input("custom","中国",Map.of("alpha3Code","INVALID","numericCode","156"),0))).isInstanceOf(Rejection.class);
-    assertThatThrownBy(()->MasterDataService.validate(Kind.PRODUCT,new Input("P1","商品",Map.of(),0))).isInstanceOf(Rejection.class);
     assertThatThrownBy(()->MasterDataService.validate(Kind.PARTNER,new Input("P1","客商",Map.of("partnerType","INVALID ROLE"),0))).isInstanceOf(Rejection.class);
   }
   /** 标准快照保留缺省属性；租户上级允许修改，自定义码由事务内租户图校验。 */

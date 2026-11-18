@@ -902,5 +902,9 @@
   {
     "key": "[\"frontend/modules/master-data/src/product/ProductEditor.vue\",\"el-button\",\"previewOpen=false\",null,null,\"{{t('masterData.cancel')}}\"]",
     "reason": "只关闭预览确认框，不取消已提交请求，不修改商品。"
+  },
+  {
+    "key": "[\"frontend/modules/master-data/src/product/CatalogManagement.vue\",\"el-button\",\"groupEditorOpen=false\",null,null,\"{{t('masterData.cancel')}}\"]",
+    "reason": "仅关闭属性分组编辑弹窗并保留服务端原记录，不调用API、不写入、不产生业务授权副作用。"
   }
 ]

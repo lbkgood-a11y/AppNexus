@@ -13,9 +13,10 @@ public final class MasterData {
   public enum Kind {
     PARTNER("partner", "BusinessPartner", List.of("partnerType", "creditCode", "contactName", "phone", "address", "registeredPlace", "countryRegion", "nature", "listed", "chineseName", "englishName", "shortName", "customerLevel", "legalRepresentative", "legalId", "controller", "establishedOn", "registeredCurrency", "registeredCapital", "taxNumber", "organizationCode", "productsServices", "staffSize", "fax", "remarks")),
     WAREHOUSE("warehouse", "Warehouse", List.of("shortCode","shortName","warehouseType","totalArea","capacity","logisticsOrganization","contactName","contactTitle","phone","email","longitude","latitude","region","address","builtOn","openedOn","introduction","structureDescription","operatingMode","billAddress","remarks","partner","owner","ownershipCertificate","personalGuarantee","wholeLease","leaseChainDescription","subleaseDescription","otherStorageDescription","pledgee")),
+    STORAGE_AREA("storage-area", "StorageArea", List.of("parentCode", "areaType", "capacity", "remarks")),
+    STORAGE_LOCATION("storage-location", "StorageLocation", List.of("parentCode", "capacity", "remarks")),
     COUNTRY_REGION("country-region", "CountryRegion", List.of("englishName", "alpha3Code", "numericCode", "parentCode")),
-    SUBDIVISION("subdivision", "Subdivision", List.of("countryCode", "subdivisionType", "parentCode")),
-    PRODUCT("product", "Product", List.of("specification", "unit", "barcode"));
+    SUBDIVISION("subdivision", "Subdivision", List.of("countryCode", "subdivisionType", "parentCode"));
 
     /** 固定路由片段，不接受客户端自由扩展。 */
     public final String path;

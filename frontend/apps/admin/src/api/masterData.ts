@@ -11,7 +11,6 @@ async function mutate<T>(method:"post"|"put"|"delete",url:string,data:object):Pr
 export const masterDataApi:MasterDataApi={
   geographyDirectory:kind=>http.request("get",path(kind),{params:{geography:true}}),
   readPartner:async id=>{const result=await http.request<{rows:import("@appnexus/master-data").MasterDataRow[]}>("get",path("partner"),{params:{id,page:1,size:1}});if(!result.rows[0])throw new Error("MASTER_DATA_CHANGED");return result.rows[0];},
-  productOptions:()=>http.request("get",path("product"),{params:{options:true}}),
   readWarehouse:async id=>{const result=await http.request<{rows:import("@appnexus/master-data").MasterDataRow[]}>("get",path("warehouse"),{params:{id,page:1,size:1}});if(!result.rows[0])throw new Error("MASTER_DATA_CHANGED");return result.rows[0];},
   warehouseMapConfig:()=>http.request("get","/api/maps/_AMapService/configuration"),
   warehouseOptions:()=>http.request("get",path("warehouse"),{params:{options:true}}),

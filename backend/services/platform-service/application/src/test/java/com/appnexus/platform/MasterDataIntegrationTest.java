@@ -42,11 +42,13 @@ class MasterDataIntegrationTest extends DatabaseTestSupport {
     assertThat(objects).hasSize(5);
     assertThat(objects.stream().filter(o->o.code().equals("Person")).findFirst().orElseThrow().module()).isEqualTo("organization");
     assertThat(objects.stream().filter(o->!o.code().equals("Person"))).allSatisfy(o->assertThat(o.module()).isEqualTo("master-data"));
-    assertThat(objects).allSatisfy(o->{assertThat(o.category()).isEqualTo("MASTER_DATA");assertThat(o.operations()).hasSize(o.code().equals("Person")?15:4);});
+    // 审批入口仅随真实引擎装配；默认关闭时基础25项，启用时再增加3个真实只读入口。
+    int productOperations=registry.all().stream().anyMatch(o->o.id().equals("Product.readApprovals"))?28:25;
+    assertThat(objects).allSatisfy(o->{assertThat(o.category()).isEqualTo("MASTER_DATA");assertThat(o.operations()).hasSize(o.code().equals("Person")?15:o.code().equals("Product")?productOperations:4);});
     var operations=registry.all().stream().filter(o->Set.of("Person","BusinessPartner","Warehouse","CountryRegion","Product").contains(o.objectType())).toList();
-    assertThat(operations).hasSize(31);
+    assertThat(operations).hasSize(27+productOperations);
     for(var operation:operations){
-      for(String permission:operation.permissions())assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM access_permission WHERE code=? AND scope_type='TENANT'",Integer.class,permission)).isEqualTo(1);
+      for(String expression:operation.permissions())for(String permission:expression.split("&"))assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM access_permission WHERE code=? AND scope_type='TENANT'",Integer.class,permission)).isEqualTo(1);
       for(String key:operation.pages()){
         var page=NavigationPages.find(key);assertThat(page).isNotNull();
         assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM platform_menu WHERE component_key=? AND route_path=? AND permission_code=?",Integer.class,key,page.path(),page.permission())).isEqualTo(1);

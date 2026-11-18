@@ -29,7 +29,7 @@ public final class ProductAttributeService {
   *
  * @param numericScale INTEGER必须0，DECIMAL为0至12，其他必须空
   *
- * @param validationJson 当前仅支持空规则对象，非空规则拒绝而不假称已生效
+ * @param validationJson 规则白名单：文本长度、数值/日期范围、枚举数量；拒绝脚本/SQL/任意正则
   *
  * @param version 当前父属性版本，非负
  * @param options 枚举初始选项，可空；与修订同事务保存
@@ -55,7 +55,7 @@ public final class ProductAttributeService {
  /** 固定属性的全部修订及该修订下选项；历史发布版本仍可读。 */
  public Object revisions(VerifiedTenantContext c,String id){
   require(c,"read");uuid(id);
-  return jdbc.queryForList("SELECT BIN_TO_UUID(id) id,BIN_TO_UUID(attribute_id) attributeId,revision_no revision,name,data_type dataType,BIN_TO_UUID(unit_id) unitId,numeric_scale numericScale,state,BIN_TO_UUID(created_by) createdBy,created_at createdAt,BIN_TO_UUID(updated_by) updatedBy,updated_at updatedAt FROM md_product_attribute_revision WHERE tenant_id=UUID_TO_BIN(?) AND attribute_id=UUID_TO_BIN(?) ORDER BY revision_no DESC",tenant(c),id);
+  return jdbc.queryForList("SELECT BIN_TO_UUID(id) id,BIN_TO_UUID(attribute_id) attributeId,revision_no revision,name,data_type dataType,BIN_TO_UUID(unit_id) unitId,numeric_scale numericScale,CAST(validation_json AS CHAR) validationJson,state,BIN_TO_UUID(created_by) createdBy,created_at createdAt,BIN_TO_UUID(updated_by) updatedBy,updated_at updatedAt FROM md_product_attribute_revision WHERE tenant_id=UUID_TO_BIN(?) AND attribute_id=UUID_TO_BIN(?) ORDER BY revision_no DESC",tenant(c),id);
  }
  /** 选项仅返回本租户本修订，不能使用未知ID穿透其他租户。 */
  public Object options(VerifiedTenantContext c,String id){
@@ -72,6 +72,49 @@ public final class ProductAttributeService {
  public void publishRevision(VerifiedTenantContext c,String id,long version){require(c,"publish");uuid(id);write(()->{var row=lockRevision(c,id,version);String type=(String)row.get("data_type");if(Set.of("SINGLE_SELECT","MULTI_SELECT").contains(type)&&jdbc.queryForObject("SELECT COUNT(*) FROM md_product_attribute_option WHERE tenant_id=UUID_TO_BIN(?) AND revision_id=UUID_TO_BIN(?)",Integer.class,tenant(c),id)==0)throw invalid();if(jdbc.update("UPDATE md_product_attribute_revision SET state='PUBLISHED',published_at=CURRENT_TIMESTAMP(6),updated_by=UUID_TO_BIN(?),updated_at=CURRENT_TIMESTAMP(6) WHERE tenant_id=UUID_TO_BIN(?) AND id=UUID_TO_BIN(?) AND state='DRAFT'",actor(c),tenant(c),id)!=1)throw changed();return null;});}
  /** 仅未发布的枚举修订允许追加选项；与父CAS同事务，已发布拒绝。 */
  public Map<String,String> createOption(VerifiedTenantContext c,String revisionId,OptionInput i){require(c,"update");uuid(revisionId);if(i==null||i.code()==null||!i.code().matches("[A-Za-z0-9][A-Za-z0-9._-]{0,63}")||i.label()==null||i.label().isBlank()||i.label().length()>200)throw invalid();String id=UUID.randomUUID().toString();return write(()->{var row=lockRevision(c,revisionId,i.version());if(!Set.of("SINGLE_SELECT","MULTI_SELECT").contains(row.get("data_type")))throw invalid();jdbc.update("INSERT INTO md_product_attribute_option(id,tenant_id,revision_id,option_code,label,sort_order,created_by,updated_by) VALUES(UUID_TO_BIN(?),UUID_TO_BIN(?),UUID_TO_BIN(?),?,?,?,UUID_TO_BIN(?),UUID_TO_BIN(?))",id,tenant(c),revisionId,i.code(),i.label().trim(),i.sortOrder(),actor(c),actor(c));return Map.of("id",id);});}
+
+ /** 分组名称维护不改变已发布模板的分组快照，编码不允许修改。 */
+ public void updateGroup(VerifiedTenantContext c,String id,GroupInput input){
+  require(c,"update");uuid(id);if(input==null)throw invalid();common(input.code(),input.name(),input.version());
+  write(()->{if(jdbc.update("UPDATE md_product_attribute_group SET name=?,version=version+1,updated_by=UUID_TO_BIN(?),updated_at=CURRENT_TIMESTAMP(6) WHERE tenant_id=UUID_TO_BIN(?) AND id=UUID_TO_BIN(?) AND code=? AND version=?",input.name().trim(),actor(c),tenant(c),id,input.code(),input.version())!=1)throw changed();return null;});
+ }
+ /** 稳定属性仅调整分组，不修改语义编码、已发布修订或商品值。 */
+ public void updateAttribute(VerifiedTenantContext c,String id,AttributeInput input){
+  require(c,"update");uuid(id);if(input==null)throw invalid();common(input.code(),input.code(),input.version());
+  if(input.groupId()!=null)uuid(input.groupId());
+  write(()->{if(jdbc.update("UPDATE md_product_attribute SET group_id=UUID_TO_BIN(?),version=version+1,updated_by=UUID_TO_BIN(?),updated_at=CURRENT_TIMESTAMP(6) WHERE tenant_id=UUID_TO_BIN(?) AND id=UUID_TO_BIN(?) AND code=? AND version=?",input.groupId(),actor(c),tenant(c),id,input.code(),input.version())!=1)throw changed();return null;});
+ }
+ /** 独立启停不删除修订；group参数由固定Controller选择，不由客户端指定表。 */
+ public void setStatus(VerifiedTenantContext c,String id,CatalogData.Status input,boolean group){
+  require(c,"set_status");uuid(id);if(input==null||input.enabled()==null||input.version()<0)throw invalid();
+  String table=group?"md_product_attribute_group":"md_product_attribute";
+  write(()->{if(jdbc.update("UPDATE "+table+" SET enabled=?,version=version+1,updated_by=UUID_TO_BIN(?),updated_at=CURRENT_TIMESTAMP(6) WHERE tenant_id=UUID_TO_BIN(?) AND id=UUID_TO_BIN(?) AND version=?",input.enabled(),actor(c),tenant(c),id,input.version())!=1)throw changed();return null;});
+ }
+ /** 退役仅阻止新模板选用，保留旧商品解释；父CAS保护且不能退役草稿。 */
+ public void retireRevision(VerifiedTenantContext c,String id,long version){
+  require(c,"publish");uuid(id);write(()->{
+   var rows=jdbc.queryForList("SELECT BIN_TO_UUID(attribute_id) id FROM md_product_attribute_revision WHERE tenant_id=UUID_TO_BIN(?) AND id=UUID_TO_BIN(?)",String.class,tenant(c),id);
+   if(rows.isEmpty())throw changed();lockAttribute(c,rows.getFirst(),version);
+   if(jdbc.update("UPDATE md_product_attribute_revision SET state='RETIRED',updated_by=UUID_TO_BIN(?),updated_at=CURRENT_TIMESTAMP(6) WHERE tenant_id=UUID_TO_BIN(?) AND id=UUID_TO_BIN(?) AND state='PUBLISHED'",actor(c),tenant(c),id)!=1)throw changed();return null;
+  });
+ }
+
+
+ /** 仅DRAFT可编辑正文/选项；父CAS串行，已发布版本无原地更新通道。 */
+ public void updateRevision(VerifiedTenantContext c,String id,RevisionInput input){
+  require(c,"update");uuid(id);if(input==null||input.name()==null||input.name().isBlank())throw invalid();validateRevision(input);
+  write(()->{
+   lockRevision(c,id,input.version());
+   if(input.unitId()!=null){uuid(input.unitId());if(jdbc.queryForObject("SELECT COUNT(*) FROM md_product_unit WHERE tenant_id=UUID_TO_BIN(?) AND id=UUID_TO_BIN(?) AND enabled=TRUE",Integer.class,tenant(c),input.unitId())!=1)throw invalid();}
+   jdbc.update("UPDATE md_product_attribute_revision SET name=?,data_type=?,unit_id=UUID_TO_BIN(?),numeric_scale=?,validation_json=?,updated_by=UUID_TO_BIN(?),updated_at=CURRENT_TIMESTAMP(6) WHERE tenant_id=UUID_TO_BIN(?) AND id=UUID_TO_BIN(?)",input.name().trim(),input.dataType(),input.unitId(),input.numericScale(),input.validationJson(),actor(c),tenant(c),id);
+   if(input.options()!=null){
+    jdbc.update("DELETE FROM md_product_attribute_option WHERE tenant_id=UUID_TO_BIN(?) AND revision_id=UUID_TO_BIN(?)",tenant(c),id);
+    if(!Set.of("SINGLE_SELECT","MULTI_SELECT").contains(input.dataType())&&!input.options().isEmpty()||input.options().size()>50)throw invalid();
+    int order=0;for(var o:input.options()){if(o==null)throw invalid();common(o.code(),o.label(),0);jdbc.update("INSERT INTO md_product_attribute_option(id,tenant_id,revision_id,option_code,label,sort_order,created_by,updated_by) VALUES(UUID_TO_BIN(?),UUID_TO_BIN(?),UUID_TO_BIN(?),?,?,?,UUID_TO_BIN(?),UUID_TO_BIN(?))",UUID.randomUUID().toString(),tenant(c),id,o.code(),o.label(),order++,actor(c),actor(c));}
+   }
+  return null;});
+ }
+
  /** 属性聚合CAS同时覆盖修订和选项，避免发布后并发插入修改已发布含义。 */
  private void lockAttribute(VerifiedTenantContext c,String id,long version){
   var rows=jdbc.queryForList("SELECT version,enabled FROM md_product_attribute WHERE tenant_id=UUID_TO_BIN(?) AND id=UUID_TO_BIN(?) FOR UPDATE",tenant(c),id);
@@ -88,8 +131,7 @@ public final class ProductAttributeService {
   if(i.name().trim().length()>200||!Set.of("TEXT","INTEGER","DECIMAL","BOOLEAN","SINGLE_SELECT","MULTI_SELECT","DATE").contains(i.dataType()))throw invalid();
   boolean numeric=Set.of("INTEGER","DECIMAL").contains(i.dataType());
   if(numeric&&(i.numericScale()==null||i.numericScale()<0||i.numericScale()>12)||!numeric&&(i.unitId()!=null||i.numericScale()!=null)||"INTEGER".equals(i.dataType())&&i.numericScale()!=0)throw invalid();
-  // 首版仅接受空校验对象，未实现的脚本/表达式不允许以配置形式悄悄生效。
-  if(i.validationJson()!=null){try{var node=new ObjectMapper().readTree(i.validationJson());if(!node.isObject()||node.size()!=0)throw invalid();}catch(MasterData.Rejection e){throw e;}catch(Exception e){throw invalid();}}
+  ProductAttributeRules.definition(i.dataType(),i.validationJson());
  }
  private void require(VerifiedTenantContext c,String a){if(c==null||!access.hasPermission(AccessAuthorization.Subject.tenant(c.accountId(),c.tenantId(),c.memberId()),"masterdata.productattribute:"+a))throw new MasterData.Rejection(403,"MASTER_DATA_DENIED");}
  private <T>T write(java.util.function.Supplier<T> s){try{return tx.execute(x->s.get());}catch(DataIntegrityViolationException e){throw new MasterData.Rejection(409,"PRODUCT_ATTRIBUTE_CONFLICT");}}

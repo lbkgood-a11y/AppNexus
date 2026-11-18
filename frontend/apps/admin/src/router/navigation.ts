@@ -11,11 +11,11 @@ import { buildNavigationMenus, safeNavigationUrl } from "./navigationModel";
 const pages = {
   "organization/personnel": {path:"/organization/personnel",name:"OrganizationPersonnel",component:()=>import("@/views/organization/personnel.vue")},
   "master-data/partner": {path:"/master-data/partner",name:"MasterDataBusinessPartner",component:()=>import("@/views/master-data/partner.vue")},
+  "master-data/storage": {path:"/master-data/storage",name:"MasterDataStorage",component:()=>import("@/views/master-data/storage.vue")},
   "master-data/warehouse": {path:"/master-data/warehouse",name:"MasterDataWarehouse",component:()=>import("@/views/master-data/warehouse.vue")},
   "master-data/country-region": {path:"/master-data/country-region",name:"MasterDataCountryRegion",component:()=>import("@/views/master-data/country-region.vue")},
   "master-data/subdivision": {path:"/master-data/subdivision",name:"MasterDataSubdivision",component:()=>import("@/views/master-data/subdivision.vue")},
   "master-data/product": {path:"/master-data/product",name:"MasterDataProduct",component:()=>import("@/views/master-data/product.vue")},
-  "master-data/product-v1": {path:"/master-data/product-v1",name:"MasterDataProductV1",component:()=>import("@/views/master-data/product-v1.vue")},
   "master-data/product-category": {path:"/master-data/product-category",name:"MasterDataProductCategory",component:()=>import("@/views/master-data/product-category.vue")},
   "master-data/product-unit": {path:"/master-data/product-unit",name:"MasterDataProductUnit",component:()=>import("@/views/master-data/product-unit.vue")},
   "master-data/product-attribute": {path:"/master-data/product-attribute",name:"MasterDataProductAttribute",component:()=>import("@/views/master-data/product-attribute.vue")},

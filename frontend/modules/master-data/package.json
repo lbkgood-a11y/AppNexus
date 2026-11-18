@@ -4,6 +4,7 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
+    "./storage": "./src/StorageManagement.vue",
     "./management": "./src/Management.vue",
     "./product-catalog": "./src/product/CatalogManagement.vue",
     "./product-catalog-types": "./src/product/catalog.ts",
