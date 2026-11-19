@@ -12,7 +12,14 @@ import static com.appnexus.masterdata.BusinessPartnerDeclaration.*;
 @Component
 public final class PartnerDataAccess implements DataAccessDeclaration.Executor, com.appnexus.masterdata.application.PartnerAccess {
     private final AccessPlanning planning;private final FieldProtection protection;private final DataAccessReferences references;private final JdbcTemplate jdbc;private final DataAccessCatalog catalog;private final RowAccessControl rows;
-    /** @param rows 平台公共行范围执行能力；必须由装配注入，不能缺省绕过数据范围 */
+    /**
+     * @param planning 当前主体、操作及资源的权威权限计划入口
+     * @param protection 字段展示与写入的强制限制入口
+     * @param references 可信租户内组织等授权引用目录
+     * @param jdbc 与客商用例事务共用的数据库访问器
+     * @param catalog 统一业务对象派生的数据权限目录
+     * @param rows 平台公共行范围执行能力；必须由装配注入，不能缺省绕过数据范围
+     */
     public PartnerDataAccess(AccessPlanning planning,FieldProtection protection,DataAccessReferences references,JdbcTemplate jdbc,DataAccessCatalog catalog,RowAccessControl rows){this.planning=planning;this.protection=protection;this.references=references;this.jdbc=jdbc;this.catalog=catalog;this.rows=Objects.requireNonNull(rows);}
     @Override public Set<String> enforcedResources(){return Set.of(ROOT,CONTACT,BANK);}
     private AccessAuthorization.Subject subject(VerifiedTenantContext c){return AccessAuthorization.Subject.tenant(c.accountId(),c.tenantId(),c.memberId());}
