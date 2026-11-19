@@ -67,7 +67,7 @@ class MasterDataMySqlTest {
       UUID testOrganization=UUID.randomUUID();
       com.appnexus.platform.authorization.DataAccessReferences references=(subject,permission)->List.of(new com.appnexus.platform.authorization.DataAccessReferences.Organization(testOrganization,"隔离测试组织"));
       var dataCatalog=com.appnexus.platform.authorization.DataAccessCatalog.fromObjects(List.of(new BusinessPartnerDeclaration()));
-      var service=MasterDataConfiguration.create(jdbc,access,new DataSourceTransactionManager(source),catalog,new PartnerDataAccess(planning,fields,references,jdbc,dataCatalog));
+      var service=MasterDataConfiguration.create(jdbc,access,new DataSourceTransactionManager(source),catalog,new PartnerDataAccess(planning,fields,references,jdbc,dataCatalog,new com.appnexus.platform.persistence.platformscope.MySqlRowAccessControl()));
       verifyStorageHierarchy(service,jdbc);
       for(var kind:Kind.values()){
         // 通用档案测试先前已停用上级；恢复父级后才能验证下一级的独立写入。

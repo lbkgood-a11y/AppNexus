@@ -11,18 +11,17 @@ import static com.appnexus.masterdata.BusinessPartnerDeclaration.*;
 /** 客商统一声明的真实执行器；只使用构建内固定 SQL，原始明细只在已授权父记录的事务内读取。 */
 @Component
 public final class PartnerDataAccess implements DataAccessDeclaration.Executor, com.appnexus.masterdata.application.PartnerAccess {
-    private final AccessPlanning planning;private final FieldProtection protection;private final DataAccessReferences references;private final JdbcTemplate jdbc;private final DataAccessCatalog catalog;
-    public PartnerDataAccess(AccessPlanning planning,FieldProtection protection,DataAccessReferences references,JdbcTemplate jdbc,DataAccessCatalog catalog){this.planning=planning;this.protection=protection;this.references=references;this.jdbc=jdbc;this.catalog=catalog;}
+    private final AccessPlanning planning;private final FieldProtection protection;private final DataAccessReferences references;private final JdbcTemplate jdbc;private final DataAccessCatalog catalog;private final RowAccessControl rows;
+    /** @param rows 平台公共行范围执行能力；必须由装配注入，不能缺省绕过数据范围 */
+    public PartnerDataAccess(AccessPlanning planning,FieldProtection protection,DataAccessReferences references,JdbcTemplate jdbc,DataAccessCatalog catalog,RowAccessControl rows){this.planning=planning;this.protection=protection;this.references=references;this.jdbc=jdbc;this.catalog=catalog;this.rows=Objects.requireNonNull(rows);}
     @Override public Set<String> enforcedResources(){return Set.of(ROOT,CONTACT,BANK);}
     private AccessAuthorization.Subject subject(VerifiedTenantContext c){return AccessAuthorization.Subject.tenant(c.accountId(),c.tenantId(),c.memberId());}
     /** 每次执行读取权威策略；无功能或无范围默认拒绝，不使用浏览器传入的权限计划。 */
     public AccessPlan plan(VerifiedTenantContext c,String action){try{return planning.plan(subject(c),ROOT+":"+action,ROOT);}catch(SecurityException e){throw denied();}}
     /** 固定组织列谓词；只动态生成绑定占位符数量，COUNT 与分页必须共用返回条件。 */
     public String predicate(AccessPlan plan,List<Object> args){
-        if(plan.rows().type()==DataScopeAuthorization.ScopeType.ALL)return "";
-        if(plan.rows().type()!=DataScopeAuthorization.ScopeType.ORGANIZATION||plan.rows().organizationIds().isEmpty())return " AND 1=0";
-        plan.rows().organizationIds().stream().sorted().forEach(id->args.add(id.toString()));
-        return " AND organization_id IN ("+String.join(",",Collections.nCopies(plan.rows().organizationIds().size(),"UUID_TO_BIN(?)"))+")";
+        var predicate=rows.organizationPredicate(plan,"organization_id");
+        args.addAll(predicate.parameters());return predicate.sql();
     }
     /** 写入先锁定授权范围内父记录；无权与不存在统一冲突，不先泄露客商或明细内容。 */
     public String lock(VerifiedTenantContext c,String id,String action){
@@ -39,12 +38,12 @@ public final class PartnerDataAccess implements DataAccessDeclaration.Executor, 
         if(organization.isBlank())throw new Rejection(400,"PARTNER_ORGANIZATION_REQUIRED");
         UUID id;try{id=UUID.fromString(organization);}catch(IllegalArgumentException e){throw new Rejection(400,"MASTER_DATA_INPUT_INVALID");}
         var plan=plan(c,action);
-        if(references.organizations(subject(c),ROOT+":"+action).stream().noneMatch(o->o.id().equals(id))||!(plan.rows().type()==DataScopeAuthorization.ScopeType.ALL||plan.rows().type()==DataScopeAuthorization.ScopeType.ORGANIZATION&&plan.rows().organizationIds().contains(id)))throw denied();
+        if(references.organizations(subject(c),ROOT+":"+action).stream().noneMatch(o->o.id().equals(id))||!rows.allowsOrganization(plan,id))throw denied();
     }
     /** 字段限制与归属候选供页面展示；该元数据不替代保存时的后端检查。 */
     public Map<String,Object> metadata(VerifiedTenantContext c){
-        var scope=plan(c,"read").rows();
-        var options=references.organizations(subject(c),ROOT+":read").stream().filter(o->scope.type()==DataScopeAuthorization.ScopeType.ALL||scope.type()==DataScopeAuthorization.ScopeType.ORGANIZATION&&scope.organizationIds().contains(o.id())).toList();
+        var scope=plan(c,"read");
+        var options=references.organizations(subject(c),ROOT+":read").stream().filter(o->rows.allowsOrganization(scope,o.id())).toList();
         return Map.of("organizations",options,"fieldRestrictions",restrictions(c));
     }
     private Map<String,Map<String,FieldSecurity.Mode>> restrictions(VerifiedTenantContext c){var result=new LinkedHashMap<String,Map<String,FieldSecurity.Mode>>();for(String resource:enforcedResources())result.put(resource,protection.restrictions(subject(c),resource));return Map.copyOf(result);}
