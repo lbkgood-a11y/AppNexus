@@ -10,7 +10,9 @@ import org.springframework.web.context.request.*;
 
 /** 组织单元仓储适配器；租户 UUID 只取自请求级服务端上下文。 */
 @Repository
-public class MyBatisOrganizationUnitRepository implements OrganizationUnitRepository {
+public class MyBatisOrganizationUnitRepository implements OrganizationUnitRepository, DataAccessDeclaration.Executor {
+    /** 本仓储真实消费统一权限计划，覆盖组织单元读写。 */
+    @Override public Set<String> enforcedResources(){return Set.of("organization.unit");}
     private final OrganizationUnitMapper mapper;
     private final OrganizationAuthorizationMapper grants;
     private final OrganizationStructure structure;

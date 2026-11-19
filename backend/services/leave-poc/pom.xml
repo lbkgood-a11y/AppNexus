@@ -10,7 +10,7 @@
 <!-- 业务打印仅依赖公开端口，不引用打印实现。 -->
 <dependency><groupId>com.appnexus</groupId><artifactId>print-contracts</artifactId><version>${project.version}</version></dependency>
     <!-- 真实闭环测试装配单据实现；业务主代码仅依赖 business-object-contracts。 -->
-    <dependency><groupId>com.appnexus</groupId><artifactId>business-object-service</artifactId><version>${project.version}</version><scope>test</scope></dependency>
+    <dependency><groupId>com.appnexus</groupId><artifactId>platform-persistence-adapter</artifactId><version>${project.version}</version><scope>test</scope></dependency>
     <!-- 单据服务仅通过公开契约集成，业务执行仍归业务模块。 -->
     <dependency><groupId>com.appnexus</groupId><artifactId>business-object-contracts</artifactId><version>${project.version}</version></dependency>
     <dependency><groupId>com.appnexus</groupId><artifactId>workflow-contracts</artifactId><version>${project.version}</version></dependency>

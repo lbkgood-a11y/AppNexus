@@ -29,6 +29,8 @@ public final class MasterData {
     }
     /**
    * @return 构建内固定表名，禁止拼接用户输入 */
+    /** 固定类型的持久化字段白名单；禁止由请求扩展表或列。 */
+    public List<String> fields(){return List.copyOf(fields);}
     public String table() { return "md_"+name().toLowerCase(Locale.ROOT); }
     /**
    * @param field 构建内领域字段名
@@ -48,11 +50,14 @@ public final class MasterData {
    *
    * @param attributes 固定领域字段；缺省为全空文本，单项最长 500 字符，邮箱最长 200 字符
    *
+   * @param organizationId 客商归属组织 UUID；新增客商必填，修改缺省保留原值，不允许将未知归属伪造为当前组织
    * @param contacts 客商联系人，最多100条；null 保留已有明细，空列表清空；非客商不得传入
    * @param bankAccounts 客商银行账户，最多100条；null 保留已有明细，空列表清空；审计只读
    * @param version 修改时必须传当前非负版本；新建使用 0，不影响新建结果
    */
-  public record Input(String code,String name,Map<String,String> attributes,long version,List<DetailInput> contacts,List<DetailInput> bankAccounts) {
+  public record Input(String code,String name,Map<String,String> attributes,long version,List<DetailInput> contacts,List<DetailInput> bankAccounts,String organizationId) {
+    /** 旧内部调用不携带归属；新增客商仍由执行器要求明确组织，不能据此回退全部。 */
+    public Input(String code,String name,Map<String,String> attributes,long version,List<DetailInput> contacts,List<DetailInput> bankAccounts){this(code,name,attributes,version,contacts,bankAccounts,null);}
     /** 非客商调用与历史内部调用不传明细时保留原明细；空列表表示明确清空。 */
     public Input(String code,String name,Map<String,String> attributes,long version){this(code,name,attributes,version,null,null);}
   }
@@ -72,8 +77,10 @@ public final class MasterData {
    * @param version 当前非负版本，成功后递增 1；陈旧版本返回 409
    */
   public record Status(Boolean enabled,long version) {}
-  /** 已授权档案；version 为乐观锁版本，不接受客户端覆盖。 */
-  public record Row(String id,String code,String name,Map<String,String> attributes,boolean enabled,long version,Audit audit,List<Detail> contacts,List<Detail> bankAccounts) {
+  /** 已授权档案；organizationId 为可信业务归属，fieldRestrictions 为服务端只读限制提示，不能作为放行凭据。version 为乐观锁版本。 */
+  public record Row(String id,String code,String name,Map<String,String> attributes,boolean enabled,long version,Audit audit,List<Detail> contacts,List<Detail> bankAccounts,String organizationId,Map<String,Map<String,com.appnexus.platform.authorization.FieldSecurity.Mode>> fieldRestrictions) {
+    /** 旧非保护资源构造不产生额外限制，客商响应由保护执行器构造完整投影。 */
+    public Row(String id,String code,String name,Map<String,String> attributes,boolean enabled,long version,Audit audit,List<Detail> contacts,List<Detail> bankAccounts){this(id,code,name,attributes,enabled,version,audit,contacts,bankAccounts,null,Map.of());}
     /** 非客商摘要没有关联明细。 */
     public Row(String id,String code,String name,Map<String,String> attributes,boolean enabled,long version,Audit audit){this(id,code,name,attributes,enabled,version,audit,List.of(),List.of());}
     /** 内部摘要未读取审计时显式为空；不构造历史事实。 */

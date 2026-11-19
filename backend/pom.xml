@@ -20,6 +20,9 @@
     <module>building-blocks</module>
     <module>services</module>
     <module>contracts</module>
+    <!-- 部署组合独立于业务模块；架构检查覆盖实际组合产物。 -->
+    <module>applications</module>
+    <module>architecture-tests</module>
     <module>poc-app</module>
   </modules>
 

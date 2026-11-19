@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { setErrorFeedback } from "@appnexus/ui";
+import { InfoHint } from "@appnexus/ui";
 import { FloatingError } from "@appnexus/ui";
 import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
@@ -46,9 +47,9 @@ const templateApplyOperation = computed(() => location.hash.includes('/platform/
 </script>
 <template>
   <section v-if="api.templates" class="template-actions">
-    <h3>{{ t("authorizationCenter.templates") }}</h3>
+    <h3>{{ t("authorizationCenter.templates") }}<InfoHint :content="t('authorizationCenter.templateHint')" /></h3>
     <FloatingError v-if="error" :title="error" scope="error" type="error" :closable="false"><el-button link @click="load">{{ t("account.retry") }}</el-button></FloatingError>
-    <p>{{ t("authorizationCenter.templateHint") }}</p>
+    <div class="template-forms">
     <el-form inline @submit.prevent="save">
       <el-form-item :label="t('authorizationCenter.templateName')"><el-input v-model="name" :maxlength="100" :disabled="busy || loading || saving || dirty" /></el-form-item>
       <el-form-item><el-button v-operation="templateSaveOperation" :loading="saving" :disabled="busy || loading || dirty || !name.trim() || !!error" native-type="submit">{{ t("authorizationCenter.saveTemplate") }}</el-button></el-form-item>
@@ -57,11 +58,21 @@ const templateApplyOperation = computed(() => location.hash.includes('/platform/
       <el-form-item :label="t('authorizationCenter.templates')"><el-select v-model="selected" filterable :disabled="busy || loading || saving || dirty" class="template-select"><el-option v-for="item in templates" :key="item.id" :label="item.name" :value="item.id" /></el-select></el-form-item>
       <el-form-item><el-button v-operation="templateApplyOperation" type="warning" :loading="saving" :disabled="busy || loading || dirty || !selected || !reason.trim() || !!error" native-type="submit">{{ t("authorizationCenter.applyTemplate") }}</el-button></el-form-item>
     </el-form>
+    </div>
   </section>
 </template>
 <style scoped>
-.template-actions { border-top: 1px solid var(--el-border-color-lighter); margin-top: 20px; padding-top: 16px; }
-.template-actions h3 { font-size: 14px; font-weight: 500; margin-bottom: 12px; }
-.template-actions p { color: var(--el-text-color-secondary); line-height: 1.8; margin-bottom: 12px; }
-.template-select { min-width: 180px; }
+/* 复用原表单与提示组件；桌面并排、窄屏换行，保留全部操作及校验。 */
+.template-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; min-width: 0; }
+.template-actions h3 { display: flex; align-items: center; gap: 4px; font-size: var(--el-font-size-base); font-weight: 500; margin: 0; }
+.template-forms { display: flex; flex-wrap: wrap; gap: 8px 16px; min-width: 0; }
+.template-forms .el-form { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; min-width: 0; }
+.template-forms .el-form-item { margin: 0; min-width: 0; }
+.template-forms .el-input, .template-select { width: 180px; max-width: 100%; }
+@media (max-width: 700px) {
+  .template-actions, .template-forms { align-items: stretch; flex-direction: column; }
+  .template-forms .el-form-item:first-child { flex: 1; }
+  .template-forms .el-input, .template-select { width: 100%; }
+  .template-forms :deep(.el-button) { min-height: 44px; }
+}
 </style>

@@ -15,7 +15,7 @@ public class OrganizationSummaryController {
     private final OrganizationSummary summary;
     public OrganizationSummaryController(OrganizationSummary summary){this.summary=summary;}
     /** 返回有权组织的类型/状态统计，不暴露无权范围计数。 */
-    @com.appnexus.contracts.operation.OperationBinding(id="OrganizationUnit.summary",objectType="OrganizationUnit",operationCode="summary",pages={"organization/index"},nameZh="组织单元：查看摘要",nameEn="Read organization units",policy="主体管理域、角色权限及业务用例约束由原执行器逐请求复核")
+    @com.appnexus.contracts.operation.OperationBinding(id="OrganizationUnit.summary",reference=true)
  @EndpointOperation("organization.unit:read") @GetMapping("/api/organization/summaries")
     ResponseEntity<List<OrganizationSummary.Group>> get(HttpServletRequest request){
         var value=request.getAttribute(VerifiedTenantContext.class.getName());

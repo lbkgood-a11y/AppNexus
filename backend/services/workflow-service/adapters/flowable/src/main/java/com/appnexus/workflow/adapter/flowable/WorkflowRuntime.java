@@ -208,56 +208,21 @@ public final class WorkflowRuntime implements WorkflowResults, WorkflowTaskAcces
     return validateInternal(c, m);
   }
 
+  /**
+   * 从可信代码目录取得能力及业务视图后委托纯应用校验，客户端不能提供能力白名单。
+   * @param c 已经入口权限校验的上下文；能力目录仍复核主体有效性
+   * @param m 待校验草稿，可空以保持原标准错误集合
+   * @return 当前只读校验错误，不创建部署、任务或业务解析
+   */
   private List<String> validateInternal(WorkflowContext c, WorkflowModel m) {
     var caps = businesses(c);
-    var keys = new HashSet<String>();
-    var fields = new HashSet<String>();
-    caps.forEach(
-        b -> {
-          keys.add(b.key());
-          fields.addAll(b.outputs());
-        });
-    if (m != null && m.nodes() != null)
-      m.nodes().stream().filter(Objects::nonNull).forEach(n -> fields.add(n.id() + "_decision"));
-    var errors = new ArrayList<>(WorkflowValidator.validate(m, keys, fields));
-    if (m != null && m.edges() != null) {
-      // 数值条件必须显式来自本单据的 NUMBER 字段，避免按字符串或跨业务字段误判。
+    var profiles = new HashMap<String, WorkflowBusinessProfile>();
+    if (m != null) {
       var entry = businesses.get(m.entryCapability());
-      var profile = entry == null ? null : businessProfile(entry,m.entryCapability());
-      if (profile != null && m.mode() == Mode.APPROVAL) {
-        for (String result : List.of("APPROVED", "REJECTED")) {
-          String bound = m.terminalActions() == null ? null : m.terminalActions().get(result);
-          if (profile.outcomes().stream().noneMatch(o -> o.result().equals(result) && o.capability().equals(bound)))
-            errors.add("BUSINESS_OUTCOME_REQUIRED:" + result);
-        }
-        if (m.withdrawalCapability() != null && !m.withdrawalCapability().isBlank()) {
-          String bound = m.terminalActions() == null ? null : m.terminalActions().get("WITHDRAWN");
-          if (!m.withdrawalCapability().equals(profile.withdrawalCapability()) || profile.outcomes().stream()
-              .noneMatch(o -> o.result().equals("WITHDRAWN") && o.capability().equals(bound)))
-            errors.add("BUSINESS_WITHDRAWAL_INVALID");
-        }
-      }
-      for (var edge : m.edges())
-        if (edge != null && !edge.defaultEdge()
-            && !Set.of("EQ", "NE").contains(WorkflowCondition.operator(edge.operator()))
-            && (profile == null || profile.fields().stream()
-                .noneMatch(f -> f.key().equals(edge.field()) && "NUMBER".equals(f.type()))))
-          errors.add("NUMERIC_FIELD_REQUIRED:" + edge.from());
+      var profile = entry == null ? null : businessProfile(entry, m.entryCapability());
+      if (profile != null) profiles.put(m.entryCapability(), profile);
     }
-    if (m != null && m.nodes() != null)
-      for (var n : m.nodes())
-        if (n != null && n.capability() != null && !n.capability().isBlank()) {
-          if (!keys.contains(n.capability())) {
-            errors.add("CAPABILITY_UNAVAILABLE:" + n.id());
-            continue;
-          }
-          var cap = businesses.get(n.capability()).capability();
-          if (n.input() != null && !cap.inputs().containsAll(n.input().keySet()))
-            errors.add("INPUT_FIELD_INVALID:" + n.id());
-          if (n.required() != null && !cap.inputs().containsAll(n.required()))
-            errors.add("REQUIRED_FIELD_INVALID:" + n.id());
-        }
-    return errors;
+    return com.appnexus.workflow.application.WorkflowModelValidation.validate(m, caps, profiles);
   }
 
   /** 草稿乐观锁保存；相同请求重放返回原结果，不覆盖已发布版本。 */
@@ -639,81 +604,79 @@ public final class WorkflowRuntime implements WorkflowResults, WorkflowTaskAcces
         c,
         "TASK:" + taskId + ":" + action + ":" + WorkflowJson.write(values) + ":" + comment,
         () -> {
-          var t = one("SELECT * FROM wf_task WHERE tenant_id=? AND id=?", c.tenantId(), taskId);
-          var i = instance(c.tenantId(), str(t, "instance_id"), true);
-          // 锁实例后重读任务；等待锁的另一请求不能沿用锁前OPEN快照重复调用业务。
-          t =
-              one(
-                  "SELECT * FROM wf_task WHERE tenant_id=? AND id=? FOR UPDATE",
-                  c.tenantId(),
-                  taskId);
-          if (!"RUNNING".equals(i.get("state"))
-              || !"OPEN".equals(t.get("state"))
-              || !c.actorId().equals(t.get("actor"))) throw fail("TASK_NOT_ACTIVE", 409);
-          var n = definition(i).node(str(t, "node_id"));
-          if (!resolve(i, n).contains(c.actorId())||n.people().stream().noneMatch(p->platform.candidate(c,str(i,"organization_id"),p.kind(),p.reference()))) throw fail("TASK_ASSIGNMENT_EXPIRED", 403);
-          if (n.kind() == Kind.REVIEW && !Set.of("APPROVE", "REJECT").contains(action)
-              || n.kind() == Kind.HANDLE && !Set.of("SAVE", "SUBMIT").contains(action))
-            throw fail("ACTION_INVALID", 400);
-          // 每次办理都复核提交时审批依据；正常节点填写应由业务端维护独立办理版本。
-          var entryBusiness = businesses.get(definition(i).entryCapability());
-          if (entryBusiness == null) throw fail("CAPABILITY_UNAVAILABLE", 409);
-          var basis =
-              outputs(
-                  entryBusiness,
-                  entryBusiness.snapshot(
-                      invocation(c, i, taskId, c.requestId(), "SNAPSHOT", Map.of())));
-          if (!basis.equals(WorkflowJson.map(str(i, "snapshot"))))
-            throw fail("APPROVAL_BASIS_CHANGED", 409);
-          Map<String, String> out = Map.of();
-          if (n.capability() != null && !n.capability().isBlank()) {
-            var business = businesses.get(n.capability());
-            if (business == null) throw fail("CAPABILITY_UNAVAILABLE", 409);
-            if (!business.capability().inputs().containsAll(values.keySet()))
-              throw fail("INPUT_FIELD_INVALID", 400);
-            if (!action.equals("SAVE")
-                && n.required() != null
-                && n.required().stream().anyMatch(k -> values.getOrDefault(k, "").isBlank()))
-              throw fail("REQUIRED_INPUT", 400);
-            var result = business.execute(invocation(c, i, taskId, c.requestId(), action, values));
-            if (result.pending()) throw fail("BUSINESS_CONFIRMATION_REQUIRED", 409);
-            out = outputs(business, result.outputs());
-          } else if (!values.isEmpty()) throw fail("INPUT_FIELD_INVALID", 400);
-          if (action.equals("SAVE")) {
+          var service=new com.appnexus.workflow.application.TaskCompletionService(new com.appnexus.workflow.application.TaskCompletionPort(){
+            private Map<String,Object> instance;
+            private WorkflowModel.Node node;
+            private String nodeId;
+            @Override public Task lock(WorkflowContext context,String id){
+              var task=one("SELECT * FROM wf_task WHERE tenant_id=? AND id=?",context.tenantId(),id);
+              instance=instance(context.tenantId(),str(task,"instance_id"),true);
+              task=one("SELECT * FROM wf_task WHERE tenant_id=? AND id=? FOR UPDATE",context.tenantId(),id);
+              // 模型仅在状态通过后加载，避免已关闭实例改变原拒绝顺序。
+              node=null;nodeId=str(task,"node_id");
+              return new Task(str(instance,"id"),str(instance,"state"),str(task,"state"),str(task,"actor"));
+            }
+            @Override public boolean assigned(WorkflowContext context,Task task){
+              node=definition(instance).node(nodeId);
+              return resolve(instance,node).contains(context.actorId())&&node.people().stream().anyMatch(person->platform.candidate(context,str(instance,"organization_id"),person.kind(),person.reference()));
+            }
+            @Override public WorkflowModel.Node node(Task task){return node;}
+            @Override public boolean basisUnchanged(WorkflowContext context,Task task,String id){
+              var business=businesses.get(definition(instance).entryCapability());
+              if(business==null)throw fail("CAPABILITY_UNAVAILABLE",409);
+              return outputs(business,business.snapshot(invocation(context,instance,id,context.requestId(),"SNAPSHOT",Map.of())))
+                  .equals(WorkflowJson.map(str(instance,"snapshot")));
+            }
+            @Override public Set<String> inputs(String capability){
+              var business=businesses.get(capability);if(business==null)throw fail("CAPABILITY_UNAVAILABLE",409);
+              return business.capability().inputs();
+            }
+            @Override public Map<String,String> execute(WorkflowContext context,Task task,String id,String operation,Map<String,String> input){
+              var business=businesses.get(node.capability());
+              var result=business.execute(invocation(context,instance,id,context.requestId(),operation,input));
+              if(result.pending())throw fail("BUSINESS_CONFIRMATION_REQUIRED",409);
+              return outputs(business,result.outputs());
+            }
+            @Override public void save(WorkflowContext context,Task task,String id,String opinion){
             jdbc.update(
                 "UPDATE wf_task SET comment=? WHERE tenant_id=? AND id=?",
-                comment,
-                c.tenantId(),
-                taskId);
-            audit(c, str(i, "id"), "TASK_SAVED", taskId, "");
-            return Map.of("saved", true);
-          }
-          var fields = fields(i);
-          fields.putAll(out);
-          fields.put(n.id() + "_decision", action);
-          engine.getRuntimeService().setVariable(str(i, "engine_id"), "wf_fields", fields);
-          if (action.equals("REJECT"))
-            engine.getRuntimeService().setVariable(str(i, "engine_id"), "wf_result", "REJECTED");
+                opinion,
+                context.tenantId(),
+                id);
+            audit(context, str(instance, "id"), "TASK_SAVED", id, "");
+
+            }
+            @Override public void complete(WorkflowContext context,Task task,String id,String operation,String opinion,Map<String,String> output){
+          var fields = fields(instance);
+          fields.putAll(output);
+          fields.put(node.id() + "_decision", operation);
+          engine.getRuntimeService().setVariable(str(instance, "engine_id"), "wf_fields", fields);
+          if (operation.equals("REJECT"))
+            engine.getRuntimeService().setVariable(str(instance, "engine_id"), "wf_result", "REJECTED");
           jdbc.update(
               "UPDATE wf_task SET"
                   + " state='DONE',decision=?,comment=?,completed_at=CURRENT_TIMESTAMP(6) WHERE"
                   + " tenant_id=? AND id=? AND state='OPEN'",
-              action,
-              comment,
-              c.tenantId(),
-              taskId);
-          audit(c, str(i, "id"), "TASK_COMPLETED", taskId, action);
-          if (action.equals("REJECT")) {
-            finish(i, "REJECTED");
-            engine.getRuntimeService().deleteProcessInstance(str(i, "engine_id"), "REJECTED");
+              operation,
+              opinion,
+              context.tenantId(),
+              id);
+          audit(context, str(instance, "id"), "TASK_COMPLETED", id, operation);
+          if (operation.equals("REJECT")) {
+            finish(instance, "REJECTED");
+            engine.getRuntimeService().deleteProcessInstance(str(instance, "engine_id"), "REJECTED");
             jdbc.update(
                 "UPDATE wf_job SET state='CANCELLED',lease_token=NULL WHERE tenant_id=? AND"
                     + " instance_id=? AND kind<>'TERMINAL' AND state<>'DONE'",
-                c.tenantId(),
-                i.get("id"));
-          } else engine.getTaskService().complete(taskId);
-          reconcileTasks(c.tenantId(), str(i, "id"));
-          return Map.of("completed", true);
+                context.tenantId(),
+                instance.get("id"));
+          } else engine.getTaskService().complete(id);
+          reconcileTasks(context.tenantId(), str(instance, "id"));
+
+            }
+          });
+          try{return service.complete(c,taskId,action,values,comment);}
+          catch(com.appnexus.contracts.workflow.WorkflowRejection rejection){throw fail(rejection.code(),rejection.status());}
         });
   }
 
@@ -725,18 +688,25 @@ public final class WorkflowRuntime implements WorkflowResults, WorkflowTaskAcces
         c,
         "REASSIGN:" + taskId + ":" + actor + ":" + reason,
         () -> {
-          var t = one("SELECT * FROM wf_task WHERE tenant_id=? AND id=?", c.tenantId(), taskId);
-          var i = instance(c.tenantId(), str(t, "instance_id"), true);
+          var service=new com.appnexus.workflow.application.TaskReassignmentService(new com.appnexus.workflow.application.TaskReassignmentPort(){
+            private Map<String,Object> t,i;
+            private WorkflowModel.Node n;
+            @Override public Task lock(WorkflowContext context,String id){
+          t = one("SELECT * FROM wf_task WHERE tenant_id=? AND id=?", c.tenantId(), taskId);
+          i = instance(c.tenantId(), str(t, "instance_id"), true);
           // 锁实例后重读任务；等待锁的另一请求不能沿用锁前OPEN快照重复调用业务。
           t =
               one(
                   "SELECT * FROM wf_task WHERE tenant_id=? AND id=? FOR UPDATE",
                   c.tenantId(),
                   taskId);
-          var n = definition(i).node(str(t, "node_id"));
-          if (!"OPEN".equals(t.get("state")) || !resolve(i, n).contains(actor))
-            throw fail("ASSIGNEE_INVALID", 409);
-          if (jdbc.queryForObject(
+          n = definition(i).node(str(t, "node_id"));
+
+              return new Task("OPEN".equals(t.get("state")),(String)t.get("actor"));
+            }
+            @Override public boolean candidate(WorkflowContext context,String target){return resolve(i,n).contains(target);}
+            @Override public boolean duplicate(WorkflowContext context,String id,String target){
+              return jdbc.queryForObject(
                   "SELECT COUNT(*) FROM wf_task WHERE tenant_id=? AND instance_id=? AND node_id=?"
                       + " AND actor=? AND state='OPEN' AND id<>?",
                   Long.class,
@@ -745,13 +715,20 @@ public final class WorkflowRuntime implements WorkflowResults, WorkflowTaskAcces
                   n.id(),
                   actor,
                   taskId)
-              > 0) throw fail("ASSIGNEE_INVALID", 409);
+              > 0;
+
+            }
+            @Override public void assign(WorkflowContext context,String id,String target,String previous,String cause){
           engine.getTaskService().setAssignee(taskId, actor);
           jdbc.update(
               "UPDATE wf_task SET actor=? WHERE tenant_id=? AND id=?", actor, c.tenantId(), taskId);
           auditAssignment(
-              c, str(i, "id"), "REASSIGNED", taskId, reason, (String) t.get("actor"), actor);
-          return Map.of("assigned", true);
+              c, str(i, "id"), "REASSIGNED", taskId, reason, previous, actor);
+
+            }
+          });
+          try{return service.assign(c,taskId,actor,reason);}
+          catch(com.appnexus.contracts.workflow.WorkflowRejection error){throw fail(error.code(),error.status());}
         });
   }
 

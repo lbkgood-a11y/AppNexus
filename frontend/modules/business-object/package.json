@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "description": "业务对象配置与关联管理；构建参数说明见 README.md",
-  "exports": { ".": "./src/index.ts", "./management": "./src/BusinessObjectManagement.vue" },
+  "exports": { ".": "./src/index.ts", "./management": "./src/BusinessObjectManagement.vue", "./coding-input": "./src/CodingInput.vue" },
   "scripts": { "build": "vue-tsc --noEmit --skipLibCheck", "typecheck": "vue-tsc --noEmit --skipLibCheck", "test": "vitest run --passWithNoTests" },
   "dependencies": { "@appnexus/ui": "workspace:*", "@appnexus/icons": "workspace:*" },
   "devDependencies": { "typescript": "^6.0.0", "vitest": "^4.0.0", "vue-tsc": "^3.1.4" },

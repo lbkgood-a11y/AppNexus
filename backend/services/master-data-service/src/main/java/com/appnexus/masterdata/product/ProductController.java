@@ -1,5 +1,7 @@
 package com.appnexus.masterdata.product;
+import com.appnexus.masterdata.api.product.ProductMainData.*;
 import com.appnexus.contracts.operation.*;import com.appnexus.masterdata.MasterData.Rejection;import com.appnexus.platform.tenant.VerifiedTenantContext;import jakarta.servlet.http.HttpServletRequest;import org.springframework.web.bind.annotation.*;import static com.appnexus.masterdata.product.ProductV1Service.*;
+import com.appnexus.masterdata.api.product.ProductStructureData.*;
 /** 商品主档固定接口；不暴露规格、SKU、图片和下游业务能力。 */
 @RestController @RequestMapping("/api/master-data/product")
 @BusinessObjectType(code="Product",nameZh="商品档案",nameEn="Products",category=BusinessObjectType.Category.MASTER_DATA,module="master-data")

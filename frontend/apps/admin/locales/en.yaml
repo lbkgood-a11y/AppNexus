@@ -950,10 +950,28 @@ roleManagement:
     ROLE_DATA_CONFLICT: The role constraints changed.
     INVALID_ROLE_INPUT: The role fields are invalid.
 authorizationCenter:
+  noRoleMembers: No users are assigned to this role. Add users in the Role users tab.
+  memberScopeSettings: Data scope settings
+  noMemberScopes: No operations in this role require a data scope
+  permissionCode: Permission code
+  collapseRoles: Collapse role configuration
+  expandRoles: Expand role configuration
+  viewRoles: View roles
+  removeFromRole: Remove from role
+  removeRoleUserConfirm: Remove user "{user}" from role "{role}" and revoke permissions contributed by this role. Other roles will be retained. Enter a reason.
+  allUsers: All users
+  currentRoleUsers: Current role users
+  roleUserListChanged: The user directory has changed. Refresh and try again.
+  roleUsers: Role users
+  inRole: Assigned
+  addToRole: Add to role
+  addRoleUserConfirm: Add user "{user}" to role "{role}". Enter a reason. Existing roles will be retained.
+  roleSearch: Search role name or code
+  noMatchingRoles: No matching roles
   memberGranted: Granted to member (data and business rules still apply)
   memberNotGranted: Role allows; member grant missing
-  roleCeilingHint: The role is a ceiling. Member draft changes require saving; scope, expiry and business state are checked separately.
-  memberOperations: Member operations within role limits
+  roleCeilingHint: Functions follow the role and cannot be overridden per member. Data scopes, expiry and business state are checked separately.
+  memberOperations: Role functions (read-only)
   templates: Policy templates
   templateName: Template name
   saveTemplate: Save current policy template
@@ -1005,12 +1023,16 @@ authorizationCenter:
     wins. Masking grants no write or query rights.
   noFieldCatalog: No executable field catalog is registered in this scope. Tenant
     fields become configurable when their backend resource is integrated.
-  memberDataHint: Assign a role first, then configure this member's own data
-    scope. Changes to role defaults do not widen existing member grants.
+  memberDataHint: Functions follow the role. Data scopes inherit the role unless customized. Historical scopes stay custom until inheritance is restored.
+  scopeMode: Data scope source
+  inheritRole: Inherit role
+  customScope: Custom
+  scopeModeHint: Role scope changes apply to inheriting members. Custom scopes stay independent. Select Inherit role and save to restore inheritance.
   assignRoleFirst: Assign roles on the Subject roles tab first.
   expiresAt: Authorization expiry (empty means no fixed expiry)
-  roleDefaultData: Role default data scopes
+  roleDefaultData: Role data scopes
   fieldModes:
+    READ_ONLY: Read only
     NONE: No extra restriction
     MASKED: Masked
     HIDDEN: Hidden
@@ -1020,14 +1042,9 @@ authorizationCenter:
   permissionQuery: Find permissions by name, code or resource
   onlySelected: Show selected permissions only
   selectResource: Select filtered permissions in this resource
-  dataPolicyHint: These are defaults for newly assigned members. Existing grants
-    do not widen when defaults change. Use Member data access for individual
-    scopes.
+  dataPolicyHint: Role scope changes apply to all inheriting members. Custom member scopes stay independent. Use Member data access for exceptions.
   pendingScopes: "{count} data scopes need attention. Configure now"
-  roleReplaceWarning: Update role {name}, default scopes and mandatory field
-    restrictions. Removed permissions and restrictions affect existing members.
-    New permissions and wider defaults do not expand existing grants. An empty
-    selection revokes all role permissions.
+  roleReplaceWarning: Update role {name}, data scopes and mandatory field restrictions. Function changes affect all role members. Scope changes affect {count} currently active inheriting members; custom scopes stay independent. An empty selection revokes all role permissions.
   subject: Subject
   account: Account
   subjects: Users / members
@@ -1879,6 +1896,16 @@ businessObject:
     BUSINESS_OBJECT_FLOW_NOT_MATCHED: No approval binding matches. Contact your tenant administrator.
     BUSINESS_OBJECT_FLOW_MATCH_CONFLICT: Multiple approval bindings match. Adjust the conditions.
     BUSINESS_OBJECT_FLOW_INCOMPATIBLE: The workflow is unavailable or incompatible. Select another version.
+    CODING_ACCESS_DENIED: "You do not have permission to use this object encoder."
+    CODING_UNAVAILABLE: "The encoder or code field is unavailable."
+    CODING_DISABLED: "This encoder is disabled. Choose another encoder."
+    CODING_VERSION_CONFLICT: "The encoder changed. Reload before editing."
+    CODING_RULE_FROZEN: "This encoder has issued codes. Create a new encoder to change its rule or field."
+    CODING_INPUT_INVALID: "Invalid code parameters or time zone."
+    CODING_RULE_INVALID: "Use exactly one sequence, include a date covering the reset period, and respect the field length limit."
+    CODING_SEQUENCE_EXHAUSTED: "The sequence for this period is exhausted. Contact an administrator."
+    CODING_IDEMPOTENCY_CONFLICT: "This request key was used for another encoder."
+    CODING_CODE_OR_REQUEST_CONFLICT: "A code or request conflict occurred. Check the encoder rule and document code."
     BUSINESS_OBJECT_VERSION_CONFLICT: Configuration changed. Reload before editing.
     BUSINESS_OBJECT_TYPE_DISABLED: Document type is disabled. Contact the platform administrator.
     BUSINESS_OBJECT_IDEMPOTENCY_CONFLICT: Request content or approval basis changed.
@@ -2009,7 +2036,7 @@ printWorkbench:
     horizontal: "Center vertically"
 
 # 主数据五类档案页面文案；不包含权限或业务配置。
-masterData: {"title": "Master data", "person": "Personnel", "partner": "Business partners", "warehouse": "Warehouses", "country-region": "Countries and regions", "product": "Products", "description": "Maintain tenant master records with separate permissions for editing and status changes.", "keyword": "Keyword", "code": "Code", "name": "Name", "status": "Status", "all": "All", "enabled": "Enabled", "disabled": "Disabled", "search": "Search", "reset": "Reset", "create": "Create", "edit": "Edit", "enable": "Enable", "disable": "Disable", "actions": "Actions", "save": "Save", "cancel": "Cancel", "saved": "Saved successfully", "statusSaved": "Status updated", "required": "This field is required", "codeRule": "Use 1–64 letters, numbers, dots, underscores or hyphens", "countryRule": "Enter a two-letter uppercase code", "alpha3Rule": "Enter a three-letter uppercase code", "numericRule": "Enter a three-digit code", "emailRule": "Enter a valid email address", "noPermission": "You do not have permission to view these records", "unavailable": "Data is unavailable. Please retry.", "retry": "Reload", "empty": "No matching records", "confirmDisable": "Disable “{name}” for new business references? Historical records are retained.", "confirmEnable": "Enable “{name}” for business selection?", "confirmTitle": "Change record status", "codeHint": "Codes cannot change after creation and must be unique within this tenant and record type.", "scopeHint": "Tenant public records only. Company usage, company attributes and system extensions are maintained separately.", "countryHint": "Select a parent continent and enter a custom country code, or search standard codes to fill details. Codes cannot change after creation. Standard alpha-3 and numeric codes must match; leading zeros are preserved.", "personHint": "Personnel records are separate from login accounts and organization assignments and do not grant access.", "fields": {"englishName": "English name", "phone": "Phone", "email": "Email", "partnerType": "Partner type", "creditCode": "Registration number", "contactName": "Contact", "address": "Address", "alpha3Code": "Alpha-3 code", "numericCode": "Numeric code", "specification": "Specification", "unit": "Base unit", "barcode": "Barcode", "countryCode": "Country code", "subdivisionType": "Subdivision type", "parentCode": "Parent ISO code", "areaType": "Area type", "capacity": "Capacity (tonnes)", "remarks": "Remarks"}, "partnerTypes": {"CUSTOMER": "Customer", "SUPPLIER": "Supplier", "BOTH": "Customer and supplier"}, "codes": {"MASTER_DATA_DENIED": "You do not have permission for this master data operation.", "MASTER_DATA_INPUT_INVALID": "Check the code, name and required fields.", "MASTER_DATA_CODE_CONFLICT": "This code already exists. Check whether the record was already created.", "MASTER_DATA_CHANGED": "The record has changed or is unavailable. Keep your input and reload to verify.", "STORAGE_ACTIVE_CHILDREN": "Disable all active child areas or locations first."}, "subdivision": "Administrative subdivisions", "selectGeography": "Search standard codes", "geographyUnavailable": "Standard codes are unavailable. Reload; if this persists, update and restart the backend.", "storage-area": "Storage areas", "storage-location": "Storage locations"}
+masterData: {"title": "Master data", "person": "Personnel", "partner": "Business partners", "warehouse": "Warehouses", "country-region": "Countries and regions", "product": "Products", "description": "Maintain tenant master records with separate permissions for editing and status changes.", "keyword": "Keyword", "code": "Code", "name": "Name", "status": "Status", "all": "All", "enabled": "Enabled", "disabled": "Disabled", "search": "Search", "reset": "Reset", "create": "Create", "edit": "Edit", "enable": "Enable", "disable": "Disable", "actions": "Actions", "save": "Save", "cancel": "Cancel", "saved": "Saved successfully", "statusSaved": "Status updated", "required": "This field is required", "codeRule": "Use 1–64 letters, numbers, dots, underscores or hyphens", "countryRule": "Enter a two-letter uppercase code", "alpha3Rule": "Enter a three-letter uppercase code", "numericRule": "Enter a three-digit code", "emailRule": "Enter a valid email address", "noPermission": "You do not have permission to view these records", "unavailable": "Data is unavailable. Please retry.", "retry": "Reload", "empty": "No matching records", "confirmDisable": "Disable “{name}” for new business references? Historical records are retained.", "confirmEnable": "Enable “{name}” for business selection?", "confirmTitle": "Change record status", "codeHint": "Codes cannot change after creation and must be unique within this tenant and record type.", "scopeHint": "Tenant public records only. Company usage, company attributes and system extensions are maintained separately.", "countryHint": "Select a parent continent and enter a custom country code, or search standard codes to fill details. Codes cannot change after creation. Standard alpha-3 and numeric codes must match; leading zeros are preserved.", "personHint": "Personnel records are separate from login accounts and organization assignments and do not grant access.", "fields": {"englishName": "English name", "phone": "Phone", "email": "Email", "partnerType": "Partner type", "creditCode": "Registration number", "contactName": "Contact", "address": "Address", "alpha3Code": "Alpha-3 code", "numericCode": "Numeric code", "specification": "Specification", "unit": "Base unit", "barcode": "Barcode", "countryCode": "Country code", "subdivisionType": "Subdivision type", "parentCode": "Parent ISO code", "areaType": "Area type", "capacity": "Capacity (tonnes)", "remarks": "Remarks"}, "partnerTypes": {"CUSTOMER": "Customer", "SUPPLIER": "Supplier", "BOTH": "Customer and supplier"}, "codes": {"DATA_FIELD_WRITE_DENIED": "A protected field cannot be changed or cleared by deleting its detail row.", "PARTNER_ORGANIZATION_REQUIRED": "Select the owning organization.", "MASTER_DATA_DENIED": "You do not have permission for this master data operation.", "MASTER_DATA_INPUT_INVALID": "Check the code, name and required fields.", "MASTER_DATA_CODE_CONFLICT": "This code already exists. Check whether the record was already created.", "MASTER_DATA_CHANGED": "The record has changed or is unavailable. Keep your input and reload to verify.", "STORAGE_ACTIVE_CHILDREN": "Disable all active child areas or locations first."}, "subdivision": "Administrative subdivisions", "selectGeography": "Search standard codes", "geographyUnavailable": "Standard codes are unavailable. Reload; if this persists, update and restart the backend.", "storage-area": "Storage areas", "storage-location": "Storage locations"}
 
 # 人员档案字段、明细及多对多关联文案；不包含配置或真实人员数据。
 personnel: {"view": "View", "title": "Personnel profile", "basic": "Basic information", "system": "System information", "code": "Personnel code", "name": "Chinese name", "createdName": "Created by", "createdAt": "Created at", "updatedName": "Modified by", "updatedAt": "Modified at", "unknownHistory": "Not recorded for historical data", "back": "Back to list", "new": "Create personnel", "details": "Profile details", "assignments": "Linked tenant accounts", "organizationId": "Organization", "positionId": "Position", "memberId": "Tenant account", "organizationName": "Organization", "userName": "Linked user", "active": "Active link", "inactive": "Unavailable link", "addDetail": "Add detail", "editDetail": "Edit detail", "deleteDetail": "Delete detail", "addAssignment": "Link account", "editAssignment": "Edit account link", "unassign": "Remove link", "confirmDelete": "Delete this {section} detail? The personnel record will be retained.", "confirmUnassign": "Remove the link with “{name}”? This user will no longer represent this person through this link.", "dirty": "Save or discard changes to the basic profile before editing details or links.", "saveFirst": "Save the personnel record before adding details or organization users.", "discard": "Discard unsaved changes and return to the list?", "discardAction": "Discard changes", "reloadWarning": "Reloading discards unsaved input. Continue?", "assignmentHint": "Link active accounts in this tenant. Organizations and positions belong to people, not accounts. Links grant no business permissions.", "organizationHint": "Personnel affiliations and appointments are the sole source of business organization. Maintain primary affiliation and validity separately.", "required": "This field is required", "dateRange": "End date cannot precede start date", "birthFuture": "Date of birth cannot be in the future", "status": "Record status", "employmentStatus": "Employment status", "retry": "Reload", "readOnly": "Read-only profile", "saved": "Saved successfully", "all": "All", "enabled": "Enabled", "disabled": "Disabled", "latestLoadFailed": "Saved, but the latest profile could not be loaded. Reload to verify before submitting again.", "fields": {"englishName": "English name", "gender": "Gender", "birthDate": "Date of birth", "ethnicity": "Ethnicity", "nativePlace": "Native place", "politicalStatus": "Political affiliation", "identityType": "Identity document type", "identityNumber": "Identity document number", "phone": "Phone", "email": "Email", "workNature": "Employment type", "bloodType": "Blood type", "emergencyContact": "Emergency contact", "emergencyPhone": "Emergency phone", "maritalStatus": "Marital status", "hobbies": "Interests and skills", "skillLevel": "Skill level", "educationLevel": "Highest education", "employmentStatus": "Employment status", "remarks": "Remarks", "certificateType": "Certificate type", "certificateNumber": "Certificate number", "certificateStatus": "Certificate status", "passedOn": "Passed on", "startsOn": "Start date", "endsOn": "End date", "trainingName": "Training name", "provider": "Provider", "result": "Result", "awardName": "Award", "issuer": "Issuing authority", "awardedOn": "Award date", "contactType": "Contact type", "contactValue": "Contact value", "addressType": "Address type", "countryRegion": "Country or region", "province": "Province or state", "city": "City", "address": "Address", "postalCode": "Postal code", "employer": "Employer", "department": "Department", "jobTitle": "Job title", "recordType": "Record type", "reason": "Reason", "recordedOn": "Record date", "school": "School", "major": "Major", "degree": "Degree", "isPrimary": "Primary organization", "enabled": "Relationship enabled"}, "sections": {"organizations": "Organizations", "positions": "Positions", "certificates": "Certificates", "training": "Training", "awards": "Awards", "contacts": "Contact methods", "addresses": "Addresses", "workHistory": "Work history", "rewardsPenalties": "Rewards and penalties", "education": "Education history"}, "choices": {"MALE": "Male", "FEMALE": "Female", "OTHER": "Other", "UNDISCLOSED": "Undisclosed", "NATIONAL_ID": "National ID", "PASSPORT": "Passport", "FULL_TIME": "Full-time", "PART_TIME": "Part-time", "CONTRACT": "Contract", "INTERN": "Intern", "A": "A", "B": "B", "AB": "AB", "O": "O", "UNKNOWN": "Unknown", "SINGLE": "Single", "MARRIED": "Married", "DIVORCED": "Divorced", "WIDOWED": "Widowed", "ACTIVE": "Employed", "PROBATION": "Probation", "LEAVE": "Left employment", "RETIRED": "Retired", "VALID": "Valid", "EXPIRED": "Expired", "REVOKED": "Revoked", "PENDING": "Pending", "REWARD": "Reward", "PENALTY": "Penalty", "PRIMARY": "Primary school", "JUNIOR_HIGH": "Junior high school", "SENIOR_HIGH": "High school", "VOCATIONAL": "Vocational school", "ASSOCIATE": "Associate degree", "BACHELOR": "Bachelor degree", "MASTER": "Master degree", "DOCTOR": "Doctoral degree", "JUNIOR": "Junior", "INTERMEDIATE": "Intermediate", "SENIOR": "Senior", "TECHNICIAN": "Technician", "SENIOR_TECHNICIAN": "Senior technician", "true": "Yes", "false": "No"}, "codes": {"PERSON_NOT_FOUND": "Personnel record is unavailable.", "PERSON_USER_UNAVAILABLE": "The account is unavailable in this tenant.", "PERSON_USER_DUPLICATE": "This organization and user link already exists.", "PERSON_ORGANIZATION_UNAVAILABLE": "The organization or position is unavailable in this tenant.", "PERSON_CONTEXT_REQUIRED": "Select a valid personnel identity and business organization."}, "profileDetails": "Additional information", "collapseDetails": "Collapse additional information", "expandDetails": "Expand additional information"}
@@ -2029,6 +2056,9 @@ recordAudit:
 
 # 客商主数据详情与聚合明细文案。
 partner:
+  organization: Owning organization
+  organizationRequired: Select the owning organization
+  unknownOrganization: Historical ownership unavailable
   new: "New business partner"
   view: "View"
   back: "Back to list"
@@ -2254,6 +2284,7 @@ productCatalog:
   maxItems: "Maximum choices"
 
 productV1:
+  event_COMPONENT_REPLACE: "Component updated"
   specifications: "At least one enabled standard specification"
   components: "Enabled component products with matching versions"
   event_SPEC_CREATE: "Specification created"
@@ -2272,7 +2303,7 @@ productV1:
   title: "Product records"
   create: "New product draft"
   details: "Details / maintain"
-  descriptionHint: "Unified products without variants, fixed configuration versions, typed attributes and product lifecycle."
+  descriptionHint: "Unified product records, typed attributes, specifications, SKUs, compositions and lifecycle."
   basic: "Basic information"
   back: "Back to list"
   shortName: "Short name"
@@ -2437,6 +2468,7 @@ productImages:
 storageHierarchy: {"warehouse": "Warehouse", "area": "Storage area", "selectWarehouse": "Select a warehouse to manage its areas.", "selectArea": "Select a warehouse and area to manage its locations.", "capacityRule": "Enter a nonnegative capacity in tonnes, up to 18 integer and 6 decimal digits.", "types": {"RECEIVING": "Receiving", "WORK": "Work", "GOOD": "Good stock", "DEFECTIVE": "Defective stock", "PACKAGING": "Packaging", "VIRTUAL": "Virtual", "FINISHED": "Finished goods"}}
 
 productStructure:
+  componentQuantity: "Component quantity"
   title: "Specifications, SKUs and composition"
   mode: "Specification mode"
   NONE: "No specifications"
@@ -2460,3 +2492,39 @@ productApproval:
   REJECTED: "Rejected"
   WITHDRAWN: "Withdrawn"
   hint: "Submitting a complete product freezes its basis. Handle or withdraw it in the existing workflow workbench. Final approval still requires explicit authorized activation; edits require a new review. A configured workflow and an eligible organization are required."
+
+coding:
+  title: "Code management"
+  hint: "Combine segments in order with exactly one sequence. Rules freeze after the first issue; create another encoder to change the rule."
+  select: "Select encoder"
+  new: "New encoder"
+  empty: "No encoder available. Configure one in Business Objects."
+  key: "Encoder key"
+  required: "Complete the required fields."
+  keyRule: "Use 1–40 letters, digits or underscores, starting with a letter."
+  field: "Code field"
+  reset: "Sequence reset"
+  zone: "Date time zone (IANA)"
+  segment: "Segment"
+  text: "Fixed text"
+  format: "Date format"
+  width: "Sequence digits (zero padded)"
+  up: "Move up"
+  down: "Move down"
+  remove: "Remove segment"
+  addSegment: "Add segment"
+  preview: "Format preview (sample date, no issue)"
+  assist: "Assist entry"
+  replace: "Replace the current code with a newly issued code?"
+  issueHint: "Issued numbers are consumed even if cancelled or unsaved. Business save still checks uniqueness."
+  cancel: "Cancel"
+  generate: "Issue and fill"
+  kinds:
+    TEXT: Fixed text
+    DATE: Date
+    SEQUENCE: Sequence
+  resets:
+    NEVER: Never
+    YEAR: Yearly
+    MONTH: Monthly
+    DAY: Daily

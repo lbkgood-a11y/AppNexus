@@ -1,10 +1,12 @@
 package com.appnexus.leave;
 
+
+
 import static org.assertj.core.api.Assertions.*;
 import com.appnexus.contracts.businessobject.*;
 import com.appnexus.contracts.businessobject.BusinessObjects.*;
 import com.appnexus.contracts.workflow.*;
-import com.appnexus.businessobject.BusinessObjectService;
+import com.appnexus.platform.businessobject.BusinessObjectManagement;
 import com.appnexus.workflow.adapter.flowable.*;
 import com.appnexus.workflow.core.WorkflowModel;
 import java.util.*;
@@ -21,7 +23,8 @@ import org.testcontainers.mysql.MySQLContainer;
 class BusinessObjectIntegrationTest {
   @Container static final MySQLContainer MYSQL=new MySQLContainer("mysql:8.4");
   static final String TENANT="019a65d0-0060-7000-8000-000000000001", OTHER="019a65d0-0060-7000-8000-000000000002";
-  static JdbcTemplate jdbc;static BusinessObjectService documents;static LeavePocService leave;static WorkflowRuntime runtime;static org.flowable.engine.ProcessEngine engine;
+  static final java.util.concurrent.atomic.AtomicReference<com.appnexus.contracts.printing.BusinessPrinting> printingPort = new java.util.concurrent.atomic.AtomicReference<>();
+  static JdbcTemplate jdbc;static BusinessObjectManagement documents;static LeavePocService leave;static WorkflowRuntime runtime;static org.flowable.engine.ProcessEngine engine;
   static Context dc(String actor){return new Context(TENANT,actor,UUID.randomUUID().toString());}
   static WorkflowContext wc(String actor){return new WorkflowContext(TENANT,actor,UUID.randomUUID().toString(),actor+"-person",LeavePocTest.ORG);}
   @BeforeAll static void setup() throws Exception {
@@ -67,7 +70,7 @@ class BusinessObjectIntegrationTest {
       new Operation("print","打印","Print","order:print","Order.print",null,List.of(),new com.appnexus.contracts.businessobject.InteractionContract("Order.print",1,"Order","print","打印","Print",com.appnexus.contracts.businessobject.InteractionContract.Trigger.USER_ACTION,java.util.List.of(new com.appnexus.contracts.businessobject.InteractionContract.Capability(com.appnexus.contracts.businessobject.InteractionContract.Service.PRINT,com.appnexus.contracts.businessobject.InteractionContract.Completion.CONFIRMATION,"order.v1","",java.util.List.of(),java.util.Set.of(), "order.v1", 1)))),
       new Operation("cancel","取消","Cancel","order:cancel","Order.cancel",null,java.util.List.of(),new com.appnexus.contracts.businessobject.InteractionContract("Order.cancel",1,"Order","cancel","取消","Cancel",com.appnexus.contracts.businessobject.InteractionContract.Trigger.USER_ACTION,java.util.List.of(new com.appnexus.contracts.businessobject.InteractionContract.Capability(com.appnexus.contracts.businessobject.InteractionContract.Service.BUSINESS,com.appnexus.contracts.businessobject.InteractionContract.Completion.SYNCHRONOUS,"Order.cancel","",java.util.List.of(),java.util.Set.of(), "Order.cancel.data", 1)))),
       new Operation("release","放行","Release","order:release","Order.release",null,java.util.List.of(),new com.appnexus.contracts.businessobject.InteractionContract("Order.release",1,"Order","release","放行","Release",com.appnexus.contracts.businessobject.InteractionContract.Trigger.USER_ACTION,java.util.List.of(new com.appnexus.contracts.businessobject.InteractionContract.Capability(com.appnexus.contracts.businessobject.InteractionContract.Service.WORKFLOW,com.appnexus.contracts.businessobject.InteractionContract.Completion.CALLBACK,"orderRelease","releaseApproval",java.util.List.of(),Set.of("APPROVED","REJECTED"), "orderRelease.data", 1))))));
-    documents=new BusinessObjectService(jdbc,tx,dp,()->runtime,List.of(leave,order));leave.bindings(()->documents);
+    documents=com.appnexus.platform.persistence.businessobject.BusinessObjectPersistence.create(jdbc,tx,dp,()->runtime,List.of(leave,order),printingPort::get);leave.bindings(()->documents);
     documents.savePageRelationships(dc("platform"),"LeaveRequest",-1,List.of(new PageRelationship("submit","LeaveRequest.submit"),new PageRelationship("print","LeaveRequest.print"),new PageRelationship("print","LeaveRequest.detail.print")));
     var bridge=new WorkflowBridge();var config=new WorkflowEngineConfiguration();engine=config.workflowProcessEngine(source,tx,bridge);
     runtime=config.workflowRuntime(engine,source,tx,platform,List.of(leave),bridge);runtime.documentBindings(()->documents);
@@ -88,7 +91,7 @@ class BusinessObjectIntegrationTest {
       new Binding(UUID.randomUUID().toString(),"取消",null,0,List.of(),"cancel","BUSINESS","Order.cancel",null));
     documents.save(dc("manager"),"Order",-1,bindings);documents.publish(dc("manager"),"Order",0);
     assertThatThrownBy(()->documents.save(dc("manager"),"Order",1,List.of(new Binding(UUID.randomUUID().toString(),"错误打印",null,0,List.of(),"print","PRINT","Order.print","missing")))).hasMessage("BUSINESS_OBJECT_PRINT_SCENE_INVALID");
-    documents.printing(()->new com.appnexus.contracts.printing.BusinessPrinting(){
+    printingPort.set(new com.appnexus.contracts.printing.BusinessPrinting(){
       public List<Scene> scenes(com.appnexus.contracts.printing.PrintContext context,String contract){assertThat(context.tenantId()).isEqualTo(TENANT);assertThat(contract).isEqualTo("order.v1");return List.of(new Scene("scene","order-scene","订单","order.v1"));}
       public Map<String,Object> request(com.appnexus.contracts.printing.PrintContext context,Request input){throw new UnsupportedOperationException();}
     });
@@ -117,7 +120,7 @@ class BusinessObjectIntegrationTest {
     };
     // 重用同一登记目录验证行为契约传给专业服务，而不是使用单据级默认用途。
     var source=(javax.sql.DataSource)jdbc.getDataSource();
-    var generic=new BusinessObjectService(jdbc,new DataSourceTransactionManager(source),new BusinessObjectPlatform(){
+    var generic=com.appnexus.platform.persistence.businessobject.BusinessObjectPersistence.create(jdbc,new DataSourceTransactionManager(source),new BusinessObjectPlatform(){
       public boolean platformAdministrator(String a){return true;}public boolean tenantAdministrator(Context context){return true;}public boolean active(Context context){return true;}public boolean tenantExists(String t){return true;}
     },()->catalog,List.of(()->(Descriptor)documents.catalog(dc("platform"),true).stream().map(r->r.get("descriptor")).filter(d->((Descriptor)d).objectType().equals("Order")).findFirst().orElseThrow()));
     assertThat(generic.options(dc("manager"),"Order","release")).hasSize(1);
@@ -228,13 +231,13 @@ class BusinessObjectIntegrationTest {
     assertThat(leave.submit(wc("applicant"),shortLeave).get("state")).isEqualTo("ACCEPTED");
     String longLeave=leave.create(wc("applicant"),LeavePocTest.input(4)).get("id").toString();
     assertThat(leave.submit(wc("applicant"),longLeave).get("instance_id")).isNotNull();
-    documents.printing(()->new com.appnexus.contracts.printing.BusinessPrinting(){
+    printingPort.set(new com.appnexus.contracts.printing.BusinessPrinting(){
       public List<Scene> scenes(com.appnexus.contracts.printing.PrintContext context,String contract){return List.of(new Scene("leave-scene","leave-scene","请假单",contract));}
       public Map<String,Object> request(com.appnexus.contracts.printing.PrintContext context,Request input){throw new UnsupportedOperationException();}
     });
     configure(List.of(new Binding(UUID.randomUUID().toString(),"请假打印",null,0,List.of(),"print","PRINT","LeaveRequest.detail.print","leave-scene")));
     assertThat(leave.availability(wc("applicant"),shortLeave)).filteredOn(value->value.operationCode().equals("print")).first().satisfies(value->assertThat(value.reasonCode()).isEqualTo("READY"));
-    documents.printing(()->new com.appnexus.contracts.printing.BusinessPrinting(){
+    printingPort.set(new com.appnexus.contracts.printing.BusinessPrinting(){
       public List<Scene> scenes(com.appnexus.contracts.printing.PrintContext context,String contract){return List.of();}
       public Map<String,Object> request(com.appnexus.contracts.printing.PrintContext context,Request request){throw new AssertionError("预检不得创建输出");}
     });

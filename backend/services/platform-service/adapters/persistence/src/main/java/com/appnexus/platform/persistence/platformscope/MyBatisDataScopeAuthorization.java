@@ -23,7 +23,6 @@ public final class MyBatisDataScopeAuthorization implements DataScopeAuthorizati
    if(row.get("organization_id")!=null)("ORGANIZATION".equals(type)?exact:roots).add(UUID.fromString((String)row.get("organization_id")));
   }
   if(!roots.isEmpty()){
-   if(!"organization.unit".equals(resource))return DataScope.deny();
    exact.addAll(mapper.descendants(tenant,roots.stream().map(UUID::toString).sorted().toList()).stream().map(UUID::fromString).toList());
   }
   return exact.isEmpty()?DataScope.deny():new DataScope(ScopeType.ORGANIZATION,Set.copyOf(exact));

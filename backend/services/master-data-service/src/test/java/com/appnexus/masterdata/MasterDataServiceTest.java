@@ -15,7 +15,7 @@ class MasterDataServiceTest {
   /** 宿主读取权是地理选择的边界；无权限时不得先查询目录。 */
   @Test void geographyDirectoryRequiresHostReadPermission(){
     var jdbc=mock(JdbcTemplate.class);var access=mock(AccessAuthorization.class);
-    var service=new MasterDataService(jdbc,access,mock(PlatformTransactionManager.class),mock(com.appnexus.platform.configuration.BusinessValueCatalog.class));
+    var service=MasterDataConfiguration.create(jdbc,access,mock(PlatformTransactionManager.class),mock(com.appnexus.platform.configuration.BusinessValueCatalog.class),null);
     var context=new VerifiedTenantContext(UUID.randomUUID(),UUID.randomUUID(),UUID.randomUUID(),1);
     assertThatThrownBy(()->service.geographyCatalog(context,Kind.PARTNER)).isInstanceOf(Rejection.class).hasMessage("MASTER_DATA_DENIED");
     assertThatThrownBy(()->service.geographyTree(context,Kind.SUBDIVISION,"",1,20)).isInstanceOf(Rejection.class);
@@ -108,7 +108,7 @@ class MasterDataServiceTest {
   }
   @Test void revokedOrMissingPermissionNeverTouchesDatabase(){
     var jdbc=mock(JdbcTemplate.class);var access=mock(AccessAuthorization.class);
-    var service=new MasterDataService(jdbc,access,mock(PlatformTransactionManager.class),mock(com.appnexus.platform.configuration.BusinessValueCatalog.class));
+    var service=MasterDataConfiguration.create(jdbc,access,mock(PlatformTransactionManager.class),mock(com.appnexus.platform.configuration.BusinessValueCatalog.class),null);
     var c=new VerifiedTenantContext(UUID.randomUUID(),UUID.randomUUID(),UUID.randomUUID(),1);
     for(var kind:Kind.values()){
       assertThatThrownBy(()->service.list(c,kind,"",null,1,20)).isInstanceOf(Rejection.class);

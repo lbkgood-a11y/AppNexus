@@ -11,12 +11,14 @@ import org.springframework.transaction.annotation.Transactional;
 public class TransactionalAccessPlanning implements AccessPlanning {
     private final AccessAuthorization authorization;
     private final DataScopeAuthorization scopes;
-    public TransactionalAccessPlanning(AccessAuthorization authorization,DataScopeAuthorization scopes){this.authorization=authorization;this.scopes=scopes;}
-    /** 组织资源当前没有已声明敏感字段，因此字段限制为空；不能宣称全资源字段操作权限已接通。 */
+    private final DataAccessCatalog catalog;
+    private final FieldProtection fields;
+    public TransactionalAccessPlanning(AccessAuthorization authorization,DataScopeAuthorization scopes,DataAccessCatalog catalog,FieldProtection fields){this.authorization=authorization;this.scopes=scopes;this.catalog=catalog;this.fields=fields;}
+    /** 只有声明并接通的资源可生成计划；行范围与字段限制在同一权威事务中读取，不缓存故障回退。 */
     @Transactional(readOnly=true)
     public AccessPlan plan(AccessAuthorization.Subject subject,String code,String resource){
-        if(!"organization.unit".equals(resource)||subject==null||subject.tenantId()==null||subject.memberId()==null||
+        if(!catalog.declared(code,resource)||subject==null||subject.tenantId()==null||subject.memberId()==null||
                 code==null||!code.startsWith(resource+":")||!authorization.hasPermission(subject,code))throw new SecurityException("Access plan denied");
-        return new AccessPlan(subject,code,resource,scopes.resolveDataScope(subject,code,resource),Map.of(),Instant.now());
+        return new AccessPlan(subject,code,resource,scopes.resolveDataScope(subject,code,resource),fields.restrictions(subject,resource),Instant.now());
     }
 }

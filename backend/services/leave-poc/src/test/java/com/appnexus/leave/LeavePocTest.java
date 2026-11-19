@@ -1,5 +1,7 @@
 package com.appnexus.leave;
 
+
+
 import static org.assertj.core.api.Assertions.*;
 import static com.appnexus.workflow.core.WorkflowModel.*;
 import com.appnexus.contracts.workflow.*;
@@ -62,7 +64,7 @@ class LeavePocTest {
     var bridge = new WorkflowBridge();
     engine = new WorkflowEngineConfiguration().workflowProcessEngine(source, manager, bridge);
     runtime = new WorkflowEngineConfiguration().workflowRuntime(engine, source, manager, platform, List.of(service), bridge);
-    var documents = new com.appnexus.businessobject.BusinessObjectService(jdbc, manager, new com.appnexus.contracts.businessobject.BusinessObjectPlatform() {
+    var documents = com.appnexus.platform.persistence.businessobject.BusinessObjectPersistence.create(jdbc, manager, new com.appnexus.contracts.businessobject.BusinessObjectPlatform() {
       public boolean platformAdministrator(String actor) { return actor.equals("applicant"); }
       public boolean active(com.appnexus.contracts.businessobject.BusinessObjects.Context context) { return platform.active(context.tenantId(),context.actorId()); }
       public boolean tenantAdministrator(com.appnexus.contracts.businessobject.BusinessObjects.Context context) { return active(context); }

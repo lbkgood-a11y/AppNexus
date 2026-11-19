@@ -211,8 +211,9 @@ const transitionMain = defineComponent({
   width: 100%;
 }
 
-.main-content {
-  /* 所有路由统一使用全局外边距，默认 8px；与公共模板高度计算共享同一变量。 */
+.viewport-page-host :deep(.main-content) {
+  /* 路由可能经多层及 Fragment 组件传递，深层匹配实际内容节点，不依赖壳的 scopeId 透传。
+     所有路由统一使用全局外边距，默认 8px；与公共模板高度计算共享同一变量。 */
   margin: var(--app-page-gap, 8px);
 }
 

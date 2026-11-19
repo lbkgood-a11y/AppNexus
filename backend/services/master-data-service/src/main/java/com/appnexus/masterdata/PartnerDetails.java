@@ -10,43 +10,13 @@ import static com.appnexus.masterdata.MasterData.*;
 /** 客商聚合明细；所有变更先由父对象权限、租户与版本锁准入，再在同一事务维护明细及审计。 */
 final class PartnerDetails {
   /** 固定字段白名单，列名仅由这些构建内标识生成；不允许请求决定 SQL 标识符。 */
-  static final List<String> CONTACT=List.of("contactType","contactName","phone","address","isDefault","email","remarks");
-  static final List<String> BANK=List.of("taxAccount","basicAccount","isDefault","bankName","accountNumber","accountAlias","currency","cnaps","swiftCode","remarks");
+  static final List<String> CONTACT=com.appnexus.masterdata.domain.partner.PartnerRules.CONTACT;
+  static final List<String> BANK=com.appnexus.masterdata.domain.partner.PartnerRules.BANK;
   private PartnerDetails() {}
-  /** 多重角色以逗号存储；保留原 BOTH 语义，拒绝重复、空片段及未知角色。 */
-  static boolean validTypes(String value){
-    if("BOTH".equals(value))return true;
-    var types=Arrays.asList(value.split(",",-1));
-    return !types.isEmpty()&&new HashSet<>(types).size()==types.size()&&types.stream().allMatch(type->type.matches("[A-Z][A-Z0-9_]{0,63}"));
-  }
-  /** 校验完整聚合；业务日期不转时间点，金额单位万元，最多 18 位整数及 6 位小数，缺省为空且不填造字典。 */
-  static void validate(Input input,Map<String,String> values){
-    try{
-      String date=values.get("establishedOn");if(!date.isEmpty()&&(!date.matches("[0-9]{4}-[0-9]{2}-[0-9]{2}")||LocalDate.parse(date).isAfter(LocalDate.now(java.time.ZoneOffset.UTC))))throw invalid();
-      String capital=values.get("registeredCapital");if(!capital.isEmpty()&&(!capital.matches("[0-9]{1,18}(\\.[0-9]{1,6})?")||new BigDecimal(capital).signum()<0))throw invalid();
-      if(!values.get("registeredCurrency").matches("(?:[A-Z]{3})?"))throw invalid();
-      String listed=values.get("listed");if(!listed.isEmpty()&&!Set.of("true","false").contains(listed))throw invalid();
-    }catch(java.time.DateTimeException|NumberFormatException e){throw invalid();}
-    validateRows(input.contacts(),false);validateRows(input.bankAccounts(),true);
-  }
-  /** 默认联系人/银行账户各最多一个；默认值、基本户与税务专用标志必须是显式布尔文本。 */
-  private static void validateRows(List<DetailInput> rows,boolean bank){
-    if(rows==null)return;if(rows.size()>100)throw invalid();
-    var ids=new HashSet<String>();int defaults=0,basic=0;
-    for(var row:rows){
-      if(row==null||row.values()==null||!(bank?BANK:CONTACT).containsAll(row.values().keySet()))throw invalid();
-      if(row.id()!=null&&!row.id().isBlank()){try{if(!UUID.fromString(row.id()).toString().equals(row.id())||!ids.add(row.id()))throw invalid();}catch(IllegalArgumentException e){throw invalid();}}
-      for(var entry:row.values().entrySet())if(entry.getValue()==null||entry.getValue().length()>500||entry.getValue().chars().anyMatch(Character::isISOControl))throw invalid();
-      for(String key:bank?List.of("bankName","accountNumber","currency"):List.of("contactType","contactName","phone","address"))if(value(row,key).isBlank())throw invalid();
-      for(String key:bank?List.of("taxAccount","basicAccount","isDefault"):List.of("isDefault"))if(!Set.of("true","false").contains(value(row,key)))throw invalid();
-      if("true".equals(value(row,"isDefault")))defaults++;
-      if(bank){
-        if("true".equals(value(row,"basicAccount")))basic++;
-        if(!value(row,"currency").matches("[A-Z]{3}")||!value(row,"cnaps").matches("(?:[0-9]{12})?")||!value(row,"swiftCode").matches("(?:[A-Z]{6}[A-Z0-9]{2}(?:[A-Z0-9]{3})?)?"))throw invalid();
-      }else if(!value(row,"email").isEmpty()&&(value(row,"email").length()>200||!value(row,"email").matches("[^\\s@]+@[^\\s@]+\\.[^\\s@]+")))throw invalid();
-    }
-    if(defaults>1||basic>1)throw invalid();
-  }
+  /** 兼容同领域原校验入口；规则已集中在不依赖 JDBC 的领域类型。 */
+  static boolean validTypes(String value){return com.appnexus.masterdata.domain.partner.PartnerRules.validTypes(value);}
+  /** 应用提供当前 UTC 自然日，不改变历史业务日期校验语义。 */
+  static void validate(Input input,Map<String,String> values){com.appnexus.masterdata.domain.partner.PartnerRules.validate(input,values,LocalDate.now(java.time.ZoneOffset.UTC));}
   private static String value(DetailInput row,String field){return row.values().getOrDefault(field,"").trim();}
   private static String column(String field){return field.replaceAll("([a-z0-9])([A-Z])","$1_$2").toLowerCase(Locale.ROOT);}
   private static String table(boolean bank){return bank?"md_partner_bank_account":"md_partner_contact";}

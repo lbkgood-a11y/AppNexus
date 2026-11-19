@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import CodingConfiguration from "./CodingConfiguration.vue";
 import { VxeTable, VxeColumn } from "@appnexus/ui";
 import { setErrorFeedback } from "@appnexus/ui";
 import { AppPagination } from "@appnexus/ui";
@@ -92,7 +93,7 @@ onMounted(async()=>{await load();const type=router.currentRoute.value.query.type
 <template>
   <div class="management-page">
   <BusinessWorkspace :title="t(platform?'businessObject.platformTitle':'businessObject.title')">
-    <template #feedback><FloatingError v-if="error" :title="error" scope="error" type="error" :closable="false"><el-button text @click="load">{{t('businessObject.refresh')}}</el-button></FloatingError></template>
+    <template #feedback><FloatingError v-if="error" :title="error" scope="error" type="error" :closable="false"><el-button v-operation="platform ? 'BusinessObject.catalog' : 'BusinessObject.tenantCatalog'" text @click="load">{{t('businessObject.refresh')}}</el-button></FloatingError></template>
     <template #search><div class="management-filter"><el-form inline @submit.prevent="applied=query;page=1"><el-form-item :label="t('businessObject.search')"><el-input v-model="query" clearable /></el-form-item><div class="management-filter-actions"><el-button type="primary" native-type="submit"><AppIcon name="search" :size="16" class="mr-1" />{{t('administration.search')}}</el-button><el-button @click="query='';applied='';page=1"><AppIcon name="refresh" :size="16" class="mr-1" />{{t('businessObject.reset')}}</el-button></div></el-form></div></template>
     <template #data><ManagementTable :title="t(platform?'businessObject.platformTitle':'businessObject.title')" :rows="paged" :columns="columns" :loading="loading" :busy="busy" embedded @refresh="load">
       <template v-if="platform" #titleHelp><InfoHint :content="t('businessObject.catalogBoundary')" /></template>
@@ -110,6 +111,7 @@ onMounted(async()=>{await load();const type=router.currentRoute.value.query.type
       <el-alert v-if="savedFeedback" :title="savedFeedback" type="success" :closable="false" />
       <!-- 契约详情按信息职责分区；复用 Element Plus 卡片，不改变授权、管控及契约字段。 -->
       <div class="object-contract-sections">
+      <CodingConfiguration v-if="!platform && selected.codingFields?.length" :key="selected.objectType" :descriptor="selected" :api="api" :error-text="errorText" />
       <el-card shadow="never" class="object-contract-section">
         <template #header><h3>{{t('businessObject.basicInfo')}}</h3></template>
       <el-descriptions :column="2" border><el-descriptions-item :label="t('businessObject.code')">{{selected.objectType}}</el-descriptions-item><el-descriptions-item :label="t('businessObject.contractVersion')">{{selected.version}}</el-descriptions-item></el-descriptions>

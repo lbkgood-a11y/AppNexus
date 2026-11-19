@@ -12,8 +12,9 @@ import tools.jackson.databind.json.JsonMapper;
 public class PolicyTemplates {
     private final RolePermissionManagement roles;
     private final JdbcTemplate jdbc;
+    private final DataAccessCatalog dataAccess;
     private final JsonMapper json=JsonMapper.builder().findAndAddModules().build();
-    public PolicyTemplates(RolePermissionManagement roles,JdbcTemplate jdbc){this.roles=roles;this.jdbc=jdbc;}
+    public PolicyTemplates(RolePermissionManagement roles,JdbcTemplate jdbc,DataAccessCatalog dataAccess){this.dataAccess=dataAccess;this.roles=roles;this.jdbc=jdbc;}
     /** 模板摘要，不返回授权快照给无管理权主体。 */
     public record View(UUID id,String name){}
     /**
@@ -55,6 +56,7 @@ public class PolicyTemplates {
         var values=jdbc.queryForList("SELECT policy_json FROM access_policy_template WHERE id=UUID_TO_BIN(?) AND owner_id=UUID_TO_BIN(?)",String.class,template.toString(),owner(context).toString());
         if(values.size()!=1)throw invalid();
         var value=json.readValue(values.getFirst(),RolePermissionManagement.AuthorizationAssignment.class);
+        if(value.dataPolicies().stream().anyMatch(p->!p.resourceType().equals("organization.unit"))&&!Objects.equals(value.dataAccessVersion(),dataAccess.version()))throw invalid();
         return roles.replaceAuthorization(context,role,version,value.permissionIds(),value.dataPolicies(),value.fieldPolicies(),reason);
     }
     private UUID owner(RoleManagement.Context context){return context.tenantId()==null?new UUID(0,0):context.tenantId();}

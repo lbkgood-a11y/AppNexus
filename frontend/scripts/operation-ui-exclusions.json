@@ -248,7 +248,7 @@
     "reason": "查询、刷新或展示选择；读取接口继续执行原授权，不独立授予刷新按钮权限"
   },
   {
-    "key": "[\"frontend/modules/authorization/src/SubjectAuthorization.vue\",\"el-button\",\"open(row)\",null,null,\"{{ t('authorizationCenter.configure') }}\"]",
+    "key": "[\"frontend/modules/authorization/src/SubjectAuthorization.vue\",\"el-button\",\"open(row)\",null,null,\"{{ t('authorizationCenter.viewRoles') }}\"]",
     "reason": "查询、刷新或展示选择；读取接口继续执行原授权，不独立授予刷新按钮权限"
   },
   {
@@ -906,5 +906,57 @@
   {
     "key": "[\"frontend/modules/master-data/src/product/CatalogManagement.vue\",\"el-button\",\"groupEditorOpen=false\",null,null,\"{{t('masterData.cancel')}}\"]",
     "reason": "仅关闭属性分组编辑弹窗并保留服务端原记录，不调用API、不写入、不产生业务授权副作用。"
+  },
+  {
+    "key": "[\"frontend/modules/business-object/src/CodingConfiguration.vue\",\"el-button\",\"select()\",null,null,\"{{t('coding.new')}}\"]",
+    "reason": "仅清空本地编码器表单并进入新建草稿，不调用保存或发号接口。"
+  },
+  {
+    "key": "[\"frontend/modules/business-object/src/CodingConfiguration.vue\",\"el-button\",\"move(index,-1)\",null,null,\"\"]",
+    "reason": "仅调整本地编码段顺序；持久化必须通过 CodingEncoder.save。"
+  },
+  {
+    "key": "[\"frontend/modules/business-object/src/CodingConfiguration.vue\",\"el-button\",\"move(index,1)\",null,null,\"\"]",
+    "reason": "仅调整本地编码段顺序；持久化必须通过 CodingEncoder.save。"
+  },
+  {
+    "key": "[\"frontend/modules/business-object/src/CodingConfiguration.vue\",\"el-button\",\"draft.rule.segments.splice(index,1)\",null,null,\"{{t('coding.remove')}}\"]",
+    "reason": "仅删除本地未保存编码段；持久化必须通过 CodingEncoder.save。"
+  },
+  {
+    "key": "[\"frontend/modules/business-object/src/CodingConfiguration.vue\",\"el-button\",\"draft.rule.segments.push({kind:'TEXT',value:'PU',width:0})\",null,null,\"=10\\\" @click=\\\"draft.rule.segments.push({kind:'TEXT',value:'PU',width:0})\\\">{{t('coding.addSegment')}}\"]",
+    "reason": "仅添加本地未保存编码段；持久化必须通过 CodingEncoder.save。"
+  },
+  {
+    "key": "[\"frontend/modules/business-object/src/CodingInput.vue\",\"el-button\",\"dialog=false\",null,null,\"{{t('coding.cancel')}}\"]",
+    "reason": "仅关闭编码协助弹窗，不调用发号，不回收已发编码。"
+  },
+  {
+    "key": "[\"frontend/modules/authorization/src/RoleUsers.vue\",\"el-button\",null,\"search()\",null,\"{{t('authorizationCenter.search')}}\"]",
+    "reason": "仅按当前授权目录查询用户，不修改角色关系。"
+  },
+  {
+    "key": "[\"frontend/modules/authorization/src/RoleUsers.vue\",\"el-button\",\"search(true)\",null,null,\"{{t('authorizationCenter.reset')}}\"]",
+    "reason": "清空检索并重新读取目录，不修改角色关系。"
+  },
+  {
+    "key": "[\"frontend/modules/authorization/src/AuthorizationCenter.vue\",\"el-button\",\"selectRole(data.id)\",null,null,\"{{ data.name }} {{ data.code }}\"]",
+    "reason": "左侧角色导航只切换授权编辑上下文，已有草稿须确认，未执行授权写入。"
+  },
+  {
+    "key": "[\"frontend/modules/business-object/src/BusinessObjectManagement.vue\",\"el-button\",null,\"applied=query;page=1\",null,\"{{t('administration.search')}}\"]",
+    "reason": "对象目录查询只在本地按已授权加载的对象列表过滤并重置分页，不发送额外API请求；实际目录读取由BusinessObject.catalog/tenantCatalog控制。"
+  },
+  {
+    "key": "[\"frontend/modules/authorization/src/AuthorizationCenter.vue\",\"el-button\",\"subjectsVisible=true\",null,null,\"\"]",
+    "reason": "仅打开主体角色管理弹框；实际角色写入继续绑定原主体授权操作并由后端复核。"
+  },
+  {
+    "key": "[\"frontend/modules/authorization/src/SubjectAuthorization.vue\",\"el-button\",\"roleExpanded=!roleExpanded\",null,null,\"\"]",
+    "reason": "仅展开或收起角色配置显示，v-show 保留表单及未保存草稿，不执行授权写入。"
+  },
+  {
+    "key": "[\"frontend/modules/authorization/src/MemberGrantEditor.vue\",\"el-button\",\"selectMember(item.id)\",null,null,\"{{item.name}}\"]",
+    "reason": "仅在成员数据权限页签内切换关联用户，先校验未保存草稿，不执行角色授权写入。"
   }
 ]

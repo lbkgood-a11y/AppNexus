@@ -872,10 +872,28 @@ roleManagement:
     ROLE_DATA_CONFLICT: 角色数据约束已变化
     INVALID_ROLE_INPUT: 角色参数不符合要求
 authorizationCenter:
+  noRoleMembers: 当前角色尚未关联用户，请到角色用户页签添加。
+  memberScopeSettings: 数据范围配置
+  noMemberScopes: 当前角色没有需要配置数据范围的操作
+  permissionCode: 权限编码
+  collapseRoles: 收起角色配置
+  expandRoles: 展开角色配置
+  viewRoles: 查看角色
+  removeFromRole: 移除角色
+  removeRoleUserConfirm: 将用户“{user}”从角色“{role}”中移除，将撤销该角色贡献的权限。其他角色保持不变，请填写变更原因。
+  allUsers: 全部用户
+  currentRoleUsers: 当前角色用户
+  roleUserListChanged: 用户目录已变化，请刷新后重试。
+  roleUsers: 角色用户
+  inRole: 已加入
+  addToRole: 加入角色
+  addRoleUserConfirm: 将用户“{user}”加入角色“{role}”，请填写变更原因。保留该用户已有的其他角色。
+  roleSearch: 检索角色名称或编码
+  noMatchingRoles: 没有符合条件的角色
   memberGranted: 成员已授予（仍受数据及业务规则限制）
   memberNotGranted: 角色允许，成员尚未授予
-  roleCeilingHint: 角色是授权上限，以下状态来自当前成员草稿；保存前不生效。数据范围、期限和业务状态仍独立校验。
-  memberOperations: 成员操作权限（角色上限内）
+  roleCeilingHint: 功能权限持续跟随角色，成员不能单独增减；数据范围、期限和业务状态仍独立校验。
+  memberOperations: 角色功能权限（只读）
   templates: 策略模板
   templateName: 模板名称
   saveTemplate: 保存当前策略模板
@@ -897,7 +915,7 @@ authorizationCenter:
     organization_unit: 组织管理
     organization_permission: 组织授权
     access_tenant_role: 租户角色
-  roleContextHint: 先选择角色，再配置功能、默认范围与字段规则；最后统一保存。
+  roleContextHint: 先选择角色，再配置功能、角色范围与字段规则；最后统一保存。
   unsavedChanges: 有未保存修改
   fieldSelect: 选择
   fieldResource: 业务资源
@@ -918,11 +936,16 @@ authorizationCenter:
   memberData: 成员数据权限
   fieldSecurityHint: 在这里统一管理各资源的敏感字段，按资源或类型筛选后可批量应用规则，统一保存。多个角色命中时取更严格限制；脱敏不包含修改或查询权。
   noFieldCatalog: 当前管理域尚无接通执行的字段目录；租户业务字段须随资源接入，不提供无效配置。
-  memberDataHint: 先在主体角色分配角色，再为指定成员配置独立数据范围。角色默认范围修改不会扩大已保存的成员授权。
+  memberDataHint: 功能权限跟随角色；数据范围默认继承角色，可切换为自定义。历史独立范围保留为自定义，恢复继承后随角色同步。
+  scopeMode: 数据范围来源
+  inheritRole: 继承角色
+  customScope: 自定义
+  scopeModeHint: 继承角色时，角色范围变更自动生效；自定义时使用成员独立范围。选择继承角色即可恢复继承，保存后生效。
   assignRoleFirst: 该成员尚未分配角色，请先到主体角色页签分配。
   expiresAt: 授权到期时间（留空为长期）
-  roleDefaultData: 角色默认数据范围
+  roleDefaultData: 角色数据范围
   fieldModes:
+    READ_ONLY: 原文只读
     NONE: 不额外限制
     MASKED: 脱敏展示
     HIDDEN: 隐藏
@@ -931,10 +954,10 @@ authorizationCenter:
   permissionQuery: 查找权限（名称、权限码或资源）
   onlySelected: 仅显示已选权限
   selectResource: 选择当前资源下的筛选结果
-  dataPolicyHint: 这里配置新分配角色时的默认数据范围；已有成员授权不会随默认范围扩大。成员差异请到「成员数据权限」配置。
+  dataPolicyHint: 这里配置角色数据范围，变更会同步影响所有继承此角色范围的成员；自定义范围不受影响。成员差异请到「成员数据权限」配置。
   pendingScopes: 还有 {count} 项数据范围待配置，前往处理
   roleReplaceWarning: 将更新角色 {name}
-    的功能集合、默认数据范围及强制字段限制。功能减权和字段限制影响已有成员；默认范围及新增功能不会自动扩大已有成员授权。空集合撤销该角色全部功能。
+    的功能集合、数据范围及强制字段限制。功能变更影响全部角色成员；数据范围变更影响当前 {count} 名有效继承成员，自定义范围保持独立。空集合撤销该角色全部功能。
   subject: 授权对象
   account: 账号
   subjects: 用户 / 成员列表
@@ -1764,6 +1787,16 @@ businessObject:
     BUSINESS_OBJECT_FLOW_NOT_MATCHED: 没有匹配的审批绑定，请联系租户管理员。
     BUSINESS_OBJECT_FLOW_MATCH_CONFLICT: 审批绑定匹配冲突，请调整条件。
     BUSINESS_OBJECT_FLOW_INCOMPATIBLE: 流程已失效或与对象契约不兼容，请重新选择。
+    CODING_ACCESS_DENIED: "没有此业务对象的编码操作权限。"
+    CODING_UNAVAILABLE: "编码器或编码字段不可用，请重新选择。"
+    CODING_DISABLED: "编码器已停用，请选择其他编码器。"
+    CODING_VERSION_CONFLICT: "编码器已变化，请重新加载后修改。"
+    CODING_RULE_FROZEN: "编码器已发号，规则和字段不可修改，请新建编码器。"
+    CODING_INPUT_INVALID: "编码参数或时区无效，请检查后重试。"
+    CODING_RULE_INVALID: "规则须包含一个流水号，日期精度须覆盖重置周期，且总长度不能超过业务字段限制。"
+    CODING_SEQUENCE_EXHAUSTED: "当前周期的流水号已用完，请联系管理员。"
+    CODING_IDEMPOTENCY_CONFLICT: "此请求键已用于其他编码器，请重新操作。"
+    CODING_CODE_OR_REQUEST_CONFLICT: "编码或请求发生冲突，请检查编码器规则及单据编码。"
     BUSINESS_OBJECT_VERSION_CONFLICT: 配置已变化，请重新加载后修改。
     BUSINESS_OBJECT_TYPE_DISABLED: 对象类型未启用，请联系平台管理员。
     BUSINESS_OBJECT_IDEMPOTENCY_CONFLICT: 请求内容或审批依据已变化，请重新操作。
@@ -1894,7 +1927,7 @@ printWorkbench:
     horizontal: "垂直居中"
 
 # 主数据五类档案页面文案；不包含权限或业务配置。
-masterData: {"title": "主数据管理", "person": "人员管理", "partner": "客商管理", "warehouse": "仓库管理", "country-region": "国别地区", "product": "商品管理", "description": "统一维护当前租户的基础档案，按独立权限管理资料和启停状态。", "keyword": "关键词", "code": "编码", "name": "名称", "status": "状态", "all": "全部", "enabled": "启用", "disabled": "停用", "search": "查询", "reset": "重置", "create": "新增", "edit": "编辑", "enable": "启用", "disable": "停用", "actions": "操作", "save": "保存", "cancel": "取消", "saved": "保存成功", "statusSaved": "状态已更新", "required": "请填写此字段", "codeRule": "编码须为 1–64 位字母、数字、点、下划线或短横线", "countryRule": "请填写两位大写字母代码", "alpha3Rule": "请填写三位大写字母代码", "numericRule": "请填写三位数字代码", "emailRule": "请填写有效邮箱", "noPermission": "没有查看此类档案的权限", "unavailable": "数据暂不可用，请重试", "retry": "重新加载", "empty": "暂无符合条件的档案", "confirmDisable": "停用“{name}”后将不再用于新增业务引用，历史资料保留。", "confirmEnable": "启用“{name}”后可重新用于业务选择。", "confirmTitle": "变更档案状态", "codeHint": "创建后编码不可修改；同一租户同类档案内唯一。", "scopeHint": "这是租户公共档案。公司使用关系、公司业务属性与系统扩展不在此维护。", "countryHint": "选择上级洲后维护国别节点；允许自定义编码，也可检索标准编码填充资料。已有编码不可修改，标准三字码与数字码须匹配，数字码保留前导零。", "personHint": "业务人员档案独立于登录账号和组织任职，不授予登录或业务权限。", "fields": {"englishName": "英文名称", "phone": "联系电话", "email": "电子邮箱", "partnerType": "客商类型", "creditCode": "统一社会信用代码", "contactName": "联系人", "address": "地址", "alpha3Code": "三位字母代码", "numericCode": "三位数字代码", "specification": "规格型号", "unit": "基本单位", "barcode": "条码", "countryCode": "所属国别编码", "subdivisionType": "区划类型", "parentCode": "上级标准编码", "areaType": "库区类型", "capacity": "库容（吨）", "remarks": "备注"}, "partnerTypes": {"CUSTOMER": "客户", "SUPPLIER": "供应商", "BOTH": "客户及供应商"}, "codes": {"MASTER_DATA_DENIED": "没有此类主数据的操作权限。", "MASTER_DATA_INPUT_INVALID": "档案字段不符合要求，请检查编码、名称及必填字段。", "MASTER_DATA_CODE_CONFLICT": "该编码已存在，请核实是否已创建。", "MASTER_DATA_CHANGED": "档案已变化或当前不可访问，请保留输入并重新加载后核实。", "STORAGE_ACTIVE_CHILDREN": "请先停用所有启用的下级库区或库位。"}, "subdivision": "行政区划", "selectGeography": "检索标准编码", "geographyUnavailable": "标准编码目录未加载，请重新加载；若持续失败，请确认后端已更新并重启。", "storage-area": "库区管理", "storage-location": "库位管理"}
+masterData: {"title": "主数据管理", "person": "人员管理", "partner": "客商管理", "warehouse": "仓库管理", "country-region": "国别地区", "product": "商品管理", "description": "统一维护当前租户的基础档案，按独立权限管理资料和启停状态。", "keyword": "关键词", "code": "编码", "name": "名称", "status": "状态", "all": "全部", "enabled": "启用", "disabled": "停用", "search": "查询", "reset": "重置", "create": "新增", "edit": "编辑", "enable": "启用", "disable": "停用", "actions": "操作", "save": "保存", "cancel": "取消", "saved": "保存成功", "statusSaved": "状态已更新", "required": "请填写此字段", "codeRule": "编码须为 1–64 位字母、数字、点、下划线或短横线", "countryRule": "请填写两位大写字母代码", "alpha3Rule": "请填写三位大写字母代码", "numericRule": "请填写三位数字代码", "emailRule": "请填写有效邮箱", "noPermission": "没有查看此类档案的权限", "unavailable": "数据暂不可用，请重试", "retry": "重新加载", "empty": "暂无符合条件的档案", "confirmDisable": "停用“{name}”后将不再用于新增业务引用，历史资料保留。", "confirmEnable": "启用“{name}”后可重新用于业务选择。", "confirmTitle": "变更档案状态", "codeHint": "创建后编码不可修改；同一租户同类档案内唯一。", "scopeHint": "客商按归属组织执行数据权限；其他档案按各自已接入的权限规则管理。", "countryHint": "选择上级洲后维护国别节点；允许自定义编码，也可检索标准编码填充资料。已有编码不可修改，标准三字码与数字码须匹配，数字码保留前导零。", "personHint": "业务人员档案独立于登录账号和组织任职，不授予登录或业务权限。", "fields": {"englishName": "英文名称", "phone": "联系电话", "email": "电子邮箱", "partnerType": "客商类型", "creditCode": "统一社会信用代码", "contactName": "联系人", "address": "地址", "alpha3Code": "三位字母代码", "numericCode": "三位数字代码", "specification": "规格型号", "unit": "基本单位", "barcode": "条码", "countryCode": "所属国别编码", "subdivisionType": "区划类型", "parentCode": "上级标准编码", "areaType": "库区类型", "capacity": "库容（吨）", "remarks": "备注"}, "partnerTypes": {"CUSTOMER": "客户", "SUPPLIER": "供应商", "BOTH": "客户及供应商"}, "codes": {"DATA_FIELD_WRITE_DENIED": "当前字段受只读或脱敏限制，不能修改或通过删除明细清除。", "PARTNER_ORGANIZATION_REQUIRED": "请选择客商归属组织。", "MASTER_DATA_DENIED": "没有此类主数据的操作权限。", "MASTER_DATA_INPUT_INVALID": "档案字段不符合要求，请检查编码、名称及必填字段。", "MASTER_DATA_CODE_CONFLICT": "该编码已存在，请核实是否已创建。", "MASTER_DATA_CHANGED": "档案已变化或当前不可访问，请保留输入并重新加载后核实。", "STORAGE_ACTIVE_CHILDREN": "请先停用所有启用的下级库区或库位。"}, "subdivision": "行政区划", "selectGeography": "检索标准编码", "geographyUnavailable": "标准编码目录未加载，请重新加载；若持续失败，请确认后端已更新并重启。", "storage-area": "库区管理", "storage-location": "库位管理"}
 
 # 人员档案字段、明细及多对多关联文案；不包含配置或真实人员数据。
 personnel: {"view": "查看", "title": "人员档案", "basic": "基本信息", "system": "系统信息", "code": "人员编码", "name": "中文名", "createdName": "创建人", "createdAt": "创建时间", "updatedName": "修改人", "updatedAt": "修改时间", "unknownHistory": "历史数据未记录", "back": "返回列表", "new": "新增人员", "details": "档案详情", "assignments": "关联租户账号", "organizationId": "组织", "positionId": "岗位", "memberId": "租户账号", "organizationName": "所属组织", "userName": "关联用户", "active": "关联有效", "inactive": "关联已失效", "addDetail": "新增明细", "editDetail": "编辑明细", "deleteDetail": "删除明细", "addAssignment": "关联账号", "editAssignment": "修改账号关联", "unassign": "解除关联", "confirmDelete": "删除此条“{section}”明细？此操作不会删除人员档案。", "confirmUnassign": "解除与“{name}”的关联？该用户将不能通过此关联代表该人员。", "dirty": "基础资料尚未保存，请先保存或返回放弃修改，再维护明细和关联。", "saveFirst": "保存人员档案后可维护明细和组织用户关联。", "discard": "有未保存的修改，是否放弃并返回列表？", "discardAction": "放弃修改", "reloadWarning": "重新加载将丢弃当前未保存的输入，是否继续？", "assignmentHint": "从当前租户有效账号选择关联。账号与组织没有直接关系；组织及岗位属于人员。关联不增加业务权限。", "organizationHint": "人员的有效组织归属与岗位任职是业务组织的唯一来源，主组织与任职有效期分别维护。", "required": "请填写必填字段", "dateRange": "结束日期不能早于开始日期", "birthFuture": "出生日期不能晚于今天", "status": "启停状态", "employmentStatus": "在职状态", "retry": "重新加载", "readOnly": "只读档案", "saved": "保存成功", "all": "全部", "enabled": "启用", "disabled": "停用", "latestLoadFailed": "保存已成功，但最新详情读取失败。请重新加载核实，勿重复提交。", "fields": {"englishName": "英文名", "gender": "性别", "birthDate": "出生日期", "ethnicity": "民族", "nativePlace": "籍贯", "politicalStatus": "政治面貌", "identityType": "证件类型", "identityNumber": "证件号码", "phone": "联系电话", "email": "电子邮箱", "workNature": "工作性质", "bloodType": "血型", "emergencyContact": "紧急联系人", "emergencyPhone": "紧急联系电话", "maritalStatus": "婚姻状况", "hobbies": "爱好特长", "skillLevel": "工作技能等级", "educationLevel": "最高学历", "employmentStatus": "人员在职状态", "remarks": "备注", "certificateType": "证书类型", "certificateNumber": "证书号", "certificateStatus": "证书状态", "passedOn": "通过时间", "startsOn": "有效时间（始）", "endsOn": "有效时间（终）", "trainingName": "培训名称", "provider": "培训机构", "result": "培训结果", "awardName": "奖项名称", "issuer": "颁发/处理单位", "awardedOn": "获奖日期", "contactType": "联系类型", "contactValue": "联系内容", "addressType": "地址类型", "countryRegion": "国别地区", "province": "省/州", "city": "城市", "address": "详细地址", "postalCode": "邮政编码", "employer": "工作单位", "department": "部门", "jobTitle": "职位", "recordType": "奖惩类型", "reason": "事由", "recordedOn": "奖惩日期", "school": "学校", "major": "专业", "degree": "学位", "isPrimary": "主组织", "enabled": "关系启用"}, "sections": {"organizations": "所属组织", "positions": "所在岗位", "certificates": "资格证书", "training": "培训信息", "awards": "获奖信息", "contacts": "联系方式", "addresses": "联系地址", "workHistory": "工作履历", "rewardsPenalties": "奖惩信息", "education": "教育履历"}, "choices": {"MALE": "男", "FEMALE": "女", "OTHER": "其他", "UNDISCLOSED": "未说明", "NATIONAL_ID": "居民身份证", "PASSPORT": "护照", "FULL_TIME": "全职", "PART_TIME": "兼职", "CONTRACT": "合同工", "INTERN": "实习", "A": "A 型", "B": "B 型", "AB": "AB 型", "O": "O 型", "UNKNOWN": "未知", "SINGLE": "未婚", "MARRIED": "已婚", "DIVORCED": "离异", "WIDOWED": "丧偶", "ACTIVE": "在职", "PROBATION": "试用", "LEAVE": "离职", "RETIRED": "退休", "VALID": "有效", "EXPIRED": "过期", "REVOKED": "撤销", "PENDING": "待确认", "REWARD": "奖励", "PENALTY": "处罚", "PRIMARY": "小学", "JUNIOR_HIGH": "初中", "SENIOR_HIGH": "高中", "VOCATIONAL": "中专/技校", "ASSOCIATE": "大专", "BACHELOR": "本科", "MASTER": "硕士", "DOCTOR": "博士", "JUNIOR": "初级", "INTERMEDIATE": "中级", "SENIOR": "高级", "TECHNICIAN": "技师", "SENIOR_TECHNICIAN": "高级技师", "true": "是", "false": "否"}, "codes": {"PERSON_NOT_FOUND": "人员不存在或当前不可访问。", "PERSON_USER_UNAVAILABLE": "账号在当前租户已不可用，请重新选择。", "PERSON_USER_DUPLICATE": "此组织、用户与人员的关联已存在。", "PERSON_ORGANIZATION_UNAVAILABLE": "组织或岗位已停用或不属于当前租户，请重新选择。", "PERSON_CONTEXT_REQUIRED": "请选择当前有效的人员身份与业务组织。"}, "profileDetails": "详细信息", "collapseDetails": "收起详细信息", "expandDetails": "展开详细信息"}
@@ -1914,6 +1947,9 @@ recordAudit:
 
 # 客商主数据详情与聚合明细文案。
 partner:
+  organization: 归属组织
+  organizationRequired: 请选择客商归属组织
+  unknownOrganization: 历史归属未记录
   new: "新增客商"
   view: "查看"
   back: "返回列表"
@@ -2139,6 +2175,7 @@ productCatalog:
   maxItems: "最多选项数"
 
 productV1:
+  event_COMPONENT_REPLACE: "更新组合明细"
   specifications: "至少一条有效标准规格"
   components: "有效且版本一致的组成商品"
   event_SPEC_CREATE: "新增规格"
@@ -2157,7 +2194,7 @@ productV1:
   title: "商品档案"
   create: "新增商品草稿"
   details: "详情 / 维护"
-  descriptionHint: "统一无规格商品主档、固定配置版本、动态档案属性及完整生命周期"
+  descriptionHint: "统一商品主档、动态属性、规格与SKU、组合及完整生命周期"
   basic: "基本信息"
   back: "返回列表"
   shortName: "简称"
@@ -2322,6 +2359,7 @@ productImages:
 storageHierarchy: {"warehouse": "所属仓库", "area": "所属库区", "selectWarehouse": "请先选择仓库，再维护其下库区。", "selectArea": "请先选择仓库和库区，再维护其下库位。", "capacityRule": "请输入非负库容，最多18位整数、6位小数，单位吨。", "types": {"RECEIVING": "收货区", "WORK": "作业区", "GOOD": "良品区", "DEFECTIVE": "次品区", "PACKAGING": "包材区", "VIRTUAL": "虚拟区", "FINISHED": "成品区"}}
 
 productStructure:
+  componentQuantity: "组件数量"
   title: "规格、SKU与组合"
   mode: "规格管理模式"
   NONE: "无规格"
@@ -2345,3 +2383,39 @@ productApproval:
   REJECTED: "已驳回"
   WITHDRAWN: "已撤回"
   hint: "完整商品提交后冻结依据，使用现有流程工作台办理或撤回。最终批准后仍需有权人员显式启用；修改后须重新审核。未配置审批流程或缺有效任职组织时不能提交。"
+
+coding:
+  title: "编码管理"
+  hint: "按顺序组合分段，必须包含一个流水号。首次发号后规则冻结，调整规则请新建编码器。"
+  select: "选择编码器"
+  new: "新建编码器"
+  empty: "暂无可用编码器，请在业务对象管理中配置。"
+  key: "编码器标识"
+  required: "请填写必填项。"
+  keyRule: "标识须以字母开头，由1–40位字母、数字或下划线组成。"
+  field: "编码字段"
+  reset: "流水重置周期"
+  zone: "日期时区（IANA）"
+  segment: "编码段"
+  text: "固定文本"
+  format: "日期格式"
+  width: "流水位数（不足补零）"
+  up: "上移"
+  down: "下移"
+  remove: "移除段"
+  addSegment: "添加编码段"
+  preview: "格式预览（示例日期，不消耗号码）"
+  assist: "协助录入"
+  replace: "当前已输入编码，是否用新发放的编码替换？"
+  issueHint: "点击发放后消耗号码，取消或未保存单据不回收；业务保存仍校验编码唯一性。"
+  cancel: "取消"
+  generate: "发放并填入"
+  kinds:
+    TEXT: 固定文本
+    DATE: 日期
+    SEQUENCE: 流水号
+  resets:
+    NEVER: 永不重置
+    YEAR: 每年
+    MONTH: 每月
+    DAY: 每天

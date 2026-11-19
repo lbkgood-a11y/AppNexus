@@ -544,5 +544,42 @@
       "frontend/modules/master-data/src/product/ProductStructure.vue"
     ],
     "reason": "仅规格新增、显式SKU新增和组合关系新增三个固定命令；每个分支由同一弹窗kind选择，后端仍独立鉴权和父CAS。"
+  },
+  {
+    "file": "frontend/modules/business-object/src/CodingInput.vue",
+    "expression": "operation",
+    "operations": [
+      "BusinessPartner.create"
+    ],
+    "sources": [
+      "frontend/modules/master-data/src/PartnerEditor.vue",
+      "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/BusinessPartnerDeclaration.java",
+      "backend/services/platform-service/business-object/src/main/java/com/appnexus/platform/businessobject/internal/application/coding/CodingService.java"
+    ],
+    "reason": "当前调用方为客商新增编码字段；候选和发号均由后端按同一 Provider 的 codingFields 派生 BusinessPartner.create 权限复核；将来新增调用方必须同步登记已接通操作。"
+  },
+  {
+    "file": "frontend/modules/business-object/src/BusinessObjectManagement.vue",
+    "expression": "platform ? 'BusinessObject.catalog' : 'BusinessObject.tenantCatalog'",
+    "operations": [
+      "BusinessObject.catalog",
+      "BusinessObject.tenantCatalog"
+    ],
+    "sources": [
+      "backend/services/platform-service/adapters/platform-api/src/main/java/com/appnexus/platform/managementapi/businessobject/BusinessObjectController.java"
+    ],
+    "reason": "目录读取失败后的刷新调用同一模式目录API，分别复核平台目录或租户目录操作；不使用无关写入权限。"
+  },
+  {
+    "file": "frontend/modules/authorization/src/RoleUsers.vue",
+    "expression": "saveOperation",
+    "operations": [
+      "AccountRoleAssignment.replace",
+      "MemberRoleAssignment.replace"
+    ],
+    "sources": [
+      "frontend/modules/authorization/src/RoleUsers.vue"
+    ],
+    "reason": "平台账号与租户成员分别复用真实主体角色覆盖接口；加入前重读完整快照并追加角色，保留版本校验及其他角色。"
   }
 ]

@@ -1,10 +1,10 @@
 # AppNexus backend
 
-The formal platform service uses modular domain boundaries and service-level adapters.
-Formal features are implemented under services/platform-service. poc-app contains isolated
-historical technical verification and is not a runtime dependency.
+后端采用业务模块、端口与适配器及独立部署组合。业务实现位于 `services`，当前系统组合入口位于 `applications/monolith-app`，全后端架构检查位于 `architecture-tests`。`poc-app` 保留隔离技术验证，不是正式业务依赖。
 
-工作流服务工程已位于 services/workflow-service，与平台平级，由现有平台启动类组合装配。
+目录与代码生成要求见[后端标准工程结构与 AI 生成约束](../docs/development/后端标准工程结构与AI生成约束.md)，本轮真实迁移状态见[全后端六边形职责改造执行记录](../docs/design/全后端六边形职责改造执行记录.md)。每个自有 Java 源包维护中文 `package-info.java`；目录与文档覆盖不能代表所有存量业务已经完成分层。
+
+工作流服务工程位于 services/workflow-service，与平台平级，由 monolith-app 组合装配。启动类暂保留原 Java 包以保持扫描与测试发现语义，业务模块不反向依赖部署组合。
 Flowable 8.0.0 内嵌在审批适配器，默认关闭，不自动建表或升级。
 工作流首批运行时、API、设计器、任务工作台与运行管理已实现；真实WMS/考核业务尚未接入，浏览器视觉验收未完成。详见 docs/design/工作流服务构建交付.md。
 结构、启用约束及验证结果见 [工作流服务详细设计](../docs/design/工作流服务详细设计.md)。
@@ -40,8 +40,8 @@ Run from the repository root in the terminal that will start the backend:
 ./scripts/Initialize-Local.ps1
 docker compose up -d --wait
 cd backend
-mvn -pl services/platform-service/application -am install -DskipTests
-mvn -pl services/platform-service/application spring-boot:run "-Dspring-boot.run.profiles=local"
+mvn -pl applications/monolith-app -am install -DskipTests
+mvn -pl applications/monolith-app spring-boot:run "-Dspring-boot.run.profiles=local"
 ```
 
 The initializer creates persistent local credentials and signing material in ignored .local/.
@@ -85,8 +85,8 @@ can explicitly enable a migration run. Applications do not run clean.
 ## Verification
 
 ```powershell
-mvn -pl services/platform-service/application -am test
-mvn -pl services/platform-service/architecture-tests -am test
+mvn -pl applications/monolith-app -am test
+mvn -pl architecture-tests -am test
 ```
 
 Application integration tests require Docker and start actual MySQL 8.4 and Valkey containers.

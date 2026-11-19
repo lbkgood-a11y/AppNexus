@@ -52,6 +52,7 @@ class MasterDataMySqlTest {
       try(var connection=source.getConnection()){ScriptUtils.executeSqlScript(connection,new ClassPathResource("db/migration/V92__international_subdivisions.sql"));}
       try(var connection=source.getConnection()){ScriptUtils.executeSqlScript(connection,new ClassPathResource("db/migration/V107__editable_geography_parent.sql"));}
       try(var connection=source.getConnection()){ScriptUtils.executeSqlScript(connection,new ClassPathResource("db/migration/V118__storage_hierarchy.sql"));}
+      try(var connection=source.getConnection()){ScriptUtils.executeSqlScript(connection,new ClassPathResource("db/migration/V122__partner_data_ownership.sql"));}
       assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM access_permission",Integer.class)).isEqualTo(36);
       assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM access_role_permission",Integer.class)).isEqualTo(36);
       var c=new VerifiedTenantContext(UUID.randomUUID(),UUID.randomUUID(),UUID.randomUUID(),1);
@@ -60,7 +61,13 @@ class MasterDataMySqlTest {
       AccessAuthorization access=(subject,permission)->!revoked.get()&&jdbc.queryForObject("SELECT COUNT(*) FROM access_permission WHERE code=?",Integer.class,permission)==1;
       var catalog=org.mockito.Mockito.mock(com.appnexus.platform.configuration.BusinessValueCatalog.class);
       org.mockito.Mockito.when(catalog.reference(org.mockito.ArgumentMatchers.any(),org.mockito.ArgumentMatchers.any(),org.mockito.ArgumentMatchers.anyString(),org.mockito.ArgumentMatchers.anyString(),org.mockito.ArgumentMatchers.anyMap(),org.mockito.ArgumentMatchers.anyMap(),org.mockito.ArgumentMatchers.anyMap())).thenReturn(true);
-      var service=new MasterDataService(jdbc,access,new DataSourceTransactionManager(source),catalog);
+      var planning=org.mockito.Mockito.mock(com.appnexus.platform.authorization.AccessPlanning.class);
+      org.mockito.Mockito.when(planning.plan(org.mockito.ArgumentMatchers.any(),org.mockito.ArgumentMatchers.anyString(),org.mockito.ArgumentMatchers.anyString())).thenAnswer(call->new com.appnexus.platform.authorization.AccessPlan(call.getArgument(0),call.getArgument(1),call.getArgument(2),new com.appnexus.platform.authorization.DataScopeAuthorization.DataScope(com.appnexus.platform.authorization.DataScopeAuthorization.ScopeType.ALL,java.util.Set.of()),Map.of(),java.time.Instant.now()));
+      var fields=org.mockito.Mockito.mock(com.appnexus.platform.authorization.FieldProtection.class);
+      UUID testOrganization=UUID.randomUUID();
+      com.appnexus.platform.authorization.DataAccessReferences references=(subject,permission)->List.of(new com.appnexus.platform.authorization.DataAccessReferences.Organization(testOrganization,"隔离测试组织"));
+      var dataCatalog=com.appnexus.platform.authorization.DataAccessCatalog.fromObjects(List.of(new BusinessPartnerDeclaration()));
+      var service=MasterDataConfiguration.create(jdbc,access,new DataSourceTransactionManager(source),catalog,new PartnerDataAccess(planning,fields,references,jdbc,dataCatalog));
       verifyStorageHierarchy(service,jdbc);
       for(var kind:Kind.values()){
         // 通用档案测试先前已停用上级；恢复父级后才能验证下一级的独立写入。
@@ -72,7 +79,7 @@ class MasterDataMySqlTest {
           case COUNTRY_REGION->Map.of("alpha3Code","CHN","numericCode","156");
           default->Map.of();
         };
-        var input=new Input(kind==Kind.COUNTRY_REGION?"CN":kind==Kind.SUBDIVISION?"US-CA":"CODE-1","原始资料",attrs,0);
+        var input=new Input(kind==Kind.COUNTRY_REGION?"CN":kind==Kind.SUBDIVISION?"US-CA":"CODE-1","原始资料",attrs,0,null,null,kind==Kind.PARTNER?testOrganization.toString():null);
         String id=service.create(c,kind,input).get("id");
         assertThat(service.list(c,kind,"",null,1,20).total()).isEqualTo(1);
         assertThat(service.list(other,kind,"",null,1,20).total()).isZero();
@@ -128,7 +135,7 @@ class MasterDataMySqlTest {
       // 明细作为聚合与父版本同事务保存；真实数据库证明审计不可伪造且外客商明细不能冒用。
       var contact=new DetailInput(null,Map.of("contactType","BUSINESS","contactName","测试联系人","phone","01000000000","address","测试地址","isDefault","true"));
       var bank=new DetailInput(null,Map.of("taxAccount","false","basicAccount","true","isDefault","true","bankName","测试银行","accountNumber","000123","currency","CNY"));
-      String partner=service.create(c,Kind.PARTNER,new Input("DETAIL","聚合",Map.of("partnerType","CUSTOMER,CARGO_OWNER"),0,List.of(contact),List.of(bank))).get("id");
+      String partner=service.create(c,Kind.PARTNER,new Input("DETAIL","聚合",Map.of("partnerType","CUSTOMER,CARGO_OWNER"),0,List.of(contact),List.of(bank),testOrganization.toString())).get("id");
       var profile=service.list(c,Kind.PARTNER,"",null,1,1,partner).rows().getFirst();
       assertThat(profile.contacts()).hasSize(1);assertThat(profile.bankAccounts()).hasSize(1);
       assertThat(profile.bankAccounts().getFirst().values().get("accountNumber")).isEqualTo("000123");

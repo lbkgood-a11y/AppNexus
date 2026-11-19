@@ -14,10 +14,11 @@ export interface PermissionItem{id:string;scopeType:"PLATFORM"|"TENANT";code:str
 export interface ScopeSupport{permissionId:string;permissionCode:string;scopeType:DataScopeType;resourceType:string}
 export interface DataPolicy{permissionId:string;scopeType:DataScopeType;resourceType:string;organizationIds:string[]}
 /** 强制字段展示限制；不提供修改或查询权，多个角色命中时取更严格结果。 */
-export interface FieldPolicy {resource:string;field:string;mode:"HIDDEN"|"MASKED"}
+export interface FieldPolicy {resource:string;field:string;mode:"HIDDEN"|"MASKED"|"READ_ONLY"}
 /** 仅列出后端已接通执行的字段，缺少目录的能力不得由前端编造。 */
 export interface FieldDescriptor {resource:string;field:string;nameZh:string;nameEn:string;kind:"EMAIL"|"PHONE"|"PERSON_NAME"|"IDENTIFIER"|"BANK_ACCOUNT"|"TEXT";modes:FieldPolicy["mode"][]}
-export interface AuthorizationAssignment{permissionIds:string[];dataPolicies:DataPolicy[];roleVersion:number;fieldPolicies?:FieldPolicy[]}
+/** 角色完整配置；inheritingMemberCount 为当前有效继承成员数（人），缺省0，仅作影响提示。 */
+export interface AuthorizationAssignment{permissionIds:string[];dataPolicies:DataPolicy[];roleVersion:number;fieldPolicies?:FieldPolicy[];inheritingMemberCount?:number;dataAccessVersion?:string}
 export interface AuthorizationOption{id:string;name:string}
 /** 当前管理域的角色策略模板摘要，不携带业务原值。 */
 export interface PolicyTemplate { id: string; name: string }
@@ -25,10 +26,13 @@ export interface PolicyTemplate { id: string; name: string }
 /** 授权菜单仅定位功能；operations 精确登记真实操作，resources 为元数据，缺少 operations 时不展开整个资源。 */
 export interface AuthorizationMenu{id:string;parentId:string|null;titleZh:string;titleEn:string;sortOrder:number;resources:string[];permission:string|null;operations?:string[]}
 /** 模板能力仅在真实后端已接入的管理域提供；应用使用当前角色版本与原因。 */
-export interface AuthorizationCenterApi{templates?:{list:(role:string)=>Promise<PolicyTemplate[]>;save:(role:string,name:string)=>Promise<PolicyTemplate>;apply:(role:string,template:string,version:number,reason:string)=>Promise<AuthorizationAssignment>};menus:()=>Promise<AuthorizationMenu[]>;permissions:()=>Promise<PermissionItem[]>;metadata:()=>Promise<ScopeSupport[]>;fields:()=>Promise<FieldDescriptor[]>;assignment:(roleId:string)=>Promise<AuthorizationAssignment>;replace:(roleId:string,input:{ids:string[];dataPolicies:DataPolicy[];fieldPolicies:FieldPolicy[];version:number;reason:string})=>Promise<AuthorizationAssignment>;organizationOptions?:()=>Promise<AuthorizationOption[]>}
+/** 代码声明只读投影；资源能力版本不由管理员填写，操作引用已有功能目录。 */
+export interface DataAccessDeclaration{objectType:string;version:number;resources:{resource:string;parentResource:string;nameZh:string;nameEn:string;fields:FieldDescriptor[]}[]}
+export interface AuthorizationCenterApi{declarations?:()=>Promise<DataAccessDeclaration[]>;templates?:{list:(role:string)=>Promise<PolicyTemplate[]>;save:(role:string,name:string)=>Promise<PolicyTemplate>;apply:(role:string,template:string,version:number,reason:string)=>Promise<AuthorizationAssignment>};menus:()=>Promise<AuthorizationMenu[]>;permissions:()=>Promise<PermissionItem[]>;metadata:()=>Promise<ScopeSupport[]>;fields:()=>Promise<FieldDescriptor[]>;assignment:(roleId:string)=>Promise<AuthorizationAssignment>;replace:(roleId:string,input:{ids:string[];dataPolicies:DataPolicy[];fieldPolicies:FieldPolicy[];version:number;reason:string;dataAccessVersion?:string})=>Promise<AuthorizationAssignment>;organizationOptions?:()=>Promise<AuthorizationOption[]>}
 
-/** 成员独立授权分支；expiresAt 为 UTC ISO 时间或 null（长期），角色增权不自动改变此快照。 */
-export interface MemberGrant {roleId:string;permissionIds:string[];dataPolicies:DataPolicy[];expiresAt:string|null;roleVersion:number}
+/** 成员角色分支；功能持续跟随角色，expiresAt 为 UTC ISO 时间或 null（长期）。 */
+/** 成员范围模式：true 持续继承角色；false 使用独立配置；修改须显式保存。 */
+export interface MemberGrant {inheritDataScope:boolean;roleId:string;permissionIds:string[];dataPolicies:DataPolicy[];expiresAt:string|null;roleVersion:number}
 export interface MemberGrantAssignment {grants:MemberGrant[];authorityVersion:number}
 /** 成员范围配置端口；版本属于成员全部授权，冲突后必须重新读取。 */
 export interface MemberGrantApi {get:(member:string)=>Promise<MemberGrantAssignment>;replace:(member:string,input:{grant:MemberGrant;version:number;reason:string})=>Promise<MemberGrantAssignment>}

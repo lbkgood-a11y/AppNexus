@@ -4,11 +4,13 @@ import java.util.List;
 
 /** 字段安全目录与最小披露规则；只登记已有后端执行点的字段，不接受任意属性路径。 */
 public final class FieldSecurity {
-    /** 强制展示上限；多个角色同时命中时 HIDDEN 优先于 MASKED，不能用普通角色原文权限绕过。 */
-    public enum Mode { HIDDEN, MASKED }
+    /** 强制字段限制；HIDDEN > MASKED > READ_ONLY，均不允许修改受限字段，普通角色不能解除限制。 */
+    public enum Mode { READ_ONLY, MASKED, HIDDEN }
+    /** 多角色限制取更严格模式：隐藏 > 脱敏 > 只读；任一种限制均禁止写入。 */
+    public static Mode stricter(Mode left,Mode right){return left.ordinal()>=right.ordinal()?left:right;}
     /** 脱敏算法按语义类型统一复用，业务字段不编写专用算法。 */
     public enum Kind { EMAIL, PHONE, PERSON_NAME, IDENTIFIER, BANK_ACCOUNT, TEXT }
-    /** @param resource 稳定资源名 @param field 稳定字段名 @param mode 强制展示上限，不包含修改权或查询权 */
+    /** @param resource 稳定资源名 @param field 稳定字段名 @param mode 强制限制模式；只读保留原文，脱敏/隐藏限制展示，均不额外授予功能或查询权 */
     public record Policy(String resource,String field,Mode mode) {}
     /** @param resource 稳定资源名 @param field 字段名 @param nameZh 中文名称 @param nameEn 英文名称 @param kind 敏感类型及算法 @param modes 已接通的展示限制 */
     public record Descriptor(String resource,String field,String nameZh,String nameEn,Kind kind,List<Mode> modes) {}
@@ -22,7 +24,7 @@ public final class FieldSecurity {
      */
     public static String display(Kind kind,String value,Mode mode) {
         if(value==null||mode==Mode.HIDDEN)return null;
-        if(mode==null)return value;
+        if(mode==null||mode==Mode.READ_ONLY)return value;
         return switch(kind) {
             case EMAIL -> {int at=value.indexOf('@');yield at>0?value.substring(0,1)+"***@"+value.substring(at+1):"***";}
             case PHONE -> value.length()>7?value.substring(0,3)+"****"+value.substring(value.length()-4):"***";

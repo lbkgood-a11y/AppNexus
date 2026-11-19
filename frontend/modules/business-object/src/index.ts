@@ -3,6 +3,8 @@ export interface Descriptor {
   objectType: string; nameZh: string; nameEn: string; module: string; version: number;
   /** 业务对象性质，与审批和打印能力独立。 */
   category: "MASTER_DATA"|"TRANSACTION"|"CONFIGURATION"|"LEDGER"|"SYSTEM";
+  /** 同一业务声明中实际接通的编码字段；空数组时不展示配置入口。 */
+  codingFields?: {field:string;operationCode:string;maxLength:number}[];
   fields: { key: string; nameZh: string; nameEn: string; type: string; unit: string }[];
   operations: {operationCode:string;nameZh:string;nameEn:string;permissionCode:string;operationId:string;interaction:{code:string;version:number;objectType:string;operationCode:string;trigger:string;capabilities:{service:string;completion:string;reference:string;purpose:string;fields:unknown[];outcomes:string[]}[]};pageOperation?:PageOperation;aliases?:{operationId:string;pageOperation:PageOperation}[]}[];
 }
@@ -18,6 +20,9 @@ export interface Binding {
 }
 /** 管理接口注入约定；写操作只执行一次，冲突由管理人员重载后处理。 */
 export interface BusinessObjectApi {
+  /** 对象内编码器配置，只有已声明编码字段的对象才显示入口。 */
+  encoders:(type:string)=>Promise<EncoderRow[]>;
+  saveEncoder:(type:string,key:string,input:EncoderInput)=>Promise<unknown>;
   readiness:(type:string)=>Promise<{operationCode:string;category:string;code:string;ready:boolean;target:string}[]>;
   pageRelationships:(type:string)=>Promise<PageRelationshipEditor>;
   controlPage:(type:string,revision:number,operationId:string,enabled:boolean,reason:string)=>Promise<PageRelationshipEditor>;
@@ -32,3 +37,12 @@ export interface BusinessObjectApi {
   save: (type: string, revision: number, bindings: Binding[]) => Promise<unknown>;
   publish: (type: string, revision: number) => Promise<unknown>;
 }
+
+/** 有序编码段；固定文本最多32字符，日期使用受控格式，流水宽度1–12位。 */
+export interface CodingSegment {kind:"TEXT"|"DATE"|"SEQUENCE";value:string;width:number}
+/** 编码日期和重置周期共同使用配置时区，审计仍以 UTC 返回。 */
+export interface CodingRule {segments:CodingSegment[];reset:"NEVER"|"YEAR"|"MONTH"|"DAY";zoneId:string}
+/** 编码配置提交不含身份和审计信息；revision=-1表示首次创建。 */
+export interface EncoderInput {revision:number;field:string;name:string;enabled:boolean;rule:CodingRule}
+/** 只读审计来自当前配置读取权限，不额外查询账号目录。 */
+export interface EncoderRow extends EncoderInput {encoderKey:string;createdBy:string|null;createdAt:string|null;updatedBy:string|null;updatedAt:string|null}

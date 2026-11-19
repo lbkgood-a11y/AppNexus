@@ -33,11 +33,13 @@ const props = withDefaults(defineProps<{
   embedded?: boolean;
   /** 树形表格稳定行标识字段；缺省为普通列表，业务方保证整树唯一。 */
   rowKey?: string;
+  /** 是否填满父级分配的表体高度，默认 false；仅在已建立 flex 高度链的弹框或面板中启用，分页仍独立置底。 */
+  fitHeight?: boolean;
   /** 树形表格展开行标识；缺省由用户交互维护，不改变业务数据。 */
   expandedRowKeys?: string[];
   /** 当前高亮行标识；缺省不启用行选中，须与 rowKey 配合使用。 */
   currentRowKey?: string;
-}>(), { loading: false, busy: false, headingLevel: "h1", embedded: false });
+}>(), { loading: false, busy: false, headingLevel: "h1", embedded: false, fitHeight: false });
 /** 异步树数据渲染后同步展开与首行高亮；不依赖组件首次挂载时的数据快照。 */
 const tableRef = ref<{ setTreeExpand: (row: Row, expanded: boolean) => void; setCurrentRow: (row?: Row) => void }>();
 watch(() => [props.rows, props.expandedRowKeys, props.currentRowKey, tableRef.value], async () => {
@@ -137,18 +139,18 @@ async function toggleFullscreen() {
   fullscreen.value = !fullscreen.value;
   await nextTick(); measure();
 }
-/** 全屏时表体占据剩余高度，分页保持可见；普通布局不强制固定表格高度。 */
+/** 全屏、受约束工作区及显式自适应面板按剩余高度渲染，普通列表保持自然高度。 */
 function measure() {
   const region = tableRegion.value;
-  // 仅在全屏或统一视口工作区内固定表高；弹窗及普通流式表格继续按内容布局。
+  // 弹框显式声明 fitHeight 后复用同一测量路径，避免依赖应用视口祖先选择器。
   // 只有直接父容器实际分配 flex 高度时才测量；流式包装层按自然高度渲染，避免测量与表高互相撑大。
   const parent = region?.closest('.management-table')?.parentElement;
   const allocated = parent && !parent.classList.contains('management-table-stack') && getComputedStyle(parent).display === 'flex';
-  const constrained = fullscreen.value || Boolean(allocated && region?.closest(".viewport-page-host .business-workspace, .viewport-page-host .tree-list-template, .viewport-page-host .standard-list-template"));
+  const constrained = fullscreen.value || props.fitHeight || Boolean(allocated && region?.closest(".viewport-page-host .business-workspace, .viewport-page-host .tree-list-template, .viewport-page-host .standard-list-template"));
   // 高度链尚未就绪时回退自然表高，禁止把瞬时 0px 写成 1px 导致表头和数据被裁切。
   tableHeight.value = constrained && region && region.clientHeight >= 80 ? region.clientHeight : undefined;
 }
-watch(fullscreen,async()=>{await nextTick();measure();});
+watch([fullscreen, () => props.fitHeight],async()=>{await nextTick();measure();});
 let observer: ResizeObserver | undefined;
 onMounted(() => {
   observer = new ResizeObserver(measure);
@@ -199,7 +201,7 @@ onBeforeUnmount(() => observer?.disconnect());
       <div ref="tableRegion" class="management-table-region">
         <vxe-table :column-config="{ resizable: true }" ref="tableRef" @toggle-tree-expand="handleExpandChange" :row-config="{ keyField: rowKey, isCurrent: currentRowKey !== undefined }" :tree-config="rowKey ? { childrenField: 'children' } : undefined" :loading="loading" :data="displayedRows" :size="size === 'default' ? 'medium' : size" :height="tableHeight" :empty-text="emptyText || t('management.empty')" border="inner">
           <vxe-column v-if="$slots.expandContent" type="expand" width="48"><template #content="{ row }"><slot name="expandContent" :row="row" /></template></vxe-column>
-          <vxe-column v-for="column in visible" :key="column.key" :field="column.prop" :title="column.label" :width="column.width" :min-width="column.minWidth || 140" :fixed="fixed[column.key]" :tree-node="!!rowKey && column.key === visible[0]?.key" :show-overflow="column.key !== 'operations'">
+          <vxe-column v-for="column in visible" :key="column.key" :field="column.prop" :title="column.label" :width="column.width" :min-width="column.minWidth || 140" :fixed="fixed[column.key]" :tree-node="!!rowKey && column.key === visible[0]?.key" :show-overflow="column.showOverflow ?? (column.key !== 'operations')">
             <template #default="{ row }"><slot :name="column.key" :row="row">{{ column.prop ? (row[column.prop] ?? '—') : '—' }}</slot></template>
           </vxe-column>
           <vxe-column v-if="hasAudit" :title="t('recordAudit.title')" :width="130" fixed="right">

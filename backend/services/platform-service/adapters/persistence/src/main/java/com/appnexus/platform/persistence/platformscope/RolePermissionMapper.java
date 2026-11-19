@@ -7,8 +7,12 @@ import org.apache.ibatis.annotations.*;
 
 /** 角色权限覆盖写 Mapper；调用服务负责固定加锁顺序、管理域复核和同事务审计。 */
 @Mapper
-@PlatformScoped(tables={"access_role","access_permission","access_role_permission","access_permission_scope_type","access_role_data_policy","access_role_data_policy_organization","tenant_organization_unit","access_authorization_audit","platform_administrator","identity_account","tenant_member","platform_tenant","access_role_field_security","access_effective_tenant_permission"})
+@PlatformScoped(tables={"access_role","access_permission","access_role_permission","access_permission_scope_type","access_role_data_policy","access_role_data_policy_organization","tenant_organization_unit","access_authorization_audit","platform_administrator","identity_account","tenant_member","platform_tenant","access_role_field_security","access_effective_tenant_permission","access_member_authorization"})
 public interface RolePermissionMapper {
+    /** 影响预览仅统计当前有效且继承的成员；保存仍以角色版本校验，人数不是授权凭据。 */
+    @Select("SELECT COUNT(*) FROM access_member_authorization g JOIN tenant_member m ON m.tenant_id=g.tenant_id AND m.id=g.member_id JOIN identity_account a ON a.id=m.account_id JOIN platform_tenant t ON t.id=m.tenant_id WHERE g.role_id=UUID_TO_BIN(#{role}) AND g.inherit_data_scope=TRUE AND (g.expires_at IS NULL OR g.expires_at>CURRENT_TIMESTAMP(6)) AND m.enabled=TRUE AND m.removed_at IS NULL AND a.enabled=TRUE AND t.enabled=TRUE")
+    long inheritingMembers(String role);
+
  /** 字段限制与角色版本使用同一事务，目录和模式由领域用例校验。 */
  @Select("SELECT resource_type,field_code,display_mode FROM access_role_field_security WHERE role_id=UUID_TO_BIN(#{role}) ORDER BY resource_type,field_code")
  List<Map<String,Object>> fields(String role);

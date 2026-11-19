@@ -1,11 +1,16 @@
 /** 固定主数据对象；页面不能声明任意实体或 API 路径。 */
 export type MasterDataKind = "partner" | "warehouse" | "storage-area" | "storage-location" | "country-region" | "subdivision";
 /** 当前租户公共档案；人员档案不是登录账号或组织任职。 */
-export interface MasterDataRow { id:string; code:string; name:string; attributes:Record<string,string>; enabled:boolean; version:number; audit:import("@appnexus/ui").RecordAudit; contacts?:PartnerDetail[]; bankAccounts?:PartnerDetail[] }
+export interface MasterDataRow { id:string; code:string; name:string; attributes:Record<string,string>; enabled:boolean; version:number; audit:import("@appnexus/ui").RecordAudit; contacts?:PartnerDetail[]; bankAccounts?:PartnerDetail[]; organizationId?:string|null; fieldRestrictions?:Record<string,Record<string,string>> }
 /** 新增或编辑输入；version 为非负版本，编码仅在创建时确定，属性限于此类白名单。 */
-export interface MasterDataInput { code:string; name:string; attributes:Record<string,string>; version:number; contacts?:PartnerDetailInput[]; bankAccounts?:PartnerDetailInput[] }
+export interface MasterDataInput { code:string; name:string; attributes:Record<string,string>; version:number; contacts?:PartnerDetailInput[]; bankAccounts?:PartnerDetailInput[]; organizationId?:string|null }
 /** 页面请求由应用壳注入，复用真实会话、CSRF 和统一操作准入；不存在模拟数据回退。 */
 export interface MasterDataApi {
+  /** 编码协助公开端口；请求键仅用于幂等，租户与账号由服务端会话确定。 */
+  codingOptions?(type:string,field:string):Promise<{encoderKey:string;name:string}[]>;
+  issueCode?(type:string,key:string,requestId:string):Promise<{code:string}>;
+  /** 客商数据权限只读提示；归属组织来自服务端可信租户，不是客户端放行凭据。 */
+  partnerAccess():Promise<{organizations:{id:string;name:string}[];fieldRestrictions:Record<string,Record<string,string>>}>;
   /** 宿主客商/仓库读取权限下的完整租户地理摘要；无浏览器长期缓存。 */
   geographyDirectory(kind:"partner"|"warehouse"):Promise<import("@appnexus/ui").GeographyNode[]>;
   /** 按客商 UUID 读取已授权详情；列表不带关联明细。 */

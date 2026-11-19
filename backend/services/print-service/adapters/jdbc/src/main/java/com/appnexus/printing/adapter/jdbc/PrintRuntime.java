@@ -32,9 +32,17 @@ public class PrintRuntime {
   private final PrintPlatform platform;
   private final PrintJson json;
   private final ObjectMapper mapper;
+  private final com.appnexus.printing.application.PrintReceiptService receipts;
 
+  /**
+   * 装配现有打印技术入口及回执纯应用用例，不在应用中构造技术客户端。
+   * @param jdbc 与宿主事务管理器共用数据源，回执锁和写入必须使用同一事务连接
+   * @param platform 可信打印授权端口，每次用例执行重新校验
+   * @param mapper 既有 JSON 协议编解码器，回执比较使用结构相等，不依赖键顺序
+   */
   public PrintRuntime(JdbcTemplate jdbc, PrintPlatform platform, ObjectMapper mapper) {
     this.jdbc = jdbc; this.platform = platform; this.mapper = mapper; this.json = new PrintJson(mapper);
+    this.receipts = new com.appnexus.printing.application.PrintReceiptService(new JdbcPrintReceiptStore(jdbc,mapper),platform);
   }
 
 
@@ -50,21 +58,21 @@ public class PrintRuntime {
 
   @Transactional
   public Map<String,Object> saveTemplate(PrintContext c, String id, TemplateDraft d) {
-    require(c,"print.template:design"); validateDraft(d);
-    String template = json.template(d.template()); String scope = json.object(d.scope());
-    UUID actor=uuid(c.actorId()), tenant=uuid(c.tenantId());
-    if (id == null) {
-      UUID created=UUID.randomUUID();
-      jdbc.update("INSERT INTO print_template(tenant_id,id,code,name,category,data_contract,scope_json,draft_json,created_by,updated_by) VALUES(UUID_TO_BIN(?),UUID_TO_BIN(?),?,?,?,?,CAST(? AS JSON),CAST(? AS JSON),UUID_TO_BIN(?),UUID_TO_BIN(?))",
-          tenant.toString(),created.toString(),d.code(),d.name().trim(),d.category(),d.dataContract(),scope,template,actor.toString(),actor.toString());
-      id=created.toString();
-    } else {
-      uuid(id);
-      int changed=jdbc.update("UPDATE print_template SET code=?,name=?,category=?,data_contract=?,scope_json=CAST(? AS JSON),draft_json=CAST(? AS JSON),draft_revision=draft_revision+1,updated_by=UUID_TO_BIN(?) WHERE tenant_id=UUID_TO_BIN(?) AND id=UUID_TO_BIN(?) AND draft_revision=?",
-          d.code(),d.name().trim(),d.category(),d.dataContract(),scope,template,actor.toString(),tenant.toString(),id,d.revision());
-      if(changed==0) throw new PrintFailure("PRINT_TEMPLATE_CONFLICT",409);
-    }
-    return template(c,id);
+    var service=new com.appnexus.printing.application.TemplateEditingService(new com.appnexus.printing.application.TemplateEditingPort(){
+      private String template,scope;
+      @Override public void prepare(){template=json.template(d.template());scope=json.object(d.scope());}
+      @Override public String identifier(String value){return uuid(value).toString();}
+      @Override public void create(PrintContext context,String target,Draft input){
+        jdbc.update("INSERT INTO print_template(tenant_id,id,code,name,category,data_contract,scope_json,draft_json,created_by,updated_by) VALUES(UUID_TO_BIN(?),UUID_TO_BIN(?),?,?,?,?,CAST(? AS JSON),CAST(? AS JSON),UUID_TO_BIN(?),UUID_TO_BIN(?))",context.tenantId(),target,input.code(),input.name().trim(),input.category(),input.contract(),scope,template,context.actorId(),context.actorId());
+      }
+      @Override public int update(PrintContext context,String target,Draft input){
+        return jdbc.update("UPDATE print_template SET code=?,name=?,category=?,data_contract=?,scope_json=CAST(? AS JSON),draft_json=CAST(? AS JSON),draft_revision=draft_revision+1,updated_by=UUID_TO_BIN(?) WHERE tenant_id=UUID_TO_BIN(?) AND id=UUID_TO_BIN(?) AND draft_revision=?",input.code(),input.name().trim(),input.category(),input.contract(),scope,template,context.actorId(),context.tenantId(),target,input.revision());
+      }
+      @Override public Map<String,Object> result(PrintContext context,String target){return template(context,target);}
+    },platform);
+    var input=d==null?null:new com.appnexus.printing.application.TemplateEditingPort.Draft(d.code(),d.name(),d.category(),d.dataContract(),d.revision());
+    try{return service.save(c,id,input);}
+    catch(com.appnexus.contracts.printing.PrintRejection error){throw new PrintFailure(error.code(),error.status());}
   }
 
   public Map<String,Object> template(PrintContext c,String id) {
@@ -82,17 +90,26 @@ public class PrintRuntime {
    */
   @Transactional
   public Map<String,Object> publish(PrintContext c,String id,long revision) {
-    require(c,"print.template:publish");
-    uuid(id);
-    jdbc.queryForList("SELECT id FROM print_template WHERE tenant_id=UUID_TO_BIN(?) AND id=UUID_TO_BIN(?) FOR UPDATE",c.tenantId(),id);
-    Map<String,Object> current=templateWithPermission(c,id,"print.template:publish");
-    if(((Number)current.get("draft_revision")).longValue()!=revision) throw new PrintFailure("PRINT_TEMPLATE_CONFLICT",409);
-    Map<String,Object> schema=contractCatalog==null?null:contractCatalog.apply(c,current.get("data_contract").toString());
-    if(schema!=null){var fields=new HashSet<String>();collectFields((List<Map<String,Object>>)schema.get("fields"),fields);validateReferences(mapper.readTree(current.get("draft_json").toString()),fields);}
-    int version=current.get("published_version")==null?1:((Number)current.get("published_version")).intValue()+1;
-    jdbc.update("INSERT INTO print_template_version(tenant_id,template_id,version,template_json,scope_json,data_contract,published_by,data_contract_schema) SELECT tenant_id,id,?,draft_json,scope_json,data_contract,UUID_TO_BIN(?),CAST(? AS JSON) FROM print_template WHERE tenant_id=UUID_TO_BIN(?) AND id=UUID_TO_BIN(?)",version,c.actorId(),schema==null?null:mapper.writeValueAsString(schema),c.tenantId(),id);
-    jdbc.update("UPDATE print_template SET published_version=?,enabled=TRUE,updated_by=UUID_TO_BIN(?) WHERE tenant_id=UUID_TO_BIN(?) AND id=UUID_TO_BIN(?)",version,c.actorId(),c.tenantId(),id);
-    return templateWithPermission(c,id,"print.template:publish");
+    var service=new com.appnexus.printing.application.TemplatePublicationService(new com.appnexus.printing.application.TemplatePublicationPort(){
+      private Map<String,Object> current;
+      @Override public Draft lock(PrintContext context,String template){
+        jdbc.queryForList("SELECT id FROM print_template WHERE tenant_id=UUID_TO_BIN(?) AND id=UUID_TO_BIN(?) FOR UPDATE",context.tenantId(),template);
+        current=templateWithPermission(context,template,"print.template:publish");
+        return new Draft(((Number)current.get("draft_revision")).longValue(),current.get("published_version")==null?null:((Number)current.get("published_version")).intValue(),current.get("data_contract").toString());
+      }
+      @Override public String validatedSchema(PrintContext context,String template,String contract){
+        Map<String,Object> schema=contractCatalog==null?null:contractCatalog.apply(context,contract);
+        if(schema!=null){var fields=new HashSet<String>();collectFields((List<Map<String,Object>>)schema.get("fields"),fields);validateReferences(mapper.readTree(current.get("draft_json").toString()),fields);}
+        return schema==null?null:mapper.writeValueAsString(schema);
+      }
+      @Override public void publish(PrintContext context,String template,int version,String schema){
+        jdbc.update("INSERT INTO print_template_version(tenant_id,template_id,version,template_json,scope_json,data_contract,published_by,data_contract_schema) SELECT tenant_id,id,?,draft_json,scope_json,data_contract,UUID_TO_BIN(?),CAST(? AS JSON) FROM print_template WHERE tenant_id=UUID_TO_BIN(?) AND id=UUID_TO_BIN(?)",version,context.actorId(),schema,context.tenantId(),template);
+        jdbc.update("UPDATE print_template SET published_version=?,enabled=TRUE,updated_by=UUID_TO_BIN(?) WHERE tenant_id=UUID_TO_BIN(?) AND id=UUID_TO_BIN(?)",version,context.actorId(),context.tenantId(),template);
+      }
+      @Override public Map<String,Object> result(PrintContext context,String template){return templateWithPermission(context,template,"print.template:publish");}
+    },platform);
+    try{return service.publish(c,id,revision);}
+    catch(com.appnexus.contracts.printing.PrintRejection error){throw new PrintFailure(error.code(),error.status());}
   }
 
   public List<Map<String,Object>> versions(PrintContext c,String id) {
@@ -197,27 +214,11 @@ public class PrintRuntime {
    */
   @Transactional
   public Map<String,Object> receipt(PrintContext c,String id,Receipt receipt) {
-    require(c,"print.agent:operate"); uuid(id);
-    if(receipt==null||receipt.state()==null||!Set.of("SUBMITTED","SUCCEEDED","FAILED","UNKNOWN").contains(receipt.state())) throw new PrintFailure("PRINT_RECEIPT_STATE_INVALID",400);
-    if(blank(receipt.agent())||receipt.agent().length()>128) throw new PrintFailure("PRINT_INPUT_INVALID",400);
-    String result=json.object(receipt.result());
-    var current=jdbc.query("SELECT state,claimed_by,result_json,(claim_expires_at<CURRENT_TIMESTAMP(6)) expired FROM print_job WHERE tenant_id=UUID_TO_BIN(?) AND id=UUID_TO_BIN(?) FOR UPDATE",
-        rs->{if(!rs.next())throw new PrintFailure("PRINT_JOB_NOT_FOUND",404);return row(rs,"state","claimed_by","result_json","expired");},c.tenantId(),id);
-    if(!receipt.agent().equals(current.get("claimed_by"))) throw new PrintFailure("PRINT_JOB_RECEIPT_CONFLICT",409);
-    String state=current.get("state").toString();
-    if(state.equals(receipt.state())&&Objects.equals(current.get("result_json"),jsonNode(result))) return job(c,id,"print.agent:operate");
-    // 未确认送入队列前不能直接声称纸张完成；已送入队列后的失败同样无法证明未出纸。
-    boolean allowed=state.equals("CLAIMED")&&!Boolean.TRUE.equals(current.get("expired"))
-        &&!(current.get("expired") instanceof Number n&&n.intValue()!=0)
-        &&Set.of("SUBMITTED","FAILED","UNKNOWN").contains(receipt.state())
-        ||state.equals("SUBMITTED")&&Set.of("SUCCEEDED","UNKNOWN").contains(receipt.state());
-    if(!allowed) throw new PrintFailure("PRINT_JOB_RECEIPT_CONFLICT",409);
-    jdbc.update("UPDATE print_job SET state=?,result_json=CAST(? AS JSON),claim_expires_at=NULL WHERE tenant_id=UUID_TO_BIN(?) AND id=UUID_TO_BIN(?)",receipt.state(),result,c.tenantId(),id);
+    // 事务入站装饰器包裹整个应用用例及结果读取；不得自调用绕过 Spring 代理。
+    try{receipts.accept(c,id,receipt==null?null:receipt.state(),receipt==null?null:receipt.agent(),()->json.object(receipt.result()));}
+    catch(com.appnexus.contracts.printing.PrintRejection error){throw new PrintFailure(error.code(),error.status());}
     return job(c,id,"print.agent:operate");
   }
-
-  /** 反序列化已通过 PrintJson 校验的结果，仅用于比较 JSON 结构，忽略对象键顺序。 */
-  private JsonNode jsonNode(String value){return mapper.readTree(value);}
 
   /**
    * 接收领取代理的 PDF，产物与任务成功状态在同一事务提交；不接受本地路径或任意 URL。
@@ -275,7 +276,6 @@ public class PrintRuntime {
   private Map<String,Object> byRequest(PrintContext c){String id=jdbc.query("SELECT BIN_TO_UUID(id) id FROM print_job WHERE tenant_id=UUID_TO_BIN(?) AND actor_id=UUID_TO_BIN(?) AND request_id=UUID_TO_BIN(?)",rs->{if(!rs.next())throw new PrintFailure("PRINT_IDEMPOTENCY_CONFLICT",409);return rs.getString(1);},c.tenantId(),actorKey(c),c.requestId());return job(c,id,"print.job:submit");}
   private Map<String,Object> job(PrintContext c,String id,String permission){require(c,permission);return jdbc.query("SELECT BIN_TO_UUID(id) id,source_type,source_id,BIN_TO_UUID(template_id) template_id,template_version,output_type,BIN_TO_UUID(device_id) device_id,copies,data_snapshot,state,attempt,result_json,BIN_TO_UUID(parent_job_id) parent_job_id,reprint_reason,created_at,updated_at FROM print_job WHERE tenant_id=UUID_TO_BIN(?) AND id=UUID_TO_BIN(?)",rs->{if(!rs.next())throw new PrintFailure("PRINT_JOB_NOT_FOUND",404);return row(rs,"id","source_type","source_id","template_id","template_version","output_type","device_id","copies","data_snapshot","state","attempt","result_json","parent_job_id","reprint_reason","created_at","updated_at");},c.tenantId(),id);}
   private Map<String,Object> templateWithPermission(PrintContext c,String id,String permission){require(c,permission);uuid(id);return jdbc.query("SELECT BIN_TO_UUID(id) id,code,name,category,data_contract,scope_json,draft_json,draft_revision,published_version,enabled,created_at,updated_at FROM print_template WHERE tenant_id=UUID_TO_BIN(?) AND id=UUID_TO_BIN(?)",rs->{if(!rs.next())throw new PrintFailure("PRINT_TEMPLATE_NOT_FOUND",404);return row(rs,"id","code","name","category","data_contract","scope_json","draft_json","draft_revision","published_version","enabled","created_at","updated_at");},c.tenantId(),id);}
-  private void validateDraft(TemplateDraft d){if(d==null||!PrintRules.validCode(d.code())||!PrintRules.validCode(d.dataContract())||blank(d.name())||d.name().trim().length()>128||!Set.of("A4","LABEL","WAYBILL","RECEIPT").contains(d.category())||d.revision() < -1)throw new PrintFailure("PRINT_INPUT_INVALID",400);}
   private void require(PrintContext c,String permission){if(!platform.allowed(c,permission))throw new PrintFailure("PRINT_ACCESS_DENIED",403);}
   private void requireAny(PrintContext c,String... permissions){if(Arrays.stream(permissions).noneMatch(p->platform.allowed(c,p)))throw new PrintFailure("PRINT_ACCESS_DENIED",403);}
   private static String actorKey(PrintContext c){return c.actorId().startsWith("partner-")?UUID.nameUUIDFromBytes(c.actorId().getBytes(java.nio.charset.StandardCharsets.UTF_8)).toString():c.actorId();}

@@ -12,4 +12,6 @@ export interface ManagementColumn {
   width?: number;
   /** 默认固定方向；缺省不固定，通常将操作列固定到 right。 */
   fixed?: "left" | "right";
+  /** 是否按单行溢出处理；默认普通列为 true、操作列为 false，多行名称或复合内容列须显式设为 false 以允许自然行高。 */
+  showOverflow?: boolean;
 }

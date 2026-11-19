@@ -8,15 +8,9 @@ import static com.appnexus.masterdata.MasterData.*;
 /** 仓库、库区、库位固定三层约束；仅在原服务完成独立权限校验后的写事务内调用。 */
 final class StorageHierarchy {
   private StorageHierarchy() {}
-  private static final Set<String> AREA_TYPES=Set.of("RECEIVING","WORK","GOOD","DEFECTIVE","PACKAGING","VIRTUAL","FINISHED");
 
-  /** 父级编码必填且不可跨租户；库容单位吨，缺省未知，允许非负数且最多18位整数、6位小数。 */
-  static void validate(Kind kind,Map<String,String> values){
-    if(parent(kind)==null)return;
-    if(!values.get("parentCode").matches("[A-Za-z0-9][A-Za-z0-9._-]{0,63}"))throw invalid();
-    if(!values.get("capacity").matches("|[0-9]{1,18}(\\.[0-9]{1,6})?"))throw invalid();
-    if(kind==Kind.STORAGE_AREA&&!values.get("areaType").isEmpty()&&!AREA_TYPES.contains(values.get("areaType")))throw invalid();
-  }
+  /** 兼容同领域调用，固定字段规则集中在纯领域类型，父子锁逻辑仍在本适配器执行。 */
+  static void validate(Kind kind,Map<String,String> values){com.appnexus.masterdata.domain.warehouse.StorageRules.validate(kind,values);}
 
   /**
    * 锁定直属上级使创建与父级停用串行；父级创建后不可改变，防止隐式搬迁整个子树。

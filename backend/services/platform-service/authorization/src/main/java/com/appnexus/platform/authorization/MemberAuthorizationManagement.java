@@ -5,18 +5,25 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
-/** 成员独立授权端口；角色提供操作上限，快照固定成员范围，角色默认策略不参与运行时扩权。 */
+/** 成员独立授权端口；角色持续提供功能权限，成员分支保存有效期及范围模式，数据范围按继承状态读取角色当前策略或成员自定义策略。 */
 public interface MemberAuthorizationManagement {
     /**
      * 已审核的单个角色授权分支。
      * @param roleId 当前租户角色 UUID
-     * @param permissionIds 明确审核过的权限集合；空集合表示本分支不授予功能
+     * @param permissionIds 角色当前完整功能集合；保存时必须与角色一致，成员不能独立增减功能
      * @param dataPolicies 同一分支的操作数据范围，不允许跨分支拼接
      * @param expiresAt 到期 UTC 时间；NULL 为长期，过期分支不参与权限判定
-     * @param roleVersion 生成本次快照时的角色版本
+     * @param inheritDataScope true 表示持续继承角色当前数据范围；false 表示使用成员自定义范围
+     * @param roleVersion 本次编辑读取的角色版本；保存时用于并发校验
      */
     record Grant(UUID roleId, Set<UUID> permissionIds, Set<RolePermissionManagement.DataPolicy> dataPolicies,
-                 Instant expiresAt, long roleVersion) {}
+                 Instant expiresAt, long roleVersion, boolean inheritDataScope) {
+        /** 旧调用保持自定义语义，避免将已有独立范围隐式转换为继承。 */
+        public Grant(UUID roleId, Set<UUID> permissionIds, Set<RolePermissionManagement.DataPolicy> dataPolicies,
+                     Instant expiresAt, long roleVersion) {
+            this(roleId, permissionIds, dataPolicies, expiresAt, roleVersion, false);
+        }
+    }
     /** @param grants 已分配角色的全部分支 @param authorityVersion 成员授权版本，保存时须原样回传 */
     record Assignment(List<Grant> grants, long authorityVersion) {}
 

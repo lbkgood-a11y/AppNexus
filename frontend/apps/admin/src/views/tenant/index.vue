@@ -39,9 +39,9 @@ onMounted(load);
 </script>
 <template>
  <div class="management-page">
-  <BusinessWorkspace :title="t('tenant.select')" :description="t('tenant.selectDescription')">
+  <BusinessWorkspace :title="t('tenant.select')" :search-title="t('tenant.search')" :description="t('tenant.selectDescription')">
    <template v-if="error" #feedback><FloatingError :title="error" scope="error" type="error" :closable="false" show-icon /></template>
-   <template v-if="tenants.length" #search><div class="management-filter"><div class="management-filter-header"><h2 class="management-filter-title">{{t('tenant.search')}}</h2></div><el-form inline @submit.prevent="search()"><el-form-item :label="t('tenant.name')"><el-input v-model="query" clearable :maxlength="100" :placeholder="t('management.keyword')" /></el-form-item><div class="management-filter-actions"><el-button native-type="submit" type="primary" :disabled="loading || Boolean(selecting)">{{t('administration.search')}}</el-button><el-button :disabled="loading || Boolean(selecting)" @click="search(true)">{{t('management.reset')}}</el-button></div></el-form></div></template>
+   <template v-if="tenants.length" #search><div class="management-filter"><el-form inline @submit.prevent="search()"><el-form-item :label="t('tenant.name')"><el-input v-model="query" clearable :maxlength="100" :placeholder="t('management.keyword')" /></el-form-item><div class="management-filter-actions"><el-button native-type="submit" type="primary" :disabled="loading || Boolean(selecting)">{{t('administration.search')}}</el-button><el-button :disabled="loading || Boolean(selecting)" @click="search(true)">{{t('management.reset')}}</el-button></div></el-form></div></template>
    <template #data><ManagementTable embedded :title="t('tenant.availableList')" :total="filteredTenants.length" :rows="filteredTenants" :columns="columns" :loading="loading" :busy="Boolean(selecting)" :empty-text="t(submittedQuery?'management.noResults':'tenant.noMembership')" @refresh="load">
    <template #actions><el-button v-if="!tenants.length&&platformAdministrator" type="primary" @click="router.push('/platform/tenants')">{{t('administration.tenantTitle')}}</el-button></template>
    <template #operations="{row}">

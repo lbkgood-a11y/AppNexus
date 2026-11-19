@@ -12,6 +12,7 @@
     "./product-types": "./src/product/product.ts"
   },
   "dependencies": {
+    "@appnexus/business-object": "workspace:*",
     "@appnexus/icons": "workspace:*",
     "@appnexus/ui": "workspace:*"
   },

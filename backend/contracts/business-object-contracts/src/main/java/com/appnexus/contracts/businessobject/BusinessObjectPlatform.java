@@ -8,6 +8,8 @@ public interface BusinessObjectPlatform {
   boolean tenantAdministrator(BusinessObjects.Context context);
   /** 解析时复核有效成员，不能因无配置权拒绝普通业务用户。 */
   boolean active(BusinessObjects.Context context);
+  /** 发号复核当前有效成员的对象操作权限；宿主未接通时默认拒绝，不借用配置管理权。 */
+  default boolean codingAllowed(BusinessObjects.Context context,String operationId,String permissionCode){return false;}
   /** 平台授权对象必须是实际存在的租户，不能保存悬空 UUID。 */
   boolean tenantExists(String tenant);
 }

@@ -25,8 +25,12 @@ public interface RolePermissionManagement {
     record DataPolicy(UUID permissionId, DataScopeAuthorization.ScopeType scopeType,
                       String resourceType, Set<UUID> organizationIds) {}
 
-    /** @param permissionIds 完整功能权限集合 @param dataPolicies 完整数据策略集合 @param roleVersion 角色乐观锁版本 @param fieldPolicies 强制字段展示限制，与普通授权合并后收口 */
-    record AuthorizationAssignment(Set<UUID> permissionIds, Set<DataPolicy> dataPolicies, long roleVersion, Set<FieldSecurity.Policy> fieldPolicies) {
+    /** @param permissionIds 完整功能权限集合 @param dataPolicies 完整数据策略集合 @param roleVersion 角色乐观锁版本 @param fieldPolicies 强制字段展示限制，与普通授权合并后收口 @param dataAccessVersion 代码声明目录版本，Web保存时原样回传，过期拒绝覆盖 @param inheritingMemberCount 当前未到期且启用的继承成员数量，单位人；仅用于保存影响提示，不作为授权依据 */
+    record AuthorizationAssignment(Set<UUID> permissionIds, Set<DataPolicy> dataPolicies, long roleVersion, Set<FieldSecurity.Policy> fieldPolicies, long inheritingMemberCount,String dataAccessVersion) {
+        /** 内部调用可省略目录版本；Web读取由目录实现填充。 */
+        public AuthorizationAssignment(Set<UUID> permissionIds,Set<DataPolicy> dataPolicies,long roleVersion,Set<FieldSecurity.Policy> fieldPolicies,long inheritingMemberCount){this(permissionIds,dataPolicies,roleVersion,fieldPolicies,inheritingMemberCount,null);}
+        /** 未查询影响人数的内部结果使用零；对外读取由持久化实现返回实际人数。 */
+        public AuthorizationAssignment(Set<UUID> permissionIds,Set<DataPolicy> dataPolicies,long roleVersion,Set<FieldSecurity.Policy> fieldPolicies){this(permissionIds,dataPolicies,roleVersion,fieldPolicies,0);}
         /** 兼容旧调用，未配置额外字段限制。 */
         public AuthorizationAssignment(Set<UUID> permissionIds,Set<DataPolicy> dataPolicies,long roleVersion){this(permissionIds,dataPolicies,roleVersion,Set.of());}
     }
@@ -68,7 +72,7 @@ public interface RolePermissionManagement {
     AuthorizationAssignment replaceAuthorization(RoleManagement.Context context, UUID roleId,
         long expectedRoleVersion, Set<UUID> permissionIds, Set<DataPolicy> dataPolicies, String reason);
 
-    /** 原子保存功能、默认数据范围与强制字段限制；字段列表为 NULL 时保留旧限制以兼容旧客户端。 */
+    /** 原子保存功能、角色数据范围与强制字段限制；字段列表为 NULL 时保留旧限制以兼容旧客户端。 */
     AuthorizationAssignment replaceAuthorization(RoleManagement.Context context,UUID roleId,long expectedRoleVersion,
         Set<UUID> permissionIds,Set<DataPolicy> dataPolicies,Set<FieldSecurity.Policy> fieldPolicies,String reason);
 }

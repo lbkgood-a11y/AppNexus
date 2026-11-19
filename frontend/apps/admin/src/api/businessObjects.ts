@@ -10,6 +10,8 @@ async function write(method:"put"|"post",path:string,data:unknown) {
 export function businessObjectApi(platform=false):BusinessObjectApi {
   const base=platform?'/bff/platform/business-objects':'/api/business-objects';const id=encodeURIComponent;
   return {
+    encoders:type=>http.request('get',`/api/business-objects/${id(type)}/encoders`),
+    saveEncoder:(type,key,input)=>write('put',`/api/business-objects/${id(type)}/encoders/${id(key)}`,input),
     readiness:type=>http.request('get',`/api/business-objects/${id(type)}/readiness`),
     pageRelationships:type=>http.request('get',`${base}/${id(type)}/page-relationships`),
     controlPage:(type,revision,operationId,enabled,reason)=>write('put',`${base}/${id(type)}/page-controls`,{revision,operationId,enabled,reason}) as ReturnType<BusinessObjectApi['controlPage']>,

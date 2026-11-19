@@ -133,7 +133,9 @@ function selectGeography(code:string){
 }
 const partnerOptions=ref<import("./index").DictionaryOption[]>([]);
 const operation=computed(()=>masterDataOperations[props.kind]);
-const fields=computed(()=>masterDataFields[props.kind]);
+/** 列显隐取自服务端字段限制；无数据时仍使用权限元数据，不能以表格偏好代替权限。 */
+const partnerFieldRestrictions=ref<Record<string,Record<string,string>>>({});
+const fields=computed(()=>masterDataFields[props.kind].filter(field=>props.kind!=="partner"||partnerFieldRestrictions.value["masterdata.partner"]?.[field]!=="HIDDEN"));
 /** 上级统一放在表单首项选择，避免与只读列重复展示。 */
 const visibleFields=computed(()=>fields.value.filter(field=>(!isGeography.value&&!isStorage.value)||field!=="parentCode"));
 const title=computed(()=>t("masterData."+props.kind));
@@ -187,6 +189,7 @@ async function load(){
     if(props.kind==="partner")partnerOptions.value=(await props.api.partnerOptions()).partnerType??[];
     if(props.kind==="warehouse")warehouseOptions.value=await props.api.warehouseOptions();
     if(isStorage.value&&!props.storageParent?.code){rows.value=[];total.value=0;return;}
+    if(props.kind==="partner")partnerFieldRestrictions.value=(await props.api.partnerAccess()).fieldRestrictions;
     const result=await props.api.list(props.kind,{keyword:keyword.value,enabled:status.value==="all"?undefined:status.value==="enabled",page:page.value,size:size.value,...(isGeography.value?{scope:treeScope.value}:isStorage.value?{scope:props.storageParent?.code}:{})});
     rows.value=result.rows;total.value=result.total;
   }catch(e){

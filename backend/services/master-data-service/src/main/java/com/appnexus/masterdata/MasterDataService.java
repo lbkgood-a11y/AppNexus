@@ -4,29 +4,31 @@ import com.appnexus.platform.authorization.AccessAuthorization;
 import com.appnexus.platform.tenant.VerifiedTenantContext;
 import java.util.*;
 import com.appnexus.platform.configuration.BusinessValueCatalog;
-import org.springframework.dao.DuplicateKeyException;
-import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.transaction.support.TransactionTemplate;
 import static com.appnexus.masterdata.MasterData.*;
 
 /**
- * 租户公共档案执行器；所有 SQL 强制带租户，所有调用重新鉴权，不缓存授权结果。
- * 仅表名和列名取自构建内白名单；业务值全部使用绑定参数，禁止任意 SQL 或动态对象执行。
+ * 主数据应用用例；协调授权、领域校验、聚合关系及输出端口，不依赖 JDBC 或 Spring 事务。
+ * 租户隔离、固定 SQL 和数据库 UTC 审计由输出适配器执行；同一聚合事务覆盖全部变更。
  */
 public final class MasterDataService {
   private final BusinessValueCatalog dictionaries;
-  private final JdbcTemplate jdbc;
+  private final com.appnexus.masterdata.application.MasterDataRecords records;
+  private final com.appnexus.masterdata.application.MasterDataRelations relations;
+  private final com.appnexus.masterdata.application.RecordTransaction transaction;
+  private final com.appnexus.masterdata.application.PartnerAccess partner;
   private final AccessAuthorization access;
-  private final TransactionTemplate transaction;
   /**
-   * @param jdbc 宿主数据源
-   * @param access 公开授权端口
-   * @param dictionaries 字典公开端口；不回退前端硬编码选项
-   * @param manager 宿主事务管理器 */
-  public MasterDataService(JdbcTemplate jdbc,AccessAuthorization access,PlatformTransactionManager manager,BusinessValueCatalog dictionaries) {
-    this.dictionaries=dictionaries;this.jdbc=jdbc;this.access=access;this.transaction=new TransactionTemplate(manager);
-  }
+   * @param access 可信功能权限公开端口，每次调用重新检查
+   * @param dictionaries 字典选项及引用公开端口，不读取其他模块表
+   * @param records 固定记录输出端口，必须实现租户、CAS 和审计
+   * @param relations 查询与聚合关系输出端口，不能独立提交明细
+   * @param transaction 同一数据源的用例事务端口
+   * @param partner 客商行与字段准入端口，缺省拒绝客商能力
+   */
+  public MasterDataService(AccessAuthorization access,BusinessValueCatalog dictionaries,com.appnexus.masterdata.application.MasterDataRecords records,com.appnexus.masterdata.application.MasterDataRelations relations,com.appnexus.masterdata.application.RecordTransaction transaction,com.appnexus.masterdata.application.PartnerAccess partner){this.access=access;this.dictionaries=dictionaries;this.records=records;this.relations=relations;this.transaction=transaction;this.partner=partner;}
+  private com.appnexus.masterdata.application.PartnerAccess partner(){if(partner==null)throw new Rejection(403,"MASTER_DATA_DENIED");return partner;}
+  /** 当前客商读取权下返回归属候选与字段限制，不读取账号资料。 */
+  public Object partnerAccess(VerifiedTenantContext c){require(c,Kind.PARTNER,"read");return transaction.execute(()->partner().metadata(c),null);}
 
   /** 只读当前客商或商品字典；由原对象读取权限复核，不授予字典维护能力。 */
   public Object dictionaryOptions(VerifiedTenantContext c,Kind kind){require(c,kind,"read");return dictionaries.options(c.tenantId(),BusinessValueCatalog.PARTNER);}
@@ -35,7 +37,7 @@ public final class MasterDataService {
   public Object warehouseOptions(VerifiedTenantContext c){require(c,Kind.WAREHOUSE,"read");return dictionaries.options(c.tenantId(),BusinessValueCatalog.WAREHOUSE);}
 
   /** 业务读取权下的地理摘要，避免给客商、仓库操作员额外授予地理维护权限。 */
-  public Object geographyCatalog(VerifiedTenantContext c,Kind kind){require(c,kind,"read");return new JdbcGeographyCatalog(jdbc).nodes(c.tenantId());}
+  public Object geographyCatalog(VerifiedTenantContext c,Kind kind){require(c,kind,"read");return relations.geographyCatalog(c);}
 
   /**
    * 标准目录仍复核原对象读取权，分页约束由标准目录统一校验。
@@ -59,7 +61,7 @@ public final class MasterDataService {
    * @return 当前层节点及总数
    */
   public Object geographyTree(VerifiedTenantContext c,Kind kind,String parent,int page,int size){
-    require(c,kind,"read");return new TenantGeography(jdbc,c.tenantId(),false).children(parent,page,size,kind==Kind.COUNTRY_REGION);
+    require(c,kind,"read");return relations.geographyTree(c,kind,parent,page,size);
   }
 
   /**
@@ -112,55 +114,7 @@ public final class MasterDataService {
    */
   public Page list(VerifiedTenantContext c,Kind kind,String keyword,Boolean enabled,int page,int size,String id,String scope) {
     require(c,kind,"read");
-    if(id!=null)uuid(id);
-    if(page<1||page>1000000||size<1||size>100||keyword==null||keyword.length()>200)throw invalid();
-    var geography=kind==Kind.COUNTRY_REGION||kind==Kind.SUBDIVISION?new TenantGeography(jdbc,c.tenantId(),false):null;
-    String where=" WHERE tenant_id=UUID_TO_BIN(?) AND (LOCATE(?,code)>0 OR LOCATE(?,name)>0)"+(enabled==null?"":" AND enabled=?");
-    var args=new ArrayList<Object>(List.of(c.tenantId().toString(),keyword.trim(),keyword.trim()));
-    // 跨国检索允许通过所属国别及标准别名定位，参数仍绑定且强制当前租户。
-    if(kind==Kind.COUNTRY_REGION||kind==Kind.SUBDIVISION){
-      String extra=kind==Kind.COUNTRY_REGION?"alpha3_code":"country_code";
-      String extra2=kind==Kind.COUNTRY_REGION?"numeric_code":"parent_code";
-      where=where.replace("OR LOCATE(?,name)>0)","OR LOCATE(?,name)>0 OR LOCATE(?,"+extra+")>0 OR LOCATE(?,"+extra2+")>0)");
-      args.add(keyword.trim());args.add(keyword.trim());
-      // 层级编码只是服务端派生的查询别名；仍以绑定的标准编码限定同一租户资料。
-      if(!keyword.isBlank()){
-        String query=keyword.trim().toLowerCase(Locale.ROOT);
-        var aliases=geography.aliases(query,kind==Kind.SUBDIVISION);
-        if(!aliases.isEmpty()){
-          where=where.replace("OR LOCATE(?,"+extra2+")>0)","OR LOCATE(?,"+extra2+")>0 OR code IN ("+String.join(",",Collections.nCopies(aliases.size(),"?"))+"))");args.addAll(aliases);
-        }
-      }
-    }
-    if(enabled!=null)args.add(enabled);
-    if((kind==Kind.STORAGE_AREA||kind==Kind.STORAGE_LOCATION)&&scope!=null&&!scope.isBlank()){
-      if(!scope.matches("[A-Za-z0-9][A-Za-z0-9._-]{0,63}"))throw invalid();
-      where+=" AND parent_code=?";args.add(scope);
-    }
-    if(id!=null){where+=" AND id=UUID_TO_BIN(?)";args.add(id);}
-    if((kind==Kind.COUNTRY_REGION||kind==Kind.SUBDIVISION)&&scope!=null&&!scope.isEmpty()){
-      var codes=geography.codes(scope,kind==Kind.SUBDIVISION);
-      if(codes.isEmpty())return new Page(List.of(),0);
-      where+=" AND code IN ("+String.join(",",Collections.nCopies(codes.size(),"?"))+")";args.addAll(codes);
-    }
-    long total=jdbc.queryForObject("SELECT COUNT(*) FROM "+kind.table()+where,Long.class,args.toArray());
-    args.add(size);args.add((page-1)*size);
-    // 客商列表仅返回原摘要字段，证件、资本与银行账户等扩展字段只在指定详情 ID 后读取。
-    var listFields=kind==Kind.PARTNER&&id==null?List.of("partnerType","creditCode","contactName","phone","address"):kind.fields;
-    var rows=jdbc.query("SELECT BIN_TO_UUID(id) id,code,name,enabled,version,BIN_TO_UUID(created_by) audit_created_by,created_at,BIN_TO_UUID(updated_by) audit_updated_by,updated_at,"+String.join(",",listFields.stream().map(kind::column).toList())+" FROM "+kind.table()+where+" ORDER BY code,id LIMIT ? OFFSET ?",(r,n)->{
-      var attributes=new LinkedHashMap<String,String>();for(String field:listFields)attributes.put(field,r.getString(kind.column(field)));
-      if(kind==Kind.COUNTRY_REGION||kind==Kind.SUBDIVISION){
-        attributes.put("parentCode",geography.parent(r.getString("code")));
-        attributes.put("displayName",geography.name(r.getString("code")));
-        attributes.put("hierarchyCode",geography.path(r.getString("code")));
-        attributes.put("parentHierarchyCode",geography.path(geography.parent(r.getString("code"))));
-        // 上级名称与父级编码从同一租户图解析，编辑回显不依赖左树已加载或当前选中的范围。
-        attributes.put("parentName",geography.name(geography.parent(r.getString("code"))));
-      }
-      Row row=new Row(r.getString("id"),r.getString("code"),r.getString("name"),attributes,r.getBoolean("enabled"),r.getLong("version"),new Audit(r.getString("audit_created_by"),r.getTimestamp("created_at")==null?null:r.getTimestamp("created_at").toInstant().toString(),r.getString("audit_updated_by"),r.getTimestamp("updated_at")==null?null:r.getTimestamp("updated_at").toInstant().toString()));
-      return kind==Kind.PARTNER&&id!=null?new Row(row.id(),row.code(),row.name(),row.attributes(),row.enabled(),row.version(),row.audit(),PartnerDetails.read(jdbc,c,row.id(),false),PartnerDetails.read(jdbc,c,row.id(),true)):row;
-    },args.toArray());
-    return new Page(rows,total);
+    return kind==Kind.PARTNER?transaction.execute(()->relations.list(c,kind,keyword,enabled,page,size,id,scope),null):relations.list(c,kind,keyword,enabled,page,size,id,scope);
   }
 
   /**
@@ -174,21 +128,22 @@ public final class MasterDataService {
    * @return 新建档案标识；编码冲突返回 409，输入错误返回 400
    */
   public Map<String,String> create(VerifiedTenantContext c,Kind kind,Input input) {
-    require(c,kind,"create");var values=validate(kind,input);String id=UUID.randomUUID().toString();
-    try {
-      return transaction.execute(status->{
-        StorageHierarchy.prepare(jdbc,c,kind,null,values);
-        prepareGeography(c,kind,input,values);
-        var args=new ArrayList<Object>(List.of(id,c.tenantId().toString(),input.code().trim(),input.name().trim()));args.addAll(values.values());
-        jdbc.update("INSERT INTO "+kind.table()+"(id,tenant_id,code,name,"+String.join(",",kind.fields.stream().map(kind::column).toList())+") VALUES(UUID_TO_BIN(?),UUID_TO_BIN(?),?,?,"+String.join(",",Collections.nCopies(kind.fields.size(),"?"))+")",args.toArray());
-        // 审计主体来自可信会话；四个字段均在同一事务内写入，系统任务可通过 NULL 表达未知主体。
-        jdbc.update("UPDATE "+kind.table()+" SET created_by=UUID_TO_BIN(?),created_at=CURRENT_TIMESTAMP(6),updated_by=UUID_TO_BIN(?),updated_at=CURRENT_TIMESTAMP(6) WHERE tenant_id=UUID_TO_BIN(?) AND id=UUID_TO_BIN(?)",c.accountId().toString(),c.accountId().toString(),c.tenantId().toString(),id);
-        if(kind==Kind.PARTNER)PartnerDetails.save(jdbc,c,id,input,dictionaries);
+    require(c,kind,"create");if(input==null)throw invalid();String id=UUID.randomUUID().toString();
+    return transaction.execute(()->{
+        var effective=kind==Kind.PARTNER?partner().prepare(c,null,input,Map.of()):input;
+        var values=validate(kind,effective);
+        if(kind==Kind.PARTNER)partner().target(c,effective.organizationId(),"create",true);
+        relations.prepareStorage(c,kind,null,values);
+        relations.prepareGeography(c,kind,input,values);
+        records.create(c,kind,id,input,values);
+        if(kind==Kind.PARTNER){
+          records.organization(c,id,effective.organizationId());
+          relations.savePartnerDetails(c,id,effective);
+        }
         if(kind==Kind.PARTNER||kind==Kind.WAREHOUSE)dictionaryReferences(c,kind,id,values,Map.of());
-        synchronizeGeography(c,kind);
+        relations.synchronizeGeography(c,kind);
         return Map.of("id",id);
-      });
-    } catch(DuplicateKeyException e){throw new Rejection(409,"MASTER_DATA_CODE_CONFLICT");}
+      },"MASTER_DATA_CODE_CONFLICT");
   }
 
   /**
@@ -201,20 +156,25 @@ public final class MasterDataService {
    * @throws Rejection 无编辑权限返回 403，输入非法返回 400，版本变化或对象不可更新返回 409
    */
   public void update(VerifiedTenantContext c,Kind kind,String id,Input input) {
-    require(c,kind,"update");uuid(id);var values=validate(kind,input);
-    transaction.executeWithoutResult(status->{
-      StorageHierarchy.prepare(jdbc,c,kind,id,values);
-      prepareGeography(c,kind,input,values);
+    require(c,kind,"update");uuid(id);if(input==null)throw invalid();
+    transaction.execute(()->{
+      String oldOrganization=kind==Kind.PARTNER?partner().lock(c,id,"update"):null;
       var previous=(kind==Kind.PARTNER||kind==Kind.WAREHOUSE)?previousValues(c,kind,id):Map.<String,String>of();
-      var args=new ArrayList<Object>(List.of(input.name().trim()));args.addAll(values.values());
-      args.add(c.tenantId().toString());args.add(id);args.add(input.version());args.add(input.code().trim());
-      int count=jdbc.update("UPDATE "+kind.table()+" SET name=?,"+String.join(",",kind.fields.stream().map(f->kind.column(f)+"=?").toList())+",version=version+1 WHERE tenant_id=UUID_TO_BIN(?) AND id=UUID_TO_BIN(?) AND version=? AND code=?",args.toArray());
-      if(count!=1)throw new Rejection(409,"MASTER_DATA_CHANGED");
-      if(kind==Kind.PARTNER)PartnerDetails.save(jdbc,c,id,input,dictionaries);
+      var effective=kind==Kind.PARTNER?partner().prepare(c,id,input,previous):input;
+      var values=validate(kind,effective);
+      String organization=input.organizationId()==null?oldOrganization:input.organizationId();
+      if(kind==Kind.PARTNER)partner().target(c,organization,"update",false);
+      relations.prepareStorage(c,kind,id,values);
+      relations.prepareGeography(c,kind,input,values);
+      records.update(c,kind,id,input,values);
+      if(kind==Kind.PARTNER){
+        records.organization(c,id,organization);
+        relations.savePartnerDetails(c,id,effective);
+      }
       if(kind==Kind.PARTNER||kind==Kind.WAREHOUSE)dictionaryReferences(c,kind,id,values,previous);
-      synchronizeGeography(c,kind);
-      audit(c,kind,id);
-    });
+      relations.synchronizeGeography(c,kind);
+      audit(c,kind,id);return null;
+    },null);
   }
 
   /**
@@ -229,12 +189,12 @@ public final class MasterDataService {
   public void setStatus(VerifiedTenantContext c,Kind kind,String id,Status input) {
     require(c,kind,"set_status");uuid(id);
     if(input==null||input.enabled()==null||input.version()<0)throw invalid();
-    transaction.executeWithoutResult(status->{
-      StorageHierarchy.status(jdbc,c,kind,id,input.enabled());
-      if(jdbc.update("UPDATE "+kind.table()+" SET enabled=?,version=version+1 WHERE tenant_id=UUID_TO_BIN(?) AND id=UUID_TO_BIN(?) AND version=?",input.enabled(),c.tenantId().toString(),id,input.version())!=1)
-        throw new Rejection(409,"MASTER_DATA_CHANGED");
-      audit(c,kind,id);
-    });
+    transaction.execute(()->{
+      if(kind==Kind.PARTNER)partner().lock(c,id,"set_status");
+      relations.storageStatus(c,kind,id,input.enabled());
+      records.status(c,kind,id,input);
+      audit(c,kind,id);return null;
+    },null);
   }
 
   /** 权限每次经公开端口复核；未知权限、无效成员和缺少上下文一律拒绝。 */
@@ -242,48 +202,12 @@ public final class MasterDataService {
     if(c==null||kind==null||!access.hasPermission(AccessAuthorization.Subject.tenant(c.accountId(),c.tenantId(),c.memberId()),kind.resource()+":"+action))
       throw new Rejection(403,"MASTER_DATA_DENIED");
   }
-  /** 严格白名单与长度校验，避免把任意 JSON 当作已实现的业务扩展能力。 */
-  static LinkedHashMap<String,String> validate(Kind kind,Input input) {
-    if(input==null||input.code()==null||!input.code().trim().matches("[A-Za-z0-9][A-Za-z0-9._-]{0,63}")||input.name()==null||input.name().isBlank()||input.name().trim().length()>200||input.version()<0)throw invalid();
-    var attributes=input.attributes()==null?Map.<String,String>of():input.attributes();
-    if(!kind.fields.containsAll(attributes.keySet()))throw invalid();
-    var values=new LinkedHashMap<String,String>();
-    for(String field:kind.fields){String value=Objects.toString(attributes.get(field),"").trim();if(value.length()>500||value.chars().anyMatch(Character::isISOControl))throw invalid();values.put(field,value);}
-    if(kind==Kind.PARTNER&&!PartnerDetails.validTypes(values.get("partnerType")))throw invalid();
-    if(kind==Kind.COUNTRY_REGION||kind==Kind.SUBDIVISION){
-      // 标准目录仅提供缺省值；显式选择上级允许租户调整层级，不再把自定义码伪装成标准码。
-      var standard=GeographyStandards.entries(kind==Kind.SUBDIVISION).stream().filter(e->e.code().equals(input.code().trim())).findFirst();
-      if(kind==Kind.COUNTRY_REGION&&standard.isPresent())for(String key:List.of("alpha3Code","numericCode")){
-        String supplied=values.get(key);if(!supplied.isEmpty()&&!supplied.equals(standard.get().attributes().get(key)))throw invalid();
-      }
-      standard.ifPresent(e->e.attributes().forEach((key,value)->{if(values.getOrDefault(key,"").isEmpty())values.put(key,value);}));
-      if(kind==Kind.COUNTRY_REGION&&(!values.get("alpha3Code").matches("|[A-Z]{3}")||!values.get("numericCode").matches("|[0-9]{3}")))throw invalid();
-    }
-    if(kind==Kind.WAREHOUSE)WarehouseProfile.validate(values);
-    StorageHierarchy.validate(kind,values);
-    if(kind==Kind.PARTNER)PartnerDetails.validate(input,values);
-    else if(input.contacts()!=null||input.bankAccounts()!=null)throw invalid();
-    return values;
-  }
-
-  /** 写入事务内先锁定当前租户地理行；父链校验失败时整笔业务和审计均回滚。 */
-  private void prepareGeography(VerifiedTenantContext c,Kind kind,Input input,Map<String,String> values){
-    if(kind==Kind.COUNTRY_REGION||kind==Kind.SUBDIVISION)new TenantGeography(jdbc,c.tenantId(),true).put(kind,input.code().trim(),input.name().trim(),values);
-  }
-
-  /** 跨国移动同步全部已建后代国别；同事务递增版本和审计，旧编辑草稿不得覆盖移动结果。 */
-  private void synchronizeGeography(VerifiedTenantContext c,Kind kind){
-    if(kind!=Kind.COUNTRY_REGION&&kind!=Kind.SUBDIVISION)return;
-    var graph=new TenantGeography(jdbc,c.tenantId(),false);
-    var nodes=jdbc.queryForList("SELECT code,country_code FROM md_subdivision WHERE tenant_id=UUID_TO_BIN(?)",c.tenantId().toString());
-    for(var node:nodes){String code=(String)node.get("code"),country=graph.country(code);if(!country.equals(node.get("country_code")))
-      jdbc.update("UPDATE md_subdivision SET country_code=?,version=version+1,updated_by=UUID_TO_BIN(?),updated_at=CURRENT_TIMESTAMP(6) WHERE tenant_id=UUID_TO_BIN(?) AND code=?",country,c.accountId().toString(),c.tenantId().toString(),code);}
-  }
+  /** 输入校验委托纯领域规则；UTC 自然日由应用提供，不接受客户端指定校验日期。 */
+  static LinkedHashMap<String,String> validate(Kind kind,Input input){return com.appnexus.masterdata.domain.MasterDataRules.validate(kind,input,java.time.LocalDate.now(java.time.ZoneOffset.UTC));}
 
   /** 旧值只从已授权父对象读取，供停用项保持不变时放行；事务中仍需父版本成功。 */
   private Map<String,String> previousValues(VerifiedTenantContext c,Kind kind,String id){
-    var fields=kind.fields;var rows=jdbc.query("SELECT "+String.join(",",fields.stream().map(kind::column).toList())+" FROM "+kind.table()+" WHERE tenant_id=UUID_TO_BIN(?) AND id=UUID_TO_BIN(?)",(r,n)->{var result=new HashMap<String,String>();for(String field:fields)result.put(field,r.getString(kind.column(field)));return result;},c.tenantId().toString(),id);
-    return rows.isEmpty()?Map.of():rows.getFirst();
+    return records.previous(c,kind,id);
   }
   /** 字典校验与引用在业务写事务内执行；未知新值拒绝，已有停用值可保留。 */
   private void dictionaryReferences(VerifiedTenantContext c,Kind kind,String id,Map<String,String> values,Map<String,String> previous){
@@ -295,7 +219,7 @@ public final class MasterDataService {
   }
 
   /** 统一更新固定主数据的最后修改主体；时间由数据库生成，避免客户端时钟漂移。 */
-  private void audit(VerifiedTenantContext c,Kind kind,String id){jdbc.update("UPDATE "+kind.table()+" SET updated_by=UUID_TO_BIN(?),updated_at=CURRENT_TIMESTAMP(6) WHERE tenant_id=UUID_TO_BIN(?) AND id=UUID_TO_BIN(?)",c.accountId().toString(),c.tenantId().toString(),id);}
+  private void audit(VerifiedTenantContext c,Kind kind,String id){records.audit(c,kind,id);}
   private static void uuid(String id){try{if(!UUID.fromString(id).toString().equalsIgnoreCase(id))throw invalid();}catch(IllegalArgumentException|NullPointerException e){throw invalid();}}
   private static Rejection invalid(){return new Rejection(400,"MASTER_DATA_INPUT_INVALID");}
 }

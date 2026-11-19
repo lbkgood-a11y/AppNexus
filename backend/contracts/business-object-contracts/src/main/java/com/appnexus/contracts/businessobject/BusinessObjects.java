@@ -45,13 +45,83 @@ public final class BusinessObjects {
     /** 打印专属读取视图，同一声明为场景兼容校验提供权威契约编码。 */
     public PrintingContract printing(){return interaction.capabilities().stream().filter(c->c.service()==InteractionContract.Service.PRINT).findFirst().map(c->new PrintingContract(c.dataContract())).orElse(null);}
   }
-  /** 代码注册声明；version 为正整数，操作交互契约是服务能力的唯一来源，操作不在中心执行。 */
+  /**
+   * 统一对象声明的数据权限部分；不包含对象身份、版本或权限码的第二份定义。
+   * @param scope TENANT或PLATFORM管理域，必填
+   * @param resources 首项为主资源，子资源继承主资源行权限；资源内字段键必须唯一
+   * @param operationScopes 已声明operationCode到受控范围编码集合；无配置则不启用该操作行范围
+   */
+  public record DataAccess(String scope,List<DataResource> resources,Map<String,Set<String>> operationScopes) {
+    public DataAccess {
+      Objects.requireNonNull(scope);resources=List.copyOf(resources);
+      var copy=new TreeMap<String,Set<String>>();operationScopes.forEach((key,value)->copy.put(key,Set.copyOf(value)));operationScopes=Map.copyOf(copy);
+    }
+  }
+  /**
+   * 主从数据资源声明；不得携带数据库表名、列名或SQL。
+   * @param resource 全局唯一小写点分资源键
+   * @param parentResource 主资源为空串，子资源为同对象主资源键
+   * @param nameZh 中文名称，必填
+   * @param nameEn 英文名称，必填
+   * @param responseType 自动响应投影的完整record类名；缺省空串表示由业务执行器显式保护，不接受客户端设置
+   * @param fields 已接通执行的字段保护能力
+   */
+  public record DataResource(String resource,String parentResource,String nameZh,String nameEn,List<DataField> fields,String responseType) {
+    /** 显式业务执行器无需自动响应绑定，缺省保持空串。 */
+    public DataResource(String resource,String parentResource,String nameZh,String nameEn,List<DataField> fields){this(resource,parentResource,nameZh,nameEn,fields,"");}
+    public DataResource {fields=List.copyOf(fields);Objects.requireNonNull(responseType);}
+  }
+  /**
+   * 字段安全能力，表示业务实际支持的配置，不直接授予访问权限。
+   * @param field 资源内稳定业务字段键，禁止自由属性路径
+   * @param nameZh 中文名称，必填
+   * @param nameEn 英文名称，必填
+   * @param kind 受控语义算法编码；由授权目录校验PHONE/EMAIL等实际支持类型
+   * @param modes 已实现的READ_ONLY/MASKED/HIDDEN集合，不支持的模式不得声明
+   */
+  public record DataField(String field,String nameZh,String nameEn,String kind,Set<String> modes) {
+    public DataField {modes=Set.copyOf(modes);}
+  }
+  /**
+   * 业务对象唯一代码声明；目录、操作、服务能力和数据权限均由此投影，业务仍在原执行器处理。
+   * @param objectType 全局稳定对象标识，不能重复登记
+   * @param nameZh 中文对象名称
+   * @param nameEn 英文对象名称
+   * @param module 所属业务模块标识
+   * @param version 正整数契约版本；改变安全语义必须递增并迁移策略
+   * @param category 对象业务分类，必填
+   * @param fields 交互使用的非敏感业务事实字段，不等于完整数据库字段
+   * @param operations 对象内唯一操作清单；Controller只能引用
+   * @param codingFields 已接通编码字段，缺省为空；不改变原手工录入和业务唯一约束
+   * @param dataAccess 可空表示尚未接入数据权限，不推断为ALL；非空必须引用本对象操作
+   */
   public record Descriptor(String objectType, String nameZh, String nameEn, String module,
-      int version, Category category, List<Field> fields,List<Operation> operations) {
+      int version, Category category, List<Field> fields,List<Operation> operations,DataAccess dataAccess,List<CodingField> codingFields) {
+    /** 已有声明缺省不开启编码协助，避免向未实现字段提供发号入口。 */
+    public Descriptor(String objectType,String nameZh,String nameEn,String module,int version,Category category,List<Field> fields,List<Operation> operations,DataAccess dataAccess){this(objectType,nameZh,nameEn,module,version,category,fields,operations,dataAccess,List.of());}
+    /** 尚未接入数据权限的既有对象保持空声明，不生成虚假范围能力。 */
+    public Descriptor(String objectType,String nameZh,String nameEn,String module,int version,Category category,List<Field> fields,List<Operation> operations){this(objectType,nameZh,nameEn,module,version,category,fields,operations,null);}
     public Descriptor { Objects.requireNonNull(category,"BUSINESS_OBJECT_CATEGORY_REQUIRED");
       for(var operation:operations)if(!operation.operationId().equals(objectType+"."+operation.operationCode()))throw new IllegalArgumentException("BUSINESS_OBJECT_OPERATION_ID_INVALID");
-      fields = List.copyOf(fields); operations=List.copyOf(operations); }
+      fields = List.copyOf(fields); operations=List.copyOf(operations);codingFields=List.copyOf(codingFields);
+      var operationCodes=operations.stream().map(Operation::operationCode).collect(java.util.stream.Collectors.toSet());
+      if(codingFields.stream().map(CodingField::field).distinct().count()!=codingFields.size()||codingFields.stream().anyMatch(f->!operationCodes.contains(f.operationCode())))throw new IllegalArgumentException("CODING_FIELD_OPERATION_INVALID");
+      if(dataAccess!=null){
+        if(!Set.of("TENANT","PLATFORM").contains(dataAccess.scope())||dataAccess.resources().isEmpty())throw new IllegalArgumentException("BUSINESS_OBJECT_DATA_ACCESS_INVALID");
+        var codes=operations.stream().map(Operation::operationCode).collect(java.util.stream.Collectors.toSet());
+        if(!codes.containsAll(dataAccess.operationScopes().keySet()))throw new IllegalArgumentException("BUSINESS_OBJECT_DATA_OPERATION_UNDECLARED");
+      }
+    }
 
+  }
+  /**
+   * 业务实际接通的编码字段；管理人员不能配置任意属性或调用地址。
+   * @param field 业务字段键，必填；当前仅允许字母开头的字母数字键
+   * @param operationCode 发号所需的本对象操作，必填；仍由业务保存接口复核数据权限
+   * @param maxLength 编码最大字符数，1–128；与业务字段校验保持一致
+   */
+  public record CodingField(String field,String operationCode,int maxLength) {
+    public CodingField {if(field==null||!field.matches("[a-zA-Z][a-zA-Z0-9]*")||maxLength<1||maxLength>128)throw new IllegalArgumentException("CODING_FIELD_INVALID");}
   }
   /** 业务代码提供声明；平台激活和租户授权独立维护。 */
   public interface Provider { Descriptor descriptor(); }
