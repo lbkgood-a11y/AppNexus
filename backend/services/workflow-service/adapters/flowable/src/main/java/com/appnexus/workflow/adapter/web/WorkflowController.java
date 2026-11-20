@@ -1,5 +1,5 @@
 package com.appnexus.workflow.adapter.web;
-import com.appnexus.workflow.adapter.flowable.*;
+import com.appnexus.workflow.api.WorkflowManagement;
 
 import com.appnexus.contracts.workflow.*;
 import com.appnexus.workflow.core.WorkflowModel;
@@ -13,9 +13,9 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/workflow")
 public final class WorkflowController {
-  private final WorkflowRuntime runtime;
+  private final WorkflowManagement runtime;
 
-  public WorkflowController(WorkflowRuntime runtime) {
+  public WorkflowController(WorkflowManagement runtime) {
     this.runtime = runtime;
   }
 
@@ -52,7 +52,7 @@ public final class WorkflowController {
     return reply(
         () -> {
           var errors = runtime.validate(context(r), p.model());
-          if (!errors.isEmpty()) throw new WorkflowFailure("PREVIEW_INVALID_MODEL", 400);
+          if (!errors.isEmpty()) throw new WorkflowRejection("PREVIEW_INVALID_MODEL", 400);
           return com.appnexus.workflow.core.WorkflowPreview.trace(p.model(), p.sample());
         });
   }
@@ -205,13 +205,13 @@ public final class WorkflowController {
 
   private WorkflowContext context(HttpServletRequest r) {
     if (!(r.getAttribute(WorkflowContext.class.getName()) instanceof WorkflowContext c))
-      throw new WorkflowFailure("TENANT_REQUIRED", 409);
+      throw new WorkflowRejection("TENANT_REQUIRED", 409);
     String id = r.getHeader("Idempotency-Key");
     if (!Set.of("GET", "HEAD", "OPTIONS").contains(r.getMethod())) {
       try {
         UUID.fromString(id);
       } catch (Exception e) {
-        throw new WorkflowFailure("IDEMPOTENCY_KEY_REQUIRED", 400);
+        throw new WorkflowRejection("IDEMPOTENCY_KEY_REQUIRED", 400);
       }
     }
     return new WorkflowContext(
@@ -222,7 +222,7 @@ public final class WorkflowController {
     try {
       return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(action.get());
     } catch(com.appnexus.contracts.data.DataContract.Violation e){return ResponseEntity.badRequest().cacheControl(CacheControl.noStore()).body(Map.of("status",400,"code",e.getMessage(),"field",e.path()));}
-    catch (WorkflowFailure e) {
+    catch (WorkflowRejection e) {
       return problem(e.status(), e.code());
     } catch (SecurityException e) {
       return problem(403, "BUSINESS_ACCESS_DENIED");

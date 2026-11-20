@@ -51,8 +51,7 @@ public final class MyBatisPersonnelDirectory implements PersonnelDirectory {
   }
   @Override public boolean deleteAffiliation(UUID tenant,UUID person,String section,UUID id){
     if(section.equals("positions"))mapper.statement13(tenant.toString(),person.toString(),id.toString());
-    String table=switch(section){case "organizations"->"tenant_person_organization";case "positions"->"tenant_person_position";default->throw new IllegalArgumentException("INVALID_PERSON_AFFILIATION");};
-    return mapper.statement14(tenant.toString(),person.toString(),id.toString())==1;
+    return switch(section){case "organizations"->mapper.statement14(tenant.toString(),person.toString(),id.toString())==1;case "positions"->mapper.deletePosition(tenant.toString(),person.toString(),id.toString())==1;default->throw new IllegalArgumentException("INVALID_PERSON_AFFILIATION");};
   }
   @Override public List<String> resolvePersons(UUID tenant,UUID organization,String kind,String reference){
     if(!Set.of("POSITION","LEADER").contains(kind))return List.of();

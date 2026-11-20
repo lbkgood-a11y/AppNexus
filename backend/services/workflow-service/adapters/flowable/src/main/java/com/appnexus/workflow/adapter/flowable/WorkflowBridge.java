@@ -1,4 +1,5 @@
 package com.appnexus.workflow.adapter.flowable;
+import com.appnexus.workflow.application.WorkflowRuntime;
 
 import java.util.*;
 import org.flowable.engine.delegate.*;
@@ -17,7 +18,7 @@ public final class WorkflowBridge
 
   /** 多人集合由当前租户组织规则解析；无人时保留不可处理占位任务，不自动跳过。 */
   public List<String> people(DelegateExecution execution, String node) {
-    return runtime.people(execution, node);
+    return runtime.people(execution.getTenantId(),String.valueOf(execution.getVariable("wf_id")),node);
   }
 
   /** 与预演复用固定比较器；参数只来自校验后的模型，不能调用任意函数或读取业务原文。 */
@@ -29,12 +30,12 @@ public final class WorkflowBridge
 
   @Override
   public void notify(DelegateExecution execution) {
-    if ("end".equals(execution.getEventName())) runtime.ended(execution);
-    else runtime.action(execution);
+    if ("end".equals(execution.getEventName())) runtime.ended(execution.getTenantId(),String.valueOf(execution.getVariable("wf_id")),String.valueOf(execution.getVariable("wf_result")));
+    else runtime.action(execution.getTenantId(),String.valueOf(execution.getVariable("wf_id")),execution.getCurrentActivityId(),execution.getId());
   }
 
   @Override
   public void notify(DelegateTask task) {
-    runtime.created(task);
+    runtime.created(task.getTenantId(),String.valueOf(task.getVariable("wf_id")),task.getId(),task.getTaskDefinitionKey(),task.getAssignee());
   }
 }

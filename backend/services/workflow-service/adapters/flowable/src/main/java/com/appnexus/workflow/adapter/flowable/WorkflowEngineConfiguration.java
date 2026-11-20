@@ -1,4 +1,5 @@
 package com.appnexus.workflow.adapter.flowable;
+import com.appnexus.workflow.application.WorkflowRuntime;
 import com.appnexus.workflow.adapter.web.WorkflowController;
 import com.appnexus.workflow.adapter.persistence.WorkflowRecordMapper;
 
@@ -37,12 +38,12 @@ public class WorkflowEngineConfiguration {
       WorkflowBridge bridge,
       org.springframework.beans.factory.ObjectProvider<com.appnexus.contracts.businessobject.BusinessObjectBindings> documents,
       java.util.List<com.appnexus.contracts.businessobject.BusinessObjects.Provider> providers,
-      org.springframework.beans.factory.ObjectProvider<com.appnexus.contracts.workflow.WorkflowTaskAccess> tasks) {
+      org.springframework.beans.factory.ObjectProvider<com.appnexus.contracts.workflow.WorkflowTaskAccess> tasks,WorkflowRecordMapper statements) {
     var registered=new java.util.ArrayList<com.appnexus.contracts.workflow.WorkflowBusiness>(businesses);
     for(var provider:providers)for(var operation:provider.descriptor().operations()){
       if(operation.approval()!=null)registered.add(new ObjectWorkflowAdapter(provider,operation,platform,tasks::getObject,manager));
     }
-    var runtime=workflowRuntime(engine,source,manager,platform,registered,bridge);
+    var runtime=workflowRuntime(engine,source,manager,platform,registered,bridge,statements);
     runtime.documentBindings(documents::getObject);
     return runtime;
   }
@@ -53,11 +54,11 @@ public class WorkflowEngineConfiguration {
       java.util.List<com.appnexus.contracts.workflow.WorkflowBusiness> businesses,WorkflowBridge bridge,WorkflowRecordMapper statements) {
     var runtime =
         new WorkflowRuntime(
-            engine,
-            statements,
-            manager,
+            new FlowableEngineCommands(engine),
+            new com.appnexus.workflow.adapter.persistence.MyBatisWorkflowRecords(statements),
+            new com.appnexus.workflow.adapter.transaction.SpringWorkflowTransaction(manager),
             platform,
-            businesses);
+            businesses,new JacksonWorkflowContent(),new FlowableWorkflowCompilation());
     bridge.bind(runtime);
     return runtime;
   }

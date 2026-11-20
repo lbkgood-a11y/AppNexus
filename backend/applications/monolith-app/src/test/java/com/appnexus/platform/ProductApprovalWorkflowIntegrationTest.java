@@ -1,4 +1,5 @@
 package com.appnexus.platform;
+import com.appnexus.workflow.application.WorkflowRuntime;
 import com.appnexus.masterdata.api.product.ProductCatalogData;
 import com.appnexus.masterdata.application.product.ProductService;
 import com.appnexus.contracts.businessobject.BusinessObjects.*;
@@ -26,7 +27,7 @@ class ProductApprovalWorkflowIntegrationTest extends DatabaseTestSupport {
  @Autowired ProductCatalogService catalog;
  @Autowired ProductApprovalService approvals;
  @Autowired com.appnexus.platform.businessobject.BusinessObjectManagement bindings;
- @Autowired com.appnexus.workflow.adapter.flowable.WorkflowRuntime runtime;
+ @Autowired com.appnexus.workflow.application.WorkflowRuntime runtime;
  @Autowired com.appnexus.platform.persistence.organization.OrganizationAdministratorBootstrap bootstrap;
  @MockitoBean WorkflowPlatform platform;
  @MockitoBean BusinessObjectPlatform businessPlatform;

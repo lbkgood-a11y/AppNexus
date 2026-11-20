@@ -1,5 +1,6 @@
-package com.appnexus.workflow.adapter.flowable;
-import com.appnexus.workflow.adapter.persistence.WorkflowRecordMapper;
+package com.appnexus.workflow.application;
+import com.appnexus.workflow.application.WorkflowRecords;
+import com.appnexus.workflow.application.WorkflowContent;
 
 import static com.appnexus.workflow.core.WorkflowModel.*;
 
@@ -10,18 +11,16 @@ import java.security.MessageDigest;
 import java.time.*;
 import java.util.*;
 import java.util.function.Supplier;
-import org.flowable.engine.ProcessEngine;
-import org.flowable.engine.delegate.DelegateExecution;
-import org.flowable.task.service.delegate.DelegateTask;
+import com.appnexus.workflow.application.WorkflowEngineCommands;
 
-import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.transaction.support.TransactionTemplate;
+import com.appnexus.workflow.application.WorkflowTransaction;
+
 
 /**
  * 工作流应用入口；写入、引擎推进、幂等响应、任务及Outbox共享本地事务。 业务能力仍以稳定调用ID幂等，不能假设业务服务与引擎共享事务。
  * 所有对象查询带租户；历史只向参与者或受权运维开放，不返回原始业务实体。
  */
-public final class WorkflowRuntime implements WorkflowResults, WorkflowTaskAccess, WorkflowStarter, WorkflowDefinitionCatalog {
+public final class WorkflowRuntime implements WorkflowResults, WorkflowTaskAccess, WorkflowStarter, WorkflowDefinitionCatalog, com.appnexus.workflow.api.WorkflowManagement {
   private java.util.function.Supplier<com.appnexus.contracts.businessobject.BusinessObjectBindings> documentBindings;
 
   /** 由装配层设置延迟公开契约；避免业务、配置和引擎相互初始化，非浏览器配置点。 */
@@ -32,8 +31,8 @@ public final class WorkflowRuntime implements WorkflowResults, WorkflowTaskAcces
   /** 本租户兼容发布版本目录，管理端是否可调用由公开目录宿主鉴权。 */
   @Override public List<WorkflowDefinitionCatalog.Option> published(WorkflowContext c,String type,String purpose,String entry,Set<String> outcomes) {
     requireActive(c);
-    return statements.statement1(c.tenantId()).stream()
-      .filter(r->{var m=model(r);return (r.get("data_contract_schema")==null||WorkflowJson.read(r.get("data_contract_schema").toString(),com.appnexus.contracts.data.DataContract.class).equals(dataSchema(businesses.get(entry),entry)))&&m.objectType().equals(type)&&m.purpose().equals(purpose)&&m.entryCapability().equals(entry)
+    return statements.publishedDefinitions(c.tenantId()).stream()
+      .filter(r->{var m=model(r);return (r.get("data_contract_schema")==null||content.schema(r.get("data_contract_schema").toString()).equals(dataSchema(businesses.get(entry),entry)))&&m.objectType().equals(type)&&m.purpose().equals(purpose)&&m.entryCapability().equals(entry)
         &&m.mode()==Mode.APPROVAL&&m.terminalActions()!=null&&outcomes.stream().allMatch(o->entry.equals(m.terminalActions().get(o)))
         &&(m.matches()==null||m.matches().isEmpty());})
       .map(r->new WorkflowDefinitionCatalog.Option(r.get("definition_id").toString(),((Number)r.get("version")).intValue(),model(r).name())).toList();
@@ -43,9 +42,11 @@ public final class WorkflowRuntime implements WorkflowResults, WorkflowTaskAcces
     if(documentBindings==null)throw fail("BUSINESS_OBJECT_BINDINGS_UNAVAILABLE",503);
     return String.valueOf(((Map<?,?>)startInternal(c,type,object,version,organization,purpose,entry,resolution)).get("id"));
   }
-  private final ProcessEngine engine;
-  private final WorkflowRecordMapper statements;
-  private final TransactionTemplate tx;
+  private final WorkflowEngineCommands engine;
+  private final WorkflowRecords statements;
+  private final WorkflowContent content;
+  private final WorkflowCompilation compilation;
+  private final WorkflowTransaction tx;
   private final WorkflowPlatform platform;
   private final Map<String, WorkflowBusiness> businesses;
 
@@ -55,14 +56,16 @@ public final class WorkflowRuntime implements WorkflowResults, WorkflowTaskAcces
    * @param handlers 代码注册的业务能力，无能力时允许管理流程草稿，但发布和发起失败关闭
    */
   public WorkflowRuntime(
-      ProcessEngine engine,
-      WorkflowRecordMapper statements,
-      PlatformTransactionManager manager,
+      WorkflowEngineCommands engine,
+      WorkflowRecords statements,
+      WorkflowTransaction transaction,
       WorkflowPlatform platform,
-      List<WorkflowBusiness> handlers) {
+      List<WorkflowBusiness> handlers,WorkflowContent content,WorkflowCompilation compilation) {
+    this.compilation=compilation;
+    this.content=content;
     this.engine = engine;
     this.statements = statements;
-    this.tx = new TransactionTemplate(manager);
+    this.tx = transaction;
     this.platform = platform;
     var map = new HashMap<String, WorkflowBusiness>();
     for (var h : handlers) {
@@ -112,13 +115,13 @@ public final class WorkflowRuntime implements WorkflowResults, WorkflowTaskAcces
       boolean write) {
     requireActive(c);
     var rows =
-        statements.statement2(c.tenantId(),taskId,c.actorId());
+        statements.openActorTask(c.tenantId(),taskId,c.actorId());
     if (rows.isEmpty()) return false;
     var t = rows.getFirst();
     var i = instance(c.tenantId(), str(t, "instance_id"), false);
     if (!"RUNNING".equals(i.get("state"))
-        || !type.equals(i.get("object_type"))
-        || !object.equals(i.get("object_id"))
+        || !type.equals((String)i.get("object_type"))
+        || !object.equals((String)i.get("object_id"))
         || version != number(i, "object_version")) return false;
     var model = definition(i);
     var n = model.node(str(t, "node_id"));
@@ -183,7 +186,7 @@ public final class WorkflowRuntime implements WorkflowResults, WorkflowTaskAcces
   /** 最多100个定义；支持按名称筛选，分页由HTTP约束。 */
   public List<Map<String, Object>> definitions(WorkflowContext c) {
     require(c, "read");
-    return statements.statement3(c.tenantId());
+    return statements.definitions(c.tenantId());
   }
 
   /** 校验草稿，不部署；输入输出和权限由当前能力目录再校验。 */
@@ -216,17 +219,17 @@ public final class WorkflowRuntime implements WorkflowResults, WorkflowTaskAcces
     if (m == null
         || m.nodes() == null
         || m.nodes().size() > 100
-        || WorkflowJson.write(m).length() > 262144) throw fail("MODEL_INVALID", 400);
+        || content.encode(m).length() > 262144) throw fail("MODEL_INVALID", 400);
     return mutate(
         c,
-        "SAVE:" + id + ":" + revision + ":" + WorkflowJson.write(m),
+        "SAVE:" + id + ":" + revision + ":" + content.encode(m),
         () -> {
           if (revision < 0) {
-            statements.statement4(c.tenantId(),id,WorkflowJson.write(m));
+            statements.createDefinition(c.tenantId(),id,content.encode(m));
             revisionAudit(c, "DRAFT_CREATED", id);
             return Map.of("revision", 0);
           }
-          if (statements.statement5(WorkflowJson.write(m),c.tenantId(),id,revision)
+          if (statements.updateDraft(content.encode(m),c.tenantId(),id,revision)
               != 1) throw fail("VERSION_CONFLICT", 409);
           revisionAudit(c, "DRAFT_SAVED", id);
           return Map.of("revision", revision + 1);
@@ -241,30 +244,17 @@ public final class WorkflowRuntime implements WorkflowResults, WorkflowTaskAcces
         "PUBLISH:" + id + ":" + revision,
         () -> {
           var row =
-              required(statements.unique0(c.tenantId(),id));
+              required(statements.lockDefinition(c.tenantId(),id));
           if (number(row, "revision") != revision) throw fail("VERSION_CONFLICT", 409);
           var model = model(row);
           var errors = validateInternal(c, model);
           if (!errors.isEmpty()) throw fail(errors.getFirst().split(":")[0], 400);
           int version = (int) number(row, "published") + 1;
           String key = "wf_" + id.replace("-", "") + "_" + version;
-          byte[] bpmn = WorkflowCompiler.compile(key, model);
-          var deployment =
-              engine
-                  .getRepositoryService()
-                  .createDeployment()
-                  .tenantId(c.tenantId())
-                  .addBytes(key + ".bpmn20.xml", bpmn)
-                  .deploy();
-          var definition =
-              engine
-                  .getRepositoryService()
-                  .createProcessDefinitionQuery()
-                  .deploymentId(deployment.getId())
-                  .processDefinitionTenantId(c.tenantId())
-                  .singleResult();
-          statements.statement6(c.tenantId(),id,version,WorkflowJson.write(model),new String(bpmn, StandardCharsets.UTF_8),definition.getId(),c.actorId(),dataSchema(businesses.get(model.entryCapability()),model.entryCapability())==null?null:WorkflowJson.write(dataSchema(businesses.get(model.entryCapability()),model.entryCapability())));
-          statements.statement7(version,c.tenantId(),id);
+          byte[] bpmn = compilation.compile(key, model);
+          String definition=engine.deploy(c.tenantId(),key,bpmn);
+          statements.createPublishedVersion(c.tenantId(),id,version,content.encode(model),new String(bpmn, StandardCharsets.UTF_8),definition,c.actorId(),dataSchema(businesses.get(model.entryCapability()),model.entryCapability())==null?null:content.encode(dataSchema(businesses.get(model.entryCapability()),model.entryCapability())));
+          statements.activateVersion(version,c.tenantId(),id);
           revisionAudit(c, "PUBLISHED", id);
           return Map.of("version", version, "revision", revision + 1);
         });
@@ -278,7 +268,7 @@ public final class WorkflowRuntime implements WorkflowResults, WorkflowTaskAcces
         c,
         "DISABLE:" + id + ":" + revision + ":" + reason,
         () -> {
-          if (statements.statement8(c.tenantId(),id,revision)
+          if (statements.disableDefinition(c.tenantId(),id,revision)
               != 1) throw fail("VERSION_CONFLICT", 409);
           audit(c, null, "DISABLED", id, reason);
           return Map.of("revision", revision + 1);
@@ -288,7 +278,7 @@ public final class WorkflowRuntime implements WorkflowResults, WorkflowTaskAcces
   /** 发布版本用于比较，历史只读；不暴露原生引擎部署接口。 */
   public List<Map<String, Object>> versions(WorkflowContext c, String id) {
     require(c, "read");
-    return statements.statement9(c.tenantId(),id);
+    return statements.definitionVersions(c.tenantId(),id);
   }
 
   /** 发起时只接收业务身份，流转依据由已授权入口能力从业务存储重读。 单据同用途活动唯一键处理并发，重复请求和业务调用分别幂等。 */
@@ -356,7 +346,7 @@ public final class WorkflowRuntime implements WorkflowResults, WorkflowTaskAcces
                   .filter(
                       row -> {
                         var m = model(row);
-                        return (bound==null||bound.definitionId().equals(row.get("definition_id")))
+                        return (bound==null||bound.definitionId().equals((String)row.get("definition_id")))
                             && m.objectType().equals(objectType)
                             && m.purpose().equals(purpose)
                             && m.entryCapability().equals(entry)
@@ -372,25 +362,21 @@ public final class WorkflowRuntime implements WorkflowResults, WorkflowTaskAcces
           var m = model(selected);
           var currentSchema=dataSchema(business,entry);
           Object frozenSchema=selected.get("data_contract_schema");
-          if(frozenSchema!=null&&!WorkflowJson.read(frozenSchema.toString(),com.appnexus.contracts.data.DataContract.class).equals(currentSchema))throw fail("DATA_CONTRACT_CHANGED",409);
+          if(frozenSchema!=null&&!content.schema(frozenSchema.toString()).equals(currentSchema))throw fail("DATA_CONTRACT_CHANGED",409);
           String id = UUID.randomUUID().toString();
-          statements.statement10(c.tenantId(),id,selected.get("definition_id"),selected.get("version"),objectType,objectId,objectVersion,purpose,organization,c.actorId(),hash(objectType + ":" + objectId + ":" + purpose),WorkflowJson.write(snapshot),currentSchema==null?null:WorkflowJson.write(currentSchema));
+          statements.createInstance(c.tenantId(),id,(String)selected.get("definition_id"),((Number)selected.get("version")).intValue(),objectType,objectId,objectVersion,purpose,organization,c.actorId(),hash(objectType + ":" + objectId + ":" + purpose),content.encode(snapshot),currentSchema==null?null:content.encode(currentSchema));
           if (m.copies() != null)
             for (var rule : m.copies())
               for (var actor :
                   platform.resolve(c.tenantId(), organization, rule.kind(), rule.reference()))
                 if (platform.active(c.tenantId(), actor))
-                  statements.statement11(c.tenantId(),id,actor);
+                  statements.copyActor(c.tenantId(),id,actor);
           var vars = new HashMap<String, Object>();
           vars.put("wf_id", id);
           vars.put("wf_fields", new HashMap<>(snapshot));
           vars.put("wf_result", "APPROVED");
-          var process =
-              engine
-                  .getRuntimeService()
-                  .startProcessInstanceById(
-                      String.valueOf(selected.get("engine_definition")), id, vars);
-          statements.statement12(process.getId(),c.tenantId(),id);
+          String process=engine.start(String.valueOf(selected.get("engine_definition")),id,vars);
+          statements.bindEngineInstance(process,c.tenantId(),id);
           audit(c, id, "STARTED", id, "");
           return Map.of("id", id);
         });
@@ -402,16 +388,16 @@ public final class WorkflowRuntime implements WorkflowResults, WorkflowTaskAcces
     if (!Set.of("todo", "done", "started", "copied").contains(view))
       throw fail("VIEW_INVALID", 400);
     if (view.equals("copied"))
-      return statements.statement13(c.tenantId(),c.actorId());
+      return statements.copiedInstances(c.tenantId(),c.actorId());
     if (view.equals("started"))
-      return statements.statement14(c.tenantId(),c.actorId());
+      return statements.participantInstances(c.tenantId(),c.actorId());
     return statements.actorTasks(c.tenantId(),c.actorId(),view.equals("todo"));
   }
 
   /** 运维列表不返回单据原文；详细业务数据仍由业务端单独授权读取。 */
   public List<Map<String, Object>> instances(WorkflowContext c) {
     require(c, "operate");
-    return statements.statement15(c.tenantId());
+    return statements.startedInstances(c.tenantId());
   }
 
   /** 实例事实与历史受参与者或运维权限保护；业务原文不在此接口返回。 */
@@ -423,24 +409,24 @@ public final class WorkflowRuntime implements WorkflowResults, WorkflowTaskAcces
     result.put("instance", publicInstance(row));
     result.put(
         "tasks",
-        statements.statement16(c.tenantId(),id));
+        statements.instanceTasks(c.tenantId(),id));
     result.put(
         "history",
-        statements.statement17(c.tenantId(),id));
+        statements.instanceAudit(c.tenantId(),id));
     if (platform.allowed(c, "workflow:operate"))
       result.put(
           "jobs",
-          statements.statement18(c.tenantId(),id));
+          statements.instanceJobs(c.tenantId(),id));
     result.put(
         "relatedInstances",
-        statements.statement19(c.tenantId(),row.get("object_type"),row.get("object_id"),row.get("purpose"),c.actorId(),platform.allowed(c, "workflow:operate"),c.actorId(),c.actorId()));
+        statements.objectInstances(c.tenantId(),(String)row.get("object_type"),(String)row.get("object_id"),(String)row.get("purpose"),c.actorId(),platform.allowed(c, "workflow:operate"),c.actorId(),c.actorId()));
     return result;
   }
 
   /** 任务只返回业务能力声明，不返回原始单据内容；业务页面仍执行字段和强制限制。 */
   public Map<String, Object> task(WorkflowContext c, String taskId) {
     requireActive(c);
-    var t = required(statements.unique1(c.tenantId(),taskId));
+    var t = required(statements.taskRecord(c.tenantId(),taskId));
     if (!c.actorId().equals(t.get("actor"))) throw fail("TASK_DENIED", 403);
     var i = instance(c.tenantId(), str(t, "instance_id"), false);
     var n = definition(i).node(str(t, "node_id"));
@@ -473,16 +459,16 @@ public final class WorkflowRuntime implements WorkflowResults, WorkflowTaskAcces
     bounded(values);
     return mutate(
         c,
-        "TASK:" + taskId + ":" + action + ":" + WorkflowJson.write(values) + ":" + comment,
+        "TASK:" + taskId + ":" + action + ":" + content.encode(values) + ":" + comment,
         () -> {
           var service=new com.appnexus.workflow.application.TaskCompletionService(new com.appnexus.workflow.application.TaskCompletionPort(){
             private Map<String,Object> instance;
             private WorkflowModel.Node node;
             private String nodeId;
             @Override public Task lock(WorkflowContext context,String id){
-              var task=required(statements.unique2(context.tenantId(),id));
+              var task=required(statements.taskForCompletion(context.tenantId(),id));
               instance=instance(context.tenantId(),str(task,"instance_id"),true);
-              task=required(statements.unique3(context.tenantId(),id));
+              task=required(statements.lockTaskForCompletion(context.tenantId(),id));
               // 模型仅在状态通过后加载，避免已关闭实例改变原拒绝顺序。
               node=null;nodeId=str(task,"node_id");
               return new Task(str(instance,"id"),str(instance,"state"),str(task,"state"),str(task,"actor"));
@@ -496,7 +482,7 @@ public final class WorkflowRuntime implements WorkflowResults, WorkflowTaskAcces
               var business=businesses.get(definition(instance).entryCapability());
               if(business==null)throw fail("CAPABILITY_UNAVAILABLE",409);
               return outputs(business,business.snapshot(invocation(context,instance,id,context.requestId(),"SNAPSHOT",Map.of())))
-                  .equals(WorkflowJson.map(str(instance,"snapshot")));
+                  .equals(content.fields(str(instance,"snapshot")));
             }
             @Override public Set<String> inputs(String capability){
               var business=businesses.get(capability);if(business==null)throw fail("CAPABILITY_UNAVAILABLE",409);
@@ -509,7 +495,7 @@ public final class WorkflowRuntime implements WorkflowResults, WorkflowTaskAcces
               return outputs(business,result.outputs());
             }
             @Override public void save(WorkflowContext context,Task task,String id,String opinion){
-            statements.statement20(opinion,context.tenantId(),id);
+            statements.saveTaskComment(opinion,context.tenantId(),id);
             audit(context, str(instance, "id"), "TASK_SAVED", id, "");
 
             }
@@ -517,16 +503,16 @@ public final class WorkflowRuntime implements WorkflowResults, WorkflowTaskAcces
           var fields = fields(instance);
           fields.putAll(output);
           fields.put(node.id() + "_decision", operation);
-          engine.getRuntimeService().setVariable(str(instance, "engine_id"), "wf_fields", fields);
+          engine.fields(str(instance, "engine_id"),fields);
           if (operation.equals("REJECT"))
-            engine.getRuntimeService().setVariable(str(instance, "engine_id"), "wf_result", "REJECTED");
-          statements.statement21(operation,opinion,context.tenantId(),id);
+            engine.result(str(instance, "engine_id"),"REJECTED");
+          statements.completeTask(operation,opinion,context.tenantId(),id);
           audit(context, str(instance, "id"), "TASK_COMPLETED", id, operation);
           if (operation.equals("REJECT")) {
             finish(instance, "REJECTED");
-            engine.getRuntimeService().deleteProcessInstance(str(instance, "engine_id"), "REJECTED");
-            statements.statement22(context.tenantId(),instance.get("id"));
-          } else engine.getTaskService().complete(id);
+            engine.terminate(str(instance, "engine_id"), "REJECTED");
+            statements.cancelOpenJobs(context.tenantId(),(String)instance.get("id"));
+          } else engine.complete(id);
           reconcileTasks(context.tenantId(), str(instance, "id"));
 
             }
@@ -548,24 +534,24 @@ public final class WorkflowRuntime implements WorkflowResults, WorkflowTaskAcces
             private Map<String,Object> t,i;
             private WorkflowModel.Node n;
             @Override public Task lock(WorkflowContext context,String id){
-          t = required(statements.unique4(c.tenantId(),taskId));
+          t = required(statements.taskForReassignment(c.tenantId(),taskId));
           i = instance(c.tenantId(), str(t, "instance_id"), true);
           // 锁实例后重读任务；等待锁的另一请求不能沿用锁前OPEN快照重复调用业务。
           t =
-              required(statements.unique5(c.tenantId(),taskId));
+              required(statements.lockTaskForReassignment(c.tenantId(),taskId));
           n = definition(i).node(str(t, "node_id"));
 
               return new Task("OPEN".equals(t.get("state")),(String)t.get("actor"));
             }
             @Override public boolean candidate(WorkflowContext context,String target){return resolve(i,n).contains(target);}
             @Override public boolean duplicate(WorkflowContext context,String id,String target){
-              return statements.statement23(c.tenantId(),i.get("id"),n.id(),actor,taskId)
+              return statements.duplicateAssignmentCount(c.tenantId(),(String)i.get("id"),n.id(),actor,taskId)
               > 0;
 
             }
             @Override public void assign(WorkflowContext context,String id,String target,String previous,String cause){
-          engine.getTaskService().setAssignee(taskId, actor);
-          statements.statement24(actor,c.tenantId(),taskId);
+          engine.assign(taskId, actor);
+          statements.assignTask(actor,c.tenantId(),taskId);
           auditAssignment(
               c, str(i, "id"), "REASSIGNED", taskId, reason, previous, actor);
 
@@ -585,10 +571,10 @@ public final class WorkflowRuntime implements WorkflowResults, WorkflowTaskAcces
         "RETRY:" + id + ":" + reason,
         () -> {
           var job =
-              required(statements.unique6(c.tenantId(),id));
+              required(statements.lockRetryJob(c.tenantId(),id));
           if (!Set.of("MANUAL", "TIMEOUT").contains(str(job, "state")))
             throw fail("JOB_NOT_MANUAL", 409);
-          statements.statement25(c.tenantId(),id);
+          statements.retryJob(c.tenantId(),id);
           audit(c, str(job, "instance_id"), "JOB_RETRIED", id, reason);
           return Map.of("retried", true);
         });
@@ -613,8 +599,8 @@ public final class WorkflowRuntime implements WorkflowResults, WorkflowTaskAcces
               business.execute(invocation(c, i, null, c.requestId(), "WITHDRAW", Map.of()));
           if (result.pending()) throw fail("BUSINESS_CONFIRMATION_REQUIRED", 409);
           finish(i, "WITHDRAWN");
-          engine.getRuntimeService().deleteProcessInstance(str(i, "engine_id"), "WITHDRAWN");
-          statements.statement26(c.tenantId(),id);
+          engine.terminate(str(i, "engine_id"), "WITHDRAWN");
+          statements.cancelInstanceJobs(c.tenantId(),id);
           reconcileTasks(c.tenantId(), id);
           audit(c, id, "WITHDRAWN", id, reason);
           return Map.of("withdrawn", true);
@@ -624,11 +610,11 @@ public final class WorkflowRuntime implements WorkflowResults, WorkflowTaskAcces
   /** 每次发起或运行节点从冻结版本读取模型，不受后续草稿修改影响。 */
   WorkflowModel definition(Map<String, Object> instance) {
     return model(
-        required(statements.unique7(instance.get("tenant_id"),instance.get("definition_id"),instance.get("definition_version"))));
+        required(statements.frozenDefinition((String)instance.get("tenant_id"),(String)instance.get("definition_id"),((Number)instance.get("definition_version")).intValue())));
   }
 
-  List<String> people(DelegateExecution e, String node) {
-    var i = instance(e.getTenantId(), String.valueOf(e.getVariable("wf_id")), false);
+  public List<String> people(String tenant,String instanceId,String node) {
+    var i = instance(tenant,instanceId,false);
     var people = resolve(i, definition(i).node(node));
     return people.isEmpty() ? List.of("__UNASSIGNED__") : people;
   }
@@ -646,30 +632,28 @@ public final class WorkflowRuntime implements WorkflowResults, WorkflowTaskAcces
     return List.copyOf(people);
   }
 
-  void created(DelegateTask task) {
-    String tenant = task.getTenantId(), id = String.valueOf(task.getVariable("wf_id"));
+  public void created(String tenant,String id,String taskId,String node,String assigned) {
     var i = instance(tenant, id, false);
-    var n = definition(i).node(task.getTaskDefinitionKey());
-    String actor = task.getAssignee();
+    var n = definition(i).node(node);
+    String actor = assigned;
     if ("__UNASSIGNED__".equals(actor)) {
-      task.setAssignee(null);
+      engine.assign(taskId,null);
       actor = null;
     }
-    statements.statement27(tenant,task.getId(),id,n.id(),n.name(),actor,java.sql.Timestamp.from(Instant.now().plusSeconds(n.timeoutSeconds())));
+    statements.createTask(tenant,taskId,id,n.id(),n.name(),actor,Instant.now().plusSeconds(n.timeoutSeconds()));
     auditAssignment(
         new WorkflowContext(tenant, str(i, "starter"), UUID.randomUUID().toString()),
         id,
         actor == null ? "NO_ASSIGNEE" : "TASK_CREATED",
-        task.getId(),
+        taskId,
         "",
         null,
         actor);
   }
 
-  void action(DelegateExecution e) {
-    String tenant = e.getTenantId(), id = String.valueOf(e.getVariable("wf_id"));
+  public void action(String tenant,String id,String activity,String execution) {
     var i = instance(tenant, id, false);
-    var n = definition(i).node(e.getCurrentActivityId());
+    var n = definition(i).node(activity);
     var values = new TreeMap<String, String>();
     var fields = fields(i);
     if (n.input() != null)
@@ -684,7 +668,7 @@ public final class WorkflowRuntime implements WorkflowResults, WorkflowTaskAcces
     createJob(
         i,
         n.id(),
-        e.getId(),
+        execution,
         n.capability(),
         n.kind().name(),
         values,
@@ -692,16 +676,14 @@ public final class WorkflowRuntime implements WorkflowResults, WorkflowTaskAcces
         n.timeoutSeconds());
   }
 
-  void ended(DelegateExecution e) {
-    String tenant = e.getTenantId(), id = String.valueOf(e.getVariable("wf_id"));
+  public void ended(String tenant,String id,String result) {
     var i = instance(tenant, id, false);
     if (!"RUNNING".equals(i.get("state"))) return;
-    String result = String.valueOf(e.getVariable("wf_result"));
     finish(i, result);
   }
 
   private void finish(Map<String, Object> i, String result) {
-    statements.statement28(result,i.get("tenant_id"),i.get("id"));
+    statements.endInstance(result,(String)i.get("tenant_id"),(String)i.get("id"));
     var model = definition(i);
     if (model.mode() == Mode.APPROVAL
         && model.terminalActions() != null
@@ -732,24 +714,23 @@ public final class WorkflowRuntime implements WorkflowResults, WorkflowTaskAcces
       Map<String, String> payload,
       int attempts,
       int timeout) {
-    statements.statement29(i.get("tenant_id"),UUID.randomUUID().toString(),i.get("id"),node,execution,capability,kind,WorkflowJson.write(payload),attempts,java.sql.Timestamp.from(Instant.now().plusSeconds(timeout)));
+    statements.createDeliveryJob((String)i.get("tenant_id"),UUID.randomUUID().toString(),(String)i.get("id"),node,execution,capability,kind,content.encode(payload),attempts,Instant.now().plusSeconds(timeout));
   }
 
   /** 领取后在事务外调用业务；成功回写与引擎推进同事务。租约令牌防止过期执行者覆盖新结果。 宕机后可再次执行，因此业务适配器必须按job.id持久化幂等，不能承诺外部副作用恰好一次。 */
   public boolean dispatch() {
     Map<String, Object> job =
-        tx.execute(
-            s -> {
+        tx.required(()-> {
               var rows =
-                  statements.statement30();
+                  statements.lockDueJob();
               if (rows.isEmpty()) return null;
               var j = rows.getFirst();
               if (number(j, "attempts") >= number(j, "max_attempts")) {
-                statements.statement31(j.get("tenant_id"),j.get("id"));
+                statements.markLeaseExhausted((String)j.get("tenant_id"),(String)j.get("id"));
                 return null;
               }
               String token = UUID.randomUUID().toString();
-              statements.statement32(token,j.get("tenant_id"),j.get("id"));
+              statements.claimJobLease(token,(String)j.get("tenant_id"),(String)j.get("id"));
               j.put("lease_token", token);
               return j;
             });
@@ -765,7 +746,7 @@ public final class WorkflowRuntime implements WorkflowResults, WorkflowTaskAcces
       result =
           business.execute(
               invocation(
-                  c, i, null, str(job, "id"), "EXECUTE", WorkflowJson.map(str(job, "payload"))));
+                  c, i, null, str(job, "id"), "EXECUTE", content.fields(str(job, "payload"))));
       outputs(business, result.outputs());
     } catch (IllegalArgumentException | SecurityException e) {
       error = "BUSINESS_REJECTED";
@@ -776,18 +757,17 @@ public final class WorkflowRuntime implements WorkflowResults, WorkflowTaskAcces
     var completed = result;
     var code = error;
     boolean manual = businessError;
-    tx.executeWithoutResult(
-        s -> {
+    tx.run(()-> {
           var j =
-              required(statements.unique8(job.get("tenant_id"),job.get("id")));
+              required(statements.lockDispatchedJob((String)job.get("tenant_id"),(String)job.get("id")));
           if (!"RUNNING".equals(j.get("state"))
               || !job.get("lease_token").equals(j.get("lease_token"))) return;
           if (completed != null) {
             if (completed.pending())
-              statements.statement33(WorkflowJson.write(completed.outputs()),j.get("tenant_id"),j.get("id"));
+              statements.awaitCallback(content.encode(completed.outputs()),(String)j.get("tenant_id"),(String)j.get("id"));
             else acknowledge(j, completed.outputs());
           } else
-            statements.statement34(manual || number(j, "attempts") >= number(j, "max_attempts") ? "MANUAL" : "READY",code,j.get("tenant_id"),j.get("id"));
+            statements.scheduleRetry(manual || number(j, "attempts") >= number(j, "max_attempts") ? "MANUAL" : "READY",code,(String)j.get("tenant_id"),(String)j.get("id"));
         });
     return true;
   }
@@ -802,15 +782,14 @@ public final class WorkflowRuntime implements WorkflowResults, WorkflowTaskAcces
    */
   public void callback(
       String tenant, String jobId, String capability, Map<String, String> outputs) {
-    tx.executeWithoutResult(
-        s -> {
-          var j = required(statements.unique9(tenant,jobId));
+    tx.run(()-> {
+          var j = required(statements.lockCallbackJob(tenant,jobId));
           if (!capability.equals(j.get("capability"))) throw fail("CALLBACK_DENIED", 403);
           var b = businesses.get(capability);
           if (b == null) throw fail("CAPABILITY_UNAVAILABLE", 409);
           var checked = outputs(b, outputs);
           if ("DONE".equals(j.get("state"))) {
-            if (!WorkflowJson.map(str(j, "result")).equals(checked))
+            if (!content.fields(str(j, "result")).equals(checked))
               throw fail("CALLBACK_CONFLICT", 409);
             return;
           }
@@ -826,10 +805,10 @@ public final class WorkflowRuntime implements WorkflowResults, WorkflowTaskAcces
       if (!"RUNNING".equals(i.get("state"))) throw fail("INSTANCE_NOT_RUNNING", 409);
       var fields = fields(i);
       fields.putAll(output);
-      engine.getRuntimeService().setVariable(str(i, "engine_id"), "wf_fields", fields);
-      engine.getRuntimeService().trigger(str(j, "execution_id"));
+      engine.fields(str(i, "engine_id"),fields);
+      engine.trigger(str(j, "execution_id"));
     }
-    statements.statement35(WorkflowJson.write(output),j.get("tenant_id"),j.get("id"));
+    statements.completeDelivery(content.encode(output),(String)j.get("tenant_id"),(String)j.get("id"));
     audit(
         new WorkflowContext(str(j, "tenant_id"), str(i, "starter"), str(j, "id")),
         str(i, "id"),
@@ -840,21 +819,20 @@ public final class WorkflowRuntime implements WorkflowResults, WorkflowTaskAcces
 
   /** 超时不自动通过；到期交付转人工，任务到期写告警事实但不改变业务决定。 */
   public void maintain() {
-    tx.executeWithoutResult(
-        s -> {
-          statements.statement36();
-          statements.statement37();
+    tx.run(()-> {
+          statements.auditExpiredAssignment();
+          statements.timeoutJobs();
           var rows =
-              statements.statement38();
+              statements.tasksForMaintenance();
           for (var t : rows) {
-            statements.statement39(t.get("tenant_id"),t.get("id"));
+            statements.markTaskChecked((String)t.get("tenant_id"),(String)t.get("id"));
             var i = instance(str(t, "tenant_id"), str(t, "instance_id"), true);
             if (!"RUNNING".equals(i.get("state"))) continue;
             var n = definition(i).node(str(t, "node_id"));
             String actor = (String) t.get("actor");
             if (actor != null && !resolve(i, n).contains(actor)) {
-              engine.getTaskService().setAssignee(str(t, "id"), null);
-              statements.statement40(t.get("tenant_id"),t.get("id"));
+              engine.assign(str(t, "id"), null);
+              statements.unassignTask((String)t.get("tenant_id"),(String)t.get("id"));
               auditAssignment(
                   new WorkflowContext(
                       str(t, "tenant_id"), str(i, "starter"), UUID.randomUUID().toString()),
@@ -871,15 +849,9 @@ public final class WorkflowRuntime implements WorkflowResults, WorkflowTaskAcces
 
   private void reconcileTasks(String tenant, String id) {
     for (var row :
-        statements.statement41(tenant,id))
-      if (engine
-              .getTaskService()
-              .createTaskQuery()
-              .taskId(str(row, "id"))
-              .taskTenantId(tenant)
-              .count()
-          == 0)
-        statements.statement42(tenant,row.get("id"));
+        statements.openInstanceTasks(tenant,id))
+      if (!engine.taskExists(tenant,str(row,"id")))
+        statements.cancelTask(tenant,(String)row.get("id"));
   }
 
   private WorkflowBusiness business(WorkflowContext c, String key) {
@@ -901,7 +873,7 @@ public final class WorkflowRuntime implements WorkflowResults, WorkflowTaskAcces
     String workItemKey = key;
     if (task != null) {
       var taskRow =
-          required(statements.unique10(c.tenantId(),task));
+          required(statements.taskNodeForAction(c.tenantId(),task));
       var node = definition(i).node(str(taskRow, "node_id"));
       workItemKey = node.separate() ? task : str(i, "id") + ":" + node.id();
     }
@@ -909,11 +881,11 @@ public final class WorkflowRuntime implements WorkflowResults, WorkflowTaskAcces
     if (task != null)
       nodeId =
           str(
-              required(statements.unique11(c.tenantId(),task)),
+              required(statements.taskNodeForCallback(c.tenantId(),task)),
               "node_id");
     else {
       var jobs =
-          statements.statement43(c.tenantId(),key);
+          statements.deliveryNode(c.tenantId(),key);
       if (!jobs.isEmpty()) nodeId = str(jobs.getFirst(), "node_id");
     }
     var reference =
@@ -949,15 +921,10 @@ public final class WorkflowRuntime implements WorkflowResults, WorkflowTaskAcces
   private Map<String, String> fields(Map<String, Object> i) {
     String engineId = (String) i.get("engine_id");
     if (engineId != null
-        && engine
-                .getRuntimeService()
-                .createProcessInstanceQuery()
-                .processInstanceId(engineId)
-                .count()
-            > 0)
+        && engine.running(engineId))
       return new TreeMap<>(
-          (Map<String, String>) engine.getRuntimeService().getVariable(engineId, "wf_fields"));
-    return new TreeMap<>(WorkflowJson.map(str(i, "snapshot")));
+          engine.fields(engineId));
+    return new TreeMap<>(content.fields(str(i, "snapshot")));
   }
 
   private Map<String, Object> publicInstance(Map<String, Object> i) {
@@ -980,20 +947,20 @@ public final class WorkflowRuntime implements WorkflowResults, WorkflowTaskAcces
 
   private void canRead(WorkflowContext c, Map<String, Object> i) {
     if (c.actorId().equals(i.get("starter")) || platform.allowed(c, "workflow:operate")) return;
-    if (statements.statement44(c.tenantId(),i.get("id"),c.actorId())
+    if (statements.copyCount(c.tenantId(),(String)i.get("id"),c.actorId())
         > 0) return;
-    if (statements.statement45(c.tenantId(),i.get("id"),c.actorId())
+    if (statements.participantTaskCount(c.tenantId(),(String)i.get("id"),c.actorId())
         == 0) throw fail("INSTANCE_DENIED", 403);
   }
 
   private Map<String, Object> instance(String tenant, String id, boolean lock) {
-    return required(statements.unique12(tenant,id,lock));
+    return required(statements.instanceRecord(tenant,id,lock));
   }
 
   private Map<String,Object> required(List<Map<String,Object>> rows){if(rows.size()!=1)throw fail("WORKFLOW_NOT_FOUND",404);return rows.getFirst();}
 
   private WorkflowModel model(Map<String, Object> row) {
-    return WorkflowJson.read(str(row, "model"), WorkflowModel.class);
+    return content.model(str(row, "model"));
   }
 
   private void requireActive(WorkflowContext c) {
@@ -1008,16 +975,15 @@ public final class WorkflowRuntime implements WorkflowResults, WorkflowTaskAcces
   private Object mutate(WorkflowContext c, String fingerprint, Supplier<Object> work) {
     UUID.fromString(c.requestId());
     String hash = hash(Objects.toString(c.personId(),"")+"|"+Objects.toString(c.organizationId(),"")+"|"+fingerprint);
-    return tx.execute(
-        s -> {
-          statements.statement46(c.tenantId(),c.actorId(),c.requestId(),hash);
+    return tx.required(()-> {
+          statements.registerRequest(c.tenantId(),c.actorId(),c.requestId(),hash);
           var row =
-              required(statements.unique13(c.tenantId(),c.actorId(),c.requestId()));
+              required(statements.lockRequest(c.tenantId(),c.actorId(),c.requestId()));
           if (!hash.equals(row.get("fingerprint"))) throw fail("IDEMPOTENCY_CONFLICT", 409);
           if (row.get("response") != null)
-            return WorkflowJson.read(str(row, "response"), Object.class);
+            return content.response(str(row, "response"));
           Object result = work.get();
-          statements.statement47(WorkflowJson.write(result),c.tenantId(),c.actorId(),c.requestId());
+          statements.saveRequestResponse(content.encode(result),c.tenantId(),c.actorId(),c.requestId());
           return result;
         });
   }
@@ -1031,7 +997,7 @@ public final class WorkflowRuntime implements WorkflowResults, WorkflowTaskAcces
       String reason,
       String previous,
       String next) {
-    statements.statement48(c.tenantId(),instance,c.actorId(),action,target,reason,previous,next);
+    statements.auditAssignment(c.tenantId(),instance,c.actorId(),action,target,reason,previous,next);
   }
 
   private void revisionAudit(WorkflowContext c, String action, String id) {
@@ -1040,7 +1006,7 @@ public final class WorkflowRuntime implements WorkflowResults, WorkflowTaskAcces
 
   /** 审计记录真实执行账号和已选业务人员，不把流程分配账号解释为人员唯一身份。 */
   private void audit(WorkflowContext c,String instance,String action,String target,String detail){
-    statements.statement49(c.tenantId(),instance,c.actorId(),action,target,detail,c.personId(),c.organizationId());
+    statements.auditOperation(c.tenantId(),instance,c.actorId(),action,target,detail,c.personId(),c.organizationId());
   }
 
   private static String hash(String value) {
@@ -1085,7 +1051,7 @@ public final class WorkflowRuntime implements WorkflowResults, WorkflowTaskAcces
                         || e.getValue().length() > 2000)) throw fail("INPUT_INVALID", 400);
   }
 
-  private static WorkflowFailure fail(String code, int status) {
-    return new WorkflowFailure(code, status);
+  private static WorkflowRejection fail(String code, int status) {
+    return new WorkflowRejection(code, status);
   }
 }

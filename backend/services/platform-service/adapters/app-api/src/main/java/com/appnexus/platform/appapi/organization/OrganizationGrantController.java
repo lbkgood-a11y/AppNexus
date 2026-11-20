@@ -60,7 +60,7 @@ public class OrganizationGrantController {
     }
     /** 验证范围内管理能力，默认拒绝；不能用用户名、全局账号或普通成员身份作为捷径。 */
     private VerifiedTenantContext requireAuthority(HttpServletRequest request) {
-        if(!(request.getAttribute(TenantExecutionFilter.ATTRIBUTE) instanceof VerifiedTenantContext c))
+        if(!(request.getAttribute(com.appnexus.platform.tenant.VerifiedTenantContext.class.getName()) instanceof VerifiedTenantContext c))
             throw AccountSettingsController.problem(HttpStatus.CONFLICT,"TENANT_REQUIRED","请选择有效租户");
         if(!authorization.allows(c.tenantId(),c.memberId(),OrganizationCapability.GRANT))
             throw AccountSettingsController.problem(HttpStatus.FORBIDDEN,"GRANT_DENIED","无授权管理权限");

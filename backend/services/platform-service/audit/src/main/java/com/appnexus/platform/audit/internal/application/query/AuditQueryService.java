@@ -1,24 +1,20 @@
-package com.appnexus.platform.security;
-import com.appnexus.platform.persistence.audit.AuditQueriesMapper;
+package com.appnexus.platform.audit.internal.application.query;
+import com.appnexus.platform.audit.AuditQueries;
+import com.appnexus.platform.audit.AuditQueries.*;
+import com.appnexus.platform.audit.port.AuditRecords;
 
 import com.appnexus.platform.authorization.*;
 import com.appnexus.platform.tenant.*;
 import java.time.Instant;
 import java.util.*;
-import org.springframework.stereotype.Service;
 
 /** 统一受权审计读模型，只暴露标识/动作/结果/追踪；不联接密码、Token、敏感原值或完整授权 JSON。 */
-@Service
-public class UnifiedAudit {
-    /** 审计摘要，traceId 缺省 null 表示历史事件未采集，不伪造技术关联。 */
-    public record Entry(String source,String eventId,String actor,String action,String target,String traceId,Integer status,Instant occurredAt){}
-    /** 固定分页契约，items/total 使用完全一致的租户边界。 */
-    public record Page(List<Entry> items,long total,int page,int pageSize){}
-    private final AuditQueriesMapper mapper;
+public final class AuditQueryService implements AuditQueries {
+    private final AuditRecords mapper;
     private final PlatformAdministration platform;
     private final AccessAuthorization authorization;
     private final TenantAccess tenants;
-    public UnifiedAudit(AuditQueriesMapper mapper,PlatformAdministration platform,AccessAuthorization authorization,TenantAccess tenants){this.mapper=mapper;this.platform=platform;this.authorization=authorization;this.tenants=tenants;}
+    public AuditQueryService(AuditRecords mapper,PlatformAdministration platform,AccessAuthorization authorization,TenantAccess tenants){this.mapper=mapper;this.platform=platform;this.authorization=authorization;this.tenants=tenants;}
     /**
      * 平台查询可选目标租户，不读取全局个人安全日志或凭据。
      * @param actor 权威平台操作者 UUID
@@ -46,7 +42,7 @@ public class UnifiedAudit {
         return new Page(mapper.tenant(id,size,(long)(page-1)*size).stream().map(row->entry(row,(String)row.get("source"))).toList(),mapper.tenantCount(id),page,size);
     }
     /** 固定查询别名转UTC摘要；NULL历史值保持未知，不生成敏感正文。 */
-    private Entry entry(Map<String,Object> row,String source){Object at=row.get("occurred_at");Instant occurred=at instanceof java.sql.Timestamp time?time.toInstant():at instanceof java.time.LocalDateTime time?time.toInstant(java.time.ZoneOffset.UTC):(Instant)at;return new Entry(source,Objects.toString(row.get("event_id"),null),(String)row.get("actor"),(String)row.get("action"),(String)row.get("target"),(String)row.get("trace_id"),row.get("status")==null?null:((Number)row.get("status")).intValue(),occurred);}
-    private void validate(int page,int size){if(page<1||page>100000||size<1||size>100)throw AccountSettingsController.problem(org.springframework.http.HttpStatus.BAD_REQUEST,"INVALID_AUDIT_QUERY","审计分页参数不正确");}
-    private org.springframework.web.ErrorResponseException denied(){return AccountSettingsController.problem(org.springframework.http.HttpStatus.FORBIDDEN,"AUDIT_QUERY_DENIED","无审计查询权限");}
+    private Entry entry(Map<String,Object> row,String source){Object at=row.get("occurred_at");Instant occurred=(Instant)at;return new Entry(source,Objects.toString(row.get("event_id"),null),(String)row.get("actor"),(String)row.get("action"),(String)row.get("target"),(String)row.get("trace_id"),row.get("status")==null?null:((Number)row.get("status")).intValue(),occurred);}
+    private void validate(int page,int size){if(page<1||page>100000||size<1||size>100)throw new Rejection(400,"INVALID_AUDIT_QUERY");}
+    private Rejection denied(){return new Rejection(403,"AUDIT_QUERY_DENIED");}
 }

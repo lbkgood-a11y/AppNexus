@@ -1,6 +1,5 @@
 package com.appnexus.masterdata.adapter.web.masterdata;
 import com.appnexus.masterdata.api.masterdata.MasterDataManagement;
-import com.appnexus.masterdata.*;
 
 import com.appnexus.contracts.operation.*;
 import com.appnexus.platform.tenant.VerifiedTenantContext;

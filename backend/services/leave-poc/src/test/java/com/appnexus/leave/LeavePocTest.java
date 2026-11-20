@@ -1,4 +1,6 @@
 package com.appnexus.leave;
+import com.appnexus.workflow.application.WorkflowRuntime;
+import com.appnexus.leave.application.LeavePocService;
 
 
 
@@ -63,12 +65,12 @@ class LeavePocTest {
         return k.equals("LEADER") ? (leaderMissing?List.of():List.of("leader")) : active(t, r) ? List.of(r) : List.of();
       }
     };
-    service = new LeavePocService(jdbc, manager, platform, () -> runtime);
-    service.runtimeFactory(new com.appnexus.platform.persistence.businessobject.MappedObjectRuntimeFactory(jdbc));
+    service = new LeavePocService(new com.appnexus.leave.adapter.persistence.MyBatisLeaveRepository(mapper(com.appnexus.leave.adapter.persistence.LeaveRecordMapper.class)),new com.appnexus.leave.adapter.transaction.SpringLeaveTransaction(manager),platform,()->runtime);
+    var declaration=new com.appnexus.leave.adapter.integration.LeaveDeclaration(service);declaration.runtimeFactory(new com.appnexus.platform.persistence.businessobject.MappedObjectRuntimeFactory(mapper(com.appnexus.platform.persistence.businessobject.ObjectRecordMapper.class)));
     var bridge = new WorkflowBridge();
     engine = new WorkflowEngineConfiguration().workflowProcessEngine(source, manager, bridge);
-    approval=new ObjectWorkflowAdapter(service,LeavePocService.SUBMIT_OPERATION,platform,()->runtime,manager);
-    runtime = new WorkflowEngineConfiguration().workflowRuntime(engine, source, manager, platform, List.of(approval), bridge);
+    approval=new ObjectWorkflowAdapter(declaration,com.appnexus.leave.api.LeaveOperations.SUBMIT_OPERATION,platform,()->runtime,manager);
+    runtime = new WorkflowEngineConfiguration().workflowRuntime(engine, source, manager, platform, List.of(approval), bridge,mapper(com.appnexus.workflow.adapter.persistence.WorkflowRecordMapper.class));
     var objectPlatform = new com.appnexus.contracts.businessobject.BusinessObjectPlatform() {
       public boolean operationAllowed(com.appnexus.contracts.businessobject.BusinessObjects.Context c,String operation,String permission){return platform.allowed(new WorkflowContext(c.tenantId(),c.actorId(),c.requestId()),permission);}
       public com.appnexus.contracts.businessobject.BusinessObjectRuntime.Snapshot authorizeRecord(com.appnexus.contracts.businessobject.BusinessObjects.Context c,com.appnexus.contracts.businessobject.BusinessObjects.Descriptor d,String operation,com.appnexus.contracts.businessobject.BusinessObjectRuntime.Snapshot snapshot){return snapshot;}
@@ -77,9 +79,9 @@ class LeavePocTest {
       public boolean tenantAdministrator(com.appnexus.contracts.businessobject.BusinessObjects.Context context) { return active(context); }
       public boolean tenantExists(String tenant) { return tenant.equals("019a65d0-0061-7000-8000-000000000001"); }
     };
-    var documents = com.appnexus.platform.persistence.businessobject.BusinessObjectPersistence.create(configurationMapper(),manager,objectPlatform,()->runtime,List.of(service));
+    var documents = com.appnexus.platform.persistence.businessobject.BusinessObjectPersistence.create(configurationMapper(),manager,objectPlatform,()->runtime,List.of(declaration));
     service.bindings(() -> documents);
-    service.execution(()->com.appnexus.platform.businessobject.BusinessObjectUseCases.execution(List.of(service),documents,new com.appnexus.platform.persistence.businessobject.configuration.SpringConfigurationTransaction(manager),objectPlatform,()->runtime,()->null));
+    service.execution(()->com.appnexus.platform.businessobject.BusinessObjectUseCases.execution(List.of(declaration),documents,new com.appnexus.platform.persistence.businessobject.configuration.SpringConfigurationTransaction(manager),objectPlatform,()->runtime,()->null));
     runtime.documentBindings(() -> documents);
     var model = model();
     assertThat(runtime.validate(c("applicant"), model)).isEmpty();
@@ -109,8 +111,8 @@ class LeavePocTest {
             new Edge("choice", "merge", null, null, true), edge("hr", "merge"), edge("merge", "end")),
         Map.of("APPROVED", "leavePoc", "REJECTED", "leavePoc", "WITHDRAWN", "leavePoc"), List.of(), "leavePoc");
   }
-  static LeavePocService.Input input(int days) {
-    return new LeavePocService.Input(ORG, "PERSONAL", LocalDate.of(2026, 11, 1), LocalDate.of(2026, 11, days), "私人原因");
+  static com.appnexus.leave.api.LeaveData.Input input(int days) {
+    return new com.appnexus.leave.api.LeaveData.Input(ORG, "PERSONAL", LocalDate.of(2026, 11, 1), LocalDate.of(2026, 11, days), "私人原因");
   }
   static Map<String, Object> create(int days) { return service.create(c("applicant"), input(days)); }
   static String task(String actor, String id) {
@@ -153,7 +155,7 @@ class LeavePocTest {
     String id = row.get("id").toString();
     assertThatThrownBy(() -> service.read(new WorkflowContext("other", "applicant", UUID.randomUUID().toString()), id, null)).isInstanceOf(SecurityException.class);
     assertThatThrownBy(() -> service.submit(c("hr"), id)).isInstanceOf(SecurityException.class);
-    assertThatThrownBy(() -> LeavePocService.days(new LeavePocService.Input(ORG, "PERSONAL", LocalDate.of(2026, 11, 2), LocalDate.of(2026, 11, 1), "原因"))).isInstanceOf(IllegalArgumentException.class);
+    assertThatThrownBy(() -> LeavePocService.days(new com.appnexus.leave.api.LeaveData.Input(ORG, "PERSONAL", LocalDate.of(2026, 11, 2), LocalDate.of(2026, 11, 1), "原因"))).isInstanceOf(IllegalArgumentException.class);
   }
 
   @Test void withdrawalIsBusinessCheckedAndDeliveredWithoutApproving() {
@@ -169,7 +171,7 @@ class LeavePocTest {
   /** 新模型创建时必须与已选人员组织一致；提交仍复核实时归属，撤销归属不能靠旧草稿继续审批。 */
   @Test void selectedOrganizationIsCheckedAtCreationAndRecheckedAtApproval(){
     var base=input(2);
-    var forged=new LeavePocService.Input(UUID.randomUUID().toString(),base.leaveType(),base.startDate(),base.endDate(),base.reason());
+    var forged=new com.appnexus.leave.api.LeaveData.Input(UUID.randomUUID().toString(),base.leaveType(),base.startDate(),base.endDate(),base.reason());
     assertThatThrownBy(()->service.create(c("applicant"),forged)).hasMessage("PERSON_CONTEXT_REQUIRED");
     String id=service.create(c("applicant"),base).get("id").toString();
     assertThat(service.update(c("applicant"),id,0,base).get("state")).isEqualTo("DRAFT");
@@ -268,4 +270,7 @@ class LeavePocTest {
           .getMapper(com.appnexus.platform.persistence.businessobject.configuration.ConfigurationMapper.class);
     } catch (Exception error) { throw new IllegalStateException("Cannot assemble configuration mapper", error); }
   }
+
+  /** 隔离数据库固定Mapper装配，不使用生产兼容构造或任意SQL端口。 */
+  private static <T>T mapper(Class<T> type){try{var factory=new org.mybatis.spring.SqlSessionFactoryBean();factory.setDataSource(java.util.Objects.requireNonNull(jdbc.getDataSource()));var config=new org.apache.ibatis.session.Configuration();config.setLocalCacheScope(org.apache.ibatis.session.LocalCacheScope.STATEMENT);config.setCacheEnabled(false);config.setCallSettersOnNulls(true);config.addMapper(type);factory.setConfiguration(config);return new org.mybatis.spring.SqlSessionTemplate(factory.getObject()).getMapper(type);}catch(Exception failure){throw new IllegalStateException("FIXTURE_MAPPER_ASSEMBLY_FAILED",failure);}}
 }

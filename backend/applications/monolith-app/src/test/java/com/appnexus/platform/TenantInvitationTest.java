@@ -1,6 +1,6 @@
 package com.appnexus.platform;
 
-import com.appnexus.platform.security.TenantInvitations;
+import com.appnexus.platform.tenant.TenantInvitations;
 import com.appnexus.platform.persistence.platformscope.MyBatisPlatformAdministration;
 import java.util.*;
 import org.junit.jupiter.api.*;

@@ -990,5 +990,73 @@
   {
     "key": "[\"frontend/modules/business-object/src/BusinessObjectManagement.vue\",\"el-button\",\"detailTab=row.service==='CODING'?'coding':'configuration'\",null,null,\"{{t('businessObject.configureCapability')}}\"]",
     "reason": "通用能力概览切换到既有配置页签，仅改变本地展示，不发出保存或发布请求；实际维护操作仍使用原对象操作准入。"
+  },
+  {
+    "key": "[\"frontend/apps/admin/src/layout/components/lay-setting/index.vue\",\"el-button\",\"scrollToPreferenceSection(section)\",null,null,\"{{ section.label }}\"]",
+    "reason": "只滚动到设置页内分区，不保存设置或修改授权。"
+  },
+  {
+    "key": "[\"frontend/experiments/workflow-bpmn-demo/src/App.vue\",\"el-button\",\"probe.theme(false)\",null,null,\"浅色\"]",
+    "reason": "隔离BPMN实验画布切换浅色，不连接业务接口。"
+  },
+  {
+    "key": "[\"frontend/experiments/workflow-bpmn-demo/src/App.vue\",\"el-button\",\"probe.theme(true)\",null,null,\"深色\"]",
+    "reason": "隔离BPMN实验画布切换深色，不连接业务接口。"
+  },
+  {
+    "key": "[\"frontend/modules/authorization/src/AuthorizationCenter.vue\",\"el-button\",\"selectRole(data.id)\",null,null,\"{{ data.name }}\"]",
+    "reason": "选择已有角色并经原读取接口加载详情，不提交授权；修改仍由保存操作准入。"
+  },
+  {
+    "key": "[\"frontend/modules/configuration/src/VxeDictionaryTable.vue\",\"el-button\",\"resetColumns\",null,null,\"{{ t('management.reset') }}\"]",
+    "reason": "恢复本地列显示顺序，不修改字典数据。"
+  },
+  {
+    "key": "[\"frontend/modules/configuration/src/VxeDictionaryTable.vue\",\"el-button\",\"move(column.key, -1)\",null,null,\"\"]",
+    "reason": "在本地列配置中向前移动列，不写业务记录。"
+  },
+  {
+    "key": "[\"frontend/modules/configuration/src/VxeDictionaryTable.vue\",\"el-button\",\"move(column.key, 1)\",null,null,\"\"]",
+    "reason": "在本地列配置中向后移动列，不写业务记录。"
+  },
+  {
+    "key": "[\"frontend/modules/configuration/src/VxeDictionaryTable.vue\",\"el-button\",\"toggleFullscreen\",null,null,\"\"]",
+    "reason": "只切换表格全屏显示，不发起业务写入。"
+  },
+  {
+    "key": "[\"frontend/modules/master-data/src/product/ProductSkuManagement.vue\",\"el-button\",\"selected?refresh():findProducts()\",null,null,\"{{t('masterData.retry')}}\"]",
+    "reason": "重试读取已授权的商品/规格列表，沿用原服务端读取准入，不创建SKU。"
+  },
+  {
+    "key": "[\"frontend/modules/master-data/src/product/ProductSkuManagement.vue\",\"el-button\",\"createOpen=false\",null,null,\"{{t('masterData.cancel')}}\"]",
+    "reason": "关闭未保存SKU草稿弹窗，不调用新增接口。"
+  },
+  {
+    "key": "[\"frontend/modules/print/src/PrintFlowWorkspace.vue\",\"el-button\",\"row.columns.splice(rowIndex,1)\",null,null,\"{{t('printing.flow.removeLine')}}\"]",
+    "reason": "删除本地契约明细列草稿，只有原保存操作才持久化。"
+  },
+  {
+    "key": "[\"frontend/modules/print/src/PrintFlowWorkspace.vue\",\"el-button\",\"contractForm.fields.splice(rowIndex,1)\",null,null,\"{{t('printing.flow.removeLine')}}\"]",
+    "reason": "删除本地契约字段草稿，不删除已发布契约。"
+  },
+  {
+    "key": "[\"frontend/modules/print/src/PrintFlowWorkspace.vue\",\"el-button\",\"data[field.key].splice(rowIndex,1)\",null,null,\"{{t('printing.flow.removeLine')}}\"]",
+    "reason": "删除本地打印录入草稿行，不提交打印或删除后端单据。"
+  },
+  {
+    "key": "[\"frontend/modules/print/src/TemplateDesigner.vue\",\"el-button\",\"activeTool=''\",null,null,\"×\"]",
+    "reason": "关闭设计工具编辑面板，未保存模板不写入后端。"
+  },
+  {
+    "key": "[\"frontend/modules/print/src/TemplateDesigner.vue\",\"el-button\",\"activeTool=''\",null,null,\"{{t('organization.cancel')}}\"]",
+    "reason": "关闭设计工具编辑面板，未保存模板不写入后端。"
+  },
+  {
+    "key": "[\"frontend/modules/print/src/TemplateDesigner.vue\",\"el-button\",\"applyQuick\",null,null,\"{{t(activeTool==='paper'?'printing.applyPaper':activeTool==='field'?'printing.addField':'printing.addText')}}\"]",
+    "reason": "只修改当前设计器纸张/字段/文字草稿及撤销历史，持久化仍经原保存操作。"
+  },
+  {
+    "key": "[\"frontend/modules/workflow/src/WorkflowCenter.vue\",\"el-button\",null,\"\\r\\n              submitted = query;\\r\\n              page = 1;\\r\\n            \",null,\"{{ t(\\\"administration.search\\\") }}\"]",
+    "reason": "提交本地已加载工作流列表的关键词过滤并重置页码，不发起工作流命令或保存配置。"
   }
 ]

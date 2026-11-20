@@ -1,6 +1,6 @@
 package com.appnexus.masterdata.application.product;
 import com.appnexus.masterdata.api.product.ProductStructureData.Migration;
-import com.appnexus.masterdata.MasterData.Rejection;
+import com.appnexus.masterdata.api.masterdata.MasterData.Rejection;
 import java.util.Map;
 import java.util.TreeSet;
 /** 结构迁移应用协调；调用方先授权并建立原幂等范围、十秒事务及技术冲突映射。 */

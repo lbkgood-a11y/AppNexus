@@ -1,4 +1,5 @@
 package com.appnexus.platform.appapi.configuration;
+import com.appnexus.platform.configuration.TenantParameters;
 import com.appnexus.platform.security.*;
 
 import com.appnexus.platform.tenant.VerifiedTenantContext;

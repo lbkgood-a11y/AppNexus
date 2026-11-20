@@ -3,7 +3,7 @@ import com.appnexus.contracts.businessobject.BusinessObjects.*;
 
 import com.appnexus.contracts.businessobject.*;
 import com.appnexus.contracts.workflow.WorkflowBusiness;
-import com.appnexus.workflow.adapter.flowable.WorkflowRuntime;
+import com.appnexus.workflow.application.WorkflowRuntime;
 import java.util.*;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

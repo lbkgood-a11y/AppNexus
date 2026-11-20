@@ -16,12 +16,14 @@ const ids=new Set();
 function java(dir){for(const entry of fs.readdirSync(dir,{withFileTypes:true})){if(entry.name==='target')continue;const f=path.join(dir,entry.name);if(entry.isDirectory())java(f);else if(f.endsWith('.java')){const source=fs.readFileSync(f,'utf8');for(const match of source.matchAll(/OperationBinding\(id="([^"]+)"/g))ids.add(match[1]);for(const match of source.matchAll(/(?:new\s+(?:[A-Za-z0-9_.]+\.)?Operation)\(\s*"[^"]+"\s*,\s*"[^"]+"\s*,\s*"[^"]+"\s*,\s*"[^"]+"\s*,\s*"([^"]+)"/g))ids.add(match[1]);}}}
 java('backend/services');
 const exclusionPath='frontend/scripts/operation-ui-exclusions.json';
-const key=row=>JSON.stringify([row.file,row.tag,row.click,row.submit,row.confirm,row.text]);
+// Git在Windows使用CRLF时仍是相同Vue表达式，不为换行差异新增授权例外。
+const canonicalKey=value=>JSON.stringify(JSON.parse(value).map(item=>typeof item==='string'?item.replaceAll('\r\n','\n'):item));
+const key=row=>canonicalKey(JSON.stringify([row.file,row.tag,row.click,row.submit,row.confirm,row.text]));
 const unbound=rows.filter(row=>!row.operation&&(row.click||row.submit||row.confirm));
 if(process.argv.includes('--write-exclusions'))throw new Error('禁止批量自动生成授权例外；请逐项审查副作用后手工维护例外及中文原因');
 
 const exclusions=JSON.parse(fs.readFileSync(exclusionPath,'utf8'));
-const excluded=new Set(exclusions.filter(item=>item.reason).map(item=>item.key));
+const excluded=new Set(exclusions.filter(item=>item.reason).map(item=>canonicalKey(item.key)));
 const problems=unbound.filter(row=>!excluded.has(key(row))).map(row=>`${row.file}:${row.line} 新增交互未绑定操作或明确声明界面例外`);
 
 const dynamic=JSON.parse(fs.readFileSync('frontend/scripts/operation-dynamic-bindings.json','utf8'));

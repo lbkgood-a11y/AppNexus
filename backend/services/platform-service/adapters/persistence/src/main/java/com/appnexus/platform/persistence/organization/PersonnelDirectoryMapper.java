@@ -64,8 +64,12 @@ public interface PersonnelDirectoryMapper {
  int statement13(@Param("p0") Object p0,@Param("p1") Object p1,@Param("p2") Object p2);
 
  /** 固定人员关系SQL；操作、租户、人员及组织有效性由公开端口复核，不复制授权规则。 */
- @Delete("DELETE FROM "+table+" WHERE tenant_id=UUID_TO_BIN(#{p0}) AND person_id=UUID_TO_BIN(#{p1}) AND id=UUID_TO_BIN(#{p2})")
+ @Delete("DELETE FROM tenant_person_organization WHERE tenant_id=UUID_TO_BIN(#{p0}) AND person_id=UUID_TO_BIN(#{p1}) AND id=UUID_TO_BIN(#{p2})")
  int statement14(@Param("p0") Object p0,@Param("p1") Object p1,@Param("p2") Object p2);
+
+ /** 固定删除岗位任职，不允许传入表名；调用方已清理负责人关系且处于同一事务。 */
+ @Delete("DELETE FROM tenant_person_position WHERE tenant_id=UUID_TO_BIN(#{tenant}) AND person_id=UUID_TO_BIN(#{person}) AND id=UUID_TO_BIN(#{id})")
+ int deletePosition(@Param("tenant") String tenant,@Param("person") String person,@Param("id") String id);
 
  /** 固定人员关系SQL；操作、租户、人员及组织有效性由公开端口复核，不复制授权规则。 */
  @Select("SELECT a.display_name FROM identity_account a JOIN tenant_member m ON m.account_id=a.id WHERE m.tenant_id=UUID_TO_BIN(#{p0}) AND a.id=UUID_TO_BIN(#{p1})")

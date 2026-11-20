@@ -1,5 +1,4 @@
 package com.appnexus.platform.persistence.organization.personnel;
-import com.appnexus.platform.organization.personnel.*;
 import com.appnexus.platform.organization.port.personnel.PersonnelIdentityQueries;
 import com.appnexus.platform.organization.PersonnelCatalog;
 import java.util.*;

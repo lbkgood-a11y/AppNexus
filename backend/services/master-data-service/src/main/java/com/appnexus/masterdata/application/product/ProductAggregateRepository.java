@@ -4,6 +4,8 @@ import java.util.*;
 import java.util.function.BiFunction;
 /** 商品聚合固定快照、历史及属性存取输出端口；回调只表达同聚合只读事实，不开放SQL或跨上下文访问。 */
 public interface ProductAggregateRepository {
+ /** @param c 已授权主体 @param id 当前租户商品ID @param page 正整数页码 @param size 每页1—100条 @return 同一商品历史及总数，不包含其他租户记录 */
+ Map<String,Object> changes(VerifiedTenantContext c,String id,int page,int size);
  /** 原值及选项创建审计；时间必须为稳定JDK值，历史未知保持null。 */
  record ValueHistory(Map<String,Map<String,Object>> values,Map<String,Map<String,Object>> choices) {}
  /** @param c 已授权主体 @param id 当前商品 @param issues 原完整性事实协作 @return 同租户完整快照 */

@@ -1,4 +1,5 @@
 package com.appnexus.platform.persistence.audit;
+import com.appnexus.platform.audit.AuditQueries;
 import com.appnexus.persistence.mybatis.PlatformScoped;
 import java.util.List;
 import java.util.Map;

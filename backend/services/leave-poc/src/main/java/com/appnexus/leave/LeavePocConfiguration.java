@@ -1,4 +1,5 @@
 package com.appnexus.leave;
+import com.appnexus.leave.application.LeavePocService;
 import com.appnexus.leave.adapter.web.LeavePocController;
 import com.appnexus.leave.adapter.persistence.LeaveRecordMapper;
 
@@ -22,13 +23,15 @@ public class LeavePocConfiguration {
       ObjectProvider<com.appnexus.contracts.printing.BusinessPrinting> printing,
       ObjectProvider<com.appnexus.contracts.businessobject.BusinessObjectExecution> execution,
       com.appnexus.contracts.businessobject.ObjectRecordRuntimeFactory runtimeFactory) {
-    var service=new LeavePocService(statements, manager, platform, tasks::getObject);
+    var service=new LeavePocService(new com.appnexus.leave.adapter.persistence.MyBatisLeaveRepository(statements),new com.appnexus.leave.adapter.transaction.SpringLeaveTransaction(manager), platform, tasks::getObject);
     service.bindings(bindings::getObject);
     service.printing(printing::getObject);
     service.execution(execution::getObject);
-    service.runtimeFactory(runtimeFactory);
+
     return service;
   }
+  /** 唯一声明与原公共运行工厂接线，不另建逐对象审批或打印驱动。 */
+  @Bean public com.appnexus.leave.adapter.integration.LeaveDeclaration leaveDeclaration(LeavePocService service,com.appnexus.contracts.businessobject.ObjectRecordRuntimeFactory factory){var declaration=new com.appnexus.leave.adapter.integration.LeaveDeclaration(service);declaration.runtimeFactory(factory);return declaration;}
   /** 注册只读对象诊断；复用本人读取及配置检查，不模拟指定用户或越过业务归属。 */
   @Bean public com.appnexus.contracts.operation.ObjectDiagnostics leaveObjectDiagnostics(LeavePocService service){
     return new com.appnexus.contracts.operation.ObjectDiagnostics(){

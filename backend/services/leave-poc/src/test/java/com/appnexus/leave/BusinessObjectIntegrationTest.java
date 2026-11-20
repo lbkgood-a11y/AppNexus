@@ -1,4 +1,6 @@
 package com.appnexus.leave;
+import com.appnexus.workflow.application.WorkflowRuntime;
+import com.appnexus.leave.application.LeavePocService;
 import com.appnexus.contracts.businessobject.BusinessObjects.*;
 
 
@@ -68,18 +70,18 @@ class BusinessObjectIntegrationTest {
       public boolean tenantAdministrator(Context c){return active(c)&&c.actorId().equals("manager");}
       public boolean tenantExists(String t){return Set.of(TENANT,OTHER).contains(t);}
     };
-    leave=new LeavePocService(jdbc,tx,platform,()->runtime);
-    leave.runtimeFactory(new com.appnexus.platform.persistence.businessobject.MappedObjectRuntimeFactory(jdbc));
+    leave=new LeavePocService(new com.appnexus.leave.adapter.persistence.MyBatisLeaveRepository(mapper(com.appnexus.leave.adapter.persistence.LeaveRecordMapper.class)),new com.appnexus.leave.adapter.transaction.SpringLeaveTransaction(tx),platform,()->runtime);
+    var declaration=new com.appnexus.leave.adapter.integration.LeaveDeclaration(leave);declaration.runtimeFactory(new com.appnexus.platform.persistence.businessobject.MappedObjectRuntimeFactory(mapper(com.appnexus.platform.persistence.businessobject.ObjectRecordMapper.class)));
     Provider order=()->new Descriptor("Order","订单","Order","sales",1,Category.TRANSACTION,List.of(new Field("amount","金额","Amount","NUMBER","元",true)),List.of(
       new Operation("confirm","确认","Confirm","order:confirm","Order.confirm",null,List.of(new OperationAlias("Order.detail.confirm",new PageOperation("order/detail","/orders/detail","订单详情","Order details","POST","/api/orders/{id}/confirm"))),new com.appnexus.contracts.businessobject.InteractionContract("Order.confirm",1,"Order","confirm","确认","Confirm",com.appnexus.contracts.businessobject.InteractionContract.Trigger.USER_ACTION,java.util.List.of(new com.appnexus.contracts.businessobject.InteractionContract.Capability(com.appnexus.contracts.businessobject.InteractionContract.Service.BUSINESS,com.appnexus.contracts.businessobject.InteractionContract.Completion.SYNCHRONOUS,"Order.confirm","",java.util.List.of(),java.util.Set.of(), "Order.confirm.data", 1)))),
       new Operation("print","打印","Print","order:print","Order.print",null,List.of(),new com.appnexus.contracts.businessobject.InteractionContract("Order.print",1,"Order","print","打印","Print",com.appnexus.contracts.businessobject.InteractionContract.Trigger.USER_ACTION,java.util.List.of(new com.appnexus.contracts.businessobject.InteractionContract.Capability(com.appnexus.contracts.businessobject.InteractionContract.Service.PRINT,com.appnexus.contracts.businessobject.InteractionContract.Completion.CONFIRMATION,"order.v1","",java.util.List.of(),java.util.Set.of(), "order.v1", 1)))),
       new Operation("cancel","取消","Cancel","order:cancel","Order.cancel",null,java.util.List.of(),new com.appnexus.contracts.businessobject.InteractionContract("Order.cancel",1,"Order","cancel","取消","Cancel",com.appnexus.contracts.businessobject.InteractionContract.Trigger.USER_ACTION,java.util.List.of(new com.appnexus.contracts.businessobject.InteractionContract.Capability(com.appnexus.contracts.businessobject.InteractionContract.Service.BUSINESS,com.appnexus.contracts.businessobject.InteractionContract.Completion.SYNCHRONOUS,"Order.cancel","",java.util.List.of(),java.util.Set.of(), "Order.cancel.data", 1)))),
       new Operation("release","放行","Release","order:release","Order.release",null,java.util.List.of(),new com.appnexus.contracts.businessobject.InteractionContract("Order.release",1,"Order","release","放行","Release",com.appnexus.contracts.businessobject.InteractionContract.Trigger.USER_ACTION,java.util.List.of(new com.appnexus.contracts.businessobject.InteractionContract.Capability(com.appnexus.contracts.businessobject.InteractionContract.Service.WORKFLOW,com.appnexus.contracts.businessobject.InteractionContract.Completion.CALLBACK,"orderRelease","releaseApproval",java.util.List.of(),Set.of("APPROVED","REJECTED"), "orderRelease.data", 1))))));
-    documents=com.appnexus.platform.persistence.businessobject.BusinessObjectPersistence.create(configurationMapper(),tx,dp,()->runtime,List.of(leave,order),printingPort::get);leave.bindings(()->documents);
-    leave.execution(()->com.appnexus.platform.businessobject.BusinessObjectUseCases.execution(List.of(leave,order),documents,new com.appnexus.platform.persistence.businessobject.configuration.SpringConfigurationTransaction(tx),dp,()->runtime,printingPort::get));
+    documents=com.appnexus.platform.persistence.businessobject.BusinessObjectPersistence.create(configurationMapper(),tx,dp,()->runtime,List.of(declaration,order),printingPort::get);leave.bindings(()->documents);
+    leave.execution(()->com.appnexus.platform.businessobject.BusinessObjectUseCases.execution(List.of(declaration,order),documents,new com.appnexus.platform.persistence.businessobject.configuration.SpringConfigurationTransaction(tx),dp,()->runtime,printingPort::get));
     documents.savePageRelationships(dc("platform"),"LeaveRequest",-1,List.of(new PageRelationship("submit","LeaveRequest.submit"),new PageRelationship("print","LeaveRequest.print"),new PageRelationship("print","LeaveRequest.detail.print")));
     var bridge=new WorkflowBridge();var config=new WorkflowEngineConfiguration();engine=config.workflowProcessEngine(source,tx,bridge);
-    runtime=config.workflowRuntime(engine,source,tx,platform,List.of(new ObjectWorkflowAdapter(leave,LeavePocService.SUBMIT_OPERATION,platform,()->runtime,tx)),bridge);runtime.documentBindings(()->documents);
+    runtime=config.workflowRuntime(engine,source,tx,platform,List.of(new ObjectWorkflowAdapter(declaration,com.appnexus.leave.api.LeaveOperations.SUBMIT_OPERATION,platform,()->runtime,tx)),bridge,mapper(com.appnexus.workflow.adapter.persistence.WorkflowRecordMapper.class));runtime.documentBindings(()->documents);
     var base=LeavePocTest.model();var model=new WorkflowModel(base.name(),base.objectType(),base.purpose(),base.mode(),base.entryCapability(),List.of(),base.nodes(),base.edges(),Map.of("APPROVED","leavePoc","REJECTED","leavePoc","WITHDRAWN","leavePoc"),List.of(),"leavePoc");
     runtime.save(wc("manager"),"leave",-1,model);runtime.publish(wc("manager"),"leave",0);
     documents.activate(dc("platform"),"LeaveRequest",0,true);documents.grant(dc("platform"),"LeaveRequest",TENANT,true);
@@ -149,7 +151,7 @@ class BusinessObjectIntegrationTest {
     jdbc.update("UPDATE business_object_page_relationships SET revision=? WHERE object_type='LeaveRequest'",revision);
   }
   @Test void completeDocumentContract() {
-    assertThat(leave.descriptor().operations()).contains(LeavePocService.SUBMIT_OPERATION);
+    assertThat(new com.appnexus.leave.adapter.integration.LeaveDeclaration(leave).descriptor().operations()).contains(com.appnexus.leave.api.LeaveOperations.SUBMIT_OPERATION);
     assertThat(leave.actions(wc("applicant"))).first().satisfies(a->{assertThat(a.operationId()).isEqualTo("LeaveRequest.submit");assertThat(a.allowed()).isTrue();});
     assertThatThrownBy(()->documents.resolveOperation(dc("applicant"),"LeaveRequest","unknown",UUID.randomUUID().toString(),0,Map.of())).hasMessage("BUSINESS_OBJECT_ACTION_INVALID");
     // 授权资格与启用开关分别表达：未启用仍可配置/查看，但不能发起运行。
@@ -189,7 +191,7 @@ class BusinessObjectIntegrationTest {
     var connected=documents.configuration(dc("manager"),"LeaveRequest");
     assertThat((List<Binding>)connected.get("bindings")).first().satisfies(b->assertThat(b.operationId()).isEqualTo("LeaveRequest.submit"));
     assertThat(jdbc.queryForObject("SELECT JSON_UNQUOTE(JSON_EXTRACT(published,'$[0].operationId')) FROM business_object_configuration WHERE tenant_id=? AND object_type='LeaveRequest'",String.class,TENANT)).isEqualTo("LeaveRequest.submit");
-    assertThat(LeavePocService.SUBMIT_OPERATION.pageOperation().pageKey()).isEqualTo("workflow/leave");
+    assertThat(com.appnexus.leave.api.LeaveOperations.SUBMIT_OPERATION.pageOperation().pageKey()).isEqualTo("workflow/leave");
     assertThatThrownBy(()->configure(List.of(new Binding(UUID.randomUUID().toString(),"错绑","leave",1,List.of(),"submit","WORKFLOW","Order.submit",null)))).hasMessage("BUSINESS_OBJECT_PAGE_OPERATION_INVALID");
     assertThatThrownBy(()->configure(List.of(new Binding(UUID.randomUUID().toString(),"未选择","leave",1,List.of(),"submit","WORKFLOW","",null)))).hasMessage("BUSINESS_OBJECT_PAGE_OPERATION_INVALID");
     // 发布第二版后绑定仍精确使用第一版，而不是自动升级。
@@ -294,4 +296,7 @@ class BusinessObjectIntegrationTest {
           .getMapper(com.appnexus.platform.persistence.businessobject.configuration.ConfigurationMapper.class);
     } catch (Exception error) { throw new IllegalStateException("Cannot assemble configuration mapper", error); }
   }
+
+  /** 隔离数据库固定Mapper装配，不使用生产兼容构造或任意SQL端口。 */
+  private static <T>T mapper(Class<T> type){try{var factory=new org.mybatis.spring.SqlSessionFactoryBean();factory.setDataSource(java.util.Objects.requireNonNull(jdbc.getDataSource()));var config=new org.apache.ibatis.session.Configuration();config.setLocalCacheScope(org.apache.ibatis.session.LocalCacheScope.STATEMENT);config.setCacheEnabled(false);config.setCallSettersOnNulls(true);config.addMapper(type);factory.setConfiguration(config);return new org.mybatis.spring.SqlSessionTemplate(factory.getObject()).getMapper(type);}catch(Exception failure){throw new IllegalStateException("FIXTURE_MAPPER_ASSEMBLY_FAILED",failure);}}
 }

@@ -19,7 +19,7 @@ public final class PartnerDataAccess implements DataAccessDeclaration.Executor, 
         new RowAccessControl.Column("id",DataGrantRules.ValueType.UUID),new RowAccessControl.Column("organization_id",DataGrantRules.ValueType.UUID),
         Map.of("code",new RowAccessControl.Column("code",DataGrantRules.ValueType.TEXT),"name",new RowAccessControl.Column("name",DataGrantRules.ValueType.TEXT),
             "organizationId",new RowAccessControl.Column("organization_id",DataGrantRules.ValueType.UUID)));
-    private final AccessPlanning planning;private final FieldProtection protection;private final DataAccessReferences references;private final MasterReadMapper mapper;private final DataAccessCatalog catalog;private final RowAccessControl rows;
+    private final com.appnexus.masterdata.adapter.persistence.PartnerDetailMapper detailMapper;private final AccessPlanning planning;private final FieldProtection protection;private final DataAccessReferences references;private final MasterReadMapper mapper;private final DataAccessCatalog catalog;private final RowAccessControl rows;
     /**
      * @param planning 当前主体、操作及资源的权威权限计划入口
      * @param protection 字段展示与写入的强制限制入口
@@ -28,7 +28,7 @@ public final class PartnerDataAccess implements DataAccessDeclaration.Executor, 
      * @param catalog 统一业务对象派生的数据权限目录
      * @param rows 平台公共行范围执行能力；必须由装配注入，不能缺省绕过数据范围
      */
-    public PartnerDataAccess(AccessPlanning planning,FieldProtection protection,DataAccessReferences references,MasterReadMapper mapper,DataAccessCatalog catalog,RowAccessControl rows){this.planning=planning;this.protection=protection;this.references=references;this.mapper=mapper;this.catalog=catalog;this.rows=Objects.requireNonNull(rows);}
+    public PartnerDataAccess(AccessPlanning planning,FieldProtection protection,DataAccessReferences references,MasterReadMapper mapper,DataAccessCatalog catalog,RowAccessControl rows,com.appnexus.masterdata.adapter.persistence.PartnerDetailMapper detailMapper){this.detailMapper=detailMapper;this.planning=planning;this.protection=protection;this.references=references;this.mapper=mapper;this.catalog=catalog;this.rows=Objects.requireNonNull(rows);}
     @Override public Set<String> enforcedResources(){return Set.of(ROOT,CONTACT,BANK);}
     private AccessAuthorization.Subject subject(VerifiedTenantContext c){return AccessAuthorization.Subject.tenant(c.accountId(),c.tenantId(),c.memberId());}
     /** 每次执行读取权威策略；无功能或无范围默认拒绝，不使用浏览器传入的权限计划。 */
@@ -99,7 +99,7 @@ public final class PartnerDataAccess implements DataAccessDeclaration.Executor, 
     }
     /** 限制字段所在明细禁止通过整行删除绕过写保护；null 集合明确保留全部明细。 */
     private List<DetailInput> details(VerifiedTenantContext c,String id,List<DetailInput> supplied,boolean bank,Map<String,FieldSecurity.Mode> modes){
-        if(supplied==null)return null;var existing=id==null?List.<Detail>of():PartnerDetails.read(jdbc,c,id,bank);
+        if(supplied==null)return null;var existing=id==null?List.<Detail>of():PartnerDetails.read(detailMapper,c,id,bank);
         var known=new HashMap<String,Detail>();existing.forEach(row->known.put(row.id(),row));var retained=new HashSet<String>();var result=new ArrayList<DetailInput>();
         for(var row:supplied){if(row==null)throw new Rejection(400,"MASTER_DATA_INPUT_INVALID");var old=row.id()==null?null:known.get(row.id());if(row.id()!=null&&old==null)throw new Rejection(409,"MASTER_DATA_CHANGED");if(old!=null)retained.add(old.id());result.add(new DetailInput(row.id(),merge(row.values(),old==null?Map.of():old.values(),modes)));}
         if(!modes.isEmpty()&&existing.stream().anyMatch(row->!retained.contains(row.id())))throw new Rejection(403,"DATA_FIELD_WRITE_DENIED");

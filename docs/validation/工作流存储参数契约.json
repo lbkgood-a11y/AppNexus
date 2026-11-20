@@ -1,0 +1,327 @@
+[
+  {
+    "method": "publishedDefinitions",
+    "before": "Object p0",
+    "after": "String tenant"
+  },
+  {
+    "method": "openActorTask",
+    "before": "Object p0, Object p1, Object p2",
+    "after": "String tenant,String task,String actor"
+  },
+  {
+    "method": "definitions",
+    "before": "Object p0",
+    "after": "String tenant"
+  },
+  {
+    "method": "createDefinition",
+    "before": "Object p0, Object p1, Object p2",
+    "after": "String tenant,String id,String model"
+  },
+  {
+    "method": "updateDraft",
+    "before": "Object p0, Object p1, Object p2, Object p3",
+    "after": "String model,String tenant,String id,long revision"
+  },
+  {
+    "method": "createPublishedVersion",
+    "before": "Object p0, Object p1, Object p2, Object p3, Object p4, Object p5, Object p6, Object p7",
+    "after": "String tenant,String definition,int version,String model,String bpmn,String engineDefinition,String actor,String schema"
+  },
+  {
+    "method": "activateVersion",
+    "before": "Object p0, Object p1, Object p2",
+    "after": "int version,String tenant,String id"
+  },
+  {
+    "method": "disableDefinition",
+    "before": "Object p0, Object p1, Object p2",
+    "after": "String tenant,String id,long revision"
+  },
+  {
+    "method": "definitionVersions",
+    "before": "Object p0, Object p1",
+    "after": "String tenant,String definition"
+  },
+  {
+    "method": "createInstance",
+    "before": "Object p0, Object p1, Object p2, Object p3, Object p4, Object p5, Object p6, Object p7, Object p8, Object p9, Object p10, Object p11, Object p12",
+    "after": "String tenant,String id,String definition,int version,String objectType,String objectId,long objectVersion,String purpose,String organization,String actor,String digest,String snapshot,String schema"
+  },
+  {
+    "method": "copyActor",
+    "before": "Object p0, Object p1, Object p2",
+    "after": "String tenant,String instance,String actor"
+  },
+  {
+    "method": "bindEngineInstance",
+    "before": "Object p0, Object p1, Object p2",
+    "after": "String engineInstance,String tenant,String id"
+  },
+  {
+    "method": "copiedInstances",
+    "before": "Object p0, Object p1",
+    "after": "String tenant,String actor"
+  },
+  {
+    "method": "participantInstances",
+    "before": "Object p0, Object p1",
+    "after": "String tenant,String actor"
+  },
+  {
+    "method": "startedInstances",
+    "before": "Object p0",
+    "after": "String tenant"
+  },
+  {
+    "method": "instanceTasks",
+    "before": "Object p0, Object p1",
+    "after": "String tenant,String instance"
+  },
+  {
+    "method": "instanceAudit",
+    "before": "Object p0, Object p1",
+    "after": "String tenant,String instance"
+  },
+  {
+    "method": "instanceJobs",
+    "before": "Object p0, Object p1",
+    "after": "String tenant,String instance"
+  },
+  {
+    "method": "objectInstances",
+    "before": "Object p0, Object p1, Object p2, Object p3, Object p4, Object p5, Object p6, Object p7",
+    "after": "String tenant,String objectType,String objectId,String purpose,String actor,boolean operator,String participant,String copiedActor"
+  },
+  {
+    "method": "saveTaskComment",
+    "before": "Object p0, Object p1, Object p2",
+    "after": "String comment,String tenant,String task"
+  },
+  {
+    "method": "completeTask",
+    "before": "Object p0, Object p1, Object p2, Object p3",
+    "after": "String decision,String comment,String tenant,String task"
+  },
+  {
+    "method": "cancelOpenJobs",
+    "before": "Object p0, Object p1",
+    "after": "String tenant,String instance"
+  },
+  {
+    "method": "duplicateAssignmentCount",
+    "before": "Object p0, Object p1, Object p2, Object p3, Object p4",
+    "after": "String tenant,String instance,String node,String actor,String task"
+  },
+  {
+    "method": "assignTask",
+    "before": "Object p0, Object p1, Object p2",
+    "after": "String actor,String tenant,String task"
+  },
+  {
+    "method": "retryJob",
+    "before": "Object p0, Object p1",
+    "after": "String tenant,String job"
+  },
+  {
+    "method": "cancelInstanceJobs",
+    "before": "Object p0, Object p1",
+    "after": "String tenant,String instance"
+  },
+  {
+    "method": "createTask",
+    "before": "Object p0, Object p1, Object p2, Object p3, Object p4, Object p5, Object p6",
+    "after": "String tenant,String id,String instance,String node,String name,String actor,Instant deadline"
+  },
+  {
+    "method": "endInstance",
+    "before": "Object p0, Object p1, Object p2",
+    "after": "String result,String tenant,String instance"
+  },
+  {
+    "method": "createDeliveryJob",
+    "before": "Object p0, Object p1, Object p2, Object p3, Object p4, Object p5, Object p6, Object p7, Object p8, Object p9",
+    "after": "String tenant,String id,String instance,String node,String execution,String capability,String kind,String payload,int attempts,Instant deadline"
+  },
+  {
+    "method": "lockDueJob",
+    "before": "",
+    "after": ""
+  },
+  {
+    "method": "markLeaseExhausted",
+    "before": "Object p0, Object p1",
+    "after": "String tenant,String job"
+  },
+  {
+    "method": "claimJobLease",
+    "before": "Object p0, Object p1, Object p2",
+    "after": "String token,String tenant,String job"
+  },
+  {
+    "method": "awaitCallback",
+    "before": "Object p0, Object p1, Object p2",
+    "after": "String result,String tenant,String job"
+  },
+  {
+    "method": "scheduleRetry",
+    "before": "Object p0, Object p1, Object p2, Object p3",
+    "after": "String state,String error,String tenant,String job"
+  },
+  {
+    "method": "completeDelivery",
+    "before": "Object p0, Object p1, Object p2",
+    "after": "String result,String tenant,String job"
+  },
+  {
+    "method": "auditExpiredAssignment",
+    "before": "",
+    "after": ""
+  },
+  {
+    "method": "timeoutJobs",
+    "before": "",
+    "after": ""
+  },
+  {
+    "method": "tasksForMaintenance",
+    "before": "",
+    "after": ""
+  },
+  {
+    "method": "markTaskChecked",
+    "before": "Object p0, Object p1",
+    "after": "String tenant,String task"
+  },
+  {
+    "method": "unassignTask",
+    "before": "Object p0, Object p1",
+    "after": "String tenant,String task"
+  },
+  {
+    "method": "openInstanceTasks",
+    "before": "Object p0, Object p1",
+    "after": "String tenant,String instance"
+  },
+  {
+    "method": "cancelTask",
+    "before": "Object p0, Object p1",
+    "after": "String tenant,String task"
+  },
+  {
+    "method": "deliveryNode",
+    "before": "Object p0, Object p1",
+    "after": "String tenant,String job"
+  },
+  {
+    "method": "copyCount",
+    "before": "Object p0, Object p1, Object p2",
+    "after": "String tenant,String instance,String actor"
+  },
+  {
+    "method": "participantTaskCount",
+    "before": "Object p0, Object p1, Object p2",
+    "after": "String tenant,String instance,String actor"
+  },
+  {
+    "method": "registerRequest",
+    "before": "Object p0, Object p1, Object p2, Object p3",
+    "after": "String tenant,String actor,String request,String digest"
+  },
+  {
+    "method": "saveRequestResponse",
+    "before": "Object p0, Object p1, Object p2, Object p3",
+    "after": "String response,String tenant,String actor,String request"
+  },
+  {
+    "method": "auditAssignment",
+    "before": "Object p0, Object p1, Object p2, Object p3, Object p4, Object p5, Object p6, Object p7",
+    "after": "String tenant,String instance,String actor,String action,String target,String detail,String previous,String next"
+  },
+  {
+    "method": "auditOperation",
+    "before": "Object p0, Object p1, Object p2, Object p3, Object p4, Object p5, Object p6, Object p7",
+    "after": "String tenant,String instance,String actor,String action,String target,String detail,String person,String organization"
+  },
+  {
+    "method": "unique0",
+    "before": "Object p0, Object p1",
+    "after": "String tenant,String definition"
+  },
+  {
+    "method": "unique1",
+    "before": "Object p0, Object p1",
+    "after": "String tenant,String task"
+  },
+  {
+    "method": "unique2",
+    "before": "Object p0, Object p1",
+    "after": "String tenant,String task"
+  },
+  {
+    "method": "unique3",
+    "before": "Object p0, Object p1",
+    "after": "String tenant,String task"
+  },
+  {
+    "method": "unique4",
+    "before": "Object p0, Object p1",
+    "after": "String tenant,String task"
+  },
+  {
+    "method": "unique5",
+    "before": "Object p0, Object p1",
+    "after": "String tenant,String task"
+  },
+  {
+    "method": "unique6",
+    "before": "Object p0, Object p1",
+    "after": "String tenant,String job"
+  },
+  {
+    "method": "unique7",
+    "before": "Object p0, Object p1, Object p2",
+    "after": "String tenant,String definition,int version"
+  },
+  {
+    "method": "unique8",
+    "before": "Object p0, Object p1",
+    "after": "String tenant,String job"
+  },
+  {
+    "method": "unique9",
+    "before": "Object p0, Object p1",
+    "after": "String tenant,String job"
+  },
+  {
+    "method": "unique10",
+    "before": "Object p0, Object p1",
+    "after": "String tenant,String task"
+  },
+  {
+    "method": "unique11",
+    "before": "Object p0, Object p1",
+    "after": "String tenant,String task"
+  },
+  {
+    "method": "unique12",
+    "before": "Object p0, Object p1, boolean lock",
+    "after": "String tenant,String instance,boolean lock"
+  },
+  {
+    "method": "unique13",
+    "before": "Object p0, Object p1, Object p2",
+    "after": "String tenant,String actor,String request"
+  },
+  {
+    "method": "publishedCandidates",
+    "before": "String tenant, Integer version",
+    "after": "String tenant,Integer version"
+  },
+  {
+    "method": "actorTasks",
+    "before": "String tenant, String actor, boolean todo",
+    "after": "String tenant,String actor,boolean todo"
+  }
+]

@@ -1,0 +1,17 @@
+{
+  "statement1": "existingMembership",
+  "statement2": "revokePending",
+  "statement3": "createInvitation",
+  "statement4": "invitationOwner",
+  "statement5": "lockPendingInvitation",
+  "statement6": "lockMembership",
+  "statement7": "createMembership",
+  "statement8": "clearMemberRoles",
+  "statement9": "reactivateMembership",
+  "statement10": "acceptInvitation",
+  "statement11": "revokeInvitation",
+  "statement12": "lockAdministrator",
+  "statement13": "lockTenant",
+  "statement14": "lockAccount",
+  "statement15": "appendAudit"
+}

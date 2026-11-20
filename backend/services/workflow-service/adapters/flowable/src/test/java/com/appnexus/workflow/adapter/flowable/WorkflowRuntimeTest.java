@@ -1,4 +1,5 @@
 package com.appnexus.workflow.adapter.flowable;
+import com.appnexus.workflow.application.WorkflowRuntime;
 
 import static com.appnexus.workflow.core.WorkflowModel.*;
 import static org.assertj.core.api.Assertions.*;
@@ -105,7 +106,7 @@ class WorkflowRuntimeTest {
             return new Result(false, Map.of());
           }
         };
-    runtime = new WorkflowRuntime(engine, jdbc, manager, platform, List.of(business, async, flaky));
+    runtime = new WorkflowRuntime(new FlowableEngineCommands(engine),records(),new com.appnexus.workflow.adapter.transaction.SpringWorkflowTransaction(manager), platform, List.of(business, async, flaky),new JacksonWorkflowContent(),new FlowableWorkflowCompilation());
     bridge.bind(runtime);
   }
 
@@ -182,7 +183,7 @@ class WorkflowRuntimeTest {
       public List<String> resolve(String tenant,String organization,String kind,String reference){return List.of(reference);}
       public boolean candidate(WorkflowContext context,String organization,String kind,String reference){return true;}
     };
-    var subject = new WorkflowRuntime(engine,jdbc,new DataSourceTransactionManager(source),platform,List.of(new ContractBusiness()));
+    var subject = new WorkflowRuntime(new FlowableEngineCommands(engine),records(),new com.appnexus.workflow.adapter.transaction.SpringWorkflowTransaction(new DataSourceTransactionManager(source)),platform,List.of(new ContractBusiness()),new JacksonWorkflowContent(),new FlowableWorkflowCompilation());
     var draft = new WorkflowModel("契约测试","ContractDocument","approval",Mode.APPROVAL,"contractBusiness",List.of(),
         List.of(n("start",Kind.START,null),n("end",Kind.END,null)),List.of(e("start","end")),
         Map.of("APPROVED","contractBusiness","REJECTED","contractBusiness"));
@@ -786,4 +787,7 @@ class WorkflowRuntimeTest {
     assertThat(jdbc.queryForObject("SELECT result FROM wf_instance WHERE id=?", String.class, id))
         .isEqualTo("APPROVED");
   }
+
+ /** 真实固定Mapper装配，不保留旧JDBC兼容构造。 */
+ private com.appnexus.workflow.application.WorkflowRecords records(){try{var factory=new org.mybatis.spring.SqlSessionFactoryBean();factory.setDataSource(java.util.Objects.requireNonNull(jdbc.getDataSource()));var config=new org.apache.ibatis.session.Configuration();config.setLocalCacheScope(org.apache.ibatis.session.LocalCacheScope.STATEMENT);config.setCacheEnabled(false);config.setCallSettersOnNulls(true);config.addMapper(com.appnexus.workflow.adapter.persistence.WorkflowRecordMapper.class);factory.setConfiguration(config);return new com.appnexus.workflow.adapter.persistence.MyBatisWorkflowRecords(new org.mybatis.spring.SqlSessionTemplate(factory.getObject()).getMapper(com.appnexus.workflow.adapter.persistence.WorkflowRecordMapper.class));}catch(Exception failure){throw new IllegalStateException("WORKFLOW_FIXTURE_ASSEMBLY_FAILED",failure);}}
 }

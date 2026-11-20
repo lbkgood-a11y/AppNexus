@@ -11,9 +11,12 @@ import org.springframework.web.bind.annotation.*;
 @EndpointPolicy(EndpointPolicy.Domain.TENANT_CONTEXT)
 @RequestMapping("/bff/tenants")
 public class TenantContextController {
-    static final String TENANT="appnexus.tenant";
-    static final String MEMBER="appnexus.member";
-    static final String VERSION="appnexus.tenantVersion";
+    /** 宿主会话上下文键；仅供受信HTTP适配器读取，不接受请求体覆盖。 */
+    public static final String TENANT="appnexus.tenant";
+    /** 宿主会话上下文键；仅供受信HTTP适配器读取，不接受请求体覆盖。 */
+    public static final String MEMBER="appnexus.member";
+    /** 宿主会话上下文键；仅供受信HTTP适配器读取，不接受请求体覆盖。 */
+    public static final String VERSION="appnexus.tenantVersion";
     private final TenantAccess access;
     public TenantContextController(TenantAccess access) { this.access=access; }
     /** 当前可访问租户；不提供跨账号查询参数。 */

@@ -1,6 +1,6 @@
 package com.appnexus.masterdata.adapter.integration.partner;
 import com.appnexus.contracts.businessobject.BusinessObjects.*;
-import com.appnexus.masterdata.adapter.persistence.masterdata.PartnerDetails;
+import com.appnexus.masterdata.domain.partner.PartnerRules;
 import com.appnexus.masterdata.api.masterdata.MasterData;
 
 import com.appnexus.contracts.businessobject.*;
@@ -25,8 +25,8 @@ public final class BusinessPartnerDeclaration implements BusinessObjects.Provide
             operation("setStatus","启停客商管理","Change business partner status","set_status","PUT","/{id}/status"));
         var dataAccess=new DataAccess("TENANT",List.of(
             new DataResource(ROOT,"","客商主档","Business partner",fields(MasterData.Kind.PARTNER.fields)),
-            new DataResource(CONTACT,ROOT,"客商联系人","Partner contacts",fields(PartnerDetails.CONTACT)),
-            new DataResource(BANK,ROOT,"客商银行账户","Partner bank accounts",fields(PartnerDetails.BANK))),
+            new DataResource(CONTACT,ROOT,"客商联系人","Partner contacts",fields(PartnerRules.CONTACT)),
+            new DataResource(BANK,ROOT,"客商银行账户","Partner bank accounts",fields(PartnerRules.BANK))),
             operations.stream().collect(java.util.stream.Collectors.toMap(Operation::operationCode,op->op.operationCode().equals("list")?Set.of("ALL","ORGANIZATION","ORGANIZATION_SUBTREE","RULES"):scopes)),
             List.of(new DataDimension("code","客商编码","Partner code","TEXT",Set.of("EQ","IN")),
                 new DataDimension("name","客商名称","Partner name","TEXT",Set.of("EQ","IN")),

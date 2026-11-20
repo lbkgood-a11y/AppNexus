@@ -553,7 +553,7 @@
     ],
     "sources": [
       "frontend/modules/master-data/src/PartnerEditor.vue",
-      "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/BusinessPartnerDeclaration.java",
+      "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/adapter/integration/partner/BusinessPartnerDeclaration.java",
       "backend/services/platform-service/business-object/src/main/java/com/appnexus/platform/businessobject/internal/application/coding/CodingService.java"
     ],
     "reason": "当前调用方为客商新增编码字段；候选和发号均由后端按同一 Provider 的 codingFields 派生 BusinessPartner.create 权限复核；将来新增调用方必须同步登记已接通操作。"

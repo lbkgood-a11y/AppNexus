@@ -1,4 +1,5 @@
 package com.appnexus.platform.persistence.authorization;
+import com.appnexus.platform.authorization.PolicyTemplates;
 import com.appnexus.persistence.mybatis.PlatformScoped;
 import org.apache.ibatis.annotations.*;
 import java.util.List;

@@ -1,6 +1,6 @@
 package com.appnexus.platform;
 
-import com.appnexus.platform.security.TenantParameters;
+import com.appnexus.platform.configuration.TenantParameters;
 import com.appnexus.platform.tenant.VerifiedTenantContext;
 import com.appnexus.platform.persistence.platformscope.MyBatisPlatformAdministration;
 import java.util.*;

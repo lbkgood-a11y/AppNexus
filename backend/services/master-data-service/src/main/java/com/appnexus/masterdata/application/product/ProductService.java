@@ -156,7 +156,7 @@ public final class ProductService implements com.appnexus.masterdata.api.product
  public Object changes(VerifiedTenantContext c,String id,int page,int size){
   require(c,"read");uuid(id);authorizeRecord(c,id,"read",false);if(page<1||page>1000000||size<1||size>100)throw invalid();row(c,id,false);
   var tenantId=c.tenantId();var tenantBytes=java.nio.ByteBuffer.allocate(16).putLong(tenantId.getMostSignificantBits()).putLong(tenantId.getLeastSignificantBits()).array();
-  return Map.of("rows",historyMapper.list(tenantBytes,id,size,(page-1)*size),"total",historyMapper.count(tenantBytes,id));
+  return aggregates.changes(c,id,page,size);
  }
 
 

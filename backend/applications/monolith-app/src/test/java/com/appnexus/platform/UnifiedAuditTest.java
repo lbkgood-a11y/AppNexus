@@ -1,6 +1,6 @@
 package com.appnexus.platform;
 
-import com.appnexus.platform.security.UnifiedAudit;
+import com.appnexus.platform.audit.AuditQueries;
 import com.appnexus.platform.persistence.platformscope.MyBatisPlatformAdministration;
 import java.util.*;
 import org.junit.jupiter.api.Test;
@@ -14,7 +14,7 @@ import static org.assertj.core.api.Assertions.*;
 @SpringBootTest
 @ActiveProfiles("local")
 class UnifiedAuditTest extends DatabaseTestSupport {
-    @Autowired UnifiedAudit audit;
+    @Autowired AuditQueries audit;
     @Autowired JdbcTemplate jdbc;
     @Autowired MyBatisPlatformAdministration administration;
     @Test void platformTenantQueryCannotMixForeignAuditAndRetainsTrace(){

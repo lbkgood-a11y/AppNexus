@@ -1,4 +1,5 @@
 package com.appnexus.platform.managementapi.administration;
+import com.appnexus.platform.tenant.TenantInvitations;
 import com.appnexus.platform.security.*;
 
 import java.util.*;

@@ -95,7 +95,7 @@ public class RoleManagementController {
     private RoleManagement.Context managed(Authentication a,UUID tenant){return new RoleManagement.Context(actor(a),Objects.requireNonNull(tenant),null);}
     /** 当前租户及成员只来自服务端过滤器验证结果，不读取请求头或正文提供的身份。 */
     private RoleManagement.Context tenant(Authentication a,HttpServletRequest request){
-        if(!(request.getAttribute(TenantExecutionFilter.ATTRIBUTE) instanceof VerifiedTenantContext c))throw AccountSettingsController.problem(HttpStatus.CONFLICT,"TENANT_REQUIRED","请选择有效租户");
+        if(!(request.getAttribute(com.appnexus.platform.tenant.VerifiedTenantContext.class.getName()) instanceof VerifiedTenantContext c))throw AccountSettingsController.problem(HttpStatus.CONFLICT,"TENANT_REQUIRED","请选择有效租户");
         return new RoleManagement.Context(actor(a),c.tenantId(),c.memberId());
     }
     private UUID actor(Authentication a){return UUID.fromString(a.getName());}

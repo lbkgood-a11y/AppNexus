@@ -1,7 +1,7 @@
 package com.appnexus.platform;
 
 import com.appnexus.platform.authorization.*;
-import com.appnexus.platform.security.PolicyTemplates;
+import com.appnexus.platform.authorization.PolicyTemplates;
 import com.appnexus.platform.persistence.platformscope.MyBatisPlatformAdministration;
 import java.util.*;
 import org.junit.jupiter.api.*;

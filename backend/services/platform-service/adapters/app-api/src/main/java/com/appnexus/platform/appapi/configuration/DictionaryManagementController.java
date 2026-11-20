@@ -63,7 +63,7 @@ public class DictionaryManagementController {
  @EndpointOperation("configuration.dictionary:item_delete") @DeleteMapping("/{dictionaryId}/items/{itemId}") ResponseEntity<Void> deleteItem(Authentication a,HttpServletRequest r,@PathVariable UUID dictionaryId,@PathVariable UUID itemId,@RequestParam long version){return empty(()->dictionaries.deleteItem(context(a,r),dictionaryId,itemId,version));}
 
  /** 构造可信上下文；缺少租户选择时返回稳定冲突码而不是查询任意租户。 */
- private DictionaryManagement.Context context(Authentication a,HttpServletRequest request){if(!(request.getAttribute(TenantExecutionFilter.ATTRIBUTE) instanceof VerifiedTenantContext c))throw AccountSettingsController.problem(HttpStatus.CONFLICT,"TENANT_REQUIRED","请选择有效租户");return new DictionaryManagement.Context(UUID.fromString(a.getName()),c.tenantId(),c.memberId());}
+ private DictionaryManagement.Context context(Authentication a,HttpServletRequest request){if(!(request.getAttribute(com.appnexus.platform.tenant.VerifiedTenantContext.class.getName()) instanceof VerifiedTenantContext c))throw AccountSettingsController.problem(HttpStatus.CONFLICT,"TENANT_REQUIRED","请选择有效租户");return new DictionaryManagement.Context(UUID.fromString(a.getName()),c.tenantId(),c.memberId());}
  private <T> ResponseEntity<T> ok(Supplier<T> action){return result(()->ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(action.get()));}
  private ResponseEntity<Void> empty(Runnable action){return result(()->{action.run();return ResponseEntity.noContent().cacheControl(CacheControl.noStore()).build();});}
  /** 错误响应隐藏 SQL 和跨租户数据存在性，仅暴露稳定业务码。 */

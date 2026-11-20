@@ -1024,5 +1024,209 @@
     "method": "enabledScene",
     "before": "Object p0, Object p1",
     "after": "String tenant,String scene"
+  },
+  {
+    "repository": "PrintRuntimeRepository",
+    "method": "createTemplate",
+    "before": "Object p0, Object p1, Object p2, Object p3, Object p4, Object p5, Object p6, Object p7, Object p8, Object p9",
+    "after": "String tenant,String id,String code,String name,String category,String contract,String scope,String template,String creator,String updater"
+  },
+  {
+    "repository": "PrintRuntimeRepository",
+    "method": "updateTemplate",
+    "before": "Object p0, Object p1, Object p2, Object p3, Object p4, Object p5, Object p6, Object p7, Object p8, Object p9",
+    "after": "String code,String name,String category,String contract,String scope,String template,String actor,String tenant,String id,long revision"
+  },
+  {
+    "repository": "PrintRuntimeRepository",
+    "method": "lockTemplate",
+    "before": "Object p0, Object p1",
+    "after": "String tenant,String id"
+  },
+  {
+    "repository": "PrintRuntimeRepository",
+    "method": "publishTemplate",
+    "before": "Object p0, Object p1, Object p2, Object p3, Object p4",
+    "after": "int version,String actor,String schema,String tenant,String id"
+  },
+  {
+    "repository": "PrintRuntimeRepository",
+    "method": "freezeTemplateVersion",
+    "before": "Object p0, Object p1, Object p2, Object p3",
+    "after": "int version,String actor,String tenant,String id"
+  },
+  {
+    "repository": "PrintRuntimeRepository",
+    "method": "restoreTemplate",
+    "before": "Object p0, Object p1, Object p2, Object p3, Object p4",
+    "after": "int version,String actor,String tenant,String id,long revision"
+  },
+  {
+    "repository": "PrintRuntimeRepository",
+    "method": "createDevice",
+    "before": "Object p0, Object p1, Object p2, Object p3, Object p4, Object p5, Object p6, Object p7",
+    "after": "String tenant,String id,String code,String name,String site,String queue,String capabilities,String actor"
+  },
+  {
+    "repository": "PrintRuntimeRepository",
+    "method": "updateDevice",
+    "before": "Object p0, Object p1, Object p2, Object p3, Object p4, Object p5, Object p6, Object p7",
+    "after": "String code,String name,String site,String queue,String capabilities,boolean enabled,String tenant,String id"
+  },
+  {
+    "repository": "PrintRuntimeRepository",
+    "method": "publishedTemplate",
+    "before": "Object p0, Object p1, Object p2",
+    "after": "String tenant,String id,int version"
+  },
+  {
+    "repository": "PrintRuntimeRepository",
+    "method": "createJob",
+    "before": "Object p0, Object p1, Object p2, Object p3, Object p4, Object p5, Object p6, Object p7, Object p8, Object p9, Object p10, Object p11, Object p12",
+    "after": "String tenant,String id,String request,String actor,String sourceType,String sourceId,String templateId,int version,String output,String device,int copies,String snapshot,String schema"
+  },
+  {
+    "repository": "PrintRuntimeRepository",
+    "method": "existingReprint",
+    "before": "Object p0, Object p1, Object p2",
+    "after": "String tenant,String actor,String request"
+  },
+  {
+    "repository": "PrintRuntimeRepository",
+    "method": "copyReprint",
+    "before": "Object p0, Object p1, Object p2, Object p3, Object p4, Object p5",
+    "after": "String id,String request,String actor,String reason,String tenant,String sourceId"
+  },
+  {
+    "repository": "PrintRuntimeRepository",
+    "method": "expireLeases",
+    "before": "Object p0",
+    "after": "String tenant"
+  },
+  {
+    "repository": "PrintRuntimeRepository",
+    "method": "claimableJobs",
+    "before": "Object p0, Object p1",
+    "after": "String tenant,String site"
+  },
+  {
+    "repository": "PrintRuntimeRepository",
+    "method": "claimJob",
+    "before": "Object p0, Object p1, Object p2",
+    "after": "String agent,String tenant,String id"
+  },
+  {
+    "repository": "PrintRuntimeRepository",
+    "method": "expireRendererLeases",
+    "before": "Object p0, Object p1",
+    "after": "String tenant,String site"
+  },
+  {
+    "repository": "PrintRuntimeRepository",
+    "method": "savePdf",
+    "before": "Object p0, Object p1, Object p2",
+    "after": "String tenant,String id,byte[] pdf"
+  },
+  {
+    "repository": "PrintRuntimeRepository",
+    "method": "completePdf",
+    "before": "Object p0, Object p1",
+    "after": "String tenant,String id"
+  },
+  {
+    "repository": "PrintRuntimeRepository",
+    "method": "enabledDeviceCount",
+    "before": "Object p0, Object p1",
+    "after": "String tenant,String id"
+  },
+  {
+    "repository": "PrintRuntimeRepository",
+    "method": "copyPreview",
+    "before": "Object p0, Object p1, Object p2, Object p3, Object p4, Object p5, Object p6",
+    "after": "String id,String request,String actor,String device,int copies,String tenant,String sourceId"
+  },
+  {
+    "repository": "PrintRuntimeRepository",
+    "method": "templates",
+    "before": "Object p0",
+    "after": "String tenant"
+  },
+  {
+    "repository": "PrintRuntimeRepository",
+    "method": "template",
+    "before": "Object p0, Object p1",
+    "after": "String tenant,String id"
+  },
+  {
+    "repository": "PrintRuntimeRepository",
+    "method": "versions",
+    "before": "Object p0, Object p1",
+    "after": "String tenant,String id"
+  },
+  {
+    "repository": "PrintRuntimeRepository",
+    "method": "devices",
+    "before": "Object p0",
+    "after": "String tenant"
+  },
+  {
+    "repository": "PrintRuntimeRepository",
+    "method": "device",
+    "before": "Object p0, Object p1",
+    "after": "String tenant,String id"
+  },
+  {
+    "repository": "PrintRuntimeRepository",
+    "method": "jobs",
+    "before": "Object p0",
+    "after": "String tenant"
+  },
+  {
+    "repository": "PrintRuntimeRepository",
+    "method": "enabledDevice",
+    "before": "Object p0, Object p1",
+    "after": "String tenant,String id"
+  },
+  {
+    "repository": "PrintRuntimeRepository",
+    "method": "currentTemplate",
+    "before": "Object p0, Object p1",
+    "after": "String tenant,String id"
+  },
+  {
+    "repository": "PrintRuntimeRepository",
+    "method": "claimedJob",
+    "before": "Object p0, Object p1",
+    "after": "String tenant,String id"
+  },
+  {
+    "repository": "PrintRuntimeRepository",
+    "method": "artifactJob",
+    "before": "Object p0, Object p1",
+    "after": "String tenant,String id"
+  },
+  {
+    "repository": "PrintRuntimeRepository",
+    "method": "pdfArtifact",
+    "before": "Object p0, Object p1",
+    "after": "String tenant,String id"
+  },
+  {
+    "repository": "PrintRuntimeRepository",
+    "method": "requestJob",
+    "before": "Object p0, Object p1, Object p2",
+    "after": "String tenant,String actor,String request"
+  },
+  {
+    "repository": "PrintRuntimeRepository",
+    "method": "job",
+    "before": "Object p0, Object p1",
+    "after": "String tenant,String id"
+  },
+  {
+    "repository": "PrintRuntimeRepository",
+    "method": "permissionTemplate",
+    "before": "Object p0, Object p1",
+    "after": "String tenant,String id"
   }
 ]

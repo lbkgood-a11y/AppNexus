@@ -94,6 +94,12 @@ class TypePlacementRulesTest {
         "com.appnexus.printing.application.PrintOutputService",
         "com.appnexus.printing.core.PrintDataPolicy",
         "com.appnexus.printing.core.PrintTemplateReferences",
+        "com.appnexus.workflow.application.WorkflowRuntime",
+        "com.appnexus.leave.application.LeavePocService",
+        "com.appnexus.platform.tenant.internal.application.invitation.InvitationService",
+        "com.appnexus.platform.authorization.internal.application.template.PolicyTemplateService",
+        "com.appnexus.platform.audit.internal.application.query.AuditQueryService",
+        "com.appnexus.platform.configuration.internal.application.parameter.TenantParameterService",
         "com.appnexus.printing.application.BusinessPrintingService")) {
       assertTrue(classes.contain(name), () -> "生产产物缺少本批迁移用例：" + name);
       noClasses().that().haveFullyQualifiedName(name)
