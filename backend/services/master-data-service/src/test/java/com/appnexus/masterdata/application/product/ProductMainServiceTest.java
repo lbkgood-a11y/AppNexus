@@ -1,8 +1,8 @@
 package com.appnexus.masterdata.application.product;
+import com.appnexus.masterdata.api.product.ProductMainData.*;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
-import com.appnexus.masterdata.api.product.ProductMainData.*;
 import com.appnexus.platform.tenant.VerifiedTenantContext;
 import java.util.*;
 import java.util.function.Supplier;

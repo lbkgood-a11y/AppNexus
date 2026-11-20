@@ -1,4 +1,5 @@
 package com.appnexus.platform.security;
+import com.appnexus.platform.persistence.authorization.AuthorizationTemplateMapper;
 
 import com.appnexus.platform.authorization.*;
 import java.util.*;
@@ -10,13 +11,13 @@ import tools.jackson.databind.json.JsonMapper;
 /** 角色策略快照模板；复用正式授权保存，模板不能绕过当前权限目录、组织归属或字段执行支持。 */
 @Service
 public class PolicyTemplates {
-    private final PolicyTemplatesSqlMapper statements;
+    private final AuthorizationTemplateMapper statements;
 
     private final RolePermissionManagement roles;
     
     private final DataAccessCatalog dataAccess;
     private final JsonMapper json=JsonMapper.builder().findAndAddModules().build();
-    public PolicyTemplates(RolePermissionManagement roles,DataAccessCatalog dataAccess,PolicyTemplatesSqlMapper statements){this.statements=statements;this.dataAccess=dataAccess;this.roles=roles;}
+    public PolicyTemplates(RolePermissionManagement roles,DataAccessCatalog dataAccess,AuthorizationTemplateMapper statements){this.statements=statements;this.dataAccess=dataAccess;this.roles=roles;}
     /** 模板摘要，不返回授权快照给无管理权主体。 */
     public record View(UUID id,String name){}
     /**

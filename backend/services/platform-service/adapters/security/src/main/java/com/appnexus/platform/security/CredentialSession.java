@@ -1,6 +1,7 @@
 package com.appnexus.platform.security;
+import com.appnexus.platform.audit.port.SecurityLogRepository;
 
-import com.appnexus.platform.identity.AccountRepository;
+import com.appnexus.platform.identity.port.AccountRepository;
 import jakarta.servlet.http.*;
 import java.io.IOException;
 import java.util.UUID;
@@ -12,7 +13,7 @@ public final class CredentialSession extends SavedRequestAwareAuthenticationSucc
     public static final String VERSION = "appnexus.credentialVersion";
     private final AccountRepository accounts;
     private final boolean callback;
-    private final com.appnexus.platform.audit.SecurityLogRepository logs;
+    private final com.appnexus.platform.audit.port.SecurityLogRepository logs;
     private final com.appnexus.platform.identity.MultiFactorAuthentication mfa;
     private final String failureUrl;
 
@@ -24,7 +25,7 @@ public final class CredentialSession extends SavedRequestAwareAuthenticationSucc
      * @param mfa 第二因子权威端口；启用后必须成功消费验证码才能建立认证会话
      * @param failureUrl 固定可信登录失败地址，不接受用户输入的回跳地址
      */
-    public CredentialSession(AccountRepository accounts, String target, boolean always, com.appnexus.platform.audit.SecurityLogRepository logs,
+    public CredentialSession(AccountRepository accounts, String target, boolean always, com.appnexus.platform.audit.port.SecurityLogRepository logs,
             com.appnexus.platform.identity.MultiFactorAuthentication mfa,String failureUrl) {
         this.accounts = accounts;
         this.callback = always;

@@ -1,11 +1,13 @@
 package com.appnexus.masterdata;
+import com.appnexus.masterdata.adapter.persistence.masterdata.TenantGeography;
+import com.appnexus.masterdata.domain.geography.GeographyHierarchy;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
 import java.util.*;
 import org.junit.jupiter.api.Test;
 import org.springframework.jdbc.core.JdbcTemplate;
-import static com.appnexus.masterdata.MasterData.*;
+import static com.appnexus.masterdata.api.masterdata.MasterData.*;
 
 /** 租户图回归：自定义码、祖先关系、类型边界以及跨国移动不依赖字符串前缀。 */
 class TenantGeographyTest {

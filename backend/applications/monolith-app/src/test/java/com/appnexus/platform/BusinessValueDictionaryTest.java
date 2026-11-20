@@ -1,7 +1,8 @@
 package com.appnexus.platform;
+import com.appnexus.masterdata.application.masterdata.MasterDataService;
+import com.appnexus.masterdata.api.masterdata.MasterData;
 import com.appnexus.platform.configuration.*;
 import com.appnexus.platform.persistence.configuration.BusinessValueDefaults;
-import com.appnexus.platform.persistence.configuration.StandardDictionaryDefaults;
 import com.appnexus.masterdata.*;
 import com.appnexus.platform.tenant.VerifiedTenantContext;
 import java.util.*;
@@ -20,8 +21,8 @@ class BusinessValueDictionaryTest extends DatabaseTestSupport {
  @Autowired BusinessValueCatalog catalog;
  @Autowired DictionaryManagement management;
  @Autowired MasterDataService master;
- @Autowired com.appnexus.masterdata.product.ProductCatalogService productCatalog;
- @Autowired com.appnexus.masterdata.product.ProductV1Service products;
+ @Autowired com.appnexus.masterdata.application.product.ProductCatalogService productCatalog;
+ @Autowired com.appnexus.masterdata.application.product.ProductService products;
  @Autowired PlatformTransactionManager manager;
  @Autowired com.appnexus.platform.persistence.organization.OrganizationAdministratorBootstrap bootstrap;
  private VerifiedTenantContext tenant(){
@@ -39,7 +40,7 @@ class BusinessValueDictionaryTest extends DatabaseTestSupport {
   assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM tenant_dictionary WHERE tenant_id=UUID_TO_BIN(?)",Integer.class,c.tenantId().toString())).isEqualTo(25);
   var dictionary=management.dictionaries(context).stream().filter(row->row.code().equals("partner_type")).findFirst().orElseThrow();
   var option=management.createItem(context,dictionary.id(),new DictionaryManagement.CreateItem(null,"custom_role","CUSTOM_ROLE","自定义客商类型",null,1));
-  var productUnit=productCatalog.createUnit(c,new com.appnexus.masterdata.product.CatalogData.UnitInput("PIECE","件","COUNT",0,0));
+  var productUnit=productCatalog.createUnit(c,new com.appnexus.masterdata.api.product.ProductCatalogData.UnitInput("PIECE","件","COUNT",0,0));
   products.create(c,new com.appnexus.masterdata.api.product.ProductMainData.Input("UNIT","商品单位",null,null,null,"PHYSICAL",productUnit.id(),null,null,null,null));
   assertThatThrownBy(()->products.create(c,new com.appnexus.masterdata.api.product.ProductMainData.Input("BADUNIT","非法商品单位",null,null,null,"PHYSICAL",UUID.randomUUID().toString(),null,null,null,null))).isInstanceOf(MasterData.Rejection.class);
   // 客商新增必须指定可信租户内启用组织；字典测试不能依赖历史缺省归属绕过真实执行约束。

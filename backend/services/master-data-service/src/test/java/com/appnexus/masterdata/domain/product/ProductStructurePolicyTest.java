@@ -1,7 +1,7 @@
 package com.appnexus.masterdata.domain.product;
+import com.appnexus.masterdata.domain.product.ProductStructurePolicy.*;
 
 import static org.assertj.core.api.Assertions.*;
-import com.appnexus.masterdata.domain.product.ProductStructurePolicy.*;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 

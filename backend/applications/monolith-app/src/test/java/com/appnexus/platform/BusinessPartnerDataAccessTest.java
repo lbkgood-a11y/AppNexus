@@ -1,4 +1,6 @@
 package com.appnexus.platform;
+import com.appnexus.masterdata.application.masterdata.MasterDataService;
+import com.appnexus.platform.security.operation.OperationRegistry;
 
 import com.appnexus.masterdata.*;
 import com.appnexus.platform.authorization.*;
@@ -11,7 +13,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.jdbc.core.JdbcTemplate;
 import static org.assertj.core.api.Assertions.*;
-import static com.appnexus.masterdata.MasterData.*;
+import static com.appnexus.masterdata.api.masterdata.MasterData.*;
 
 /** 真实MySQL客商闭环：声明、行范围、子树、字段、明细、租户及失败回滚使用生产执行器。 */
 @SpringBootTest(properties="app.public-url=http://localhost:18080")

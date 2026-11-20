@@ -1,10 +1,10 @@
 package com.appnexus.leave;
+import com.appnexus.contracts.businessobject.BusinessObjects.*;
 
 
 
 import static org.assertj.core.api.Assertions.*;
 import com.appnexus.contracts.businessobject.*;
-import com.appnexus.contracts.businessobject.BusinessObjects.*;
 import com.appnexus.contracts.workflow.*;
 import com.appnexus.platform.businessobject.BusinessObjectManagement;
 import com.appnexus.workflow.adapter.flowable.*;
@@ -76,7 +76,7 @@ class BusinessObjectIntegrationTest {
       new Operation("cancel","取消","Cancel","order:cancel","Order.cancel",null,java.util.List.of(),new com.appnexus.contracts.businessobject.InteractionContract("Order.cancel",1,"Order","cancel","取消","Cancel",com.appnexus.contracts.businessobject.InteractionContract.Trigger.USER_ACTION,java.util.List.of(new com.appnexus.contracts.businessobject.InteractionContract.Capability(com.appnexus.contracts.businessobject.InteractionContract.Service.BUSINESS,com.appnexus.contracts.businessobject.InteractionContract.Completion.SYNCHRONOUS,"Order.cancel","",java.util.List.of(),java.util.Set.of(), "Order.cancel.data", 1)))),
       new Operation("release","放行","Release","order:release","Order.release",null,java.util.List.of(),new com.appnexus.contracts.businessobject.InteractionContract("Order.release",1,"Order","release","放行","Release",com.appnexus.contracts.businessobject.InteractionContract.Trigger.USER_ACTION,java.util.List.of(new com.appnexus.contracts.businessobject.InteractionContract.Capability(com.appnexus.contracts.businessobject.InteractionContract.Service.WORKFLOW,com.appnexus.contracts.businessobject.InteractionContract.Completion.CALLBACK,"orderRelease","releaseApproval",java.util.List.of(),Set.of("APPROVED","REJECTED"), "orderRelease.data", 1))))));
     documents=com.appnexus.platform.persistence.businessobject.BusinessObjectPersistence.create(configurationMapper(),tx,dp,()->runtime,List.of(leave,order),printingPort::get);leave.bindings(()->documents);
-    leave.execution(()->com.appnexus.platform.businessobject.BusinessObjectUseCases.execution(List.of(leave,order),documents,new com.appnexus.platform.persistence.businessobject.configuration.JdbcConfigurationTransaction(tx),dp,()->runtime,printingPort::get));
+    leave.execution(()->com.appnexus.platform.businessobject.BusinessObjectUseCases.execution(List.of(leave,order),documents,new com.appnexus.platform.persistence.businessobject.configuration.SpringConfigurationTransaction(tx),dp,()->runtime,printingPort::get));
     documents.savePageRelationships(dc("platform"),"LeaveRequest",-1,List.of(new PageRelationship("submit","LeaveRequest.submit"),new PageRelationship("print","LeaveRequest.print"),new PageRelationship("print","LeaveRequest.detail.print")));
     var bridge=new WorkflowBridge();var config=new WorkflowEngineConfiguration();engine=config.workflowProcessEngine(source,tx,bridge);
     runtime=config.workflowRuntime(engine,source,tx,platform,List.of(new ObjectWorkflowAdapter(leave,LeavePocService.SUBMIT_OPERATION,platform,()->runtime,tx)),bridge);runtime.documentBindings(()->documents);

@@ -1,4 +1,5 @@
 package com.appnexus.platform;
+import com.appnexus.platform.identity.port.AccountRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -28,7 +29,7 @@ class WebLoginTest extends DatabaseTestSupport {
                 .andExpect(status().isUnauthorized());
         }finally{redis.delete(key);}
     }
-    @Autowired com.appnexus.platform.identity.AccountRepository accounts;
+    @Autowired com.appnexus.platform.identity.port.AccountRepository accounts;
     /** 缺少真实认证因子时间的旧会话必须重认证，不能进入 OIDC 签发后触发 500。 */
     @Test void legacySessionWithoutAuthenticationTimeMustAuthenticateAgain() throws Exception {
         var request=new org.springframework.mock.web.MockHttpServletRequest("GET","/oauth2/authorize");

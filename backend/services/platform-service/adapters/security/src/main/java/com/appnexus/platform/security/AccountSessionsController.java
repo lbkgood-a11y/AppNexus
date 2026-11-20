@@ -1,4 +1,5 @@
 package com.appnexus.platform.security;
+import com.appnexus.platform.audit.port.SecurityLogRepository;
 
 import jakarta.servlet.http.HttpServletRequest;
 import java.nio.charset.StandardCharsets;
@@ -17,10 +18,10 @@ import org.springframework.web.bind.annotation.*;
 public class AccountSessionsController {
     private final FindByIndexNameSessionRepository<? extends Session> sessions;
 
-    private final com.appnexus.platform.audit.SecurityLogRepository logs;
+    private final com.appnexus.platform.audit.port.SecurityLogRepository logs;
     private final SessionLifetime lifetime;
     public AccountSessionsController(FindByIndexNameSessionRepository<? extends Session> sessions,
-            com.appnexus.platform.audit.SecurityLogRepository logs,SessionLifetime lifetime) {
+            com.appnexus.platform.audit.port.SecurityLogRepository logs,SessionLifetime lifetime) {
         this.logs = logs;
         this.sessions = sessions;
         this.lifetime=lifetime;

@@ -1,4 +1,9 @@
 package com.appnexus.masterdata;
+import com.appnexus.masterdata.adapter.persistence.masterdata.PartnerDataAccess;
+import com.appnexus.masterdata.domain.geography.GeographyHierarchy;
+import com.appnexus.masterdata.adapter.integration.partner.BusinessPartnerDeclaration;
+import com.appnexus.masterdata.bootstrap.MasterDataConfiguration;
+import com.appnexus.masterdata.application.masterdata.MasterDataService;
 
 import static org.assertj.core.api.Assertions.*;
 import com.appnexus.platform.authorization.AccessAuthorization;
@@ -13,7 +18,7 @@ import org.springframework.jdbc.datasource.init.ScriptUtils;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.ByteArrayResource;
 import org.testcontainers.mysql.MySQLContainer;
-import static com.appnexus.masterdata.MasterData.*;
+import static com.appnexus.masterdata.api.masterdata.MasterData.*;
 
 /** 真实 MySQL 验证迁移建表、编码唯一、跨租户同 ID、并发版本及权限撤销。 */
 @Tag("container")

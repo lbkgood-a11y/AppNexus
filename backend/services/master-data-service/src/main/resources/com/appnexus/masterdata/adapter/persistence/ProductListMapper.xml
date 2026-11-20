@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.appnexus.masterdata.adapter.persistence.ProductListMapper">
+  <!-- 列表和COUNT共用完整条件；所有字段及运算均由固定choose选择，禁止任意列/SQL插值。 -->
+  <sql id="conditions">
+    WHERE tenant_id=#{__verifiedTenant}
+    <if test="!query.range.all"><choose><when test="!query.range.ids.isEmpty()"> AND organization_id IN <foreach collection="query.range.ids" item="organization" open="(" separator="," close=")">UUID_TO_BIN(#{organization})</foreach></when><otherwise> AND 1=0</otherwise></choose></if>
+    AND LOCATE(#{query.name},name)&gt;0 AND LOCATE(#{query.code},code)&gt;0
+    AND draft_archived_at IS <choose><when test="query.archived">NOT NULL</when><otherwise>NULL</otherwise></choose>
+    <if test="query.category != null"> AND category_id=UUID_TO_BIN(#{query.category})</if>
+    <if test="query.form != null"> AND product_form=#{query.form}</if>
+    <if test="query.status != null"> AND status=#{query.status}</if>
+    <if test="query.config != null"> AND category_config_id=UUID_TO_BIN(#{query.config})</if>
+    <foreach collection="query.filters" item="filter">
+      AND EXISTS(SELECT 1 FROM md_product_v1_attribute_value av
+      <if test="filter.type == 'SINGLE_SELECT' or filter.type == 'MULTI_SELECT'">
+        JOIN md_product_v1_attribute_choice ch ON ch.tenant_id=av.tenant_id AND ch.value_id=av.id
+      </if>
+      WHERE av.tenant_id=md_product_v1.tenant_id AND av.product_id=md_product_v1.id AND av.template_item_id=UUID_TO_BIN(#{filter.item})
+      <choose>
+        <when test="filter.type == 'SINGLE_SELECT' or filter.type == 'MULTI_SELECT'">
+          AND ch.option_id IN <foreach collection="filter.values" item="value" open="(" separator="," close=")">UUID_TO_BIN(#{value})</foreach>
+        </when>
+        <otherwise>
+          AND <choose><when test="filter.type == 'INTEGER'">av.integer_value</when><when test="filter.type == 'DECIMAL'">av.decimal_value</when><when test="filter.type == 'DATE'">av.date_value</when><when test="filter.type == 'BOOLEAN'">av.boolean_value</when><otherwise>NULL</otherwise></choose>
+          <choose>
+            <when test="filter.operator == 'eq'"> = #{filter.values[0]}</when>
+            <when test="filter.operator == 'gte'"> &gt;= #{filter.values[0]}</when>
+            <when test="filter.operator == 'lte'"> &lt;= #{filter.values[0]}</when>
+            <when test="filter.operator == 'between'"> BETWEEN #{filter.values[0]} AND #{filter.values[1]}</when>
+            <otherwise> = NULL</otherwise>
+          </choose>
+        </otherwise>
+      </choose>)
+    </foreach>
+  </sql>
+  <select id="list" resultType="map">
+    SELECT BIN_TO_UUID(id) id,BIN_TO_UUID(organization_id) organizationId,code,name,product_form productForm,status,structure_state structureState,draft_archived_at archivedAt,version,updated_at updatedAt FROM md_product_v1
+    <include refid="conditions"/> ORDER BY code,id LIMIT #{query.size} OFFSET #{query.offset}
+  </select>
+  <select id="count" resultType="long">SELECT COUNT(*) FROM md_product_v1 <include refid="conditions"/></select>
+  <select id="definitions" resultType="map">
+    SELECT r.data_type,r.numeric_scale,BIN_TO_UUID(r.id) revisionId FROM md_product_category_config_item ci
+    JOIN md_product_template_item i ON i.tenant_id=ci.tenant_id AND i.id=ci.template_item_id
+    JOIN md_product_attribute_revision r ON r.tenant_id=ci.tenant_id AND r.id=ci.attribute_revision_id
+    WHERE ci.tenant_id=#{__verifiedTenant} AND ci.config_id=UUID_TO_BIN(#{config}) AND ci.template_item_id=UUID_TO_BIN(#{item}) AND i.searchable=TRUE
+  </select>
+  <select id="optionCount" resultType="int">SELECT COUNT(*) FROM md_product_attribute_option WHERE tenant_id=#{__verifiedTenant} AND revision_id=UUID_TO_BIN(#{revision}) AND id=UUID_TO_BIN(#{option})</select>
+</mapper>

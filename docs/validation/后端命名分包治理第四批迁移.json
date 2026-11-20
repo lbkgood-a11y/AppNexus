@@ -1,0 +1,128 @@
+[
+  {
+    "old": "com.appnexus.platform.security.AmapProxyController",
+    "new": "com.appnexus.platform.appapi.configuration.AmapProxyController",
+    "source": "backend\\services\\platform-service\\adapters\\security\\src\\main\\java\\com\\appnexus\\platform\\security\\AmapProxyController.java",
+    "destination": "backend\\services\\platform-service\\adapters\\app-api\\src\\main\\java\\com\\appnexus\\platform\\appapi\\configuration\\AmapProxyController.java"
+  },
+  {
+    "old": "com.appnexus.platform.security.AuditQueryController",
+    "new": "com.appnexus.platform.managementapi.administration.AuditQueryController",
+    "source": "backend\\services\\platform-service\\adapters\\security\\src\\main\\java\\com\\appnexus\\platform\\security\\AuditQueryController.java",
+    "destination": "backend\\services\\platform-service\\adapters\\platform-api\\src\\main\\java\\com\\appnexus\\platform\\managementapi\\administration\\AuditQueryController.java"
+  },
+  {
+    "old": "com.appnexus.platform.security.AuthorizationManagementController",
+    "new": "com.appnexus.platform.managementapi.administration.AuthorizationManagementController",
+    "source": "backend\\services\\platform-service\\adapters\\security\\src\\main\\java\\com\\appnexus\\platform\\security\\AuthorizationManagementController.java",
+    "destination": "backend\\services\\platform-service\\adapters\\platform-api\\src\\main\\java\\com\\appnexus\\platform\\managementapi\\administration\\AuthorizationManagementController.java"
+  },
+  {
+    "old": "com.appnexus.platform.security.DictionaryManagementController",
+    "new": "com.appnexus.platform.appapi.configuration.DictionaryManagementController",
+    "source": "backend\\services\\platform-service\\adapters\\security\\src\\main\\java\\com\\appnexus\\platform\\security\\DictionaryManagementController.java",
+    "destination": "backend\\services\\platform-service\\adapters\\app-api\\src\\main\\java\\com\\appnexus\\platform\\appapi\\configuration\\DictionaryManagementController.java"
+  },
+  {
+    "old": "com.appnexus.platform.security.IntegrationClientController",
+    "new": "com.appnexus.platform.managementapi.administration.IntegrationClientController",
+    "source": "backend\\services\\platform-service\\adapters\\security\\src\\main\\java\\com\\appnexus\\platform\\security\\IntegrationClientController.java",
+    "destination": "backend\\services\\platform-service\\adapters\\platform-api\\src\\main\\java\\com\\appnexus\\platform\\managementapi\\administration\\IntegrationClientController.java"
+  },
+  {
+    "old": "com.appnexus.platform.security.MenuManagementController",
+    "new": "com.appnexus.platform.managementapi.configuration.MenuManagementController",
+    "source": "backend\\services\\platform-service\\adapters\\security\\src\\main\\java\\com\\appnexus\\platform\\security\\MenuManagementController.java",
+    "destination": "backend\\services\\platform-service\\adapters\\platform-api\\src\\main\\java\\com\\appnexus\\platform\\managementapi\\configuration\\MenuManagementController.java"
+  },
+  {
+    "old": "com.appnexus.platform.security.NavigationController",
+    "new": "com.appnexus.platform.appapi.configuration.NavigationController",
+    "source": "backend\\services\\platform-service\\adapters\\security\\src\\main\\java\\com\\appnexus\\platform\\security\\NavigationController.java",
+    "destination": "backend\\services\\platform-service\\adapters\\app-api\\src\\main\\java\\com\\appnexus\\platform\\appapi\\configuration\\NavigationController.java"
+  },
+  {
+    "old": "com.appnexus.platform.security.OrganizationController",
+    "new": "com.appnexus.platform.appapi.organization.OrganizationController",
+    "source": "backend\\services\\platform-service\\adapters\\security\\src\\main\\java\\com\\appnexus\\platform\\security\\OrganizationController.java",
+    "destination": "backend\\services\\platform-service\\adapters\\app-api\\src\\main\\java\\com\\appnexus\\platform\\appapi\\organization\\OrganizationController.java"
+  },
+  {
+    "old": "com.appnexus.platform.security.OrganizationDomainController",
+    "new": "com.appnexus.platform.appapi.organization.OrganizationDomainController",
+    "source": "backend\\services\\platform-service\\adapters\\security\\src\\main\\java\\com\\appnexus\\platform\\security\\OrganizationDomainController.java",
+    "destination": "backend\\services\\platform-service\\adapters\\app-api\\src\\main\\java\\com\\appnexus\\platform\\appapi\\organization\\OrganizationDomainController.java"
+  },
+  {
+    "old": "com.appnexus.platform.security.OrganizationGrantController",
+    "new": "com.appnexus.platform.appapi.organization.OrganizationGrantController",
+    "source": "backend\\services\\platform-service\\adapters\\security\\src\\main\\java\\com\\appnexus\\platform\\security\\OrganizationGrantController.java",
+    "destination": "backend\\services\\platform-service\\adapters\\app-api\\src\\main\\java\\com\\appnexus\\platform\\appapi\\organization\\OrganizationGrantController.java"
+  },
+  {
+    "old": "com.appnexus.platform.security.OrganizationSummaryController",
+    "new": "com.appnexus.platform.appapi.organization.OrganizationSummaryController",
+    "source": "backend\\services\\platform-service\\adapters\\security\\src\\main\\java\\com\\appnexus\\platform\\security\\OrganizationSummaryController.java",
+    "destination": "backend\\services\\platform-service\\adapters\\app-api\\src\\main\\java\\com\\appnexus\\platform\\appapi\\organization\\OrganizationSummaryController.java"
+  },
+  {
+    "old": "com.appnexus.platform.security.PartnerDictionaryController",
+    "new": "com.appnexus.platform.partnerapi.configuration.PartnerDictionaryController",
+    "source": "backend\\services\\platform-service\\adapters\\security\\src\\main\\java\\com\\appnexus\\platform\\security\\PartnerDictionaryController.java",
+    "destination": "backend\\services\\platform-service\\adapters\\partner-api\\src\\main\\java\\com\\appnexus\\platform\\partnerapi\\configuration\\PartnerDictionaryController.java"
+  },
+  {
+    "old": "com.appnexus.platform.security.PartnerReferenceController",
+    "new": "com.appnexus.platform.partnerapi.administration.PartnerReferenceController",
+    "source": "backend\\services\\platform-service\\adapters\\security\\src\\main\\java\\com\\appnexus\\platform\\security\\PartnerReferenceController.java",
+    "destination": "backend\\services\\platform-service\\adapters\\partner-api\\src\\main\\java\\com\\appnexus\\platform\\partnerapi\\administration\\PartnerReferenceController.java"
+  },
+  {
+    "old": "com.appnexus.platform.security.PlatformAdministrationController",
+    "new": "com.appnexus.platform.managementapi.administration.PlatformAdministrationController",
+    "source": "backend\\services\\platform-service\\adapters\\security\\src\\main\\java\\com\\appnexus\\platform\\security\\PlatformAdministrationController.java",
+    "destination": "backend\\services\\platform-service\\adapters\\platform-api\\src\\main\\java\\com\\appnexus\\platform\\managementapi\\administration\\PlatformAdministrationController.java"
+  },
+  {
+    "old": "com.appnexus.platform.security.PolicyTemplateController",
+    "new": "com.appnexus.platform.managementapi.administration.PolicyTemplateController",
+    "source": "backend\\services\\platform-service\\adapters\\security\\src\\main\\java\\com\\appnexus\\platform\\security\\PolicyTemplateController.java",
+    "destination": "backend\\services\\platform-service\\adapters\\platform-api\\src\\main\\java\\com\\appnexus\\platform\\managementapi\\administration\\PolicyTemplateController.java"
+  },
+  {
+    "old": "com.appnexus.platform.security.RoleManagementController",
+    "new": "com.appnexus.platform.managementapi.administration.RoleManagementController",
+    "source": "backend\\services\\platform-service\\adapters\\security\\src\\main\\java\\com\\appnexus\\platform\\security\\RoleManagementController.java",
+    "destination": "backend\\services\\platform-service\\adapters\\platform-api\\src\\main\\java\\com\\appnexus\\platform\\managementapi\\administration\\RoleManagementController.java"
+  },
+  {
+    "old": "com.appnexus.platform.security.SecurityLogController",
+    "new": "com.appnexus.platform.appapi.administration.SecurityLogController",
+    "source": "backend\\services\\platform-service\\adapters\\security\\src\\main\\java\\com\\appnexus\\platform\\security\\SecurityLogController.java",
+    "destination": "backend\\services\\platform-service\\adapters\\app-api\\src\\main\\java\\com\\appnexus\\platform\\appapi\\administration\\SecurityLogController.java"
+  },
+  {
+    "old": "com.appnexus.platform.security.TaskManagementController",
+    "new": "com.appnexus.platform.managementapi.administration.TaskManagementController",
+    "source": "backend\\services\\platform-service\\adapters\\security\\src\\main\\java\\com\\appnexus\\platform\\security\\TaskManagementController.java",
+    "destination": "backend\\services\\platform-service\\adapters\\platform-api\\src\\main\\java\\com\\appnexus\\platform\\managementapi\\administration\\TaskManagementController.java"
+  },
+  {
+    "old": "com.appnexus.platform.security.TenantInvitationController",
+    "new": "com.appnexus.platform.managementapi.administration.TenantInvitationController",
+    "source": "backend\\services\\platform-service\\adapters\\security\\src\\main\\java\\com\\appnexus\\platform\\security\\TenantInvitationController.java",
+    "destination": "backend\\services\\platform-service\\adapters\\platform-api\\src\\main\\java\\com\\appnexus\\platform\\managementapi\\administration\\TenantInvitationController.java"
+  },
+  {
+    "old": "com.appnexus.platform.security.TenantParameterController",
+    "new": "com.appnexus.platform.appapi.configuration.TenantParameterController",
+    "source": "backend\\services\\platform-service\\adapters\\security\\src\\main\\java\\com\\appnexus\\platform\\security\\TenantParameterController.java",
+    "destination": "backend\\services\\platform-service\\adapters\\app-api\\src\\main\\java\\com\\appnexus\\platform\\appapi\\configuration\\TenantParameterController.java"
+  },
+  {
+    "old": "com.appnexus.platform.security.OrganizationDomainErrors",
+    "new": "com.appnexus.platform.appapi.organization.OrganizationDomainErrors",
+    "source": "backend\\services\\platform-service\\adapters\\security\\src\\main\\java\\com\\appnexus\\platform\\security\\OrganizationDomainErrors.java",
+    "destination": "backend\\services\\platform-service\\adapters\\app-api\\src\\main\\java\\com\\appnexus\\platform\\appapi\\organization\\OrganizationDomainErrors.java"
+  }
+]

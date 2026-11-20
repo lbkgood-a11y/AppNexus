@@ -1,7 +1,7 @@
 package com.appnexus.masterdata.application.product;
-
 import com.appnexus.masterdata.api.product.ProductMainData.*;
-import com.appnexus.masterdata.MasterData.Rejection;
+
+import com.appnexus.masterdata.api.masterdata.MasterData.Rejection;
 import com.appnexus.masterdata.domain.product.ProductLifecycle;
 import com.appnexus.platform.authorization.AccessAuthorization;
 import com.appnexus.platform.tenant.VerifiedTenantContext;

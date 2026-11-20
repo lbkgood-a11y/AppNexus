@@ -1,4 +1,5 @@
 package com.appnexus.platform.security;
+import com.appnexus.platform.persistence.identity.integration.ClientSecretMapper;
 
 
 import org.springframework.security.crypto.password.PasswordEncoder;

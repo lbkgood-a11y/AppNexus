@@ -1,0 +1,38 @@
+[
+  {
+    "source": "backend/services/platform-service/organization/src/main/java/com/appnexus/platform/organization/personnel/PersonnelConfiguration.java",
+    "destination": "backend/services/platform-service/adapters/persistence/src/main/java/com/appnexus/platform/persistence/organization/personnel/PersonnelConfiguration.java",
+    "old": "com.appnexus.platform.organization.personnel.PersonnelConfiguration",
+    "new": "com.appnexus.platform.persistence.organization.personnel.PersonnelConfiguration"
+  },
+  {
+    "source": "backend/services/platform-service/organization/src/main/java/com/appnexus/platform/organization/personnel/PersonnelCatalogAdapter.java",
+    "destination": "backend/services/platform-service/adapters/persistence/src/main/java/com/appnexus/platform/persistence/organization/personnel/PersonnelCatalogAdapter.java",
+    "old": "com.appnexus.platform.organization.personnel.PersonnelCatalogAdapter",
+    "new": "com.appnexus.platform.persistence.organization.personnel.PersonnelCatalogAdapter"
+  },
+  {
+    "source": "backend/services/platform-service/organization/src/main/java/com/appnexus/platform/organization/personnel/PersonnelExecutionAdapter.java",
+    "destination": "backend/services/platform-service/adapters/persistence/src/main/java/com/appnexus/platform/persistence/organization/personnel/PersonnelExecutionAdapter.java",
+    "old": "com.appnexus.platform.organization.personnel.PersonnelExecutionAdapter",
+    "new": "com.appnexus.platform.persistence.organization.personnel.PersonnelExecutionAdapter"
+  },
+  {
+    "source": "backend/services/print-service/adapters/jdbc/src/main/java/com/appnexus/printing/adapter/jdbc/PrintController.java",
+    "destination": "backend/services/print-service/adapters/jdbc/src/main/java/com/appnexus/printing/adapter/web/PrintController.java",
+    "old": "com.appnexus.printing.adapter.jdbc.PrintController",
+    "new": "com.appnexus.printing.adapter.web.PrintController"
+  },
+  {
+    "source": "backend/services/workflow-service/adapters/flowable/src/main/java/com/appnexus/workflow/adapter/flowable/WorkflowController.java",
+    "destination": "backend/services/workflow-service/adapters/flowable/src/main/java/com/appnexus/workflow/adapter/web/WorkflowController.java",
+    "old": "com.appnexus.workflow.adapter.flowable.WorkflowController",
+    "new": "com.appnexus.workflow.adapter.web.WorkflowController"
+  },
+  {
+    "source": "backend/services/leave-poc/src/main/java/com/appnexus/leave/LeavePocController.java",
+    "destination": "backend/services/leave-poc/src/main/java/com/appnexus/leave/adapter/web/LeavePocController.java",
+    "old": "com.appnexus.leave.LeavePocController",
+    "new": "com.appnexus.leave.adapter.web.LeavePocController"
+  }
+]

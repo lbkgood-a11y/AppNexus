@@ -1,8 +1,8 @@
 package com.appnexus.platform.persistence.businessobject.coding;
+import com.appnexus.contracts.businessobject.BusinessObjects.*;
 
 import com.appnexus.platform.businessobject.port.CodingStore;
 import com.appnexus.contracts.businessobject.BusinessCoding.Rule;
-import com.appnexus.contracts.businessobject.BusinessObjects.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.Instant;
 import java.util.*;

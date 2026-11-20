@@ -1,8 +1,8 @@
 package com.appnexus.platform;
 
 import com.appnexus.platform.organization.OrganizationStructure;
-import com.appnexus.platform.security.OrganizationDomainController;
-import com.appnexus.platform.security.OrganizationDomainErrors;
+import com.appnexus.platform.appapi.organization.OrganizationDomainController;
+import com.appnexus.platform.appapi.organization.OrganizationDomainErrors;
 import org.junit.jupiter.api.Test;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;

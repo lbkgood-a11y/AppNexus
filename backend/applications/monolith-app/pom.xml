@@ -32,7 +32,7 @@
     <!-- 组合部署打印服务；服务通过公开平台桥接复核租户与功能权限。 -->
     <dependency>
       <groupId>com.appnexus</groupId>
-      <artifactId>print-jdbc-adapter</artifactId>
+      <artifactId>print-persistence-adapter</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>

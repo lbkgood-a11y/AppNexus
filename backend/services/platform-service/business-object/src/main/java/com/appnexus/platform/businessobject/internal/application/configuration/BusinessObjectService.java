@@ -67,9 +67,10 @@ public final class BusinessObjectService implements com.appnexus.platform.busine
       var keys=new HashSet<String>();
       for(var f:d.fields()) if(!keys.add(f.key())||!Set.of("TEXT","NUMBER","BOOLEAN").contains(f.type()))
         throw new IllegalArgumentException("BUSINESS_OBJECT_FIELD_INVALID");
+      // 专用API操作允许空公共能力；保存绑定和执行仍必须命中实际声明的服务，不能默认补BUSINESS。
       var actions=new HashSet<String>();
       for(var a:d.operations()) if(a.operationCode()==null||!a.operationCode().matches("[a-zA-Z][a-zA-Z0-9_-]{0,63}")||!actions.add(a.operationCode())||a.permissionCode()==null||a.permissionCode().isBlank()
-          ||!a.operationId().equals(d.objectType()+"."+a.operationCode())||a.supportedServices().isEmpty()
+          ||!a.operationId().equals(d.objectType()+"."+a.operationCode())
           ||!Set.of("BUSINESS","WORKFLOW","PRINT").containsAll(a.supportedServices()))throw new IllegalArgumentException("BUSINESS_OBJECT_ACTION_INVALID");
       // 同身份数据契约不可由不同业务提供者悄悄覆盖；部署即拒绝冲突声明。
       for(var action:d.operations())for(var capability:action.interaction().capabilities()){

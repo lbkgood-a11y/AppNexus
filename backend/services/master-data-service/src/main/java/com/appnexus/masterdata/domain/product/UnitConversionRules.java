@@ -1,6 +1,6 @@
 package com.appnexus.masterdata.domain.product;
 
-import com.appnexus.masterdata.MasterData.Rejection;
+import com.appnexus.masterdata.api.masterdata.MasterData.Rejection;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.Map;

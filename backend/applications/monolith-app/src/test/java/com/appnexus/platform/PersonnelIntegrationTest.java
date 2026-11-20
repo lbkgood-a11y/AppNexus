@@ -1,4 +1,8 @@
 package com.appnexus.platform;
+import com.appnexus.platform.organization.internal.domain.personnel.PersonnelSchema;
+import com.appnexus.platform.organization.PersonnelManagement;
+import com.appnexus.platform.organization.PersonManagement;
+import com.appnexus.platform.organization.PersonData;
 
 import com.appnexus.platform.organization.personnel.*;
 import com.appnexus.platform.tenant.VerifiedTenantContext;
@@ -10,7 +14,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import static org.assertj.core.api.Assertions.*;
-import static com.appnexus.platform.organization.personnel.PersonData.*;
+import static com.appnexus.platform.organization.PersonData.*;
 
 /** 真实 MySQL/Valkey/RBAC 验证全量人员档案、十类明细和组织用户多对多关系，隔离测试数据不进入开发库。 */
 @SpringBootTest
@@ -19,8 +23,8 @@ import static com.appnexus.platform.organization.personnel.PersonData.*;
 class PersonnelIntegrationTest extends DatabaseTestSupport {
   @Autowired JdbcTemplate jdbc;
   @Autowired org.springframework.test.web.servlet.MockMvc mvc;
-  @Autowired PersonnelService personnel;
-  @Autowired PersonDataService master;
+  @Autowired PersonnelManagement personnel;
+  @Autowired PersonManagement master;
   @Autowired OrganizationAdministratorBootstrap bootstrap;
   @Autowired com.appnexus.platform.organization.PersonnelExecution execution;
   /** 测试主体包含可信成员及同租户组织、岗位；所有账号为独立测试账号，不使用管理员真实凭据。 */
@@ -64,7 +68,7 @@ class PersonnelIntegrationTest extends DatabaseTestSupport {
   /** 组织页选择人员而非账号；任职和负责人经公开契约投影到关联账号，不修改账号本身的组织。 */
   @Test void organizationAppointmentUsesPersonAndResolvesLinkedAccounts() throws Exception {
     var f=fixture();String person=person(f,"POSITION-PERSON");
-    personnel.assign(f.admin(),person,null,new PersonnelService.AssignmentInput(f.user().memberId().toString(),version(f,person)));
+    personnel.assign(f.admin(),person,null,new com.appnexus.platform.organization.PersonnelData.AssignmentInput(f.user().memberId().toString(),version(f,person)));
     var selected=mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/bff/tenants/current").with(authenticated(f.admin().accountId().toString(),0)).with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf()).contentType("application/json").content("{\"tenantId\":\""+f.admin().tenantId()+"\"}")).andReturn().getResponse();
     var cookie=selected.getCookie("JSESSIONID");
     String input="{\"personId\":\""+person+"\",\"positionId\":\""+f.position()+"\",\"startsAt\":\"2020-01-01T00:00:00Z\"}";
@@ -77,8 +81,8 @@ class PersonnelIntegrationTest extends DatabaseTestSupport {
     assertThat(personnel.read(f.admin(),person).details()).anyMatch(d->d.section().equals("positions")&&d.id().equalsIgnoreCase(assignment));
     assertThat(personnel.canRepresent(f.user(),person,f.org())).isTrue();
     assertThat(execution.routeCandidate(f.user().tenantId(),f.user().memberId(),UUID.fromString(person),UUID.fromString(f.org()),"POSITION",f.position())).isTrue();
-    String another=person(f,"OTHER-IDENTITY");personnel.assign(f.admin(),another,null,new PersonnelService.AssignmentInput(f.user().memberId().toString(),version(f,another)));
-    personnel.saveDetail(f.admin(),another,"organizations",null,new PersonnelService.DetailInput(version(f,another),Map.of("organizationId",f.org())));
+    String another=person(f,"OTHER-IDENTITY");personnel.assign(f.admin(),another,null,new com.appnexus.platform.organization.PersonnelData.AssignmentInput(f.user().memberId().toString(),version(f,another)));
+    personnel.saveDetail(f.admin(),another,"organizations",null,new com.appnexus.platform.organization.PersonnelData.DetailInput(version(f,another),Map.of("organizationId",f.org())));
     assertThat(execution.routeCandidate(f.user().tenantId(),f.user().memberId(),UUID.fromString(another),UUID.fromString(f.org()),"POSITION",f.position())).isFalse();
     jdbc.update("UPDATE tenant_member SET enabled=FALSE WHERE tenant_id=UUID_TO_BIN(?) AND id=UUID_TO_BIN(?)",f.user().tenantId().toString(),f.user().memberId().toString());
     assertThat(execution.resolveAccounts(f.admin().tenantId(),UUID.fromString(f.org()),"LEADER","")).isEmpty();
@@ -87,10 +91,10 @@ class PersonnelIntegrationTest extends DatabaseTestSupport {
   /** 多身份必须显式选择；人员组织独立于账号关系，选择失效立即阻断业务请求。 */
   @Test void identitySelectionIsExplicitTenantScopedAndDoesNotMergePeople() throws Exception {
     var f=fixture();var other=fixture();String first=person(f,"IDENTITY-1"),second=person(f,"IDENTITY-2");
-    personnel.assign(f.admin(),first,null,new PersonnelService.AssignmentInput(f.user().memberId().toString(),version(f,first)));
-    personnel.assign(f.admin(),second,null,new PersonnelService.AssignmentInput(f.user().memberId().toString(),version(f,second)));
+    personnel.assign(f.admin(),first,null,new com.appnexus.platform.organization.PersonnelData.AssignmentInput(f.user().memberId().toString(),version(f,first)));
+    personnel.assign(f.admin(),second,null,new com.appnexus.platform.organization.PersonnelData.AssignmentInput(f.user().memberId().toString(),version(f,second)));
     assertThat(personnel.identities(f.user())).isEmpty();
-    personnel.saveDetail(f.admin(),first,"organizations",null,new PersonnelService.DetailInput(version(f,first),Map.of("organizationId",f.org(),"isPrimary","true")));
+    personnel.saveDetail(f.admin(),first,"organizations",null,new com.appnexus.platform.organization.PersonnelData.DetailInput(version(f,first),Map.of("organizationId",f.org(),"isPrimary","true")));
     assertThat(personnel.identities(f.user())).hasSize(1);
     assertThat(personnel.canRepresent(f.user(),second,f.org())).isFalse();
     var selected=mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/bff/tenants/current").with(authenticated(f.user().accountId().toString(),0)).with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf()).contentType("application/json").content("{\"tenantId\":\""+f.user().tenantId()+"\"}")).andReturn().getResponse();
@@ -100,7 +104,7 @@ class PersonnelIntegrationTest extends DatabaseTestSupport {
     assertThat(mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/api/master-data/person/identity").cookie(cookie).with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf()).contentType("application/json").content(choice)).andReturn().getResponse().getStatus()).isEqualTo(200);
     assertThat(mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get("/api/master-data/person/identity").cookie(cookie)).andReturn().getResponse().getContentAsString()).contains(first);
     assertThat(mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get("/api/leave-poc").cookie(cookie).header("X-Person-Id",second)).andReturn().getResponse().getStatus()).isEqualTo(409);
-    assertThatThrownBy(()->personnel.verifyIdentity(f.user(),new PersonnelService.IdentitySelection(first,other.org()))).hasMessage("PERSON_CONTEXT_REQUIRED");
+    assertThatThrownBy(()->personnel.verifyIdentity(f.user(),new com.appnexus.platform.organization.PersonnelData.IdentitySelection(first,other.org()))).hasMessage("PERSON_CONTEXT_REQUIRED");
     master.setStatus(f.admin(),Kind.PERSON,first,new Status(false,version(f,first)));
     assertThat(mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get("/api/leave-poc").cookie(cookie)).andReturn().getResponse().getStatus()).isEqualTo(409);
     assertThat(personnel.identities(f.user())).isEmpty();
@@ -119,10 +123,10 @@ class PersonnelIntegrationTest extends DatabaseTestSupport {
       if(section==PersonnelSchema.Section.ADDRESSES)values.put("addressType","HOME");
       if(section==PersonnelSchema.Section.REWARDSPENALTIES)values.put("recordType","REWARD");
       if(section.fields.contains("startsOn")){values.put("startsOn","2020-01-01");values.put("endsOn","2021-01-01");}
-      String detail=personnel.saveDetail(f.admin(),id,section.code,null,new PersonnelService.DetailInput(version(f,id),values)).get("id");
+      String detail=personnel.saveDetail(f.admin(),id,section.code,null,new com.appnexus.platform.organization.PersonnelData.DetailInput(version(f,id),values)).get("id");
       assertThat(personnel.read(f.admin(),id).details()).anyMatch(d->d.id().equalsIgnoreCase(detail)&&d.section().equals(section.code));
       values.put("remarks","已更新");
-      personnel.saveDetail(f.admin(),id,section.code,detail,new PersonnelService.DetailInput(version(f,id),values));
+      personnel.saveDetail(f.admin(),id,section.code,detail,new com.appnexus.platform.organization.PersonnelData.DetailInput(version(f,id),values));
       assertThat(personnel.read(f.admin(),id).details().stream().filter(d->d.id().equalsIgnoreCase(detail)).findFirst().orElseThrow().values().get("remarks")).isEqualTo("已更新");
       long current=version(f,id);
       assertThatThrownBy(()->personnel.deleteDetail(f.admin(),id,section.code,detail,current-1)).hasMessage("MASTER_DATA_CHANGED");
@@ -131,35 +135,35 @@ class PersonnelIntegrationTest extends DatabaseTestSupport {
     assertThat(personnel.read(f.admin(),id).details()).isEmpty();
     assertThatThrownBy(()->master.update(f.admin(),Kind.PERSON,id,new Input("PERSON-1","测试",Map.of("birthDate","9999-01-01"),version(f,id)))).hasMessage("MASTER_DATA_INPUT_INVALID");
     long current=version(f,id);
-    assertThatThrownBy(()->personnel.saveDetail(f.admin(),id,"contacts",null,new PersonnelService.DetailInput(current,Map.of("contactType","PHONE","contactValue","x","tenantId","forged")))).hasMessage("MASTER_DATA_INPUT_INVALID");
+    assertThatThrownBy(()->personnel.saveDetail(f.admin(),id,"contacts",null,new com.appnexus.platform.organization.PersonnelData.DetailInput(current,Map.of("contactType","PHONE","contactValue","x","tenantId","forged")))).hasMessage("MASTER_DATA_INPUT_INVALID");
     assertThat(version(f,id)).isEqualTo(current);
-    assertThatThrownBy(()->personnel.saveDetail(f.admin(),id,"training",null,new PersonnelService.DetailInput(current,Map.of("trainingName","测试","startsOn","2024-02-30")))).hasMessage("MASTER_DATA_INPUT_INVALID");
-    assertThatThrownBy(()->personnel.saveDetail(f.admin(),id,"training",null,new PersonnelService.DetailInput(current,Map.of("trainingName","测试","startsOn","2024-05-01","endsOn","2024-01-01")))).hasMessage("MASTER_DATA_INPUT_INVALID");
+    assertThatThrownBy(()->personnel.saveDetail(f.admin(),id,"training",null,new com.appnexus.platform.organization.PersonnelData.DetailInput(current,Map.of("trainingName","测试","startsOn","2024-02-30")))).hasMessage("MASTER_DATA_INPUT_INVALID");
+    assertThatThrownBy(()->personnel.saveDetail(f.admin(),id,"training",null,new com.appnexus.platform.organization.PersonnelData.DetailInput(current,Map.of("trainingName","测试","startsOn","2024-05-01","endsOn","2024-01-01")))).hasMessage("MASTER_DATA_INPUT_INVALID");
     var other=fixture();
     assertThatThrownBy(()->personnel.read(other.admin(),id)).hasMessage("PERSON_NOT_FOUND");
-    assertThatThrownBy(()->personnel.saveDetail(other.admin(),id,"contacts",null,new PersonnelService.DetailInput(current,Map.of("contactType","PHONE","contactValue","x")))).hasMessage("MASTER_DATA_CHANGED");
-    assertThatThrownBy(()->personnel.saveDetail(f.admin(),id,"organizations",null,new PersonnelService.DetailInput(current,Map.of("organizationId",other.org())))).hasMessage("PERSON_ORGANIZATION_UNAVAILABLE");
+    assertThatThrownBy(()->personnel.saveDetail(other.admin(),id,"contacts",null,new com.appnexus.platform.organization.PersonnelData.DetailInput(current,Map.of("contactType","PHONE","contactValue","x")))).hasMessage("MASTER_DATA_CHANGED");
+    assertThatThrownBy(()->personnel.saveDetail(f.admin(),id,"organizations",null,new com.appnexus.platform.organization.PersonnelData.DetailInput(current,Map.of("organizationId",other.org())))).hasMessage("PERSON_ORGANIZATION_UNAVAILABLE");
     assertThat(personnel.read(f.admin(),id).audit().updatedBy()).isEqualToIgnoringCase(f.admin().accountId().toString());
   }
   @Test void oneAccountRepresentsMultiplePeopleOnlyInItsValidOrganizationsAndNeverGainsBusinessPermission(){
     var f=fixture();var other=fixture();String first=person(f,"FIRST"),second=person(f,"SECOND");
     assertThat(personnel.canRepresent(f.user(),first,f.org())).isFalse();
-    personnel.saveDetail(f.admin(),first,"organizations",null,new PersonnelService.DetailInput(version(f,first),Map.of("organizationId",f.org(),"isPrimary","true")));
-    personnel.saveDetail(f.admin(),second,"organizations",null,new PersonnelService.DetailInput(version(f,second),Map.of("organizationId",f.org())));
-    String link=personnel.assign(f.admin(),first,null,new PersonnelService.AssignmentInput(f.user().memberId().toString(),version(f,first))).get("id");
-    personnel.assign(f.admin(),first,null,new PersonnelService.AssignmentInput(f.admin().memberId().toString(),version(f,first)));
+    personnel.saveDetail(f.admin(),first,"organizations",null,new com.appnexus.platform.organization.PersonnelData.DetailInput(version(f,first),Map.of("organizationId",f.org(),"isPrimary","true")));
+    personnel.saveDetail(f.admin(),second,"organizations",null,new com.appnexus.platform.organization.PersonnelData.DetailInput(version(f,second),Map.of("organizationId",f.org())));
+    String link=personnel.assign(f.admin(),first,null,new com.appnexus.platform.organization.PersonnelData.AssignmentInput(f.user().memberId().toString(),version(f,first))).get("id");
+    personnel.assign(f.admin(),first,null,new com.appnexus.platform.organization.PersonnelData.AssignmentInput(f.admin().memberId().toString(),version(f,first)));
     assertThat(personnel.canRepresent(f.admin(),first,f.org())).isTrue();
-    personnel.assign(f.admin(),second,null,new PersonnelService.AssignmentInput(f.user().memberId().toString(),version(f,second)));
+    personnel.assign(f.admin(),second,null,new com.appnexus.platform.organization.PersonnelData.AssignmentInput(f.user().memberId().toString(),version(f,second)));
     assertThat(personnel.canRepresent(f.user(),first,f.org())).isTrue();assertThat(personnel.canRepresent(f.user(),second,f.org())).isTrue();
     assertThat(personnel.read(f.admin(),first).assignments()).hasSize(2);
     assertThat(personnel.canRepresent(other.user(),first,f.org())).isFalse();
     assertThatThrownBy(()->personnel.read(f.user(),first)).hasMessage("MASTER_DATA_DENIED");
-    assertThatThrownBy(()->personnel.assign(f.user(),first,null,new PersonnelService.AssignmentInput(f.user().memberId().toString(),version(f,first)))).hasMessage("MASTER_DATA_DENIED");
+    assertThatThrownBy(()->personnel.assign(f.user(),first,null,new com.appnexus.platform.organization.PersonnelData.AssignmentInput(f.user().memberId().toString(),version(f,first)))).hasMessage("MASTER_DATA_DENIED");
     long current=version(f,first);
-    assertThatThrownBy(()->personnel.assign(f.admin(),first,null,new PersonnelService.AssignmentInput(f.user().memberId().toString(),current))).hasMessage("PERSON_USER_DUPLICATE");
+    assertThatThrownBy(()->personnel.assign(f.admin(),first,null,new com.appnexus.platform.organization.PersonnelData.AssignmentInput(f.user().memberId().toString(),current))).hasMessage("PERSON_USER_DUPLICATE");
     assertThat(version(f,first)).isEqualTo(current);
-    assertThatThrownBy(()->personnel.assign(f.admin(),first,null,new PersonnelService.AssignmentInput(other.user().memberId().toString(),current))).hasMessage("PERSON_USER_UNAVAILABLE");
-    personnel.assign(f.admin(),first,link,new PersonnelService.AssignmentInput(f.user().memberId().toString(),current));
+    assertThatThrownBy(()->personnel.assign(f.admin(),first,null,new com.appnexus.platform.organization.PersonnelData.AssignmentInput(other.user().memberId().toString(),current))).hasMessage("PERSON_USER_UNAVAILABLE");
+    personnel.assign(f.admin(),first,link,new com.appnexus.platform.organization.PersonnelData.AssignmentInput(f.user().memberId().toString(),current));
     personnel.unassign(f.admin(),first,link,version(f,first));assertThat(personnel.canRepresent(f.user(),first,f.org())).isFalse();
     jdbc.update("UPDATE tenant_member SET enabled=FALSE WHERE id=UUID_TO_BIN(?)",f.user().memberId().toString());
     assertThat(personnel.canRepresent(f.user(),second,f.org())).isFalse();

@@ -1,8 +1,8 @@
 package com.appnexus.masterdata.domain;
 
 import java.util.*;
-import com.appnexus.masterdata.GeographyStandards;
-import static com.appnexus.masterdata.MasterData.*;
+import com.appnexus.masterdata.domain.geography.GeographyStandards;
+import static com.appnexus.masterdata.api.masterdata.MasterData.*;
 
 /** 固定主数据输入领域规则；不依赖存储与框架，标准地理快照仅作为不可变参考数据。 */
 public final class MasterDataRules {

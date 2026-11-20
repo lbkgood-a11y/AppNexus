@@ -1,7 +1,7 @@
 package com.appnexus.masterdata.domain.warehouse;
 
 import java.util.*;
-import static com.appnexus.masterdata.MasterData.*;
+import static com.appnexus.masterdata.api.masterdata.MasterData.*;
 
 /** 库区、库位的纯字段约束；父子启用及不可移动事实由持久化关系端口在锁内验证。 */
 public final class StorageRules {

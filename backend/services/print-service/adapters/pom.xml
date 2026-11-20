@@ -4,5 +4,5 @@
   <modelVersion>4.0.0</modelVersion>
   <parent><groupId>com.appnexus</groupId><artifactId>print-service</artifactId><version>0.1.0-SNAPSHOT</version><relativePath>../pom.xml</relativePath></parent>
   <artifactId>print-adapters</artifactId><packaging>pom</packaging>
-  <modules><module>jdbc</module></modules>
+  <modules><module>persistence</module></modules>
 </project>

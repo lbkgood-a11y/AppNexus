@@ -1,7 +1,7 @@
 package com.appnexus.platform;
 
 import com.appnexus.platform.authorization.*;
-import com.appnexus.masterdata.BusinessPartnerDeclaration;
+import com.appnexus.masterdata.adapter.integration.partner.BusinessPartnerDeclaration;
 import java.util.*;
 import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.*;

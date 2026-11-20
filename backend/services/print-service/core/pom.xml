@@ -4,4 +4,5 @@
   <modelVersion>4.0.0</modelVersion>
   <parent><groupId>com.appnexus</groupId><artifactId>print-service</artifactId><version>0.1.0-SNAPSHOT</version><relativePath>../pom.xml</relativePath></parent>
   <artifactId>print-core</artifactId>
-</project>
+<!-- 打印公开用例仅依赖稳定打印契约，禁止依赖技术适配器。 -->
+<dependencies><dependency><groupId>com.appnexus</groupId><artifactId>print-contracts</artifactId><version>${project.version}</version></dependency></dependencies></project>

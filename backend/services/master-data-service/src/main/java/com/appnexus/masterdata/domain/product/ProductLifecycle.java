@@ -1,6 +1,6 @@
 package com.appnexus.masterdata.domain.product;
 
-import com.appnexus.masterdata.MasterData.Rejection;
+import com.appnexus.masterdata.api.masterdata.MasterData.Rejection;
 import java.util.Objects;
 
 /** 商品生命周期规则；只判断领域状态，不读取数据库、审批引擎或认证上下文。 */

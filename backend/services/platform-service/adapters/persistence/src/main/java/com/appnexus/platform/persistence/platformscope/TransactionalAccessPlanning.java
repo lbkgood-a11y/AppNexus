@@ -2,7 +2,6 @@ package com.appnexus.platform.persistence.platformscope;
 
 import com.appnexus.platform.authorization.*;
 import java.time.Instant;
-import java.util.Map;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

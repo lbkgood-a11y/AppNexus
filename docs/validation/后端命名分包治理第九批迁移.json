@@ -1,0 +1,98 @@
+[
+  {
+    "old": "com.appnexus.platform.persistence.security.CapabilityDirectoryMapper",
+    "new": "com.appnexus.platform.persistence.capability.CapabilityDirectoryMapper",
+    "source": "backend\\services\\platform-service\\adapters\\persistence\\src\\main\\java\\com\\appnexus\\platform\\persistence\\security\\CapabilityDirectoryMapper.java",
+    "destination": "backend\\services\\platform-service\\adapters\\persistence\\src\\main\\java\\com\\appnexus\\platform\\persistence\\capability\\CapabilityDirectoryMapper.java"
+  },
+  {
+    "old": "com.appnexus.platform.persistence.security.ClientSecretMapper",
+    "new": "com.appnexus.platform.persistence.identity.integration.ClientSecretMapper",
+    "source": "backend\\services\\platform-service\\adapters\\persistence\\src\\main\\java\\com\\appnexus\\platform\\persistence\\security\\ClientSecretMapper.java",
+    "destination": "backend\\services\\platform-service\\adapters\\persistence\\src\\main\\java\\com\\appnexus\\platform\\persistence\\identity\\integration\\ClientSecretMapper.java"
+  },
+  {
+    "old": "com.appnexus.platform.persistence.security.IntegrationClientsMapper",
+    "new": "com.appnexus.platform.persistence.identity.integration.IntegrationClientMapper",
+    "source": "backend\\services\\platform-service\\adapters\\persistence\\src\\main\\java\\com\\appnexus\\platform\\persistence\\security\\IntegrationClientsMapper.java",
+    "destination": "backend\\services\\platform-service\\adapters\\persistence\\src\\main\\java\\com\\appnexus\\platform\\persistence\\identity\\integration\\IntegrationClientMapper.java"
+  },
+  {
+    "old": "com.appnexus.platform.persistence.security.OAuthRepositoryMapper",
+    "new": "com.appnexus.platform.persistence.identity.oauth.OAuthAuthorizationRepositoryMapper",
+    "source": "backend\\services\\platform-service\\adapters\\persistence\\src\\main\\java\\com\\appnexus\\platform\\persistence\\security\\OAuthRepositoryMapper.java",
+    "destination": "backend\\services\\platform-service\\adapters\\persistence\\src\\main\\java\\com\\appnexus\\platform\\persistence\\identity\\oauth\\OAuthAuthorizationRepositoryMapper.java"
+  },
+  {
+    "old": "com.appnexus.platform.persistence.security.PartnerCallFilterMapper",
+    "new": "com.appnexus.platform.persistence.identity.integration.PartnerClientAuthorityMapper",
+    "source": "backend\\services\\platform-service\\adapters\\persistence\\src\\main\\java\\com\\appnexus\\platform\\persistence\\security\\PartnerCallFilterMapper.java",
+    "destination": "backend\\services\\platform-service\\adapters\\persistence\\src\\main\\java\\com\\appnexus\\platform\\persistence\\identity\\integration\\PartnerClientAuthorityMapper.java"
+  },
+  {
+    "old": "com.appnexus.platform.persistence.security.PartnerDictionaryMapper",
+    "new": "com.appnexus.platform.persistence.configuration.partner.PartnerDictionaryMapper",
+    "source": "backend\\services\\platform-service\\adapters\\persistence\\src\\main\\java\\com\\appnexus\\platform\\persistence\\security\\PartnerDictionaryMapper.java",
+    "destination": "backend\\services\\platform-service\\adapters\\persistence\\src\\main\\java\\com\\appnexus\\platform\\persistence\\configuration\\partner\\PartnerDictionaryMapper.java"
+  },
+  {
+    "old": "com.appnexus.platform.persistence.security.PartnerReferenceAuditMapper",
+    "new": "com.appnexus.platform.persistence.configuration.partner.PartnerReferenceMapper",
+    "source": "backend\\services\\platform-service\\adapters\\persistence\\src\\main\\java\\com\\appnexus\\platform\\persistence\\security\\PartnerReferenceAuditMapper.java",
+    "destination": "backend\\services\\platform-service\\adapters\\persistence\\src\\main\\java\\com\\appnexus\\platform\\persistence\\configuration\\partner\\PartnerReferenceMapper.java"
+  },
+  {
+    "old": "com.appnexus.platform.persistence.security.PolicyTemplatesMapper",
+    "new": "com.appnexus.platform.persistence.authorization.AuthorizationTemplateMapper",
+    "source": "backend\\services\\platform-service\\adapters\\persistence\\src\\main\\java\\com\\appnexus\\platform\\persistence\\security\\PolicyTemplatesMapper.java",
+    "destination": "backend\\services\\platform-service\\adapters\\persistence\\src\\main\\java\\com\\appnexus\\platform\\persistence\\authorization\\AuthorizationTemplateMapper.java"
+  },
+  {
+    "old": "com.appnexus.platform.persistence.security.ReliableEventsMapper",
+    "new": "com.appnexus.platform.persistence.eventing.OutboxMapper",
+    "source": "backend\\services\\platform-service\\adapters\\persistence\\src\\main\\java\\com\\appnexus\\platform\\persistence\\security\\ReliableEventsMapper.java",
+    "destination": "backend\\services\\platform-service\\adapters\\persistence\\src\\main\\java\\com\\appnexus\\platform\\persistence\\eventing\\OutboxMapper.java"
+  },
+  {
+    "old": "com.appnexus.platform.persistence.security.RotatingAuthorizationMapper",
+    "new": "com.appnexus.platform.persistence.identity.oauth.OAuthAuthorizationMapper",
+    "source": "backend\\services\\platform-service\\adapters\\persistence\\src\\main\\java\\com\\appnexus\\platform\\persistence\\security\\RotatingAuthorizationMapper.java",
+    "destination": "backend\\services\\platform-service\\adapters\\persistence\\src\\main\\java\\com\\appnexus\\platform\\persistence\\identity\\oauth\\OAuthAuthorizationMapper.java"
+  },
+  {
+    "old": "com.appnexus.platform.persistence.security.TaskManagementAuditMapper",
+    "new": "com.appnexus.platform.persistence.audit.TaskAuditMapper",
+    "source": "backend\\services\\platform-service\\adapters\\persistence\\src\\main\\java\\com\\appnexus\\platform\\persistence\\security\\TaskManagementAuditMapper.java",
+    "destination": "backend\\services\\platform-service\\adapters\\persistence\\src\\main\\java\\com\\appnexus\\platform\\persistence\\audit\\TaskAuditMapper.java"
+  },
+  {
+    "old": "com.appnexus.platform.persistence.security.TenantInvitationsMapper",
+    "new": "com.appnexus.platform.persistence.tenant.TenantInvitationMapper",
+    "source": "backend\\services\\platform-service\\adapters\\persistence\\src\\main\\java\\com\\appnexus\\platform\\persistence\\security\\TenantInvitationsMapper.java",
+    "destination": "backend\\services\\platform-service\\adapters\\persistence\\src\\main\\java\\com\\appnexus\\platform\\persistence\\tenant\\TenantInvitationMapper.java"
+  },
+  {
+    "old": "com.appnexus.platform.persistence.security.TenantParameterMapper",
+    "new": "com.appnexus.platform.persistence.configuration.TenantParameterMapper",
+    "source": "backend\\services\\platform-service\\adapters\\persistence\\src\\main\\java\\com\\appnexus\\platform\\persistence\\security\\TenantParameterMapper.java",
+    "destination": "backend\\services\\platform-service\\adapters\\persistence\\src\\main\\java\\com\\appnexus\\platform\\persistence\\configuration\\TenantParameterMapper.java"
+  },
+  {
+    "old": "com.appnexus.platform.persistence.security.UnifiedAuditMapper",
+    "new": "com.appnexus.platform.persistence.audit.AuditQueriesMapper",
+    "source": "backend\\services\\platform-service\\adapters\\persistence\\src\\main\\java\\com\\appnexus\\platform\\persistence\\security\\UnifiedAuditMapper.java",
+    "destination": "backend\\services\\platform-service\\adapters\\persistence\\src\\main\\java\\com\\appnexus\\platform\\persistence\\audit\\AuditQueriesMapper.java"
+  },
+  {
+    "old": "com.appnexus.masterdata.adapter.persistence.JdbcRecordTransaction",
+    "new": "com.appnexus.masterdata.adapter.transaction.SpringRecordTransaction",
+    "source": "backend\\services\\master-data-service\\src\\main\\java\\com\\appnexus\\masterdata\\adapter\\persistence\\JdbcRecordTransaction.java",
+    "destination": "backend\\services\\master-data-service\\src\\main\\java\\com\\appnexus\\masterdata\\adapter\\transaction\\SpringRecordTransaction.java"
+  },
+  {
+    "old": "com.appnexus.platform.persistence.businessobject.configuration.JdbcConfigurationTransaction",
+    "new": "com.appnexus.platform.persistence.businessobject.configuration.SpringConfigurationTransaction",
+    "source": "backend\\services\\platform-service\\adapters\\persistence\\src\\main\\java\\com\\appnexus\\platform\\persistence\\businessobject\\configuration\\JdbcConfigurationTransaction.java",
+    "destination": "backend\\services\\platform-service\\adapters\\persistence\\src\\main\\java\\com\\appnexus\\platform\\persistence\\businessobject\\configuration\\SpringConfigurationTransaction.java"
+  }
+]

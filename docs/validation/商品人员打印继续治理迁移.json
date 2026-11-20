@@ -1,0 +1,307 @@
+{
+  "personnel": [
+    {
+      "old": "com.appnexus.platform.organization.personnel.PersonData",
+      "new": "com.appnexus.platform.organization.PersonData",
+      "source": "backend\\services\\platform-service\\organization\\src\\main\\java\\com\\appnexus\\platform\\organization\\personnel\\PersonData.java",
+      "destination": "backend\\services\\platform-service\\organization\\src\\main\\java\\com\\appnexus\\platform\\organization\\PersonData.java"
+    },
+    {
+      "old": "com.appnexus.platform.organization.personnel.PersonDataService",
+      "new": "com.appnexus.platform.organization.internal.application.personnel.PersonDataService",
+      "source": "backend\\services\\platform-service\\organization\\src\\main\\java\\com\\appnexus\\platform\\organization\\personnel\\PersonDataService.java",
+      "destination": "backend\\services\\platform-service\\organization\\src\\main\\java\\com\\appnexus\\platform\\organization\\internal\\application\\personnel\\PersonDataService.java"
+    },
+    {
+      "old": "com.appnexus.platform.organization.personnel.PersonnelService",
+      "new": "com.appnexus.platform.organization.internal.application.personnel.PersonnelService",
+      "source": "backend\\services\\platform-service\\organization\\src\\main\\java\\com\\appnexus\\platform\\organization\\personnel\\PersonnelService.java",
+      "destination": "backend\\services\\platform-service\\organization\\src\\main\\java\\com\\appnexus\\platform\\organization\\internal\\application\\personnel\\PersonnelService.java"
+    },
+    {
+      "old": "com.appnexus.platform.organization.personnel.PersonnelSchema",
+      "new": "com.appnexus.platform.organization.internal.domain.personnel.PersonnelSchema",
+      "source": "backend\\services\\platform-service\\organization\\src\\main\\java\\com\\appnexus\\platform\\organization\\personnel\\PersonnelSchema.java",
+      "destination": "backend\\services\\platform-service\\organization\\src\\main\\java\\com\\appnexus\\platform\\organization\\internal\\domain\\personnel\\PersonnelSchema.java"
+    }
+  ],
+  "publicDtos": [
+    "DetailInput",
+    "AssignmentInput",
+    "Detail",
+    "Assignment",
+    "Audit",
+    "Profile",
+    "Options",
+    "IdentitySelection"
+  ],
+  "status": "迁移中，按用户要求未执行验证",
+  "printing": {
+    "publicUseCases": [
+      "PrintRuntimeManagement",
+      "PrintSceneManagement",
+      "PrintOutputManagement"
+    ],
+    "dtoMoves": [
+      {
+        "from": "PrintRuntime.TemplateDraft",
+        "to": "PrintData.TemplateDraft"
+      },
+      {
+        "from": "PrintRuntime.DeviceDraft",
+        "to": "PrintData.DeviceDraft"
+      },
+      {
+        "from": "PrintRuntime.JobDraft",
+        "to": "PrintData.JobDraft"
+      },
+      {
+        "from": "PrintRuntime.Receipt",
+        "to": "PrintData.Receipt"
+      },
+      {
+        "from": "PrintFlow.Scene",
+        "to": "PrintData.SceneRequest"
+      },
+      {
+        "from": "PrintFlow.Document",
+        "to": "PrintData.DocumentRequest"
+      },
+      {
+        "from": "PrintFlow.Output",
+        "to": "PrintData.DocumentPrintRequest"
+      },
+      {
+        "from": "PrintFlow.QueueReport",
+        "to": "PrintData.QueueReport"
+      },
+      {
+        "from": "PrintOutputs.TargetCheck",
+        "to": "PrintData.TargetCheck"
+      },
+      {
+        "from": "PrintOutputs.Input",
+        "to": "PrintData.ExternalOutputRequest"
+      },
+      {
+        "from": "PrintOutputs.DocumentInput",
+        "to": "PrintData.DocumentOutputRequest"
+      }
+    ],
+    "remaining": "存量技术执行器内部的流程与存储仍需继续拆分，不宣称完成",
+    "businessUseCase": {
+      "application": "application.BusinessPrintingService",
+      "output": "application.BusinessPrintQueries",
+      "adapter": "adapter.persistence.MyBatisBusinessPrintQueries",
+      "assembly": "bootstrap.PrintConfiguration",
+      "status": "已迁移，未验证"
+    }
+  },
+  "product": {
+    "publicUseCases": [
+      "ProductManagement",
+      "ProductCatalogManagement",
+      "ProductAttributeManagement",
+      "ProductTemplateManagement",
+      "ProductStructureManagement",
+      "ProductImageManagement",
+      "ProductApprovalManagement"
+    ],
+    "dtoMoves": [
+      {
+        "from": "ProductService.Status",
+        "to": "ProductCommandData.Status"
+      },
+      {
+        "from": "ProductService.Version",
+        "to": "ProductCommandData.Version"
+      },
+      {
+        "from": "ProductService.LegacyReview",
+        "to": "ProductCommandData.LegacyReview"
+      },
+      {
+        "from": "ProductCatalogService.UnitPage",
+        "to": "ProductCatalogPages.UnitPage"
+      },
+      {
+        "from": "ProductCatalogService.CategoryPage",
+        "to": "ProductCatalogPages.CategoryPage"
+      },
+      {
+        "from": "ProductAttributeService.GroupInput",
+        "to": "ProductAttributeData.GroupInput"
+      },
+      {
+        "from": "ProductAttributeService.AttributeInput",
+        "to": "ProductAttributeData.AttributeInput"
+      },
+      {
+        "from": "ProductAttributeService.RevisionInput",
+        "to": "ProductAttributeData.RevisionInput"
+      },
+      {
+        "from": "ProductAttributeService.OptionSeed",
+        "to": "ProductAttributeData.OptionSeed"
+      },
+      {
+        "from": "ProductAttributeService.OptionInput",
+        "to": "ProductAttributeData.OptionInput"
+      },
+      {
+        "from": "ProductTemplateService.TemplateInput",
+        "to": "ProductTemplateData.TemplateInput"
+      },
+      {
+        "from": "ProductTemplateService.ItemInput",
+        "to": "ProductTemplateData.ItemInput"
+      },
+      {
+        "from": "ProductTemplateService.VersionInput",
+        "to": "ProductTemplateData.VersionInput"
+      },
+      {
+        "from": "ProductStructureService.Specification",
+        "to": "ProductStructureCommands.Specification"
+      },
+      {
+        "from": "ProductStructureService.SpecValue",
+        "to": "ProductStructureCommands.SpecValue"
+      },
+      {
+        "from": "ProductStructureService.Sku",
+        "to": "ProductStructureCommands.Sku"
+      },
+      {
+        "from": "ProductStructureService.Component",
+        "to": "ProductStructureCommands.Component"
+      },
+      {
+        "from": "ProductStructureService.State",
+        "to": "ProductStructureCommands.State"
+      },
+      {
+        "from": "ProductImageService.Content",
+        "to": "ProductImageData.Content"
+      }
+    ],
+    "remaining": "旧商品执行器仍包含技术依赖，继续拆分；不以接口提取宣称完整分层",
+    "imageUseCase": {
+      "application": "application.product.ProductImageService",
+      "ports": [
+        "ProductImageRepository",
+        "ProductImageContent",
+        "ProductAggregateAccess",
+        "RecordTransaction"
+      ],
+      "adapters": [
+        "MyBatisProductImageRepository",
+        "ImageIoProductImageContent"
+      ],
+      "status": "已迁移，未验证"
+    },
+    "templateUseCase": {
+      "application": "application.product.ProductTemplateService",
+      "ports": [
+        "ProductTemplateRepository",
+        "ProductTemplateTransaction"
+      ],
+      "adapters": [
+        "MyBatisProductTemplateRepository",
+        "SpringProductTemplateTransaction"
+      ],
+      "status": "已迁移，未验证"
+    },
+    "additionalUseCases": [
+      {
+        "application": "application.product.ProductAttributeService",
+        "ports": [
+          "ProductAttributeRepository",
+          "ProductAttributeTransaction",
+          "AttributeRuleContent"
+        ],
+        "adapters": [
+          "MyBatisProductAttributeRepository",
+          "SpringProductAttributeTransaction",
+          "JacksonAttributeRuleContent"
+        ],
+        "status": "已迁移，未验证"
+      },
+      {
+        "application": "application.product.ProductCatalogService",
+        "ports": [
+          "ProductCatalogRepository",
+          "ProductCatalogTransaction"
+        ],
+        "adapters": [
+          "MyBatisProductCatalogRepository",
+          "SpringProductCatalogTransaction"
+        ],
+        "status": "已迁移，未验证"
+      },
+      {
+        "application": "application.product.ProductStructureService",
+        "ports": [
+          "ProductStructureRepository",
+          "ProductStructureTransaction",
+          "ProductAggregateAccess",
+          "AttributeRuleContent"
+        ],
+        "adapters": [
+          "MyBatisProductStructureRepository",
+          "SpringProductStructureTransaction"
+        ],
+        "status": "已迁移，未验证"
+      }
+    ]
+  },
+  "personnelRepositoryMethods": [
+    {
+      "from": "statement1",
+      "to": "readDetailContent"
+    },
+    {
+      "from": "statement2",
+      "to": "createDetail"
+    },
+    {
+      "from": "statement3",
+      "to": "updateDetail"
+    },
+    {
+      "from": "statement4",
+      "to": "deleteDetail"
+    },
+    {
+      "from": "statement5",
+      "to": "createAssignment"
+    },
+    {
+      "from": "statement6",
+      "to": "updateAssignment"
+    },
+    {
+      "from": "statement7",
+      "to": "deleteAssignment"
+    },
+    {
+      "from": "statement8",
+      "to": "countActiveIdentity"
+    },
+    {
+      "from": "statement9",
+      "to": "advanceVersion"
+    }
+  ],
+  "remaining": [
+    "固定仓储端口的语义参数、稳定类型和中文参数契约细化",
+    "商品集成夹具中旧构造器与统一权限事实装配迁移",
+    "全仓剩余边界完成后统一验证；当前未编译、未运行测试、未验收"
+  ],
+  "preservedMigrationUseCase": {
+    "from": "application.product.ProductStructureService(ProductStructurePort)",
+    "to": "application.product.ProductStructureMigrationService(ProductStructurePort)",
+    "reason": "与规格/SKU/组合结构管理用例明确区分，保留原纯迁移流程"
+  },
+  "latest": "商品主档、审批和打印运行/场景/输出主要执行器已迁入纯应用层；精确对照见商品主档审批打印执行器迁移.json"
+}

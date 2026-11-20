@@ -1,4 +1,5 @@
 package com.appnexus.platform.security;
+import com.appnexus.platform.identity.port.AccountRepository;
 import java.util.List;
 import org.springframework.http.CacheControl;
 import org.springframework.http.ResponseEntity;
@@ -10,8 +11,8 @@ import org.springframework.web.bind.annotation.*;
 @EndpointPolicy(EndpointPolicy.Domain.ACCOUNT_SELF_SERVICE)
 @RequestMapping("/bff")
 public class SessionController {
-    private final com.appnexus.platform.identity.AccountRepository accounts;
-    public SessionController(com.appnexus.platform.identity.AccountRepository accounts) { this.accounts = accounts; }
+    private final com.appnexus.platform.identity.port.AccountRepository accounts;
+    public SessionController(com.appnexus.platform.identity.port.AccountRepository accounts) { this.accounts = accounts; }
     public record SessionView(String username, String nickname, String avatar,
             List<String> roles, List<String> permissions) {}
     public record CsrfView(String token, String headerName) {}

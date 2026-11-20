@@ -1,7 +1,7 @@
 package com.appnexus.masterdata.domain.product;
 
 import static org.assertj.core.api.Assertions.*;
-import com.appnexus.masterdata.MasterData.Rejection;
+import com.appnexus.masterdata.api.masterdata.MasterData.Rejection;
 import org.junit.jupiter.api.Test;
 
 /** 在无数据库和 Spring 的条件下验证生命周期约束，阻止分层迁移放宽归档及状态限制。 */

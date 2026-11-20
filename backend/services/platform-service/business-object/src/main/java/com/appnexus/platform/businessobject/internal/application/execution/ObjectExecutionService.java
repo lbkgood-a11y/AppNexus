@@ -48,6 +48,8 @@ public final class ObjectExecutionService implements BusinessObjectExecution {
     var descriptor=provider.descriptor();
     var operation=descriptor.operations().stream().filter(value->value.operationCode().equals(request.operationCode()))
         .findFirst().orElseThrow(()->new Rejection(403,"BUSINESS_OBJECT_OPERATION_UNAVAILABLE"));
+    // 仅专用API的操作没有公共命令协议；在读取记录或创建关联解析前拒绝，不伪造默认输入。
+    if(operation.interaction().capabilities().isEmpty())throw new Rejection(403,"BUSINESS_OBJECT_OPERATION_API_ONLY");
     if(!operation.operationId().equals(request.operationId())&&operation.aliases().stream().noneMatch(alias->alias.operationId().equals(request.operationId())))
       throw new Rejection(403,"BUSINESS_OBJECT_OPERATION_UNAVAILABLE");
     if(!platform.active(context)||!platform.operationAllowed(context,operation.operationId(),operation.permissionCode()))throw new Rejection(403,"BUSINESS_OBJECT_ACCESS_DENIED");

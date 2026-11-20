@@ -1,6 +1,7 @@
 package com.appnexus.platform;
+import com.appnexus.masterdata.application.masterdata.MasterDataService;
+import com.appnexus.masterdata.api.masterdata.MasterData;
 import com.appnexus.platform.configuration.*;
-import com.appnexus.platform.persistence.configuration.StandardDictionaryDefaults;
 import com.appnexus.masterdata.*;
 import com.appnexus.platform.tenant.VerifiedTenantContext;
 import java.util.*;

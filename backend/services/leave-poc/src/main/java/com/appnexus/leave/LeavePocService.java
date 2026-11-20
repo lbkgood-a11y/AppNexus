@@ -1,4 +1,5 @@
 package com.appnexus.leave;
+import com.appnexus.leave.adapter.persistence.LeaveRecordMapper;
 
 import com.appnexus.contracts.workflow.*;
 import com.appnexus.contracts.businessobject.*;

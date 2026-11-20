@@ -1,10 +1,11 @@
 package com.appnexus.platform;
+import com.appnexus.contracts.businessobject.BusinessObjects.*;
+import com.appnexus.leave.adapter.web.LeavePocController;
 
 import com.appnexus.platform.bootstrap.businessobject.BusinessObjectConfiguration;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
-import com.appnexus.contracts.businessobject.BusinessObjects.*;
 import com.appnexus.leave.LeavePocService;
 import java.util.*;
 import org.junit.jupiter.api.Test;
@@ -17,7 +18,7 @@ class BusinessObjectIntegrationValidationTest {
   private Provider provider(Operation action){return ()->new Descriptor("LeaveRequest","请假","Leave","leave",1,Category.TRANSACTION,List.of(),List.of(action));}
   @Test void registeredPageAndHandlerPass() throws Exception {
     var mappings=mock(RequestMappingHandlerMapping.class);
-    when(mappings.getHandlerMethods()).thenReturn(Collections.singletonMap(RequestMappingInfo.paths("/api/leave-poc/{id}/submit").methods(RequestMethod.POST).build(),new org.springframework.web.method.HandlerMethod(mock(com.appnexus.leave.LeavePocController.class),com.appnexus.leave.LeavePocController.class.getMethod("submit",jakarta.servlet.http.HttpServletRequest.class,String.class,com.appnexus.leave.LeavePocController.SubmitOperation.class))));
+    when(mappings.getHandlerMethods()).thenReturn(Collections.singletonMap(RequestMappingInfo.paths("/api/leave-poc/{id}/submit").methods(RequestMethod.POST).build(),new org.springframework.web.method.HandlerMethod(mock(com.appnexus.leave.adapter.web.LeavePocController.class),com.appnexus.leave.adapter.web.LeavePocController.class.getMethod("submit",jakarta.servlet.http.HttpServletRequest.class,String.class,com.appnexus.leave.adapter.web.LeavePocController.SubmitOperation.class))));
     assertThatCode(()->new BusinessObjectIntegrationValidation().validateDocumentIntegration(List.of(provider(LeavePocService.SUBMIT_OPERATION)),mappings).afterSingletonsInstantiated()).doesNotThrowAnyException();
   }
   @Test void missingHandlerFailsClosed(){

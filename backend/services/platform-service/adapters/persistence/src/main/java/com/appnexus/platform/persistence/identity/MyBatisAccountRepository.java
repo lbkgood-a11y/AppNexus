@@ -1,4 +1,6 @@
 package com.appnexus.platform.persistence.identity;
+import com.appnexus.platform.audit.port.SecurityLogRepository;
+import com.appnexus.platform.identity.port.AccountRepository;
 import com.appnexus.platform.identity.*;
 import java.util.*;
 import org.springframework.stereotype.Repository;
@@ -7,8 +9,8 @@ import org.springframework.dao.DuplicateKeyException;
 @Repository
 public class MyBatisAccountRepository implements AccountRepository {
     private final AccountMapper mapper;
-    private final com.appnexus.platform.audit.SecurityLogRepository logs;
-    public MyBatisAccountRepository(AccountMapper mapper, com.appnexus.platform.audit.SecurityLogRepository logs) {
+    private final com.appnexus.platform.audit.port.SecurityLogRepository logs;
+    public MyBatisAccountRepository(AccountMapper mapper, com.appnexus.platform.audit.port.SecurityLogRepository logs) {
         this.mapper = mapper; this.logs = logs;
     }
     public Optional<AccountCredentials> findByUsername(String username) { return convert(mapper.findByUsername(username)); }

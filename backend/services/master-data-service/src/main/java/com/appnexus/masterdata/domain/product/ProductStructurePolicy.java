@@ -1,6 +1,6 @@
 package com.appnexus.masterdata.domain.product;
 
-import com.appnexus.masterdata.MasterData.Rejection;
+import com.appnexus.masterdata.api.masterdata.MasterData.Rejection;
 import java.util.*;
 
 /** 商品结构切换的纯领域策略；输入是应用在父锁下重读的事实，不读取预检缓存或客户端快照。 */

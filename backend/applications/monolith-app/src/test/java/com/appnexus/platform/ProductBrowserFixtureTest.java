@@ -19,10 +19,10 @@ import org.springframework.jdbc.core.JdbcTemplate;
 class ProductBrowserFixtureTest extends DatabaseTestSupport {
  @Autowired JdbcTemplate jdbc;
  @Autowired com.appnexus.platform.persistence.organization.OrganizationAdministratorBootstrap bootstrap;
- @Autowired com.appnexus.masterdata.product.ProductCatalogService catalog;
- @Autowired com.appnexus.masterdata.product.ProductV1Service products;
- @Autowired com.appnexus.masterdata.product.ProductAttributeService attributes;
- @Autowired com.appnexus.masterdata.product.ProductTemplateService templates;
+ @Autowired com.appnexus.masterdata.application.product.ProductCatalogService catalog;
+ @Autowired com.appnexus.masterdata.application.product.ProductService products;
+ @Autowired com.appnexus.masterdata.application.product.ProductAttributeService attributes;
+ @Autowired com.appnexus.masterdata.application.product.ProductTemplateService templates;
  @Test void isolatedBrowserHost()throws Exception{
   UUID tenant=UUID.randomUUID(),account=UUID.randomUUID(),member=UUID.randomUUID();
   jdbc.update("INSERT INTO platform_tenant(id,name) VALUES(UUID_TO_BIN(?),'商品V1浏览器验收')",tenant.toString());
@@ -31,15 +31,15 @@ class ProductBrowserFixtureTest extends DatabaseTestSupport {
   bootstrap.initialize(tenant,member);
   // 一次性真实目录种子仅用于隔离浏览器验收，全部通过领域命令，不写共享库或伪造接口返回。
   var trusted=new com.appnexus.platform.tenant.VerifiedTenantContext(account,tenant,member,1);
-  var gram=catalog.createUnit(trusted,new com.appnexus.masterdata.product.CatalogData.UnitInput("QA-G","验收克","MASS",3,0));
-  catalog.createUnit(trusted,new com.appnexus.masterdata.product.CatalogData.UnitInput("QA-KG","验收千克","MASS",3,0));
-  var category=catalog.createCategory(trusted,new com.appnexus.masterdata.product.CatalogData.CategoryInput("QA-EXT","扩展验收分类",null,0));
-  var attribute=attributes.createAttribute(trusted,new com.appnexus.masterdata.product.ProductAttributeService.AttributeInput("diameter",null,0)).get("id");
-  var revision=attributes.createRevision(trusted,attribute,new com.appnexus.masterdata.product.ProductAttributeService.RevisionInput("验收直径","DECIMAL",gram.id(),2,"{}",0)).get("id");attributes.publishRevision(trusted,revision,1);
-  var template=templates.create(trusted,new com.appnexus.masterdata.product.ProductTemplateService.TemplateInput("QA-SPEC","验收规格模板","SPEC",0)).get("id");
-  var templateVersion=templates.createVersion(trusted,template,new com.appnexus.masterdata.product.ProductTemplateService.VersionInput("规格验收",List.of(new com.appnexus.masterdata.product.ProductTemplateService.ItemInput(attribute,revision,null,null,true,false,false,0)),0)).get("id");templates.publish(trusted,templateVersion,1);
+  var gram=catalog.createUnit(trusted,new com.appnexus.masterdata.api.product.ProductCatalogData.UnitInput("QA-G","验收克","MASS",3,0));
+  catalog.createUnit(trusted,new com.appnexus.masterdata.api.product.ProductCatalogData.UnitInput("QA-KG","验收千克","MASS",3,0));
+  var category=catalog.createCategory(trusted,new com.appnexus.masterdata.api.product.ProductCatalogData.CategoryInput("QA-EXT","扩展验收分类",null,0));
+  var attribute=attributes.createAttribute(trusted,new com.appnexus.masterdata.api.product.ProductAttributeData.AttributeInput("diameter",null,0)).get("id");
+  var revision=attributes.createRevision(trusted,attribute,new com.appnexus.masterdata.api.product.ProductAttributeData.RevisionInput("验收直径","DECIMAL",gram.id(),2,"{}",0)).get("id");attributes.publishRevision(trusted,revision,1);
+  var template=templates.create(trusted,new com.appnexus.masterdata.api.product.ProductTemplateData.TemplateInput("QA-SPEC","验收规格模板","SPEC",0)).get("id");
+  var templateVersion=templates.createVersion(trusted,template,new com.appnexus.masterdata.api.product.ProductTemplateData.VersionInput("规格验收",List.of(new com.appnexus.masterdata.api.product.ProductTemplateData.ItemInput(attribute,revision,null,null,true,false,false,0)),0)).get("id");templates.publish(trusted,templateVersion,1);
   var slots=new LinkedHashMap<String,String>();for(String purpose:List.of("BASIC","SPEC","QUALITY","EXTENSION"))slots.put(purpose,null);slots.put("SPEC",templateVersion);
-  var config=catalog.publish(trusted,category.id(),new com.appnexus.masterdata.product.CatalogData.Publish(slots,false,0));
+  var config=catalog.publish(trusted,category.id(),new com.appnexus.masterdata.api.product.ProductCatalogData.Publish(slots,false,0));
   products.create(trusted,new com.appnexus.masterdata.api.product.ProductMainData.Input("QA-EXT-P","扩展浏览器验收商品",null,category.id(),config.id(),"PHYSICAL",gram.id(),null,null,null,null));
 
   var session=sessionRepository.createSession();

@@ -1,6 +1,6 @@
 package com.appnexus.masterdata.application.product;
 import com.appnexus.masterdata.api.product.ProductStructureData.Migration;
-import com.appnexus.masterdata.MasterData.Rejection;
+import com.appnexus.masterdata.api.masterdata.MasterData.Rejection;
 import java.util.*;
 /** 结构预检应用；只组合真实快照、退出确认和短期证明，不创建执行任务。 */
 public final class ProductPreviewService {

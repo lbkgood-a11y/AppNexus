@@ -1,4 +1,5 @@
 package com.appnexus.platform.security;
+import com.appnexus.platform.identity.port.AccountRepository;
 
 import com.appnexus.platform.identity.*;
 import jakarta.servlet.http.*;
@@ -97,7 +98,7 @@ public class AccountSettingsController {
             .orElseThrow(() -> problem(HttpStatus.UNAUTHORIZED, "SESSION_EXPIRED", "登录已失效，请重新登录"));
     }
     /** 使用标准 ProblemDetail 返回稳定业务码；不回显任何凭据或请求内容。 */
-    static org.springframework.web.ErrorResponseException problem(HttpStatus status, String code, String detail) {
+    public static org.springframework.web.ErrorResponseException problem(HttpStatus status, String code, String detail) {
         var body = ProblemDetail.forStatusAndDetail(status, detail);
         body.setTitle(status.getReasonPhrase()); body.setProperty("code", code);
         return new org.springframework.web.ErrorResponseException(status, body, null);

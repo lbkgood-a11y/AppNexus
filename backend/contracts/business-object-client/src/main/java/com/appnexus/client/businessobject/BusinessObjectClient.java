@@ -1,6 +1,6 @@
 package com.appnexus.client.businessobject;
-
 import com.appnexus.contracts.businessobject.BusinessObjects.*;
+
 import com.appnexus.contracts.printing.BusinessPrinting;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.net.URI;

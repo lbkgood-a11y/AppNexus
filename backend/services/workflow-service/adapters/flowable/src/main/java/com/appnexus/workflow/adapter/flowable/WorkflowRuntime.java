@@ -1,4 +1,5 @@
 package com.appnexus.workflow.adapter.flowable;
+import com.appnexus.workflow.adapter.persistence.WorkflowRecordMapper;
 
 import static com.appnexus.workflow.core.WorkflowModel.*;
 

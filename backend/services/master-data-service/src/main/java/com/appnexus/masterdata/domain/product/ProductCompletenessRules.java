@@ -1,5 +1,5 @@
 package com.appnexus.masterdata.domain.product;
-import com.appnexus.masterdata.MasterData.Rejection;
+import com.appnexus.masterdata.api.masterdata.MasterData.Rejection;
 import java.util.List;
 /** 完整性状态纯规则；事实由可信租户查询提供，不在领域访问数据库或时钟。 */
 public final class ProductCompletenessRules {

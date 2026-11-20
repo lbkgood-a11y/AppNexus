@@ -1,4 +1,5 @@
 package com.appnexus.platform;
+import com.appnexus.platform.security.operation.OperationRegistry;
 
 import com.appnexus.platform.configuration.MenuManagement;
 import com.appnexus.platform.configuration.NavigationQuery;

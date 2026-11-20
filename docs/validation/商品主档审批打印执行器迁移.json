@@ -1,0 +1,62 @@
+{
+  "date": "2026-11-20",
+  "status": "已实施迁移，未编译或运行验证",
+  "changes": [
+    {
+      "from": "com.appnexus.masterdata.product.ProductService",
+      "to": "com.appnexus.masterdata.application.product.ProductService",
+      "responsibility": "主档、预览、迁移、历史保全的纯应用协调"
+    },
+    {
+      "from": "com.appnexus.masterdata.product.ProductApprovalService",
+      "to": "com.appnexus.masterdata.application.product.ProductApprovalService",
+      "responsibility": "审批提交与原任务资格的纯应用协调"
+    },
+    {
+      "from": "ProductApprovalService Provider/runtime/recordMapping",
+      "to": "com.appnexus.masterdata.adapter.integration.product.ProductApprovalDeclaration",
+      "responsibility": "原唯一审批对象声明和公共运行接入，ID及版本保持"
+    },
+    {
+      "from": "com.appnexus.masterdata.adapter.persistence.MyBatisProductCompleteness",
+      "to": "com.appnexus.masterdata.application.product.ProductCompletenessService + adapter.persistence.MyBatisProductCompletenessFacts",
+      "responsibility": "业务完整性判断与固定SQL事实分离"
+    },
+    {
+      "from": "com.appnexus.printing.adapter.persistence.PrintOutputs",
+      "to": "com.appnexus.printing.application.PrintOutputService",
+      "responsibility": "原统一输出、请求去重、预览确认与完整事务"
+    },
+    {
+      "from": "com.appnexus.printing.adapter.persistence.PrintFlow",
+      "to": "com.appnexus.printing.application.PrintSceneService",
+      "responsibility": "原场景、本人单据、契约与代理队列协调"
+    },
+    {
+      "from": "com.appnexus.printing.adapter.persistence.PrintRuntime",
+      "to": "com.appnexus.printing.application.PrintRuntimeService",
+      "responsibility": "原模板、设备、任务、租约、回执、附件业务协调"
+    },
+    {
+      "from": "PrintFlow JSON业务校验",
+      "to": "com.appnexus.printing.core.PrintDataPolicy",
+      "responsibility": "消费JDK JSON值的字段契约纯规则"
+    },
+    {
+      "from": "PrintRuntime 模板field校验",
+      "to": "com.appnexus.printing.core.PrintTemplateReferences",
+      "responsibility": "消费JDK JSON值的模板引用纯规则"
+    },
+    {
+      "from": "com.appnexus.printing.adapter.persistence.PrintJson",
+      "to": "com.appnexus.printing.adapter.codec.PrintJson",
+      "responsibility": "原编码、深度、大小、可执行键和URL限制的技术边界"
+    }
+  ],
+  "remaining": [
+    "固定仓储端口的语义参数、稳定类型和中文参数契约细化",
+    "商品集成夹具的旧构造器、MyBatis资源和统一授权装配迁移",
+    "声明字符串绑定与实际路由/运行接线逐对象复核",
+    "全仓其他未迁移边界完成后统一执行门禁，当前不得标记验收或部署完成"
+  ]
+}

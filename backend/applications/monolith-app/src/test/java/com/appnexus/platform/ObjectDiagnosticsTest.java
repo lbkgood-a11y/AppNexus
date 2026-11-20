@@ -1,4 +1,5 @@
 package com.appnexus.platform;
+import com.appnexus.platform.appapi.operation.ObjectDiagnosticsController;
 import com.appnexus.contracts.operation.ObjectDiagnostics;
 import com.appnexus.platform.tenant.VerifiedTenantContext;
 import java.util.*;

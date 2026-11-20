@@ -93,4 +93,15 @@ class ObjectExecutionServiceTest {
     assertThatThrownBy(()->service.execute(context,request)).hasMessage("DATA_FIELD_REQUIRED");
     verify(driver,never()).execute(any(),any(),any(),any());
   }
+  /** 专用API没有公共命令协议时，应在正文读取、绑定解析及能力写入前失败关闭。 */
+  @Test void apiOnlyOperationNeverReadsResolvesOrDispatches(){
+    var apiOperation=new Operation("edit","编辑","Edit","test:edit","ApiOnly.edit",null,List.of(),new InteractionContract("ApiOnly.edit",2,"ApiOnly","edit","编辑","Edit",InteractionContract.Trigger.USER_ACTION,List.of()));
+    Provider apiProvider=new Provider(){
+      public Descriptor descriptor(){return new Descriptor("ApiOnly","专用入口","API only","test",2,Category.MASTER_DATA,List.of(),List.of(apiOperation));}
+      public BusinessObjectRuntime runtime(){return runtime;}
+    };
+    var executor=new ObjectExecutionService(List.of(apiProvider),List.of(),bindings,transaction,platform);
+    assertThatThrownBy(()->executor.execute(context,new BusinessObjectExecution.Request("ApiOnly","record","edit","ApiOnly.edit",0))).hasMessage("BUSINESS_OBJECT_OPERATION_API_ONLY");
+    verifyNoInteractions(runtime,bindings,driver,platform);
+  }
 }

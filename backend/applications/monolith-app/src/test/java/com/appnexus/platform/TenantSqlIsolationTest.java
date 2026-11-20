@@ -1,4 +1,5 @@
 package com.appnexus.platform;
+import com.appnexus.platform.organization.port.OrganizationUnitRepository;
 import java.util.*;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,7 +31,7 @@ class TenantSqlIsolationTest extends DatabaseTestSupport {
   UUID tenant=UUID.randomUUID(),foreign=UUID.randomUUID();context(tenant);
   byte[] bytes=java.nio.ByteBuffer.allocate(16).putLong(foreign.getMostSignificantBits()).putLong(foreign.getLeastSignificantBits()).array();
   try(var session=factory.openSession()){
-   assertThatThrownBy(()->session.getMapper(com.appnexus.masterdata.adapter.jdbc.ProductRecordMapper.class).load(bytes,UUID.randomUUID().toString(),false))
+   assertThatThrownBy(()->session.getMapper(com.appnexus.masterdata.adapter.persistence.ProductRecordMapper.class).load(bytes,UUID.randomUUID().toString(),false))
     .hasStackTraceContaining("Mapper tenant does not match verified context");
   }finally{RequestContextHolder.resetRequestAttributes();}
  }
@@ -96,7 +97,7 @@ class TenantSqlIsolationTest extends DatabaseTestSupport {
    context(a);session.clearCache();assertThat(mapper.find(parameters).get("value")).isEqualTo("A-updated");
   } finally {RequestContextHolder.resetRequestAttributes();}
  }
- @org.springframework.beans.factory.annotation.Autowired com.appnexus.platform.organization.OrganizationUnitRepository units;
+ @org.springframework.beans.factory.annotation.Autowired com.appnexus.platform.organization.port.OrganizationUnitRepository units;
  @org.springframework.beans.factory.annotation.Autowired com.appnexus.platform.organization.OrganizationStructure structure;
  @org.springframework.beans.factory.annotation.Autowired com.appnexus.platform.persistence.organization.OrganizationAdministratorBootstrap organizationBootstrap;
  /** 类型树拒绝循环移动和使用中类型停用，证明核心生命周期约束在正式 MySQL 上生效。 */

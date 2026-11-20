@@ -1,4 +1,5 @@
 package com.appnexus.platform;
+import com.appnexus.platform.audit.port.SecurityLogRepository;
 
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -9,7 +10,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import com.appnexus.platform.identity.AccountRepository;
+import com.appnexus.platform.identity.port.AccountRepository;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -122,5 +123,5 @@ class AccountSettingsTest extends DatabaseTestSupport {
             .andExpect(status().isBadRequest());
         mvc.perform(get("/bff/account/security-logs")).andExpect(status().isUnauthorized());
     }
-    @Autowired com.appnexus.platform.audit.SecurityLogRepository logs;
+    @Autowired com.appnexus.platform.audit.port.SecurityLogRepository logs;
 }

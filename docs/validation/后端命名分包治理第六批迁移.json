@@ -1,0 +1,8 @@
+{
+  "mapperNaming": "全仓 SqlMapper 后缀统一为 Mapper",
+  "printModule": {
+    "from": "print-jdbc-adapter",
+    "to": "print-persistence-adapter"
+  },
+  "status": "迁移中，未统一验证"
+}

@@ -73,5 +73,6 @@
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-sql</artifactId>
     </dependency>
-  <dependency><groupId>com.appnexus</groupId><artifactId>platform-audit</artifactId><version>${project.version}</version></dependency><dependency><groupId>com.appnexus</groupId><artifactId>platform-tenant</artifactId><version>${project.version}</version></dependency></dependencies>
+  <dependency><groupId>com.appnexus</groupId><artifactId>platform-audit</artifactId><version>${project.version}</version></dependency><dependency><groupId>com.appnexus</groupId><artifactId>platform-tenant</artifactId><version>${project.version}</version></dependency><!-- 职责迁移期间显式连接安全入口契约及存储实现；业务端口继续逐用例拆分。 -->
+<dependency><groupId>com.appnexus</groupId><artifactId>platform-persistence-adapter</artifactId><version>${project.version}</version></dependency></dependencies>
 </project>

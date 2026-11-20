@@ -1,6 +1,6 @@
 package com.appnexus.platform;
 
-import com.appnexus.masterdata.BusinessPartnerDeclaration;
+import com.appnexus.masterdata.adapter.integration.partner.BusinessPartnerDeclaration;
 import com.appnexus.platform.authorization.*;
 import com.appnexus.platform.persistence.platformscope.*;
 import java.util.*;

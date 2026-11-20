@@ -1,4 +1,5 @@
 package com.appnexus.platform.security;
+import com.appnexus.platform.persistence.audit.AuditQueriesMapper;
 
 import com.appnexus.platform.authorization.*;
 import com.appnexus.platform.tenant.*;
@@ -13,11 +14,11 @@ public class UnifiedAudit {
     public record Entry(String source,String eventId,String actor,String action,String target,String traceId,Integer status,Instant occurredAt){}
     /** 固定分页契约，items/total 使用完全一致的租户边界。 */
     public record Page(List<Entry> items,long total,int page,int pageSize){}
-    private final UnifiedAuditMapper mapper;
+    private final AuditQueriesMapper mapper;
     private final PlatformAdministration platform;
     private final AccessAuthorization authorization;
     private final TenantAccess tenants;
-    public UnifiedAudit(UnifiedAuditMapper mapper,PlatformAdministration platform,AccessAuthorization authorization,TenantAccess tenants){this.mapper=mapper;this.platform=platform;this.authorization=authorization;this.tenants=tenants;}
+    public UnifiedAudit(AuditQueriesMapper mapper,PlatformAdministration platform,AccessAuthorization authorization,TenantAccess tenants){this.mapper=mapper;this.platform=platform;this.authorization=authorization;this.tenants=tenants;}
     /**
      * 平台查询可选目标租户，不读取全局个人安全日志或凭据。
      * @param actor 权威平台操作者 UUID

@@ -1,4 +1,9 @@
 package com.appnexus.platform;
+import com.appnexus.masterdata.adapter.web.product.ProductUnitConversionController;
+import com.appnexus.masterdata.adapter.web.product.ProductStructureController;
+import com.appnexus.masterdata.adapter.web.product.ProductImageController;
+import com.appnexus.masterdata.adapter.web.product.ProductController;
+import com.appnexus.masterdata.adapter.web.product.ProductApprovalController;
 
 import com.appnexus.masterdata.product.*;
 import org.springdoc.core.customizers.GlobalOperationCustomizer;

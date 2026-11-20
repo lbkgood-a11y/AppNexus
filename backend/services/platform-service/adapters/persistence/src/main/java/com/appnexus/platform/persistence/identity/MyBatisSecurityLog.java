@@ -1,4 +1,5 @@
 package com.appnexus.platform.persistence.identity;
+import com.appnexus.platform.audit.port.SecurityLogRepository;
 import com.appnexus.platform.audit.*;
 import java.util.*;
 import org.springframework.stereotype.Repository;

@@ -1,4 +1,5 @@
 package com.appnexus.platform;
+import com.appnexus.platform.security.operation.OperationRegistry;
 import com.appnexus.contracts.operation.OperationBinding;
 import com.appnexus.platform.security.EndpointOperation;
 import java.util.*;

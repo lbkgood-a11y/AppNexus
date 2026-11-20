@@ -1,0 +1,6 @@
+/**
+ * 主数据职责分包。
+ * <p>公开契约、应用、领域、技术适配与装配按本包职责隔离；禁止跨业务上下文内部实现和私表访问。
+ * <p>当前状态：类型归属已迁移，存量用例仍须依实际调用链复核，尚未统一运行验证。
+ */
+package com.appnexus.masterdata.adapter.persistence.masterdata;

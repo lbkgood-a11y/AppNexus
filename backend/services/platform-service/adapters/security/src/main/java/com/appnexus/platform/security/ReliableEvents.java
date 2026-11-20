@@ -1,4 +1,5 @@
 package com.appnexus.platform.security;
+import com.appnexus.platform.persistence.eventing.OutboxMapper;
 
 import java.util.*;
 
@@ -11,13 +12,13 @@ import org.springframework.transaction.annotation.*;
  */
 @Service
 public class ReliableEvents {
-    private final ReliableEventsSqlMapper statements;
+    private final OutboxMapper statements;
 
     /** 零 UUID 为平台级事件边界，不允许租户业务使用其绕过隔离。 */
     public static final UUID PLATFORM=new UUID(0,0);
     private static final Set<String> TYPES=Set.of("AUTHORITY_INVALIDATED","INTEGRATION_AUTHORITY_CHANGED");
     
-    public ReliableEvents(ReliableEventsSqlMapper statements){this.statements=statements;}
+    public ReliableEvents(OutboxMapper statements){this.statements=statements;}
     /** 租约令牌必须与领取时一致；租户和聚合均由数据库记录返回。 */
     public record Event(UUID id,UUID tenant,String type,String aggregate,int attempts,String lease){}
     /**

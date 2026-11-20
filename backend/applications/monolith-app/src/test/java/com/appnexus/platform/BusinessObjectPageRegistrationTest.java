@@ -1,7 +1,9 @@
 package com.appnexus.platform;
+import com.appnexus.masterdata.adapter.integration.partner.BusinessPartnerDeclaration;
+import com.appnexus.masterdata.adapter.web.masterdata.BusinessPartnerController;
 
 import static org.assertj.core.api.Assertions.*;
-import com.appnexus.leave.LeavePocController;
+import com.appnexus.leave.adapter.web.LeavePocController;
 import com.appnexus.leave.LeavePocService;
 import com.appnexus.platform.configuration.NavigationPages;
 import org.junit.jupiter.api.Test;
@@ -20,9 +22,9 @@ class BusinessObjectPageRegistrationTest {
   }
   /** 客商Controller只引用统一声明；对象注解和重复操作参数均禁止重新引入。 */
   @Test void partnerControllerReferencesOneAuthoritativeDeclaration(){
-    var descriptor=new com.appnexus.masterdata.BusinessPartnerDeclaration().descriptor();
-    assertThat(com.appnexus.masterdata.BusinessPartnerController.class.getAnnotation(com.appnexus.contracts.operation.BusinessObjectType.class)).isNull();
-    var bindings=java.util.Arrays.stream(com.appnexus.masterdata.BusinessPartnerController.class.getMethods()).flatMap(method->java.util.Arrays.stream(method.getAnnotationsByType(com.appnexus.contracts.operation.OperationBinding.class))).toList();
+    var descriptor=new com.appnexus.masterdata.adapter.integration.partner.BusinessPartnerDeclaration().descriptor();
+    assertThat(com.appnexus.masterdata.adapter.web.masterdata.BusinessPartnerController.class.getAnnotation(com.appnexus.contracts.operation.BusinessObjectType.class)).isNull();
+    var bindings=java.util.Arrays.stream(com.appnexus.masterdata.adapter.web.masterdata.BusinessPartnerController.class.getMethods()).flatMap(method->java.util.Arrays.stream(method.getAnnotationsByType(com.appnexus.contracts.operation.OperationBinding.class))).toList();
     assertThat(bindings).hasSize(descriptor.operations().size());
     for(var operation:descriptor.operations())assertThat(bindings).anySatisfy(binding->{
       assertThat(binding.id()).isEqualTo(operation.operationId());assertThat(binding.reference()).isTrue();
@@ -31,7 +33,7 @@ class BusinessObjectPageRegistrationTest {
   }
   /** 所有统一声明页面键必须映射真实路由，禁止将页面键拼成URL。 */
   @Test void unifiedObjectPagesUseRegisteredRoutes(){
-    var objects=java.util.List.of(new com.appnexus.masterdata.BusinessPartnerDeclaration().descriptor(),new com.appnexus.platform.security.OrganizationUnitDeclaration().descriptor(),new com.appnexus.platform.security.AccountDeclaration().descriptor(),new com.appnexus.platform.security.TenantMemberDeclaration().descriptor(),new com.appnexus.platform.security.PersonDirectoryDeclaration().descriptor());
+    var objects=java.util.List.of(new com.appnexus.masterdata.adapter.integration.partner.BusinessPartnerDeclaration().descriptor(),new com.appnexus.platform.security.OrganizationUnitDeclaration().descriptor(),new com.appnexus.platform.security.AccountDeclaration().descriptor(),new com.appnexus.platform.security.TenantMemberDeclaration().descriptor(),new com.appnexus.platform.security.PersonDirectoryDeclaration().descriptor());
     for(var object:objects)for(var action:object.operations()){
       var page=NavigationPages.find(action.pageOperation().pageKey());
       assertThat(page).as(action.operationId()).isNotNull();

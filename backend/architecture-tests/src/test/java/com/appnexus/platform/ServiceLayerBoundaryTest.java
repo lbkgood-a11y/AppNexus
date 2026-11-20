@@ -1,6 +1,5 @@
 package com.appnexus.platform;
 
-import com.appnexus.platform.managementapi.businessobject.BusinessObjectController;
 
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -31,12 +30,12 @@ class ServiceLayerBoundaryTest {
         "com.appnexus.platform.persistence.organization.MyBatisOrganizationMembership",
         "com.appnexus.platform.persistence.organization.ScopedOrganizationSummary",
         "com.appnexus.platform.persistence.platformscope.TransactionalAuthorityEvents",
-        "com.appnexus.masterdata.adapter.jdbc.MyBatisUnitConversionStore",
-        "com.appnexus.masterdata.adapter.jdbc.MyBatisProductRecords",
-        "com.appnexus.masterdata.adapter.jdbc.MyBatisProductCompleteness",
-        "com.appnexus.masterdata.adapter.jdbc.MyBatisProductSnapshot",
-        "com.appnexus.masterdata.adapter.jdbc.MyBatisProductHistory",
-        "com.appnexus.masterdata.adapter.jdbc.MyBatisProductList")){
+        "com.appnexus.masterdata.adapter.persistence.MyBatisUnitConversionRepository",
+        "com.appnexus.masterdata.adapter.persistence.MyBatisProductRepository",
+        "com.appnexus.masterdata.adapter.persistence.MyBatisProductCompletenessFacts",
+        "com.appnexus.masterdata.adapter.persistence.MyBatisProductSnapshot",
+        "com.appnexus.masterdata.adapter.persistence.MyBatisProductHistory",
+        "com.appnexus.masterdata.adapter.persistence.MyBatisProductListQueries")){
       assertTrue(classes.contain(name),()->"缺少已迁移存储："+name);
       noClasses().that().haveFullyQualifiedName(name).should().dependOnClassesThat().resideInAnyPackage("org.springframework.jdbc..").check(classes);
     }
@@ -78,7 +77,7 @@ class ServiceLayerBoundaryTest {
             "com.appnexus.workflow.application..", "com.appnexus.printing.application..")
         .or().haveFullyQualifiedName("com.appnexus.platform.businessobject.CodingManagement")
         .or().haveFullyQualifiedName("com.appnexus.platform.businessobject.BusinessObjectUseCases")
-        .or().haveFullyQualifiedName("com.appnexus.masterdata.MasterDataService")
+        .or().haveFullyQualifiedName("com.appnexus.masterdata.application.masterdata.MasterDataService")
         .should().dependOnClassesThat().resideInAnyPackage(
             "org.springframework..", "java.sql..", "javax.sql..",
             "com.fasterxml.jackson..", "tools.jackson..", "..adapter..", "..adapters..")
@@ -107,20 +106,20 @@ class ServiceLayerBoundaryTest {
         "com.appnexus.masterdata.domain.product.ProductLifecycle",
         "com.appnexus.masterdata.domain.product.ProductFilterRules",
         "com.appnexus.masterdata.domain.product.ProductCompletenessRules",
-        "com.appnexus.masterdata.application.product.ProductListReads",
-        "com.appnexus.masterdata.adapter.jdbc.MyBatisProductList",
-        "com.appnexus.masterdata.adapter.jdbc.MyBatisProductCompleteness",
+        "com.appnexus.masterdata.application.product.ProductListQueries",
+        "com.appnexus.masterdata.adapter.persistence.MyBatisProductListQueries",
+        "com.appnexus.masterdata.adapter.persistence.MyBatisProductCompletenessFacts",
         "com.appnexus.masterdata.domain.product.AttributeRulePolicy",
         "com.appnexus.masterdata.application.product.ProductCatalogQueryService",
-        "com.appnexus.masterdata.application.product.ProductCatalogReads",
-        "com.appnexus.masterdata.adapter.jdbc.MyBatisProductCatalogReads",
+        "com.appnexus.masterdata.application.product.ProductCatalogQueries",
+        "com.appnexus.masterdata.adapter.persistence.MyBatisProductCatalogQueries",
         "com.appnexus.masterdata.application.product.ProductPreviewService",
         "com.appnexus.masterdata.application.product.ProductPreviewPort",
-        "com.appnexus.masterdata.adapter.jdbc.MyBatisProductAttributes",
-        "com.appnexus.masterdata.adapter.jdbc.MyBatisProductHistory",
+        "com.appnexus.masterdata.adapter.persistence.MyBatisProductAttributes",
+        "com.appnexus.masterdata.adapter.persistence.MyBatisProductHistory",
         "com.appnexus.masterdata.application.product.ProductAttributePreparation",
         "com.appnexus.masterdata.application.product.ProductStructureService",
-        "com.appnexus.masterdata.adapter.jdbc.MyBatisProductSnapshot",
+        "com.appnexus.masterdata.adapter.persistence.MyBatisProductSnapshot",
         "com.appnexus.workflow.application.TaskReassignmentService",
         "com.appnexus.printing.application.TemplateEditingService",
         "com.appnexus.masterdata.application.product.ProductLifecycleService",
@@ -133,12 +132,12 @@ class ServiceLayerBoundaryTest {
         "com.appnexus.workflow.application.TaskCompletionPort",
         "com.appnexus.printing.application.TemplatePublicationService",
         "com.appnexus.printing.application.TemplatePublicationPort",
-        "com.appnexus.masterdata.MasterDataService",
+        "com.appnexus.masterdata.application.masterdata.MasterDataService",
         "com.appnexus.masterdata.domain.MasterDataRules",
-        "com.appnexus.masterdata.application.MasterDataRecords",
-        "com.appnexus.masterdata.application.product.ProductRecords",
+        "com.appnexus.masterdata.application.masterdata.MasterDataRepository",
+        "com.appnexus.masterdata.application.product.ProductRepository",
         "com.appnexus.masterdata.application.product.ProductUnitConversionService",
-        "com.appnexus.masterdata.application.product.UnitConversionStore",
+        "com.appnexus.masterdata.application.product.UnitConversionRepository",
         "com.appnexus.masterdata.domain.product.UnitConversionRules",
         "com.appnexus.workflow.application.WorkflowModelValidation",
         "com.appnexus.printing.core.PrintJobLifecycle",
@@ -160,10 +159,10 @@ class ServiceLayerBoundaryTest {
   /** 平台授权桥接必须通过公开租户端口，单位换算 HTTP 入口只依赖公开输入契约。 */
   @Test void migratedPlatformAndProductEntrypointsAvoidStorageTechnology() {
     noClasses().that().haveFullyQualifiedName("com.appnexus.platform.security.BusinessObjectPlatformBridge")
-        .or().haveFullyQualifiedName("com.appnexus.masterdata.product.ProductUnitConversionController")
+        .or().haveFullyQualifiedName("com.appnexus.masterdata.adapter.web.product.ProductUnitConversionController")
         .should().dependOnClassesThat().resideInAnyPackage(
             "org.springframework.jdbc..", "com.appnexus.platform.persistence..",
-            "com.appnexus.masterdata.application..", "com.appnexus.masterdata.adapter.jdbc..")
+            "com.appnexus.masterdata.application..", "com.appnexus.masterdata.adapter.persistence..")
         .check(classes);
   }
 

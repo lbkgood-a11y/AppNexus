@@ -1,4 +1,5 @@
 package com.appnexus.platform;
+import com.appnexus.platform.security.operation.OperationRegistry;
 
 import static org.assertj.core.api.Assertions.*;
 import java.util.*;
@@ -7,9 +8,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
-import com.appnexus.masterdata.MasterDataService;
+import com.appnexus.masterdata.application.masterdata.MasterDataService;
 import com.appnexus.platform.tenant.VerifiedTenantContext;
-import static com.appnexus.masterdata.MasterData.*;
+import static com.appnexus.masterdata.api.masterdata.MasterData.*;
 
 /** 组合上下文真实RBAC、对象登记和迁移验证；隔离测试租户，不修改管理员凭据。 */
 @SpringBootTest

@@ -1,6 +1,6 @@
 package com.appnexus.masterdata.application;
+import com.appnexus.masterdata.api.masterdata.MasterData.*;
 
-import com.appnexus.masterdata.MasterData.*;
 import com.appnexus.platform.tenant.VerifiedTenantContext;
 import java.util.Map;
 

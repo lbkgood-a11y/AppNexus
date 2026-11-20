@@ -1,0 +1,32 @@
+[
+  {
+    "source": "backend\\applications\\monolith-app\\src\\main\\java\\com\\appnexus\\platform\\OperationRegistry.java",
+    "destination": "backend\\services\\platform-service\\adapters\\security\\src\\main\\java\\com\\appnexus\\platform\\security\\operation\\OperationRegistry.java",
+    "old": "com.appnexus.platform.OperationRegistry",
+    "new": "com.appnexus.platform.security.operation.OperationRegistry"
+  },
+  {
+    "source": "backend\\applications\\monolith-app\\src\\main\\java\\com\\appnexus\\platform\\OperationCatalogController.java",
+    "destination": "backend\\services\\platform-service\\adapters\\platform-api\\src\\main\\java\\com\\appnexus\\platform\\managementapi\\operation\\OperationCatalogController.java",
+    "old": "com.appnexus.platform.OperationCatalogController",
+    "new": "com.appnexus.platform.managementapi.operation.OperationCatalogController"
+  },
+  {
+    "source": "backend\\applications\\monolith-app\\src\\main\\java\\com\\appnexus\\platform\\OperationDecisionController.java",
+    "destination": "backend\\services\\platform-service\\adapters\\app-api\\src\\main\\java\\com\\appnexus\\platform\\appapi\\operation\\OperationDecisionController.java",
+    "old": "com.appnexus.platform.OperationDecisionController",
+    "new": "com.appnexus.platform.appapi.operation.OperationDecisionController"
+  },
+  {
+    "source": "backend\\applications\\monolith-app\\src\\main\\java\\com\\appnexus\\platform\\OperationDiagnosticsController.java",
+    "destination": "backend\\services\\platform-service\\adapters\\platform-api\\src\\main\\java\\com\\appnexus\\platform\\managementapi\\operation\\OperationDiagnosticsController.java",
+    "old": "com.appnexus.platform.OperationDiagnosticsController",
+    "new": "com.appnexus.platform.managementapi.operation.OperationDiagnosticsController"
+  },
+  {
+    "source": "backend\\applications\\monolith-app\\src\\main\\java\\com\\appnexus\\platform\\ObjectDiagnosticsController.java",
+    "destination": "backend\\services\\platform-service\\adapters\\app-api\\src\\main\\java\\com\\appnexus\\platform\\appapi\\operation\\ObjectDiagnosticsController.java",
+    "old": "com.appnexus.platform.ObjectDiagnosticsController",
+    "new": "com.appnexus.platform.appapi.operation.ObjectDiagnosticsController"
+  }
+]

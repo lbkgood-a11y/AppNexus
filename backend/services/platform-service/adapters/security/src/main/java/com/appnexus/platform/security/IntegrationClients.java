@@ -1,4 +1,5 @@
 package com.appnexus.platform.security;
+import com.appnexus.platform.persistence.identity.integration.IntegrationClientMapper;
 
 import com.appnexus.platform.tenant.PlatformAdministration;
 import java.security.SecureRandom;
@@ -18,7 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
  */
 @Service
 public class IntegrationClients {
-    private final IntegrationClientsSqlMapper statements;
+    private final IntegrationClientMapper statements;
 
     /** 当前正式可执行的外部 API scope；打印代理 scope 只允许受控代理路径，不授予其他租户 API。 */
     public static final Set<String> SUPPORTED=Set.of("dictionaries:read","dictionary-references:write","print-agent:operate","print:submit","business-object:resolve");
@@ -27,7 +28,7 @@ public class IntegrationClients {
     private final PasswordEncoder encoder;
     private final PlatformAdministration platform;
     private final ReliableEvents events;
-    public IntegrationClients(RegisteredClientRepository clients,PasswordEncoder encoder,PlatformAdministration platform,ReliableEvents events,IntegrationClientsSqlMapper statements){this.statements=statements;
+    public IntegrationClients(RegisteredClientRepository clients,PasswordEncoder encoder,PlatformAdministration platform,ReliableEvents events,IntegrationClientMapper statements){this.statements=statements;
         this.clients=clients;this.encoder=encoder;this.platform=platform;this.events=events;
     }
     /** 管理摘要，不含密钥哈希或 Token；version 用于拒绝并发覆盖。 */

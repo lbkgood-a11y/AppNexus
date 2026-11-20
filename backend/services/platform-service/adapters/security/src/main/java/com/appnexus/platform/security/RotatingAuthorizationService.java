@@ -1,4 +1,6 @@
 package com.appnexus.platform.security;
+import com.appnexus.platform.audit.port.SecurityLogRepository;
+import com.appnexus.platform.persistence.identity.oauth.OAuthAuthorizationMapper;
 
 import java.nio.charset.StandardCharsets;
 import java.security.*;
@@ -18,14 +20,14 @@ import org.springframework.security.oauth2.server.authorization.authentication.*
  * 刷新在权威授权行锁中执行，旧摘要保留到族到期；重放删除对应设备授权，不撤销其他设备。
  */
 public final class RotatingAuthorizationService implements OAuth2AuthorizationService {
-    private final RotatingAuthorizationServiceSqlMapper statements;
+    private final OAuthAuthorizationMapper statements;
 
     /** 授权记录中的可信租户、成员和版本；由受控绑定用例写入，不能来自任意请求头。 */
     public static final String TENANT="appnexus.nativeTenant",MEMBER="appnexus.nativeMember",VERSION="appnexus.nativeVersion";
     private final OAuth2AuthorizationService delegate;
     
     private final TransactionTemplate transactions;
-    private final com.appnexus.platform.audit.SecurityLogRepository logs;
+    private final com.appnexus.platform.audit.port.SecurityLogRepository logs;
     /**
      * @param delegate 框架 JDBC OAuth 仓储，不替换标准协议及序列化边界
      * @param jdbc 仅访问全局账号、授权及刷新摘要表的内部数据库入口
@@ -33,7 +35,7 @@ public final class RotatingAuthorizationService implements OAuth2AuthorizationSe
      * @param logs 重放撤销审计端口；记录失败时拒绝刷新，不返回新凭证
      */
     public RotatingAuthorizationService(OAuth2AuthorizationService delegate,PlatformTransactionManager manager,
-            com.appnexus.platform.audit.SecurityLogRepository logs,RotatingAuthorizationServiceSqlMapper statements){this.statements=statements;
+            com.appnexus.platform.audit.port.SecurityLogRepository logs,OAuthAuthorizationMapper statements){this.statements=statements;
         this.delegate=delegate;this.transactions=new TransactionTemplate(manager);this.logs=logs;
         // 等待账号/授权锁后必须读取最新提交状态，不能使用首次查询创建的旧快照。
         this.transactions.setIsolationLevel(org.springframework.transaction.TransactionDefinition.ISOLATION_READ_COMMITTED);

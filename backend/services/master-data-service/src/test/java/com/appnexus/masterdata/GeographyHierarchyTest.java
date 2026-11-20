@@ -1,4 +1,7 @@
 package com.appnexus.masterdata;
+import com.appnexus.masterdata.domain.geography.GeographyHierarchy;
+import com.appnexus.masterdata.domain.geography.GeographyStandards;
+import com.appnexus.masterdata.api.masterdata.MasterData;
 
 import static org.assertj.core.api.Assertions.*;
 import java.util.*;

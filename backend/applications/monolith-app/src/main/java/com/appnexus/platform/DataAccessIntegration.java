@@ -1,4 +1,5 @@
 package com.appnexus.platform;
+import com.appnexus.platform.security.operation.OperationRegistry;
 
 import com.appnexus.platform.authorization.*;
 import java.util.*;

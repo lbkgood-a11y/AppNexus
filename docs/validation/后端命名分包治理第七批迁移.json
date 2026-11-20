@@ -1,0 +1,92 @@
+[
+  {
+    "old": "com.appnexus.masterdata.MasterData",
+    "new": "com.appnexus.masterdata.api.masterdata.MasterData",
+    "source": "backend\\services\\master-data-service\\src\\main\\java\\com\\appnexus\\masterdata\\MasterData.java",
+    "destination": "backend\\services\\master-data-service\\src\\main\\java\\com\\appnexus\\masterdata\\api\\masterdata\\MasterData.java"
+  },
+  {
+    "old": "com.appnexus.masterdata.MasterDataService",
+    "new": "com.appnexus.masterdata.application.masterdata.MasterDataService",
+    "source": "backend\\services\\master-data-service\\src\\main\\java\\com\\appnexus\\masterdata\\MasterDataService.java",
+    "destination": "backend\\services\\master-data-service\\src\\main\\java\\com\\appnexus\\masterdata\\application\\masterdata\\MasterDataService.java"
+  },
+  {
+    "old": "com.appnexus.masterdata.MasterDataConfiguration",
+    "new": "com.appnexus.masterdata.bootstrap.MasterDataConfiguration",
+    "source": "backend\\services\\master-data-service\\src\\main\\java\\com\\appnexus\\masterdata\\MasterDataConfiguration.java",
+    "destination": "backend\\services\\master-data-service\\src\\main\\java\\com\\appnexus\\masterdata\\bootstrap\\MasterDataConfiguration.java"
+  },
+  {
+    "old": "com.appnexus.masterdata.MasterDataErrors",
+    "new": "com.appnexus.masterdata.adapter.web.MasterDataErrors",
+    "source": "backend\\services\\master-data-service\\src\\main\\java\\com\\appnexus\\masterdata\\MasterDataErrors.java",
+    "destination": "backend\\services\\master-data-service\\src\\main\\java\\com\\appnexus\\masterdata\\adapter\\web\\MasterDataErrors.java"
+  },
+  {
+    "old": "com.appnexus.masterdata.MasterDataCachePolicy",
+    "new": "com.appnexus.masterdata.adapter.web.MasterDataCachePolicy",
+    "source": "backend\\services\\master-data-service\\src\\main\\java\\com\\appnexus\\masterdata\\MasterDataCachePolicy.java",
+    "destination": "backend\\services\\master-data-service\\src\\main\\java\\com\\appnexus\\masterdata\\adapter\\web\\MasterDataCachePolicy.java"
+  },
+  {
+    "old": "com.appnexus.masterdata.BusinessPartnerDeclaration",
+    "new": "com.appnexus.masterdata.adapter.integration.partner.BusinessPartnerDeclaration",
+    "source": "backend\\services\\master-data-service\\src\\main\\java\\com\\appnexus\\masterdata\\BusinessPartnerDeclaration.java",
+    "destination": "backend\\services\\master-data-service\\src\\main\\java\\com\\appnexus\\masterdata\\adapter\\integration\\partner\\BusinessPartnerDeclaration.java"
+  },
+  {
+    "old": "com.appnexus.masterdata.GeographyStandards",
+    "new": "com.appnexus.masterdata.domain.geography.GeographyStandards",
+    "source": "backend\\services\\master-data-service\\src\\main\\java\\com\\appnexus\\masterdata\\GeographyStandards.java",
+    "destination": "backend\\services\\master-data-service\\src\\main\\java\\com\\appnexus\\masterdata\\domain\\geography\\GeographyStandards.java"
+  },
+  {
+    "old": "com.appnexus.masterdata.GeographyHierarchy",
+    "new": "com.appnexus.masterdata.domain.geography.GeographyHierarchy",
+    "source": "backend\\services\\master-data-service\\src\\main\\java\\com\\appnexus\\masterdata\\GeographyHierarchy.java",
+    "destination": "backend\\services\\master-data-service\\src\\main\\java\\com\\appnexus\\masterdata\\domain\\geography\\GeographyHierarchy.java"
+  },
+  {
+    "old": "com.appnexus.masterdata.GeographyDefaults",
+    "new": "com.appnexus.masterdata.adapter.persistence.masterdata.GeographyDefaults",
+    "source": "backend\\services\\master-data-service\\src\\main\\java\\com\\appnexus\\masterdata\\GeographyDefaults.java",
+    "destination": "backend\\services\\master-data-service\\src\\main\\java\\com\\appnexus\\masterdata\\adapter\\persistence\\masterdata\\GeographyDefaults.java"
+  },
+  {
+    "old": "com.appnexus.masterdata.MyBatisGeographyCatalog",
+    "new": "com.appnexus.masterdata.adapter.persistence.masterdata.MyBatisGeographyCatalog",
+    "source": "backend\\services\\master-data-service\\src\\main\\java\\com\\appnexus\\masterdata\\MyBatisGeographyCatalog.java",
+    "destination": "backend\\services\\master-data-service\\src\\main\\java\\com\\appnexus\\masterdata\\adapter\\persistence\\masterdata\\MyBatisGeographyCatalog.java"
+  },
+  {
+    "old": "com.appnexus.masterdata.MyBatisMasterDataRelations",
+    "new": "com.appnexus.masterdata.adapter.persistence.masterdata.MyBatisMasterDataRelations",
+    "source": "backend\\services\\master-data-service\\src\\main\\java\\com\\appnexus\\masterdata\\MyBatisMasterDataRelations.java",
+    "destination": "backend\\services\\master-data-service\\src\\main\\java\\com\\appnexus\\masterdata\\adapter\\persistence\\masterdata\\MyBatisMasterDataRelations.java"
+  },
+  {
+    "old": "com.appnexus.masterdata.PartnerDetails",
+    "new": "com.appnexus.masterdata.adapter.persistence.masterdata.PartnerDetails",
+    "source": "backend\\services\\master-data-service\\src\\main\\java\\com\\appnexus\\masterdata\\PartnerDetails.java",
+    "destination": "backend\\services\\master-data-service\\src\\main\\java\\com\\appnexus\\masterdata\\adapter\\persistence\\masterdata\\PartnerDetails.java"
+  },
+  {
+    "old": "com.appnexus.masterdata.StorageHierarchy",
+    "new": "com.appnexus.masterdata.adapter.persistence.masterdata.StorageHierarchy",
+    "source": "backend\\services\\master-data-service\\src\\main\\java\\com\\appnexus\\masterdata\\StorageHierarchy.java",
+    "destination": "backend\\services\\master-data-service\\src\\main\\java\\com\\appnexus\\masterdata\\adapter\\persistence\\masterdata\\StorageHierarchy.java"
+  },
+  {
+    "old": "com.appnexus.masterdata.TenantGeography",
+    "new": "com.appnexus.masterdata.adapter.persistence.masterdata.TenantGeography",
+    "source": "backend\\services\\master-data-service\\src\\main\\java\\com\\appnexus\\masterdata\\TenantGeography.java",
+    "destination": "backend\\services\\master-data-service\\src\\main\\java\\com\\appnexus\\masterdata\\adapter\\persistence\\masterdata\\TenantGeography.java"
+  },
+  {
+    "old": "com.appnexus.masterdata.PartnerDataAccess",
+    "new": "com.appnexus.masterdata.adapter.persistence.masterdata.PartnerDataAccess",
+    "source": "backend\\services\\master-data-service\\src\\main\\java\\com\\appnexus\\masterdata\\PartnerDataAccess.java",
+    "destination": "backend\\services\\master-data-service\\src\\main\\java\\com\\appnexus\\masterdata\\adapter\\persistence\\masterdata\\PartnerDataAccess.java"
+  }
+]

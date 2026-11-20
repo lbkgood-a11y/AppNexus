@@ -1,5 +1,5 @@
 package com.appnexus.masterdata.domain.warehouse;
-import com.appnexus.masterdata.MasterData;
+import com.appnexus.masterdata.api.masterdata.MasterData;
 import java.util.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;

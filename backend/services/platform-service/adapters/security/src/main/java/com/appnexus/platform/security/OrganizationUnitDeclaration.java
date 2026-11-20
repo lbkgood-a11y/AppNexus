@@ -1,7 +1,7 @@
 package com.appnexus.platform.security;
+import com.appnexus.contracts.businessobject.BusinessObjects.*;
 
 import com.appnexus.contracts.businessobject.*;
-import com.appnexus.contracts.businessobject.BusinessObjects.*;
 import java.util.*;
 import org.springframework.stereotype.Component;
 

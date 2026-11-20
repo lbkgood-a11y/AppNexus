@@ -1,0 +1,219 @@
+{
+  "scope": "主数据持久化包第一批迁移；其余全仓范围继续治理",
+  "moved": [
+    {
+      "from": "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/adapter/jdbc/MyBatisProductHistory.java",
+      "to": "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/adapter/persistence/MyBatisProductHistory.java"
+    },
+    {
+      "from": "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/adapter/jdbc/ProductAttributeValueMapper.java",
+      "to": "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/adapter/persistence/ProductAttributeValueMapper.java"
+    },
+    {
+      "from": "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/adapter/jdbc/ProductCatalogServiceSqlMapper.java",
+      "to": "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/adapter/persistence/ProductCatalogServiceSqlMapper.java"
+    },
+    {
+      "from": "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/adapter/jdbc/ProductHistoryMapper.java",
+      "to": "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/adapter/persistence/ProductHistoryMapper.java"
+    },
+    {
+      "from": "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/adapter/jdbc/ProductImageServiceSqlMapper.java",
+      "to": "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/adapter/persistence/ProductImageServiceSqlMapper.java"
+    },
+    {
+      "from": "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/adapter/jdbc/MyBatisProductAttributes.java",
+      "to": "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/adapter/persistence/MyBatisProductAttributes.java"
+    },
+    {
+      "from": "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/adapter/jdbc/MyBatisProductList.java",
+      "to": "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/adapter/persistence/MyBatisProductList.java"
+    },
+    {
+      "from": "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/adapter/jdbc/ProductApprovalServiceSqlMapper.java",
+      "to": "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/adapter/persistence/ProductApprovalServiceSqlMapper.java"
+    },
+    {
+      "from": "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/adapter/jdbc/ProductAccess.java",
+      "to": "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/adapter/persistence/ProductAccess.java"
+    },
+    {
+      "from": "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/adapter/jdbc/MyBatisProductSnapshot.java",
+      "to": "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/adapter/persistence/MyBatisProductSnapshot.java"
+    },
+    {
+      "from": "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/adapter/jdbc/ProductCompletenessMapper.java",
+      "to": "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/adapter/persistence/ProductCompletenessMapper.java"
+    },
+    {
+      "from": "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/adapter/jdbc/JdbcRecordTransaction.java",
+      "to": "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/adapter/persistence/JdbcRecordTransaction.java"
+    },
+    {
+      "from": "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/adapter/jdbc/ProductRecordMapper.java",
+      "to": "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/adapter/persistence/ProductRecordMapper.java"
+    },
+    {
+      "from": "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/adapter/jdbc/ProductAttributeServiceSqlMapper.java",
+      "to": "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/adapter/persistence/ProductAttributeServiceSqlMapper.java"
+    },
+    {
+      "from": "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/adapter/jdbc/MasterRecordMapper.java",
+      "to": "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/adapter/persistence/MasterRecordMapper.java"
+    },
+    {
+      "from": "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/adapter/jdbc/ProductCatalogReadMapper.java",
+      "to": "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/adapter/persistence/ProductCatalogReadMapper.java"
+    },
+    {
+      "from": "backend/services/master-data-service/src/main/resources/com/appnexus/masterdata/adapter/jdbc/ProductListMapper.xml",
+      "to": "backend/services/master-data-service/src/main/resources/com/appnexus/masterdata/adapter/persistence/ProductListMapper.xml"
+    },
+    {
+      "from": "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/adapter/jdbc/ProductV1ServiceSqlMapper.java",
+      "to": "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/adapter/persistence/ProductV1ServiceSqlMapper.java"
+    },
+    {
+      "from": "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/adapter/jdbc/MyBatisProductCatalogReads.java",
+      "to": "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/adapter/persistence/MyBatisProductCatalogReads.java"
+    },
+    {
+      "from": "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/adapter/jdbc/ProductListMapper.java",
+      "to": "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/adapter/persistence/ProductListMapper.java"
+    },
+    {
+      "from": "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/adapter/jdbc/package-info.java",
+      "to": "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/adapter/persistence/package-info.java"
+    },
+    {
+      "from": "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/adapter/jdbc/MyBatisProductCompleteness.java",
+      "to": "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/adapter/persistence/MyBatisProductCompleteness.java"
+    },
+    {
+      "from": "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/adapter/jdbc/MyBatisUnitConversionStore.java",
+      "to": "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/adapter/persistence/MyBatisUnitConversionStore.java"
+    },
+    {
+      "from": "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/adapter/jdbc/MyBatisMasterDataRecords.java",
+      "to": "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/adapter/persistence/MyBatisMasterDataRecords.java"
+    },
+    {
+      "from": "backend/services/master-data-service/src/main/resources/com/appnexus/masterdata/adapter/jdbc/MasterRecordMapper.xml",
+      "to": "backend/services/master-data-service/src/main/resources/com/appnexus/masterdata/adapter/persistence/MasterRecordMapper.xml"
+    },
+    {
+      "from": "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/adapter/jdbc/MyBatisProductRecords.java",
+      "to": "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/adapter/persistence/MyBatisProductRecords.java"
+    },
+    {
+      "from": "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/adapter/jdbc/ProductSnapshotMapper.java",
+      "to": "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/adapter/persistence/ProductSnapshotMapper.java"
+    },
+    {
+      "from": "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/adapter/jdbc/ProductAccessMapper.java",
+      "to": "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/adapter/persistence/ProductAccessMapper.java"
+    },
+    {
+      "from": "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/adapter/jdbc/UnitConversionMapper.java",
+      "to": "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/adapter/persistence/UnitConversionMapper.java"
+    },
+    {
+      "from": "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/adapter/jdbc/ProductStructureServiceSqlMapper.java",
+      "to": "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/adapter/persistence/ProductStructureServiceSqlMapper.java"
+    },
+    {
+      "from": "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/adapter/jdbc/ProductTemplateServiceSqlMapper.java",
+      "to": "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/adapter/persistence/ProductTemplateServiceSqlMapper.java"
+    }
+  ],
+  "referencesUpdated": [
+    "backend/applications/monolith-app/src/test/java/com/appnexus/platform/TenantSqlIsolationTest.java",
+    "backend/architecture-tests/src/test/java/com/appnexus/platform/ServiceLayerBoundaryTest.java",
+    "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/MasterDataConfiguration.java",
+    "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/adapter/jdbc/JdbcRecordTransaction.java",
+    "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/adapter/jdbc/MasterRecordMapper.java",
+    "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/adapter/jdbc/MyBatisMasterDataRecords.java",
+    "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/adapter/jdbc/MyBatisProductAttributes.java",
+    "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/adapter/jdbc/MyBatisProductCatalogReads.java",
+    "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/adapter/jdbc/MyBatisProductCompleteness.java",
+    "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/adapter/jdbc/MyBatisProductHistory.java",
+    "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/adapter/jdbc/MyBatisProductList.java",
+    "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/adapter/jdbc/MyBatisProductRecords.java",
+    "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/adapter/jdbc/MyBatisProductSnapshot.java",
+    "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/adapter/jdbc/MyBatisUnitConversionStore.java",
+    "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/adapter/jdbc/ProductAccess.java",
+    "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/adapter/jdbc/ProductAccessMapper.java",
+    "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/adapter/jdbc/ProductApprovalServiceSqlMapper.java",
+    "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/adapter/jdbc/ProductAttributeServiceSqlMapper.java",
+    "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/adapter/jdbc/ProductAttributeValueMapper.java",
+    "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/adapter/jdbc/ProductCatalogReadMapper.java",
+    "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/adapter/jdbc/ProductCatalogServiceSqlMapper.java",
+    "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/adapter/jdbc/ProductCompletenessMapper.java",
+    "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/adapter/jdbc/ProductHistoryMapper.java",
+    "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/adapter/jdbc/ProductImageServiceSqlMapper.java",
+    "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/adapter/jdbc/ProductListMapper.java",
+    "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/adapter/jdbc/ProductRecordMapper.java",
+    "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/adapter/jdbc/ProductSnapshotMapper.java",
+    "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/adapter/jdbc/ProductStructureServiceSqlMapper.java",
+    "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/adapter/jdbc/ProductTemplateServiceSqlMapper.java",
+    "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/adapter/jdbc/ProductV1ServiceSqlMapper.java",
+    "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/adapter/jdbc/UnitConversionMapper.java",
+    "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/adapter/jdbc/package-info.java",
+    "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/product/ProductApprovalService.java",
+    "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/product/ProductAttributeService.java",
+    "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/product/ProductCatalogService.java",
+    "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/product/ProductImageService.java",
+    "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/product/ProductStructureService.java",
+    "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/product/ProductTemplateService.java",
+    "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/product/ProductV1Service.java",
+    "backend/services/master-data-service/src/main/resources/com/appnexus/masterdata/adapter/jdbc/MasterRecordMapper.xml",
+    "backend/services/master-data-service/src/main/resources/com/appnexus/masterdata/adapter/jdbc/ProductListMapper.xml",
+    "backend/services/master-data-service/src/test/java/com/appnexus/masterdata/product/ProductCatalogMySqlTest.java"
+  ],
+  "typeMigrations": [
+    {
+      "from": "com.appnexus.masterdata.GeographyMapper",
+      "to": "com.appnexus.masterdata.adapter.persistence.GeographyMapper"
+    },
+    {
+      "from": "com.appnexus.masterdata.MasterReadMapper",
+      "to": "com.appnexus.masterdata.adapter.persistence.MasterReadMapper"
+    },
+    {
+      "from": "com.appnexus.masterdata.PartnerDetailMapper",
+      "to": "com.appnexus.masterdata.adapter.persistence.PartnerDetailMapper"
+    },
+    {
+      "from": "com.appnexus.masterdata.StorageHierarchyMapper",
+      "to": "com.appnexus.masterdata.adapter.persistence.StorageHierarchyMapper"
+    },
+    {
+      "from": "com.appnexus.masterdata.adapter.persistence.ProductApprovalServiceSqlMapper",
+      "to": "com.appnexus.masterdata.adapter.persistence.ProductApprovalMapper"
+    },
+    {
+      "from": "com.appnexus.masterdata.adapter.persistence.ProductAttributeServiceSqlMapper",
+      "to": "com.appnexus.masterdata.adapter.persistence.ProductAttributeMapper"
+    },
+    {
+      "from": "com.appnexus.masterdata.adapter.persistence.ProductCatalogServiceSqlMapper",
+      "to": "com.appnexus.masterdata.adapter.persistence.ProductCatalogMapper"
+    },
+    {
+      "from": "com.appnexus.masterdata.adapter.persistence.ProductImageServiceSqlMapper",
+      "to": "com.appnexus.masterdata.adapter.persistence.ProductImageMapper"
+    },
+    {
+      "from": "com.appnexus.masterdata.adapter.persistence.ProductStructureServiceSqlMapper",
+      "to": "com.appnexus.masterdata.adapter.persistence.ProductStructureMapper"
+    },
+    {
+      "from": "com.appnexus.masterdata.adapter.persistence.ProductTemplateServiceSqlMapper",
+      "to": "com.appnexus.masterdata.adapter.persistence.ProductTemplateMapper"
+    },
+    {
+      "from": "com.appnexus.masterdata.adapter.persistence.ProductV1ServiceSqlMapper",
+      "to": "com.appnexus.masterdata.adapter.persistence.ProductV1Mapper"
+    }
+  ]
+}

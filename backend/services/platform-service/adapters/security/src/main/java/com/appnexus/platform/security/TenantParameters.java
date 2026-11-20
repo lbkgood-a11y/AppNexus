@@ -1,4 +1,5 @@
 package com.appnexus.platform.security;
+import com.appnexus.platform.persistence.configuration.TenantParameterMapper;
 
 import com.appnexus.platform.authorization.*;
 import com.appnexus.platform.tenant.*;

@@ -1,4 +1,8 @@
 package com.appnexus.masterdata;
+import com.appnexus.masterdata.adapter.persistence.masterdata.PartnerDetails;
+import com.appnexus.masterdata.domain.geography.GeographyStandards;
+import com.appnexus.masterdata.bootstrap.MasterDataConfiguration;
+import com.appnexus.masterdata.application.masterdata.MasterDataService;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -8,7 +12,7 @@ import java.util.*;
 import org.junit.jupiter.api.*;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.PlatformTransactionManager;
-import static com.appnexus.masterdata.MasterData.*;
+import static com.appnexus.masterdata.api.masterdata.MasterData.*;
 
 /** 输入、独立权限及失败关闭测试；真实 MySQL 租户和并发测试在集成测试中执行。 */
 class MasterDataServiceTest {

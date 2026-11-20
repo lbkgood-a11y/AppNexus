@@ -1,4 +1,7 @@
 package com.appnexus.platform;
+import com.appnexus.masterdata.api.product.ProductCatalogData;
+import com.appnexus.masterdata.application.product.ProductService;
+import com.appnexus.platform.security.operation.OperationRegistry;
 
 import static org.assertj.core.api.Assertions.*;
 import com.appnexus.masterdata.product.*;
@@ -20,7 +23,7 @@ class ProductV1IntegrationTest extends DatabaseTestSupport {
  @Autowired JdbcTemplate jdbc;
  @Autowired org.springframework.test.web.servlet.MockMvc mvc;
  @Autowired ProductCatalogService catalog;
- @Autowired ProductV1Service products;
+ @Autowired ProductService products;
  @Autowired OperationRegistry registry;
  @Autowired com.appnexus.platform.persistence.organization.OrganizationAdministratorBootstrap bootstrap;
 
@@ -38,16 +41,16 @@ class ProductV1IntegrationTest extends DatabaseTestSupport {
   var directRequest=new org.springframework.mock.web.MockHttpServletRequest();
   directRequest.setAttribute(VerifiedTenantContext.class.getName(),admin);
   org.springframework.web.context.request.RequestContextHolder.setRequestAttributes(new org.springframework.web.context.request.ServletRequestAttributes(directRequest));
-  var category=catalog.createCategory(admin,new CatalogData.CategoryInput("ROOT","商品分类",null,0));
+  var category=catalog.createCategory(admin,new ProductCatalogData.CategoryInput("ROOT","商品分类",null,0));
   assertThat(category.audit().createdBy()).isEqualTo(account.toString());
   var slots=new LinkedHashMap<String,String>();for(String purpose:List.of("BASIC","SPEC","QUALITY","EXTENSION"))slots.put(purpose,null);
-  var config=catalog.publish(admin,category.id(),new CatalogData.Publish(slots,false,0));
+  var config=catalog.publish(admin,category.id(),new ProductCatalogData.Publish(slots,false,0));
   var draft=products.create(admin,new com.appnexus.masterdata.api.product.ProductMainData.Input("SERVICE","无规格服务",null,category.id(),config.id(),"SERVICE",null,null,null,null,null));
   String id=(String)draft.get("id");
   assertThat(draft.get("status")).isEqualTo("DRAFT");
-  assertThat(products.updateStatus(admin,id,new ProductV1Service.Status("ENABLED",0)).get("status")).isEqualTo("ENABLED");
+  assertThat(products.updateStatus(admin,id,new com.appnexus.masterdata.api.product.ProductCommandData.Status("ENABLED",0)).get("status")).isEqualTo("ENABLED");
   assertThatThrownBy(()->products.read(ordinary,id)).hasMessage("MASTER_DATA_DENIED");
-  assertThatThrownBy(()->catalog.createCategory(ordinary,new CatalogData.CategoryInput("NO","拒绝",null,0))).hasMessage("MASTER_DATA_DENIED");
+  assertThatThrownBy(()->catalog.createCategory(ordinary,new ProductCatalogData.CategoryInput("NO","拒绝",null,0))).hasMessage("MASTER_DATA_DENIED");
   assertThatThrownBy(()->products.create(ordinary,new com.appnexus.masterdata.api.product.ProductMainData.Input("NO","拒绝",null,null,null,null,null,null,null,null,null))).hasMessage("MASTER_DATA_DENIED");
   assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM md_product_v1_change WHERE tenant_id=UUID_TO_BIN(?) AND product_id=UUID_TO_BIN(?)",Integer.class,tenant.toString(),id)).isEqualTo(2);
   var json=new tools.jackson.databind.ObjectMapper();
@@ -86,7 +89,7 @@ class ProductV1IntegrationTest extends DatabaseTestSupport {
   assertThat(staged.get("legacySpecificationOriginal")).isEqualTo(original);
   assertThat(staged.get("createdAt")).isNull();assertThat(staged.get("updatedAt")).isNull();
   assertThatThrownBy(()->products.stageLegacy(ordinary,oldId)).hasMessage("MASTER_DATA_DENIED");
-  products.reviewLegacySpecification(admin,oldId,new ProductV1Service.LegacyReview("DEFERRED_SPEC","保留真实规格",2L));
+  products.reviewLegacySpecification(admin,oldId,new com.appnexus.masterdata.api.product.ProductCommandData.LegacyReview("DEFERRED_SPEC","保留真实规格",2L));
   assertThat(products.read(admin,oldId).get("legacySpecificationOriginal")).isEqualTo(original);
   assertThat(products.read(admin,oldId).get("structureState")).isEqualTo("LEGACY_PENDING");
   assertThat(mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put("/api/master-data/product/"+id+"/status").cookie(cookie).with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf()).contentType("application/json").content(json.writeValueAsString(Map.of("status","DISABLED","version",1)))).andReturn().getResponse().getStatus()).isEqualTo(200);

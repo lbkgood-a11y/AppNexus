@@ -1,0 +1,1028 @@
+[
+  {
+    "repository": "ProductApprovalRepository",
+    "method": "lockProduct",
+    "before": "Object p0, Object p1",
+    "after": "String tenant,String product"
+  },
+  {
+    "repository": "ProductApprovalRepository",
+    "method": "existingRequest",
+    "before": "Object p0, Object p1, Object p2",
+    "after": "String tenant,String applicant,String requestKey"
+  },
+  {
+    "repository": "ProductApprovalRepository",
+    "method": "freezeProductVersion",
+    "before": "Object p0, Object p1, Object p2",
+    "after": "String actor,String tenant,String product"
+  },
+  {
+    "repository": "ProductApprovalRepository",
+    "method": "createApproval",
+    "before": "Object p0, Object p1, Object p2, Object p3, Object p4, Object p5, Object p6, Object p7, Object p8, Object p9",
+    "after": "String id,String tenant,String product,String requestKey,long productVersion,String applicant,String organization,String snapshot,String creator,String updater"
+  },
+  {
+    "repository": "ProductApprovalRepository",
+    "method": "bindExecution",
+    "before": "Object p0, Object p1, Object p2, Object p3",
+    "after": "String instance,String resolution,String tenant,String id"
+  },
+  {
+    "repository": "ProductApprovalRepository",
+    "method": "approvalHistory",
+    "before": "Object p0, Object p1",
+    "after": "String tenant,String product"
+  },
+  {
+    "repository": "ProductApprovalRepository",
+    "method": "approvalDetail",
+    "before": "Object p0, Object p1",
+    "after": "String tenant,String id"
+  },
+  {
+    "repository": "ProductImageRepository",
+    "method": "list",
+    "before": "Object p0, Object p1",
+    "after": "String tenant,String product"
+  },
+  {
+    "repository": "ProductImageRepository",
+    "method": "count",
+    "before": "Object p0, Object p1",
+    "after": "String tenant,String product"
+  },
+  {
+    "repository": "ProductImageRepository",
+    "method": "insert",
+    "before": "Object p0, Object p1, Object p2, Object p3, Object p4, Object p5, Object p6, Object p7, Object p8",
+    "after": "String id,String tenant,String product,byte[] bytes,byte[] digest,int width,int height,String creator,String updater"
+  },
+  {
+    "repository": "ProductImageRepository",
+    "method": "detach",
+    "before": "Object p0, Object p1, Object p2, Object p3",
+    "after": "String actor,String tenant,String product,String id"
+  },
+  {
+    "repository": "ProductImageRepository",
+    "method": "advanceParent",
+    "before": "Object p0, Object p1, Object p2, Object p3",
+    "after": "String actor,String tenant,String product,long version"
+  },
+  {
+    "repository": "ProductImageRepository",
+    "method": "content",
+    "before": "String tenant, String product, String id",
+    "after": "String tenant, String product, String id"
+  },
+  {
+    "repository": "ProductImageRepository",
+    "method": "parent",
+    "before": "String tenant, String id, boolean lock",
+    "after": "String tenant, String id, boolean lock"
+  },
+  {
+    "repository": "ProductCommandRepository",
+    "method": "createProduct",
+    "before": "Object p0, Object p1, Object p2, Object p3, Object p4, Object p5, Object p6, Object p7, Object p8, Object p9, Object p10, Object p11, Object p12, Object p13, Object p14, Object p15",
+    "after": "String id,String tenant,String code,String name,String shortName,String category,String configuration,String form,String unit,String description,String brand,String origin,String barcode,String organization,String creator,String updater"
+  },
+  {
+    "repository": "ProductCommandRepository",
+    "method": "updateMainFields",
+    "before": "Object p0, Object p1, Object p2, Object p3, Object p4, Object p5, Object p6, Object p7, Object p8",
+    "after": "String name,String shortName,String description,String brand,String origin,String barcode,String organization,String tenant,String id"
+  },
+  {
+    "repository": "ProductCommandRepository",
+    "method": "approvalStates",
+    "before": "Object p0, Object p1",
+    "after": "String tenant,String product"
+  },
+  {
+    "repository": "ProductCommandRepository",
+    "method": "setProductStatus",
+    "before": "Object p0, Object p1, Object p2",
+    "after": "String status,String tenant,String product"
+  },
+  {
+    "repository": "ProductCommandRepository",
+    "method": "changeStructureTarget",
+    "before": "Object p0, Object p1, Object p2, Object p3, Object p4, Object p5, Object p6",
+    "after": "String category,String configuration,String form,String unit,String disposition,String tenant,String product"
+  },
+  {
+    "repository": "ProductCommandRepository",
+    "method": "retireSpecification",
+    "before": "Object p0, Object p1, Object p2, Object p3",
+    "after": "String actor,String tenant,String product,String specification"
+  },
+  {
+    "repository": "ProductCommandRepository",
+    "method": "changeSpecificationMode",
+    "before": "Object p0, Object p1, Object p2",
+    "after": "String mode,String tenant,String product"
+  },
+  {
+    "repository": "ProductCommandRepository",
+    "method": "disableComponents",
+    "before": "Object p0, Object p1, Object p2",
+    "after": "String actor,String tenant,String product"
+  },
+  {
+    "repository": "ProductCommandRepository",
+    "method": "saveMigrationResult",
+    "before": "Object p0, Object p1, Object p2, Object p3, Object p4, Object p5, Object p6, Object p7, Object p8, Object p9, Object p10, Object p11",
+    "after": "String id,String tenant,String actor,String product,String requestKey,String digest,long productVersion,long structureRevision,String changeId,String resultJson,String creator,String updater"
+  },
+  {
+    "repository": "ProductCommandRepository",
+    "method": "serviceUnitRequired",
+    "before": "Object p0, Object p1",
+    "after": "String tenant,String configuration"
+  },
+  {
+    "repository": "ProductCommandRepository",
+    "method": "requiredItems",
+    "before": "Object p0, Object p1",
+    "after": "String tenant,String configuration"
+  },
+  {
+    "repository": "ProductCommandRepository",
+    "method": "categoryAdmission",
+    "before": "Object p0, Object p1",
+    "after": "String tenant,String category"
+  },
+  {
+    "repository": "ProductCommandRepository",
+    "method": "templateAdmission",
+    "before": "Object p0, Object p1",
+    "after": "String tenant,String configuration"
+  },
+  {
+    "repository": "ProductCommandRepository",
+    "method": "unitAdmission",
+    "before": "Object p0, Object p1",
+    "after": "String tenant,String unit"
+  },
+  {
+    "repository": "ProductCommandRepository",
+    "method": "deleteChoices",
+    "before": "Object p0, Object p1",
+    "after": "String tenant,String product"
+  },
+  {
+    "repository": "ProductCommandRepository",
+    "method": "deleteValues",
+    "before": "Object p0, Object p1",
+    "after": "String tenant,String product"
+  },
+  {
+    "repository": "ProductCommandRepository",
+    "method": "reviewLegacyDisposition",
+    "before": "Object p0, Object p1, Object p2",
+    "after": "String disposition,String tenant,String product"
+  },
+  {
+    "repository": "ProductCommandRepository",
+    "method": "lockLegacySource",
+    "before": "Object p0, Object p1",
+    "after": "String tenant,String product"
+  },
+  {
+    "repository": "ProductCommandRepository",
+    "method": "stagedCount",
+    "before": "Object p0, Object p1",
+    "after": "String tenant,String product"
+  },
+  {
+    "repository": "ProductCommandRepository",
+    "method": "stageLegacyProduct",
+    "before": "Object p0, Object p1",
+    "after": "String tenant,String product"
+  },
+  {
+    "repository": "ProductCommandRepository",
+    "method": "legacyReconciliation",
+    "before": "Object p0, Object p1, Object p2",
+    "after": "String tenant,int size,long offset"
+  },
+  {
+    "repository": "ProductCommandRepository",
+    "method": "legacyCount",
+    "before": "Object p0",
+    "after": "String tenant"
+  },
+  {
+    "repository": "ProductCommandRepository",
+    "method": "pendingApprovalCount",
+    "before": "Object p0, Object p1",
+    "after": "String tenant,String product"
+  },
+  {
+    "repository": "ProductCommandRepository",
+    "method": "attributeDefinition",
+    "before": "Object p0, Object p1, Object p2",
+    "after": "String tenant,String configuration,String item"
+  },
+  {
+    "repository": "ProductCommandRepository",
+    "method": "validOptionCount",
+    "before": "Object p0, Object p1, Object p2",
+    "after": "String tenant,String revision,String option"
+  },
+  {
+    "repository": "ProductCommandRepository",
+    "method": "archive",
+    "before": "String tenant, String id, boolean archived",
+    "after": "String tenant, String id, boolean archived"
+  },
+  {
+    "repository": "ProductCommandRepository",
+    "method": "replay",
+    "before": "String tenant, String actor, String id, String key, boolean lock",
+    "after": "String tenant, String actor, String id, String key, boolean lock"
+  },
+  {
+    "repository": "ProductTemplateRepository",
+    "method": "versions",
+    "before": "Object p0, Object p1",
+    "after": "String tenant,String template"
+  },
+  {
+    "repository": "ProductTemplateRepository",
+    "method": "items",
+    "before": "Object p0, Object p1",
+    "after": "String tenant,String templateVersion"
+  },
+  {
+    "repository": "ProductTemplateRepository",
+    "method": "createTemplate",
+    "before": "Object p0, Object p1, Object p2, Object p3, Object p4, Object p5, Object p6",
+    "after": "String id,String tenant,String code,String name,String purpose,String creator,String updater"
+  },
+  {
+    "repository": "ProductTemplateRepository",
+    "method": "purpose",
+    "before": "Object p0, Object p1",
+    "after": "String tenant,String template"
+  },
+  {
+    "repository": "ProductTemplateRepository",
+    "method": "nextVersion",
+    "before": "Object p0, Object p1",
+    "after": "String tenant,String template"
+  },
+  {
+    "repository": "ProductTemplateRepository",
+    "method": "createVersion",
+    "before": "Object p0, Object p1, Object p2, Object p3, Object p4, Object p5, Object p6, Object p7",
+    "after": "String id,String tenant,String template,long revision,String purpose,String description,String creator,String updater"
+  },
+  {
+    "repository": "ProductTemplateRepository",
+    "method": "versionOwnerAndState",
+    "before": "Object p0, Object p1",
+    "after": "String tenant,String templateVersion"
+  },
+  {
+    "repository": "ProductTemplateRepository",
+    "method": "lockVersionState",
+    "before": "Object p0, Object p1",
+    "after": "String tenant,String templateVersion"
+  },
+  {
+    "repository": "ProductTemplateRepository",
+    "method": "deleteVersionItems",
+    "before": "Object p0, Object p1",
+    "after": "String tenant,String templateVersion"
+  },
+  {
+    "repository": "ProductTemplateRepository",
+    "method": "updateDescription",
+    "before": "Object p0, Object p1, Object p2, Object p3",
+    "after": "String description,String actor,String tenant,String templateVersion"
+  },
+  {
+    "repository": "ProductTemplateRepository",
+    "method": "attributeRevision",
+    "before": "Object p0, Object p1, Object p2",
+    "after": "String tenant,String revision,String attribute"
+  },
+  {
+    "repository": "ProductTemplateRepository",
+    "method": "attributeGroup",
+    "before": "Object p0, Object p1",
+    "after": "String tenant,String attribute"
+  },
+  {
+    "repository": "ProductTemplateRepository",
+    "method": "createItem",
+    "before": "Object p0, Object p1, Object p2, Object p3, Object p4, Object p5, Object p6, Object p7, Object p8, Object p9, Object p10, Object p11, Object p12, Object p13",
+    "after": "String id,String tenant,String templateVersion,String attribute,String revision,String dataType,String groupCode,String groupName,boolean required,boolean searchable,boolean allowCustom,int sortOrder,String creator,String updater"
+  },
+  {
+    "repository": "ProductTemplateRepository",
+    "method": "versionOwners",
+    "before": "Object p0, Object p1",
+    "after": "String tenant,String templateVersion"
+  },
+  {
+    "repository": "ProductTemplateRepository",
+    "method": "itemCount",
+    "before": "Object p0, Object p1",
+    "after": "String tenant,String templateVersion"
+  },
+  {
+    "repository": "ProductTemplateRepository",
+    "method": "unavailableItemCount",
+    "before": "Object p0, Object p1",
+    "after": "String tenant,String templateVersion"
+  },
+  {
+    "repository": "ProductTemplateRepository",
+    "method": "publishVersion",
+    "before": "Object p0, Object p1, Object p2",
+    "after": "String actor,String tenant,String templateVersion"
+  },
+  {
+    "repository": "ProductTemplateRepository",
+    "method": "updateTemplate",
+    "before": "Object p0, Object p1, Object p2, Object p3, Object p4, Object p5, Object p6",
+    "after": "String name,String actor,String tenant,String template,String code,String purpose,long version"
+  },
+  {
+    "repository": "ProductTemplateRepository",
+    "method": "setTemplateStatus",
+    "before": "Object p0, Object p1, Object p2, Object p3, Object p4",
+    "after": "boolean enabled,String actor,String tenant,String template,long version"
+  },
+  {
+    "repository": "ProductTemplateRepository",
+    "method": "retirementOwners",
+    "before": "Object p0, Object p1",
+    "after": "String tenant,String templateVersion"
+  },
+  {
+    "repository": "ProductTemplateRepository",
+    "method": "retireVersion",
+    "before": "Object p0, Object p1, Object p2",
+    "after": "String actor,String tenant,String templateVersion"
+  },
+  {
+    "repository": "ProductTemplateRepository",
+    "method": "lockTemplate",
+    "before": "Object p0, Object p1",
+    "after": "String tenant,String template"
+  },
+  {
+    "repository": "ProductTemplateRepository",
+    "method": "advanceTemplateVersion",
+    "before": "Object p0, Object p1, Object p2",
+    "after": "String actor,String tenant,String template"
+  },
+  {
+    "repository": "ProductTemplateRepository",
+    "method": "summaries",
+    "before": "String tenant",
+    "after": "String tenant"
+  },
+  {
+    "repository": "ProductTemplateRepository",
+    "method": "versionState",
+    "before": "String tenant, String version",
+    "after": "String tenant, String version"
+  },
+  {
+    "repository": "ProductAttributeRepository",
+    "method": "revisions",
+    "before": "Object p0, Object p1",
+    "after": "String tenant,String attribute"
+  },
+  {
+    "repository": "ProductAttributeRepository",
+    "method": "options",
+    "before": "Object p0, Object p1",
+    "after": "String tenant,String revision"
+  },
+  {
+    "repository": "ProductAttributeRepository",
+    "method": "createGroup",
+    "before": "Object p0, Object p1, Object p2, Object p3, Object p4, Object p5",
+    "after": "String id,String tenant,String code,String name,String creator,String updater"
+  },
+  {
+    "repository": "ProductAttributeRepository",
+    "method": "createAttribute",
+    "before": "Object p0, Object p1, Object p2, Object p3, Object p4, Object p5",
+    "after": "String id,String tenant,String code,String group,String creator,String updater"
+  },
+  {
+    "repository": "ProductAttributeRepository",
+    "method": "enabledUnitCount",
+    "before": "Object p0, Object p1",
+    "after": "String tenant,String unit"
+  },
+  {
+    "repository": "ProductAttributeRepository",
+    "method": "nextRevision",
+    "before": "Object p0, Object p1",
+    "after": "String tenant,String attribute"
+  },
+  {
+    "repository": "ProductAttributeRepository",
+    "method": "createRevision",
+    "before": "Object p0, Object p1, Object p2, Object p3, Object p4, Object p5, Object p6, Object p7, Object p8, Object p9, Object p10",
+    "after": "String id,String tenant,String attribute,long revisionNumber,String name,String dataType,String unit,Integer scale,String rulesJson,String creator,String updater"
+  },
+  {
+    "repository": "ProductAttributeRepository",
+    "method": "createInitialOption",
+    "before": "Object p0, Object p1, Object p2, Object p3, Object p4, Object p5, Object p6, Object p7",
+    "after": "String id,String tenant,String revision,String code,String label,int sortOrder,String creator,String updater"
+  },
+  {
+    "repository": "ProductAttributeRepository",
+    "method": "optionCount",
+    "before": "Object p0, Object p1",
+    "after": "String tenant,String revision"
+  },
+  {
+    "repository": "ProductAttributeRepository",
+    "method": "publishRevision",
+    "before": "Object p0, Object p1, Object p2",
+    "after": "String actor,String tenant,String revision"
+  },
+  {
+    "repository": "ProductAttributeRepository",
+    "method": "createOption",
+    "before": "Object p0, Object p1, Object p2, Object p3, Object p4, Object p5, Object p6, Object p7",
+    "after": "String id,String tenant,String revision,String code,String label,int sortOrder,String creator,String updater"
+  },
+  {
+    "repository": "ProductAttributeRepository",
+    "method": "updateGroup",
+    "before": "Object p0, Object p1, Object p2, Object p3, Object p4, Object p5",
+    "after": "String name,String actor,String tenant,String group,String code,long version"
+  },
+  {
+    "repository": "ProductAttributeRepository",
+    "method": "updateAttribute",
+    "before": "Object p0, Object p1, Object p2, Object p3, Object p4, Object p5",
+    "after": "String group,String actor,String tenant,String attribute,String code,long version"
+  },
+  {
+    "repository": "ProductAttributeRepository",
+    "method": "revisionOwners",
+    "before": "Object p0, Object p1",
+    "after": "String tenant,String revision"
+  },
+  {
+    "repository": "ProductAttributeRepository",
+    "method": "retireRevision",
+    "before": "Object p0, Object p1, Object p2",
+    "after": "String actor,String tenant,String revision"
+  },
+  {
+    "repository": "ProductAttributeRepository",
+    "method": "validUnitCount",
+    "before": "Object p0, Object p1",
+    "after": "String tenant,String unit"
+  },
+  {
+    "repository": "ProductAttributeRepository",
+    "method": "updateRevision",
+    "before": "Object p0, Object p1, Object p2, Object p3, Object p4, Object p5, Object p6, Object p7",
+    "after": "String name,String dataType,String unit,Integer scale,String rulesJson,String actor,String tenant,String revision"
+  },
+  {
+    "repository": "ProductAttributeRepository",
+    "method": "deleteOptions",
+    "before": "Object p0, Object p1",
+    "after": "String tenant,String revision"
+  },
+  {
+    "repository": "ProductAttributeRepository",
+    "method": "replaceOption",
+    "before": "Object p0, Object p1, Object p2, Object p3, Object p4, Object p5, Object p6, Object p7",
+    "after": "String id,String tenant,String revision,String code,String label,int sortOrder,String creator,String updater"
+  },
+  {
+    "repository": "ProductAttributeRepository",
+    "method": "lockAttribute",
+    "before": "Object p0, Object p1",
+    "after": "String tenant,String attribute"
+  },
+  {
+    "repository": "ProductAttributeRepository",
+    "method": "advanceAttributeVersion",
+    "before": "Object p0, Object p1, Object p2",
+    "after": "String actor,String tenant,String attribute"
+  },
+  {
+    "repository": "ProductAttributeRepository",
+    "method": "revisionParent",
+    "before": "Object p0, Object p1",
+    "after": "String tenant,String revision"
+  },
+  {
+    "repository": "ProductAttributeRepository",
+    "method": "lockRevisionState",
+    "before": "Object p0, Object p1",
+    "after": "String tenant,String revision"
+  },
+  {
+    "repository": "ProductAttributeRepository",
+    "method": "groups",
+    "before": "String tenant",
+    "after": "String tenant"
+  },
+  {
+    "repository": "ProductAttributeRepository",
+    "method": "attributes",
+    "before": "String tenant",
+    "after": "String tenant"
+  },
+  {
+    "repository": "ProductAttributeRepository",
+    "method": "status",
+    "before": "boolean group, String tenant, String id, boolean enabled, String actor, long version",
+    "after": "boolean group, String tenant, String id, boolean enabled, String actor, long version"
+  },
+  {
+    "repository": "ProductCatalogRepository",
+    "method": "createUnit",
+    "before": "Object p0, Object p1, Object p2, Object p3, Object p4, Object p5, Object p6, Object p7",
+    "after": "String id,String tenant,String code,String name,String dimension,int scale,String creator,String updater"
+  },
+  {
+    "repository": "ProductCatalogRepository",
+    "method": "renameUnit",
+    "before": "Object p0, Object p1, Object p2, Object p3, Object p4, Object p5, Object p6, Object p7",
+    "after": "String name,String actor,String tenant,String unit,String code,String dimension,int scale,long version"
+  },
+  {
+    "repository": "ProductCatalogRepository",
+    "method": "setUnitStatus",
+    "before": "Object p0, Object p1, Object p2, Object p3, Object p4",
+    "after": "boolean enabled,String actor,String tenant,String unit,long version"
+  },
+  {
+    "repository": "ProductCatalogRepository",
+    "method": "createCategory",
+    "before": "Object p0, Object p1, Object p2, Object p3, Object p4, Object p5, Object p6",
+    "after": "String id,String tenant,String code,String name,String parent,String creator,String updater"
+  },
+  {
+    "repository": "ProductCatalogRepository",
+    "method": "moveCategory",
+    "before": "Object p0, Object p1, Object p2, Object p3, Object p4, Object p5",
+    "after": "String name,String parent,String actor,String tenant,String category,long version"
+  },
+  {
+    "repository": "ProductCatalogRepository",
+    "method": "setCategoryStatus",
+    "before": "Object p0, Object p1, Object p2, Object p3, Object p4",
+    "after": "boolean enabled,String actor,String tenant,String category,long version"
+  },
+  {
+    "repository": "ProductCatalogRepository",
+    "method": "publishedTemplate",
+    "before": "Object p0, Object p1",
+    "after": "String tenant,String templateVersion"
+  },
+  {
+    "repository": "ProductCatalogRepository",
+    "method": "templateAttributes",
+    "before": "Object p0, Object p1",
+    "after": "String tenant,String templateVersion"
+  },
+  {
+    "repository": "ProductCatalogRepository",
+    "method": "nextConfigurationRevision",
+    "before": "Object p0, Object p1",
+    "after": "String tenant,String category"
+  },
+  {
+    "repository": "ProductCatalogRepository",
+    "method": "createConfiguration",
+    "before": "Object p0, Object p1, Object p2, Object p3, Object p4, Object p5, Object p6, Object p7",
+    "after": "String id,String tenant,String category,long revision,String path,boolean serviceUnitRequired,String creator,String updater"
+  },
+  {
+    "repository": "ProductCatalogRepository",
+    "method": "bindTemplate",
+    "before": "Object p0, Object p1, Object p2, Object p3, Object p4, Object p5, Object p6",
+    "after": "String id,String tenant,String configuration,String purpose,String templateVersion,String creator,String updater"
+  },
+  {
+    "repository": "ProductCatalogRepository",
+    "method": "freezeConfigurationItem",
+    "before": "Object p0, Object p1, Object p2, Object p3",
+    "after": "String creator,String updater,String tenant,String configuration"
+  },
+  {
+    "repository": "ProductCatalogRepository",
+    "method": "activateConfiguration",
+    "before": "Object p0, Object p1, Object p2, Object p3, Object p4",
+    "after": "String configuration,String actor,String tenant,String category,long version"
+  },
+  {
+    "repository": "ProductCatalogRepository",
+    "method": "ensureCategoryGuard",
+    "before": "Object p0, Object p1, Object p2",
+    "after": "String tenant,String creator,String updater"
+  },
+  {
+    "repository": "ProductCatalogRepository",
+    "method": "lockCategoryGuard",
+    "before": "Object p0",
+    "after": "String tenant"
+  },
+  {
+    "repository": "ProductCatalogRepository",
+    "method": "units",
+    "before": "String tenant, String keyword, int size, int offset",
+    "after": "String tenant, String keyword, int size, int offset"
+  },
+  {
+    "repository": "ProductCatalogRepository",
+    "method": "unit",
+    "before": "String tenant, String id",
+    "after": "String tenant, String id"
+  },
+  {
+    "repository": "ProductCatalogRepository",
+    "method": "configuration",
+    "before": "String tenant, String category, String id",
+    "after": "String tenant, String category, String id"
+  },
+  {
+    "repository": "ProductCatalogRepository",
+    "method": "tree",
+    "before": "String tenant",
+    "after": "String tenant"
+  },
+  {
+    "repository": "ProductCatalogRepository",
+    "method": "slots",
+    "before": "String tenant, String id",
+    "after": "String tenant, String id"
+  },
+  {
+    "repository": "ProductCatalogRepository",
+    "method": "unitCount",
+    "before": "String tenant, String keyword",
+    "after": "String tenant, String keyword"
+  },
+  {
+    "repository": "ProductStructureRepository",
+    "method": "specifications",
+    "before": "Object p0, Object p1",
+    "after": "String tenant,String product"
+  },
+  {
+    "repository": "ProductStructureRepository",
+    "method": "skus",
+    "before": "Object p0, Object p1",
+    "after": "String tenant,String product"
+  },
+  {
+    "repository": "ProductStructureRepository",
+    "method": "components",
+    "before": "Object p0, Object p1",
+    "after": "String tenant,String product"
+  },
+  {
+    "repository": "ProductStructureRepository",
+    "method": "standardDefinitions",
+    "before": "Object p0, Object p1",
+    "after": "String tenant,String configuration"
+  },
+  {
+    "repository": "ProductStructureRepository",
+    "method": "standardOption",
+    "before": "Object p0, Object p1, Object p2",
+    "after": "String tenant,String revision,String option"
+  },
+  {
+    "repository": "ProductStructureRepository",
+    "method": "createSpecification",
+    "before": "Object p0, Object p1, Object p2, Object p3, Object p4, Object p5, Object p6, Object p7, Object p8, Object p9, Object p10",
+    "after": "String id,String tenant,String product,String configuration,String mode,String name,String description,String signature,byte[] digest,String creator,String updater"
+  },
+  {
+    "repository": "ProductStructureRepository",
+    "method": "createStandardValue",
+    "before": "Object p0, Object p1, Object p2, Object p3, Object p4, Object p5, Object p6, Object p7, Object p8, Object p9, Object p10, Object p11, Object p12",
+    "after": "String id,String tenant,String specification,String configuration,String item,String revision,String type,Long integerValue,BigDecimal decimalValue,Boolean booleanValue,String option,String creator,String updater"
+  },
+  {
+    "repository": "ProductStructureRepository",
+    "method": "customDefinitions",
+    "before": "Object p0, Object p1",
+    "after": "String tenant,String configuration"
+  },
+  {
+    "repository": "ProductStructureRepository",
+    "method": "validOptionCount",
+    "before": "Object p0, Object p1, Object p2",
+    "after": "String tenant,String revision,String option"
+  },
+  {
+    "repository": "ProductStructureRepository",
+    "method": "createCustomValue",
+    "before": "Object p0, Object p1, Object p2, Object p3, Object p4, Object p5, Object p6, Object p7, Object p8, Object p9, Object p10, Object p11, Object p12, Object p13",
+    "after": "String id,String tenant,String specification,String configuration,String item,String revision,String type,String text,LocalDate dateValue,Long integerValue,BigDecimal decimalValue,Boolean booleanValue,String creator,String updater"
+  },
+  {
+    "repository": "ProductStructureRepository",
+    "method": "createChoice",
+    "before": "Object p0, Object p1, Object p2, Object p3, Object p4, Object p5, Object p6, Object p7, Object p8",
+    "after": "String id,String tenant,String value,String revision,String type,String option,String customText,String creator,String updater"
+  },
+  {
+    "repository": "ProductStructureRepository",
+    "method": "specificationValues",
+    "before": "Object p0, Object p1",
+    "after": "String tenant,String specification"
+  },
+  {
+    "repository": "ProductStructureRepository",
+    "method": "customChoices",
+    "before": "Object p0, Object p1",
+    "after": "String tenant,String value"
+  },
+  {
+    "repository": "ProductStructureRepository",
+    "method": "standardChoices",
+    "before": "Object p0, Object p1",
+    "after": "String tenant,String option"
+  },
+  {
+    "repository": "ProductStructureRepository",
+    "method": "specificationCount",
+    "before": "Object p0, Object p1, Object p2",
+    "after": "String tenant,String product,String specification"
+  },
+  {
+    "repository": "ProductStructureRepository",
+    "method": "createSku",
+    "before": "Object p0, Object p1, Object p2, Object p3, Object p4, Object p5, Object p6",
+    "after": "String id,String tenant,String product,String specification,String code,String creator,String updater"
+  },
+  {
+    "repository": "ProductStructureRepository",
+    "method": "unitPrecision",
+    "before": "Object p0, Object p1",
+    "after": "String tenant,String unit"
+  },
+  {
+    "repository": "ProductStructureRepository",
+    "method": "componentChildren",
+    "before": "Object p0, Object p1",
+    "after": "String tenant,String product"
+  },
+  {
+    "repository": "ProductStructureRepository",
+    "method": "existingComponent",
+    "before": "Object p0, Object p1, Object p2",
+    "after": "String tenant,String product,String component"
+  },
+  {
+    "repository": "ProductStructureRepository",
+    "method": "updateComponent",
+    "before": "Object p0, Object p1, Object p2, Object p3, Object p4",
+    "after": "BigDecimal quantity,long componentVersion,String actor,String tenant,String id"
+  },
+  {
+    "repository": "ProductStructureRepository",
+    "method": "createComponent",
+    "before": "Object p0, Object p1, Object p2, Object p3, Object p4, Object p5, Object p6, Object p7",
+    "after": "String id,String tenant,String product,String component,BigDecimal quantity,long componentVersion,String creator,String updater"
+  },
+  {
+    "repository": "ProductStructureRepository",
+    "method": "ensureGraphGuard",
+    "before": "Object p0, Object p1, Object p2",
+    "after": "String tenant,String creator,String updater"
+  },
+  {
+    "repository": "ProductStructureRepository",
+    "method": "lockGraphGuard",
+    "before": "Object p0",
+    "after": "String tenant"
+  },
+  {
+    "repository": "ProductStructureRepository",
+    "method": "advanceParentVersion",
+    "before": "Object p0, Object p1, Object p2, Object p3",
+    "after": "String actor,String tenant,String product,long version"
+  },
+  {
+    "repository": "ProductStructureRepository",
+    "method": "state",
+    "before": "String kind, boolean enabled, String actor, String tenant, String product, String id, long version",
+    "after": "String kind, boolean enabled, String actor, String tenant, String product, String id, long version"
+  },
+  {
+    "repository": "ProductStructureRepository",
+    "method": "parent",
+    "before": "String tenant, String id, boolean lock",
+    "after": "String tenant, String id, boolean lock"
+  },
+  {
+    "repository": "ProductStructureRepository",
+    "method": "audit",
+    "before": "Resource resource, String tenant, Object id",
+    "after": "Resource resource,String tenant,String id"
+  },
+  {
+    "repository": "PrintOutputRepository",
+    "method": "businessScene",
+    "before": "Object p0, Object p1, Object p2",
+    "after": "String tenant,String sceneCode,String contract"
+  },
+  {
+    "repository": "PrintOutputRepository",
+    "method": "ownDocument",
+    "before": "Object p0, Object p1, Object p2",
+    "after": "String tenant,String document,String actor"
+  },
+  {
+    "repository": "PrintOutputRepository",
+    "method": "sceneReady",
+    "before": "Object p0, Object p1",
+    "after": "String tenant,String scene"
+  },
+  {
+    "repository": "PrintOutputRepository",
+    "method": "rendererReady",
+    "before": "Object p0",
+    "after": "String tenant"
+  },
+  {
+    "repository": "PrintOutputRepository",
+    "method": "enabledDevice",
+    "before": "Object p0, Object p1",
+    "after": "String tenant,String device"
+  },
+  {
+    "repository": "PrintOutputRepository",
+    "method": "deviceQueueOnline",
+    "before": "Object p0, Object p1, Object p2",
+    "after": "String tenant,String site,String queue"
+  },
+  {
+    "repository": "PrintOutputRepository",
+    "method": "externalScene",
+    "before": "Object p0, Object p1",
+    "after": "String tenant,String sceneCode"
+  },
+  {
+    "repository": "PrintOutputRepository",
+    "method": "lockTenantOutputs",
+    "before": "Object p0",
+    "after": "String tenant"
+  },
+  {
+    "repository": "PrintOutputRepository",
+    "method": "existingRequest",
+    "before": "Object p0, Object p1, Object p2",
+    "after": "String tenant,String owner,String request"
+  },
+  {
+    "repository": "PrintOutputRepository",
+    "method": "createOutput",
+    "before": "Object p0, Object p1, Object p2, Object p3, Object p4, Object p5, Object p6, Object p7, Object p8",
+    "after": "String tenant,String id,String owner,String request,String digest,String mode,String job,String device,int copies"
+  },
+  {
+    "repository": "PrintOutputRepository",
+    "method": "outputStatus",
+    "before": "Object p0, Object p1",
+    "after": "String tenant,String id"
+  },
+  {
+    "repository": "PrintOutputRepository",
+    "method": "rendererOnline",
+    "before": "Object p0",
+    "after": "String tenant"
+  },
+  {
+    "repository": "PrintOutputRepository",
+    "method": "confirmedJob",
+    "before": "Object p0, Object p1",
+    "after": "String tenant,String job"
+  },
+  {
+    "repository": "PrintOutputRepository",
+    "method": "lockOutput",
+    "before": "Object p0, Object p1",
+    "after": "String tenant,String id"
+  },
+  {
+    "repository": "PrintOutputRepository",
+    "method": "confirmOutput",
+    "before": "Object p0, Object p1, Object p2",
+    "after": "String job,String tenant,String id"
+  },
+  {
+    "repository": "PrintSceneRepository",
+    "method": "scenes",
+    "before": "Object p0",
+    "after": "String tenant"
+  },
+  {
+    "repository": "PrintSceneRepository",
+    "method": "lockScene",
+    "before": "Object p0, Object p1",
+    "after": "String tenant,String scene"
+  },
+  {
+    "repository": "PrintSceneRepository",
+    "method": "sceneTemplate",
+    "before": "Object p0, Object p1",
+    "after": "String tenant,String template"
+  },
+  {
+    "repository": "PrintSceneRepository",
+    "method": "createScene",
+    "before": "Object p0, Object p1, Object p2, Object p3, Object p4, Object p5, Object p6, Object p7, Object p8",
+    "after": "String tenant,String id,String code,String name,String contract,String template,int copies,boolean enabled,String actor"
+  },
+  {
+    "repository": "PrintSceneRepository",
+    "method": "updateScene",
+    "before": "Object p0, Object p1, Object p2, Object p3, Object p4, Object p5, Object p6, Object p7, Object p8, Object p9",
+    "after": "String code,String name,String contract,String template,int copies,boolean enabled,String actor,String tenant,String id,long revision"
+  },
+  {
+    "repository": "PrintSceneRepository",
+    "method": "ownDocuments",
+    "before": "Object p0, Object p1",
+    "after": "String tenant,String actor"
+  },
+  {
+    "repository": "PrintSceneRepository",
+    "method": "createDocument",
+    "before": "Object p0, Object p1, Object p2, Object p3, Object p4, Object p5",
+    "after": "String tenant,String id,String scene,String number,String content,String actor"
+  },
+  {
+    "repository": "PrintSceneRepository",
+    "method": "ownDocument",
+    "before": "Object p0, Object p1, Object p2",
+    "after": "String tenant,String id,String actor"
+  },
+  {
+    "repository": "PrintSceneRepository",
+    "method": "publishedTemplate",
+    "before": "Object p0, Object p1",
+    "after": "String tenant,String template"
+  },
+  {
+    "repository": "PrintSceneRepository",
+    "method": "snapshotTemplate",
+    "before": "Object p0, Object p1",
+    "after": "String tenant,String template"
+  },
+  {
+    "repository": "PrintSceneRepository",
+    "method": "contractDefinitions",
+    "before": "Object p0",
+    "after": "String tenant"
+  },
+  {
+    "repository": "PrintSceneRepository",
+    "method": "createContract",
+    "before": "Object p0, Object p1, Object p2, Object p3",
+    "after": "String tenant,String code,String content,String actor"
+  },
+  {
+    "repository": "PrintSceneRepository",
+    "method": "deleteAgentQueues",
+    "before": "Object p0, Object p1, Object p2",
+    "after": "String tenant,String site,String agent"
+  },
+  {
+    "repository": "PrintSceneRepository",
+    "method": "reportAgentQueue",
+    "before": "Object p0, Object p1, Object p2, Object p3",
+    "after": "String tenant,String site,String agent,String queue"
+  },
+  {
+    "repository": "PrintSceneRepository",
+    "method": "queues",
+    "before": "Object p0",
+    "after": "String tenant"
+  },
+  {
+    "repository": "PrintSceneRepository",
+    "method": "enabledScene",
+    "before": "Object p0, Object p1",
+    "after": "String tenant,String scene"
+  }
+]

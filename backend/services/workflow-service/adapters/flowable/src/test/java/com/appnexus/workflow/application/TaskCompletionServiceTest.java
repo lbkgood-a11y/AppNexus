@@ -1,9 +1,9 @@
 package com.appnexus.workflow.application;
+import com.appnexus.workflow.core.WorkflowModel.*;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
 import com.appnexus.contracts.workflow.WorkflowContext;
-import com.appnexus.workflow.core.WorkflowModel.*;
 import java.util.*;
 import org.junit.jupiter.api.Test;
 

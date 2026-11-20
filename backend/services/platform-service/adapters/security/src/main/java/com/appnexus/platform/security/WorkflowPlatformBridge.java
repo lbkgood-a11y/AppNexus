@@ -1,4 +1,5 @@
 package com.appnexus.platform.security;
+import com.appnexus.platform.persistence.capability.CapabilityDirectoryMapper;
 
 import com.appnexus.contracts.workflow.*;
 import com.appnexus.platform.authorization.AccessAuthorization;

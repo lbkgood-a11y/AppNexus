@@ -1,0 +1,17 @@
+# Product统一运行接入修复
+
+日期：2026-11-20。状态：源码实施，未运行编译、测试或真实数据库验证，未部署。
+
+原ProductDeclaration.runtime为空，所有操作却统一登记BUSINESS，公共驱动只能传记录、操作和版本，无法完整表达创建、编辑、上传及子资源命令。本轮没有增加默认输入或模拟执行：同一Provider连接ProductRuntime，复用ProductManagement、ProductStructureManagement、ProductImageManagement、ProductAuthorization及ProductRepository。每次由TenantAccess权威读取当前成员，再按真实操作统一权限和记录范围锁定父行并重验版本。通用事实未声明字段时只返回真实版本、组织及空投影；执行摘要不回传未经声明的商品正文。
+
+公共运行支持read、archiveDraft、restoreDraft、readChanges（固定原默认第1页20条）、readStructure、listImages。归档/恢复调用原用例及CAS事务，不复制状态机；其余操作调用原只读用例。其他操作仍登记原页面、HTTP与权限，但capabilities为空，明确仅专用API执行。公共模型允许这种空能力声明，统一执行器在正文读取或关联解析前拒绝，不能配置虚假公共目标。
+
+Product声明版本从2变3，InteractionContract从1变2，公共BUSINESS数据协议升2。对象和操作标识、HTTP及原授权资源不改；未删除字段或扩大数据范围，不改历史策略。管理员原已保存的能力绑定需重新加载当前目录并按有效能力复核；本轮未执行任何数据库配置迁移或替管理员改绑定。兼容性与现有版本冲突处理仍需在统一验证时确认，未验证不能交付。
+
+D01/D02：同一Product Provider，标识与全量操作保持；D03：原专用API保留；D04/D05：权威成员、独立操作、真实行范围和CAS在runtime两阶段复核；D06/D08：不输出未声明原文，通用摘要为空；D07/D10：有完整命令协议的操作接入同一runtime，专用API操作不虚构能力；D09：无编码变化；D11：加入公共执行器原REQUIRED事务并复用原业务事务；D12：源码已追踪，所有运行与安全正反向证据未验证。
+
+后续继续：细化打印仓储参数及结果契约、同步剩余测试构造与模型空能力断言、复核绑定目录对空能力及声明版本变化的处理；全部迁移后统一执行门禁。当前结论：未满足交付门禁。
+
+## 后续目录同步
+
+BusinessObjectService构建校验原先强制supportedServices非空，现与专用API空能力契约同步；原保存绑定仍检查服务必须属于supportedServices，故空能力不允许保存公共目标。ObjectExecutionServiceTest新增负向用例，断言专用API操作在runtime、平台判定、绑定及驱动产生任何调用前拒绝；仅编写，按用户要求未执行。打印输出与场景仓储参数同步改为语义类型并补中文约束，详见仓储参数契约细化.json。

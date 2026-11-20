@@ -1,0 +1,242 @@
+[
+  {
+    "source": "backend/services/leave-poc/src/main/java/com/appnexus/leave/LeaveRecordMapper.java",
+    "old": "com.appnexus.leave.LeaveRecordMapper",
+    "new": "com.appnexus.leave.adapter.persistence.LeaveRecordMapper",
+    "destination": "backend/services/leave-poc/src/main/java/com/appnexus/leave/adapter/persistence/LeaveRecordMapper.java"
+  },
+  {
+    "source": "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/BusinessPartnerController.java",
+    "old": "com.appnexus.masterdata.BusinessPartnerController",
+    "new": "com.appnexus.masterdata.adapter.web.masterdata.BusinessPartnerController",
+    "destination": "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/adapter/web/masterdata/BusinessPartnerController.java"
+  },
+  {
+    "source": "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/CountryRegionController.java",
+    "old": "com.appnexus.masterdata.CountryRegionController",
+    "new": "com.appnexus.masterdata.adapter.web.masterdata.CountryRegionController",
+    "destination": "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/adapter/web/masterdata/CountryRegionController.java"
+  },
+  {
+    "source": "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/StorageAreaController.java",
+    "old": "com.appnexus.masterdata.StorageAreaController",
+    "new": "com.appnexus.masterdata.adapter.web.masterdata.StorageAreaController",
+    "destination": "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/adapter/web/masterdata/StorageAreaController.java"
+  },
+  {
+    "source": "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/StorageLocationController.java",
+    "old": "com.appnexus.masterdata.StorageLocationController",
+    "new": "com.appnexus.masterdata.adapter.web.masterdata.StorageLocationController",
+    "destination": "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/adapter/web/masterdata/StorageLocationController.java"
+  },
+  {
+    "source": "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/SubdivisionController.java",
+    "old": "com.appnexus.masterdata.SubdivisionController",
+    "new": "com.appnexus.masterdata.adapter.web.masterdata.SubdivisionController",
+    "destination": "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/adapter/web/masterdata/SubdivisionController.java"
+  },
+  {
+    "source": "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/WarehouseController.java",
+    "old": "com.appnexus.masterdata.WarehouseController",
+    "new": "com.appnexus.masterdata.adapter.web.masterdata.WarehouseController",
+    "destination": "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/adapter/web/masterdata/WarehouseController.java"
+  },
+  {
+    "source": "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/product/ProductApprovalController.java",
+    "old": "com.appnexus.masterdata.product.ProductApprovalController",
+    "new": "com.appnexus.masterdata.adapter.web.product.ProductApprovalController",
+    "destination": "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/adapter/web/product/ProductApprovalController.java"
+  },
+  {
+    "source": "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/product/ProductAttributeController.java",
+    "old": "com.appnexus.masterdata.product.ProductAttributeController",
+    "new": "com.appnexus.masterdata.adapter.web.product.ProductAttributeController",
+    "destination": "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/adapter/web/product/ProductAttributeController.java"
+  },
+  {
+    "source": "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/product/ProductCategoryController.java",
+    "old": "com.appnexus.masterdata.product.ProductCategoryController",
+    "new": "com.appnexus.masterdata.adapter.web.product.ProductCategoryController",
+    "destination": "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/adapter/web/product/ProductCategoryController.java"
+  },
+  {
+    "source": "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/product/ProductController.java",
+    "old": "com.appnexus.masterdata.product.ProductController",
+    "new": "com.appnexus.masterdata.adapter.web.product.ProductController",
+    "destination": "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/adapter/web/product/ProductController.java"
+  },
+  {
+    "source": "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/product/ProductImageController.java",
+    "old": "com.appnexus.masterdata.product.ProductImageController",
+    "new": "com.appnexus.masterdata.adapter.web.product.ProductImageController",
+    "destination": "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/adapter/web/product/ProductImageController.java"
+  },
+  {
+    "source": "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/product/ProductStructureController.java",
+    "old": "com.appnexus.masterdata.product.ProductStructureController",
+    "new": "com.appnexus.masterdata.adapter.web.product.ProductStructureController",
+    "destination": "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/adapter/web/product/ProductStructureController.java"
+  },
+  {
+    "source": "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/product/ProductTemplateController.java",
+    "old": "com.appnexus.masterdata.product.ProductTemplateController",
+    "new": "com.appnexus.masterdata.adapter.web.product.ProductTemplateController",
+    "destination": "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/adapter/web/product/ProductTemplateController.java"
+  },
+  {
+    "source": "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/product/ProductUnitController.java",
+    "old": "com.appnexus.masterdata.product.ProductUnitController",
+    "new": "com.appnexus.masterdata.adapter.web.product.ProductUnitController",
+    "destination": "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/adapter/web/product/ProductUnitController.java"
+  },
+  {
+    "source": "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/product/ProductUnitConversionController.java",
+    "old": "com.appnexus.masterdata.product.ProductUnitConversionController",
+    "new": "com.appnexus.masterdata.adapter.web.product.ProductUnitConversionController",
+    "destination": "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/adapter/web/product/ProductUnitConversionController.java"
+  },
+  {
+    "source": "backend/services/platform-service/organization/src/main/java/com/appnexus/platform/organization/personnel/PersonnelExecutionAdapterSqlMapper.java",
+    "old": "com.appnexus.platform.organization.personnel.PersonnelExecutionAdapterSqlMapper",
+    "new": "com.appnexus.platform.persistence.organization.personnel.PersonnelExecutionMapper",
+    "destination": "backend/services/platform-service/adapters/persistence/src/main/java/com/appnexus/platform/persistence/organization/personnel/PersonnelExecutionMapper.java"
+  },
+  {
+    "source": "backend/services/platform-service/organization/src/main/java/com/appnexus/platform/organization/personnel/PersonnelIdentityMapper.java",
+    "old": "com.appnexus.platform.organization.personnel.PersonnelIdentityMapper",
+    "new": "com.appnexus.platform.persistence.organization.personnel.PersonnelIdentityMapper",
+    "destination": "backend/services/platform-service/adapters/persistence/src/main/java/com/appnexus/platform/persistence/organization/personnel/PersonnelIdentityMapper.java"
+  },
+  {
+    "source": "backend/services/platform-service/organization/src/main/java/com/appnexus/platform/organization/personnel/PersonnelServiceSqlMapper.java",
+    "old": "com.appnexus.platform.organization.personnel.PersonnelServiceSqlMapper",
+    "new": "com.appnexus.platform.persistence.organization.personnel.PersonnelMapper",
+    "destination": "backend/services/platform-service/adapters/persistence/src/main/java/com/appnexus/platform/persistence/organization/personnel/PersonnelMapper.java"
+  },
+  {
+    "source": "backend/services/platform-service/organization/src/main/java/com/appnexus/platform/organization/personnel/PersonRecordMapper.java",
+    "old": "com.appnexus.platform.organization.personnel.PersonRecordMapper",
+    "new": "com.appnexus.platform.persistence.organization.personnel.PersonRecordMapper",
+    "destination": "backend/services/platform-service/adapters/persistence/src/main/java/com/appnexus/platform/persistence/organization/personnel/PersonRecordMapper.java"
+  },
+  {
+    "source": "backend/services/platform-service/adapters/security/src/main/java/com/appnexus/platform/security/CapabilityDirectoryMapper.java",
+    "old": "com.appnexus.platform.security.CapabilityDirectoryMapper",
+    "new": "com.appnexus.platform.persistence.security.CapabilityDirectoryMapper",
+    "destination": "backend/services/platform-service/adapters/persistence/src/main/java/com/appnexus/platform/persistence/security/CapabilityDirectoryMapper.java"
+  },
+  {
+    "source": "backend/services/platform-service/adapters/security/src/main/java/com/appnexus/platform/security/ClientSecretMapper.java",
+    "old": "com.appnexus.platform.security.ClientSecretMapper",
+    "new": "com.appnexus.platform.persistence.security.ClientSecretMapper",
+    "destination": "backend/services/platform-service/adapters/persistence/src/main/java/com/appnexus/platform/persistence/security/ClientSecretMapper.java"
+  },
+  {
+    "source": "backend/services/platform-service/adapters/security/src/main/java/com/appnexus/platform/security/IntegrationClientsSqlMapper.java",
+    "old": "com.appnexus.platform.security.IntegrationClientsSqlMapper",
+    "new": "com.appnexus.platform.persistence.security.IntegrationClientsSqlMapper",
+    "destination": "backend/services/platform-service/adapters/persistence/src/main/java/com/appnexus/platform/persistence/security/IntegrationClientsSqlMapper.java"
+  },
+  {
+    "source": "backend/services/platform-service/adapters/security/src/main/java/com/appnexus/platform/security/OAuthRepositoryMapper.java",
+    "old": "com.appnexus.platform.security.OAuthRepositoryMapper",
+    "new": "com.appnexus.platform.persistence.security.OAuthRepositoryMapper",
+    "destination": "backend/services/platform-service/adapters/persistence/src/main/java/com/appnexus/platform/persistence/security/OAuthRepositoryMapper.java"
+  },
+  {
+    "source": "backend/services/platform-service/adapters/security/src/main/java/com/appnexus/platform/security/PartnerCallFilterSqlMapper.java",
+    "old": "com.appnexus.platform.security.PartnerCallFilterSqlMapper",
+    "new": "com.appnexus.platform.persistence.security.PartnerCallFilterSqlMapper",
+    "destination": "backend/services/platform-service/adapters/persistence/src/main/java/com/appnexus/platform/persistence/security/PartnerCallFilterSqlMapper.java"
+  },
+  {
+    "source": "backend/services/platform-service/adapters/security/src/main/java/com/appnexus/platform/security/PartnerDictionaryMapper.java",
+    "old": "com.appnexus.platform.security.PartnerDictionaryMapper",
+    "new": "com.appnexus.platform.persistence.security.PartnerDictionaryMapper",
+    "destination": "backend/services/platform-service/adapters/persistence/src/main/java/com/appnexus/platform/persistence/security/PartnerDictionaryMapper.java"
+  },
+  {
+    "source": "backend/services/platform-service/adapters/security/src/main/java/com/appnexus/platform/security/PartnerReferenceControllerSqlMapper.java",
+    "old": "com.appnexus.platform.security.PartnerReferenceControllerSqlMapper",
+    "new": "com.appnexus.platform.persistence.security.PartnerReferenceAuditMapper",
+    "destination": "backend/services/platform-service/adapters/persistence/src/main/java/com/appnexus/platform/persistence/security/PartnerReferenceAuditMapper.java"
+  },
+  {
+    "source": "backend/services/platform-service/adapters/security/src/main/java/com/appnexus/platform/security/PolicyTemplatesSqlMapper.java",
+    "old": "com.appnexus.platform.security.PolicyTemplatesSqlMapper",
+    "new": "com.appnexus.platform.persistence.security.PolicyTemplatesSqlMapper",
+    "destination": "backend/services/platform-service/adapters/persistence/src/main/java/com/appnexus/platform/persistence/security/PolicyTemplatesSqlMapper.java"
+  },
+  {
+    "source": "backend/services/platform-service/adapters/security/src/main/java/com/appnexus/platform/security/ReliableEventsSqlMapper.java",
+    "old": "com.appnexus.platform.security.ReliableEventsSqlMapper",
+    "new": "com.appnexus.platform.persistence.security.ReliableEventsSqlMapper",
+    "destination": "backend/services/platform-service/adapters/persistence/src/main/java/com/appnexus/platform/persistence/security/ReliableEventsSqlMapper.java"
+  },
+  {
+    "source": "backend/services/platform-service/adapters/security/src/main/java/com/appnexus/platform/security/RotatingAuthorizationServiceSqlMapper.java",
+    "old": "com.appnexus.platform.security.RotatingAuthorizationServiceSqlMapper",
+    "new": "com.appnexus.platform.persistence.security.RotatingAuthorizationMapper",
+    "destination": "backend/services/platform-service/adapters/persistence/src/main/java/com/appnexus/platform/persistence/security/RotatingAuthorizationMapper.java"
+  },
+  {
+    "source": "backend/services/platform-service/adapters/security/src/main/java/com/appnexus/platform/security/TaskManagementControllerSqlMapper.java",
+    "old": "com.appnexus.platform.security.TaskManagementControllerSqlMapper",
+    "new": "com.appnexus.platform.persistence.security.TaskManagementAuditMapper",
+    "destination": "backend/services/platform-service/adapters/persistence/src/main/java/com/appnexus/platform/persistence/security/TaskManagementAuditMapper.java"
+  },
+  {
+    "source": "backend/services/platform-service/adapters/security/src/main/java/com/appnexus/platform/security/TenantInvitationsSqlMapper.java",
+    "old": "com.appnexus.platform.security.TenantInvitationsSqlMapper",
+    "new": "com.appnexus.platform.persistence.security.TenantInvitationsSqlMapper",
+    "destination": "backend/services/platform-service/adapters/persistence/src/main/java/com/appnexus/platform/persistence/security/TenantInvitationsSqlMapper.java"
+  },
+  {
+    "source": "backend/services/platform-service/adapters/security/src/main/java/com/appnexus/platform/security/TenantParameterMapper.java",
+    "old": "com.appnexus.platform.security.TenantParameterMapper",
+    "new": "com.appnexus.platform.persistence.security.TenantParameterMapper",
+    "destination": "backend/services/platform-service/adapters/persistence/src/main/java/com/appnexus/platform/persistence/security/TenantParameterMapper.java"
+  },
+  {
+    "source": "backend/services/platform-service/adapters/security/src/main/java/com/appnexus/platform/security/UnifiedAuditMapper.java",
+    "old": "com.appnexus.platform.security.UnifiedAuditMapper",
+    "new": "com.appnexus.platform.persistence.security.UnifiedAuditMapper",
+    "destination": "backend/services/platform-service/adapters/persistence/src/main/java/com/appnexus/platform/persistence/security/UnifiedAuditMapper.java"
+  },
+  {
+    "source": "backend/services/print-service/adapters/jdbc/src/main/java/com/appnexus/printing/adapter/jdbc/BusinessPrintingMapper.java",
+    "old": "com.appnexus.printing.adapter.jdbc.BusinessPrintingMapper",
+    "new": "com.appnexus.printing.adapter.persistence.BusinessPrintingMapper",
+    "destination": "backend/services/print-service/adapters/jdbc/src/main/java/com/appnexus/printing/adapter/persistence/BusinessPrintingMapper.java"
+  },
+  {
+    "source": "backend/services/print-service/adapters/jdbc/src/main/java/com/appnexus/printing/adapter/jdbc/PrintFlowSqlMapper.java",
+    "old": "com.appnexus.printing.adapter.jdbc.PrintFlowSqlMapper",
+    "new": "com.appnexus.printing.adapter.persistence.PrintFlowSqlMapper",
+    "destination": "backend/services/print-service/adapters/jdbc/src/main/java/com/appnexus/printing/adapter/persistence/PrintFlowSqlMapper.java"
+  },
+  {
+    "source": "backend/services/print-service/adapters/jdbc/src/main/java/com/appnexus/printing/adapter/jdbc/PrintOutputsSqlMapper.java",
+    "old": "com.appnexus.printing.adapter.jdbc.PrintOutputsSqlMapper",
+    "new": "com.appnexus.printing.adapter.persistence.PrintOutputsSqlMapper",
+    "destination": "backend/services/print-service/adapters/jdbc/src/main/java/com/appnexus/printing/adapter/persistence/PrintOutputsSqlMapper.java"
+  },
+  {
+    "source": "backend/services/print-service/adapters/jdbc/src/main/java/com/appnexus/printing/adapter/jdbc/PrintReceiptMapper.java",
+    "old": "com.appnexus.printing.adapter.jdbc.PrintReceiptMapper",
+    "new": "com.appnexus.printing.adapter.persistence.PrintReceiptMapper",
+    "destination": "backend/services/print-service/adapters/jdbc/src/main/java/com/appnexus/printing/adapter/persistence/PrintReceiptMapper.java"
+  },
+  {
+    "source": "backend/services/print-service/adapters/jdbc/src/main/java/com/appnexus/printing/adapter/jdbc/PrintRuntimeSqlMapper.java",
+    "old": "com.appnexus.printing.adapter.jdbc.PrintRuntimeSqlMapper",
+    "new": "com.appnexus.printing.adapter.persistence.PrintRuntimeSqlMapper",
+    "destination": "backend/services/print-service/adapters/jdbc/src/main/java/com/appnexus/printing/adapter/persistence/PrintRuntimeSqlMapper.java"
+  },
+  {
+    "source": "backend/services/workflow-service/adapters/flowable/src/main/java/com/appnexus/workflow/adapter/flowable/WorkflowRecordMapper.java",
+    "old": "com.appnexus.workflow.adapter.flowable.WorkflowRecordMapper",
+    "new": "com.appnexus.workflow.adapter.persistence.WorkflowRecordMapper",
+    "destination": "backend/services/workflow-service/adapters/flowable/src/main/java/com/appnexus/workflow/adapter/persistence/WorkflowRecordMapper.java"
+  }
+]

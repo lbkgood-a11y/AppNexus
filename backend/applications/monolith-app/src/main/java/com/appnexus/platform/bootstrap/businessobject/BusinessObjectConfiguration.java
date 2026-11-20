@@ -28,7 +28,7 @@ public class BusinessObjectConfiguration {
       ObjectProvider<com.appnexus.contracts.workflow.WorkflowStarter> workflows,
       ObjectProvider<com.appnexus.contracts.printing.BusinessPrinting> printing) {
     return com.appnexus.platform.businessobject.BusinessObjectUseCases.execution(providers,bindings,
-        new com.appnexus.platform.persistence.businessobject.configuration.JdbcConfigurationTransaction(manager),platform,
+        new com.appnexus.platform.persistence.businessobject.configuration.SpringConfigurationTransaction(manager),platform,
         workflows::getIfAvailable,printing::getIfAvailable);
   }
   /** 编码器元数据与执行器均由当前业务对象模块装配，不引入另一套应用入口。 */

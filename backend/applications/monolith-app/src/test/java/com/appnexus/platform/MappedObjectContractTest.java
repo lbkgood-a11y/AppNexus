@@ -1,7 +1,7 @@
 package com.appnexus.platform;
+import com.appnexus.contracts.businessobject.BusinessObjects.*;
 
 import com.appnexus.contracts.businessobject.*;
-import com.appnexus.contracts.businessobject.BusinessObjects.*;
 import static com.appnexus.contracts.businessobject.ObjectRecordMapping.*;
 import java.util.*;
 import org.junit.jupiter.api.Test;

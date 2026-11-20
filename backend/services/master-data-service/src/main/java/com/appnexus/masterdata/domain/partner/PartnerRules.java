@@ -3,7 +3,7 @@ package com.appnexus.masterdata.domain.partner;
 import java.util.*;
 import java.time.LocalDate;
 import java.math.BigDecimal;
-import static com.appnexus.masterdata.MasterData.*;
+import static com.appnexus.masterdata.api.masterdata.MasterData.*;
 
 /** 客商及明细的纯领域约束；日期由应用层提供，不读取系统时钟、数据库或会话。 */
 public final class PartnerRules {

@@ -1,4 +1,5 @@
 package com.appnexus.platform.security;
+import com.appnexus.platform.persistence.tenant.TenantInvitationMapper;
 
 import com.appnexus.platform.tenant.PlatformAdministration;
 import java.security.*;
@@ -13,11 +14,11 @@ import org.springframework.http.HttpStatus;
 /** 已有账号邀请/激活闭环；邀请不能自行注册账号、信任未验证邮箱或继承旧成员授权。 */
 @Service
 public class TenantInvitations {
-    private final TenantInvitationsSqlMapper statements;
+    private final TenantInvitationMapper statements;
 
     
     private final PlatformAdministration platform;
-    public TenantInvitations(PlatformAdministration platform,TenantInvitationsSqlMapper statements){this.statements=statements;this.platform=platform;}
+    public TenantInvitations(PlatformAdministration platform,TenantInvitationMapper statements){this.statements=statements;this.platform=platform;}
     /** 公开管理摘要不返回凭证摘要、账号联系方式或权限信息。 */
     public record View(UUID id,UUID tenantId,UUID accountId,String status,Instant expiresAt){}
     /** 随机邀请凭证仅返回一次，必须通过已核实对象的受控渠道传递。 */

@@ -1,4 +1,10 @@
 package com.appnexus.platform.security;
+import com.appnexus.platform.audit.port.SecurityLogRepository;
+import com.appnexus.platform.identity.port.AccountRepository;
+import com.appnexus.platform.persistence.identity.oauth.OAuthAuthorizationMapper;
+import com.appnexus.platform.persistence.identity.integration.PartnerClientAuthorityMapper;
+import com.appnexus.platform.persistence.identity.oauth.OAuthAuthorizationRepositoryMapper;
+import com.appnexus.platform.persistence.identity.integration.ClientSecretMapper;
 
 
 import org.springframework.security.oauth2.server.authorization.*;
@@ -40,7 +46,7 @@ public class WebSecurityConfiguration {
     }
     @Bean
     @Order(1)
-    SecurityFilterChain authorizationServer(HttpSecurity http, @Value("${app.frontend-url}") String frontendUrl, com.appnexus.platform.identity.AccountRepository accounts,
+    SecurityFilterChain authorizationServer(HttpSecurity http, @Value("${app.frontend-url}") String frontendUrl, com.appnexus.platform.identity.port.AccountRepository accounts,
             org.springframework.security.oauth2.server.resource.introspection.OpaqueTokenIntrospector introspection,
             RegisteredClientRepository clients,RotatingAuthorizationService authorizations,
             PasswordEncoder encoder,ClientSecretMapper clientSecrets,
@@ -77,7 +83,7 @@ public class WebSecurityConfiguration {
     @Order(2)
     SecurityFilterChain partnerApi(HttpSecurity http,
             org.springframework.security.oauth2.server.resource.introspection.OpaqueTokenIntrospector introspection,
-            PartnerCallFilterSqlMapper partnerCalls,org.springframework.data.redis.core.StringRedisTemplate redis)throws Exception{
+            PartnerClientAuthorityMapper partnerCalls,org.springframework.data.redis.core.StringRedisTemplate redis)throws Exception{
         http.securityMatcher("/v1/**")
             .sessionManagement(session->session.sessionCreationPolicy(org.springframework.security.config.http.SessionCreationPolicy.STATELESS))
             // 外部接口仅接受 Bearer 机密客户端，Cookie 不参与，不允许跨接口面借用 Web 登录。
@@ -91,7 +97,7 @@ public class WebSecurityConfiguration {
     @Order(3)
     SecurityFilterChain nativeApi(HttpSecurity http,
             org.springframework.security.oauth2.server.resource.introspection.OpaqueTokenIntrospector introspection,
-            com.appnexus.platform.identity.AccountRepository accounts,SessionLifetime lifetime,
+            com.appnexus.platform.identity.port.AccountRepository accounts,SessionLifetime lifetime,
             com.appnexus.platform.tenant.TenantAccess tenants,
             com.appnexus.platform.organization.PersonnelExecution personnel,
             com.appnexus.platform.authorization.OrganizationAuthorization organizationAuthorization)throws Exception{
@@ -110,12 +116,12 @@ public class WebSecurityConfiguration {
     SecurityFilterChain application(HttpSecurity http,
             @Value("${app.frontend-url}") String frontendUrl,
             ClientRegistrationRepository registrations,
-            com.appnexus.platform.audit.SecurityLogRepository logs,
+            com.appnexus.platform.audit.port.SecurityLogRepository logs,
             com.appnexus.platform.tenant.TenantAccess tenantAccess,
             com.appnexus.platform.organization.PersonnelExecution personnel,
             com.appnexus.platform.authorization.OrganizationAuthorization organizationAuthorization,
             org.springframework.data.redis.core.StringRedisTemplate redis,
-            com.appnexus.platform.identity.AccountRepository accounts,
+            com.appnexus.platform.identity.port.AccountRepository accounts,
             SessionLifetime lifetime,
             com.appnexus.platform.identity.MultiFactorAuthentication mfa,
             com.appnexus.platform.tenant.PlatformAdministration platform,
@@ -194,7 +200,7 @@ public class WebSecurityConfiguration {
     @org.springframework.boot.sql.init.dependency.DependsOnDatabaseInitialization
     RegisteredClientRepository registeredClients(PasswordEncoder encoder,
             @Value("${app.bff-secret}") String secret,
-            @Value("${app.public-url}") String publicUrl, OAuthRepositoryMapper oauth,
+            @Value("${app.public-url}") String publicUrl, OAuthAuthorizationRepositoryMapper oauth,
             @Value("${app.native.redirect-uri:}") String nativeRedirect) {
         var repository = new MyBatisRegisteredClients(oauth);
         var client = RegisteredClient.withId("appnexus-bff")
@@ -239,8 +245,8 @@ public class WebSecurityConfiguration {
     }
 
     @Bean
-    RotatingAuthorizationService authorizationService(OAuthRepositoryMapper oauth, RegisteredClientRepository clients,RotatingAuthorizationServiceSqlMapper statements,
-            org.springframework.transaction.PlatformTransactionManager transactions,com.appnexus.platform.audit.SecurityLogRepository logs) {
+    RotatingAuthorizationService authorizationService(OAuthAuthorizationRepositoryMapper oauth, RegisteredClientRepository clients,OAuthAuthorizationMapper statements,
+            org.springframework.transaction.PlatformTransactionManager transactions,com.appnexus.platform.audit.port.SecurityLogRepository logs) {
         return new RotatingAuthorizationService(new MyBatisAuthorizations(oauth,clients),transactions,logs,statements);
     }
     /**
@@ -282,7 +288,7 @@ public class WebSecurityConfiguration {
     }
     @Bean
     org.springframework.security.oauth2.server.resource.introspection.OpaqueTokenIntrospector localIntrospection(
-            OAuth2AuthorizationService authorizations, com.appnexus.platform.identity.AccountRepository accounts,IntegrationClients integrations) {
+            OAuth2AuthorizationService authorizations, com.appnexus.platform.identity.port.AccountRepository accounts,IntegrationClients integrations) {
         return token -> {
             var authorization = authorizations.findByToken(token, OAuth2TokenType.ACCESS_TOKEN);
             if (authorization == null || authorization.getAccessToken() == null || !authorization.getAccessToken().isActive())
@@ -318,7 +324,7 @@ public class WebSecurityConfiguration {
         };
     }
     @Bean
-    OAuth2AuthorizationConsentService consentService(OAuthRepositoryMapper oauth, RegisteredClientRepository clients) {
+    OAuth2AuthorizationConsentService consentService(OAuthAuthorizationRepositoryMapper oauth, RegisteredClientRepository clients) {
         return new MyBatisAuthorizationConsents(oauth,clients);
     }
     @Bean

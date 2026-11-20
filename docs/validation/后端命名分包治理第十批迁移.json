@@ -1,0 +1,26 @@
+[
+  {
+    "old": "com.appnexus.masterdata.product.ProductV1Service",
+    "new": "com.appnexus.masterdata.product.ProductService",
+    "source": "backend\\services\\master-data-service\\src\\main\\java\\com\\appnexus\\masterdata\\product\\ProductV1Service.java",
+    "destination": "backend\\services\\master-data-service\\src\\main\\java\\com\\appnexus\\masterdata\\product\\ProductService.java"
+  },
+  {
+    "old": "com.appnexus.masterdata.adapter.persistence.ProductV1Mapper",
+    "new": "com.appnexus.masterdata.adapter.persistence.ProductMainMapper",
+    "source": "backend\\services\\master-data-service\\src\\main\\java\\com\\appnexus\\masterdata\\adapter\\persistence\\ProductV1Mapper.java",
+    "destination": "backend\\services\\master-data-service\\src\\main\\java\\com\\appnexus\\masterdata\\adapter\\persistence\\ProductMainMapper.java"
+  },
+  {
+    "old": "com.appnexus.masterdata.product.CatalogData",
+    "new": "com.appnexus.masterdata.api.product.ProductCatalogData",
+    "source": "backend\\services\\master-data-service\\src\\main\\java\\com\\appnexus\\masterdata\\product\\CatalogData.java",
+    "destination": "backend\\services\\master-data-service\\src\\main\\java\\com\\appnexus\\masterdata\\api\\product\\ProductCatalogData.java"
+  },
+  {
+    "old": "com.appnexus.masterdata.product.ProductDeclaration",
+    "new": "com.appnexus.masterdata.adapter.integration.product.ProductDeclaration",
+    "source": "backend\\services\\master-data-service\\src\\main\\java\\com\\appnexus\\masterdata\\product\\ProductDeclaration.java",
+    "destination": "backend\\services\\master-data-service\\src\\main\\java\\com\\appnexus\\masterdata\\adapter\\integration\\product\\ProductDeclaration.java"
+  }
+]

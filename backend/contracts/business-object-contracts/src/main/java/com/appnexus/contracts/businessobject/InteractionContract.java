@@ -15,7 +15,7 @@ import java.util.Set;
  * @param nameZh 中文名称
  * @param nameEn 英文名称
  * @param trigger 触发来源；声明本身不创建事件订阅或调度任务
- * @param capabilities 允许选择的目标服务及专业协议；同一服务只能声明一次
+ * @param capabilities 已接通公共执行的目标服务及协议；同一服务只能声明一次。空列表表示仅通过原专用API执行，不开放公共能力绑定
  */
 public record InteractionContract(
     String code, int version, String objectType, String operationCode,
@@ -28,8 +28,7 @@ public record InteractionContract(
     }
     Objects.requireNonNull(trigger);
     capabilities = List.copyOf(capabilities);
-    if (capabilities.isEmpty()
-        || capabilities.stream().map(Capability::service).distinct().count() != capabilities.size()) {
+    if (capabilities.stream().map(Capability::service).distinct().count() != capabilities.size()) {
       throw new IllegalArgumentException("INTERACTION_CAPABILITY_INVALID");
     }
   }

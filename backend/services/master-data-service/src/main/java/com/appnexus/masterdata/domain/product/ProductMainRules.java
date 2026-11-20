@@ -1,7 +1,7 @@
 package com.appnexus.masterdata.domain.product;
-
 import com.appnexus.masterdata.api.product.ProductMainData.*;
-import com.appnexus.masterdata.MasterData.Rejection;
+
+import com.appnexus.masterdata.api.masterdata.MasterData.Rejection;
 import java.util.UUID;
 
 /** 商品主档文本及标识纯输入规则；不把数据库、授权或属性目录读取混入领域。 */

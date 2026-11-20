@@ -1,4 +1,7 @@
 package com.appnexus.platform;
+import com.appnexus.platform.organization.PersonManagement;
+import com.appnexus.platform.organization.PersonData;
+import com.appnexus.platform.security.operation.OperationRegistry;
 
 import static org.assertj.core.api.Assertions.*;
 import java.util.*;
@@ -15,7 +18,7 @@ import com.appnexus.platform.configuration.NavigationPages;
 class MasterDataIntegrationTest extends DatabaseTestSupport {
   @Autowired JdbcTemplate jdbc;
   @Autowired OperationRegistry registry;
-  @Autowired com.appnexus.platform.organization.personnel.PersonDataService service;
+  @Autowired com.appnexus.platform.organization.PersonManagement service;
   @Autowired com.appnexus.platform.persistence.organization.OrganizationAdministratorBootstrap bootstrap;
   /** 新租户管理员及普通成员使用真实 RBAC 执行器，验证新权限不会向普通成员扩散。 */
   @Test void administratorCanManageButOrdinaryAndRevokedMembersCannot(){
@@ -29,13 +32,13 @@ class MasterDataIntegrationTest extends DatabaseTestSupport {
     bootstrap.initialize(tenant,adminMember);
     var admin=new com.appnexus.platform.tenant.VerifiedTenantContext(adminAccount,tenant,adminMember,1);
     var ordinary=new com.appnexus.platform.tenant.VerifiedTenantContext(ordinaryAccount,tenant,ordinaryMember,1);
-    var input=new com.appnexus.platform.organization.personnel.PersonData.Input("STAFF-1","独立测试人员",Map.of(),0);
-    service.create(admin,com.appnexus.platform.organization.personnel.PersonData.Kind.PERSON,input);
-    assertThat(service.list(admin,com.appnexus.platform.organization.personnel.PersonData.Kind.PERSON,"",null,1,20).total()).isEqualTo(1);
-    assertThatThrownBy(()->service.list(ordinary,com.appnexus.platform.organization.personnel.PersonData.Kind.PERSON,"",null,1,20)).hasMessage("MASTER_DATA_DENIED");
-    assertThatThrownBy(()->service.create(ordinary,com.appnexus.platform.organization.personnel.PersonData.Kind.PERSON,input)).hasMessage("MASTER_DATA_DENIED");
+    var input=new com.appnexus.platform.organization.PersonData.Input("STAFF-1","独立测试人员",Map.of(),0);
+    service.create(admin,com.appnexus.platform.organization.PersonData.Kind.PERSON,input);
+    assertThat(service.list(admin,com.appnexus.platform.organization.PersonData.Kind.PERSON,"",null,1,20).total()).isEqualTo(1);
+    assertThatThrownBy(()->service.list(ordinary,com.appnexus.platform.organization.PersonData.Kind.PERSON,"",null,1,20)).hasMessage("MASTER_DATA_DENIED");
+    assertThatThrownBy(()->service.create(ordinary,com.appnexus.platform.organization.PersonData.Kind.PERSON,input)).hasMessage("MASTER_DATA_DENIED");
     jdbc.update("DELETE FROM access_member_role WHERE tenant_id=UUID_TO_BIN(?) AND member_id=UUID_TO_BIN(?)",tenant.toString(),adminMember.toString());
-    assertThatThrownBy(()->service.list(admin,com.appnexus.platform.organization.personnel.PersonData.Kind.PERSON,"",null,1,20)).hasMessage("MASTER_DATA_DENIED");
+    assertThatThrownBy(()->service.list(admin,com.appnexus.platform.organization.PersonData.Kind.PERSON,"",null,1,20)).hasMessage("MASTER_DATA_DENIED");
   }
   @Test void masterDataIsInstalledAndDeclaredExactlyOnce(){
     var objects=registry.objects().stream().filter(o->Set.of("Person","BusinessPartner","Warehouse","CountryRegion","Product").contains(o.code())).toList();

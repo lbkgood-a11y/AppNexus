@@ -79,7 +79,7 @@ class LeavePocTest {
     };
     var documents = com.appnexus.platform.persistence.businessobject.BusinessObjectPersistence.create(configurationMapper(),manager,objectPlatform,()->runtime,List.of(service));
     service.bindings(() -> documents);
-    service.execution(()->com.appnexus.platform.businessobject.BusinessObjectUseCases.execution(List.of(service),documents,new com.appnexus.platform.persistence.businessobject.configuration.JdbcConfigurationTransaction(manager),objectPlatform,()->runtime,()->null));
+    service.execution(()->com.appnexus.platform.businessobject.BusinessObjectUseCases.execution(List.of(service),documents,new com.appnexus.platform.persistence.businessobject.configuration.SpringConfigurationTransaction(manager),objectPlatform,()->runtime,()->null));
     runtime.documentBindings(() -> documents);
     var model = model();
     assertThat(runtime.validate(c("applicant"), model)).isEmpty();

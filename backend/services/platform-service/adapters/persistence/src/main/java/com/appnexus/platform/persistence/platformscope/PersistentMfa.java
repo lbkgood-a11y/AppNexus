@@ -1,4 +1,5 @@
 package com.appnexus.platform.persistence.platformscope;
+import com.appnexus.platform.audit.port.SecurityLogRepository;
 
 import com.appnexus.platform.identity.*;
 import com.appnexus.platform.audit.*;

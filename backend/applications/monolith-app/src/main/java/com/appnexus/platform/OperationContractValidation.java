@@ -1,4 +1,5 @@
 package com.appnexus.platform;
+import com.appnexus.platform.security.operation.OperationRegistry;
 import com.appnexus.platform.configuration.NavigationPages;
 import org.springframework.beans.factory.SmartInitializingSingleton;
 import org.springframework.context.annotation.*;

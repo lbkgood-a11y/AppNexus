@@ -1,4 +1,6 @@
 package com.appnexus.platform;
+import com.appnexus.platform.managementapi.operation.OperationDiagnosticsController;
+import com.appnexus.platform.security.operation.OperationRegistry;
 
 import com.appnexus.contracts.operation.OperationBinding.Eligibility;
 import com.appnexus.platform.authorization.*;

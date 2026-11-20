@@ -1,7 +1,7 @@
 package com.appnexus.platform;
+import com.appnexus.contracts.businessobject.BusinessObjects.*;
 
 import com.appnexus.contracts.businessobject.*;
-import com.appnexus.contracts.businessobject.BusinessObjects.*;
 import com.appnexus.platform.authorization.*;
 import com.appnexus.platform.persistence.platformscope.MyBatisPlatformAdministration;
 import java.util.*;

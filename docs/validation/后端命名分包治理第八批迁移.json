@@ -1,0 +1,80 @@
+[
+  {
+    "source": "backend\\services\\master-data-service\\src\\main\\java\\com\\appnexus\\masterdata\\application\\MasterDataRecords.java",
+    "destination": "backend\\services\\master-data-service\\src\\main\\java\\com\\appnexus\\masterdata\\application\\masterdata\\MasterDataRepository.java",
+    "old": "com.appnexus.masterdata.application.MasterDataRecords",
+    "new": "com.appnexus.masterdata.application.masterdata.MasterDataRepository"
+  },
+  {
+    "source": "backend\\services\\master-data-service\\src\\main\\java\\com\\appnexus\\masterdata\\adapter\\persistence\\MyBatisMasterDataRecords.java",
+    "destination": "backend\\services\\master-data-service\\src\\main\\java\\com\\appnexus\\masterdata\\adapter\\persistence\\MyBatisMasterDataRepository.java",
+    "old": "com.appnexus.masterdata.adapter.persistence.MyBatisMasterDataRecords",
+    "new": "com.appnexus.masterdata.adapter.persistence.MyBatisMasterDataRepository"
+  },
+  {
+    "source": "backend\\services\\master-data-service\\src\\main\\java\\com\\appnexus\\masterdata\\adapter\\persistence\\MyBatisProductCatalogReads.java",
+    "destination": "backend\\services\\master-data-service\\src\\main\\java\\com\\appnexus\\masterdata\\adapter\\persistence\\MyBatisProductCatalogQueries.java",
+    "old": "com.appnexus.masterdata.adapter.persistence.MyBatisProductCatalogReads",
+    "new": "com.appnexus.masterdata.adapter.persistence.MyBatisProductCatalogQueries"
+  },
+  {
+    "source": "backend\\services\\master-data-service\\src\\main\\java\\com\\appnexus\\masterdata\\adapter\\persistence\\MyBatisProductList.java",
+    "destination": "backend\\services\\master-data-service\\src\\main\\java\\com\\appnexus\\masterdata\\adapter\\persistence\\MyBatisProductListQueries.java",
+    "old": "com.appnexus.masterdata.adapter.persistence.MyBatisProductList",
+    "new": "com.appnexus.masterdata.adapter.persistence.MyBatisProductListQueries"
+  },
+  {
+    "source": "backend\\services\\master-data-service\\src\\main\\java\\com\\appnexus\\masterdata\\adapter\\persistence\\MyBatisProductRecords.java",
+    "destination": "backend\\services\\master-data-service\\src\\main\\java\\com\\appnexus\\masterdata\\adapter\\persistence\\MyBatisProductRepository.java",
+    "old": "com.appnexus.masterdata.adapter.persistence.MyBatisProductRecords",
+    "new": "com.appnexus.masterdata.adapter.persistence.MyBatisProductRepository"
+  },
+  {
+    "source": "backend\\services\\master-data-service\\src\\main\\java\\com\\appnexus\\masterdata\\adapter\\persistence\\MyBatisUnitConversionStore.java",
+    "destination": "backend\\services\\master-data-service\\src\\main\\java\\com\\appnexus\\masterdata\\adapter\\persistence\\MyBatisUnitConversionRepository.java",
+    "old": "com.appnexus.masterdata.adapter.persistence.MyBatisUnitConversionStore",
+    "new": "com.appnexus.masterdata.adapter.persistence.MyBatisUnitConversionRepository"
+  },
+  {
+    "source": "backend\\services\\master-data-service\\src\\main\\java\\com\\appnexus\\masterdata\\application\\product\\ProductCatalogReads.java",
+    "destination": "backend\\services\\master-data-service\\src\\main\\java\\com\\appnexus\\masterdata\\application\\product\\ProductCatalogQueries.java",
+    "old": "com.appnexus.masterdata.application.product.ProductCatalogReads",
+    "new": "com.appnexus.masterdata.application.product.ProductCatalogQueries"
+  },
+  {
+    "source": "backend\\services\\master-data-service\\src\\main\\java\\com\\appnexus\\masterdata\\application\\product\\ProductListReads.java",
+    "destination": "backend\\services\\master-data-service\\src\\main\\java\\com\\appnexus\\masterdata\\application\\product\\ProductListQueries.java",
+    "old": "com.appnexus.masterdata.application.product.ProductListReads",
+    "new": "com.appnexus.masterdata.application.product.ProductListQueries"
+  },
+  {
+    "source": "backend\\services\\master-data-service\\src\\main\\java\\com\\appnexus\\masterdata\\application\\product\\ProductRecords.java",
+    "destination": "backend\\services\\master-data-service\\src\\main\\java\\com\\appnexus\\masterdata\\application\\product\\ProductRepository.java",
+    "old": "com.appnexus.masterdata.application.product.ProductRecords",
+    "new": "com.appnexus.masterdata.application.product.ProductRepository"
+  },
+  {
+    "source": "backend\\services\\master-data-service\\src\\main\\java\\com\\appnexus\\masterdata\\application\\product\\UnitConversionStore.java",
+    "destination": "backend\\services\\master-data-service\\src\\main\\java\\com\\appnexus\\masterdata\\application\\product\\UnitConversionRepository.java",
+    "old": "com.appnexus.masterdata.application.product.UnitConversionStore",
+    "new": "com.appnexus.masterdata.application.product.UnitConversionRepository"
+  },
+  {
+    "source": "backend\\services\\platform-service\\audit\\src\\main\\java\\com\\appnexus\\platform\\audit\\SecurityLogRepository.java",
+    "destination": "backend\\services\\platform-service\\audit\\src\\main\\java\\com\\appnexus\\platform\\audit\\port\\SecurityLogRepository.java",
+    "old": "com.appnexus.platform.audit.SecurityLogRepository",
+    "new": "com.appnexus.platform.audit.port.SecurityLogRepository"
+  },
+  {
+    "source": "backend\\services\\platform-service\\identity\\src\\main\\java\\com\\appnexus\\platform\\identity\\AccountRepository.java",
+    "destination": "backend\\services\\platform-service\\identity\\src\\main\\java\\com\\appnexus\\platform\\identity\\port\\AccountRepository.java",
+    "old": "com.appnexus.platform.identity.AccountRepository",
+    "new": "com.appnexus.platform.identity.port.AccountRepository"
+  },
+  {
+    "source": "backend\\services\\platform-service\\organization\\src\\main\\java\\com\\appnexus\\platform\\organization\\OrganizationUnitRepository.java",
+    "destination": "backend\\services\\platform-service\\organization\\src\\main\\java\\com\\appnexus\\platform\\organization\\port\\OrganizationUnitRepository.java",
+    "old": "com.appnexus.platform.organization.OrganizationUnitRepository",
+    "new": "com.appnexus.platform.organization.port.OrganizationUnitRepository"
+  }
+]

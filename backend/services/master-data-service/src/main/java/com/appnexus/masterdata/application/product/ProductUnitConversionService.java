@@ -1,6 +1,7 @@
 package com.appnexus.masterdata.application.product;
+import com.appnexus.masterdata.application.product.UnitConversionRepository;
 
-import com.appnexus.masterdata.MasterData.Rejection;
+import com.appnexus.masterdata.api.masterdata.MasterData.Rejection;
 import com.appnexus.masterdata.api.product.UnitConversions;
 import com.appnexus.masterdata.application.RecordTransaction;
 import com.appnexus.platform.authorization.AccessAuthorization;
@@ -12,11 +13,11 @@ import static com.appnexus.masterdata.domain.product.UnitConversionRules.*;
 
 /** 单位换算用例；协调真实授权、固定锁顺序、领域规则及原子写入，不依赖 JDBC 或事务框架。 */
 public final class ProductUnitConversionService implements UnitConversions {
-  private final UnitConversionStore store;
+  private final UnitConversionRepository store;
   private final AccessAuthorization access;
   private final RecordTransaction transaction;
   /** @param store 租户限定的固定存储端口 @param access 每次调用复核的可信授权端口 @param transaction 与存储同数据源的 REQUIRED 事务 */
-  public ProductUnitConversionService(UnitConversionStore store, AccessAuthorization access, RecordTransaction transaction) {
+  public ProductUnitConversionService(UnitConversionRepository store, AccessAuthorization access, RecordTransaction transaction) {
     this.store = store; this.access = access; this.transaction = transaction;
   }
   /** {@inheritDoc} */
@@ -59,7 +60,7 @@ public final class ProductUnitConversionService implements UnitConversions {
     var facts = store.calculation(c.tenantId().toString(), id); if (facts == null) throw invalid();
     return com.appnexus.masterdata.domain.product.UnitConversionRules.calculate(amount, facts.factor(), facts.scale());
   }
-  private UnitConversionStore.Unit enabled(VerifiedTenantContext c, String id) {
+  private UnitConversionRepository.Unit enabled(VerifiedTenantContext c, String id) {
     var unit = store.lockUnit(c.tenantId().toString(), id);
     if (unit == null || !unit.enabled()) throw invalid(); return unit;
   }

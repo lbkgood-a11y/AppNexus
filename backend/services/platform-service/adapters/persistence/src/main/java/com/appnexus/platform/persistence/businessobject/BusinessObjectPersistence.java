@@ -37,7 +37,7 @@ public final class BusinessObjectPersistence {
       BusinessObjectPlatform platform, Supplier<WorkflowDefinitionCatalog> workflows, List<BusinessObjects.Provider> providers,
       Supplier<com.appnexus.contracts.printing.BusinessPrinting> printing) {
     return BusinessObjectUseCases.configuration(new com.appnexus.platform.persistence.businessobject.configuration.MyBatisConfigurationStore(mapper),
-        new com.appnexus.platform.persistence.businessobject.configuration.JdbcConfigurationTransaction(manager),
+        new com.appnexus.platform.persistence.businessobject.configuration.SpringConfigurationTransaction(manager),
         new com.appnexus.platform.persistence.businessobject.configuration.JacksonConfigurationCodec(),platform,workflows,providers,printing);
   }
   /**
