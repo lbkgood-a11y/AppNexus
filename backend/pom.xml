@@ -33,6 +33,8 @@
     <bouncycastle.version>1.86</bouncycastle.version>
     <testcontainers.version>2.0.5</testcontainers.version>
     <test.excluded-groups>container</test.excluded-groups>
+    <!-- Maven构建目录，默认target；与IDE后台编译并行验收时可设target-agent，避免产物互相覆盖，不改变运行配置。 -->
+    <appnexus.build.directory>target</appnexus.build.directory>
   </properties>
 
   <dependencyManagement>
@@ -48,6 +50,7 @@
   </dependencyManagement>
 
   <build>
+    <directory>${appnexus.build.directory}</directory>
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>

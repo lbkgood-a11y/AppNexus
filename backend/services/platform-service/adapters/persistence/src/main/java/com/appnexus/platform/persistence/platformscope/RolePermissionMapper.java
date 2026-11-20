@@ -36,8 +36,14 @@ public interface RolePermissionMapper {
     List<String> lockPermissions(@Param("scope") String scope,@Param("ids") List<String> ids);
     @Select({"<script>","SELECT DISTINCT BIN_TO_UUID(permission_id) permission_text FROM access_permission_scope_type WHERE permission_id IN","<foreach collection='ids' item='id' open='(' separator=',' close=')'>UUID_TO_BIN(#{id})</foreach>","ORDER BY permission_text","</script>"})
     List<String> scopedPermissions(@Param("ids") List<String> ids);
-    @Select("SELECT BIN_TO_UUID(dp.permission_id) permission_id,dp.scope_type,dp.resource_type,BIN_TO_UUID(o.organization_id) organization_id FROM access_role_data_policy dp LEFT JOIN access_role_data_policy_organization o ON o.role_id=dp.role_id AND o.permission_id=dp.permission_id WHERE dp.role_id=UUID_TO_BIN(#{role}) ORDER BY dp.permission_id,o.organization_id")
+    @Select("SELECT BIN_TO_UUID(dp.permission_id) permission_id,dp.scope_type,dp.resource_type,CAST(dp.rules_json AS CHAR) rules_json,BIN_TO_UUID(o.organization_id) organization_id FROM access_role_data_policy dp LEFT JOIN access_role_data_policy_organization o ON o.role_id=dp.role_id AND o.permission_id=dp.permission_id WHERE dp.role_id=UUID_TO_BIN(#{role}) ORDER BY dp.permission_id,o.organization_id")
     List<Map<String,Object>> policies(String role);
+    /** 组合策略沿用原策略主键；调用方与角色版本和审计在同一事务内更新。 */
+    @Update("UPDATE access_role_data_policy SET rules_json=CAST(#{rules} AS JSON),updated_by=UUID_TO_BIN(#{actor}),updated_at=CURRENT_TIMESTAMP(6) WHERE role_id=UUID_TO_BIN(#{role}) AND permission_id=UUID_TO_BIN(#{permission})")
+    void rules(@Param("role") String role,@Param("permission") String permission,@Param("rules") String rules,@Param("actor") String actor);
+    /** 授权主体必须是当前租户有效成员，不能使用全局账号标识。 */
+    @Select({"<script>","SELECT COUNT(*) FROM tenant_member WHERE tenant_id=UUID_TO_BIN(#{tenant}) AND enabled=TRUE AND removed_at IS NULL AND id IN", "<foreach collection='ids' item='id' open='(' separator=',' close=')'>UUID_TO_BIN(#{id})</foreach>","</script>"})
+    int validMembers(@Param("tenant") String tenant,@Param("ids") List<String> ids);
     @Select("SELECT EXISTS(SELECT 1 FROM access_permission_scope_type WHERE permission_id=UUID_TO_BIN(#{permission}) AND scope_type=#{scopeType} AND resource_type=#{resource} AND NOT(resource_type='organization.unit' AND scope_type='SELF') AND NOT(resource_type='organization.unit' AND scope_type<>'ALL' AND permission_id IN(SELECT id FROM access_permission WHERE code='organization.unit:create')))")
     boolean supportsPolicy(@Param("permission") String permission,@Param("scopeType") String scopeType,@Param("resource") String resource);
     @Select({"<script>","SELECT COUNT(*) FROM tenant_organization_unit WHERE tenant_id=UUID_TO_BIN(#{tenant}) AND enabled=TRUE AND id IN","<foreach collection='ids' item='id' open='(' separator=',' close=')'>UUID_TO_BIN(#{id})</foreach>","FOR UPDATE","</script>"})

@@ -51,8 +51,11 @@ public final class DataAccessDeclaration {
      * @param scope 平台或租户管理域，不能跨域授权
      * @param resources 主资源在首位，后续子资源继承主资源行范围
      * @param operations 已执行的数据权限操作引用
+     * @param dimensions 从统一对象声明派生的条件维度；不含SQL映射
      */
-    public record Descriptor(String objectType,int version,PermissionCatalog.ScopeType scope,List<Resource> resources,List<Operation> operations) {
-        public Descriptor { resources=List.copyOf(resources);operations=List.copyOf(operations); }
+    public record Descriptor(String objectType,int version,PermissionCatalog.ScopeType scope,List<Resource> resources,List<Operation> operations,List<com.appnexus.contracts.businessobject.BusinessObjects.DataDimension> dimensions) {
+        /** 旧声明缺省不开放条件字段。 */
+        public Descriptor(String objectType,int version,PermissionCatalog.ScopeType scope,List<Resource> resources,List<Operation> operations){this(objectType,version,scope,resources,operations,List.of());}
+        public Descriptor { resources=List.copyOf(resources);operations=List.copyOf(operations);dimensions=List.copyOf(dimensions); }
     }
 }

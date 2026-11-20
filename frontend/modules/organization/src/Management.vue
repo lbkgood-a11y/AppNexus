@@ -250,12 +250,8 @@ watch(tree, nodes => {
 /* 页面外围留白引用全局内容与区块 Token，局部字段间距和触控高度按原交互保留。 */
 /* 复用字典左树右表的 220px 分类区、紧凑留白和主题选中态，组织层级仍使用真实树组件。 */
 
-.organization-management :deep(.tree-list-template__tree-header) { padding: 6px 8px; min-height: 44px; }
-.organization-management :deep(.tree-list-template__tree) { padding: 6px; }
 
 
-.organization-management :deep(.el-tree-node__content) { min-height: 36px; border-radius: var(--el-border-radius-small); font-size: 13px; }
-.organization-management :deep(.el-tree--highlight-current .el-tree-node.is-current > .el-tree-node__content) { background: var(--el-color-primary-light-9); color: var(--el-color-primary); box-shadow: inset 2px 0 var(--el-color-primary); }
 .organization-detail { gap: var(--app-section-gap, 12px); }
 /* 双表各自保留分页空间，窄窗口由详情区滚动，避免页码被压出可见表面。 */
 .organization-detail > .management-table { flex-shrink: 0; }

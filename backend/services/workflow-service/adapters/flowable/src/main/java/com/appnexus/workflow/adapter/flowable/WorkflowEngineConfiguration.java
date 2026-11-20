@@ -33,13 +33,19 @@ public class WorkflowEngineConfiguration {
       com.appnexus.contracts.workflow.WorkflowPlatform platform,
       java.util.List<com.appnexus.contracts.workflow.WorkflowBusiness> businesses,
       WorkflowBridge bridge,
-      org.springframework.beans.factory.ObjectProvider<com.appnexus.contracts.businessobject.BusinessObjectBindings> documents) {
-    var runtime=workflowRuntime(engine,source,manager,platform,businesses,bridge);
+      org.springframework.beans.factory.ObjectProvider<com.appnexus.contracts.businessobject.BusinessObjectBindings> documents,
+      java.util.List<com.appnexus.contracts.businessobject.BusinessObjects.Provider> providers,
+      org.springframework.beans.factory.ObjectProvider<com.appnexus.contracts.workflow.WorkflowTaskAccess> tasks) {
+    var registered=new java.util.ArrayList<com.appnexus.contracts.workflow.WorkflowBusiness>(businesses);
+    for(var provider:providers)for(var operation:provider.descriptor().operations()){
+      if(operation.approval()!=null)registered.add(new ObjectWorkflowAdapter(provider,operation,platform,tasks::getObject,manager));
+    }
+    var runtime=workflowRuntime(engine,source,manager,platform,registered,bridge);
     runtime.documentBindings(documents::getObject);
     return runtime;
   }
 
-  /** 测试装配兼容入口；真实应用必须装配单据绑定公开契约。 */
+  /** 显式端口装配入口；真实应用必须装配单据绑定公开契约。 */
   public WorkflowRuntime workflowRuntime(ProcessEngine engine,DataSource source,PlatformTransactionManager manager,
       com.appnexus.contracts.workflow.WorkflowPlatform platform,
       java.util.List<com.appnexus.contracts.workflow.WorkflowBusiness> businesses,WorkflowBridge bridge) {

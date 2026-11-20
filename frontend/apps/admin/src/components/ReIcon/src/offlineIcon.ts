@@ -67,8 +67,11 @@ import RiNodeTree from "~icons/ri/node-tree?raw";
 import RiRulerLine from "~icons/ri/ruler-line?raw";
 import RiListSettingsLine from "~icons/ri/list-settings-line?raw";
 import RiLayoutGridLine from "~icons/ri/layout-grid-line?raw";
+import RiBarcodeLine from "~icons/ri/barcode-line?raw";
 
 const icons = [
+  // 商品明细入口使用后端声明的条码图标，必须离线注册后才能在菜单中渲染。
+  ["ri/barcode-line", RiBarcodeLine],
   // 主数据子菜单按业务语义区分，全部注册为本地 Remix Icon，兼容离线导航与图标选择器。
   ["ri/contacts-line", RiContactsLine],
   ["ri/store-2-line", RiStore2Line],

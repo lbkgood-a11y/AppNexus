@@ -1,9 +1,13 @@
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { nextTick, type DirectiveBinding, type ObjectDirective, type VNode } from "vue";
 
-const state = vi.hoisted(() => ({ request: vi.fn(), tenant: { value: undefined as { tenantId: string } | undefined } }));
+const state = vi.hoisted(() => ({ request: vi.fn(), tenant: { value: undefined as { tenantId: string; memberId?: string; version?: number } | undefined } }));
 vi.mock("@/utils/http", () => ({ http: { request: state.request } }));
-vi.mock("@/utils/tenantContext", () => ({ currentTenant: state.tenant }));
+vi.mock("@/utils/tenantContext", async () => {
+  const { shallowRef } = await import("vue");
+  state.tenant = shallowRef();
+  return { currentTenant: state.tenant };
+});
 import { operation, setOperationRefreshSeconds } from "./index";
 
 let release: (() => void) | undefined;
@@ -92,4 +96,45 @@ it("preserves buttons during recheck and hides on failure", async () => {
   expect(element.style.display).toBe("");
   reject(new Error("unavailable")); await settle();
   expect(element.style.display).toBe("none");
+});
+
+/** 新页面必须独立取证，旧请求成功或失败均不能改变新页面的按钮。 */
+it.each([true, false])("reloads capabilities after remount while an old request is pending: %s", async success => {
+  let resolve!: (codes: string[]) => void;
+  let reject!: (reason: Error) => void;
+  state.request.mockImplementationOnce(() => new Promise<string[]>((done, fail) => { resolve = done; reject = fail; }));
+  mount("Account.create"); release?.(); release = undefined;
+  state.request.mockResolvedValue(["Account.create"]);
+  const current = mount("Account.create"); await settle();
+  expect(state.request).toHaveBeenCalledTimes(2);
+  expect(current.style.display).toBe("");
+  if (success) resolve([]); else reject(new Error("old failure"));
+  await settle(); expect(current.style.display).toBe("");
+});
+
+/** 租户状态恢复时不依赖焦点事件或轮询，立即重新取得统一操作结果。 */
+it("loads tenant permissions when the tenant becomes available", async () => {
+  vi.stubGlobal("location", { hash: "#/access/roles", pathname: "/" });
+  state.request.mockRejectedValueOnce(new Error("tenant required"));
+  const element = mount("TenantRole.create"); await settle();
+  expect(element.style.display).toBe("none");
+  state.request.mockResolvedValue(["TenantRole.create"]);
+  state.tenant.value = { tenantId: "tenant-a" };
+  await settle(); expect(element.style.display).toBe("");
+  expect(state.request).toHaveBeenCalledTimes(2);
+});
+
+/** 同一租户的新版本也必须重新取证，旧版本的失败不得清空新快照。 */
+it("refreshes same-tenant version changes without accepting the old failure", async () => {
+  vi.stubGlobal("location", { hash: "#/access/roles", pathname: "/" });
+  state.tenant.value = { tenantId: "a", memberId: "m", version: 1 };
+  let reject!: (error: Error) => void;
+  state.request.mockImplementationOnce(() => new Promise((_done, fail) => { reject = fail; }));
+  const element = mount("TenantRole.create");
+  state.request.mockResolvedValue(["TenantRole.create"]);
+  state.tenant.value = { tenantId: "a", memberId: "m", version: 2 };
+  await settle(); expect(element.style.display).toBe("");
+  reject(new Error("old version")); await settle();
+  expect(element.style.display).toBe("");
+  expect(state.request).toHaveBeenCalledTimes(2);
 });

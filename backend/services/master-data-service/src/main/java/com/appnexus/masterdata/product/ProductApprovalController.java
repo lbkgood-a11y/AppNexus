@@ -15,7 +15,7 @@ public final class ProductApprovalController {
  @GetMapping("/{id}/approvals") @RecordAuditSource(table="md_product_approval") @OperationBinding(id="Product.readApprovals",objectType="Product",operationCode="readApprovals",nameZh="查询商品审核记录",nameEn="Read product approvals",pages={"master-data/product"},permissions={"masterdata.product:read"},policy="可信租户原商品读取权")
  public Object list(HttpServletRequest r,@PathVariable String id){return service.list(tenant(r),id);}
  /** 审批组织候选沿用平台有效任职，不开放整个组织目录。 */
- @GetMapping("/approval-organizations") @OperationBinding(id="Product.readApprovalOrganizations",objectType="Product",operationCode="readApprovalOrganizations",nameZh="查询商品审核组织",nameEn="Read approval organizations",pages={"master-data/product"},permissions={"masterdata.product:submit_approval"},policy="可信租户有效任职范围")
+ @GetMapping("/approval-organizations") @OperationBinding(id="Product.readApprovalOrganizations",objectType="Product",operationCode="readApprovalOrganizations",nameZh="查询商品审核组织",nameEn="Read approval organizations",pages={"master-data/product"},permissions={"masterdata.product.approval:submit"},policy="可信租户有效任职范围")
  public Object organizations(HttpServletRequest r){return service.organizations(workflow(r,false));}
  /** 任务受限原文读取；领域按当前有效任务复核，不凭请求ID扩大商品读取权。 */
  @GetMapping("/approval-requests/{id}") @OperationBinding(id="Product.readApprovalSnapshot",objectType="Product",operationCode="readApprovalSnapshot",nameZh="查看商品审核快照",nameEn="Read product approval snapshot",pages={"master-data/product"},policy="原申请人或有效任务受限读取",eligibility=OperationBinding.Eligibility.OBJECT)

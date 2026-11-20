@@ -5,5 +5,5 @@
   <parent><groupId>com.appnexus</groupId><artifactId>workflow-service</artifactId><version>0.1.0-SNAPSHOT</version><relativePath>../pom.xml</relativePath></parent>
   <artifactId>workflow-core</artifactId>
 
-  <dependencies><dependency><groupId>com.appnexus</groupId><artifactId>workflow-contracts</artifactId><version>${project.version}</version></dependency></dependencies>
+  <dependencies><!-- 公共对象审批用例只依赖唯一业务对象契约，不访问业务适配器。 --><dependency><groupId>com.appnexus</groupId><artifactId>business-object-contracts</artifactId><version>${project.version}</version></dependency><dependency><groupId>com.appnexus</groupId><artifactId>workflow-contracts</artifactId><version>${project.version}</version></dependency></dependencies>
 </project>

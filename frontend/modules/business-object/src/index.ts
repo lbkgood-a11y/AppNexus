@@ -21,6 +21,9 @@ export interface Binding {
 /** 管理接口注入约定；写操作只执行一次，冲突由管理人员重载后处理。 */
 export interface BusinessObjectApi {
   /** 对象内编码器配置，只有已声明编码字段的对象才显示入口。 */
+  codingRules:()=>Promise<CodingRuleRow[]>;
+  saveCodingRule:(key:string,input:CodingRuleInput)=>Promise<unknown>;
+  codingRuleOptions:(type:string)=>Promise<CodingRuleRow[]>;
   encoders:(type:string)=>Promise<EncoderRow[]>;
   saveEncoder:(type:string,key:string,input:EncoderInput)=>Promise<unknown>;
   readiness:(type:string)=>Promise<{operationCode:string;category:string;code:string;ready:boolean;target:string}[]>;
@@ -42,7 +45,12 @@ export interface BusinessObjectApi {
 export interface CodingSegment {kind:"TEXT"|"DATE"|"SEQUENCE";value:string;width:number}
 /** 编码日期和重置周期共同使用配置时区，审计仍以 UTC 返回。 */
 export interface CodingRule {segments:CodingSegment[];reset:"NEVER"|"YEAR"|"MONTH"|"DAY";zoneId:string}
-/** 编码配置提交不含身份和审计信息；revision=-1表示首次创建。 */
-export interface EncoderInput {revision:number;field:string;name:string;enabled:boolean;rule:CodingRule}
+/** 对象字段绑定：revision=-1首次创建；ruleKey必填且ruleVersion>0，固定版本不自动升级；不含身份或审计。 */
+export interface EncoderInput {revision:number;field:string;name:string;enabled:boolean;ruleKey:string;ruleVersion:number}
 /** 只读审计来自当前配置读取权限，不额外查询账号目录。 */
 export interface EncoderRow extends EncoderInput {encoderKey:string;createdBy:string|null;createdAt:string|null;updatedBy:string|null;updatedAt:string|null}
+
+/** 规则版本不可变；revision=-1创建规则，其余值为当前最新版本号。 */
+export interface CodingRuleInput {revision:number;name:string;rule:CodingRule}
+/** 当前租户独立规则版本及服务端只读审计。 */
+export interface CodingRuleRow {ruleKey:string;ruleVersion:number;name:string;rule:CodingRule;createdBy:string|null;createdAt:string|null;updatedBy:string|null;updatedAt:string|null}

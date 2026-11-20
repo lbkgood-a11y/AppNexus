@@ -14,7 +14,7 @@ final class LeaveContractData {
   }
   /** 现有审批引擎使用字符串传输；仅在严格类型校验后显式序列化，禁止猜测或补默认值。 */
   static Map<String,String> facts(Map<String,Object> row){
-    var result=new LinkedHashMap<String,String>();approval(row).forEach((key,value)->result.put(key,value.toString()));return Map.copyOf(result);
+    return LeavePocService.SUBMIT_OPERATION.interaction().capabilities().stream().filter(c->c.service()==InteractionContract.Service.WORKFLOW).findFirst().orElseThrow().schema().encode(approval(row));
   }
   /** 打印投影只提供契约字段；不将申请原因、组织及人员信息透传打印服务。 */
   static Map<String,Object> printing(String id,Map<String,Object> row){

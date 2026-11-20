@@ -16,6 +16,14 @@ public interface WorkflowPlatform {
   default List<Option> documentOrganizations(WorkflowContext context) { return List.of(); }
   /** 判断当前可信上下文的功能权限；未知权限或无效成员失败关闭。 */
   boolean allowed(WorkflowContext context, String permission);
+  /**
+   * 对已通过对象或当前任务准入的审批依据执行统一字段保护，不因任务分配放宽强制隐藏。
+   * @param context 当前可信成员；每次办理重新读取限制
+   * @param resource 同一对象声明的数据资源
+   * @param values 服务端业务原值，禁止来自浏览器或写日志
+   * @return 字段白名单投影；必填字段隐藏由审批契约拒绝
+   */
+  default Map<String,Object> projectData(WorkflowContext context,String resource,Map<String,Object> values){throw new SecurityException("WORKFLOW_FIELD_PROTECTION_UNAVAILABLE");}
 
   /**
    * 解析当前租户内的有效人员，返回账号标识；必须限定组织及有效任职。

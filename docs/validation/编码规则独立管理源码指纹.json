@@ -1,0 +1,72 @@
+[
+  {
+    "path": "backend/contracts/business-object-contracts/src/main/java/com/appnexus/contracts/businessobject/BusinessCoding.java",
+    "sha256": "3e643d37fcf3c62bf52c9919641ad026e0232db562fba875ddb5b5956a0274f5",
+    "matchesTestSnapshot": true
+  },
+  {
+    "path": "backend/applications/monolith-app/src/main/java/com/appnexus/platform/bootstrap/businessobject/BusinessObjectConfiguration.java",
+    "sha256": "ab9914676c391de22cb02c5e01dd6c6c6b1392c71006053cd066f55db8842937",
+    "matchesTestSnapshot": true
+  },
+  {
+    "path": "backend/applications/monolith-app/src/test/java/com/appnexus/platform/CodingCapabilityTest.java",
+    "sha256": "f79f72deb6f6638b08e442f529690cc2fbbdaa56b0c7270e9e8333ff2ab3dde2",
+    "matchesTestSnapshot": true
+  },
+  {
+    "path": "backend/applications/monolith-app/src/test/java/com/appnexus/platform/businessobject/CodingMySqlTest.java",
+    "sha256": "f1b3d92e4117d07fb3009b7272eb40d14b6fa16260d74edfea350da67a238d19",
+    "matchesTestSnapshot": true
+  },
+  {
+    "path": "backend/services/platform-service/configuration/src/main/java/com/appnexus/platform/configuration/NavigationPages.java",
+    "sha256": "a59921178f77916e9905f727fbc603b7af243ad29246e188c9b1e86126b18a0f",
+    "matchesTestSnapshot": true
+  },
+  {
+    "path": "backend/services/platform-service/adapters/app-api/src/main/java/com/appnexus/platform/appapi/businessobject/CodingDeclaration.java",
+    "sha256": "d3696891bd206e742f3fc455bd813f4df882dc85d055663b7e610bba7cedc4a1",
+    "matchesTestSnapshot": true
+  },
+  {
+    "path": "backend/services/platform-service/adapters/app-api/src/main/java/com/appnexus/platform/appapi/businessobject/CodingRuleDeclaration.java",
+    "sha256": "8cf92b9884f8255fdd0277c6bb96f7e9edd8753a789fdb9177432e80dec701c8",
+    "matchesTestSnapshot": true
+  },
+  {
+    "path": "backend/services/platform-service/adapters/platform-api/src/main/java/com/appnexus/platform/appapi/businessobject/CodingController.java",
+    "sha256": "9706e7826e9c6d184d8f6fac4306baada9ca65bfa602d21b62132301fbb29fed",
+    "matchesTestSnapshot": true
+  },
+  {
+    "path": "backend/services/platform-service/adapters/persistence/src/main/java/com/appnexus/platform/persistence/businessobject/coding/JdbcCodingStore.java",
+    "sha256": "5b458898af2731566c10b91ac1d18933914c968b2b19d760b4c01c917cbdb0cf",
+    "matchesTestSnapshot": true
+  },
+  {
+    "path": "backend/services/platform-service/adapters/persistence/src/main/resources/db/migration/V126__independent_coding_rules.sql",
+    "sha256": "c6f967144454b2f374f0f0b6bfa0b8586575c0e3ab43ba76be87acdf1e2095dd",
+    "matchesTestSnapshot": true
+  },
+  {
+    "path": "backend/services/platform-service/adapters/persistence/src/main/resources/db/migration/V127__coding_rule_permission_navigation.sql",
+    "sha256": "e880ed8236c6a6cc1e36a72ff50136780cf2c593f0c7963fbc14321085d91b4a",
+    "matchesTestSnapshot": true
+  },
+  {
+    "path": "backend/services/platform-service/business-object/src/main/java/com/appnexus/platform/businessobject/CodingManagement.java",
+    "sha256": "80d9c7e3db0b44600d9739460cced14c23f5da6e1370c77fab6d5d8759aaaca6",
+    "matchesTestSnapshot": true
+  },
+  {
+    "path": "backend/services/platform-service/business-object/src/main/java/com/appnexus/platform/businessobject/port/CodingStore.java",
+    "sha256": "61310b3f33d9e6edcdcca1f437d7316767e30e1463f919e4e57215d621e44990",
+    "matchesTestSnapshot": true
+  },
+  {
+    "path": "backend/services/platform-service/business-object/src/main/java/com/appnexus/platform/businessobject/internal/application/coding/CodingService.java",
+    "sha256": "1e32aabdaee3843bf1c0164b7bd8e5727df0d2a70ec8369a21244ac1ea1f17c6",
+    "matchesTestSnapshot": true
+  }
+]

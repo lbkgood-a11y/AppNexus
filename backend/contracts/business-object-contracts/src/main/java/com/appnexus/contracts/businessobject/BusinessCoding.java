@@ -22,7 +22,7 @@ public interface BusinessCoding {
    */
   record Segment(String kind,String value,int width) {}
   /**
-   * 编码规则；发号后冻结，避免修改规则造成重复或改变历史语义。
+   * 编码规则值；由独立规则目录保存不可变版本，对象绑定显式引用，避免修改历史语义。
    * @param segments 1–10个有序分段，输出首字符必须为字母或数字
    * @param reset NEVER、YEAR、MONTH、DAY；默认由界面显式提交 NEVER，周期必须有对应精度日期段
    * @param zoneId 必填 IANA 时区，如 Asia/Shanghai；只用于日期和周期计算，审计时间仍为 UTC

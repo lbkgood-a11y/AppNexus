@@ -1,0 +1,53 @@
+package com.appnexus.platform.persistence.platformscope;
+
+import com.appnexus.platform.authorization.*;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.*;
+
+/** 原授权策略 JSON 的固定类型编解码与统一校验；不接收自由表达式，不把解析失败回退成全部。 */
+public final class DataGrantPolicySupport {
+    private static final ObjectMapper JSON=new ObjectMapper();
+    private DataGrantPolicySupport() {}
+    /** @param rules 经过统一模型校验的规则 @return 原策略表保存与审计共用的完整规则 JSON */
+    public static String encode(List<DataGrantRules.Rule> rules) {
+        try{return JSON.writeValueAsString(rules);}catch(Exception e){throw new IllegalArgumentException("DATA_GRANT_SERIALIZATION_FAILED",e);}
+    }
+    /** @param value 数据库规则文本，历史 NULL 缺省空列表；非空非法值拒绝 @return 不可变规则列表 */
+    public static List<DataGrantRules.Rule> decode(Object value) {
+        if(value==null)return List.of();
+        try{return List.copyOf(JSON.readValue(value.toString(),new TypeReference<List<DataGrantRules.Rule>>(){}));}
+        catch(Exception e){throw new IllegalStateException("DATA_GRANT_POLICY_INVALID",e);}
+    }
+    /**
+     * 保存前在原管理事务中校验能力及主体，不让另一租户主体进入策略。
+     * @param tenant 可信租户；平台域不支持组合授权
+     * @param permission 已选操作权限码
+     * @param policy 本分支策略
+     * @param catalog 构建声明目录
+     * @param mapper 已通过管理权门禁的原策略仓储
+     */
+    public static void validate(UUID tenant,String permission,RolePermissionManagement.DataPolicy policy,DataAccessCatalog catalog,RolePermissionMapper mapper) {
+        if(policy.scopeType()!=DataScopeAuthorization.ScopeType.RULES)return;
+        if(tenant==null)throw new IllegalArgumentException("DATA_GRANT_TENANT_REQUIRED");
+        catalog.validateRules(permission,policy.resourceType(),policy.rules());
+        // 同条策略跨规则重复主体只查验一次；所有条件仍完整保留，不能为优化而合并授权分支。
+        var organizations=new TreeSet<UUID>();var members=new TreeSet<UUID>();
+        for(var rule:policy.rules()) {
+            if(rule.subjectType()==DataGrantRules.SubjectType.ORGANIZATION)organizations.addAll(rule.subjectIds());
+            if(rule.subjectType()==DataGrantRules.SubjectType.MEMBER)members.addAll(rule.subjectIds());
+        }
+        // 每规则500个主体，策略最多20条；分批上限500，避免不同规则合计形成超长IN查询。
+        validateSubjects(tenant,organizations,true,mapper);
+        validateSubjects(tenant,members,false,mapper);
+    }
+    /** 仅在原管理事务内分批验证权威主体；空集合不发SQL，任何批次失败使整个保存回滚。 */
+    private static void validateSubjects(UUID tenant,Set<UUID> subjects,boolean organization,RolePermissionMapper mapper) {
+        var ids=subjects.stream().map(UUID::toString).sorted().toList();
+        for(int offset=0;offset<ids.size();offset+=500) {
+            var batch=ids.subList(offset,Math.min(offset+500,ids.size()));
+            int found=organization?mapper.validOrganizations(tenant.toString(),batch):mapper.validMembers(tenant.toString(),batch);
+            if(found!=batch.size())throw new IllegalArgumentException("DATA_GRANT_SUBJECT_INVALID");
+        }
+    }
+}

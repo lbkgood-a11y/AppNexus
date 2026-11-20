@@ -18,12 +18,22 @@ public interface RolePermissionManagement {
     /**
      * 单项结构化数据策略。
      * @param permissionId 本次完整权限集合中的权限 UUID
-     * @param scopeType SELF、ORGANIZATION、ORGANIZATION_SUBTREE 或 ALL，禁止 DENY
+     * @param scopeType 目录实际支持的 ORGANIZATION、ORGANIZATION_SUBTREE、ALL 或 RULES，禁止 DENY
      * @param resourceType 后端登记的资源类型
      * @param organizationIds 组织范围值；仅组织类范围必填，其他类型必须为空
+     * @param rules RULES时必填1–20条；同条记录与条件AND，多条OR，其他类型必须为空
      */
     record DataPolicy(UUID permissionId, DataScopeAuthorization.ScopeType scopeType,
-                      String resourceType, Set<UUID> organizationIds) {}
+                      String resourceType, Set<UUID> organizationIds, java.util.List<DataGrantRules.Rule> rules) {
+        /** 既有调用不携带组合规则。 */
+        public DataPolicy(UUID permissionId,DataScopeAuthorization.ScopeType scopeType,String resourceType,Set<UUID> organizationIds){this(permissionId,scopeType,resourceType,organizationIds,java.util.List.of());}
+        public DataPolicy {
+            organizationIds=organizationIds==null?Set.of():Set.copyOf(organizationIds);
+            rules=rules==null?java.util.List.of():java.util.List.copyOf(rules);
+            if(scopeType==DataScopeAuthorization.ScopeType.RULES){rules=DataGrantRules.checked(rules);if(!organizationIds.isEmpty())throw new IllegalArgumentException("RULES cannot contain legacy organizations");}
+            else if(!rules.isEmpty())throw new IllegalArgumentException("Rules require RULES scope");
+        }
+    }
 
     /** @param permissionIds 完整功能权限集合 @param dataPolicies 完整数据策略集合 @param roleVersion 角色乐观锁版本 @param fieldPolicies 强制字段展示限制，与普通授权合并后收口 @param dataAccessVersion 代码声明目录版本，Web保存时原样回传，过期拒绝覆盖 @param inheritingMemberCount 当前未到期且启用的继承成员数量，单位人；仅用于保存影响提示，不作为授权依据 */
     record AuthorizationAssignment(Set<UUID> permissionIds, Set<DataPolicy> dataPolicies, long roleVersion, Set<FieldSecurity.Policy> fieldPolicies, long inheritingMemberCount,String dataAccessVersion) {

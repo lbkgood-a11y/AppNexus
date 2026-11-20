@@ -1,10 +1,10 @@
 <script setup lang="ts">
 /** 多根节点包含独立弹框，应用壳的 class 等属性仅传给主工作区，确保全局页面边距及高度链生效。 */
 defineOptions({ inheritAttrs: false });
-import { setErrorFeedback } from "@appnexus/ui";
+import { reportError, setErrorFeedback } from "@appnexus/ui";
 import { InfoHint } from "@appnexus/ui";
 import {h,computed,onMounted,onBeforeUnmount,ref,watch} from "vue";
-import {ElButton,ElNotification,ElMessage,ElMessageBox} from "element-plus";
+import {ElButton,ElMessage,ElMessageBox} from "element-plus";
 import {useI18n} from "vue-i18n";
 import {BusinessWorkspace,ManagedDialog,TreeListTemplate,AppPagination,ManagementTable,type ManagementColumn} from "@appnexus/ui";
 import { AppIcon } from "@appnexus/icons";
@@ -12,6 +12,8 @@ import MenuPermissionBranch from "./MenuPermissionBranch.vue";
 import {menuPermissionTree} from "./menuPermissionView";
 import type {AuthorizationMenu} from "./index";
 import MemberGrantEditor from "./MemberGrantEditor.vue";
+import DataGrantRuleEditor from "./DataGrantRuleEditor.vue";
+import {incompleteDataPolicy} from "./dataGrantDraft";
 import {applyFieldPolicyBatch} from "./fieldPolicyDraft";
 import RoleUsers from "./RoleUsers.vue";
 import SubjectAuthorization from "./SubjectAuthorization.vue";
@@ -20,6 +22,7 @@ import type { SubjectAuthorizationApi,FieldDescriptor,FieldPolicy } from "./inde
 import type {AuthorizationCenterApi,DataPolicy,DataScopeType,PermissionItem,RoleItem,RoleManagementApi,ScopeSupport,AuthorizationOption} from "./index";
 const props=defineProps<{roleApi:RoleManagementApi;api:AuthorizationCenterApi;subjectApi:SubjectAuthorizationApi;errorText:(error:unknown)=>string}>();
 const activeTab=ref("permissions"), editorTab=ref("functions"), query=ref(""), onlySelected=ref(false), ready=ref(false), baseline=ref<string|null>(null);
+const grantMembers=ref<import("./index").AuthorizationOption[]>([]);
 const declarations=ref<import("./index").DataAccessDeclaration[]>([]);
 const menus=ref<AuthorizationMenu[]>([]),functionView=ref("menus");
 const fieldCatalog=ref<FieldDescriptor[]>([]), fieldPolicies=ref<FieldPolicy[]>([]);
@@ -85,7 +88,7 @@ function toggleMenu(ids:string[],enabled:boolean){ids.forEach(id=>toggle(id,enab
 /** 稳定比较完整草稿；字段顺序和组织选择顺序不构成授权变化。 */
 function snapshot(){return JSON.stringify({ids:[...selected.value].sort(),fields:[...fieldPolicies.value].sort((a,b)=>(a.resource+a.field).localeCompare(b.resource+b.field)),policies:Object.values(policies.value).map(item=>({...item,organizationIds:[...item.organizationIds].sort()})).sort((a,b)=>a.permissionId.localeCompare(b.permissionId))});}
 const changed=computed(()=>baseline.value!==null&&snapshot()!==baseline.value);
-const incompleteCount=computed(()=>selected.value.filter(id=>supports(id).length&&(!policies.value[id]||(needsOrganizations(policies.value[id].scopeType)&&!policies.value[id].organizationIds.length))).length);
+const incompleteCount=computed(()=>selected.value.filter(id=>supports(id).length&&incompleteDataPolicy(policies.value[id],declarations.value.find(d=>d.resources[0]?.resource===policies.value[id]?.resourceType)?.dimensions??[])).length);
 /**
  * 资源批选只改变当前筛选结果；不自动授予 ALL，也不推断数据范围。
  * @param items 当前资源下筛选后可见的权限，禁用权限不参与批量变更。
@@ -96,30 +99,27 @@ async function confirmDiscard(){if(!changed.value&&!reason.value.trim())return t
 async function selectRole(id:string){if(saving.value||id===roleId.value||!(await memberEditor.value?.canLeave()??true)||!(await roleUsersEditor.value?.canLeave()??true)||!(await confirmDiscard()))return;roleId.value=id;await loadAssignment();}
 function supports(id:string){return metadata.value.filter(item=>item.permissionId===id)}function label(item:PermissionItem){return locale.value.startsWith("zh")?item.nameZh:item.nameEn}function needsOrganizations(type?:DataScopeType){return type==="ORGANIZATION"||type==="ORGANIZATION_SUBTREE"}
 function toggle(id:string,enabled:boolean){if(enabled){if(!selected.value.includes(id))selected.value.push(id);}else{selected.value=selected.value.filter(value=>value!==id);delete policies.value[id];}}
-function scopeChanged(permissionId:string,type:DataScopeType){const support=supports(permissionId).find(item=>item.scopeType===type);if(!support)return;policies.value[permissionId]={permissionId,scopeType:type,resourceType:support.resourceType,organizationIds:[]};}
+function scopeChanged(permissionId:string,type:DataScopeType){const support=supports(permissionId).find(item=>item.scopeType===type);if(!support)return;policies.value[permissionId]={permissionId,scopeType:type,resourceType:support.resourceType,organizationIds:[],rules:[]};}
 /** 角色切换后清除旧快照，过期响应不得写入新角色；读取失败时禁止覆盖保存。 */
-/**
- * 错误使用浮动通知，不挤占工作区；持续显示直到关闭，并提供显式重试，避免自动重放写请求。
- */
-watch(error, message => {
+/** 错误复用公共浮层；更新或离开页面时释放，重读由用户显式触发。 */
+watch(error, (message, _previous, onCleanup) => {
   if (!message) return;
-  const notification = ElNotification({
-    type: "error",
-    duration: 0,
-    message: h("div", [
-      h("p", message),
-      h(ElButton, {
-        link: true,
-        type: "primary",
-        onClick: () => { notification.close(); void load(); }
-      }, () => t("account.retry"))
-    ])
-  });
+  const release = reportError(message, h("div", [
+    h("p", message),
+    h(ElButton, {
+      link: true,
+      type: "primary",
+      onClick: () => { release(); void load(); }
+    }, () => t("account.retry"))
+  ]));
+  onCleanup(release);
 });
 async function loadAssignment(){if(!roleId.value)return;const request=++requestVersion;loading.value=true;ready.value=false;error.value="";baseline.value=null;fieldSelection.value=[];fieldPolicies.value=[];selected.value=[];policies.value={};reason.value="";try{const value=await props.api.assignment(roleId.value);if(request!==requestVersion)return;inheritingMemberCount.value=value.inheritingMemberCount??0;dataAccessVersion.value=value.dataAccessVersion;selected.value=[...value.permissionIds];policies.value=Object.fromEntries(value.dataPolicies.map(item=>[item.permissionId,{...item,organizationIds:[...item.organizationIds]}]));version.value=value.roleVersion;fieldPolicies.value=[...(value.fieldPolicies??[])];baseline.value=snapshot();ready.value=true;}catch(cause){if(request===requestVersion)await setErrorFeedback(error, props.errorText(cause));}finally{if(request===requestVersion)loading.value=false;}}
 /** 读取完整角色目录，避免超过每页 100 条后无法找到目标角色。 */
 async function loadRoles(){const result:RoleItem[]=[];for(let page=1;;page++){const value=await props.roleApi.list({query:"",status:"ENABLED",page,pageSize:100});result.push(...value.items);if(result.length>=value.total)return result;if(!value.items.length)throw new Error(t("authorizationCenter.roleListChanged"));}}
-async function load(){if(saving.value||!(await roleUsersEditor.value?.canLeave()??true)||!(await confirmDiscard()))return;loading.value=true;ready.value=false;error.value="";try{const [catalog,items,support,orgs,fields,navigation,declared]=await Promise.all([loadRoles(),props.api.permissions(),props.api.metadata(),props.api.organizationOptions?.()??Promise.resolve([]),props.api.fields(),props.api.menus(),props.api.declarations?.()??Promise.resolve([])]);declarations.value=declared;menus.value=navigation;fieldCatalog.value=fields;roles.value=catalog;permissions.value=items;metadata.value=support;organizations.value=orgs;roleId.value=catalog.some(item=>item.id===roleId.value)?roleId.value:(catalog[0]?.id??"");if(roleId.value)await loadAssignment();else{baseline.value=null;fieldSelection.value=[];fieldPolicies.value=[];selected.value=[];policies.value={};reason.value="";}}catch(cause){await setErrorFeedback(error, props.errorText(cause));}finally{loading.value=false;}}
+async function load(){if(saving.value||!(await roleUsersEditor.value?.canLeave()??true)||!(await confirmDiscard()))return;loading.value=true;ready.value=false;error.value="";try{const [catalog,items,support,orgs,fields,navigation,declared]=await Promise.all([loadRoles(),props.api.permissions(),props.api.metadata(),props.api.organizationOptions?.()??Promise.resolve([]),props.api.fields(),props.api.menus(),props.api.declarations?.()??Promise.resolve([])]);declarations.value=declared;
+if(declared.some(d=>d.dimensions?.length)){const all:import("./index").AuthorizationOption[]=[];for(let page=1;;page++){const batch=await props.subjectApi.subjects(page,"");all.push(...batch.items);if(all.length>=batch.total)break;if(!batch.items.length)throw new Error(t("authorizationCenter.roleListChanged"));}grantMembers.value=all;}
+menus.value=navigation;fieldCatalog.value=fields;roles.value=catalog;permissions.value=items;metadata.value=support;organizations.value=orgs;roleId.value=catalog.some(item=>item.id===roleId.value)?roleId.value:(catalog[0]?.id??"");if(roleId.value)await loadAssignment();else{baseline.value=null;fieldSelection.value=[];fieldPolicies.value=[];selected.value=[];policies.value={};reason.value="";}}catch(cause){await setErrorFeedback(error, props.errorText(cause));}finally{loading.value=false;}}
 const invalid=computed(()=>!ready.value||loading.value||!changed.value||incompleteCount.value>0||!reason.value.trim());
 /** 完整授权覆盖写影响全部角色成员；失败后要求重读版本，禁止盲目重试。 */
 async function save(){if(!roleId.value||invalid.value||saving.value)return;saving.value=true;error.value="";try{await ElMessageBox.confirm(t("authorizationCenter.roleReplaceWarning",{name:selectedRole.value?.name,count:inheritingMemberCount.value}),t("authorizationCenter.summary"),{confirmButtonText:t("organization.save"),cancelButtonText:t("organization.cancel"),type:"warning"});}catch{saving.value=false;return;}try{const value=await props.api.replace(roleId.value,{ids:[...selected.value],dataPolicies:Object.values(policies.value),fieldPolicies:fieldPolicies.value,dataAccessVersion:dataAccessVersion.value,version:version.value,reason:reason.value.trim()});inheritingMemberCount.value=value.inheritingMemberCount??0;dataAccessVersion.value=value.dataAccessVersion;selected.value=[...value.permissionIds];policies.value=Object.fromEntries(value.dataPolicies.map(item=>[item.permissionId,{...item,organizationIds:[...item.organizationIds]}]));version.value=value.roleVersion;fieldPolicies.value=[...(value.fieldPolicies??[])];baseline.value=snapshot();reason.value="";ElMessage.success(t("authorizationCenter.saved"));}catch(cause){await setErrorFeedback(error, props.errorText(cause));ready.value=false;}finally{saving.value=false;}}
@@ -221,6 +221,7 @@ onMounted(load);
                     <el-select v-if="needsOrganizations(policies[item.id]?.scopeType)" v-model="policies[item.id].organizationIds" :aria-label="label(item) + ' · ' + t('authorizationCenter.selectOrganizations')" :disabled="!ready || saving" multiple filterable :placeholder="t('authorizationCenter.selectOrganizations')">
                       <el-option v-for="organization in organizations" :key="organization.id" :label="organization.name" :value="organization.id" />
                     </el-select>
+                    <DataGrantRuleEditor :resource="item.resource" :record-search="api.recordSearch" :error-text="errorText" v-if="policies[item.id]?.scopeType==='RULES'" :model-value="policies[item.id].rules??[]" :dimensions="declarations.find(d=>d.resources[0]?.resource===item.resource)?.dimensions??[]" :organizations="organizations" :members="grantMembers" :disabled="!ready||saving" @update:model-value="value=>policies[item.id].rules=value" />
                   </template>
                 </div>
               </template>
@@ -303,6 +304,8 @@ h2{font-size:var(--el-font-size-medium);margin:0;font-weight:600}
 .permission-items-functions{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0 16px}
 .permission-row{display:grid;grid-template-columns:minmax(180px,1fr) minmax(160px,1fr) minmax(180px,1.5fr);gap:16px;align-items:center;padding:12px 0;border-bottom:1px solid var(--el-border-color-lighter)}
 .permission-row:last-child{border-bottom:0}
+/* 组合规则独占整行，避免在旧组织选择列中压缩多条件表单。 */
+.permission-row>.grant-rules{grid-column:1/-1;min-width:0}
 /* 仅压缩功能权限条目的上下留白，不改变字段和数据范围编辑表单。 */
 .permission-row.function-row{grid-template-columns:1fr;padding:4px 0}
 .permission-row :deep(.el-checkbox){max-width:100%;height:auto;min-height:40px;align-items:flex-start}

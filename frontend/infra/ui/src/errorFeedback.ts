@@ -1,4 +1,4 @@
-import { ElMessage, ElNotification } from "element-plus";
+import { ElMessage } from "element-plus";
 import { nextTick, type Ref, type VNode } from "vue";
 
 /** 当前上下文的活动错误；仅保存在内存，不记录业务正文或身份。 */
@@ -25,9 +25,11 @@ export function reportError(text: string, content?: VNode, identity: unknown = S
   if (!entry) {
     if (active.size >= MAX_ERRORS) active.values().next().value?.close();
     const onClose = () => { if (active.get(identity) === entry) active.delete(identity); };
-    const handle = content || text.length > 100
-      ? ElNotification({ message: content ?? text, duration: 0, type: "error", customClass: "app-error-feedback", showClose: true, onClose })
-      : ElMessage({ message: text, type: "error", customClass: "pure-message app-error-feedback", duration: ERROR_DURATION, showClose: true, onClose });
+    // 所有异常共用顶部居中消息栈；长文案和补救操作持续显示，避免操作入口提前消失。
+    const handle = ElMessage({
+      message: content ?? text, type: "error", customClass: "pure-message app-error-feedback",
+      duration: content || text.length > 100 ? 0 : ERROR_DURATION, showClose: true, onClose
+    });
     entry = { close: () => { handle.close(); onClose(); }, owners: 0 };
     active.set(identity, entry);
   }

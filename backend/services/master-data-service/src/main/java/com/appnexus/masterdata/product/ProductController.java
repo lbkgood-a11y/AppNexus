@@ -10,7 +10,7 @@ public final class ProductController {
  /** @param service 固定商品聚合服务，权限/租户/CAS/审计与事务由真实执行器复核 */
  public ProductController(ProductV1Service service){this.service=service;}
  /** 分页查询仅当前可信租户；page从1起、size默认20最大100，动态条件仅单固定配置最多3项。 */
- @RecordAuditSource(table="md_product_v1",path="rows") @GetMapping @OperationBinding(id="Product.list",objectType="Product",operationCode="list",nameZh="查询商品",nameEn="List V1 products",pages={"master-data/product"},permissions={"masterdata.product:read"},policy="可信租户有效成员、独立功能权限、领域校验及商品聚合版本") public Object list(HttpServletRequest r,@RequestParam(defaultValue="") String name,@RequestParam(defaultValue="") String code,@RequestParam(required=false) String categoryId,@RequestParam(required=false) String form,@RequestParam(required=false) String status,@RequestParam(defaultValue="false") boolean archived,@RequestParam(defaultValue="1") int page,@RequestParam(defaultValue="20") int size,@RequestParam(required=false) String configId,@RequestParam(required=false) String attributeFilters){return service.list(ctx(r),name,code,categoryId,form,status,archived,page,size,configId,attributeFilters);}
+ @RecordAuditSource(table="md_product_v1",path="rows") @GetMapping @OperationBinding(id="Product.list",objectType="Product",operationCode="list",nameZh="查询商品",nameEn="List V1 products",pages={"master-data/product","master-data/product-sku"},permissions={"masterdata.product:read"},policy="可信租户有效成员、独立功能权限、领域校验及商品聚合版本") public Object list(HttpServletRequest r,@RequestParam(defaultValue="") String name,@RequestParam(defaultValue="") String code,@RequestParam(required=false) String categoryId,@RequestParam(required=false) String form,@RequestParam(required=false) String status,@RequestParam(defaultValue="false") boolean archived,@RequestParam(defaultValue="1") int page,@RequestParam(defaultValue="20") int size,@RequestParam(required=false) String configId,@RequestParam(required=false) String attributeFilters){return service.list(ctx(r),name,code,categoryId,form,status,archived,page,size,configId,attributeFilters);}
  /** 创建只建DRAFT，编码/名称必填；已填属性必须合法，缺必填仅阻断后续独立启用。 */
  @PostMapping @OperationBinding(id="Product.create",objectType="Product",operationCode="create",nameZh="新增商品",nameEn="Create V1 product",pages={"master-data/product"},permissions={"masterdata.product:create"},policy="可信租户有效成员、独立功能权限、领域校验及商品聚合版本") public Object create(HttpServletRequest r,@RequestBody Input i){return service.create(ctx(r),i);}
  /** 状态命令必须当前version；启用重验完整性，LEGACY_PENDING不得直接启用。 */
@@ -18,7 +18,7 @@ public final class ProductController {
 
  /** 已授权完整详情；只读用户无需编辑权。 */
  @GetMapping("/{id}")
- @OperationBinding(id="Product.read",objectType="Product",operationCode="read",nameZh="查看商品",nameEn="Read V1 product",pages={"master-data/product"},permissions={"masterdata.product:read"},policy="可信租户有效成员、独立功能权限、领域校验及商品聚合版本")
+ @OperationBinding(id="Product.read",objectType="Product",operationCode="read",nameZh="查看商品",nameEn="Read V1 product",pages={"master-data/product","master-data/product-sku"},permissions={"masterdata.product:read"},policy="可信租户有效成员、独立功能权限、领域校验及商品聚合版本")
  public Object read(HttpServletRequest r,@PathVariable String id){return service.read(ctx(r),id);}
  /** 普通修改不接收结构字段；使用父商品CAS。 */
  @PutMapping("/{id}")
@@ -52,7 +52,7 @@ public final class ProductController {
  public Object options(HttpServletRequest r,@RequestParam String kind,@RequestParam(defaultValue="") String keyword,@RequestParam(defaultValue="1") int page,@RequestParam(defaultValue="20") int size){return service.options(ctx(r),kind,keyword,page,size);}
  /** 动态表单固定版本读取，不按当前分类指针重解释旧商品。 */
  @GetMapping("/configurations/{id}")
- @OperationBinding(id="Product.readConfiguration",objectType="Product",operationCode="readConfiguration",nameZh="读取商品固定配置",nameEn="Read product fixed configuration",pages={"master-data/product"},permissions={"masterdata.product:read"},policy="可信租户与原商品读取权，固定模板/属性修订只读")
+ @OperationBinding(id="Product.readConfiguration",objectType="Product",operationCode="readConfiguration",nameZh="读取商品固定配置",nameEn="Read product fixed configuration",pages={"master-data/product","master-data/product-sku"},permissions={"masterdata.product:read"},policy="可信租户与原商品读取权，固定模板/属性修订只读")
  public Object configuration(HttpServletRequest r,@PathVariable String id){return service.configuration(ctx(r),id);}
 
  /** 分类固定配置版本目录；仅用于显式选择，不改变当前商品绑定。 */

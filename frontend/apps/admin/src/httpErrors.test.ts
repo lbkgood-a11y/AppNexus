@@ -1,6 +1,8 @@
 import Axios, { AxiosError, CanceledError } from "axios";
 import { afterEach, describe, expect, it, vi } from "vitest";
 const transport = vi.hoisted(() => ({ request: vi.fn(), finish: vi.fn(), clearSession: vi.fn() }));
+// 请求模块在导入时注册浏览器事件；本组仅验证协议，使用最小事件宿主。
+vi.hoisted(() => { vi.stubGlobal("window", new EventTarget()); });
 vi.mock("axios", async importOriginal => {
   const original = await importOriginal<typeof import("axios")>();
   return { ...original, default: { ...original.default, create: () => ({ request: transport.request }) } };
@@ -11,7 +13,7 @@ vi.mock("@/utils/tenantContext", async () => {
   return { currentTenant: shallowRef(), beginTenantWrite: () => transport.finish, reloadTenant: vi.fn() };
 });
 vi.mock("@/utils/sessionLifecycle", () => ({ clearSession: transport.clearSession }));
-import { currentTenant } from "@/utils/tenantContext";
+import { currentTenant, reloadTenant } from "@/utils/tenantContext";
 import { http, requestErrorMessage } from "@/utils/http";
 
 /** 构造协议错误，验证客户端边界；不代表真实服务端已返回该错误。 */
@@ -20,6 +22,21 @@ function failure(status?: number, code?: string): AxiosError {
     status ? { status, data: { code }, statusText: "", headers: {}, config: { headers: {} } } as any : undefined);
 }
 describe("请求异常协议边界", () => {
+  it("租户恢复成功后静默取消旧写入且不重放", async () => {
+    vi.mocked(reloadTenant).mockResolvedValueOnce();
+    transport.request.mockRejectedValueOnce(failure(409, "TENANT_CONTEXT_CHANGED"));
+    await expect(http.request("post", "/api/acceptance")).rejects.toSatisfy(Axios.isCancel);
+    expect(reloadTenant).toHaveBeenCalledTimes(1);
+    expect(transport.request).toHaveBeenCalledTimes(1);
+    expect(transport.finish).toHaveBeenCalledTimes(1);
+  });
+  it("租户恢复失败向调用方传播且不重放请求", async () => {
+    const unavailable = failure(503);
+    vi.mocked(reloadTenant).mockRejectedValueOnce(unavailable);
+    transport.request.mockRejectedValueOnce(failure(409, "TENANT_CONTEXT_CHANGED"));
+    await expect(http.request("get", "/api/acceptance")).rejects.toBe(unavailable);
+    expect(transport.request).toHaveBeenCalledTimes(1);
+  });
   afterEach(() => { currentTenant.value = undefined; vi.clearAllMocks(); });
   it.each([[403, "account.forbidden"], [429, "account.rateLimited"], [503, "account.unavailable"]])("HTTP %s 映射受控文案", (status, key) => {
     expect(requestErrorMessage(failure(status as number))).toBe(key);
@@ -45,6 +62,14 @@ describe("请求异常协议边界", () => {
     currentTenant.value = { tenantId: "b", memberId: "n", name: "B", version: 2 };
     settle(success ? { data: [] } : failure(409, "ROLE_CHANGED"));
     await expect(pending).rejects.toSatisfy(Axios.isCancel);
+  });
+  it("不同租户版本相同时仍丢弃旧响应", async () => {
+    currentTenant.value = { tenantId: "a", memberId: "m", name: "A", version: 1 };
+    transport.request.mockImplementationOnce(() => {
+      currentTenant.value = { tenantId: "b", memberId: "n", name: "B", version: 1 };
+      return Promise.resolve({ data: ["old"] });
+    });
+    await expect(http.request("get", "/api/acceptance")).rejects.toSatisfy(Axios.isCancel);
   });
   it("401即使来自旧租户仍执行会话清理且只发一次请求", async () => {
     currentTenant.value = { tenantId: "a", memberId: "m", name: "A", version: 1 };

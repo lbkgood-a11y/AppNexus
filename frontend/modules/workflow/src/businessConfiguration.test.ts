@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { appendBusinessReview, businessModel, removeBusinessReview } from "./businessConfiguration";
+import { appendBusinessReview, businessModel, removeBusinessReview, businessContractIssues } from "./businessConfiguration";
 import type { BusinessProfile } from "./index";
 
 const profile: BusinessProfile = {
@@ -77,5 +77,26 @@ describe("business approval graph updates", () => {
     const before = JSON.stringify(flow);
     expect(appendBusinessReview(flow, true, names)).toBeNull();
     expect(JSON.stringify(flow)).toBe(before);
+  });
+});
+
+
+describe("business contract publication checks", () => {
+  const completeProfile: BusinessProfile = {...profile, withdrawalCapability:"leavePoc", outcomes:
+    ["APPROVED","REJECTED","WITHDRAWN"].map(result=>({result,capability:"leavePoc",nameZh:result,nameEn:result}))};
+  const create = () => businessModel("leavePoc",completeProfile,{title:"审批",start:"开始",review:"审核",end:"结束"});
+  it("creates a model with every declared outcome and withdrawal entry", () => {
+    const flow=create(); expect(businessContractIssues(flow,completeProfile)).toEqual([]);
+    expect(flow.terminalActions.WITHDRAWN).toBe("leavePoc"); expect(flow.withdrawalCapability).toBe("leavePoc");
+  });
+  it("reports old drafts missing withdrawal without silently repairing them", () => {
+    const flow=create(); delete flow.terminalActions.WITHDRAWN; flow.withdrawalCapability=null;
+    expect(businessContractIssues(flow,completeProfile)).toContain("BUSINESS_OUTCOME_REQUIRED:WITHDRAWN");
+    expect(businessContractIssues(flow,completeProfile)).toContain("BUSINESS_WITHDRAWAL_INVALID");
+    expect(flow.withdrawalCapability).toBeNull();
+  });
+  it("rejects a different business and conditions which binding candidates cannot accept", () => {
+    const flow=create(); flow.objectType="Other";flow.matches=[{field:"days",value:"3"}];
+    expect(businessContractIssues(flow,completeProfile)).toEqual(expect.arrayContaining(["BUSINESS_PROFILE_MISMATCH","BUSINESS_MATCH_FORBIDDEN"]));
   });
 });

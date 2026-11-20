@@ -12,6 +12,8 @@ defineProps<{
   title: string;
   /** 当前业务视图说明，可随 Tab 同步变化；为空时不占据空间。 */
   description?: string;
+  /** 嵌入已有业务页面时隐藏重复页头和外框，按内容自然增高；默认 false，查询及数据区域沿用全局密度。 */
+  embedded?: boolean;
 }>();
 defineSlots<{
   navigation?: () => unknown;
@@ -23,8 +25,8 @@ defineSlots<{
 </script>
 
 <template>
-  <section class="business-workspace" :aria-label="title" :aria-description="description">
-    <div class="workspace-banner" data-page-banner><span class="workspace-banner-icon" aria-hidden="true"><AppIcon name="layers" :size="26" /></span><div><h1>{{title}}</h1><p v-if="description">{{description}}</p></div></div>
+  <section class="business-workspace" :class="{ 'is-embedded': embedded }" :aria-label="title" :aria-description="description">
+    <div v-if="!embedded" class="workspace-banner" data-page-banner><span class="workspace-banner-icon" aria-hidden="true"><AppIcon name="layers" :size="26" /></span><div><h1>{{title}}</h1><p v-if="description">{{description}}</p></div></div>
     <header v-if="$slots.navigation || $slots.context" class="business-workspace__navigation">
       <div v-if="$slots.context" class="business-workspace__context">
         <slot name="context" />

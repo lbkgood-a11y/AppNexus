@@ -8,8 +8,18 @@ public final class BusinessObjects {
   /** 对象业务性质；审批或打印能力不决定对象分类。 */
   public enum Category { MASTER_DATA, TRANSACTION, CONFIGURATION, LEDGER, SYSTEM }
 
-  /** 可信身份；租户及操作者由认证链建立，requestId 为本次 UUID 请求键。 */
-  public record Context(String tenantId, String actorId, String requestId) {}
+  /**
+   * 可信身份，由服务端认证链建立，不能从浏览器自由构造。
+   * @param tenantId 当前可信租户标识
+   * @param actorId 实际账号标识
+   * @param requestId 稳定UUID请求键，同一命令重试保持不变
+   * @param personId 已验证的被代表人员；管理调用可为空
+   * @param organizationId 已验证的当前业务组织，不替代业务记录归属核验
+   */
+  public record Context(String tenantId, String actorId, String requestId, String personId, String organizationId) {
+    /** 管理调用没有被代表人员，不据此推断业务身份。 */
+    public Context(String tenantId,String actorId,String requestId){this(tenantId,actorId,requestId,null,null);}
+  }
   /**
    * 数据字段；type 为 NUMBER、BOOLEAN 或 TEXT；unit 不参与隐式换算。
    * @param required 是否必填；必须显式声明，缺失可选字段不自动补值
@@ -50,12 +60,27 @@ public final class BusinessObjects {
    * @param scope TENANT或PLATFORM管理域，必填
    * @param resources 首项为主资源，子资源继承主资源行权限；资源内字段键必须唯一
    * @param operationScopes 已声明operationCode到受控范围编码集合；无配置则不启用该操作行范围
+   * @param dimensions 已接通的组合授权条件维度，缺省为空；SQL映射由业务存储代码固定
    */
-  public record DataAccess(String scope,List<DataResource> resources,Map<String,Set<String>> operationScopes) {
+  public record DataAccess(String scope,List<DataResource> resources,Map<String,Set<String>> operationScopes,List<DataDimension> dimensions) {
+    /** 既有对象缺省不开放条件维度，保持已声明的行范围。 */
+    public DataAccess(String scope,List<DataResource> resources,Map<String,Set<String>> operationScopes){this(scope,resources,operationScopes,List.of());}
     public DataAccess {
+      dimensions=List.copyOf(dimensions);
       Objects.requireNonNull(scope);resources=List.copyOf(resources);
       var copy=new TreeMap<String,Set<String>>();operationScopes.forEach((key,value)->copy.put(key,Set.copyOf(value)));operationScopes=Map.copyOf(copy);
     }
+  }
+  /**
+   * 对象可授权条件维度；不包含 SQL 映射，只有真实执行支持的字段才可声明。
+   * @param field 稳定业务键，字母开头的字母数字
+   * @param nameZh 中文名称
+   * @param nameEn 英文名称
+   * @param valueType UUID 或 TEXT；UUID 值必须是规范标识
+   * @param operators 已实现的 EQ/IN 集合
+   */
+  public record DataDimension(String field,String nameZh,String nameEn,String valueType,Set<String> operators) {
+    public DataDimension {operators=Set.copyOf(operators);}
   }
   /**
    * 主从数据资源声明；不得携带数据库表名、列名或SQL。
@@ -124,7 +149,11 @@ public final class BusinessObjects {
     public CodingField {if(field==null||!field.matches("[a-zA-Z][a-zA-Z0-9]*")||maxLength<1||maxLength>128)throw new IllegalArgumentException("CODING_FIELD_INVALID");}
   }
   /** 业务代码提供声明；平台激活和租户授权独立维护。 */
-  public interface Provider { Descriptor descriptor(); }
+  public interface Provider {
+    Descriptor descriptor();
+    /** 对象只接入一次运行端口，所有通用能力复用；纯目录声明不伪造执行实现。 */
+    default BusinessObjectRuntime runtime() { return this instanceof BusinessObjectRuntime runtime ? runtime : null; }
+  }
   /** 条件为受控标量比较；同一绑定内条件全部满足才匹配。 */
   public record Condition(String field, String operator, String value) {}
   /** 业务对象操作策略；WORKFLOW 必须指定发布版本，BUSINESS 无流程；操作、服务和页面标识均须显式提供。 */

@@ -55,4 +55,28 @@ class RowAccessControlTest {
         }
         assertThatThrownBy(() -> control.organizationPredicate(all, null)).isInstanceOf(IllegalArgumentException.class);
     }
+
+    /** 组合不能把指定记录和条件错误地取并集，也不能按未声明字段或其他资源编译。 */
+    @Test void combinedRulesUseAndWithinBranchesAndOrAcrossBranches() {
+        UUID record=UUID.randomUUID();
+        var rule=new DataGrantRules.Rule(DataGrantRules.SubjectType.ROLE_MEMBERS,Set.of(),Set.of(record),
+            List.of(new DataGrantRules.Condition("code",DataGrantRules.Operator.EQ,List.of("A' OR 1=1 --"))),false);
+        var second=new DataGrantRules.Rule(DataGrantRules.SubjectType.ROLE_MEMBERS,Set.of(),Set.of(),
+            List.of(new DataGrantRules.Condition("code",DataGrantRules.Operator.IN,List.of("B","C"))),false);
+        var subject=AccessAuthorization.Subject.tenant(UUID.randomUUID(),UUID.randomUUID(),UUID.randomUUID());
+        var scoped=new AccessPlan(subject,"masterdata.partner:read","masterdata.partner",
+            new DataScopeAuthorization.DataScope(DataScopeAuthorization.ScopeType.RULES,Set.of(),List.of(rule,second)),Map.of(),Instant.now());
+        var uuid=new RowAccessControl.Column("id",DataGrantRules.ValueType.UUID);
+        var organization=new RowAccessControl.Column("organization_id",DataGrantRules.ValueType.UUID);
+        var mapping=new RowAccessControl.Mapping("masterdata.partner",uuid,organization,Map.of("code",new RowAccessControl.Column("code",DataGrantRules.ValueType.TEXT)));
+        var predicate=control.predicate(scoped,mapping);
+        assertThat(predicate.sql()).isEqualTo(" AND ((id IN (UUID_TO_BIN(?)) AND code IN (?)) OR (code IN (?,?)))");
+        assertThat(predicate.parameters()).containsExactly(record.toString(),"A' OR 1=1 --","B","C");
+        assertThatThrownBy(()->control.predicate(scoped,new RowAccessControl.Mapping("other.resource",uuid,organization,mapping.dimensions()))).isInstanceOf(SecurityException.class);
+        assertThatThrownBy(()->control.predicate(scoped,new RowAccessControl.Mapping("masterdata.partner",uuid,organization,Map.of()))).isInstanceOf(SecurityException.class);
+        assertThat(control.organizationPredicate(scoped,"organization_id").sql()).isEqualTo(" AND 1=0");
+        assertThatThrownBy(()->new DataGrantRules.Rule(DataGrantRules.SubjectType.ROLE_MEMBERS,Set.of(),Set.of(),List.of(),false)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(()->new DataGrantRules.Condition("phone.value",DataGrantRules.Operator.EQ,List.of("x"))).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(()->new DataGrantRules.Condition("code",DataGrantRules.Operator.EQ,List.of("A","B"))).isInstanceOf(IllegalArgumentException.class);
+    }
 }

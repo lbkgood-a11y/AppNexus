@@ -6,7 +6,7 @@ import { computed, ref, watch, onMounted, onBeforeUnmount } from "vue";
 import { useI18n } from "vue-i18n";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { onBeforeRouteLeave, useRoute } from "vue-router";
-import { businessModel } from './businessConfiguration';
+import { businessModel, businessContractIssues } from './businessConfiguration';
 import { ManagedDialog } from "@appnexus/ui";
 import { layoutGraph } from "./layout";
 import { connectionError } from "./graphEditing";
@@ -43,6 +43,8 @@ const currentProfile = computed(
       (d) => d.capability === model.value.entryCapability,
     )?.profile,
 );
+/** 设计期间持续检查业务契约，前端提示与发布预检共享同一来源。 */
+const contractIssues = computed(() => businessContractIssues(model.value, currentProfile.value));
 /** 目录加载失败保留原草稿；业务配置不在前端伪造单据或选人数据。 */
 async function loadConfiguration() {
   configurationLoading.value = true;
@@ -178,11 +180,14 @@ async function save() {
 }
 async function validate() {
   await run(async () => {
-    validation.value = await props.api.validate(model.value);
+    validation.value = [...new Set([...contractIssues.value, ...await props.api.validate(model.value)])];
   });
 }
 async function publish() {
   await run(async () => {
+    // 在保存与发布之前展示全部错误；后端发布事务仍重验，防止绕过或契约并发变化。
+    validation.value = [...new Set([...contractIssues.value, ...await props.api.validate(model.value)])];
+    if (validation.value.length) return;
     const saved = await props.api.save(id.value, revision.value, model.value);
     revision.value = saved.revision;
     baseline.value = JSON.stringify(model.value);
@@ -466,6 +471,9 @@ watch(
         type="error"
         :closable="false"
       />
+      <el-alert v-if="contractIssues.length" type="warning" :closable="false" :title="t('businessWorkflow.requiredContractHint')">
+       <ul><li v-for="issue in contractIssues" :key="issue">{{t('workflow.codes.'+issue.split(':')[0])}} {{issue.includes(':')?t('workflow.states.'+issue.split(':')[1]):''}}</li></ul>
+      </el-alert>
       <el-alert
         v-if="validation"
         :type="validation.length ? 'warning' : 'success'"

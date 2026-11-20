@@ -9,13 +9,21 @@ import java.util.UUID;
  */
 public interface DataScopeAuthorization {
     /** 数据范围类型；DENY 是失败关闭结果，不可由管理员保存。 */
-    enum ScopeType { DENY, SELF, ORGANIZATION, ORGANIZATION_SUBTREE, ALL }
+    enum ScopeType { DENY, SELF, ORGANIZATION, ORGANIZATION_SUBTREE, ALL, RULES }
     /**
      * 已解析数据范围。
      * @param type 范围类型
      * @param organizationIds 当前租户内组织 UUID；SELF、ALL、DENY 时为空
+     * @param rules 已匹配主体的组合规则；RULES 时与 organizationIds 对应的旧范围取 OR，其他范围必须为空
      */
-    record DataScope(ScopeType type, Set<UUID> organizationIds) {
+    record DataScope(ScopeType type, Set<UUID> organizationIds, java.util.List<DataGrantRules.Rule> rules) {
+        /** 既有组织范围不包含组合规则。 */
+        public DataScope(ScopeType type,Set<UUID> organizationIds){this(type,organizationIds,java.util.List.of());}
+        public DataScope {
+            java.util.Objects.requireNonNull(type);organizationIds=Set.copyOf(organizationIds);
+            rules=DataGrantRules.executionRules(rules);
+            if(type!=ScopeType.RULES&&!rules.isEmpty())throw new IllegalArgumentException("Rules require RULES scope");
+        }
         /** 创建不可放行任何数据的稳定结果。 */
         public static DataScope deny(){return new DataScope(ScopeType.DENY,Set.of());}
     }

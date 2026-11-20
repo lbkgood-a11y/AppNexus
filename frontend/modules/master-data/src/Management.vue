@@ -10,9 +10,11 @@ import { masterDataFields, masterDataOperations, type MasterDataApi, type Master
 
 /** 主数据档案复用现有工作区、表格和弹窗；表单差异来自固定字段契约，不构建平行 UI 体系。 */
 const props=defineProps<{kind:MasterDataKind;api:MasterDataApi;errorText:(error:unknown)=>string;
+  /** 嵌入库区主从工作区时隐藏重复横幅，默认 false。 */
+  embedded?:boolean;
   /** 库区或库位的直属上级编码，必填；名称仅展示，不参与授权或写入。 */
   storageParent?:{code:string;name:string;enabled:boolean}}>();
-const emit=defineEmits<{changed:[]}>();
+const emit=defineEmits<{changed:[];selected:[row:MasterDataRow]}>();
 const {t,te}=useI18n();
 /** 区划类型仅做中英双语展示；未知标准类型原样保留，不改变提交及校验原值。 */
 function subdivisionTypeLabel(value?:string){
@@ -253,7 +255,7 @@ onMounted(load);
 <template>
   <PartnerEditor v-if="kind==='partner'&&partnerEditor" :id="partnerId" :mode="partnerEditorMode" :api="api" :error-text="errorText" @close="partnerEditor=false;load()" />
   <WarehouseEditor v-else-if="kind==='warehouse'&&warehouseEditor" :id="partnerId" :mode="warehouseEditorMode" :api="api" :error-text="errorText" @close="warehouseEditor=false;load()" />
-  <component :is="isGeography?TreeListTemplate:BusinessWorkspace" v-else :title="title" :description="t('masterData.description')" :collapsed="treeCollapsed" :tree-label="t('geographyHierarchy.title')" @update:collapsed="treeCollapsed=$event">
+  <component :is="isGeography?TreeListTemplate:BusinessWorkspace" v-else :title="title" :description="t('masterData.description')" :embedded="embedded" :collapsed="treeCollapsed" :tree-label="t('geographyHierarchy.title')" @update:collapsed="treeCollapsed=$event">
     <template v-if="isGeography" #treeHeader><strong>{{t('geographyHierarchy.title')}}</strong></template>
     <template v-if="isGeography" #tree>
       <el-button v-operation="operation.list" text :disabled="loading||busy" @click="clearTreeScope">{{t('geographyHierarchy.all')}}</el-button>
@@ -285,7 +287,7 @@ onMounted(load);
         </template>
         <template #actions><el-button v-operation="operation.create" type="primary" :disabled="loading||busy||(isStorage&&(!storageParent?.code||!storageParent.enabled))" @click="edit()">{{t('masterData.create')}}</el-button></template>
         <template v-for="field in visibleFields" :key="field" #[field]="{row}">{{kind==='warehouse'?(warehouseOptions[field]?.find(option=>option.value===row.attributes[field])?.name||row.attributes[field]||'—'):field==='partnerType'?(row.attributes[field]==='BOTH'?['CUSTOMER','SUPPLIER']:row.attributes[field].split(',')).map((value:string)=>partnerOptions.find(option=>option.value===value)?.name??value).join(' / '):field==='subdivisionType'?subdivisionTypeLabel(row.attributes[field]):field==='areaType'?(row.attributes[field]?t('storageHierarchy.types.'+row.attributes[field]):'—'):row.attributes[field]||'—'}}</template>
-        <template #name="{row}">{{isGeography?(row.attributes.displayName||row.name):row.name}}</template>
+        <template #name="{row}"><el-button v-if="kind==='storage-area'&&embedded" v-operation="operation.list" link type="primary" @click="emit('selected',row)">{{row.name}}</el-button><span v-else>{{isGeography?(row.attributes.displayName||row.name):row.name}}</span></template>
         <template #hierarchyCode="{row}">{{row.attributes.hierarchyCode||row.code}}</template>
         <template #parentHierarchyCode="{row}">{{row.attributes.parentHierarchyCode||'—'}}</template>
         <template #status="{row}"><el-tag :type="row.enabled?'success':'info'">{{t('masterData.'+(row.enabled?'enabled':'disabled'))}}</el-tag></template>

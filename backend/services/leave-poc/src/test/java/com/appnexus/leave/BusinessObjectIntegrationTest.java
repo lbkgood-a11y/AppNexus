@@ -50,8 +50,10 @@ class BusinessObjectIntegrationTest {
       var table=java.util.regex.Pattern.compile("(?:TABLE|UPDATE)\\s+`?([a-z_]+)`?",java.util.regex.Pattern.CASE_INSENSITIVE).matcher(statement);
       if(table.find()&&jdbc.queryForObject("SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=?",Integer.class,table.group(1))>0)jdbc.execute(statement);
     }
+    try(var connection=source.getConnection()){ScriptUtils.executeSqlScript(connection,new ClassPathResource("db/migration/V129__object_approval_receipts.sql"));}
     var tx=new DataSourceTransactionManager(source);
     WorkflowPlatform platform=new WorkflowPlatform(){
+      public Map<String,Object> projectData(WorkflowContext context,String resource,Map<String,Object> values){return Map.copyOf(values);}
       public boolean candidate(WorkflowContext c,String org,String kind,String reference){return resolve(c.tenantId(),org,kind,reference).contains(c.actorId());}
       public boolean active(String t,String a){return TENANT.equals(t)&&Set.of("applicant","leader","hr","manager").contains(a);}
       public boolean allowed(WorkflowContext c,String p){return active(c.tenantId(),c.actorId());}
@@ -59,21 +61,24 @@ class BusinessObjectIntegrationTest {
       public List<String> resolve(String t,String o,String kind,String ref){return "LEADER".equals(kind)?List.of("leader"):List.of(ref);}
     };
     BusinessObjectPlatform dp=new BusinessObjectPlatform(){
+      public boolean operationAllowed(Context c,String operation,String permission){return platform.allowed(new WorkflowContext(c.tenantId(),c.actorId(),c.requestId()),permission);}
+      public com.appnexus.contracts.businessobject.BusinessObjectRuntime.Snapshot authorizeRecord(com.appnexus.contracts.businessobject.BusinessObjects.Context c,com.appnexus.contracts.businessobject.BusinessObjects.Descriptor d,String operation,com.appnexus.contracts.businessobject.BusinessObjectRuntime.Snapshot snapshot){return snapshot;}
       public boolean platformAdministrator(String a){return a.equals("platform");}
       public boolean active(Context c){return platform.active(c.tenantId(),c.actorId())||(TENANT.equals(c.tenantId())&&c.actorId().equals("partner-019a65d0-0060-7000-8000-000000000099"));}
       public boolean tenantAdministrator(Context c){return active(c)&&c.actorId().equals("manager");}
       public boolean tenantExists(String t){return Set.of(TENANT,OTHER).contains(t);}
     };
-    leave=new LeavePocService(jdbc,tx,platform,()->runtime,()->runtime);
+    leave=new LeavePocService(jdbc,tx,platform,()->runtime);
     Provider order=()->new Descriptor("Order","订单","Order","sales",1,Category.TRANSACTION,List.of(new Field("amount","金额","Amount","NUMBER","元",true)),List.of(
       new Operation("confirm","确认","Confirm","order:confirm","Order.confirm",null,List.of(new OperationAlias("Order.detail.confirm",new PageOperation("order/detail","/orders/detail","订单详情","Order details","POST","/api/orders/{id}/confirm"))),new com.appnexus.contracts.businessobject.InteractionContract("Order.confirm",1,"Order","confirm","确认","Confirm",com.appnexus.contracts.businessobject.InteractionContract.Trigger.USER_ACTION,java.util.List.of(new com.appnexus.contracts.businessobject.InteractionContract.Capability(com.appnexus.contracts.businessobject.InteractionContract.Service.BUSINESS,com.appnexus.contracts.businessobject.InteractionContract.Completion.SYNCHRONOUS,"Order.confirm","",java.util.List.of(),java.util.Set.of(), "Order.confirm.data", 1)))),
       new Operation("print","打印","Print","order:print","Order.print",null,List.of(),new com.appnexus.contracts.businessobject.InteractionContract("Order.print",1,"Order","print","打印","Print",com.appnexus.contracts.businessobject.InteractionContract.Trigger.USER_ACTION,java.util.List.of(new com.appnexus.contracts.businessobject.InteractionContract.Capability(com.appnexus.contracts.businessobject.InteractionContract.Service.PRINT,com.appnexus.contracts.businessobject.InteractionContract.Completion.CONFIRMATION,"order.v1","",java.util.List.of(),java.util.Set.of(), "order.v1", 1)))),
       new Operation("cancel","取消","Cancel","order:cancel","Order.cancel",null,java.util.List.of(),new com.appnexus.contracts.businessobject.InteractionContract("Order.cancel",1,"Order","cancel","取消","Cancel",com.appnexus.contracts.businessobject.InteractionContract.Trigger.USER_ACTION,java.util.List.of(new com.appnexus.contracts.businessobject.InteractionContract.Capability(com.appnexus.contracts.businessobject.InteractionContract.Service.BUSINESS,com.appnexus.contracts.businessobject.InteractionContract.Completion.SYNCHRONOUS,"Order.cancel","",java.util.List.of(),java.util.Set.of(), "Order.cancel.data", 1)))),
       new Operation("release","放行","Release","order:release","Order.release",null,java.util.List.of(),new com.appnexus.contracts.businessobject.InteractionContract("Order.release",1,"Order","release","放行","Release",com.appnexus.contracts.businessobject.InteractionContract.Trigger.USER_ACTION,java.util.List.of(new com.appnexus.contracts.businessobject.InteractionContract.Capability(com.appnexus.contracts.businessobject.InteractionContract.Service.WORKFLOW,com.appnexus.contracts.businessobject.InteractionContract.Completion.CALLBACK,"orderRelease","releaseApproval",java.util.List.of(),Set.of("APPROVED","REJECTED"), "orderRelease.data", 1))))));
     documents=com.appnexus.platform.persistence.businessobject.BusinessObjectPersistence.create(jdbc,tx,dp,()->runtime,List.of(leave,order),printingPort::get);leave.bindings(()->documents);
+    leave.execution(()->com.appnexus.platform.businessobject.BusinessObjectUseCases.execution(List.of(leave,order),documents,new com.appnexus.platform.persistence.businessobject.configuration.JdbcConfigurationTransaction(tx),dp,()->runtime,printingPort::get));
     documents.savePageRelationships(dc("platform"),"LeaveRequest",-1,List.of(new PageRelationship("submit","LeaveRequest.submit"),new PageRelationship("print","LeaveRequest.print"),new PageRelationship("print","LeaveRequest.detail.print")));
     var bridge=new WorkflowBridge();var config=new WorkflowEngineConfiguration();engine=config.workflowProcessEngine(source,tx,bridge);
-    runtime=config.workflowRuntime(engine,source,tx,platform,List.of(leave),bridge);runtime.documentBindings(()->documents);
+    runtime=config.workflowRuntime(engine,source,tx,platform,List.of(new ObjectWorkflowAdapter(leave,LeavePocService.SUBMIT_OPERATION,platform,()->runtime,tx)),bridge);runtime.documentBindings(()->documents);
     var base=LeavePocTest.model();var model=new WorkflowModel(base.name(),base.objectType(),base.purpose(),base.mode(),base.entryCapability(),List.of(),base.nodes(),base.edges(),Map.of("APPROVED","leavePoc","REJECTED","leavePoc","WITHDRAWN","leavePoc"),List.of(),"leavePoc");
     runtime.save(wc("manager"),"leave",-1,model);runtime.publish(wc("manager"),"leave",0);
     documents.activate(dc("platform"),"LeaveRequest",0,true);documents.grant(dc("platform"),"LeaveRequest",TENANT,true);
@@ -242,11 +247,11 @@ class BusinessObjectIntegrationTest {
       public Map<String,Object> request(com.appnexus.contracts.printing.PrintContext context,Request request){throw new AssertionError("预检不得创建输出");}
     });
     assertThat(leave.availability(wc("applicant"),shortLeave)).filteredOn(value->value.operationCode().equals("print")).first().satisfies(value->{assertThat(value.allowed()).isFalse();assertThat(value.reasonCode()).isEqualTo("PRINT_TARGET_INVALID");});
-    leave.printing(()->new com.appnexus.contracts.printing.BusinessPrinting(){
+    printingPort.set(new com.appnexus.contracts.printing.BusinessPrinting(){
       public List<Scene> scenes(com.appnexus.contracts.printing.PrintContext context,String contract){return List.of();}
-      public Map<String,Object> request(com.appnexus.contracts.printing.PrintContext context,Request input){assertThat(input.sceneCode()).isEqualTo("leave-scene");assertThat(input.dataContract()).isEqualTo("leave.request.v1");assertThat(input.data()).doesNotContainKeys("reason","applicant");return Map.of("id","output");}
+      public Map<String,Object> request(com.appnexus.contracts.printing.PrintContext context,Request input){assertThat(input.sceneCode()).isEqualTo("leave-scene");assertThat(input.dataContract()).isEqualTo("leave.request.v1");assertThat(input.data()).doesNotContainKeys("reason","applicant");var output=new HashMap<String,Object>();output.put("id","output");output.put("deviceId",null);return output;}
     });
-    assertThat(leave.print(wc("applicant"),shortLeave,"LeaveRequest.print").get("id")).isEqualTo("output");
+    assertThat(leave.print(wc("applicant"),shortLeave,"LeaveRequest.print")).containsEntry("id","output").containsEntry("deviceId",null);
     assertThat(leave.print(wc("applicant"),shortLeave,"LeaveRequest.detail.print").get("id")).isEqualTo("output");
     assertThatThrownBy(()->leave.print(wc("leader"),shortLeave,"LeaveRequest.print")).hasMessage("LEAVE_ACCESS_DENIED");
     assertThatThrownBy(()->leave.print(wc("applicant"),shortLeave,"Other.print")).hasMessage("LEAVE_ACCESS_DENIED");

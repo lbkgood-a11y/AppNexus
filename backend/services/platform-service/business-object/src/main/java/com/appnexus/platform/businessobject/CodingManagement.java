@@ -13,9 +13,40 @@ public interface CodingManagement extends BusinessCoding {
    * @param field 已声明的文本编码字段
    * @param name 显示名称，去除首尾空格后 1–100 字符
    * @param enabled 是否允许新发号；停用后幂等重放也必须拒绝
-   * @param rule 完整编码规则，已发号后的字段与规则冻结
+   * @param ruleKey 独立规则标识，必填；只允许引用当前租户规则
+   * @param ruleVersion 固定规则版本，大于0；不会自动跟随最新版本
    */
-  record Input(long revision, String field, String name, boolean enabled, Rule rule) {}
+  record Input(long revision, String field, String name, boolean enabled, String ruleKey, long ruleVersion) {}
+
+  /**
+   * 新规则版本输入；已存在版本不可原地覆盖。
+   * @param revision 最新版本号；首次为-1，已有规则每次追加版本必须回传最新版本
+   * @param name 显示名称，去空格后1–100字符
+   * @param rule 分段规则，最大输出128字符
+   */
+  record RuleInput(long revision, String name, Rule rule) {}
+  /**
+   * 读取当前租户全部规则版本；需要独立规则管理权限，不授予业务发号权。
+   * @param context 可信会话账号、租户和请求上下文
+   * @return 按规则键和版本倒序返回的不可变版本及只读审计
+   * @throws com.appnexus.contracts.businessobject.BusinessObjects.Rejection 无规则管理权限
+   */
+  List<Map<String,Object>> rules(Context context);
+  /**
+   * 对象绑定候选；先复核目标对象配置权，不要求独立规则维护权。
+   * @param context 可信会话上下文
+   * @param type 代码声明且已向本租户开放的对象类型
+   * @return 当前租户可绑定的精确规则版本，不消耗流水
+   */
+  List<Map<String,Object>> ruleOptions(Context context, String type);
+  /**
+   * 原子追加不可变版本；冲突不推进版本或审计。
+   * @param context 可信会话上下文，账号和UTC时间不接受客户端指定
+   * @param key 1–40字符，字母开头，仅字母数字及下划线，租户内唯一
+   * @param input 新版本内容及读取时的最新版本；首次revision为-1
+   * @throws com.appnexus.contracts.businessobject.BusinessObjects.Rejection 无权限、非法规则或版本冲突
+   */
+  void saveRule(Context context, String key, RuleInput input);
 
   /**
    * 读取租户编码配置，先校验配置管理权及对象授权。

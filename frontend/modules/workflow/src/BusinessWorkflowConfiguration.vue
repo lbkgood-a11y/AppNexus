@@ -40,21 +40,11 @@ const conditions = computed(() =>
   ),
 );
 const options = computed(() => props.catalog.options);
-const withdrawal = computed({
-  get: () => !!model.value.withdrawalCapability,
-  set: (enabled: boolean) => {
-    if (props.disabled || !profile.value) return;
-    model.value.withdrawalCapability = enabled
-      ? profile.value.withdrawalCapability
-      : null;
-    const outcome = profile.value.outcomes.find(
-      (o) => o.result === "WITHDRAWN",
-    );
-    if (enabled && outcome)
-      model.value.terminalActions.WITHDRAWN = outcome.capability;
-    else delete model.value.terminalActions.WITHDRAWN;
-  },
-});
+/** 必需结果直接来自业务契约；旧草稿缺项即时提示，禁止静默补齐后假装已配置。 */
+const requiredResults = computed(() => [...new Set(profile.value?.outcomes.map(outcome => outcome.result) || [])]);
+const outcomeError = (result: string) => profile.value?.outcomes.some(outcome =>
+  outcome.result === result && outcome.capability === model.value.terminalActions[result])
+  ? '' : t('businessWorkflow.requiredOutcome');
 const nameOf = (id: string) =>
   model.value.nodes.find((n) => n.id === id)?.name || id;
 function selectDocument(key: string) {
@@ -335,9 +325,10 @@ function setOutcome(result: string, capability?: string) {
             {{ t("businessWorkflow.deliveryHint") }}
           </p>
           <el-form-item
-            v-for="result in ['APPROVED', 'REJECTED']"
+            v-for="result in requiredResults"
             :key="result"
             :label="t('workflow.states.' + result)"
+            :error="outcomeError(result)"
             required
           >
             <el-select
@@ -352,19 +343,13 @@ function setOutcome(result: string, capability?: string) {
                 :label="label(outcome)"
             /></el-select>
           </el-form-item>
-          <el-form-item :label="t('businessWorkflow.allowWithdrawal')"
-            ><el-switch
-              v-model="withdrawal"
-              :disabled="
-                disabled ||
-                !profile.withdrawalCapability ||
-                !profile.outcomes.some((o) => o.result === 'WITHDRAWN')
-              "
-          /></el-form-item>
-          <p>{{ t("businessWorkflow.withdrawHint") }}</p>
-          <p v-if="withdrawal">
-            {{ label(profile.outcomes.find((o) => o.result === "WITHDRAWN")!) }}
-          </p>
+          <el-form-item v-if="requiredResults.includes('WITHDRAWN')" :label="t('workflow.withdrawalCapability')" required
+            :error="model.withdrawalCapability === profile.withdrawalCapability && model.withdrawalCapability ? '' : t('businessWorkflow.requiredWithdrawal')">
+           <el-select v-model="model.withdrawalCapability" :disabled="disabled">
+            <el-option v-if="profile.withdrawalCapability" :value="profile.withdrawalCapability" :label="t('businessWorkflow.contractWithdrawal')" />
+           </el-select>
+          </el-form-item>
+          <p class="business-explanation">{{t('businessWorkflow.requiredContractHint')}}</p>
         </template>
       </el-form>
     </div>

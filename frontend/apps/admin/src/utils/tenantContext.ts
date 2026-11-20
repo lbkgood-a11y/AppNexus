@@ -8,6 +8,7 @@ export const availableTenants=shallowRef<{tenantId:string;memberId:string;name:s
 let channel:BroadcastChannel|undefined;
 let switching=false;
 let writes=0;
+let recovery: Promise<void> | undefined;
 /** 阻止切换中的新业务写入，等待在途写入结束后才允许切换。 */
 export function beginTenantWrite(){if(switching)throw new Error("Tenant switch in progress");writes++;return()=>{writes--;};}
 export function beginTenantSwitch(){if(writes||switching)throw new Error("Wait for pending changes");switching=true;}
@@ -33,9 +34,14 @@ export async function refreshTenantWorkspace(path?:string){
  }else await router.replace(target);
 }
 /** 上下文冲突时先从服务端重读权威状态，再刷新当前内容；网络失败交由原请求错误反馈。 */
-export async function reloadTenant(path?:string){
- currentTenant.value=(await(await import("@/api/tenant")).probeCurrentTenant())||undefined;
- await refreshTenantWorkspace(path);
+export function reloadTenant(path?:string): Promise<void>{
+ if(recovery)return recovery;
+ // 同批冲突共享服务端探测和页面重建，防止并发错误反复清空导航与按钮。
+ recovery=(async()=>{
+  currentTenant.value=(await(await import("@/api/tenant")).probeCurrentTenant())||undefined;
+  await refreshTenantWorkspace(path);
+ })().finally(()=>{recovery=undefined;});
+ return recovery;
 }
 /** 消息不携带账号、租户或凭据，其他标签只重读服务器上下文。 */
 export function notifyTenantChange(){channel?.postMessage("changed");}

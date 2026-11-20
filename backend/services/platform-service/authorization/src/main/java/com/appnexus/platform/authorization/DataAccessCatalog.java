@@ -16,6 +16,13 @@ public final class DataAccessCatalog {
             var d=Objects.requireNonNull(projection);
             if(d.version()<1||d.objectType()==null||!d.objectType().matches("[A-Z][A-Za-z0-9]*")||!objects.add(d.objectType())||d.scope()==null||d.resources().isEmpty())throw invalid();
             String root=d.resources().getFirst().resource();
+            var dimensionKeys=new HashSet<String>();
+            for(var dimension:d.dimensions()) {
+                if(dimension.field()==null||!dimension.field().matches("[a-z][A-Za-z0-9]*")||!dimensionKeys.add(dimension.field())
+                    ||dimension.nameZh()==null||dimension.nameZh().isBlank()||dimension.nameEn()==null||dimension.nameEn().isBlank()
+                    ||!Set.of("UUID","TEXT").contains(dimension.valueType())||dimension.operators().isEmpty()
+                    ||!Set.of("EQ","IN").containsAll(dimension.operators()))throw invalid();
+            }
             for(int i=0;i<d.resources().size();i++) {
                 var r=d.resources().get(i);
                 if(r.resource()==null||!r.resource().matches("[a-z][a-z0-9]*(\\.[a-z][a-z0-9]*)*")||!resources.add(r.resource())||r.nameZh()==null||r.nameZh().isBlank()||r.nameEn()==null||r.nameEn().isBlank()||!(i==0?"".equals(r.parentResource()):root.equals(r.parentResource())))throw invalid();
@@ -38,7 +45,7 @@ public final class DataAccessCatalog {
             var object=provider.descriptor();var access=object.dataAccess();if(access==null)continue;
             var resources=access.resources().stream().map(r->new DataAccessDeclaration.Resource(r.resource(),r.parentResource(),r.nameZh(),r.nameEn(),r.fields().stream().map(f->new DataAccessDeclaration.Field(f.field(),f.nameZh(),f.nameEn(),FieldSecurity.Kind.valueOf(f.kind()),f.modes().stream().map(FieldSecurity.Mode::valueOf).collect(java.util.stream.Collectors.toSet()))).toList(),r.responseType())).toList();
             var operations=object.operations().stream().filter(op->access.operationScopes().containsKey(op.operationCode())).map(op->new DataAccessDeclaration.Operation(op.operationId(),op.permissionCode(),access.operationScopes().get(op.operationCode()).stream().map(DataScopeAuthorization.ScopeType::valueOf).collect(java.util.stream.Collectors.toSet()))).toList();
-            var projection=new DataAccessDeclaration.Descriptor(object.objectType(),object.version(),PermissionCatalog.ScopeType.valueOf(access.scope()),resources,operations);
+            var projection=new DataAccessDeclaration.Descriptor(object.objectType(),object.version(),PermissionCatalog.ScopeType.valueOf(access.scope()),resources,operations,access.dimensions());
             projections.add(projection);
         }
         return new DataAccessCatalog(projections);
@@ -54,4 +61,16 @@ public final class DataAccessCatalog {
     /** 从同一权威声明投影字段目录，供保存校验和响应执行复用。 */
     public List<FieldSecurity.Descriptor> fields(PermissionCatalog.ScopeType scope){return list(scope).stream().flatMap(d->d.resources().stream()).flatMap(r->r.fields().stream().map(f->new FieldSecurity.Descriptor(r.resource(),f.field(),f.nameZh(),f.nameEn(),f.kind(),f.modes().stream().sorted().toList()))).toList();}
     private static IllegalStateException invalid(){return new IllegalStateException("DATA_ACCESS_DECLARATION_INVALID");}
+    /** 校验条件仅使用统一声明中真实支持的维度和运算，禁止管理配置提供任意字段。 */
+    public void validateRules(String permission,String resource,List<DataGrantRules.Rule> rules) {
+        if(!supports(permission,resource,DataScopeAuthorization.ScopeType.RULES))throw new IllegalArgumentException("DATA_SCOPE_UNSUPPORTED");
+        var descriptor=descriptors.stream().filter(d->d.resources().getFirst().resource().equals(resource)).findFirst().orElseThrow();
+        for(var rule:DataGrantRules.checked(rules))for(var condition:rule.conditions()) {
+            var dimension=descriptor.dimensions().stream().filter(d->d.field().equals(condition.field())).findFirst()
+                .orElseThrow(()->new IllegalArgumentException("DATA_GRANT_FIELD_UNSUPPORTED"));
+            if(!dimension.operators().contains(condition.operator().name()))throw new IllegalArgumentException("DATA_GRANT_OPERATOR_UNSUPPORTED");
+            if("UUID".equals(dimension.valueType()))for(String value:condition.values())
+                if(!UUID.fromString(value).toString().equals(value))throw new IllegalArgumentException("DATA_GRANT_UUID_INVALID");
+        }
+    }
 }

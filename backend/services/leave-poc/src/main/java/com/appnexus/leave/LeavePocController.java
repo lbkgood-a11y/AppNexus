@@ -38,7 +38,7 @@ public final class LeavePocController {
   public Object print(HttpServletRequest r,@PathVariable String id,@RequestBody SubmitOperation input){return reply(()->service.print(context(r),id,input.operationId()));}
 
   /** 创建草稿，仅校验表单业务值和标识格式；组织任职在审批提交时核验，不隐式创建组织或人员。 */
-  @com.appnexus.contracts.operation.OperationBinding(id="LeaveRequest.create",objectType="LeaveRequest",operationCode="create",pages={"workflow/leave"},nameZh="新建请假单",nameEn="Create leave request",permissions={"workflow:start"},policy="原服务逐请求复核有效成员、功能权限、对象归属、版本与业务状态")
+  @com.appnexus.contracts.operation.OperationBinding(id="LeaveRequest.create",objectType="LeaveRequest",operationCode="create",pages={"workflow/leave"},nameZh="新建请假单",nameEn="Create leave request",permissions={"leave.request:submit"},policy="原服务逐请求复核有效成员、功能权限、对象归属、版本与业务状态")
   @PostMapping
   public Object create(HttpServletRequest r, @RequestBody LeavePocService.Input input) {
     return reply(() -> service.create(context(r), input));
@@ -69,7 +69,7 @@ public final class LeavePocController {
   /** 修改参数包含期望依据版本；审批中不可修改，成功后需重新提交新轮次。 */
   public record Edit(long basisVersion,LeavePocService.Input input) {}
   /** 本人修改草稿、驳回或撤回单据。 */
-  @com.appnexus.contracts.operation.OperationBinding(id="LeaveRequest.update",objectType="LeaveRequest",operationCode="update",pages={"workflow/leave"},nameZh="修改请假单",nameEn="Edit leave request",permissions={"workflow:start"},policy="原服务逐请求复核有效成员、功能权限、对象归属、版本与业务状态")
+  @com.appnexus.contracts.operation.OperationBinding(id="LeaveRequest.update",objectType="LeaveRequest",operationCode="update",pages={"workflow/leave"},nameZh="修改请假单",nameEn="Edit leave request",permissions={"leave.request:submit"},policy="原服务逐请求复核有效成员、功能权限、对象归属、版本与业务状态")
   @PutMapping("/{id}")
   public Object update(HttpServletRequest r,@PathVariable String id,@RequestBody Edit edit) {
     return reply(()->service.update(context(r),id,edit.basisVersion(),edit.input()));

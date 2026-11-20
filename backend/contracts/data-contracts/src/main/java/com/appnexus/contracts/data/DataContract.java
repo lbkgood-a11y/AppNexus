@@ -25,6 +25,8 @@ public record DataContract(String code, int version, String purpose, List<Field>
     if(code==null||code.isBlank()||version<1||purpose==null||purpose.isBlank())throw new IllegalArgumentException("DATA_CONTRACT_INVALID");
     fields=List.copyOf(fields);var paths=new HashSet<String>();
     for(var f:fields)if(f.path()==null||!f.path().matches("[A-Za-z][A-Za-z0-9_]*(\\.[A-Za-z][A-Za-z0-9_]*)*")||f.type()==null||!paths.add(f.path()))throw new IllegalArgumentException("DATA_CONTRACT_FIELD_INVALID");
+    for (String path : paths) if (paths.stream().anyMatch(other -> other.startsWith(path + ".")))
+      throw new IllegalArgumentException("DATA_CONTRACT_FIELD_INVALID");
   }
   /**
    * 在执行边界校验完整交付数据；多余字段也拒绝，避免无关敏感数据进入快照。
@@ -40,6 +42,102 @@ public record DataContract(String code, int version, String purpose, List<Field>
       if(!valid)throw new Violation(f.path(),"DATA_FIELD_TYPE_INVALID");
     }
     inspect(data,"");
+  }
+  /**
+   * 将已授权对象数据投影为本契约字段；审批和打印复用同一白名单，禁止透传整条记录。
+   * @param source 已经完成记录与字段授权的业务数据；本方法不授予读取权限
+   * @return 深度不可变的契约投影；可选空值保持缺失，必填缺失拒绝
+   */
+  public Map<String,Object> project(Map<String,?> source) {
+    Objects.requireNonNull(source);
+    var result = new LinkedHashMap<String,Object>();
+    for (var field : fields) {
+      Object value = pathValue(source, field.path());
+      if (value != null) putPath(result, field.path(), value);
+    }
+    validate(result);
+    return immutable(result);
+  }
+
+  /**
+   * 按本契约生成审批字符串传输字段；字段类型和完整性先校验，不隐式补默认值。
+   * @param source 已授权对象字段；只输出本契约声明字段
+   * @return 键为完整字段路径的不可变标量映射
+   */
+  public Map<String,String> encode(Map<String,?> source) {
+    var data = project(source);
+    var result = new LinkedHashMap<String,String>();
+    for (var field : fields) {
+      Object value = pathValue(data, field.path());
+      if (value != null) result.put(field.path(), value.toString());
+    }
+    return Map.copyOf(result);
+  }
+
+  /**
+   * 按字段类型解码引擎字符串快照并严格验证；未知字段及非法布尔、数值失败关闭。
+   * @param values 路径到字符串的受控传输映射，不能作为可信业务数据来源
+   * @return 深度不可变的有类型数据；错误只包含字段路径和稳定码
+   */
+  public Map<String,Object> decode(Map<String,String> values) {
+    Objects.requireNonNull(values);
+    var declared = new HashMap<String,Field>();
+    fields.forEach(field -> declared.put(field.path(), field));
+    var result = new LinkedHashMap<String,Object>();
+    for (var entry : values.entrySet()) {
+      var field = declared.get(entry.getKey());
+      if (field == null) throw new Violation(entry.getKey(), "DATA_FIELD_UNKNOWN");
+      if (entry.getValue() == null) continue;
+      Object value;
+      try {
+        value = switch (field.type()) {
+          case TEXT -> entry.getValue();
+          case NUMBER -> new java.math.BigDecimal(entry.getValue());
+          case BOOLEAN -> {
+            if (!Set.of("true", "false").contains(entry.getValue())) throw new IllegalArgumentException();
+            yield Boolean.valueOf(entry.getValue());
+          }
+        };
+      } catch (IllegalArgumentException error) {
+        throw new Violation(field.path(), "DATA_FIELD_TYPE_INVALID");
+      }
+      putPath(result, field.path(), value);
+    }
+    validate(result);
+    return immutable(result);
+  }
+
+  private static Object pathValue(Map<String,?> source, String path) {
+    Object value = source;
+    for (String part : path.split("\\.")) {
+      if (value == null) return null;
+      if (!(value instanceof Map<?,?> map)) throw new Violation(path, "DATA_FIELD_TYPE_INVALID");
+      value = map.get(part);
+    }
+    return value;
+  }
+
+  @SuppressWarnings("unchecked")
+  private static void putPath(Map<String,Object> target, String path, Object value) {
+    String[] parts = path.split("\\.");
+    for (int index = 0; index < parts.length - 1; index++) {
+      Object child = target.computeIfAbsent(parts[index], ignored -> new LinkedHashMap<String,Object>());
+      if (!(child instanceof Map<?,?>)) throw new Violation(path, "DATA_FIELD_TYPE_INVALID");
+      target = (Map<String,Object>) child;
+    }
+    target.put(parts[parts.length - 1], value);
+  }
+
+  private static Map<String,Object> immutable(Map<String,Object> source) {
+    var copy = new LinkedHashMap<String,Object>();
+    source.forEach((key,value) -> {
+      if (value instanceof Map<?,?> nested) {
+        var child = new LinkedHashMap<String,Object>();
+        nested.forEach((childKey,childValue) -> child.put((String) childKey,childValue));
+        copy.put(key, immutable(child));
+      } else copy.put(key,value);
+    });
+    return Collections.unmodifiableMap(copy);
   }
   private void inspect(Map<?,?> data,String prefix){
     for(var entry:data.entrySet()){

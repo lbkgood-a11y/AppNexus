@@ -5,6 +5,8 @@
   <parent><groupId>com.appnexus</groupId><artifactId>services</artifactId><version>0.1.0-SNAPSHOT</version></parent>
   <artifactId>master-data-service</artifactId>
   <dependencies>
+    <!-- 商品审核集成测试使用公共对象审批桥接；正式主数据不依赖引擎实现。 -->
+    <dependency><groupId>com.appnexus</groupId><artifactId>workflow-flowable-adapter</artifactId><version>${project.version}</version><scope>test</scope></dependency>
     <!-- 存储集成测试使用生产公共行范围实现；正式业务仅依赖授权公开契约。 -->
     <dependency><groupId>com.appnexus</groupId><artifactId>platform-persistence-adapter</artifactId><version>${project.version}</version><scope>test</scope></dependency>
     <!-- 审批仅依赖公开契约，不读取引擎表或引入Flowable实现。 -->

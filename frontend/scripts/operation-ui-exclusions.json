@@ -958,5 +958,33 @@
   {
     "key": "[\"frontend/modules/authorization/src/MemberGrantEditor.vue\",\"el-button\",\"selectMember(item.id)\",null,null,\"{{item.name}}\"]",
     "reason": "仅在成员数据权限页签内切换关联用户，先校验未保存草稿，不执行角色授权写入。"
-  }
+  },
+  {
+    "key": "[\"frontend/modules/authorization/src/DataGrantRuleEditor.vue\",\"el-button\",\"remove(index)\",null,null,\"{{t('authorizationCenter.rules.remove')}}\"]",
+    "reason": "仅增删组合授权本地草稿，不调用API；正式保存由原角色或成员授权操作及后端管理权统一执行"
+  },
+  {
+    "key": "[\"frontend/modules/authorization/src/DataGrantRuleEditor.vue\",\"el-button\",\"removeCondition(index,ci)\",null,null,\"{{t('authorizationCenter.rules.remove')}}\"]",
+    "reason": "仅增删组合授权本地草稿，不调用API；正式保存由原角色或成员授权操作及后端管理权统一执行"
+  },
+  {
+    "key": "[\"frontend/modules/authorization/src/DataGrantRuleEditor.vue\",\"el-button\",\"addCondition(index)\",null,null,\"{{t('authorizationCenter.rules.addCondition')}}\"]",
+    "reason": "仅增删组合授权本地草稿，不调用API；正式保存由原角色或成员授权操作及后端管理权统一执行"
+  },
+  {
+    "key": "[\"frontend/modules/authorization/src/DataGrantRuleEditor.vue\",\"el-button\",\"add\",null,null,\"{{t('authorizationCenter.rules.add')}}\"]",
+    "reason": "仅增删组合授权本地草稿，不调用API；正式保存由原角色或成员授权操作及后端管理权统一执行"
+  },
+  {
+    "key": "[\"frontend/modules/authorization/src/DataGrantRuleEditor.vue\",\"el-button\",\"moreRecords\",null,null,\"{{t('authorizationCenter.rules.more')}}\"]",
+    "reason": "公共规则选择器分页事件委托，只通过应用固定映射读取当前操作者有权的候选；业务接口逐次校验功能、租户及行范围，不写授权配置，最终保存仍走原授权操作"
+  },
+  {
+    "key": "[\"frontend/modules/master-data/src/product/ProductSkuManagement.vue\",\"el-button\",\"reset\",null,null,\"{{t('masterData.reset')}}\"]",
+    "reason": "仅清空当前商品明细的本地货号、规格及状态过滤和页码，不发起接口请求、不改变商品/SKU；读取与写入继续使用既有Product操作。"
+  },
+{
+  "key": "[\"frontend/modules/business-object/src/CodingRuleManagement.vue\",\"el-button\",\"dialog=false\",null,null,\"{{t('coding.cancel')}}\"]",
+  "reason": "关闭编码规则草稿弹窗，仅改变本地显示状态，不调用 API 或执行业务写入"
+}
 ]

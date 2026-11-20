@@ -9,10 +9,10 @@ export interface RoleCreate{code:string;name:string;description:string;sortOrder
 export interface RoleUpdate{name:string;description:string;sortOrder:number;version:number}
 /** 角色领域组件只依赖此端口，不读取应用会话、租户标识或 CSRF 实现。 */
 export interface RoleManagementApi{list:(query:RoleQuery)=>Promise<RolePage>;create:(input:RoleCreate)=>Promise<RoleItem>;update:(id:string,input:RoleUpdate)=>Promise<RoleItem>;changeStatus:(id:string,status:RoleStatus,reason:string,version:number)=>Promise<RoleItem>;remove:(id:string,confirmationCode:string,reason:string,version:number)=>Promise<void>}
-export type DataScopeType="SELF"|"ORGANIZATION"|"ORGANIZATION_SUBTREE"|"ALL";
+export type DataScopeType="SELF"|"ORGANIZATION"|"ORGANIZATION_SUBTREE"|"ALL"|"RULES";
 export interface PermissionItem{id:string;scopeType:"PLATFORM"|"TENANT";code:string;resource:string;action:string;nameZh:string;nameEn:string;description:string;enabled:boolean;systemManaged:boolean;version:number}
 export interface ScopeSupport{permissionId:string;permissionCode:string;scopeType:DataScopeType;resourceType:string}
-export interface DataPolicy{permissionId:string;scopeType:DataScopeType;resourceType:string;organizationIds:string[]}
+export interface DataPolicy{permissionId:string;scopeType:DataScopeType;resourceType:string;organizationIds:string[];rules?:DataGrantRule[]}
 /** 强制字段展示限制；不提供修改或查询权，多个角色命中时取更严格结果。 */
 export interface FieldPolicy {resource:string;field:string;mode:"HIDDEN"|"MASKED"|"READ_ONLY"}
 /** 仅列出后端已接通执行的字段，缺少目录的能力不得由前端编造。 */
@@ -20,6 +20,13 @@ export interface FieldDescriptor {resource:string;field:string;nameZh:string;nam
 /** 角色完整配置；inheritingMemberCount 为当前有效继承成员数（人），缺省0，仅作影响提示。 */
 export interface AuthorizationAssignment{permissionIds:string[];dataPolicies:DataPolicy[];roleVersion:number;fieldPolicies?:FieldPolicy[];inheritingMemberCount?:number;dataAccessVersion?:string}
 export interface AuthorizationOption{id:string;name:string}
+/** 记录候选查询复用业务受控列表；不授予额外读取权，回调只返回配置所需标识与标签。 */
+export interface DataRecordSearch {
+ /** 支持的资源来自应用固定映射，未接通资源不能显示虚假的搜索入口。 */
+ resources:readonly string[];
+ /** 关键词为名称或编码，最长200字符；page从1开始，每页20条，total为同一受控查询总数。 */
+ search:(resource:string,query:string,page:number)=>Promise<{items:AuthorizationOption[];total:number}>;
+}
 /** 当前管理域的角色策略模板摘要，不携带业务原值。 */
 export interface PolicyTemplate { id: string; name: string }
 /** 授权工作台请求端口；完整快照保存由应用适配器附加 CSRF，不在领域组件读取会话。 */
@@ -27,8 +34,12 @@ export interface PolicyTemplate { id: string; name: string }
 export interface AuthorizationMenu{id:string;parentId:string|null;titleZh:string;titleEn:string;sortOrder:number;resources:string[];permission:string|null;operations?:string[]}
 /** 模板能力仅在真实后端已接入的管理域提供；应用使用当前角色版本与原因。 */
 /** 代码声明只读投影；资源能力版本不由管理员填写，操作引用已有功能目录。 */
-export interface DataAccessDeclaration{objectType:string;version:number;resources:{resource:string;parentResource:string;nameZh:string;nameEn:string;fields:FieldDescriptor[]}[]}
-export interface AuthorizationCenterApi{declarations?:()=>Promise<DataAccessDeclaration[]>;templates?:{list:(role:string)=>Promise<PolicyTemplate[]>;save:(role:string,name:string)=>Promise<PolicyTemplate>;apply:(role:string,template:string,version:number,reason:string)=>Promise<AuthorizationAssignment>};menus:()=>Promise<AuthorizationMenu[]>;permissions:()=>Promise<PermissionItem[]>;metadata:()=>Promise<ScopeSupport[]>;fields:()=>Promise<FieldDescriptor[]>;assignment:(roleId:string)=>Promise<AuthorizationAssignment>;replace:(roleId:string,input:{ids:string[];dataPolicies:DataPolicy[];fieldPolicies:FieldPolicy[];version:number;reason:string;dataAccessVersion?:string})=>Promise<AuthorizationAssignment>;organizationOptions?:()=>Promise<AuthorizationOption[]>}
+/** 受控条件维度，来源于业务对象代码声明，不允许输入 SQL 字段。 */
+export interface DataDimension{field:string;nameZh:string;nameEn:string;valueType:"UUID"|"TEXT";operators:("EQ"|"IN")[]}
+/** 同条规则内记录与所有条件取 AND；多条规则取 OR，空范围必须显式 allRecords。 */
+export interface DataGrantRule{subjectType:"ROLE_MEMBERS"|"MEMBER"|"ORGANIZATION";subjectIds:string[];recordIds:string[];conditions:{field:string;operator:"EQ"|"IN";values:string[]}[];allRecords:boolean}
+export interface DataAccessDeclaration{objectType:string;version:number;dimensions?:DataDimension[];resources:{resource:string;parentResource:string;nameZh:string;nameEn:string;fields:FieldDescriptor[]}[]}
+export interface AuthorizationCenterApi{recordSearch?:DataRecordSearch;declarations?:()=>Promise<DataAccessDeclaration[]>;templates?:{list:(role:string)=>Promise<PolicyTemplate[]>;save:(role:string,name:string)=>Promise<PolicyTemplate>;apply:(role:string,template:string,version:number,reason:string)=>Promise<AuthorizationAssignment>};menus:()=>Promise<AuthorizationMenu[]>;permissions:()=>Promise<PermissionItem[]>;metadata:()=>Promise<ScopeSupport[]>;fields:()=>Promise<FieldDescriptor[]>;assignment:(roleId:string)=>Promise<AuthorizationAssignment>;replace:(roleId:string,input:{ids:string[];dataPolicies:DataPolicy[];fieldPolicies:FieldPolicy[];version:number;reason:string;dataAccessVersion?:string})=>Promise<AuthorizationAssignment>;organizationOptions?:()=>Promise<AuthorizationOption[]>}
 
 /** 成员角色分支；功能持续跟随角色，expiresAt 为 UTC ISO 时间或 null（长期）。 */
 /** 成员范围模式：true 持续继承角色；false 使用独立配置；修改须显式保存。 */

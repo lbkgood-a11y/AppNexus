@@ -23,7 +23,20 @@ const selected=ref<Descriptor>(), dialog=ref(false), revision=ref(-1), published
 const workflows=ref<Record<string,Awaited<ReturnType<BusinessObjectApi['workflows']>>>>({}), tenants=ref<Awaited<ReturnType<BusinessObjectApi['tenants']>>>([]), grants=ref<Awaited<ReturnType<BusinessObjectApi['grants']>>>([]);
 const tenant=ref("");
 const checks=ref<Awaited<ReturnType<BusinessObjectApi['readiness']>>>([]);
+/** 按服务端操作分组，仅聚合三项基础检查；缺失项显示未检查，不将缺失或未知状态当成功。 */
+const readinessRows=computed(()=>[...new Set(checks.value.map(check=>check.operationCode))].map(operationCode=>{
+ const operation=selected.value?.operations.find(item=>item.operationCode===operationCode);
+ const items=checks.value.filter(item=>item.operationCode===operationCode);
+ const state=(code:string)=>{const matches=items.filter(item=>item.code===code);return matches.length?matches.every(item=>item.ready):undefined;};
+ return {operationCode,name:selected.value?.objectType==='BusinessPartner'&&['list','create','update','setStatus'].includes(operationCode)?t('businessObject.partnerOperations.'+operationCode):operation?(locale.value.startsWith('zh')?operation.nameZh:operation.nameEn):operationCode,
+  enabled:state('TYPE_ENABLED'),connected:state('PAGE_RELATION'),published:state('PUBLISHED_BINDING')};
+}));
+/** 流程、打印及实时依赖保留在补充检查中，避免汇总时丢失失败信息。 */
+const dependencyChecks=computed(()=>checks.value.filter(item=>!['TYPE_ENABLED','PAGE_RELATION','PUBLISHED_BINDING'].includes(item.code)));
+const readinessText=(value:boolean|undefined)=>t(value===undefined?'businessObject.unchecked':value?'businessObject.checkYes':'businessObject.checkNo');
 async function inspectReadiness(){if(!selected.value)return;await run(async()=>{checks.value=await props.api.readiness(selected.value!.objectType);});}
+/** 页签只管理展示，切换使用既有实例保留草稿；保存/发布仅作用于业务绑定。 */
+const detailTab=ref('declaration');
 const savedFeedback=ref('');
 const pageEditor=ref<PageRelationshipEditor>({revision:-1,relationships:[],candidates:[]});
 /** 已接入关系只读，搜索限定当前业务对象；管控使用独立接口并要求原因。 */
@@ -55,11 +68,13 @@ const columns=computed<ManagementColumn[]>(()=>[
 ]);
 async function run(action:()=>Promise<void>) {busy.value=true;error.value='';try{await action();}catch(e){await setErrorFeedback(error, props.errorText(e));}finally{busy.value=false;}}
 async function load(){loading.value=true;error.value='';try{rows.value=await props.api.catalog();}catch(e){await setErrorFeedback(error, props.errorText(e));}finally{loading.value=false;}}
-async function open(d:Descriptor){checks.value=[];savedFeedback.value="";selected.value=d;entryQuery.value='';entryPage.value=1;await run(async()=>{
+async function open(d:Descriptor){detailTab.value=props.platform?'declaration':d.codingFields?.length?'coding':'configuration';checks.value=[];savedFeedback.value="";selected.value=d;entryQuery.value='';entryPage.value=1;await run(async()=>{
   if(props.platform){[tenants.value,grants.value,pageEditor.value]=await Promise.all([props.api.tenants(),props.api.grants(d.objectType),props.api.pageRelationships(d.objectType)]);tenant.value='';}
   else {const [config,options]=await Promise.all([props.api.configuration(d.objectType),Promise.all(d.operations.filter(a=>a.interaction.capabilities.map(c=>c.service).includes('WORKFLOW')).map(async a=>[a.operationCode,await props.api.workflows(d.objectType,a.operationCode)] as const))]);revision.value=config.revision;published.value=config.publishedVersion;bindings.value=config.bindings;workflows.value=Object.fromEntries(options);}
   if(!props.platform)printScenes.value=Object.fromEntries(await Promise.all(d.operations.filter(a=>a.interaction.capabilities.map(c=>c.service).includes('PRINT')).map(async a=>[a.operationCode,await props.api.scenes(d.objectType,a.operationCode)] as const)));
   dialog.value=true;
+  // 默认展示当前对象真实检查结果；检查失败不阻止配置弹窗打开，也不伪装为已就绪。
+  if(!props.platform){try{checks.value=await props.api.readiness(d.objectType);}catch(e){await setErrorFeedback(error,props.errorText(e));}}
 });}
 async function activate(row:(typeof rows.value)[number]){
   try{await ElMessageBox.confirm(t(row.enabled?'businessObject.disableConfirm':'businessObject.enableConfirm'),t('businessObject.state'),{type:'warning'});}catch{return;}
@@ -83,6 +98,12 @@ async function save(publish=false){if(!selected.value)return;
     if(publish){await props.api.publish(type,revision.value);config=await props.api.configuration(type);revision.value=config.revision;published.value=config.publishedVersion;}
     checks.value=[];savedFeedback.value=t(publish?'businessObject.published':'businessObject.saved');ElMessage.success(savedFeedback.value);
   });}
+/** 下拉展开时刷新兼容发布版本，保留绑定草稿，避免流程发布后仍显示旧的空候选。 */
+async function refreshWorkflowOptions(operationCode:string){
+ if(!selected.value||!operationCode)return;
+ try{workflows.value={...workflows.value,[operationCode]:await props.api.workflows(selected.value.objectType,operationCode)};}
+ catch(e){await setErrorFeedback(error,props.errorText(e));}
+}
 function workflowSelect(b:Binding,value:string){const w=(workflows.value[b.operationCode]||[]).find(w=>`${w.id}:${w.version}`===value);b.definitionId=w?.id||'';b.definitionVersion=w?.version||0;}
 function operators(field:string){return selected.value?.fields.find(f=>f.key===field)?.type==='NUMBER'?['EQ','NE','GT','GE','LT','LE']:['EQ','NE'];}
 /** 创建入口带回跳信息；绑定草稿保存后再离开，流程仍需人工校验和发布。 */
@@ -93,35 +114,42 @@ onMounted(async()=>{await load();const type=router.currentRoute.value.query.type
 <template>
   <div class="management-page">
   <BusinessWorkspace :title="t(platform?'businessObject.platformTitle':'businessObject.title')">
-    <template #feedback><FloatingError v-if="error" :title="error" scope="error" type="error" :closable="false"><el-button v-operation="platform ? 'BusinessObject.catalog' : 'BusinessObject.tenantCatalog'" text @click="load">{{t('businessObject.refresh')}}</el-button></FloatingError></template>
+    <template #feedback><FloatingError v-if="error && !dialog" :title="error" scope="error" type="error" :closable="false"><el-button v-operation="platform ? 'BusinessObject.catalog' : 'BusinessObject.tenantCatalog'" text @click="load">{{t('businessObject.refresh')}}</el-button></FloatingError></template>
     <template #search><div class="management-filter"><el-form inline @submit.prevent="applied=query;page=1"><el-form-item :label="t('businessObject.search')"><el-input v-model="query" clearable /></el-form-item><div class="management-filter-actions"><el-button type="primary" native-type="submit"><AppIcon name="search" :size="16" class="mr-1" />{{t('administration.search')}}</el-button><el-button @click="query='';applied='';page=1"><AppIcon name="refresh" :size="16" class="mr-1" />{{t('businessObject.reset')}}</el-button></div></el-form></div></template>
     <template #data><ManagementTable :title="t(platform?'businessObject.platformTitle':'businessObject.title')" :rows="paged" :columns="columns" :loading="loading" :busy="busy" embedded @refresh="load">
       <template v-if="platform" #titleHelp><InfoHint :content="t('businessObject.catalogBoundary')" /></template>
       <template #objectType="{row}">{{row.descriptor.objectType}}</template><template #name="{row}">{{name(row.descriptor)}}</template><template #module="{row}">{{row.descriptor.module}}</template><template #version="{row}">{{row.descriptor.version}}</template>
       <template #state="{row}"><el-tag :type="row.enabled?'success':'info'">{{t(row.enabled?'businessObject.enabled':'businessObject.disabled')}}</el-tag></template>
       <template #category="{row}"><el-tag type="info">{{t('businessObject.categories.'+row.descriptor.category)}}</el-tag></template>
-      <template #operations="{row}"><el-button link type="primary" :disabled="busy" v-operation="platform ? 'BusinessObject.relationships' : 'BusinessObject.configuration'" @click="open(row.descriptor)">{{t(platform?'businessObject.grants':'businessObject.configure')}}</el-button><el-button v-operation="'BusinessObject.state'" v-if="platform" link :type="row.enabled?'danger':'primary'" :disabled="busy" @click="activate(row)">{{t(row.enabled?'businessObject.disable':'businessObject.enable')}}</el-button></template>
+      <template #operations="{row}"><el-button link type="primary" :disabled="busy" v-operation="platform ? 'BusinessObject.relationships' : 'BusinessObject.configuration'" @click="open(row.descriptor)">{{t(platform?'businessObject.viewDetails':'businessObject.configure')}}</el-button><el-button v-operation="'BusinessObject.state'" v-if="platform" link :type="row.enabled?'danger':'primary'" :disabled="busy" @click="activate(row)">{{t(row.enabled?'businessObject.disable':'businessObject.enable')}}</el-button></template>
       <template #empty><el-empty :description="t('businessObject.empty')" /></template>
       <template #pagination><AppPagination v-model:current-page="page" v-model:page-size="size" :total="filtered.length" layout="total, sizes, prev, pager, next" @size-change="page=1" /></template>
     </ManagementTable></template>
   </BusinessWorkspace>
-  <ManagedDialog v-model="dialog" :title="selected?name(selected):''" width="min(1200px, calc(100vw - 32px))" :close-on-click-modal="false"><template #title><span class="info-hint-title">{{selected?name(selected):''}}<el-tag v-if="selected" size="small" type="info">{{t('businessObject.contractVersion')}} {{selected.version}}</el-tag><InfoHint v-if="!platform" :content="t('businessObject.bindingHint')" /></span></template>
+  <ManagedDialog v-model="dialog" :title="selected?name(selected):''" width="min(1200px, calc(100vw - 32px))" :close-on-click-modal="false" :busy="busy"><template #title><span class="info-hint-title">{{selected?name(selected):''}}<el-tag v-if="selected" size="small" type="info">{{t('businessObject.contractVersion')}} {{selected.version}}</el-tag><InfoHint v-if="!platform" :content="t('businessObject.bindingHint')" /></span></template>
     <FloatingError v-if="error" :title="error" scope="error" type="error" :closable="false" />
     <template v-if="selected">
       <el-alert v-if="savedFeedback" :title="savedFeedback" type="success" :closable="false" />
       <!-- 契约详情按信息职责分区；复用 Element Plus 卡片，不改变授权、管控及契约字段。 -->
+      <el-tabs v-model="detailTab" class="object-detail-tabs">
+      <el-tab-pane :label="t('businessObject.declarationTab')" name="declaration">
       <div class="object-contract-sections">
-      <CodingConfiguration v-if="!platform && selected.codingFields?.length" :key="selected.objectType" :descriptor="selected" :api="api" :error-text="errorText" />
-      <el-card shadow="never" class="object-contract-section">
-        <template #header><h3>{{t('businessObject.basicInfo')}}</h3></template>
       <el-descriptions :column="2" border><el-descriptions-item :label="t('businessObject.code')">{{selected.objectType}}</el-descriptions-item><el-descriptions-item :label="t('businessObject.contractVersion')">{{selected.version}}</el-descriptions-item></el-descriptions>
-      </el-card>
-      <el-card shadow="never" class="object-contract-section">
-        <template #header><h3>{{t('businessObject.field')}}<el-tag size="small" type="info">{{selected.fields.length}}</el-tag></h3></template>
-      <vxe-table size="small" :min-height="0" :column-config="{ resizable: true }"  :data="selected.fields" border="inner"><vxe-column field="key" :title="t('businessObject.field')"/><vxe-column :field="locale.startsWith('zh')?'nameZh':'nameEn'" :title="t('businessObject.name')"/><vxe-column field="type" :title="t('businessObject.fieldType')"/><vxe-column field="unit" :title="t('businessObject.unit')"><template #default="{row}">{{row.unit || '—'}}</template></vxe-column></vxe-table>
-      </el-card>
-      <el-card shadow="never" class="object-contract-section">
-        <template #header><h3>{{t('businessObject.interactions')}}<el-tag size="small" type="info">{{selected.operations.length}}</el-tag></h3></template>
+      <section class="object-contract-section">
+       <header><h3>{{t('businessObject.codingDeclaration')}}<InfoHint :content="t('businessObject.codingDeclarationHint')" /></h3></header>
+       <VxeTable v-if="selected.codingFields?.length" size="small" :min-height="0" :data="selected.codingFields || []" :column-config="{resizable:true}" border="inner">
+        <VxeColumn field="field" :title="t('coding.field')" min-width="180" />
+        <VxeColumn :title="t('businessObject.action')" min-width="220"><template #default="{row}">{{selected.objectType}}.{{row.operationCode}}</template></VxeColumn>
+        <VxeColumn field="maxLength" :title="t('businessObject.codingMaxLength')" min-width="160" align="right" />
+       </VxeTable>
+       <p v-else class="object-empty-note">{{t('businessObject.noCodingDeclaration')}}</p>
+      </section>
+      <section class="object-contract-section">
+        <header><h3>{{t('businessObject.field')}}<el-tag size="small" type="info">{{selected.fields.length}}</el-tag></h3></header>
+      <vxe-table v-if="selected.fields.length" size="small" :min-height="0" :column-config="{ resizable: true }"  :data="selected.fields" border="inner"><vxe-column field="key" :title="t('businessObject.field')"/><vxe-column :field="locale.startsWith('zh')?'nameZh':'nameEn'" :title="t('businessObject.name')"/><vxe-column field="type" :title="t('businessObject.fieldType')"/><vxe-column field="unit" :title="t('businessObject.unit')"><template #default="{row}">{{row.unit || '—'}}</template></vxe-column></vxe-table><p v-else class="object-empty-note">{{t('businessObject.noConditionFields')}}</p>
+      </section>
+      <section class="object-contract-section">
+        <header><h3>{{t('businessObject.interactions')}}<el-tag size="small" type="info">{{selected.operations.length}}</el-tag></h3></header>
       <vxe-table size="small" :min-height="0" :column-config="{ resizable: true }"  :data="selected.operations" border="inner">
         <vxe-column type="expand"><template #content="{row}">
           <vxe-table size="small" :min-height="0" :column-config="{ resizable: true }"  :data="row.interaction.capabilities" border="inner">
@@ -139,11 +167,17 @@ onMounted(async()=>{await load();const type=router.currentRoute.value.query.type
         <vxe-column :title="t('businessObject.trigger')"><template #default="{row}">{{t('businessObject.triggers.'+row.interaction.trigger)}}</template></vxe-column>
         <vxe-column field="permissionCode" min-width="180" :title="t('businessObject.permission')"/>
       </vxe-table>
-      </el-card>
-      <template v-if="platform">
-        <el-card shadow="never" class="object-contract-section">
-          <template #header><h3>{{t('businessObject.pageRelations')}}<InfoHint :content="t('businessObject.pageRelationHint')" /><el-tag size="small" type="info">{{entryRows.length}}</el-tag></h3></template>
-        
+      </section>
+      </div>
+      </el-tab-pane>
+      <el-tab-pane v-if="!platform && selected.codingFields?.length" :label="t('coding.bindingsTitle')" name="coding" lazy>
+       <CodingConfiguration :key="selected.objectType" :descriptor="selected" :api="api" :error-text="errorText" />
+      </el-tab-pane>
+      <el-tab-pane v-if="platform" :label="t('businessObject.governanceTab')" name="governance">
+       <div class="object-contract-sections">
+        <section class="object-contract-section">
+          <header><h3>{{t('businessObject.pageRelations')}}<InfoHint :content="t('businessObject.pageRelationHint')" /><el-tag size="small" type="info">{{entryRows.length}}</el-tag></h3></header>
+
         <el-input v-model="entryQuery" clearable :aria-label="t('businessObject.search')" :placeholder="t('businessObject.search')" @input="entryPage=1" />
         <vxe-table size="small" :min-height="0" :column-config="{ resizable: true }"  :data="entryRows.slice((entryPage-1)*10,entryPage*10)" border="inner">
           <vxe-column field="compatibleOperationCode" :title="t('businessObject.action')" min-width="110" />
@@ -154,22 +188,41 @@ onMounted(async()=>{await load();const type=router.currentRoute.value.query.type
           <vxe-column :title="t('businessObject.operations')" width="120"><template #default="{row}"><el-button v-operation="'BusinessObject.control'" link :type="entryEnabled(row.operationId)?'danger':'primary'" :disabled="busy" @click="controlEntry(row.operationId)">{{t(entryEnabled(row.operationId)?'businessObject.disableEntry':'businessObject.enableEntry')}}</el-button></template></vxe-column>
         </vxe-table>
         <AppPagination v-model:current-page="entryPage" :page-size="10" :total="entryRows.length" layout="prev, pager, next" />
-        </el-card>
-        <el-card shadow="never" class="object-contract-section">
-          <template #header><h3>{{t('businessObject.tenantAuthorization')}}<el-tag size="small" type="info">{{grants.length}}</el-tag></h3></template>
+        </section>
+        <section class="object-contract-section">
+          <header><h3>{{t('businessObject.tenantAuthorization')}}<el-tag size="small" type="info">{{grants.length}}</el-tag></h3></header>
         <el-form label-position="top" class="business-border-label-form object-grant-form"><el-form-item :label="t('businessObject.tenant')"><el-select v-model="tenant" filterable><el-option v-for="v in tenants" :key="v.id" :label="v.name" :value="v.id"/></el-select></el-form-item><el-button v-operation="'BusinessObject.grant'" type="primary" :disabled="!tenant" :loading="busy" @click="grant(tenant,true)">{{t('businessObject.authorize')}}</el-button></el-form>
         <vxe-table size="small" :min-height="0" :column-config="{ resizable: true }"  :data="grants" border="inner"><vxe-column :title="t('businessObject.tenant')"><template #default="{row}">{{tenants.find(v=>v.id===row.tenant_id)?.name||row.tenant_id}}</template></vxe-column><vxe-column :title="t('businessObject.state')"><template #default="{row}">{{t(row.enabled?'businessObject.enabled':'businessObject.disabled')}}</template></vxe-column><vxe-column :title="t('businessObject.operations')"><template #default="{row}"><el-button v-operation="'BusinessObject.grant'" link :disabled="busy" @click="grant(row.tenant_id,!row.enabled)">{{t(row.enabled?'businessObject.revoke':'businessObject.authorize')}}</el-button></template></vxe-column></vxe-table>
-      </el-card>
-      </template>
-      <template v-else>
-        <el-button v-operation="'BusinessObject.readiness'" :loading="busy" @click="inspectReadiness">{{t('businessObject.checkReadiness')}}</el-button>
-        <vxe-table size="small" :min-height="0" :column-config="{ resizable: true }"  v-if="checks.length" :data="checks" border="inner"><vxe-column field="operationCode" :title="t('businessObject.action')"/><vxe-column :title="t('businessObject.checkItem')"><template #default="{row}">{{t('businessObject.checks.'+row.code)}}</template></vxe-column><vxe-column :title="t('businessObject.state')"><template #default="{row}"><el-tag :type="row.ready?'success':'warning'">{{t(row.ready?'businessObject.ready':'businessObject.notReady')}}</el-tag> {{row.category==='LIVE'?t('businessObject.liveHint'):''}}</template></vxe-column><vxe-column field="target" :title="t('businessObject.checkTarget')"/></vxe-table>
+      </section>
+       </div>
+      </el-tab-pane>
+      <el-tab-pane v-else :label="t('businessObject.configurationTab')" name="configuration">
+       <div class="object-contract-sections">
+        <div class="object-config-toolbar">
+        <el-button v-operation="'BusinessObject.readiness'" :loading="busy" @click="inspectReadiness">{{t('businessObject.checkReadiness')}}</el-button><el-tag type="info">{{t('businessObject.publishedVersion')}}: {{published}}</el-tag>
+        </div>
+        <VxeTable v-if="checks.length" size="small" :min-height="0" :column-config="{resizable:true}" :data="readinessRows" border="inner">
+         <VxeColumn field="name" :title="t('businessObject.businessOperation')" min-width="200" />
+         <VxeColumn v-for="column in [{key:'enabled',label:'platformEnabled'},{key:'connected',label:'pageConnected'},{key:'published',label:'executionPublished'}]" :key="column.key" :title="t('businessObject.'+column.label)" min-width="160">
+          <template #default="{row}"><el-tag :type="row[column.key]===undefined?'info':row[column.key]?'success':'warning'">{{readinessText(row[column.key])}}</el-tag></template>
+         </VxeColumn>
+        </VxeTable>
+        <el-collapse v-if="dependencyChecks.length">
+         <el-collapse-item :title="t('businessObject.dependencyChecks')" name="dependencies">
+          <VxeTable size="small" :min-height="0" :data="dependencyChecks" border="inner">
+           <VxeColumn field="operationCode" :title="t('businessObject.action')" />
+           <VxeColumn :title="t('businessObject.checkItem')"><template #default="{row}">{{t('businessObject.checks.'+row.code)}}</template></VxeColumn>
+           <VxeColumn :title="t('businessObject.state')"><template #default="{row}">{{readinessText(row.ready)}} {{row.category==='LIVE'?t('businessObject.liveHint'):''}}</template></VxeColumn>
+           <VxeColumn field="target" :title="t('businessObject.checkTarget')" />
+          </VxeTable>
+         </el-collapse-item>
+        </el-collapse>
         <el-alert v-if="rows.find(r=>r.descriptor.objectType===selected?.objectType)?.enabled===false" :title="t('businessObject.inactiveHint')" type="warning" :closable="false" />
-        
-        <p>{{t('businessObject.publishedVersion')}}: {{published}}</p>
-        <el-button :disabled="busy" @click="add">{{t('businessObject.addBinding')}}</el-button><el-button :disabled="busy" @click="open(selected)">{{t('businessObject.reload')}}</el-button>
-        <el-empty v-if="bindings.some(b=>b.operationCode&&b.service==='WORKFLOW'&&!(workflows[b.operationCode]?.length))" :description="t('businessObject.noWorkflow')" />
-        <el-form v-for="(b,index) in bindings" :key="b.id" :ref="form=>bindForm(b.id,form)" :model="b" :rules="bindingRules" label-position="top" class="business-border-label-form business-object-binding">
+
+        <div class="object-config-toolbar"><el-button :disabled="busy" @click="add">{{t('businessObject.addBinding')}}</el-button><el-button :disabled="busy" @click="open(selected)">{{t('businessObject.reload')}}</el-button></div>
+        <p v-if="!bindings.length" class="object-empty-note">{{t('businessObject.noBusinessBindings')}}</p>
+        <p v-if="bindings.some(b=>b.operationCode&&b.service==='WORKFLOW'&&!(workflows[b.operationCode]?.length))" class="object-empty-note">{{t('businessObject.noWorkflow')}}</p>
+        <el-form v-for="(b,index) in bindings" :key="b.id" :ref="form=>bindForm(b.id,form)" :model="b" :rules="bindingRules" label-position="top" class="business-border-label-form business-object-binding" :disabled="busy">
           <el-form-item :label="t('businessObject.bindingName')" prop="name"><el-input v-model="b.name" maxlength="100"/></el-form-item>
           <el-form-item :label="t('businessObject.action')" prop="operationId">
             <el-select :model-value="b.operationId" :placeholder="t('businessObject.selectPageOperation')" filterable @update:model-value="selectPageOperation(b,selected,$event)">
@@ -177,45 +230,53 @@ onMounted(async()=>{await load();const type=router.currentRoute.value.query.type
             </el-select>
             <el-alert v-if="!pageOperations(selected).length" :title="t('businessObject.noPageOperation')" type="warning" :closable="false" />
           </el-form-item>
-          <el-descriptions v-if="hasPageOperation(b,selected)" :column="1" border>
-            <el-descriptions-item :label="t('businessObject.action')">{{selected.objectType}}.{{b.operationCode}}</el-descriptions-item>
-            <el-descriptions-item :label="t('businessObject.permission')">{{operationAction(selected,b.operationId)?.permissionCode}}</el-descriptions-item>
-            <el-descriptions-item :label="t('businessObject.businessEndpoint')">{{operationAction(selected,b.operationId)?.pageOperation?.method}} {{operationAction(selected,b.operationId)?.pageOperation?.apiPath}}</el-descriptions-item>
-          </el-descriptions>
+
           <el-form-item :label="t('businessObject.service')"><template #label>{{t('businessObject.service')}}<InfoHint v-if="b.service!=='WORKFLOW'&&b.service!=='PRINT'" :content="t('businessObject.directHint')" /></template><el-select v-model="b.service" @change="changeService(b)"><el-option v-for="mode in selected.operations.find(a=>a.operationCode===b.operationCode)?.interaction.capabilities.map(c=>c.service)||[]" :key="mode" :value="mode" :label="t('businessObject.services.'+mode)"/></el-select></el-form-item>
-          <el-form-item v-if="b.service==='WORKFLOW'" :label="t('businessObject.workflow')" prop="definitionId"><el-select :model-value="`${b.definitionId}:${b.definitionVersion}`" @update:model-value="workflowSelect(b,$event)"><el-option v-for="w in workflows[b.operationCode]||[]" :key="`${w.id}:${w.version}`" :value="`${w.id}:${w.version}`" :label="`${w.name} · ${w.id} · v${w.version}`"/></el-select></el-form-item>
+          <el-form-item v-if="b.service==='WORKFLOW'" :label="t('businessObject.workflow')" prop="definitionId"><el-select :model-value="b.definitionId?`${b.definitionId}:${b.definitionVersion}`:undefined" @visible-change="visible=>{if(visible)refreshWorkflowOptions(b.operationCode)}" @update:model-value="workflowSelect(b,$event)"><el-option v-for="w in workflows[b.operationCode]||[]" :key="`${w.id}:${w.version}`" :value="`${w.id}:${w.version}`" :label="`${w.name} · ${w.id} · v${w.version}`"/></el-select></el-form-item>
           <el-form-item v-else-if="b.service==='PRINT'" :label="t('businessObject.printScene')" required><el-select v-model="b.sceneCode"><el-option v-for="scene in printScenes[b.operationCode]||[]" :key="scene.code" :value="scene.code" :label="scene.name+' · '+scene.code"/></el-select></el-form-item>
-          
-          <el-button v-if="b.service==='WORKFLOW'&&b.operationCode" :disabled="busy" v-operation="'WorkflowDefinition.save'" @click="createWorkflow(b.operationCode)">{{t('businessObject.createWorkflow')}}</el-button>
+
+          <!-- 只读操作信息横向平铺，长接口在本列内换行，不撑开弹窗。 -->
+          <dl v-if="hasPageOperation(b,selected)" class="binding-operation-info">
+           <div><dt>{{t('businessObject.action')}}</dt><dd>{{selected.objectType}}.{{b.operationCode}}</dd></div>
+           <div><dt>{{t('businessObject.permission')}}</dt><dd>{{operationAction(selected,b.operationId)?.permissionCode}}</dd></div>
+           <div><dt>{{t('businessObject.businessEndpoint')}}</dt><dd>{{operationAction(selected,b.operationId)?.pageOperation?.method}} {{operationAction(selected,b.operationId)?.pageOperation?.apiPath}}</dd></div>
+          </dl>
+
           <div v-for="(c,ci) in b.conditions" :key="ci" class="business-object-condition"><el-select v-model="c.field" :aria-label="t('businessObject.field')" @change="c.operator='EQ'"><el-option v-for="f in selected.fields" :key="f.key" :value="f.key" :label="locale.startsWith('zh')?f.nameZh:f.nameEn"/></el-select><el-select v-model="c.operator" :aria-label="t('businessObject.operator')"><el-option v-for="op in operators(c.field)" :key="op" :value="op" :label="t('businessObject.operators.'+op)"/></el-select><el-input v-model="c.value" :aria-label="t('businessObject.value')" maxlength="200"/><el-button @click="b.conditions.splice(ci,1)">{{t('businessObject.remove')}}</el-button></div>
+          <div class="binding-actions">
+          <el-button v-if="b.service==='WORKFLOW'&&b.operationCode" :disabled="busy" v-operation="'WorkflowDefinition.save'" @click="createWorkflow(b.operationCode)">{{t('businessObject.createWorkflow')}}</el-button>
           <el-button @click="b.conditions.push({field:'',operator:'EQ',value:''})">{{t('businessObject.addCondition')}}</el-button><el-button type="danger" plain @click="bindings.splice(index,1)">{{t('businessObject.removeBinding')}}</el-button>
+          </div>
         </el-form>
-      </template>
-      </div>
+       </div>
+      </el-tab-pane>
+      </el-tabs>
     </template>
-    <template #footer><el-button @click="dialog=false">{{t('businessObject.close')}}</el-button><template v-if="!platform"><el-button v-operation="'BusinessObject.save'" :loading="busy" @click="save()">{{t('businessObject.save')}}</el-button><el-button v-operation="'BusinessObject.publish'" type="primary" :loading="busy" @click="save(true)">{{t('businessObject.publish')}}</el-button></template></template>
+    <template #footer><el-button @click="dialog=false">{{t('businessObject.close')}}</el-button><template v-if="!platform && detailTab==='configuration'"><el-button v-operation="'BusinessObject.save'" :loading="busy" @click="save()">{{t('businessObject.save')}}</el-button><el-button v-operation="'BusinessObject.publish'" type="primary" :loading="busy" @click="save(true)">{{t('businessObject.publish')}}</el-button></template></template>
   </ManagedDialog>
   </div>
 </template>
 <style scoped>
-/* 页面外围留白引用全局内容与区块 Token，局部字段间距和触控高度按原交互保留。 */
-.business-object-search{margin-left:auto;display:flex;gap:8px} .el-form--inline{display:flex;flex-wrap:wrap} .el-pagination{justify-content:flex-end;margin-top:16px}
-.business-object-binding{margin-top:16px;padding:var(--app-content-padding,12px);border:1px solid var(--el-border-color);border-radius:var(--el-border-radius-base)}
-.business-object-condition{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}.business-object-condition>*{flex:1;min-width:100px}.el-descriptions{margin-bottom:var(--app-section-gap,8px)}
-/* 弹窗内容自然滚动，各分区不套用主列表撑高规则；主题与边框继承 Element Plus。 */
-.object-contract-sections{display:flex;flex-direction:column;gap:8px}
-.object-contract-section{flex:none}
-.object-contract-section :deep(.el-card__header){padding:8px 12px;border-bottom:0}
-.object-contract-section :deep(.el-card__body){padding:0 12px 8px}
-.object-contract-section h3{display:flex;align-items:center;gap:8px;margin:0;font-size:var(--el-font-size-medium);font-weight:600}
-.object-contract-section .el-descriptions{margin:0}
-.object-contract-section :deep(.el-input){margin-bottom:8px}
-.object-grant-form{display:flex;align-items:flex-end;gap:8px;flex-wrap:wrap;margin-bottom:8px}
-.object-grant-form .el-form-item{flex:1;min-width:200px;margin:0}
-/* 契约明细只按真实行高布局，避免默认表体最小高度产生大块空白。 */
-.object-contract-section :deep(.vxe-table){width:100%;--vxe-ui-table-row-height-small:32px;--vxe-ui-table-cell-padding-small:4px}
-.object-contract-section :deep(.el-descriptions__cell){padding:6px 10px!important}
-.object-contract-section :deep(.el-pagination){margin-top:8px}
-.object-contract-section h3::before{content:"";width:3px;height:16px;background:var(--el-color-primary);border-radius:var(--el-border-radius-small)}
-@media(max-width:700px){.object-contract-section :deep(.el-card__header){padding:8px 12px}.object-contract-section :deep(.el-card__body){padding:0 12px 8px}.object-grant-form>.el-button{min-height:44px}}
+/* 展示分区继承公共Token，不覆盖公共卡片、描述列表及表格内部密度。 */
+.object-contract-sections{container-type:inline-size;display:flex;flex-direction:column;gap:var(--app-section-gap);min-width:0}
+.object-contract-section{flex:none;min-width:0;display:grid;gap:var(--app-section-gap);padding:var(--app-content-padding);border:1px solid var(--el-border-color-lighter);border-radius:var(--el-border-radius-base)}
+.object-empty-note{margin:0;color:var(--el-text-color-secondary);font-size:var(--el-font-size-small)}
+.object-contract-section h3{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin:0;font-size:var(--el-font-size-medium);font-weight:600}
+.object-config-toolbar,.object-grant-form{display:flex;align-items:center;flex-wrap:wrap;gap:8px}
+.object-config-toolbar .el-button,.object-grant-form .el-button{margin:0}
+.object-grant-form .el-form-item{flex:1;min-width:200px}
+.business-object-binding{padding:var(--app-content-padding);border:1px solid var(--el-border-color-lighter);border-radius:var(--el-border-radius-base);display:grid;grid-template-columns:repeat(4,minmax(0,1fr));column-gap:16px;align-items:start}
+.binding-operation-info,.business-object-binding>.business-object-condition,.binding-actions{grid-column:1/-1}
+.binding-operation-info{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin:0;padding:var(--app-content-padding);background:var(--el-fill-color-light);border-radius:var(--el-border-radius-base)}
+.binding-operation-info dt{color:var(--el-text-color-secondary);font-size:var(--el-font-size-small)}
+.binding-operation-info dd{margin:4px 0 0;color:var(--el-text-color-primary);overflow-wrap:anywhere}
+@container (max-width:700px){.binding-operation-info{grid-template-columns:minmax(0,1fr);gap:8px}}
+/* 操作独立成栏，避免按钮作为表单列被拉伸；只读接口信息在字段之后展示。 */
+.binding-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding-top:var(--app-content-padding);margin-top:var(--app-section-gap);border-top:1px solid var(--el-border-color-lighter)}
+.binding-actions .el-button{margin:0}
+@container (max-width:900px){.business-object-binding{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@container (max-width:480px){.business-object-binding{grid-template-columns:minmax(0,1fr)}}
+.business-object-condition{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.business-object-condition>*{flex:1;min-width:100px}
+@media(max-width:700px){.business-object-binding{grid-template-columns:minmax(0,1fr)}.object-grant-form>.el-button,.object-config-toolbar>.el-button{min-height:44px}}
 </style>

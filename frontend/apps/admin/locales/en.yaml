@@ -950,6 +950,41 @@ roleManagement:
     ROLE_DATA_CONFLICT: The role constraints changed.
     INVALID_ROLE_INPUT: The role fields are invalid.
 authorizationCenter:
+  rules:
+    recordSearch: Search accessible records by name or code
+    more: Load next page
+    searchFailed: Could not read record options. Check business read access and retry.
+    summary: '{records} selected records and {conditions} conditions; combined selections use AND'
+    errors:
+      subject: Select valid subjects; role-member rules cannot contain specific subjects
+      record: Record identifiers must be canonical lowercase UUIDs
+      selection: Select records or conditions; all records must be explicit and cannot have conditions
+      limit: Record, subject or condition limit exceeded
+      field: Select a supported condition field
+      operator: Select an operator supported by this field
+      value: Enter valid values; equals requires one value and each value allows up to 200 characters
+      uuid: This condition requires canonical lowercase UUID values
+    title: Combined grants
+    hint: Subject, selected records and conditions use AND within a rule. Rules use OR. Subjects still need this role and operation; other roles can grant broader access.
+    branch: 'Rule {index} (OR with other rules)'
+    remove: Remove
+    subject: Grant subject
+    subjectValues: Selected organizations or members
+    records: Selected records (AND with conditions)
+    recordHint: Enter a partner record UUID; leave empty to filter by conditions
+    all: Explicitly grant all records in this tenant
+    field: Condition field
+    operator: Operator
+    values: Values (press Enter to add)
+    addCondition: Add condition (AND)
+    add: Add grant rule (OR)
+    subjects:
+      ROLE_MEMBERS: Effective members of this role
+      MEMBER: Selected tenant members
+      ORGANIZATION: Effective members of selected organizations
+    operators:
+      EQ: Equals
+      IN: In set
   noRoleMembers: No users are assigned to this role. Add users in the Role users tab.
   memberScopeSettings: Data scope settings
   noMemberScopes: No operations in this role require a data scope
@@ -1095,6 +1130,7 @@ authorizationCenter:
   incomplete: Complete the data scope for every scoped permission.
   saved: Authorization saved
   scopes:
+    RULES: Combined grants
     SELF: Self
     ORGANIZATION: Organizations
     ORGANIZATION_SUBTREE: Organizations and descendants
@@ -1246,6 +1282,8 @@ workflow:
     WITHDRAWN: Workflow withdrawn
   codes:
     NUMERIC_FIELD_REQUIRED: Select a numeric field from this document for numeric comparisons
+    BUSINESS_PROFILE_MISMATCH: The object or purpose does not match the business entry contract
+    BUSINESS_MATCH_FORBIDDEN: Configure matching conditions in business bindings rather than the approval workflow
     BUSINESS_OUTCOME_REQUIRED: Select a business action for this approval outcome
     BUSINESS_WITHDRAWAL_INVALID: Withdrawal requires both business validation and outcome handling
 
@@ -1676,6 +1714,10 @@ leavePoc:
   cancel: Cancel
 
 businessWorkflow:
+  requiredOutcome: "Configure the result handler required by this business contract."
+  requiredWithdrawal: "This business requires a withdrawal validation entry."
+  contractWithdrawal: "Validate withdrawal using the business contract"
+  requiredContractHint: "Configure every result required by the business contract before publication. Complete missing handlers in the outcome section."
   view: Configuration view
   businessView: Business setup
   advancedView: Advanced orchestration
@@ -1737,6 +1779,29 @@ businessWorkflow:
   removeReview: Remove approval step
   removeConfirm: Remove this step and its independent condition, if any? Publishing affects new submissions.
 businessObject:
+  partnerOperations:
+    list: "Query business partners"
+    create: "Create business partner"
+    update: "Edit business partner"
+    setStatus: "Enable / disable business partner"
+  businessOperation: "Business operation"
+  platformEnabled: "Platform enabled"
+  pageConnected: "Page connected"
+  executionPublished: "Execution configuration published"
+  checkYes: "Yes"
+  checkNo: "No"
+  unchecked: "Not checked"
+  dependencyChecks: "Workflow and print dependencies"
+  noConditionFields: "No condition fields declared"
+  noBusinessBindings: "No business bindings. Add a binding before saving or publishing."
+  viewDetails: "View details"
+  declarationTab: "Object declaration"
+  governanceTab: "Platform controls"
+  configurationTab: "Business bindings"
+  codingDeclaration: "Coding capability declaration"
+  codingDeclarationHint: "Code declares eligible fields, related operations and length limits. This view is read-only. Maintain formats in coding rules and bind a fixed version within the current tenant."
+  codingMaxLength: "Maximum length (characters)"
+  noCodingDeclaration: "This object declares no coding fields"
   catalogBoundary: This page manages objects with configurable workflow or printing capabilities. Find all registered objects and operations in Feature catalog → By business object.
   category: Object category
   categories:
@@ -1900,6 +1965,7 @@ businessObject:
     CODING_UNAVAILABLE: "The encoder or code field is unavailable."
     CODING_DISABLED: "This encoder is disabled. Choose another encoder."
     CODING_VERSION_CONFLICT: "The encoder changed. Reload before editing."
+    CODING_RULE_UNAVAILABLE: "The rule version is unavailable in this tenant. Refresh and select again."
     CODING_RULE_FROZEN: "This encoder has issued codes. Create a new encoder to change its rule or field."
     CODING_INPUT_INVALID: "Invalid code parameters or time zone."
     CODING_RULE_INVALID: "Use exactly one sequence, include a date covering the reset period, and respect the field length limit."
@@ -2465,7 +2531,7 @@ productImages:
   empty: "No product images"
   limit: "Up to 10 PNG/JPEG images, 5 MiB each, maximum 4096 pixels per side. Save changes and disable the product before uploading."
 
-storageHierarchy: {"warehouse": "Warehouse", "area": "Storage area", "selectWarehouse": "Select a warehouse to manage its areas.", "selectArea": "Select a warehouse and area to manage its locations.", "capacityRule": "Enter a nonnegative capacity in tonnes, up to 18 integer and 6 decimal digits.", "types": {"RECEIVING": "Receiving", "WORK": "Work", "GOOD": "Good stock", "DEFECTIVE": "Defective stock", "PACKAGING": "Packaging", "VIRTUAL": "Virtual", "FINISHED": "Finished goods"}}
+storageHierarchy: {"treeTitle": "Warehouse / area / location","warehouse": "Warehouse", "area": "Storage area", "selectWarehouse": "Select a warehouse to manage its areas.", "selectArea": "Select a warehouse and area to manage its locations.", "capacityRule": "Enter a nonnegative capacity in tonnes, up to 18 integer and 6 decimal digits.", "types": {"RECEIVING": "Receiving", "WORK": "Work", "GOOD": "Good stock", "DEFECTIVE": "Defective stock", "PACKAGING": "Packaging", "VIRTUAL": "Virtual", "FINISHED": "Finished goods"}}
 
 productStructure:
   componentQuantity: "Component quantity"
@@ -2494,6 +2560,20 @@ productApproval:
   hint: "Submitting a complete product freezes its basis. Handle or withdraw it in the existing workflow workbench. Final approval still requires explicit authorized activation; edits require a new review. A configured workflow and an eligible organization are required."
 
 coding:
+  saveBinding: "Save binding"
+  saveBindingHint: "Coding bindings take effect when saved here; business binding publication is separate. The rule version is fixed, and the field and rule reference freeze after the first issue."
+  basicInfo: "Basic information"
+  segmentsTitle: "Coding segments"
+  rulesTitle: "Coding rules"
+  rulesHint: "Define immutable rule versions, then bind them to business objects. New versions do not upgrade existing bindings. Counters remain independent."
+  ruleKey: "Rule key"
+  version: "Version"
+  newRule: "New rule"
+  newVersion: "Append version"
+  ruleVersion: "Rule and version"
+  bindingsTitle: "Coding bindings"
+  bindingHint: "Bind an explicit rule version. Counters are independent per object encoder. After issuing, field and rule references are frozen; name and state remain editable."
+  newBinding: "New binding"
   title: "Code management"
   hint: "Combine segments in order with exactly one sequence. Rules freeze after the first issue; create another encoder to change the rule."
   select: "Select encoder"
@@ -2528,3 +2608,20 @@ coding:
     YEAR: Yearly
     MONTH: Monthly
     DAY: Daily
+
+productSku:
+  title: "Product SKUs"
+  product: "Product"
+  choose: "Select a product; search by product name"
+  code: "Item number"
+  create: "Create SKU"
+  specifications: "Manage specifications and structure"
+  hint: "Select a product to manage its SKUs. Item number and specification filters apply to that product only. Dynamic attributes use the saved specification configuration. Each specification has at most one immutable item number. Disable the product in Products before structure changes; pending approvals freeze edits."
+  none: "This product has no specifications. Use the product directly; no default SKU is created."
+  empty: "No SKUs. Maintain specifications, then assign an item number."
+  detail: "SKU details"
+  codeHint: "Use 1–64 letters, digits, dots, underscores or hyphens; start with a letter or digit"
+  created: "SKU created"
+  saved: "SKU status updated"
+  attribute: "Attribute"
+  attributeValue: "Attribute value contains"

@@ -10,6 +10,22 @@ import java.util.function.Supplier;
 public final class BusinessObjectUseCases {
   private BusinessObjectUseCases() {}
   /**
+   * 组装公共对象执行器；所有能力共用对象运行端口和真实事务。
+   * @param providers 唯一对象契约和运行能力
+   * @param bindings 现有对象关联解析端口
+   * @param platform 实时统一对象操作准入
+   * @param transaction 对象、解析及本地能力写入共用的 REQUIRED 事务
+   * @param workflows 延迟公开流程启动端口
+   * @param printing 延迟公开打印端口
+   * @return 实际执行的公共入口，不提供旧路径回退
+   */
+  public static BusinessObjectExecution execution(List<BusinessObjects.Provider> providers,BusinessObjectBindings bindings,
+      ConfigurationTransaction transaction,BusinessObjectPlatform platform,Supplier<com.appnexus.contracts.workflow.WorkflowStarter> workflows,
+      Supplier<com.appnexus.contracts.printing.BusinessPrinting> printing) {
+    return new com.appnexus.platform.businessobject.internal.application.execution.ObjectExecutionService(providers,
+        com.appnexus.platform.businessobject.internal.application.execution.StandardCapabilityDrivers.create(providers,workflows,printing),bindings,transaction,platform);
+  }
+  /**
    * 组装配置用例；端口必须由受信任宿主提供，不自行创建技术实现。
    * @param store 固定配置存储端口，与 transaction 共用数据源
    * @param transaction 完整用例事务，异常回滚且嵌套加入原事务

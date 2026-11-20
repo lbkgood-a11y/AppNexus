@@ -17,6 +17,18 @@ import org.springframework.web.bind.annotation.*;
 public final class CodingController {
   private final CodingManagement service;
   public CodingController(CodingManagement service){this.service=service;}
+  /** 规则独立目录，读取与追加版本均由统一规则权限准入。 */
+  @OperationBinding(id="CodingRule.list",reference=true)
+  @GetMapping("/api/coding-rules")
+  public Object rules(HttpServletRequest r){return reply(()->service.rules(context(r)));}
+  /** 追加固定规则版本，不允许原地修改已存在版本。 */
+  @OperationBinding(id="CodingRule.save",reference=true)
+  @PutMapping("/api/coding-rules/{key}")
+  public Object saveRule(HttpServletRequest r,@PathVariable String key,@RequestBody CodingManagement.RuleInput input){return reply(()->{service.saveRule(context(r),key,input);return Map.of();});}
+  /** 绑定候选复用对象配置授权，不能据此修改规则。 */
+  @OperationBinding(id="CodingEncoder.ruleOptions",reference=true)
+  @GetMapping("/api/business-objects/{type}/coding-rules")
+  public Object ruleOptions(HttpServletRequest r,@PathVariable String type){return reply(()->service.ruleOptions(context(r),type));}
   /** 配置列表只对租户配置管理人员开放，原操作声明由 Provider 唯一维护。 */
   @OperationBinding(id="CodingEncoder.list",reference=true)
   @GetMapping("/api/business-objects/{type}/encoders")

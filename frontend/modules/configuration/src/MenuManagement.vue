@@ -109,14 +109,13 @@ watch(tree, nodes => {
 /* 标题与说明图标保持同一行，沿用公共弹窗字号和主题。 */
 .menu-dialog-title { display: inline-flex; align-items: center; gap: 8px; }
 
-.menu-tree-heading,.menu-tree-node,.menu-switches{display:flex;align-items:center}.menu-tree-heading{justify-content:space-between;gap:8px}.menu-tree-heading strong{font-size:var(--el-font-size-medium)}.menu-tree-all{justify-content:flex-start;width:100%;height:36px;margin-bottom:4px;padding:0 12px}.menu-tree-all.is-active{color:var(--el-color-primary);background:var(--el-color-primary-light-9)}.menu-tree-node{justify-content:space-between;gap:8px;width:100%;min-width:0}.menu-tree-node-label{overflow:hidden;text-overflow:ellipsis}.menu-tree-node small{flex:none;color:var(--el-text-color-secondary)}:deep(.el-tree-node__content){height:36px;border-radius:var(--el-border-radius-base)}:deep(.el-tree-node__content:hover){background:var(--el-fill-color-light)}:deep(.el-tree-node.is-current>.el-tree-node__content){color:var(--el-color-primary);background:var(--el-color-primary-light-9)}.menu-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 16px}.menu-switches{gap:32px}@media(max-width:600px){.menu-form-grid{grid-template-columns:minmax(0,1fr)}:deep(.el-button){min-height:44px}}
+.menu-tree-heading,.menu-tree-node,.menu-switches{display:flex;align-items:center}.menu-tree-heading{justify-content:space-between;gap:8px}.menu-tree-heading strong{font-size:var(--el-font-size-medium)}.menu-tree-all{justify-content:flex-start;width:100%;height:36px;margin-bottom:4px;padding:0 12px}.menu-tree-all.is-active{color:var(--el-color-primary);background:var(--el-color-primary-light-9)}.menu-tree-node{justify-content:space-between;gap:8px;width:100%;min-width:0}.menu-tree-node-label{overflow:hidden;text-overflow:ellipsis}.menu-tree-node small{flex:none;color:var(--el-text-color-secondary)}.menu-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 16px}.menu-switches{gap:32px}@media(max-width:600px){.menu-form-grid{grid-template-columns:minmax(0,1fr)}:deep(.el-button){min-height:44px}}
 /* 菜单复用公共分类工具与查询密度；范围由左树选中态表达，不重复展示只读摘要栏。 */
-.menu-workspace :deep(.tree-list-template__tree-header){padding:8px 12px;min-height:52px}
 .menu-tree-heading strong{font-size:14px}
-.menu-tree-add,.menu-workspace :deep(.tree-list-template__toggle){width:32px;height:32px;min-height:32px;flex:0 0 32px;padding:0;border:1px solid var(--el-border-color-light);border-radius:6px;background:var(--el-bg-color);color:var(--el-text-color-regular)}
+.menu-tree-add{width:32px;height:32px;min-height:32px;flex:0 0 32px;padding:0;border:1px solid var(--el-border-color-light);border-radius:6px;background:var(--el-bg-color);color:var(--el-text-color-regular)}
 
 .management-filter :deep(.el-form){gap:12px}
 .management-filter :deep(.el-form-item){flex:1;margin-right:0}
 .management-filter :deep(.el-input){width:min(360px,100%)}
-@media(max-width:600px){.menu-tree-add,.menu-workspace :deep(.tree-list-template__toggle){width:44px;height:44px;flex-basis:44px}}
+@media(max-width:600px){.menu-tree-add{width:44px;height:44px;flex-basis:44px}}
 </style>

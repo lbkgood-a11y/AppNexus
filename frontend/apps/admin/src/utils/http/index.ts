@@ -53,6 +53,8 @@ class PureHttp {
   async request<T>(method: RequestMethods, url: string, param?: AxiosRequestConfig, config?: PureHttpRequestConfig): Promise<T> {
     const request = { method, url, ...param, ...config };
     const tenant=currentTenant.value;
+    // 不同会话的租户版本可能相同，必须同时比较租户与成员，不能仅比较计数。
+    const tenantChanged=()=>currentTenant.value?.version!==tenant?.version||currentTenant.value?.tenantId!==tenant?.tenantId||currentTenant.value?.memberId!==tenant?.memberId;
     const business=url.startsWith("/api/");
     if(business&&tenant)request.headers={...request.headers,"X-Tenant-Context-Version":String(tenant.version)};
     if(business&&personnelSelection)request.headers={...request.headers,"X-Person-Id":personnelSelection.personId,"X-Person-Organization":personnelSelection.organizationId};
@@ -63,11 +65,15 @@ class PureHttp {
     catch (error) {
       // 拒绝响应也属于旧租户结果；不能只拦截成功响应，否则切换后仍会弹出旧业务错误。
       // 401 属于全局会话失效，仍交由下方会话生命周期处理。
-      if (business && tenant && currentTenant.value?.version !== tenant.version &&
+      if (business && tenant && tenantChanged() &&
           !(Axios.isAxiosError(error) && error.response?.status === 401)) {
         throw new Axios.CanceledError("Stale tenant error");
       }
-      if(business&&Axios.isAxiosError(error)&&error.response?.data?.code==='TENANT_CONTEXT_CHANGED')reloadTenant();
+      if(business&&Axios.isAxiosError(error)&&error.response?.data?.code==='TENANT_CONTEXT_CHANGED') {
+        // 恢复成功后旧请求按取消处理，避免新页面仍显示旧冲突；写入始终不自动重放。
+        await reloadTenant();
+        throw new Axios.CanceledError("Tenant context recovered");
+      }
       // 首次会话探测由路由守卫决定去向；后台其他 401 清理全部展示状态。
       if (Axios.isAxiosError(error) && error.response?.status === 401 &&
           (url.startsWith("/bff/") || url.startsWith("/api/")) && url !== "/bff/session") {
@@ -76,7 +82,7 @@ class PureHttp {
       throw error;
     } finally{finish?.();}
     // 切换后旧响应不能覆盖新租户页面；请求头不决定服务器租户来源。
-    if(business&&tenant&&currentTenant.value?.version!==tenant.version)throw new Axios.CanceledError("Stale tenant response");
+    if(business&&tenant&&tenantChanged())throw new Axios.CanceledError("Stale tenant response");
     config?.beforeResponseCallback?.(response);
     // 管理写入后立即复核按钮能力；不能把成功前的授权快照继续用于撤权后的交互。
     if(!['get','head','options'].includes(method)&&(url.startsWith('/bff/platform/')||url.startsWith('/api/access/')||url.startsWith('/api/organization/grants')))

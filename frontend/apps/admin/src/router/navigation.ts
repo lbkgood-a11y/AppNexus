@@ -15,6 +15,7 @@ const pages = {
   "master-data/warehouse": {path:"/master-data/warehouse",name:"MasterDataWarehouse",component:()=>import("@/views/master-data/warehouse.vue")},
   "master-data/country-region": {path:"/master-data/country-region",name:"MasterDataCountryRegion",component:()=>import("@/views/master-data/country-region.vue")},
   "master-data/subdivision": {path:"/master-data/subdivision",name:"MasterDataSubdivision",component:()=>import("@/views/master-data/subdivision.vue")},
+  "master-data/product-sku": {path:"/master-data/product-sku",name:"MasterDataProductSku",component:()=>import("@/views/master-data/product-sku.vue")},
   "master-data/product": {path:"/master-data/product",name:"MasterDataProduct",component:()=>import("@/views/master-data/product.vue")},
   "master-data/product-category": {path:"/master-data/product-category",name:"MasterDataProductCategory",component:()=>import("@/views/master-data/product-category.vue")},
   "master-data/product-unit": {path:"/master-data/product-unit",name:"MasterDataProductUnit",component:()=>import("@/views/master-data/product-unit.vue")},
@@ -22,6 +23,7 @@ const pages = {
   "master-data/product-template": {path:"/master-data/product-template",name:"MasterDataProductTemplate",component:()=>import("@/views/master-data/product-template.vue")},
 
   "platform/business-objects": {path:"/platform/business-objects",name:"PlatformBusinessObjectManagement",component:()=>import("@/views/platform/business-objects.vue")},
+  "configuration/coding-rules": {path:"/configuration/coding-rules",name:"CodingRules",component:()=>import("@/views/configuration/coding-rules.vue")},
   "business-objects/index": {path:"/business-objects/workbench",name:"DocumentWorkbench",component:()=>import("@/views/business-objects/index.vue")},
   "workflow/leave": {path:"/workflow/leave",name:"LeaveRequests",component:()=>import("@/views/workflow/leave.vue")},
   "print/index": {path:"/print/management",name:"PrintManagement",component:()=>import("@/views/print/index.vue")},

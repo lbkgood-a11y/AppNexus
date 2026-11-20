@@ -22,6 +22,6 @@ public record AccessPlan(AccessAuthorization.Subject subject,String permissionCo
         if(resource==null||!resource.matches("[a-z][a-z0-9.]*")||permissionCode==null||!permissionCode.startsWith(resource+":"))
             throw new IllegalArgumentException("Permission does not belong to resource");
         Objects.requireNonNull(rows);fields=Map.copyOf(fields);Objects.requireNonNull(evaluatedAt);
-        rows=new DataScopeAuthorization.DataScope(rows.type(),Set.copyOf(rows.organizationIds()));
+        rows=new DataScopeAuthorization.DataScope(rows.type(),Set.copyOf(rows.organizationIds()),rows.rules());
     }
 }

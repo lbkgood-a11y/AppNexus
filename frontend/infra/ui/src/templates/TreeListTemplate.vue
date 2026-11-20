@@ -17,7 +17,7 @@ const props = withDefaults(defineProps<{
   treeLabel?: string;
   /** 是否收起左侧树；受控状态由业务页持有。 */
   collapsed?: boolean;
-  /** 左树宽度，单位 px；有效范围 220–360，缺省使用全局 --app-category-width（默认 220px）。 */
+  /** 左树宽度，单位 px；默认必须省略以继承全局220px。仅已记录业务理由的例外可指定220–360px，不能为视觉偏好覆写。 */
   treeWidth?: number;
   /** 嵌入 BusinessWorkspace 时移除重复外框，默认 false。 */
   embedded?: boolean;

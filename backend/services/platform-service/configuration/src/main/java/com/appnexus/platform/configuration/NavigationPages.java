@@ -30,6 +30,7 @@ public final class NavigationPages {
             new Page("master-data/warehouse","/master-data/warehouse","仓库管理","Warehouses",MenuManagement.Scope.TENANT,"masterdata.warehouse:read",Gate.PERMISSION),
             new Page("master-data/country-region","/master-data/country-region","国别地区","Countries and regions",MenuManagement.Scope.TENANT,"masterdata.countryregion:read",Gate.PERMISSION),
             new Page("master-data/subdivision","/master-data/subdivision","行政区划","Subdivisions",MenuManagement.Scope.TENANT,"masterdata.subdivision:read",Gate.PERMISSION),
+            new Page("master-data/product-sku","/master-data/product-sku","商品明细管理","Product SKUs",MenuManagement.Scope.TENANT,"masterdata.product:read",Gate.PERMISSION),
             new Page("master-data/product","/master-data/product","商品管理","Products",MenuManagement.Scope.TENANT,"masterdata.product:read",Gate.PERMISSION),
             new Page("master-data/product-category","/master-data/product-category","商品分类","Product categories",MenuManagement.Scope.TENANT,"masterdata.productcategory:read",Gate.PERMISSION),
             new Page("master-data/product-unit","/master-data/product-unit","计量单位","Product units",MenuManagement.Scope.TENANT,"masterdata.productunit:read",Gate.PERMISSION),
@@ -51,6 +52,7 @@ public final class NavigationPages {
             new Page("organization/index","/organization/manage","组织管理","Organizations",MenuManagement.Scope.TENANT,"organization.unit:read",Gate.PERMISSION),
             tenant("roles/index","/access/roles","租户角色","Tenant roles","access.tenant.role:read"),
             tenant("roles/authorization","/access/authorization","授权中心","Authorization","access.tenant.role:grant"),
+            new Page("configuration/coding-rules","/configuration/coding-rules","编码规则","Coding rules",MenuManagement.Scope.TENANT,"coding.rule:manage",Gate.PERMISSION),
             new Page("configuration/parameters","/configuration/parameters","租户参数","Tenant parameters",MenuManagement.Scope.TENANT,"configuration.parameter:save",Gate.PERMISSION),
             new Page("configuration/dictionaries","/configuration/dictionaries","业务字典","Dictionaries",MenuManagement.Scope.TENANT,"configuration.dictionary:read",Gate.PERMISSION)
         );

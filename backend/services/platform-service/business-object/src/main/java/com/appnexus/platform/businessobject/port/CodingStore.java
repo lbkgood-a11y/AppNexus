@@ -17,8 +17,10 @@ public interface CodingStore {
    * @param rule 数据库保存的规则，发号前仍须按当前字段约束验证
    * @param enabled 是否允许发号；停用后也不得重放历史结果
    * @param revision 非负配置版本，用于保存时的乐观版本检查
+   * @param ruleKey 固定规则标识
+   * @param ruleVersion 固定规则版本
    */
-  record Encoder(String field, Rule rule, boolean enabled, long revision) {}
+  record Encoder(String field, Rule rule, boolean enabled, long revision, String ruleKey, long ruleVersion) {}
   /**
    * 同租户同账号请求的历史回执；重放仍须重新鉴权及检查编码器启用状态。
    * @param objectType 原发号对象，必须与重放目标一致
@@ -34,6 +36,14 @@ public interface CodingStore {
    * @throws com.appnexus.contracts.businessobject.BusinessObjects.Rejection 唯一约束冲突
    */
   <T> T atomic(Supplier<T> work, String conflictCode);
+  /** 当前租户全部不可变规则版本及只读审计。 */
+  List<Map<String,Object>> rules(Context context);
+  /** 在事务内锁定规则最新版本；不存在返回0，首次并发创建由唯一约束拒绝。 */
+  long latestRuleVersion(Context context, String key);
+  /** 查找当前租户精确版本；不存在返回null，调用者必须拒绝悬空绑定。 */
+  Rule rule(Context context, String key, long version);
+  /** 追加规则版本；版本不可更新，审计主体来自可信上下文。 */
+  void insertRule(Context context, String key, long version, String name, Rule rule);
   /** 返回当前租户配置与只读审计投影；不修改持久化状态。 */
   List<Map<String,Object>> configurations(Context context, String objectType);
   /** 返回启用的字段编码器候选；调用方先检查目标业务操作权限。 */
@@ -43,7 +53,7 @@ public interface CodingStore {
   /** 当前编码器是否已经产生回执；仅在编码器锁内判断规则冻结。 */
   boolean hasIssues(Context context, String objectType, String encoderKey);
   /** 新增或更新配置；操作者来自 Context，创建信息不允许被更新覆盖。 */
-  void save(Context context, String objectType, String encoderKey, String field, String name, boolean enabled, Rule rule, boolean create);
+  void save(Context context, String objectType, String encoderKey, String field, String name, boolean enabled, String ruleKey, long ruleVersion, boolean create);
   /** 按可信租户、账号和请求 UUID 读取幂等回执，不自动授予重放权限。 */
   Issued issued(Context context);
   /** 数据库 UTC 时间点；一次发号只读取一次，避免跨午夜日期与周期不一致。 */

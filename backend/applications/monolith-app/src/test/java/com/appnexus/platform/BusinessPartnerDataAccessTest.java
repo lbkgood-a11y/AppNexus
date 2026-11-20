@@ -60,9 +60,49 @@ class BusinessPartnerDataAccessTest extends DatabaseTestSupport {
         }
         var saved=permissions.replaceAuthorization(rc,role.id(),role.version(),ids,policies,"客商按组织授权");
         var initial=subjects.memberRoles(rc,u.memberId());subjects.replaceMemberRoles(rc,u.memberId(),initial.authorityVersion(),Set.of(role.id()),"角色默认继承");
-        assertThat(catalog.list(PermissionCatalog.ScopeType.TENANT)).anyMatch(d->d.objectType().equals("BusinessPartner")&&d.version()==1);
+        assertThat(catalog.list(PermissionCatalog.ScopeType.TENANT)).anyMatch(d->d.objectType().equals("BusinessPartner")&&d.version()==2);
         assertThat(fields.list(PermissionCatalog.ScopeType.TENANT)).anyMatch(f->f.resource().equals("masterdata.partner.bank")&&f.field().equals("accountNumber")&&f.modes().contains(FieldSecurity.Mode.READ_ONLY));
         assertThat(service.list(u,Kind.PARTNER,"",null,1,20).total()).isEqualTo(2);
+        // 指定记录与条件取AND，规则取OR；当前角色及功能权限仍是前置门槛。
+        var readPermission=permission("masterdata.partner:read");
+        var recordAndCondition=new DataGrantRules.Rule(DataGrantRules.SubjectType.MEMBER,Set.of(u.memberId()),
+            Set.of(UUID.fromString(first),UUID.fromString(blocked)),List.of(new DataGrantRules.Condition("code",DataGrantRules.Operator.EQ,List.of("FIRST"))),false);
+        var conditionOnly=new DataGrantRules.Rule(DataGrantRules.SubjectType.ROLE_MEMBERS,Set.of(),Set.of(),
+            List.of(new DataGrantRules.Condition("code",DataGrantRules.Operator.IN,List.of("CHILD"))),false);
+        var notThisMember=new DataGrantRules.Rule(DataGrantRules.SubjectType.MEMBER,Set.of(c.memberId()),Set.of(UUID.fromString(blocked)),List.of(),false);
+        var combined=new RolePermissionManagement.DataPolicy(readPermission,DataScopeAuthorization.ScopeType.RULES,"masterdata.partner",Set.of(),List.of(recordAndCondition,conditionOnly,notThisMember));
+        var combinedPolicies=new HashSet<>(policies);combinedPolicies.removeIf(p->p.permissionId().equals(readPermission));combinedPolicies.add(combined);
+        saved=permissions.replaceAuthorization(rc,role.id(),saved.roleVersion(),ids,combinedPolicies,"验证组合授权");
+        assertThat(permissions.getAuthorization(rc,role.id()).dataPolicies()).contains(combined);
+        assertThat(service.list(u,Kind.PARTNER,"",null,1,20).rows()).extracting(Row::id).containsExactly(second,first);
+        assertThat(service.list(u,Kind.PARTNER,"",null,1,20).total()).isEqualTo(2);
+        assertThat(service.list(u,Kind.PARTNER,"",null,1,20,blocked).rows()).isEmpty();
+        assertThat(service.list(foreign,Kind.PARTNER,"",null,1,20,first).rows()).isEmpty();
+        // 组织被授权方与客商归属不同：B组织成员可以看归属A的FIRST。
+        UUID person=UUID.randomUUID();
+        jdbc.update("INSERT INTO md_person(id,tenant_id,code,name,employment_status) VALUES(UUID_TO_BIN(?),UUID_TO_BIN(?),?,'组合授权人员','ACTIVE')",person.toString(),tenant.toString(),"GRANT-"+person);
+        jdbc.update("INSERT INTO md_person_account(tenant_id,id,person_id,member_id) VALUES(UUID_TO_BIN(?),UUID_TO_BIN(?),UUID_TO_BIN(?),UUID_TO_BIN(?))",tenant.toString(),UUID.randomUUID().toString(),person.toString(),u.memberId().toString());
+        UUID affiliation=UUID.randomUUID();
+        jdbc.update("INSERT INTO tenant_person_organization(tenant_id,id,person_id,organization_id) VALUES(UUID_TO_BIN(?),UUID_TO_BIN(?),UUID_TO_BIN(?),UUID_TO_BIN(?))",tenant.toString(),affiliation.toString(),person.toString(),b.toString());
+        var orgRule=new DataGrantRules.Rule(DataGrantRules.SubjectType.ORGANIZATION,Set.of(b),Set.of(UUID.fromString(first)),List.of(),false);
+        var organizationPolicy=new RolePermissionManagement.DataPolicy(readPermission,DataScopeAuthorization.ScopeType.RULES,"masterdata.partner",Set.of(),List.of(orgRule));
+        var grantState=members.get(rc,u.memberId());
+        var memberPolicies=new HashSet<>(policies);memberPolicies.removeIf(p->p.permissionId().equals(readPermission));memberPolicies.add(organizationPolicy);
+        members.replace(rc,u.memberId(),new MemberAuthorizationManagement.Grant(role.id(),ids,memberPolicies,null,saved.roleVersion(),false),grantState.authorityVersion(),"成员组织组合授权");
+        assertThat(members.get(rc,u.memberId()).grants().getFirst().dataPolicies()).contains(organizationPolicy);
+        assertThat(service.list(u,Kind.PARTNER,"",null,1,20).rows()).extracting(Row::id).containsExactly(first);
+        jdbc.update("UPDATE tenant_person_organization SET enabled=FALSE WHERE tenant_id=UUID_TO_BIN(?) AND id=UUID_TO_BIN(?)",tenant.toString(),affiliation.toString());
+        assertThat(service.list(u,Kind.PARTNER,"",null,1,20).rows()).isEmpty();
+        var restore=members.get(rc,u.memberId());
+        members.replace(rc,u.memberId(),new MemberAuthorizationManagement.Grant(role.id(),ids,Set.of(),null,saved.roleVersion(),true),restore.authorityVersion(),"恢复角色组合规则");
+        assertThat(service.list(u,Kind.PARTNER,"",null,1,20).total()).isEqualTo(2);
+        var badRules=new RolePermissionManagement.DataPolicy(readPermission,DataScopeAuthorization.ScopeType.RULES,"masterdata.partner",Set.of(),List.of(
+            new DataGrantRules.Rule(DataGrantRules.SubjectType.MEMBER,Set.of(foreign.memberId()),Set.of(UUID.fromString(first)),List.of(),false)));
+        var invalidPolicies=new HashSet<>(combinedPolicies);invalidPolicies.removeIf(p->p.permissionId().equals(readPermission));invalidPolicies.add(badRules);
+        long beforeInvalid=saved.roleVersion();
+        assertThatThrownBy(()->permissions.replaceAuthorization(rc,role.id(),beforeInvalid,ids,invalidPolicies,"拒绝跨租户主体")).isInstanceOf(IllegalArgumentException.class);
+        assertThat(permissions.getAuthorization(rc,role.id()).roleVersion()).isEqualTo(beforeInvalid);
+        saved=permissions.replaceAuthorization(rc,role.id(),saved.roleVersion(),ids,policies,"恢复原组织范围验证写入");
         var selected=mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/bff/tenants/current").with(authenticated(user.toString(),0)).with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf()).contentType("application/json").content("{\"tenantId\":\""+tenant+"\"}")).andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().isOk()).andReturn();
         var cookie=selected.getResponse().getCookie("JSESSIONID");
         mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get("/api/master-data/partner").cookie(cookie).param("id",blocked)).andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().isOk()).andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath("$.rows").isEmpty());
@@ -97,6 +137,24 @@ class BusinessPartnerDataAccessTest extends DatabaseTestSupport {
         assertThat(service.list(u,Kind.PARTNER,"",null,1,20).rows()).extracting(Row::id).containsExactly(blocked);
         var customGrant=members.get(rc,u.memberId());members.replace(rc,u.memberId(),new MemberAuthorizationManagement.Grant(role.id(),ids,Set.of(),null,saved.roleVersion(),true),customGrant.authorityVersion(),"恢复继承");
         assertThat(service.list(u,Kind.PARTNER,"",null,1,20).total()).isEqualTo(2);
+        // 真实管理HTTP契约保存并返回完整规则，避免只有Java内部调用支持新模型。
+        var body=new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(Map.of("ids",ids,"dataPolicies",combinedPolicies,
+            "version",saved.roleVersion(),"reason","HTTP组合授权验收","dataAccessVersion",catalog.version()));
+        mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put("/bff/platform/tenants/"+tenant+"/roles/"+role.id()+"/permissions")
+            .with(authenticated(actor.toString(),0)).with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf())
+            .contentType("application/json").content(body))
+            .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().isOk())
+            .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath("$.dataPolicies[?(@.scopeType == 'RULES')].rules[0].subjectType").value(org.hamcrest.Matchers.contains("MEMBER")));
+        assertThat(service.list(u,Kind.PARTNER,"",null,1,20).total()).isEqualTo(2);
+        var current=permissions.getAuthorization(rc,role.id());
+        var expiring=members.get(rc,u.memberId());
+        members.replace(rc,u.memberId(),new MemberAuthorizationManagement.Grant(role.id(),ids,Set.of(),java.time.Instant.now().minusSeconds(60),current.roleVersion(),true),expiring.authorityVersion(),"过期组合授权不生效");
+        assertThatThrownBy(()->service.list(u,Kind.PARTNER,"",null,1,20)).isInstanceOf(Rejection.class);
+        var expired=members.get(rc,u.memberId());
+        members.replace(rc,u.memberId(),new MemberAuthorizationManagement.Grant(role.id(),ids,Set.of(),null,current.roleVersion(),true),expired.authorityVersion(),"恢复长期组合授权");
+        assertThat(service.list(u,Kind.PARTNER,"",null,1,20).total()).isEqualTo(2);
+        permissions.replaceAuthorization(rc,role.id(),current.roleVersion(),Set.of(),Set.of(),"撤销功能同时停止组合访问");
+        assertThatThrownBy(()->service.list(u,Kind.PARTNER,"",null,1,20)).isInstanceOf(Rejection.class);
     }
     private Input input(String code,UUID org,Map<String,String> values,List<DetailInput> contacts,List<DetailInput> bank){var attrs=new HashMap<>(values);attrs.put("partnerType","CUSTOMER");return new Input(code,code,attrs,0,contacts,bank,org==null?null:org.toString());}
     private UUID account(UUID actor){UUID id=UUID.randomUUID();administration.createUser(actor,id,"data-"+id,"数据权限验收", encoder.encode("isolated-data-access-test"));return id;}

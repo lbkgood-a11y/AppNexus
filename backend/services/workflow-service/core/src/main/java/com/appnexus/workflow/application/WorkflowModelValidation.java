@@ -32,14 +32,23 @@ public final class WorkflowModelValidation {
       // 数值条件必须显式来自本单据的 NUMBER 字段，避免按字符串或跨业务字段误判。
       var profile = profiles.get(m.entryCapability());
       if (profile != null && m.mode() == Mode.APPROVAL) {
-        for (String result : List.of("APPROVED", "REJECTED")) {
+        // 与绑定候选一致：业务声明的全部结果都是必需项，不能把撤回降为可选。
+        var requiredResults = new LinkedHashSet<>(List.of("APPROVED", "REJECTED"));
+        profile.outcomes().forEach(outcome -> requiredResults.add(outcome.result()));
+        if (!profile.objectType().equals(m.objectType()) || !profile.purpose().equals(m.purpose()))
+          errors.add("BUSINESS_PROFILE_MISMATCH");
+        if (m.matches() != null && !m.matches().isEmpty()) errors.add("BUSINESS_MATCH_FORBIDDEN");
+        for (String result : requiredResults) {
           String bound = m.terminalActions() == null ? null : m.terminalActions().get(result);
           if (profile.outcomes().stream().noneMatch(o -> o.result().equals(result) && o.capability().equals(bound)))
             errors.add("BUSINESS_OUTCOME_REQUIRED:" + result);
         }
-        if (m.withdrawalCapability() != null && !m.withdrawalCapability().isBlank()) {
+        // 具备撤回契约时必须前置配置入口；否则发布成功仍无法作为合法绑定使用。
+        if (requiredResults.contains("WITHDRAWN") ||
+            (m.withdrawalCapability() != null && !m.withdrawalCapability().isBlank())) {
           String bound = m.terminalActions() == null ? null : m.terminalActions().get("WITHDRAWN");
-          if (!m.withdrawalCapability().equals(profile.withdrawalCapability()) || profile.outcomes().stream()
+          if (m.withdrawalCapability() == null || m.withdrawalCapability().isBlank()
+              || !m.withdrawalCapability().equals(profile.withdrawalCapability()) || profile.outcomes().stream()
               .noneMatch(o -> o.result().equals("WITHDRAWN") && o.capability().equals(bound)))
             errors.add("BUSINESS_WITHDRAWAL_INVALID");
         }

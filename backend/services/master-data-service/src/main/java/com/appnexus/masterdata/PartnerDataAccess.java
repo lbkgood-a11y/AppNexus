@@ -11,6 +11,11 @@ import static com.appnexus.masterdata.BusinessPartnerDeclaration.*;
 /** 客商统一声明的真实执行器；只使用构建内固定 SQL，原始明细只在已授权父记录的事务内读取。 */
 @Component
 public final class PartnerDataAccess implements DataAccessDeclaration.Executor, com.appnexus.masterdata.application.PartnerAccess {
+    /** 固定业务列映射；条件目录不接收 SQL，全部组合算法由平台公共执行层负责。 */
+    private static final RowAccessControl.Mapping MAPPING=new RowAccessControl.Mapping(ROOT,
+        new RowAccessControl.Column("id",DataGrantRules.ValueType.UUID),new RowAccessControl.Column("organization_id",DataGrantRules.ValueType.UUID),
+        Map.of("code",new RowAccessControl.Column("code",DataGrantRules.ValueType.TEXT),"name",new RowAccessControl.Column("name",DataGrantRules.ValueType.TEXT),
+            "organizationId",new RowAccessControl.Column("organization_id",DataGrantRules.ValueType.UUID)));
     private final AccessPlanning planning;private final FieldProtection protection;private final DataAccessReferences references;private final JdbcTemplate jdbc;private final DataAccessCatalog catalog;private final RowAccessControl rows;
     /**
      * @param planning 当前主体、操作及资源的权威权限计划入口
@@ -25,9 +30,9 @@ public final class PartnerDataAccess implements DataAccessDeclaration.Executor, 
     private AccessAuthorization.Subject subject(VerifiedTenantContext c){return AccessAuthorization.Subject.tenant(c.accountId(),c.tenantId(),c.memberId());}
     /** 每次执行读取权威策略；无功能或无范围默认拒绝，不使用浏览器传入的权限计划。 */
     public AccessPlan plan(VerifiedTenantContext c,String action){try{return planning.plan(subject(c),ROOT+":"+action,ROOT);}catch(SecurityException e){throw denied();}}
-    /** 固定组织列谓词；只动态生成绑定占位符数量，COUNT 与分页必须共用返回条件。 */
+    /** 通过公共执行器编译固定业务映射，COUNT、分页、详情及原写入锁定共用条件。 */
     public String predicate(AccessPlan plan,List<Object> args){
-        var predicate=rows.organizationPredicate(plan,"organization_id");
+        var predicate=rows.predicate(plan,MAPPING);
         args.addAll(predicate.parameters());return predicate.sql();
     }
     /** 写入先锁定授权范围内父记录；无权与不存在统一冲突，不先泄露客商或明细内容。 */

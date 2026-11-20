@@ -157,17 +157,7 @@ public final class WorkflowRuntime implements WorkflowResults, WorkflowTaskAcces
   private void validateContractSnapshot(WorkflowBusiness business,String entry,Map<String,String> snapshot){
     if(!(business instanceof com.appnexus.contracts.businessobject.BusinessObjects.Provider provider))return;
     var capability=provider.descriptor().operations().stream().flatMap(a->a.interaction().capabilities().stream()).filter(c->c.service()==com.appnexus.contracts.businessobject.InteractionContract.Service.WORKFLOW&&c.reference().equals(entry)).findFirst().orElseThrow();
-    var data=new HashMap<String,Object>();
-    for(var field:capability.fields()){
-      String value=snapshot.get(field.key());if(value==null)continue;
-      try{data.put(field.key(),switch(field.type()){
-        case "NUMBER"->new java.math.BigDecimal(value);
-        case "BOOLEAN"->{if(!Set.of("true","false").contains(value))throw new IllegalArgumentException();yield Boolean.valueOf(value);}
-        default->value;
-      });}catch(IllegalArgumentException ex){throw new com.appnexus.contracts.data.DataContract.Violation(field.key(),"DATA_FIELD_TYPE_INVALID");}
-    }
-    for(String key:snapshot.keySet())if(!data.containsKey(key))throw new com.appnexus.contracts.data.DataContract.Violation(key,"DATA_FIELD_UNKNOWN");
-    capability.schema().validate(data);
+    capability.schema().decode(snapshot);
   }
 
   /** 流程设计视图由统一单据行为声明投影生成，业务不再维护第二份工作流目录。 */

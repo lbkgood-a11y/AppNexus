@@ -1,10 +1,13 @@
-import { watchEffect, shallowRef, type Directive } from "vue";
+import { watch, watchEffect, shallowRef, type Directive } from "vue";
 import { http } from "@/utils/http";
 import { currentTenant } from "@/utils/tenantContext";
 
 /** 按钮操作能力只控制展示；无快照、切换租户或读取失败时默认隐藏，后端逐请求复核。 */
 const snapshot = shallowRef<{ context: string; operations: Set<string> }>();
 let pending: Promise<void> | undefined;
+let pendingContext: string | undefined;
+let pendingGeneration = -1;
+let stopContextWatch: (() => void) | undefined;
 let consumers = 0;
 let timer: ReturnType<typeof setInterval> | undefined;
 let generation = 0;
@@ -23,22 +26,27 @@ const values = new WeakMap<HTMLElement, string>();
 /** 当前展示域只用于选择受权能力查询，不作为服务端租户来源。 */
 function context() {
   const path = location.hash.startsWith("#/") ? location.hash.slice(1) : location.pathname;
-  if(path.startsWith("/account")) return `account:${currentTenant.value?.tenantId ?? "none"}`;
-  return path.startsWith("/platform") ? "platform" : `tenant:${currentTenant.value?.tenantId ?? "none"}`;
+  const tenant = currentTenant.value;
+  const identity = `${tenant?.tenantId ?? "none"}:${tenant?.memberId ?? "none"}:${tenant?.version ?? 0}`;
+  if(path.startsWith("/account")) return `account:${identity}`;
+  return path.startsWith("/platform") ? "platform" : `tenant:${identity}`;
 }
 /** 同一上下文复核期间保留按钮，避免布局闪动；失败默认隐藏，上下文变化立即失效，API 始终复核权限。 */
 async function refresh() {
-  if (pending) return pending;
   const expected = context(); const epoch = generation;
+  // 仅合并同一世代和上下文的请求；旧页面在途请求不能阻止新页面取得权限。
+  if (pending && pendingContext === expected && pendingGeneration === epoch) return pending;
   if (snapshot.value?.context !== expected) snapshot.value = undefined;
-  pending = (async () => {
+  pendingContext = expected; pendingGeneration = epoch;
+  const task = (async () => {
     try {
       // 个人中心同时包含本人操作与租户参数；分别读取真实管理域，不把平台权限代入租户。
       const paths = expected.startsWith("account:") ? ["/bff/operation-decisions", ...(currentTenant.value?.tenantId ? ["/api/operation-decisions"] : [])] : [expected === "platform" ? "/bff/operation-decisions" : "/api/operation-decisions"];
       const codes = (await Promise.all(paths.map(path => http.request<string[]>("get", path)))).flat();
       if (generation === epoch && context() === expected) snapshot.value = { context: expected, operations: new Set(codes) };
-    } catch { snapshot.value = undefined; }
-  })().finally(() => { pending = undefined; });
+    } catch { if (generation === epoch && context() === expected) snapshot.value = undefined; }
+  })().finally(() => { if (pending === task) pending = undefined; });
+  pending = task;
   return pending;
 }
 /** 注销时先丢弃展示能力，旧账号的在途响应不得恢复另一账号的按钮。 */
@@ -67,12 +75,16 @@ export const operation: Directive<HTMLElement, string> = {
       element.style.display = snapshot.value?.context === current && allowed ? original : "none";
     });
     cleanup.set(element, stop);
-    if (consumers++ === 0) { setOperationRefreshSeconds(refreshSeconds); window.addEventListener("focus", refresh); window.addEventListener("hashchange", refresh); window.addEventListener("appnexus:authority-changed", refresh); window.addEventListener("appnexus:session-ended", reset); }
+    if (consumers++ === 0) {
+      // 监听稳定身份字段，避免路由守卫重读同一租户时重复请求；版本变化必须重新取证。
+      stopContextWatch = watch(() => context(), () => { reset(); void refresh(); }, { flush: "sync" });
+      setOperationRefreshSeconds(refreshSeconds); window.addEventListener("focus", refresh); window.addEventListener("hashchange", refresh); window.addEventListener("appnexus:authority-changed", refresh); window.addEventListener("appnexus:session-ended", reset);
+    }
     void refresh();
   },
   updated(element, binding) { if (values.get(element) !== binding.value) { values.set(element, binding.value); void refresh(); } },
   unmounted(element) {
     cleanup.get(element)?.(); cleanup.delete(element); values.delete(element);
-    if (--consumers === 0) { clearInterval(timer); timer = undefined; reset(); window.removeEventListener("focus", refresh); window.removeEventListener("hashchange", refresh); window.removeEventListener("appnexus:authority-changed", refresh); window.removeEventListener("appnexus:session-ended", reset); }
+    if (--consumers === 0) { stopContextWatch?.(); stopContextWatch = undefined; clearInterval(timer); timer = undefined; reset(); window.removeEventListener("focus", refresh); window.removeEventListener("hashchange", refresh); window.removeEventListener("appnexus:authority-changed", refresh); window.removeEventListener("appnexus:session-ended", reset); }
   }
 };

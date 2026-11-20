@@ -14,13 +14,15 @@ public class LeavePocConfiguration {
   /** 延迟取得工作流公开端口，避免业务能力注册与引擎初始化形成循环依赖。 */
   @Bean
   public LeavePocService leavePocService(JdbcTemplate jdbc, PlatformTransactionManager manager,
-      WorkflowPlatform platform, ObjectProvider<WorkflowStarter> starter,
+      WorkflowPlatform platform,
       ObjectProvider<WorkflowTaskAccess> tasks,
       ObjectProvider<com.appnexus.contracts.businessobject.BusinessObjectBindings> bindings,
-      ObjectProvider<com.appnexus.contracts.printing.BusinessPrinting> printing) {
-    var service=new LeavePocService(jdbc, manager, platform, starter::getObject, tasks::getObject);
+      ObjectProvider<com.appnexus.contracts.printing.BusinessPrinting> printing,
+      ObjectProvider<com.appnexus.contracts.businessobject.BusinessObjectExecution> execution) {
+    var service=new LeavePocService(jdbc, manager, platform, tasks::getObject);
     service.bindings(bindings::getObject);
     service.printing(printing::getObject);
+    service.execution(execution::getObject);
     return service;
   }
   /** 注册只读对象诊断；复用本人读取及配置检查，不模拟指定用户或越过业务归属。 */

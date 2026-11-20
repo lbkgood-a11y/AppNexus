@@ -1,4 +1,6 @@
 **/target/
+# 与IDE后台编译隔离的Maven验收产物，可重新生成。
+**/target-agent/
 **/node_modules/
 **/dist/
 .DS_Store

@@ -156,6 +156,46 @@ class WorkflowRuntimeTest {
     runtime.publish(c("author"), id, 0);
   }
 
+
+  /** 真实发布事务必须拒绝不完整契约，失败后不生成版本、部署或发布审计。 */
+  @Test void publicationRejectsMissingContractOutcomeWithoutSideEffects() {
+    class ContractBusiness implements WorkflowBusiness, com.appnexus.contracts.businessobject.BusinessObjects.Provider {
+      public Capability capability(){return new Capability("contractBusiness","契约测试","test:use","",Set.of(),Set.of());}
+      public Result execute(Invocation invocation){return new Result(false,Map.of());}
+      public com.appnexus.contracts.businessobject.BusinessObjects.Descriptor descriptor(){
+        var interaction = new com.appnexus.contracts.businessobject.InteractionContract("ContractDocument.submit",1,
+            "ContractDocument","submit","提交","Submit",com.appnexus.contracts.businessobject.InteractionContract.Trigger.USER_ACTION,
+            List.of(new com.appnexus.contracts.businessobject.InteractionContract.Capability(
+                com.appnexus.contracts.businessobject.InteractionContract.Service.WORKFLOW,
+                com.appnexus.contracts.businessobject.InteractionContract.Completion.CALLBACK,
+                "contractBusiness","approval",List.of(),Set.of("APPROVED","REJECTED","WITHDRAWN"),"contract.approval",1)));
+        var operation = new com.appnexus.contracts.businessobject.BusinessObjects.Operation("submit","提交","Submit",
+            "test:use","ContractDocument.submit",null,List.of(),interaction);
+        return new com.appnexus.contracts.businessobject.BusinessObjects.Descriptor("ContractDocument","契约单据","Contract document",
+            "test",1,com.appnexus.contracts.businessobject.BusinessObjects.Category.TRANSACTION,List.of(),List.of(operation));
+      }
+    }
+    var source = new DriverManagerDataSource(MYSQL.getJdbcUrl(),MYSQL.getUsername(),MYSQL.getPassword());
+    var platform = new WorkflowPlatform(){
+      public boolean active(String tenant,String actor){return "tenant-a".equals(tenant);}
+      public boolean allowed(WorkflowContext context,String permission){return active(context.tenantId(),context.actorId());}
+      public List<String> resolve(String tenant,String organization,String kind,String reference){return List.of(reference);}
+      public boolean candidate(WorkflowContext context,String organization,String kind,String reference){return true;}
+    };
+    var subject = new WorkflowRuntime(engine,jdbc,new DataSourceTransactionManager(source),platform,List.of(new ContractBusiness()));
+    var draft = new WorkflowModel("契约测试","ContractDocument","approval",Mode.APPROVAL,"contractBusiness",List.of(),
+        List.of(n("start",Kind.START,null),n("end",Kind.END,null)),List.of(e("start","end")),
+        Map.of("APPROVED","contractBusiness","REJECTED","contractBusiness"));
+    String id=UUID.randomUUID().toString();
+    subject.save(c("author"),id,-1,draft);
+    long deployments=engine.getRepositoryService().createDeploymentQuery().count();
+    assertThat(subject.validate(c("author"),draft)).contains("BUSINESS_OUTCOME_REQUIRED:WITHDRAWN");
+    assertThatThrownBy(()->subject.publish(c("author"),id,0)).isInstanceOf(RuntimeException.class);
+    assertThat(jdbc.queryForObject("SELECT published FROM wf_definition WHERE tenant_id=? AND id=?",Integer.class,"tenant-a",id)).isZero();
+    assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM wf_version WHERE tenant_id=? AND definition_id=?",Integer.class,"tenant-a",id)).isZero();
+    assertThat(engine.getRepositoryService().createDeploymentQuery().count()).isEqualTo(deployments);
+  }
+
   static String start(String purpose) {
     return String.valueOf(
         ((Map<?, ?>)

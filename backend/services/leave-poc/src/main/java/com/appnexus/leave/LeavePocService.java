@@ -12,11 +12,11 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
 /** 请假 POC 业务存储与工作流适配；只依赖公开契约，提交后冻结依据，不计算余额或考勤。 */
-public final class LeavePocService implements WorkflowBusiness, com.appnexus.contracts.businessobject.BusinessObjects.Provider {
+public final class LeavePocService implements com.appnexus.contracts.businessobject.BusinessObjects.Provider, com.appnexus.contracts.businessobject.BusinessObjectRuntime {
   /** 页面提交、业务 API 和工作台共用行为；权限引用不等同于启动流程。 */
   public static final com.appnexus.contracts.businessobject.BusinessObjects.Operation SUBMIT_OPERATION =
       new com.appnexus.contracts.businessobject.BusinessObjects.Operation(
-          "submit", "提交", "Submit", "workflow:start", "LeaveRequest.submit",
+          "submit", "提交", "Submit", "leave.request:submit", "LeaveRequest.submit",
           new com.appnexus.contracts.businessobject.BusinessObjects.PageOperation(
               "workflow/leave", "/workflow/leave", "请假单 POC", "Leave request POC",
               "POST", "/api/leave-poc/{id}/submit"),
@@ -37,7 +37,7 @@ public final class LeavePocService implements WorkflowBusiness, com.appnexus.con
   /** 列表和详情打印共享业务动作；字段投影同时用于打印目录，不能独立维护另一份。 */
   public static final com.appnexus.contracts.businessobject.BusinessObjects.Operation PRINT_OPERATION =
       new com.appnexus.contracts.businessobject.BusinessObjects.Operation(
-          "print", "打印", "Print", "print.job:submit", "LeaveRequest.print",
+          "print", "打印", "Print", "leave.request:print", "LeaveRequest.print",
           new com.appnexus.contracts.businessobject.BusinessObjects.PageOperation(
               "workflow/leave", "/workflow/leave", "请假列表", "Leave list",
               "POST", "/api/leave-poc/{id}/print"),
@@ -61,11 +61,47 @@ public final class LeavePocService implements WorkflowBusiness, com.appnexus.con
   /** 业务授权投影不包含原因原文或人员敏感信息；打印服务按已发布场景再次校验。 */
   public Map<String,Object> print(WorkflowContext c,String id,String operation){
     active(c);if(!platform.allowed(c,PRINT_OPERATION.permissionCode())||!(PRINT_OPERATION.operationId().equals(operation)||PRINT_OPERATION.aliases().stream().anyMatch(a->a.operationId().equals(operation))))throw new SecurityException("LEAVE_ACCESS_DENIED");
-    bindings.get().verifyPageOperation(new com.appnexus.contracts.businessobject.BusinessObjects.Context(c.tenantId(),c.actorId(),c.requestId()),"LeaveRequest","print",operation);
     var row=row(c,id,false);if(!c.actorId().equals(row.get("applicant")))throw new SecurityException("LEAVE_ACCESS_DENIED");
-    var resolved=bindings.get().resolveOperation(new com.appnexus.contracts.businessobject.BusinessObjects.Context(c.tenantId(),c.actorId(),c.requestId()),"LeaveRequest","print",id,((Number)row.get("basis_version")).longValue(),LeaveContractData.facts(row));
-    if(!resolved.service().equals("PRINT"))throw new IllegalArgumentException("LEAVE_PRINT_STRATEGY_INVALID");
-    return printing.get().request(new com.appnexus.contracts.printing.PrintContext(c.tenantId(),c.actorId(),c.requestId()),new com.appnexus.contracts.printing.BusinessPrinting.Request(resolved.sceneCode(),resolved.dataContract(),id,LeaveContractData.printing(id,row),"PREVIEW",null,1));
+    return execution.get().execute(objectContext(c),new com.appnexus.contracts.businessobject.BusinessObjectExecution.Request(
+        "LeaveRequest",id,"print",operation,((Number)row.get("basis_version")).longValue())).output();
+  }
+  private Supplier<com.appnexus.contracts.businessobject.BusinessObjectExecution> execution;
+  /** 注入对象公共执行入口；缺少装配时不回退到对象专用能力接线。 */
+  public void execution(Supplier<com.appnexus.contracts.businessobject.BusinessObjectExecution> execution){this.execution=Objects.requireNonNull(execution);}
+  private static com.appnexus.contracts.businessobject.BusinessObjects.Context objectContext(WorkflowContext c){
+    return new com.appnexus.contracts.businessobject.BusinessObjects.Context(c.tenantId(),c.actorId(),c.requestId(),c.personId(),c.organizationId());
+  }
+  /** 所有通用能力共用一次对象取数；不向驱动器返回原因原文或人员敏感字段。 */
+  @Override public Snapshot read(com.appnexus.contracts.businessobject.BusinessObjects.Context context,String type,String id,String operation,long version,Set<String> fields){
+    if(!"LeaveRequest".equals(type)||!Set.of("submit","print").contains(operation))throw new SecurityException("LEAVE_ACCESS_DENIED");
+    var c=new WorkflowContext(context.tenantId(),context.actorId(),context.requestId(),context.personId(),context.organizationId());
+    active(c);var action="print".equals(operation)?PRINT_OPERATION:SUBMIT_OPERATION;
+    if(!platform.allowed(c,action.permissionCode()))throw new SecurityException("LEAVE_ACCESS_DENIED");
+    var row=row(c,id,true);
+    if(!c.actorId().equals(row.get("applicant")))throw new SecurityException("LEAVE_ACCESS_DENIED");
+    if(((Number)row.get("basis_version")).longValue()!=version)throw new com.appnexus.contracts.businessobject.BusinessObjects.Rejection(409,"BUSINESS_OBJECT_VERSION_CONFLICT");
+    if("submit".equals(operation)&&(!Objects.equals(c.personId(),row.get("person_id"))||!Objects.equals(c.organizationId(),row.get("organization_id"))))throw new com.appnexus.contracts.businessobject.BusinessObjects.Rejection(409,"PERSON_CONTEXT_REQUIRED");
+    var data=new LinkedHashMap<String,Object>(LeaveContractData.approval(row));
+    if("print".equals(operation))data.putAll(LeaveContractData.printing(id,row));
+    if(!data.keySet().containsAll(fields))throw new SecurityException("LEAVE_FIELD_DENIED");
+    data.keySet().retainAll(fields);
+    return new Snapshot(version,row.get("organization_id").toString(),data);
+  }
+  /** 主管资格属于请假提交规则，只有实际选择工作流时检查，不阻断直接受理和草稿。 */
+  @Override public void beforeCapability(com.appnexus.contracts.businessobject.BusinessObjects.Context context,String id,String operation,InteractionContract.Service service){
+    if(service!=InteractionContract.Service.WORKFLOW)return;
+    var c=new WorkflowContext(context.tenantId(),context.actorId(),context.requestId(),context.personId(),context.organizationId());
+    var row=row(c,id,true);String organization=row.get("organization_id").toString();
+    if(platform.documentOrganizations(c).stream().noneMatch(o->o.id().equalsIgnoreCase(organization)))throw new com.appnexus.contracts.businessobject.BusinessObjects.Rejection(409,"LEAVE_ORGANIZATION_UNAVAILABLE");
+    if(platform.resolve(c.tenantId(),organization,"LEADER","").isEmpty())throw new com.appnexus.contracts.businessobject.BusinessObjects.Rejection(409,"LEAVE_ORGANIZATION_LEADER_REQUIRED");
+  }
+  /** 直接受理仍执行对象状态约束；流程结果不通过客户端输入写入。 */
+  @Override public com.appnexus.contracts.businessobject.BusinessObjectRuntime.Result execute(com.appnexus.contracts.businessobject.BusinessObjects.Context context,String type,String id,String operation,long version,Map<String,?> values){
+    if(!"submit".equals(operation)||!values.isEmpty())throw new SecurityException("LEAVE_ACCESS_DENIED");
+    read(context,type,id,operation,version,Set.of("days","requiresHr"));
+    int changed=jdbc.update("UPDATE leave_poc_request SET state='ACCEPTED',instance_id=NULL WHERE tenant_id=? AND id=? AND basis_version=? AND state='SUBMITTED'",context.tenantId(),id,version);
+    if(changed!=1)throw new IllegalArgumentException("LEAVE_STATE_CONFLICT");
+    return new com.appnexus.contracts.businessobject.BusinessObjectRuntime.Result(version,Map.of("state","ACCEPTED"));
   }
   /** 当前主体可用行为视图，不持久化权限判断；写入仍重新检查。 */
   public record AvailableOperation(String operationCode,String nameZh,String nameEn,String permissionCode,String operationId,boolean allowed,String reasonCode) {}
@@ -92,7 +128,7 @@ public final class LeavePocService implements WorkflowBusiness, com.appnexus.con
     var events=new ArrayList<Map<String,Object>>();
     events.add(Map.of("kind","BUSINESS_OBJECT_CREATED","at",eventTime(row.get("created_at")),"reference",id,"state",row.get("state")));
     for(var cycle:cycles(c,id))events.add(Map.of("kind","APPROVAL_STARTED","at",eventTime(cycle.get("created_at")),"reference",cycle.get("instance_id"),"state","BASIS_"+cycle.get("basis_version")));
-    for(var result:jdbc.queryForList("SELECT instance_id,result FROM leave_poc_delivery WHERE tenant_id=? AND object_id=?",c.tenantId(),id))events.add(Map.of("kind","APPROVAL_APPLIED","at","","reference",result.get("instance_id"),"state",result.get("result")));
+    for(var result:jdbc.queryForList("SELECT instance_id,result FROM leave_poc_approval_cycle WHERE tenant_id=? AND object_id=? AND delivery_id IS NOT NULL",c.tenantId(),id))events.add(Map.of("kind","APPROVAL_APPLIED","at","","reference",result.get("instance_id"),"state",result.get("result")));
     if(printing!=null&&platform.allowed(c,"print.job:read"))for(var output:printing.get().history(new com.appnexus.contracts.printing.PrintContext(c.tenantId(),c.actorId(),c.requestId()),id)){
       events.add(Map.of("kind","PRINT_OUTPUT","at",eventTime(output.get("created_at")),"reference",output.get("id"),"state",output.get("state")));
       if(output.get("confirmedJobId")!=null)events.add(Map.of("kind","PRINT_DEVICE","at",eventTime(output.get("deliveryUpdatedAt")),"reference",output.get("confirmedJobId"),"state",Objects.toString(output.get("deliveryState"),"UNKNOWN")));
@@ -105,29 +141,34 @@ public final class LeavePocService implements WorkflowBusiness, com.appnexus.con
 
   /** 请假单据只声明已有业务能力，不生成表单或业务状态机。 */
   @Override public com.appnexus.contracts.businessobject.BusinessObjects.Descriptor descriptor() {
-    return new com.appnexus.contracts.businessobject.BusinessObjects.Descriptor("LeaveRequest","请假单","Leave request","leave",1,com.appnexus.contracts.businessobject.BusinessObjects.Category.TRANSACTION,
+    return new com.appnexus.contracts.businessobject.BusinessObjects.Descriptor("LeaveRequest","请假单","Leave request","leave",2,com.appnexus.contracts.businessobject.BusinessObjects.Category.TRANSACTION,
       List.of(new com.appnexus.contracts.businessobject.BusinessObjects.Field("days","请假天数","Leave days","NUMBER","天",true),new com.appnexus.contracts.businessobject.BusinessObjects.Field("requiresHr","是否超过三天","More than three days","BOOLEAN","",true)),
-      List.of(SUBMIT_OPERATION,PRINT_OPERATION));
+      List.of(SUBMIT_OPERATION,PRINT_OPERATION),new com.appnexus.contracts.businessobject.BusinessObjects.DataAccess("TENANT",List.of(
+        new com.appnexus.contracts.businessobject.BusinessObjects.DataResource("leave.request","","请假请求","Leave requests",List.of(
+          protectedField("days","天数","Days",false),protectedField("requiresHr","人事审批条件","HR condition",false),protectedField("documentNumber","单据标识","Document number",true),
+          protectedField("startDate","开始日期","Start date",true),protectedField("endDate","结束日期","End date",true),protectedField("state","状态","State",true)))),
+        Map.of("submit",Set.of("ALL","ORGANIZATION","ORGANIZATION_SUBTREE"),"print",Set.of("ALL","ORGANIZATION","ORGANIZATION_SUBTREE"))));
+  }
+  /** 字段目录从同一对象声明提供；数值/布尔不开放字符串脱敏，隐藏必填依据将阻止能力执行。 */
+  private static com.appnexus.contracts.businessobject.BusinessObjects.DataField protectedField(String key,String zh,String en,boolean text){
+    return new com.appnexus.contracts.businessobject.BusinessObjects.DataField(key,zh,en,"TEXT",text?Set.of("READ_ONLY","MASKED","HIDDEN"):Set.of("READ_ONLY","HIDDEN"));
   }
   private final JdbcTemplate jdbc;
   private final TransactionTemplate tx;
   private final WorkflowPlatform platform;
-  private final Supplier<WorkflowStarter> starter;
   private final Supplier<WorkflowTaskAccess> tasks;
 
   /**
    * @param jdbc 业务数据源，只访问请假 POC 自有表
    * @param manager 与组合应用共享的事务管理器，提交失败时单据与流程同时回滚
    * @param platform 可信成员和功能权限桥接，每次请求重新复核
-   * @param starter 延迟取得公开发起端口，不允许替换成客户端 URL
    * @param tasks 延迟取得有效任务授权端口，原文访问随待办结束失效
    */
   public LeavePocService(JdbcTemplate jdbc, PlatformTransactionManager manager,
-      WorkflowPlatform platform, Supplier<WorkflowStarter> starter, Supplier<WorkflowTaskAccess> tasks) {
+      WorkflowPlatform platform, Supplier<WorkflowTaskAccess> tasks) {
     this.jdbc = jdbc;
     this.tx = new TransactionTemplate(manager);
     this.platform = platform;
-    this.starter = starter;
     this.tasks = tasks;
   }
 
@@ -141,13 +182,6 @@ public final class LeavePocService implements WorkflowBusiness, com.appnexus.con
    */
   public record Input(String organizationId, String leaveType, LocalDate startDate,
       LocalDate endDate, String reason) {}
-
-  /** 只公开非敏感路由依据；原因原文通过受任务授权的独立接口读取。 */
-  @Override
-  public Capability capability() {
-    return new Capability("leavePoc", "请假单 POC", "workflow:start", "/workflow/leave",
-        Set.of(), Set.of("days", "requiresHr"));
-  }
 
   /** 校验 3 天边界与自然日口径，禁止前端自行传入审批条件。 */
   public static int days(Input input) {
@@ -230,22 +264,11 @@ public final class LeavePocService implements WorkflowBusiness, com.appnexus.con
       if (!"DRAFT".equals(row.get("state"))) return row;
       jdbc.update("UPDATE leave_poc_request SET state='SUBMITTED' WHERE tenant_id=? AND id=?", c.tenantId(), id);
       long basis=((Number)row.get("basis_version")).longValue();
-      com.appnexus.contracts.businessobject.BusinessObjects.Resolution resolved=bindings.get().resolveOperation(
-        new com.appnexus.contracts.businessobject.BusinessObjects.Context(c.tenantId(),c.actorId(),c.requestId()),"LeaveRequest",SUBMIT_OPERATION.operationCode(),id,basis,
-        LeaveContractData.facts(row));
+      var executed=execution.get().execute(objectContext(c),new com.appnexus.contracts.businessobject.BusinessObjectExecution.Request("LeaveRequest",id,"submit",SUBMIT_OPERATION.operationId(),basis));
+      var resolved=executed.resolution();
       jdbc.update("INSERT INTO leave_poc_submission(tenant_id,object_id,basis_version,resolution_id,service) VALUES(?,?,?,?,?)",c.tenantId(),id,basis,resolved.id(),resolved.service());
-      if(resolved.service().equals("BUSINESS")){
-        // 直接受理是业务显式能力，不伪造审批结论，也不创建流程实例；同事务状态及记录一起提交。
-        jdbc.update("UPDATE leave_poc_request SET state='ACCEPTED',instance_id=NULL WHERE tenant_id=? AND id=?",c.tenantId(),id);
-        return row(c,id,false);
-      }
-      // 只有审批策略使用组织路由；按可信租户复核有效任职，草稿填写不能替代提交时的业务授权。
-      if(platform.documentOrganizations(c).stream().noneMatch(o->o.id().equalsIgnoreCase(row.get("organization_id").toString())))
-        throw new com.appnexus.contracts.businessobject.BusinessObjects.Rejection(409,"LEAVE_ORGANIZATION_UNAVAILABLE");
-      // 请假 POC 的审批场景要求组织主管；失败回滚状态与解析，不影响直接受理策略。
-      if(platform.resolve(c.tenantId(),row.get("organization_id").toString(),"LEADER","").isEmpty())
-        throw new com.appnexus.contracts.businessobject.BusinessObjects.Rejection(409,"LEAVE_ORGANIZATION_LEADER_REQUIRED");
-      String instance = starter.get().startBound(c,"LeaveRequest",id,basis,row.get("organization_id").toString(),"approval","leavePoc",resolved.id());
+      if("BUSINESS".equals(resolved.service()))return row(c,id,false);
+      String instance=executed.output().get("instanceId").toString();
       jdbc.update("INSERT INTO leave_poc_approval_cycle(tenant_id,id,object_id,basis_version,instance_id,resolution_id,configuration_version,basis_snapshot) VALUES(?,?,?,?,?,?,?,JSON_OBJECT('leaveType',?,'startDate',?,'endDate',?,'days',?,'reason',?,'organizationId',?))",
         c.tenantId(),UUID.randomUUID().toString(),id,basis,instance,resolved.id(),resolved.configurationVersion(),row.get("leave_type"),row.get("start_date").toString(),row.get("end_date").toString(),row.get("days"),row.get("reason"),row.get("organization_id"));
       jdbc.update("UPDATE leave_poc_request SET instance_id=? WHERE tenant_id=? AND id=?", instance, c.tenantId(), id);
@@ -264,7 +287,7 @@ public final class LeavePocService implements WorkflowBusiness, com.appnexus.con
     return tx.execute(s->{var row=row(c,id,true);
       if(!c.actorId().equals(row.get("applicant")))throw new SecurityException("LEAVE_ACCESS_DENIED");
       if(!Set.of("DRAFT","REJECTED","WITHDRAWN").contains(row.get("state"))||expectedBasisVersion!=((Number)row.get("basis_version")).longValue())throw new IllegalArgumentException("LEAVE_BASIS_CHANGED");
-      jdbc.update("UPDATE leave_poc_request SET organization_id=?,leave_type=?,start_date=?,end_date=?,days=?,reason=?,basis_version=basis_version+1,state='DRAFT',instance_id=NULL WHERE tenant_id=? AND id=?",
+      jdbc.update("UPDATE leave_poc_request SET organization_id=?,leave_type=?,start_date=?,end_date=?,days=?,reason=?,basis_version=basis_version+1,state='DRAFT',instance_id=NULL,last_delivery_id=NULL WHERE tenant_id=? AND id=?",
         input.organizationId(),input.leaveType(),input.startDate(),input.endDate(),count,input.reason().trim(),c.tenantId(),id);
       return row(c,id,false);});
   }
@@ -275,74 +298,17 @@ public final class LeavePocService implements WorkflowBusiness, com.appnexus.con
     return jdbc.queryForList("SELECT id,basis_version,instance_id,resolution_id,configuration_version,created_at FROM leave_poc_approval_cycle WHERE tenant_id=? AND object_id=? ORDER BY basis_version DESC",c.tenantId(),id);
   }
 
-  /** 从业务存储重读依据；任务授权不隐式授予模块功能权限。 */
-  @Override
-  public Map<String, String> snapshot(Invocation i) {
-    active(i.context());
-    var row = checked(i, false);
-    if (i.workflow() == null) {
-      requireStart(i.context());
-      if (!i.context().actorId().equals(row.get("applicant"))) throw new SecurityException("LEAVE_ACCESS_DENIED");
-    } else if (!permitted(i.context(), row, i.taskId())) {
-      throw new SecurityException("LEAVE_TASK_DENIED");
-    }
-    return LeaveContractData.facts(row);
+  /** 对象只提供冻结记录与受控字段，审批任务和终态准入由公共桥接统一验证。 */
+  @Override public ApprovalRecord approvalRecord(com.appnexus.contracts.businessobject.BusinessObjects.Context context,String id,boolean lock){
+    var c=new WorkflowContext(context.tenantId(),context.actorId(),context.requestId(),context.personId(),context.organizationId());
+    var row=row(c,id,lock);
+    return new ApprovalRecord(((Number)row.get("basis_version")).longValue(),row.get("organization_id").toString(),row.get("applicant").toString(),row.get("state").toString(),Objects.toString(row.get("instance_id"),null),Objects.toString(row.get("last_delivery_id"),null),LeaveContractData.approval(row));
   }
-
-  /**
-   * 人工动作只复核有效任务；终态由可信引擎关联独立交付，不能把某一级通过当整单通过。
-   * @param i 可信公开调用；EXECUTE 必须包含匹配的终态实例引用，重复交付同事务去重
-   * @return 同步完成，无流转输出；业务原文不进入结果变量
-   */
-  @Override
-  public Result execute(Invocation i) {
-    return tx.execute(s -> {
-      var row = checked(i, true);
-      if ("WITHDRAW".equals(i.operation())) {
-        active(i.context());
-        if (!Objects.equals(row.get("applicant"), i.context().actorId()) || i.workflow() == null
-            || !Objects.equals(row.get("instance_id"), i.workflow().instanceId()) || !i.values().isEmpty())
-          throw new SecurityException("LEAVE_WITHDRAWAL_DENIED");
-        // 撤回只允许冻结中的本人单据；终态由随后可靠交付回写，不能在校验阶段提前生效。
-        return new Result(false, Map.of());
-      }
-      if (!"EXECUTE".equals(i.operation())) {
-        if (!Set.of("APPROVE", "REJECT").contains(i.operation())
-            || !permitted(i.context(), row, i.taskId()) || !i.values().isEmpty())
-          throw new SecurityException("LEAVE_TASK_DENIED");
-        return new Result(false, Map.of());
-      }
-      var ref = i.workflow();
-      if (ref == null || ref.result() == null || !"APPROVAL".equals(ref.mode())
-          || !Objects.equals(row.get("instance_id"), ref.instanceId())
-          || !Objects.equals(row.get("applicant"), i.context().actorId())
-          || !Set.of("APPROVED", "REJECTED", "WITHDRAWN").contains(ref.result()))
-        throw new SecurityException("LEAVE_RESULT_DENIED");
-      var prior = jdbc.queryForList("SELECT * FROM leave_poc_delivery WHERE tenant_id=? AND invocation_id=?",
-          i.context().tenantId(), i.invocationId());
-      if (!prior.isEmpty()) {
-        var p = prior.getFirst();
-        if (!i.objectId().equals(p.get("object_id")) || !ref.instanceId().equals(p.get("instance_id"))
-            || !ref.result().equals(p.get("result"))) throw new SecurityException("LEAVE_RESULT_CONFLICT");
-        return new Result(false, Map.of());
-      }
-      if (!"SUBMITTED".equals(row.get("state"))) throw new IllegalArgumentException("LEAVE_STATE_CONFLICT");
-      jdbc.update("INSERT INTO leave_poc_delivery(tenant_id,invocation_id,object_id,instance_id,result) VALUES(?,?,?,?,?)", i.context().tenantId(),
-          i.invocationId(), i.objectId(), ref.instanceId(), ref.result());
-      jdbc.update("UPDATE leave_poc_request SET state=? WHERE tenant_id=? AND id=?", ref.result(), i.context().tenantId(), i.objectId());
-      return new Result(false, Map.of());
-    });
-  }
-
-  private Map<String, Object> checked(Invocation i, boolean lock) {
-    if (!"LeaveRequest".equals(i.objectType())) throw new SecurityException("LEAVE_OBJECT_DENIED");
-    var row = row(i.context(), i.objectId(), lock);
-    if (!Objects.equals(row.get("organization_id"), i.organizationId())
-        || ((Number) row.get("basis_version")).longValue() != i.objectVersion())
-      throw new IllegalArgumentException("LEAVE_BASIS_CHANGED");
-    if (!"EXECUTE".equals(i.operation()) && !"SUBMITTED".equals(row.get("state")))
-      throw new IllegalArgumentException("LEAVE_STATE_CONFLICT");
-    return row;
+  /** 对象状态和交付回执加入公共桥接的同一事务，SQL仍只访问请假自有表。 */
+  @Override public void completeApproval(com.appnexus.contracts.businessobject.BusinessObjects.Context context,String id,long version,String invocation,String instance,String result){
+    int changed=jdbc.update("UPDATE leave_poc_request SET state=?,last_delivery_id=? WHERE tenant_id=? AND id=? AND basis_version=? AND instance_id=? AND state='SUBMITTED'",result,invocation,context.tenantId(),id,version,instance);
+    if(changed!=1)throw new IllegalArgumentException("BUSINESS_OBJECT_APPROVAL_STATE_CONFLICT");
+    if(jdbc.update("UPDATE leave_poc_approval_cycle SET delivery_id=?,result=?,completed_at=CURRENT_TIMESTAMP(6) WHERE tenant_id=? AND object_id=? AND basis_version=? AND instance_id=? AND delivery_id IS NULL",invocation,result,context.tenantId(),id,version,instance)!=1)throw new IllegalArgumentException("BUSINESS_OBJECT_APPROVAL_STATE_CONFLICT");
   }
 
   private boolean permitted(WorkflowContext c, Map<String, Object> row, String taskId) {

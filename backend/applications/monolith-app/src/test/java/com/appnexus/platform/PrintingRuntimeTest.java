@@ -187,7 +187,21 @@ class PrintingRuntimeTest extends DatabaseTestSupport {
   @Test void typedContractRejectsInvalidDataAndFreezesSchema(){
     String tenant=UUID.randomUUID().toString(),actor=UUID.randomUUID().toString();var c=new PrintContext(tenant,actor,UUID.randomUUID().toString());
     var flow=new PrintFlow(jdbc,(context,permission)->true,runtime,mapper);
-    flow.businessContracts(List.of(()->List.of(Map.of("code","test.typed.v1","version",1,"nameZh","测试契约","nameEn","Typed test","fields",List.of(Map.of("key","days","type","NUMBER","required",true,"unit","天"))))));
+    var objectRuntime=new com.appnexus.contracts.businessobject.BusinessObjectRuntime(){
+      public Snapshot read(com.appnexus.contracts.businessobject.BusinessObjects.Context context,String type,String id,String operation,long version,Set<String> fields){
+        var record=jdbc.queryForMap("SELECT data_json,revision FROM print_document WHERE tenant_id=UUID_TO_BIN(?) AND id=UUID_TO_BIN(?)",context.tenantId(),id);
+        @SuppressWarnings("unchecked") Map<String,Object> data=mapper.convertValue(mapper.readTree(record.get("data_json").toString()),Map.class);
+        return new Snapshot(((Number)record.get("revision")).longValue(),null,data);
+      }
+      public Result execute(com.appnexus.contracts.businessobject.BusinessObjects.Context context,String type,String id,String operation,long version,Map<String,?> values){throw new UnsupportedOperationException("PRINT_ONLY_FIXTURE");}
+    };
+    com.appnexus.contracts.businessobject.BusinessObjects.Provider provider=new com.appnexus.contracts.businessobject.BusinessObjects.Provider(){
+      public com.appnexus.contracts.businessobject.BusinessObjectRuntime runtime(){return objectRuntime;}
+      public com.appnexus.contracts.businessobject.BusinessObjects.Descriptor descriptor(){return new com.appnexus.contracts.businessobject.BusinessObjects.Descriptor("TypedPreview","类型预览","Typed preview","test",1,com.appnexus.contracts.businessobject.BusinessObjects.Category.TRANSACTION,List.of(),List.of(
+        new com.appnexus.contracts.businessobject.BusinessObjects.Operation("print","打印","Print","print.job:submit","TypedPreview.print",null,List.of(),new com.appnexus.contracts.businessobject.InteractionContract("TypedPreview.print",1,"TypedPreview","print","打印","Print",com.appnexus.contracts.businessobject.InteractionContract.Trigger.USER_ACTION,List.of(
+          new com.appnexus.contracts.businessobject.InteractionContract.Capability(com.appnexus.contracts.businessobject.InteractionContract.Service.PRINT,com.appnexus.contracts.businessobject.InteractionContract.Completion.CONFIRMATION,"test.typed.v1","",List.of(new com.appnexus.contracts.businessobject.BusinessObjects.Field("days","天数","Days","NUMBER","天",true)),Set.of(),"test.typed.v1",1))))));}
+    };
+    flow.businessContracts(List.of(new com.appnexus.platform.bootstrap.businessobject.BusinessObjectConfiguration().interactionPrintContracts(List.of(provider))));
     var template=runtime.saveTemplate(c,null,new PrintRuntime.TemplateDraft("typed","类型测试","A4","test.typed.v1",mapper.createObjectNode(),mapper.readTree("{\"panels\":[]}"),-1));
     String templateId=template.get("id").toString();runtime.publish(c,templateId,0);
     String scene=flow.saveScene(c,null,new PrintFlow.Scene("typed","类型测试","test.typed.v1",templateId,1,true,-1)).getFirst().get("id").toString();
@@ -196,6 +210,25 @@ class PrintingRuntimeTest extends DatabaseTestSupport {
     String document=flow.saveDocument(c,new PrintFlow.Document(scene,"GOOD",mapper.readTree("{\"days\":5}"))).getFirst().get("id").toString();
     var job=flow.print(new PrintContext(tenant,actor,UUID.randomUUID().toString()),document,new PrintFlow.Output(null,"PDF",1));
     assertThat(jdbc.queryForObject("SELECT JSON_UNQUOTE(JSON_EXTRACT(data_contract_schema,'$.code')) FROM print_job WHERE id=UUID_TO_BIN(?)",String.class,job.get("id"))).isEqualTo("test.typed.v1");
+    // 使用真实打印公开适配器与SQL任务，不以mock的输出Map代替公共驱动闭环。
+    var outputs=new PrintOutputs(jdbc,(context,permission)->true,runtime,flow,mapper);
+    var bridge=new com.appnexus.printing.adapter.jdbc.BusinessPrintingAdapter(jdbc,outputs,(context,permission)->true);
+    var bindings=org.mockito.Mockito.mock(com.appnexus.contracts.businessobject.BusinessObjectBindings.class);
+    org.mockito.Mockito.when(bindings.resolveOperation(org.mockito.ArgumentMatchers.any(),org.mockito.ArgumentMatchers.anyString(),org.mockito.ArgumentMatchers.anyString(),org.mockito.ArgumentMatchers.anyString(),org.mockito.ArgumentMatchers.anyLong(),org.mockito.ArgumentMatchers.anyMap())).thenReturn(
+      new com.appnexus.contracts.businessobject.BusinessObjects.Resolution("native-resolution",tenant,"TypedPreview",document,0,1,null,0,Map.of(),"print","PRINT","typed","test.typed.v1"));
+    var platform=org.mockito.Mockito.mock(com.appnexus.contracts.businessobject.BusinessObjectPlatform.class);
+    org.mockito.Mockito.when(platform.active(org.mockito.ArgumentMatchers.any())).thenReturn(true);
+    org.mockito.Mockito.when(platform.authorizeRecord(org.mockito.ArgumentMatchers.any(),org.mockito.ArgumentMatchers.any(),org.mockito.ArgumentMatchers.anyString(),org.mockito.ArgumentMatchers.any())).thenAnswer(call->call.getArgument(3));
+    org.mockito.Mockito.when(platform.operationAllowed(org.mockito.ArgumentMatchers.any(),org.mockito.ArgumentMatchers.eq("TypedPreview.print"),org.mockito.ArgumentMatchers.eq("print.job:submit"))).thenReturn(true);
+    var executor=com.appnexus.platform.businessobject.BusinessObjectUseCases.execution(List.of(provider),bindings,new com.appnexus.platform.persistence.businessobject.configuration.JdbcConfigurationTransaction(new org.springframework.jdbc.datasource.DataSourceTransactionManager(java.util.Objects.requireNonNull(jdbc.getDataSource()))),platform,()->null,()->bridge);
+    var context=new com.appnexus.contracts.businessobject.BusinessObjects.Context(tenant,actor,UUID.randomUUID().toString());
+    var request=new com.appnexus.contracts.businessobject.BusinessObjectExecution.Request("TypedPreview",document,"print","TypedPreview.print",0);
+    var output=executor.execute(context,request).output();
+    assertThat(output).containsEntry("mode","PREVIEW").containsEntry("deviceId",null).containsEntry("confirmedJobId",null);
+    assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM print_output_request WHERE id=UUID_TO_BIN(?)",Integer.class,output.get("id"))).isEqualTo(1);
+    assertThat(executor.execute(context,request).output().get("id")).isEqualTo(output.get("id"));
+    assertThat(jdbc.queryForObject("SELECT JSON_UNQUOTE(JSON_EXTRACT(data_snapshot,'$.days')) FROM print_job WHERE id=UUID_TO_BIN(?)",String.class,output.get("jobId"))).isEqualTo("5");
+
   }
 
 }

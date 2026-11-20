@@ -1,4 +1,4 @@
-import { ref, watch, nextTick } from "vue";
+import { h, ref, watch, nextTick } from "vue";
 import { afterEach, describe, expect, it, vi } from "vitest";
 const shown = vi.hoisted(() => ({ message: vi.fn(), notification: vi.fn() }));
 vi.mock("element-plus", () => ({ ElMessage: shown.message, ElNotification: shown.notification }));
@@ -18,12 +18,21 @@ describe("统一浮层生命周期", () => {
   });
   it("长文本保持显示，清理上下文后允许重新展示", () => {
     const close = vi.fn();
-    shown.notification.mockReturnValue({ close });
+    shown.message.mockReturnValue({ close });
     reportError("长".repeat(101));
-    expect(shown.notification.mock.calls[0][0].duration).toBe(0);
+    expect(shown.message.mock.calls[0][0].duration).toBe(0);
     clearErrorFeedback(); expect(close).toHaveBeenCalledOnce();
     reportError("长".repeat(101));
-    expect(shown.notification).toHaveBeenCalledTimes(2);
+    expect(shown.message).toHaveBeenCalledTimes(2);
+  });
+  it("短文案、长文案和补救操作共用消息入口且保留关闭行为", () => {
+    shown.message.mockReturnValue({ close: vi.fn() });
+    const content = h("button", "重新加载");
+    reportError("普通异常"); reportError("长".repeat(101)); reportError("冲突", content);
+    expect(shown.message.mock.calls.map(([options]) => options.duration)).toEqual([5000, 0, 0]);
+    expect(shown.message.mock.calls[2][0].message).toBe(content);
+    expect(shown.message.mock.calls.every(([options]) => options.showClose && options.type === "error")).toBe(true);
+    expect(shown.notification).not.toHaveBeenCalled();
   });
   it("空错误静默，超过数量限制关闭最早提示", () => {
     const close = vi.fn(); shown.message.mockReturnValue({ close });

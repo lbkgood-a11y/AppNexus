@@ -15,6 +15,21 @@ import org.junit.jupiter.api.Test;
  * 平台 application 是启动装配模块，不冒充领域用例层；存量未迁移服务不因本测试通过而视为完成。
  */
 class ServiceLayerBoundaryTest {
+  /** 业务对象不能重新增加工作流专用处理器，审批接入只能由公共对象桥接生成。 */
+  @Test void businessObjectsDoNotImplementWorkflowHandlers() {
+    noClasses().that().resideInAnyPackage("com.appnexus.leave..", "com.appnexus.masterdata..")
+        .should().implement(com.appnexus.contracts.workflow.WorkflowBusiness.class).check(classes);
+  }
+  /** 权限规则和公开契约保持纯模型，不能把SQL、JSON、组织私表或业务服务实现移入权限核心。 */
+  @Test void authorizationModelRemainsCohesiveAndTechnologyIndependent() {
+    assertTrue(classes.contain("com.appnexus.platform.authorization.DataGrantRules"));
+    noClasses().that().resideInAnyPackage("com.appnexus.platform.authorization..")
+        .should().dependOnClassesThat().resideInAnyPackage(
+            "org.springframework..", "org.apache.ibatis..", "java.sql..", "com.fasterxml.jackson..",
+            "tools.jackson..", "com.appnexus.platform.persistence..", "com.appnexus.platform.security..",
+            "com.appnexus.masterdata..", "com.appnexus.platform.organization.personnel..")
+        .check(classes);
+  }
   private final JavaClasses classes = new ClassFileImporter()
       .withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
       .importPackages("com.appnexus");
@@ -50,6 +65,10 @@ class ServiceLayerBoundaryTest {
         "com.appnexus.platform.businessobject.BusinessObjectManagement",
         "com.appnexus.platform.businessobject.CodingManagement",
         "com.appnexus.platform.businessobject.internal.application.configuration.BusinessObjectService",
+        "com.appnexus.platform.businessobject.internal.application.execution.ObjectExecutionService",
+        "com.appnexus.platform.businessobject.internal.application.execution.StandardCapabilityDrivers",
+        "com.appnexus.workflow.adapter.flowable.ObjectWorkflowAdapter",
+        "com.appnexus.workflow.application.ObjectApprovalService",
         "com.appnexus.platform.businessobject.port.ConfigurationStore",
         "com.appnexus.platform.businessobject.internal.domain.configuration.ConfigurationRules",
         "com.appnexus.platform.persistence.businessobject.configuration.JdbcConfigurationStore",

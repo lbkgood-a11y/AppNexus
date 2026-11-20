@@ -32,4 +32,22 @@ class WorkflowModelValidationTest {
     assertThat(WorkflowModelValidation.validate(model,List.of(capability),Map.of("entry",profile)))
         .contains("BUSINESS_OUTCOME_REQUIRED:APPROVED","BUSINESS_OUTCOME_REQUIRED:REJECTED");
   }
+  /** 旧草稿缺少撤回必须在发布用校验中拒绝，完整契约可通过且不误判对象和用途。 */
+  @Test void requiresWithdrawalBeforePublication() {
+    var capability = new WorkflowBusiness.Capability("entry","入口","test:execute","/test",Set.of(),Set.of());
+    var profile = new WorkflowBusinessProfile("Document","approval","单据","Document","","",List.of(),
+        List.of(new WorkflowBusinessProfile.Outcome("APPROVED","entry","通过","Approved"),
+          new WorkflowBusinessProfile.Outcome("REJECTED","entry","驳回","Rejected"),
+          new WorkflowBusinessProfile.Outcome("WITHDRAWN","entry","撤回","Withdrawn")),"entry");
+    var base = new WorkflowModel("测试","Document","approval",Mode.APPROVAL,"entry",List.of(),
+        List.of(node("start",Kind.START,null,Map.of()),node("end",Kind.END,null,Map.of())),
+        List.of(new Edge("start","end",null,null,false)),Map.of("APPROVED","entry","REJECTED","entry"));
+    assertThat(WorkflowModelValidation.validate(base,List.of(capability),Map.of("entry",profile)))
+        .contains("BUSINESS_OUTCOME_REQUIRED:WITHDRAWN","BUSINESS_WITHDRAWAL_INVALID");
+    var complete = new WorkflowModel(base.name(),base.objectType(),base.purpose(),base.mode(),base.entryCapability(),base.matches(),
+        base.nodes(),base.edges(),Map.of("APPROVED","entry","REJECTED","entry","WITHDRAWN","entry"),List.of(),"entry");
+    assertThat(WorkflowModelValidation.validate(complete,List.of(capability),Map.of("entry",profile)))
+        .doesNotContain("BUSINESS_OUTCOME_REQUIRED:WITHDRAWN","BUSINESS_WITHDRAWAL_INVALID","BUSINESS_PROFILE_MISMATCH");
+  }
+
 }

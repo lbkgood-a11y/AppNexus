@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 @Service
 public final class MyBatisFieldProtection implements FieldProtection,DataAccessDeclaration.Executor {
     private final FieldProtectionMapper mapper;
+    private final DataAccessCatalog catalog;
     private record Binding(PermissionCatalog.ScopeType scope,DataAccessDeclaration.Resource resource) {}
     private final Map<Class<?>,Binding> bindings;
     /**
@@ -17,7 +18,7 @@ public final class MyBatisFieldProtection implements FieldProtection,DataAccessD
      * @param catalog 只读代码目录，不接受客户端传入类名或字段路径
      */
     public MyBatisFieldProtection(FieldProtectionMapper mapper,DataAccessCatalog catalog){
-        this.mapper=mapper;
+        this.mapper=mapper;this.catalog=catalog;
         var result=new HashMap<Class<?>,Binding>();
         for(var scope:PermissionCatalog.ScopeType.values())for(var object:catalog.list(scope))for(var resource:object.resources()){
             if(resource.responseType().isEmpty())continue;
@@ -42,6 +43,24 @@ public final class MyBatisFieldProtection implements FieldProtection,DataAccessD
     }
 
     @Override @SuppressWarnings("unchecked") public <T> T protect(AccessAuthorization.Subject subject,T value){return (T)project(subject,value,new HashMap<>(),0);}
+    @Override public Map<String,Object> project(AccessAuthorization.Subject subject,String resource,Map<String,?> values){
+        var modes=restrictions(subject,resource);
+        var scope=subject.tenantId()==null?PermissionCatalog.ScopeType.PLATFORM:PermissionCatalog.ScopeType.TENANT;
+        var result=new LinkedHashMap<String,Object>();
+        var declared=catalog.fields(scope).stream().filter(field->field.resource().equals(resource)).toList();
+        for(var field:declared){
+            if(!values.containsKey(field.field()))continue;
+            var mode=modes.get(field.field());Object value=values.get(field.field());
+            if(mode!=null&&!field.modes().contains(mode))throw new SecurityException("DATA_FIELD_MODE_UNSUPPORTED");
+            if(mode==FieldSecurity.Mode.HIDDEN)continue;
+            if(mode==FieldSecurity.Mode.MASKED){
+                if(value!=null&&!(value instanceof String))throw new SecurityException("DATA_FIELD_OUTPUT_DENIED");
+                value=FieldSecurity.display(field.kind(),(String)value,mode);
+            }
+            result.put(field.field(),value);
+        }
+        return Collections.unmodifiableMap(result);
+    }
 
     /** 最大嵌套深度为 64 层；超限直接拒绝响应，不能在异常时返回未处理原文。 */
     private Object project(AccessAuthorization.Subject subject,Object value,Map<String,Map<String,FieldSecurity.Mode>> cache,int depth) {

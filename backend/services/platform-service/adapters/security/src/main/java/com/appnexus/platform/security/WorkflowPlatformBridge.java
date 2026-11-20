@@ -13,13 +13,27 @@ public final class WorkflowPlatformBridge implements WorkflowPlatform {
   private final AccessAuthorization access;
   private final TenantAccess tenants;
   private final JdbcTemplate jdbc;
+  private final org.springframework.beans.factory.ObjectProvider<com.appnexus.platform.authorization.FieldProtection> fields;
   private final com.appnexus.platform.organization.PersonnelExecution personnel;
 
+  /**
+   * @param access 统一功能授权端口，逐次核验
+   * @param tenants 可信有效成员目录，禁止使用客户端成员标识
+   * @param jdbc 组织最小目录的固定租户查询
+   * @param personnel 已选择人员及任职验证公开端口
+   * @param fields 延迟统一字段保护，避免对象目录与平台桥接形成初始化循环；不可缺省放行
+   */
   public WorkflowPlatformBridge(
-      AccessAuthorization access, TenantAccess tenants, JdbcTemplate jdbc,com.appnexus.platform.organization.PersonnelExecution personnel) {
+      AccessAuthorization access, TenantAccess tenants, JdbcTemplate jdbc,com.appnexus.platform.organization.PersonnelExecution personnel,org.springframework.beans.factory.ObjectProvider<com.appnexus.platform.authorization.FieldProtection> fields) {
     this.access = access;
     this.tenants = tenants;
-    this.jdbc = jdbc;this.personnel=personnel;
+    this.jdbc = jdbc;this.personnel=personnel;this.fields=fields;
+  }
+  /** 任务准入由工作流先验证，字段限制仍逐次消费统一权限策略，不能用审批身份绕过。 */
+  @Override public Map<String,Object> projectData(WorkflowContext c,String resource,Map<String,Object> values){
+    if(!active(c.tenantId(),c.actorId()))throw new SecurityException("WORKFLOW_FIELD_ACCESS_DENIED");
+    var member=tenants.available(UUID.fromString(c.actorId())).stream().filter(m->m.tenantId().toString().equals(c.tenantId())).findFirst().orElseThrow(()->new SecurityException("WORKFLOW_FIELD_ACCESS_DENIED"));
+    return fields.getObject().project(AccessAuthorization.Subject.tenant(UUID.fromString(c.actorId()),member.tenantId(),member.memberId()),resource,values);
   }
 
   /** 流程查看人员使用最小配置目录；所有查询强制当前租户且只含有效成员/组织/岗位。 */

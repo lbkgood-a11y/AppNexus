@@ -872,6 +872,41 @@ roleManagement:
     ROLE_DATA_CONFLICT: 角色数据约束已变化
     INVALID_ROLE_INPUT: 角色参数不符合要求
 authorizationCenter:
+  rules:
+    recordSearch: 输入名称或编码搜索可访问记录
+    more: 加载下一页
+    searchFailed: 记录候选读取失败，请检查业务读取权限后重试
+    summary: '指定记录 {records} 条，条件 {conditions} 项；两者同时配置时取 AND'
+    errors:
+      subject: 请选择有效的授权主体，角色成员模式不能携带指定主体
+      record: 记录标识必须为标准小写UUID
+      selection: 请选择记录或添加条件；全部记录必须显式勾选且不能附加条件
+      limit: 已超过记录、主体或条件数量上限
+      field: 请选择目录中支持的条件字段
+      operator: 请选择该字段支持的运算
+      value: 请填写有效条件值，等于只允许一个值，单值最多200字符
+      uuid: 该条件值必须为标准小写UUID
+    title: 组合授权
+    hint: 同条规则主体、指定记录与全部条件取AND，多条规则取OR；主体仍须拥有本角色和操作权限，其他角色的全部范围也会合并。
+    branch: '规则 {index}（与其他规则取 OR）'
+    remove: 删除
+    subject: 授权主体
+    subjectValues: 指定组织或成员
+    records: 指定记录（与条件取 AND）
+    recordHint: 输入客商记录UUID并回车；留空仅按条件筛选
+    all: 显式授权本租户全部记录
+    field: 条件字段
+    operator: 条件运算
+    values: 条件值（输入后回车）
+    addCondition: 增加条件（AND）
+    add: 增加授权规则（OR）
+    subjects:
+      ROLE_MEMBERS: 本角色的有效成员
+      MEMBER: 指定租户成员
+      ORGANIZATION: 指定组织的有效成员
+    operators:
+      EQ: 等于
+      IN: 属于集合
   noRoleMembers: 当前角色尚未关联用户，请到角色用户页签添加。
   memberScopeSettings: 数据范围配置
   noMemberScopes: 当前角色没有需要配置数据范围的操作
@@ -1005,6 +1040,7 @@ authorizationCenter:
   incomplete: 请为所有范围权限完成数据范围配置。
   saved: 授权配置已保存
   scopes:
+    RULES: 组合授权
     SELF: 本人
     ORGANIZATION: 指定组织
     ORGANIZATION_SUBTREE: 组织及下级
@@ -1154,6 +1190,8 @@ workflow:
     WITHDRAWN: 流程已撤回
   codes:
     NUMERIC_FIELD_REQUIRED: 数值比较必须选择本单据的数值字段
+    BUSINESS_PROFILE_MISMATCH: 流程对象或用途与业务入口契约不一致
+    BUSINESS_MATCH_FORBIDDEN: 请在业务绑定中配置匹配条件，业务审批流程不得自带匹配条件
     BUSINESS_OUTCOME_REQUIRED: 请为该审批结果选择业务处理动作
     BUSINESS_WITHDRAWAL_INVALID: 撤回必须同时配置业务校验和撤回结果处理
 
@@ -1567,6 +1605,10 @@ leavePoc:
   cancel: 取消
 
 businessWorkflow:
+  requiredOutcome: "请配置此业务契约必需的结果处理动作"
+  requiredWithdrawal: "此业务要求配置撤回校验入口"
+  contractWithdrawal: "按业务契约执行撤回校验"
+  requiredContractHint: "发布前必须完成业务契约要求的全部结果处理；缺失项请在结果处理区配置。"
   view: 配置视图
   businessView: 业务配置
   advancedView: 高级编排
@@ -1628,6 +1670,29 @@ businessWorkflow:
   removeReview: 移除此审批步骤
   removeConfirm: 移除此审批步骤及其独立条件（如有）？发布后影响新提交单据。
 businessObject:
+  partnerOperations:
+    list: "查询客商"
+    create: "新增客商"
+    update: "编辑客商"
+    setStatus: "启用／停用客商"
+  businessOperation: "业务操作"
+  platformEnabled: "平台已启用"
+  pageConnected: "页面已接入"
+  executionPublished: "执行配置已发布"
+  checkYes: "是"
+  checkNo: "否"
+  unchecked: "未检查"
+  dependencyChecks: "流程与打印依赖检查"
+  noConditionFields: "未声明条件字段"
+  noBusinessBindings: "暂无业务绑定，可添加绑定后保存或发布。"
+  viewDetails: "查看详情"
+  declarationTab: "对象声明"
+  governanceTab: "平台管控"
+  configurationTab: "业务绑定"
+  codingDeclaration: "编码能力声明"
+  codingDeclarationHint: "由业务对象代码声明可编码字段、关联操作和最大长度。这里只读展示能力；编号格式在编码规则管理维护，具体规则版本在当前租户的编码绑定中配置。"
+  codingMaxLength: "最大长度（字符）"
+  noCodingDeclaration: "此对象未声明可编码字段"
   catalogBoundary: 此处仅管理已声明审批、打印等可配置能力的对象；完整对象及操作登记请在“功能清单 → 按业务对象查看”查询。
   category: 对象分类
   categories:
@@ -1791,6 +1856,7 @@ businessObject:
     CODING_UNAVAILABLE: "编码器或编码字段不可用，请重新选择。"
     CODING_DISABLED: "编码器已停用，请选择其他编码器。"
     CODING_VERSION_CONFLICT: "编码器已变化，请重新加载后修改。"
+    CODING_RULE_UNAVAILABLE: "规则版本不存在或不属于当前租户，请刷新后重新选择。"
     CODING_RULE_FROZEN: "编码器已发号，规则和字段不可修改，请新建编码器。"
     CODING_INPUT_INVALID: "编码参数或时区无效，请检查后重试。"
     CODING_RULE_INVALID: "规则须包含一个流水号，日期精度须覆盖重置周期，且总长度不能超过业务字段限制。"
@@ -2356,7 +2422,7 @@ productImages:
   empty: "暂无商品图片"
   limit: "最多10张；仅PNG/JPEG，每张不超过5MiB，边长不超过4096像素。启用或有未保存修改时不可上传。"
 
-storageHierarchy: {"warehouse": "所属仓库", "area": "所属库区", "selectWarehouse": "请先选择仓库，再维护其下库区。", "selectArea": "请先选择仓库和库区，再维护其下库位。", "capacityRule": "请输入非负库容，最多18位整数、6位小数，单位吨。", "types": {"RECEIVING": "收货区", "WORK": "作业区", "GOOD": "良品区", "DEFECTIVE": "次品区", "PACKAGING": "包材区", "VIRTUAL": "虚拟区", "FINISHED": "成品区"}}
+storageHierarchy: {"treeTitle": "仓库 / 库区 / 库位","warehouse": "所属仓库", "area": "所属库区", "selectWarehouse": "请先选择仓库，再维护其下库区。", "selectArea": "请先选择仓库和库区，再维护其下库位。", "capacityRule": "请输入非负库容，最多18位整数、6位小数，单位吨。", "types": {"RECEIVING": "收货区", "WORK": "作业区", "GOOD": "良品区", "DEFECTIVE": "次品区", "PACKAGING": "包材区", "VIRTUAL": "虚拟区", "FINISHED": "成品区"}}
 
 productStructure:
   componentQuantity: "组件数量"
@@ -2385,6 +2451,20 @@ productApproval:
   hint: "完整商品提交后冻结依据，使用现有流程工作台办理或撤回。最终批准后仍需有权人员显式启用；修改后须重新审核。未配置审批流程或缺有效任职组织时不能提交。"
 
 coding:
+  saveBinding: "保存绑定"
+  saveBindingHint: "编码绑定单独保存后生效，不需要业务绑定的保存或发布。规则固定版本，首次发号后字段与规则引用冻结。"
+  basicInfo: "基本信息"
+  segmentsTitle: "编码段配置"
+  rulesTitle: "编码规则"
+  rulesHint: "独立定义规则并保存不可变版本，再到业务对象中绑定。追加版本不改变已有绑定，规则复用不共享流水。"
+  ruleKey: "规则标识"
+  version: "版本"
+  newRule: "新建规则"
+  newVersion: "追加版本"
+  ruleVersion: "规则及版本"
+  bindingsTitle: "编码绑定"
+  bindingHint: "选择规则的固定版本。流水按对象内编码器独立计数；发号后字段和规则引用冻结，名称和启停仍可修改。"
+  newBinding: "新建绑定"
   title: "编码管理"
   hint: "按顺序组合分段，必须包含一个流水号。首次发号后规则冻结，调整规则请新建编码器。"
   select: "选择编码器"
@@ -2419,3 +2499,20 @@ coding:
     YEAR: 每年
     MONTH: 每月
     DAY: 每天
+
+productSku:
+  title: "商品明细管理"
+  product: "所属商品"
+  choose: "请先选择商品，可按商品名称搜索"
+  code: "货号"
+  create: "新增商品明细"
+  specifications: "规格与组合维护"
+  hint: "先选择商品，再维护其商品明细。货号和规格筛选仅作用于当前商品；动态属性按规格实际保存的配置展示。每个规格最多分配一个货号，货号创建后不可改写。结构维护前须在商品管理停用商品；审批中不可修改。"
+  none: "该商品无规格，直接使用商品主档，不创建默认SKU。"
+  empty: "暂无商品明细，可先维护规格，再为规格分配货号。"
+  detail: "商品明细详情"
+  codeHint: "请输入1至64位字母、数字、点、下划线或短横线，首位为字母或数字"
+  created: "商品明细已创建"
+  saved: "商品明细状态已更新"
+  attribute: "属性"
+  attributeValue: "属性值包含"

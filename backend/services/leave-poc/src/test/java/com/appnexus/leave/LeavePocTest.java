@@ -28,6 +28,7 @@ class LeavePocTest {
   static boolean organizationUnavailable;
   static LeavePocService service;
   static WorkflowRuntime runtime;
+  static WorkflowBusiness approval;
   static org.flowable.engine.ProcessEngine engine;
   static WorkflowContext c(String actor) { return new WorkflowContext("019a65d0-0061-7000-8000-000000000001", actor, UUID.randomUUID().toString(),actor+"-person",ORG); }
 
@@ -46,8 +47,10 @@ class LeavePocTest {
       var table=java.util.regex.Pattern.compile("(?:TABLE|UPDATE)\\s+`?([a-z_]+)`?",java.util.regex.Pattern.CASE_INSENSITIVE).matcher(statement);
       if(table.find()&&jdbc.queryForObject("SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=?",Integer.class,table.group(1))>0)jdbc.execute(statement);
     }
+    try(var connection=source.getConnection()){ScriptUtils.executeSqlScript(connection,new ClassPathResource("db/migration/V129__object_approval_receipts.sql"));}
     var manager = new DataSourceTransactionManager(source);
     WorkflowPlatform platform = new WorkflowPlatform() {
+      public Map<String,Object> projectData(WorkflowContext context,String resource,Map<String,Object> values){return Map.copyOf(values);}
       /** 测试平台显式核验节点选人；正式平台的人员任职判定由集成测试覆盖。 */
       public boolean candidate(WorkflowContext c,String org,String kind,String reference){return resolve(c.tenantId(),org,kind,reference).contains(c.actorId());}
       public boolean allowed(WorkflowContext c, String p) { return active(c.tenantId(), c.actorId()); }
@@ -60,17 +63,22 @@ class LeavePocTest {
         return k.equals("LEADER") ? (leaderMissing?List.of():List.of("leader")) : active(t, r) ? List.of(r) : List.of();
       }
     };
-    service = new LeavePocService(jdbc, manager, platform, () -> runtime, () -> runtime);
+    service = new LeavePocService(jdbc, manager, platform, () -> runtime);
     var bridge = new WorkflowBridge();
     engine = new WorkflowEngineConfiguration().workflowProcessEngine(source, manager, bridge);
-    runtime = new WorkflowEngineConfiguration().workflowRuntime(engine, source, manager, platform, List.of(service), bridge);
-    var documents = com.appnexus.platform.persistence.businessobject.BusinessObjectPersistence.create(jdbc, manager, new com.appnexus.contracts.businessobject.BusinessObjectPlatform() {
+    approval=new ObjectWorkflowAdapter(service,LeavePocService.SUBMIT_OPERATION,platform,()->runtime,manager);
+    runtime = new WorkflowEngineConfiguration().workflowRuntime(engine, source, manager, platform, List.of(approval), bridge);
+    var objectPlatform = new com.appnexus.contracts.businessobject.BusinessObjectPlatform() {
+      public boolean operationAllowed(com.appnexus.contracts.businessobject.BusinessObjects.Context c,String operation,String permission){return platform.allowed(new WorkflowContext(c.tenantId(),c.actorId(),c.requestId()),permission);}
+      public com.appnexus.contracts.businessobject.BusinessObjectRuntime.Snapshot authorizeRecord(com.appnexus.contracts.businessobject.BusinessObjects.Context c,com.appnexus.contracts.businessobject.BusinessObjects.Descriptor d,String operation,com.appnexus.contracts.businessobject.BusinessObjectRuntime.Snapshot snapshot){return snapshot;}
       public boolean platformAdministrator(String actor) { return actor.equals("applicant"); }
       public boolean active(com.appnexus.contracts.businessobject.BusinessObjects.Context context) { return platform.active(context.tenantId(),context.actorId()); }
       public boolean tenantAdministrator(com.appnexus.contracts.businessobject.BusinessObjects.Context context) { return active(context); }
       public boolean tenantExists(String tenant) { return tenant.equals("019a65d0-0061-7000-8000-000000000001"); }
-    }, () -> runtime, List.of(service));
+    };
+    var documents = com.appnexus.platform.persistence.businessobject.BusinessObjectPersistence.create(jdbc,manager,objectPlatform,()->runtime,List.of(service));
     service.bindings(() -> documents);
+    service.execution(()->com.appnexus.platform.businessobject.BusinessObjectUseCases.execution(List.of(service),documents,new com.appnexus.platform.persistence.businessobject.configuration.JdbcConfigurationTransaction(manager),objectPlatform,()->runtime,()->null));
     runtime.documentBindings(() -> documents);
     var model = model();
     assertThat(runtime.validate(c("applicant"), model)).isEmpty();
@@ -121,11 +129,11 @@ class LeavePocTest {
     assertThat(service.read(c("applicant"), id, null).get("state")).isEqualTo("SUBMITTED");
     assertThat(runtime.dispatch()).isTrue();
     assertThat(service.read(c("applicant"), id, null).get("state")).isEqualTo("APPROVED");
-    var job = jdbc.queryForMap("SELECT * FROM leave_poc_delivery WHERE object_id=?", id);
+    var job = jdbc.queryForMap("SELECT delivery_id invocation_id,instance_id,result FROM leave_poc_approval_cycle WHERE object_id=? AND delivery_id IS NOT NULL", id);
     var ref = new WorkflowBusiness.Reference(submitted.get("instance_id").toString(), "leave-poc", 1, null, "APPROVAL", "APPROVED");
     var invocation = new WorkflowBusiness.Invocation(job.get("invocation_id").toString(), c("applicant"), "LeaveRequest", id, ORG, 0, "EXECUTE", "", ref, null, Map.of());
-    service.execute(invocation);
-    assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM leave_poc_delivery WHERE object_id=?", Integer.class, id)).isEqualTo(1);
+    approval.execute(invocation);
+    assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM leave_poc_approval_cycle WHERE object_id=? AND delivery_id IS NOT NULL", Integer.class, id)).isEqualTo(1);
   }
 
   @Test void fourDaysRequiresHrAndRejectionWritesBack() {
@@ -196,4 +204,51 @@ class LeavePocTest {
         base.matches(), base.nodes(), base.edges(), Map.of());
     assertThat(runtime.validate(c("applicant"), noResult)).contains("BUSINESS_OUTCOME_REQUIRED:APPROVED");
   }
+  /** 多线程真实连接争抢同一冻结记录，同一回执只应用一次，竞争终态不得互相覆盖。 */
+  @Test void concurrentTerminalDeliveryIsIdempotentAndConflictsRollback() throws Exception {
+    String id=create(2).get("id").toString();var submitted=service.submit(c("applicant"),id);
+    String instance=submitted.get("instance_id").toString();String delivery=UUID.randomUUID().toString();
+    var invocation=new WorkflowBusiness.Invocation(delivery,c("applicant"),"LeaveRequest",id,ORG,0,"EXECUTE","",new WorkflowBusiness.Reference(instance,"leave-poc",1,null,"APPROVAL","APPROVED"),null,Map.of("result","APPROVED"));
+    var gate=new java.util.concurrent.CountDownLatch(1);
+    try(var workers=java.util.concurrent.Executors.newFixedThreadPool(8)){
+      var futures=new ArrayList<java.util.concurrent.Future<?>>();
+      for(int index=0;index<8;index++)futures.add(workers.submit(()->{gate.await();approval.execute(invocation);return null;}));
+      gate.countDown();for(var future:futures)future.get(30,java.util.concurrent.TimeUnit.SECONDS);
+    }
+    assertThat(service.read(c("applicant"),id,null).get("state")).isEqualTo("APPROVED");
+    assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM leave_poc_approval_cycle WHERE object_id=? AND delivery_id=?",Integer.class,id,delivery)).isEqualTo(1);
+    var conflict=new WorkflowBusiness.Invocation(UUID.randomUUID().toString(),c("applicant"),"LeaveRequest",id,ORG,0,"EXECUTE","",new WorkflowBusiness.Reference(instance,"leave-poc",1,null,"APPROVAL","REJECTED"),null,Map.of("result","REJECTED"));
+    assertThatThrownBy(()->approval.execute(conflict)).isInstanceOf(SecurityException.class);
+    assertThat(jdbc.queryForObject("SELECT last_delivery_id FROM leave_poc_request WHERE id=?",String.class,id)).isEqualTo(delivery);
+  }
+  /** 结果回执写失败时连同状态写入一起回滚，重试不能看到半完成记录。 */
+  @Test void missingCycleRollsBackTerminalState(){
+    String id=create(2).get("id").toString();String instance=service.submit(c("applicant"),id).get("instance_id").toString();
+    jdbc.update("DELETE FROM leave_poc_approval_cycle WHERE object_id=?",id);
+    var invocation=new WorkflowBusiness.Invocation(UUID.randomUUID().toString(),c("applicant"),"LeaveRequest",id,ORG,0,"EXECUTE","",new WorkflowBusiness.Reference(instance,"leave-poc",1,null,"APPROVAL","APPROVED"),null,Map.of());
+    assertThatThrownBy(()->approval.execute(invocation)).isInstanceOf(IllegalArgumentException.class);
+    assertThat(service.read(c("applicant"),id,null).get("state")).isEqualTo("SUBMITTED");
+    assertThat(jdbc.queryForObject("SELECT last_delivery_id FROM leave_poc_request WHERE id=?",String.class,id)).isNull();
+  }
+
+  /** 两个不同终态并发争用同一业务版本，只有一个事务可应用，不允许后提交覆盖。 */
+  @Test void competingTerminalResultsHaveExactlyOneWinner() throws Exception {
+    String id=create(2).get("id").toString();String instance=service.submit(c("applicant"),id).get("instance_id").toString();
+    var gate=new java.util.concurrent.CountDownLatch(1);var winners=new java.util.concurrent.atomic.AtomicInteger();
+    try(var workers=java.util.concurrent.Executors.newFixedThreadPool(2)){
+      var futures=new ArrayList<java.util.concurrent.Future<?>>();
+      for(String outcome:List.of("APPROVED","REJECTED"))futures.add(workers.submit(()->{
+        gate.await();
+        var invocation=new WorkflowBusiness.Invocation(UUID.randomUUID().toString(),c("applicant"),"LeaveRequest",id,ORG,0,"EXECUTE","",new WorkflowBusiness.Reference(instance,"leave-poc",1,null,"APPROVAL",outcome),null,Map.of("result",outcome));
+        try{approval.execute(invocation);winners.incrementAndGet();}catch(SecurityException expected){assertThat(expected.getMessage()).isEqualTo("BUSINESS_OBJECT_APPROVAL_RESULT_CONFLICT");}
+        return null;
+      }));
+      gate.countDown();for(var future:futures)future.get(30,java.util.concurrent.TimeUnit.SECONDS);
+    }
+    assertThat(winners.get()).isEqualTo(1);
+    var state=service.read(c("applicant"),id,null).get("state");
+    assertThat(state).isIn("APPROVED","REJECTED");
+    assertThat(jdbc.queryForObject("SELECT result FROM leave_poc_approval_cycle WHERE object_id=?",String.class,id)).isEqualTo(state);
+  }
+
 }

@@ -166,6 +166,17 @@ class MenuManagementTest extends DatabaseTestSupport {
   administration.addMember(actor,tenant.id(),account);
   UUID member=UUID.fromString(jdbc.queryForObject("SELECT BIN_TO_UUID(id) FROM tenant_member WHERE tenant_id=UUID_TO_BIN(?) AND account_id=UUID_TO_BIN(?)",String.class,tenant.id().toString(),account.toString()));
   UUID ownerMember=UUID.fromString(jdbc.queryForObject("SELECT BIN_TO_UUID(id) FROM tenant_member WHERE tenant_id=UUID_TO_BIN(?) AND account_id=UUID_TO_BIN(?)",String.class,tenant.id().toString(),owner.toString()));
+  // 验证真实迁移后的两组导航；目录不赋权，无叶子权限的成员也不能看到空分组。
+  var ownerItems=navigation.current(owner,tenant.id(),ownerMember,1).items();
+  var products=ownerItems.stream().filter(item->item.code().equals("builtin.navigation.masterdata.products")).findFirst().orElseThrow();
+  var warehouses=ownerItems.stream().filter(item->item.code().equals("builtin.navigation.masterdata.warehouses")).findFirst().orElseThrow();
+  assertThat(products.parentId()).isEqualTo(warehouses.parentId());
+  assertThat(ownerItems.stream().filter(item->products.id().equals(item.parentId())).map(MenuManagement.Menu::component))
+    .containsExactly("master-data/product","master-data/product-sku","master-data/product-category","master-data/product-unit","master-data/product-attribute","master-data/product-template");
+  assertThat(ownerItems.stream().filter(item->warehouses.id().equals(item.parentId())).map(MenuManagement.Menu::component))
+    .containsExactly("master-data/warehouse","master-data/storage");
+  assertThat(navigation.current(account,tenant.id(),member,1).items()).extracting(MenuManagement.Menu::id)
+    .doesNotContain(products.id(),warehouses.id());
   // 待办及本人单据入口可存在；不能把公共导航存在误判为获得组织或配置管理权。
   assertThat(navigation.current(account,tenant.id(),member,1).items()).extracting(MenuManagement.Menu::component)
     .doesNotContain("organization/index","roles/index","business-objects/index","platform/business-objects");

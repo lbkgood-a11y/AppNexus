@@ -1,0 +1,542 @@
+{
+  "scope": "业务模块与 admin views 的 Vue 源码；候选不代表违规，需人工语义复核",
+  "files": [
+    {
+      "file": "frontend/apps/admin/src/views/account/components/AccountSessions.vue",
+      "style": true,
+      "candidateLines": [
+        85
+      ]
+    },
+    {
+      "file": "frontend/apps/admin/src/views/account/components/AuditQuery.vue",
+      "style": true,
+      "candidateLines": [
+        45
+      ]
+    },
+    {
+      "file": "frontend/apps/admin/src/views/account/components/MultiFactorSettings.vue",
+      "style": true,
+      "candidateLines": [
+        82
+      ]
+    },
+    {
+      "file": "frontend/apps/admin/src/views/account/components/SecurityLogs.vue",
+      "style": true,
+      "candidateLines": [
+        62
+      ]
+    },
+    {
+      "file": "frontend/apps/admin/src/views/account/components/TenantInvitationAcceptance.vue",
+      "style": true,
+      "candidateLines": []
+    },
+    {
+      "file": "frontend/apps/admin/src/views/account/index.vue",
+      "style": true,
+      "candidateLines": [
+        190,
+        213
+      ]
+    },
+    {
+      "file": "frontend/apps/admin/src/views/business-objects/index.vue",
+      "style": false,
+      "candidateLines": []
+    },
+    {
+      "file": "frontend/apps/admin/src/views/configuration/components/TenantParameters.vue",
+      "style": true,
+      "candidateLines": [
+        158,
+        161,
+        168
+      ]
+    },
+    {
+      "file": "frontend/apps/admin/src/views/configuration/dictionaries.vue",
+      "style": false,
+      "candidateLines": []
+    },
+    {
+      "file": "frontend/apps/admin/src/views/configuration/parameters.vue",
+      "style": false,
+      "candidateLines": []
+    },
+    {
+      "file": "frontend/apps/admin/src/views/error/403.vue",
+      "style": true,
+      "candidateLines": []
+    },
+    {
+      "file": "frontend/apps/admin/src/views/error/404.vue",
+      "style": true,
+      "candidateLines": []
+    },
+    {
+      "file": "frontend/apps/admin/src/views/error/500.vue",
+      "style": true,
+      "candidateLines": []
+    },
+    {
+      "file": "frontend/apps/admin/src/views/login/index.vue",
+      "style": true,
+      "candidateLines": []
+    },
+    {
+      "file": "frontend/apps/admin/src/views/login/PasswordRecoveryForm.vue",
+      "style": false,
+      "candidateLines": []
+    },
+    {
+      "file": "frontend/apps/admin/src/views/master-data/country-region.vue",
+      "style": false,
+      "candidateLines": []
+    },
+    {
+      "file": "frontend/apps/admin/src/views/master-data/partner.vue",
+      "style": false,
+      "candidateLines": []
+    },
+    {
+      "file": "frontend/apps/admin/src/views/master-data/product-attribute.vue",
+      "style": false,
+      "candidateLines": []
+    },
+    {
+      "file": "frontend/apps/admin/src/views/master-data/product-category.vue",
+      "style": false,
+      "candidateLines": []
+    },
+    {
+      "file": "frontend/apps/admin/src/views/master-data/product-template.vue",
+      "style": false,
+      "candidateLines": []
+    },
+    {
+      "file": "frontend/apps/admin/src/views/master-data/product-unit.vue",
+      "style": false,
+      "candidateLines": []
+    },
+    {
+      "file": "frontend/apps/admin/src/views/master-data/product.vue",
+      "style": false,
+      "candidateLines": []
+    },
+    {
+      "file": "frontend/apps/admin/src/views/master-data/storage.vue",
+      "style": false,
+      "candidateLines": []
+    },
+    {
+      "file": "frontend/apps/admin/src/views/master-data/subdivision.vue",
+      "style": false,
+      "candidateLines": []
+    },
+    {
+      "file": "frontend/apps/admin/src/views/master-data/warehouse.vue",
+      "style": false,
+      "candidateLines": []
+    },
+    {
+      "file": "frontend/apps/admin/src/views/organization/index.vue",
+      "style": false,
+      "candidateLines": []
+    },
+    {
+      "file": "frontend/apps/admin/src/views/organization/personnel.vue",
+      "style": false,
+      "candidateLines": []
+    },
+    {
+      "file": "frontend/apps/admin/src/views/platform/authorization.vue",
+      "style": false,
+      "candidateLines": []
+    },
+    {
+      "file": "frontend/apps/admin/src/views/platform/business-objects.vue",
+      "style": false,
+      "candidateLines": []
+    },
+    {
+      "file": "frontend/apps/admin/src/views/platform/features.vue",
+      "style": false,
+      "candidateLines": []
+    },
+    {
+      "file": "frontend/apps/admin/src/views/platform/index.vue",
+      "style": false,
+      "candidateLines": []
+    },
+    {
+      "file": "frontend/apps/admin/src/views/platform/menus.vue",
+      "style": false,
+      "candidateLines": []
+    },
+    {
+      "file": "frontend/apps/admin/src/views/platform/roles.vue",
+      "style": false,
+      "candidateLines": []
+    },
+    {
+      "file": "frontend/apps/admin/src/views/platform/tenants.vue",
+      "style": false,
+      "candidateLines": []
+    },
+    {
+      "file": "frontend/apps/admin/src/views/platform/users.vue",
+      "style": false,
+      "candidateLines": []
+    },
+    {
+      "file": "frontend/apps/admin/src/views/print/index.vue",
+      "style": false,
+      "candidateLines": []
+    },
+    {
+      "file": "frontend/apps/admin/src/views/roles/authorization.vue",
+      "style": false,
+      "candidateLines": []
+    },
+    {
+      "file": "frontend/apps/admin/src/views/roles/index.vue",
+      "style": false,
+      "candidateLines": []
+    },
+    {
+      "file": "frontend/apps/admin/src/views/template-lab/index.vue",
+      "style": true,
+      "candidateLines": [
+        49
+      ]
+    },
+    {
+      "file": "frontend/apps/admin/src/views/tenant/index.vue",
+      "style": false,
+      "candidateLines": []
+    },
+    {
+      "file": "frontend/apps/admin/src/views/welcome/index.vue",
+      "style": true,
+      "candidateLines": []
+    },
+    {
+      "file": "frontend/apps/admin/src/views/workflow/designer.vue",
+      "style": true,
+      "candidateLines": [
+        29
+      ]
+    },
+    {
+      "file": "frontend/apps/admin/src/views/workflow/index.vue",
+      "style": false,
+      "candidateLines": []
+    },
+    {
+      "file": "frontend/apps/admin/src/views/workflow/leave.vue",
+      "style": false,
+      "candidateLines": []
+    },
+    {
+      "file": "frontend/modules/authorization/src/AuthorizationCenter.vue",
+      "style": true,
+      "candidateLines": [
+        281,
+        290,
+        297,
+        301,
+        310,
+        321,
+        335
+      ]
+    },
+    {
+      "file": "frontend/modules/authorization/src/DataGrantRuleEditor.vue",
+      "style": true,
+      "candidateLines": []
+    },
+    {
+      "file": "frontend/modules/authorization/src/MemberGrantEditor.vue",
+      "style": true,
+      "candidateLines": [
+        150
+      ]
+    },
+    {
+      "file": "frontend/modules/authorization/src/MenuPermissionBranch.vue",
+      "style": true,
+      "candidateLines": [
+        27
+      ]
+    },
+    {
+      "file": "frontend/modules/authorization/src/PolicyTemplateActions.vue",
+      "style": true,
+      "candidateLines": [
+        76
+      ]
+    },
+    {
+      "file": "frontend/modules/authorization/src/RoleManagement.vue",
+      "style": true,
+      "candidateLines": []
+    },
+    {
+      "file": "frontend/modules/authorization/src/RoleUsers.vue",
+      "style": true,
+      "candidateLines": []
+    },
+    {
+      "file": "frontend/modules/authorization/src/SubjectAuthorization.vue",
+      "style": true,
+      "candidateLines": [
+        154,
+        160,
+        161,
+        162,
+        176
+      ]
+    },
+    {
+      "file": "frontend/modules/business-object/src/BusinessObjectManagement.vue",
+      "style": true,
+      "candidateLines": [
+        202,
+        203,
+        204
+      ]
+    },
+    {
+      "file": "frontend/modules/business-object/src/CodingConfiguration.vue",
+      "style": true,
+      "candidateLines": []
+    },
+    {
+      "file": "frontend/modules/business-object/src/CodingInput.vue",
+      "style": false,
+      "candidateLines": []
+    },
+    {
+      "file": "frontend/modules/configuration/src/DictionaryManagement.vue",
+      "style": true,
+      "candidateLines": [
+        82,
+        94,
+        110,
+        111
+      ]
+    },
+    {
+      "file": "frontend/modules/configuration/src/FeatureCatalog.vue",
+      "style": true,
+      "candidateLines": [
+        119
+      ]
+    },
+    {
+      "file": "frontend/modules/configuration/src/MenuManagement.vue",
+      "style": true,
+      "candidateLines": [
+        112,
+        114,
+        116,
+        118,
+        121
+      ]
+    },
+    {
+      "file": "frontend/modules/configuration/src/VxeDictionaryTable.vue",
+      "style": true,
+      "candidateLines": [
+        142,
+        163,
+        167
+      ]
+    },
+    {
+      "file": "frontend/modules/master-data/src/Management.vue",
+      "style": true,
+      "candidateLines": []
+    },
+    {
+      "file": "frontend/modules/master-data/src/PartnerEditor.vue",
+      "style": true,
+      "candidateLines": []
+    },
+    {
+      "file": "frontend/modules/master-data/src/product/CatalogManagement.vue",
+      "style": true,
+      "candidateLines": []
+    },
+    {
+      "file": "frontend/modules/master-data/src/product/ProductApprovals.vue",
+      "style": false,
+      "candidateLines": []
+    },
+    {
+      "file": "frontend/modules/master-data/src/product/ProductAttributes.vue",
+      "style": true,
+      "candidateLines": [
+        53
+      ]
+    },
+    {
+      "file": "frontend/modules/master-data/src/product/ProductEditor.vue",
+      "style": true,
+      "candidateLines": [
+        182
+      ]
+    },
+    {
+      "file": "frontend/modules/master-data/src/product/ProductImages.vue",
+      "style": true,
+      "candidateLines": [
+        19
+      ]
+    },
+    {
+      "file": "frontend/modules/master-data/src/product/ProductManagement.vue",
+      "style": true,
+      "candidateLines": []
+    },
+    {
+      "file": "frontend/modules/master-data/src/product/ProductStructure.vue",
+      "style": false,
+      "candidateLines": []
+    },
+    {
+      "file": "frontend/modules/master-data/src/product/UnitConversions.vue",
+      "style": false,
+      "candidateLines": []
+    },
+    {
+      "file": "frontend/modules/master-data/src/StorageManagement.vue",
+      "style": false,
+      "candidateLines": []
+    },
+    {
+      "file": "frontend/modules/master-data/src/WarehouseEditor.vue",
+      "style": true,
+      "candidateLines": []
+    },
+    {
+      "file": "frontend/modules/master-data/src/WarehouseMapPicker.vue",
+      "style": true,
+      "candidateLines": []
+    },
+    {
+      "file": "frontend/modules/organization/src/Management.vue",
+      "style": true,
+      "candidateLines": [
+        253,
+        254,
+        263,
+        271,
+        275,
+        284
+      ]
+    },
+    {
+      "file": "frontend/modules/organization/src/personnel/PersonnelEditor.vue",
+      "style": true,
+      "candidateLines": []
+    },
+    {
+      "file": "frontend/modules/organization/src/personnel/PersonnelManagement.vue",
+      "style": false,
+      "candidateLines": []
+    },
+    {
+      "file": "frontend/modules/print/src/PrintFlowWorkspace.vue",
+      "style": true,
+      "candidateLines": [
+        133
+      ]
+    },
+    {
+      "file": "frontend/modules/print/src/PrintManagement.vue",
+      "style": true,
+      "candidateLines": [
+        139,
+        140
+      ]
+    },
+    {
+      "file": "frontend/modules/print/src/PrintPreview.vue",
+      "style": true,
+      "candidateLines": []
+    },
+    {
+      "file": "frontend/modules/print/src/TemplateDesigner.vue",
+      "style": true,
+      "candidateLines": [
+        233,
+        234,
+        236,
+        237,
+        240,
+        243,
+        245,
+        246,
+        249,
+        257
+      ]
+    },
+    {
+      "file": "frontend/modules/tenant/src/Administration.vue",
+      "style": true,
+      "candidateLines": [
+        227
+      ]
+    },
+    {
+      "file": "frontend/modules/tenant/src/IntegrationClients.vue",
+      "style": true,
+      "candidateLines": [
+        83
+      ]
+    },
+    {
+      "file": "frontend/modules/workflow/src/BusinessWorkflowConfiguration.vue",
+      "style": true,
+      "candidateLines": [
+        401,
+        417
+      ]
+    },
+    {
+      "file": "frontend/modules/workflow/src/LeaveRequests.vue",
+      "style": true,
+      "candidateLines": []
+    },
+    {
+      "file": "frontend/modules/workflow/src/WorkflowCanvas.vue",
+      "style": true,
+      "candidateLines": []
+    },
+    {
+      "file": "frontend/modules/workflow/src/WorkflowCenter.vue",
+      "style": true,
+      "candidateLines": [
+        630,
+        637
+      ]
+    },
+    {
+      "file": "frontend/modules/workflow/src/WorkflowDesigner.vue",
+      "style": true,
+      "candidateLines": [
+        1053,
+        1285
+      ]
+    }
+  ],
+  "summary": {
+    "files": 86,
+    "withStyles": 50,
+    "candidateFiles": 30
+  }
+}

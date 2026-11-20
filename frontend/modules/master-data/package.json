@@ -9,7 +9,8 @@
     "./product-catalog": "./src/product/CatalogManagement.vue",
     "./product-catalog-types": "./src/product/catalog.ts",
     "./product": "./src/product/ProductManagement.vue",
-    "./product-types": "./src/product/product.ts"
+    "./product-types": "./src/product/product.ts",
+    "./product-sku": "./src/product/ProductSkuManagement.vue"
   },
   "dependencies": {
     "@appnexus/business-object": "workspace:*",

@@ -33,3 +33,5 @@ package.json只声明包元数据、公开入口、构建命令及仓库已有�
 | strict/noImplicitAny | strict=true，noImplicitAny=false沿用相邻领域模板回调基线；不代替接口类型约束 |
 | lib | ES2022与DOM，用于浏览器平台类型 |
 | include | 仅包含src下ts、d.ts和vue文件，编译输出由宿主负责 |
+
+业务审批设计从真实目录的outcomes展示全部必需结果（含声明的WITHDRAWN），新建草稿默认引用该契约，历史草稿不静默修复。要求撤回时必须显式配置撤回入口和结果。发布前调用原validate接口展示完整问题，实际publish仍在后端事务中校验。页面业务选择与高级模式共享契约检查；绑定页面展开流程下拉时刷新候选而不清空草稿。

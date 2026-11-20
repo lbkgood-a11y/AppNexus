@@ -25,8 +25,11 @@ public final class BusinessPartnerDeclaration implements BusinessObjects.Provide
             new DataResource(ROOT,"","客商主档","Business partner",fields(MasterData.Kind.PARTNER.fields)),
             new DataResource(CONTACT,ROOT,"客商联系人","Partner contacts",fields(PartnerDetails.CONTACT)),
             new DataResource(BANK,ROOT,"客商银行账户","Partner bank accounts",fields(PartnerDetails.BANK))),
-            operations.stream().collect(java.util.stream.Collectors.toMap(Operation::operationCode,ignored->scopes)));
-        return new Descriptor("BusinessPartner","客商管理","Business partners","master-data",1,Category.MASTER_DATA,List.of(),operations,dataAccess,List.of(new CodingField("code","create",64)));
+            operations.stream().collect(java.util.stream.Collectors.toMap(Operation::operationCode,op->op.operationCode().equals("list")?Set.of("ALL","ORGANIZATION","ORGANIZATION_SUBTREE","RULES"):scopes)),
+            List.of(new DataDimension("code","客商编码","Partner code","TEXT",Set.of("EQ","IN")),
+                new DataDimension("name","客商名称","Partner name","TEXT",Set.of("EQ","IN")),
+                new DataDimension("organizationId","归属组织","Owning organization","UUID",Set.of("EQ","IN"))));
+        return new Descriptor("BusinessPartner","客商管理","Business partners","master-data",2,Category.MASTER_DATA,List.of(),operations,dataAccess,List.of(new CodingField("code","create",64)));
     }
     /** 仅声明已实现的直接业务能力，不提供未接通审批或打印入口；契约字段为空，不复制敏感业务正文。 */
     private static Operation operation(String code,String zh,String en,String action,String method,String path){

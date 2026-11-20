@@ -29,7 +29,7 @@
 .tree-list-template__layout { display: grid; grid-template-columns: var(--tree-panel-width) minmax(0, 1fr); min-width: 0; min-height: 500px; }
 .tree-list-template.is-tree-collapsed .tree-list-template__layout { grid-template-columns: 48px minmax(0, 1fr); }
 .tree-list-template__aside { min-width: 0; overflow: hidden; border-right: 1px solid var(--el-border-color-lighter); background: var(--color-surface); }
-.tree-list-template__tree-header { display: flex; min-height: 56px; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 12px 8px 20px; border-bottom: 1px solid var(--el-border-color-lighter); }
+.tree-list-template__tree-header { display: flex; min-height: 44px; box-sizing:border-box; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 8px; border-bottom: 1px solid var(--el-border-color-lighter); }
 .tree-list-template__tree-heading { flex: 1; min-width: 0; }
 .tree-list-template__tree-heading > :first-child { margin: 0; }
 .tree-list-template__toggle { flex: 0 0 36px; width: 36px; height: 36px; padding: 0; }
@@ -40,7 +40,7 @@
 .tree-list-template__identity.el-button { display: flex; width: 100%; height: auto; min-height: 44px; margin: 0; padding: 16px 6px; color: var(--el-text-color-regular); }
 .tree-list-template__identity.el-button > span { display: flex; flex-direction: column; align-items: center; gap: 12px; min-width: 0; }
 .tree-list-template__identity span > span { writing-mode: vertical-rl; text-orientation: mixed; white-space: normal; font-weight: 500; line-height: 20px; letter-spacing: 2px; }
-.tree-list-template__tree { padding: 12px; overflow: auto; }
+.tree-list-template__tree { padding: 6px; overflow: auto; }
 .tree-list-template__content { min-width: 0; background: var(--color-surface); }
 .tree-list-template__header { padding: 20px 24px; border-bottom: 1px solid var(--el-border-color-lighter); }
 .tree-list-template__feedback { padding: 12px 24px 0; }
@@ -105,8 +105,6 @@
 .business-workspace__context { padding:10px 0; }
 .business-workspace__navigation,.tree-list-template__navigation { background:var(--el-bg-color); }
 .tree-list-template__navigation:has(> .workspace-banner) { padding:0; }
-.tree-list-template__tree { padding:6px; }
-.tree-list-template__tree-header { min-height:44px; padding:6px 8px; }
 .tree-list-template__tree .el-menu { border:0; background:transparent; }
 .tree-list-template__tree .el-menu-item { height:44px; margin:4px 0; border-radius:6px; font-size:13px; }
 .tree-list-template__tree .el-menu-item.is-active { background:var(--el-color-primary-light-9); color:var(--el-color-primary); box-shadow:inset 2px 0 var(--el-color-primary); }
@@ -202,10 +200,10 @@
   :is(.detail-form-template,.split-detail-template,.tabbed-detail-template,.app-managed-dialog) .el-descriptions__table :is(th,td) { display:block; width:auto; }
 }
 
-/* 管理工作区装配层也必须传递剩余高度；不能依赖页面根组件的名称或嵌套层数。 */
+/* 管理工作区装配层传递剩余高度；树表内部由统一模板管理，禁止将左右 grid 改为纵向 flex。 */
 @media (min-width: 761px) {
   .viewport-page-host:has(.business-workspace, .tree-list-template, .standard-list-template),
-  .viewport-page-host :where(div, section, main):has(.business-workspace, .tree-list-template, .standard-list-template) {
+  .viewport-page-host :where(div, section, main):not(.tree-list-template *):has(.business-workspace, .tree-list-template, .standard-list-template) {
     display: flex;
     flex-direction: column;
     flex: 1;
@@ -413,4 +411,36 @@
 .tree-list-template__content {row-gap:var(--app-section-gap,8px);background:var(--el-bg-color-page);}
 .tree-list-template__content > :is(.tree-list-template__header,.tree-list-template__feedback,.tree-list-template__search,.tree-list-template__data) {
  margin:0;padding:var(--app-content-padding,8px);background:var(--el-bg-color);
+}
+
+/* 上下主从列表复用全局区块间距；外层树表不再叠加内容 padding，
+   每个嵌入工作区的查询和数据区域只保留一层全局内容留白。 */
+.business-workspace-stack { display:flex;flex-direction:column;gap:var(--app-section-gap,8px);min-width:0;background:var(--el-bg-color-page); }
+.business-workspace-stack > section { flex:none;min-width:0; }
+.tree-list-template__data:has(> .template-table > .business-workspace-stack) { padding:0; }
+/* 嵌入工作区使用自然高度，避免上下列表争抢视口剩余高度。
+   全屏表格保留原有伸展、滚动及焦点管理，不受嵌入模式影响。 */
+.viewport-page-host .business-workspace.is-embedded,
+.business-workspace.is-embedded { flex:none;min-height:auto;overflow:visible;border:0;border-radius:0; }
+.viewport-page-host .business-workspace.is-embedded > .business-workspace__data,
+.viewport-page-host .business-workspace.is-embedded .management-table:not(.is-fullscreen),
+.viewport-page-host .business-workspace.is-embedded .management-table:not(.is-fullscreen) :is(.management-table-surface,.management-table-surface > .el-card__body,.management-table-region) {
+ flex:none;min-height:auto;overflow:visible;
+}
+
+/* 全站左树共用节点密度、主题反馈和长名称省略；业务插槽只组织内容，不能复制节点视觉。
+   支持多行说明的角色树另有已声明业务适配，保留自然高度。 */
+.tree-list-template__tree .el-tree-node__content {
+ height:36px;min-height:36px;border-radius:var(--el-border-radius-small);font-size:13px;
+}
+.tree-list-template__tree .el-tree-node__content:hover { background:var(--el-fill-color-light); }
+.tree-list-template__tree .el-tree--highlight-current .el-tree-node.is-current > .el-tree-node__content {
+ color:var(--el-color-primary);background:var(--el-color-primary-light-9);box-shadow:inset 2px 0 var(--el-color-primary);
+}
+.tree-list-template__tree .el-tree-node__content > :last-child { min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }
+.tree-list-template__tree .el-tree-node__content:focus-visible { outline:2px solid var(--el-color-primary);outline-offset:-2px; }
+/* 粗指针设备的节点和折叠按钮至少 44px，宽度与桌面一致；手机按统一模板堆叠布局。 */
+@media(pointer:coarse) {
+ .tree-list-template__tree .el-tree-node__content { height:auto;min-height:44px; }
+ .tree-list-template .tree-list-template__toggle { flex-basis:44px;width:44px;height:44px; }
 }

@@ -11,6 +11,14 @@ public interface FieldProtection {
      * @return 字段到展示模式的只读映射，不含原值
      */
     Map<String,FieldSecurity.Mode> restrictions(AccessAuthorization.Subject subject,String resource);
+    /**
+     * 投影已授权记录的契约字段，仅输出资源声明字段；不授予行或功能权限。
+     * @param subject 当前可信主体，不得跨请求缓存
+     * @param resource 同一对象声明的资源编码
+     * @param values 服务端原值，禁止记录日志
+     * @return 不可变投影；数值不得被字符串脱敏隐式转换，隐藏字段不返回
+     */
+    Map<String,Object> project(AccessAuthorization.Subject subject,String resource,Map<String,?> values);
 
     /**
      * 递归处理响应中的记录、分页、集合和映射；字段目录与策略从统一端口读取。

@@ -98,6 +98,9 @@ class ProductV1IntegrationTest extends DatabaseTestSupport {
  }
 
  @Test void installedProductOperationsReferenceRealPermissionsAndPages(){
+  // 明细页面沿用原权限，不创建平行资源；迁移必须生成且仅生成一个可解析菜单。
+  assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM platform_menu WHERE component_key='master-data/product-sku' AND permission_code='masterdata.product:read'",Integer.class)).isEqualTo(1);
+  assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM platform_menu_resource r JOIN platform_menu m ON m.id=r.menu_id WHERE m.component_key='master-data/product-sku' AND r.resource_code='masterdata.product'",Integer.class)).isEqualTo(1);
   var types=Set.of("ProductUnit","ProductCategory","ProductAttribute","ProductTemplate","Product");
   var operations=registry.all().stream().filter(o->types.contains(o.objectType())).toList();
   assertThat(operations).isNotEmpty();

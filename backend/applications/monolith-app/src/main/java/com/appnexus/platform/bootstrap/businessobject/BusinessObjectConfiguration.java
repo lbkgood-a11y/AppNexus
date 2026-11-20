@@ -21,8 +21,19 @@ import org.springframework.transaction.PlatformTransactionManager;
 /** 平台业务对象上下文的组合装配，未启用流程引擎时仍可管理目录，但不提供虚假的流程选项。 */
 @Configuration(proxyBeanMethods=false)
 public class BusinessObjectConfiguration {
+  /** 公共执行器延迟获取专业服务；对象只通过唯一 Provider 暴露一次运行能力。 */
+  @Bean public BusinessObjectExecution businessObjectExecution(List<BusinessObjects.Provider> providers,
+      BusinessObjectBindings bindings,PlatformTransactionManager manager,BusinessObjectPlatform platform,
+      ObjectProvider<com.appnexus.contracts.workflow.WorkflowStarter> workflows,
+      ObjectProvider<com.appnexus.contracts.printing.BusinessPrinting> printing) {
+    return com.appnexus.platform.businessobject.BusinessObjectUseCases.execution(providers,bindings,
+        new com.appnexus.platform.persistence.businessobject.configuration.JdbcConfigurationTransaction(manager),platform,
+        workflows::getIfAvailable,printing::getIfAvailable);
+  }
   /** 编码器元数据与执行器均由当前业务对象模块装配，不引入另一套应用入口。 */
   @Bean public CodingDeclaration codingDeclaration(){return new CodingDeclaration();}
+  /** 独立编码规则通过同一对象目录注册，不建立平行权限模型。 */
+  @Bean public com.appnexus.platform.appapi.businessobject.CodingRuleDeclaration codingRuleDeclaration(){return new com.appnexus.platform.appapi.businessobject.CodingRuleDeclaration();}
   /** 发号公开端口同时支持同进程业务接入和 HTTP 协助录入。 */
   @Bean public CodingManagement codingService(JdbcTemplate jdbc,PlatformTransactionManager manager,BusinessObjectPlatform platform,List<BusinessObjects.Provider> providers,BusinessObjectManagement objects){return com.appnexus.platform.persistence.businessobject.BusinessObjectPersistence.coding(jdbc,manager,platform,providers,objects);}
   /** HTTP 写请求继续使用宿主 CSRF 防护。 */

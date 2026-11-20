@@ -113,7 +113,7 @@
   overflow: auto;
   overflow-wrap: anywhere;
 }
-.app-error-feedback .el-notification__content { margin-right: 16px; }
+.app-error-feedback .el-message__content { min-width: 0; white-space: normal; }
 
 /* 全站查询与数据列表共享标题标记；使用主题变量以跟随深浅色和用户主色，无业务语义或交互副作用。 */
 .management-filter-title,

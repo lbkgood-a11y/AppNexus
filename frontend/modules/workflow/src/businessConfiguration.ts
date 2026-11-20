@@ -30,10 +30,9 @@ export function businessModel(
     edges: [plainEdge(start.id, review.id), plainEdge(review.id, end.id)],
     terminalActions: Object.fromEntries(
       profile.outcomes
-        .filter((o) => o.result !== "WITHDRAWN")
         .map((o) => [o.result, o.capability]),
     ),
-    withdrawalCapability: null,
+    withdrawalCapability: profile.withdrawalCapability,
     copies: [],
   };
 }
@@ -134,4 +133,25 @@ export function removeBusinessReview(
   }
   for (const node of model.nodes) node.position = null;
   return true;
+}
+
+/**
+ * 从可信业务目录检查发布契约；只报告缺项，不改写已有草稿或冒充服务端发布授权。
+ * @param model 当前待发布草稿，结果映射与业务对象均由用户显式确认。
+ * @param profile 服务端返回的业务契约；缺省时留给服务端校验，不伪造契约。
+ * @returns 契约错误码列表，空列表不代表已取得发布权限。
+ */
+export function businessContractIssues(model: WorkflowModel, profile?: BusinessProfile): string[] {
+  if (!profile || model.mode !== "APPROVAL") return [];
+  const issues: string[] = [];
+  if (model.objectType !== profile.objectType || model.purpose !== profile.purpose)
+    issues.push("BUSINESS_PROFILE_MISMATCH");
+  for (const outcome of profile.outcomes)
+    if (model.terminalActions[outcome.result] !== outcome.capability)
+      issues.push("BUSINESS_OUTCOME_REQUIRED:" + outcome.result);
+  if (profile.outcomes.some(outcome => outcome.result === "WITHDRAWN") &&
+      (!model.withdrawalCapability || model.withdrawalCapability !== profile.withdrawalCapability))
+    issues.push("BUSINESS_WITHDRAWAL_INVALID");
+  if (model.matches.length) issues.push("BUSINESS_MATCH_FORBIDDEN");
+  return issues;
 }
