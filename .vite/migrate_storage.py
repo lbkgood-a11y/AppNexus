@@ -1,0 +1,29 @@
+from pathlib import Path
+root=Path('backend/services/master-data-service/src/main/java/com/appnexus/masterdata')
+(root/'StorageHierarchyMapper.java').write_text('''package com.appnexus.masterdata;
+import com.appnexus.persistence.mybatis.PlatformScoped;
+import org.apache.ibatis.annotations.*;
+import java.util.List;
+/** 仓库三层固定SQL；层级由构建枚举选择，不接收自由表名。 */
+@Mapper
+@PlatformScoped(tables={"md_warehouse","md_storage_area","md_storage_location"})
+public interface StorageHierarchyMapper {
+ /** @param tenant 可信租户 @param kind STORAGE_AREA/STORAGE_LOCATION @param code 直属父编码 @return 父启用状态，写事务行锁直到提交 */
+ @Select({"<script>","SELECT enabled FROM <choose><when test=\"kind == 'STORAGE_AREA'\">md_warehouse</when><otherwise>md_storage_area</otherwise></choose> WHERE tenant_id=UUID_TO_BIN(#{tenant}) AND code=#{code} FOR UPDATE","</script>"}) List<Boolean> parent(@Param("tenant") String tenant,@Param("kind") String kind,@Param("code") String code);
+ /** 当前行父码不能修改，锁顺序保持父再子。 */
+ @Select({"<script>","SELECT parent_code FROM <choose><when test=\"kind == 'STORAGE_AREA'\">md_storage_area</when><otherwise>md_storage_location</otherwise></choose> WHERE tenant_id=UUID_TO_BIN(#{tenant}) AND id=UUID_TO_BIN(#{id})<if test='lock'> FOR UPDATE</if>","</script>"}) List<String> parentCode(@Param("tenant") String tenant,@Param("kind") String kind,@Param("id") String id,@Param("lock") boolean lock);
+ /** 固定仓库或库区节点锁，只用于已准入停用用例。 */
+ @Select({"<script>","SELECT code FROM <choose><when test=\"kind == 'WAREHOUSE'\">md_warehouse</when><otherwise>md_storage_area</otherwise></choose> WHERE tenant_id=UUID_TO_BIN(#{tenant}) AND id=UUID_TO_BIN(#{id}) FOR UPDATE","</script>"}) List<String> code(@Param("tenant") String tenant,@Param("kind") String kind,@Param("id") String id);
+ /** 已准入停用时检查启用直属下级，不允许留下启用孤立节点。 */
+ @Select({"<script>","SELECT id FROM <choose><when test=\"kind == 'WAREHOUSE'\">md_storage_area</when><otherwise>md_storage_location</otherwise></choose> WHERE tenant_id=UUID_TO_BIN(#{tenant}) AND parent_code=#{code} AND enabled=TRUE LIMIT 1 FOR UPDATE","</script>"}) List<byte[]> children(@Param("tenant") String tenant,@Param("kind") String kind,@Param("code") String code);
+}
+'''.replace('test="kind','test=\\"kind').replace("'\">","'\\\">"),encoding='utf-8')
+p=root/'StorageHierarchy.java';s=p.read_text(encoding='utf-8').replace('import org.springframework.jdbc.core.JdbcTemplate;','').replace('JdbcTemplate jdbc','StorageHierarchyMapper mapper')
+import re
+s=re.sub(r'jdbc.queryForList\("SELECT enabled FROM "\+parent.table\(\)\+"[^"\n]+",Boolean.class,c.tenantId\(\).toString\(\),values.get\("parentCode"\)\)','mapper.parent(c.tenantId().toString(),kind.name(),values.get("parentCode"))',s)
+s=re.sub(r'jdbc.queryForList\("SELECT parent_code FROM "\+kind.table\(\)\+"[^"\n]+",String.class,c.tenantId\(\).toString\(\),id\)','mapper.parentCode(c.tenantId().toString(),kind.name(),id,true)',s,count=1)
+s=re.sub(r'jdbc.queryForList\("SELECT parent_code FROM "\+kind.table\(\)\+"[^"\n]+",String.class,c.tenantId\(\).toString\(\),id\)','mapper.parentCode(c.tenantId().toString(),kind.name(),id,false)',s)
+s=re.sub(r'jdbc.queryForList\("SELECT enabled FROM "\+parent.table\(\)\+"[^"\n]+",Boolean.class,c.tenantId\(\).toString\(\),codes.getFirst\(\)\)','mapper.parent(c.tenantId().toString(),kind.name(),codes.getFirst())',s)
+s=re.sub(r'jdbc.queryForList\("SELECT code FROM "\+kind.table\(\)\+"[^"\n]+",String.class,c.tenantId\(\).toString\(\),id\)','mapper.code(c.tenantId().toString(),kind.name(),id)',s)
+s=re.sub(r'jdbc.queryForList\("SELECT id FROM "\+child.table\(\)\+"[^"\n]+",byte\[\].class,c.tenantId\(\).toString\(\),codes.getFirst\(\)\)','mapper.children(c.tenantId().toString(),kind.name(),codes.getFirst())',s)
+assert 'jdbc.' not in s;p.write_text(s,encoding='utf-8')

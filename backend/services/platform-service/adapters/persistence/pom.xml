@@ -7,7 +7,11 @@
     <version>0.1.0-SNAPSHOT</version>
   </parent>
   <artifactId>platform-persistence-adapter</artifactId>
-  <dependencies><!-- 对象能力仅通过平台公开契约和输出端口接入。 -->
+  <dependencies>
+    <!-- 历史Java迁移复用Flyway连接，不改变事务所有权或迁移资源。 -->
+    <dependency><groupId>com.appnexus</groupId><artifactId>mybatis-migration</artifactId><version>${project.version}</version></dependency>
+    <!-- 固定Mapper的中立范围元数据，不引入平台持久化或其他业务实现。 -->
+    <dependency><groupId>com.appnexus</groupId><artifactId>mybatis-scope</artifactId><version>${project.version}</version></dependency><!-- 对象能力仅通过平台公开契约和输出端口接入。 -->
 <dependency><groupId>com.appnexus</groupId><artifactId>platform-business-object</artifactId><version>${project.version}</version></dependency><dependency><groupId>com.fasterxml.jackson.core</groupId><artifactId>jackson-databind</artifactId></dependency>
 
     <dependency><groupId>com.appnexus</groupId><artifactId>platform-configuration</artifactId><version>${project.version}</version></dependency>

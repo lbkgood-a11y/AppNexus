@@ -1,0 +1,822 @@
+[INFO] Scanning for projects...
+[INFO] ------------------------------------------------------------------------
+[INFO] Reactor Build Order:
+[INFO] 
+[INFO] backend                                                            [pom]
+[INFO] building-blocks                                                    [pom]
+[INFO] mybatis-scope                                                      [jar]
+[INFO] services                                                           [pom]
+[INFO] platform-service                                                   [pom]
+[INFO] platform-identity                                                  [jar]
+[INFO] contracts                                                          [pom]
+[INFO] data-contracts                                                     [jar]
+[INFO] business-object-contracts                                          [jar]
+[INFO] platform-authorization                                             [jar]
+[INFO] platform-tenant                                                    [jar]
+[INFO] platform-configuration                                             [jar]
+[INFO] operation-contracts                                                [jar]
+[INFO] platform-organization                                              [jar]
+[INFO] platform-localization                                              [jar]
+[INFO] platform-audit                                                     [jar]
+[INFO] workflow-contracts                                                 [jar]
+[INFO] print-contracts                                                    [jar]
+[INFO] platform-business-object                                           [jar]
+[INFO] platform-adapters                                                  [pom]
+[INFO] platform-app-api-adapter                                           [jar]
+[INFO] platform-partner-api-adapter                                       [jar]
+[INFO] platform-management-api-adapter                                    [jar]
+[INFO] platform-persistence-adapter                                       [jar]
+[INFO] platform-security-adapter                                          [jar]
+[INFO] platform-eventing-adapter                                          [jar]
+[INFO] platform-observability-adapter                                     [jar]
+[INFO] workflow-service                                                   [pom]
+[INFO] workflow-core                                                      [jar]
+[INFO] workflow-adapters                                                  [pom]
+[INFO] workflow-flowable-adapter                                          [jar]
+[INFO] master-data-service                                                [jar]
+[INFO] leave-poc                                                          [jar]
+[INFO] print-service                                                      [pom]
+[INFO] print-core                                                         [jar]
+[INFO] print-adapters                                                     [pom]
+[INFO] print-jdbc-adapter                                                 [jar]
+[INFO] applications                                                       [pom]
+[INFO] monolith-app                                                       [jar]
+[INFO] 
+[INFO] ------------------------< com.appnexus:backend >------------------------
+[INFO] Building backend 0.1.0-SNAPSHOT                                   [1/39]
+[INFO]   from pom.xml
+[INFO] --------------------------------[ pom ]---------------------------------
+[INFO] 
+[INFO] --- enforcer:3.6.2:enforce (enforce-toolchain) @ backend ---
+[INFO] Rule 0: org.apache.maven.enforcer.rules.version.RequireJavaVersion passed
+[INFO] Rule 1: org.apache.maven.enforcer.rules.version.RequireMavenVersion passed
+[INFO] 
+[INFO] --------------------< com.appnexus:building-blocks >--------------------
+[INFO] Building building-blocks 0.1.0-SNAPSHOT                           [2/39]
+[INFO]   from building-blocks\pom.xml
+[INFO] --------------------------------[ pom ]---------------------------------
+[INFO] 
+[INFO] --- enforcer:3.6.2:enforce (enforce-toolchain) @ building-blocks ---
+[INFO] 
+[INFO] ---------------------< com.appnexus:mybatis-scope >---------------------
+[INFO] Building mybatis-scope 0.1.0-SNAPSHOT                             [3/39]
+[INFO]   from building-blocks\mybatis-scope\pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- enforcer:3.6.2:enforce (enforce-toolchain) @ mybatis-scope ---
+[INFO] 
+[INFO] --- resources:3.5.0:resources (default-resources) @ mybatis-scope ---
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\building-blocks\mybatis-scope\src\main\resources
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\building-blocks\mybatis-scope\src\main\resources
+[INFO] 
+[INFO] --- compiler:3.15.0:compile (default-compile) @ mybatis-scope ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- resources:3.5.0:testResources (default-testResources) @ mybatis-scope ---
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\building-blocks\mybatis-scope\src\test\resources
+[INFO] 
+[INFO] --- compiler:3.15.0:testCompile (default-testCompile) @ mybatis-scope ---
+[INFO] No sources to compile
+[INFO] 
+[INFO] --- surefire:3.5.6:test (default-test) @ mybatis-scope ---
+[INFO] No tests to run.
+[INFO] 
+[INFO] -----------------------< com.appnexus:services >------------------------
+[INFO] Building services 0.1.0-SNAPSHOT                                  [4/39]
+[INFO]   from services\pom.xml
+[INFO] --------------------------------[ pom ]---------------------------------
+[INFO] 
+[INFO] --- enforcer:3.6.2:enforce (enforce-toolchain) @ services ---
+[INFO] 
+[INFO] -------------------< com.appnexus:platform-service >--------------------
+[INFO] Building platform-service 0.1.0-SNAPSHOT                          [5/39]
+[INFO]   from services\platform-service\pom.xml
+[INFO] --------------------------------[ pom ]---------------------------------
+[INFO] 
+[INFO] --- enforcer:3.6.2:enforce (enforce-toolchain) @ platform-service ---
+[INFO] 
+[INFO] -------------------< com.appnexus:platform-identity >-------------------
+[INFO] Building platform-identity 0.1.0-SNAPSHOT                         [6/39]
+[INFO]   from services\platform-service\identity\pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- enforcer:3.6.2:enforce (enforce-toolchain) @ platform-identity ---
+[INFO] 
+[INFO] --- resources:3.5.0:resources (default-resources) @ platform-identity ---
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\services\platform-service\identity\src\main\resources
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\services\platform-service\identity\src\main\resources
+[INFO] 
+[INFO] --- compiler:3.15.0:compile (default-compile) @ platform-identity ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- resources:3.5.0:testResources (default-testResources) @ platform-identity ---
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\services\platform-service\identity\src\test\resources
+[INFO] 
+[INFO] --- compiler:3.15.0:testCompile (default-testCompile) @ platform-identity ---
+[INFO] No sources to compile
+[INFO] 
+[INFO] --- surefire:3.5.6:test (default-test) @ platform-identity ---
+[INFO] No tests to run.
+[INFO] 
+[INFO] -----------------------< com.appnexus:contracts >-----------------------
+[INFO] Building contracts 0.1.0-SNAPSHOT                                 [7/39]
+[INFO]   from contracts\pom.xml
+[INFO] --------------------------------[ pom ]---------------------------------
+[INFO] 
+[INFO] --- enforcer:3.6.2:enforce (enforce-toolchain) @ contracts ---
+[INFO] 
+[INFO] --------------------< com.appnexus:data-contracts >---------------------
+[INFO] Building data-contracts 0.1.0-SNAPSHOT                            [8/39]
+[INFO]   from contracts\data-contracts\pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- enforcer:3.6.2:enforce (enforce-toolchain) @ data-contracts ---
+[INFO] 
+[INFO] --- resources:3.5.0:resources (default-resources) @ data-contracts ---
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\contracts\data-contracts\src\main\resources
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\contracts\data-contracts\src\main\resources
+[INFO] 
+[INFO] --- compiler:3.15.0:compile (default-compile) @ data-contracts ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- resources:3.5.0:testResources (default-testResources) @ data-contracts ---
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\contracts\data-contracts\src\test\resources
+[INFO] 
+[INFO] --- compiler:3.15.0:testCompile (default-testCompile) @ data-contracts ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- surefire:3.5.6:test (default-test) @ data-contracts ---
+[INFO] 
+[INFO] ---------------< com.appnexus:business-object-contracts >---------------
+[INFO] Building business-object-contracts 0.1.0-SNAPSHOT                 [9/39]
+[INFO]   from contracts\business-object-contracts\pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- enforcer:3.6.2:enforce (enforce-toolchain) @ business-object-contracts ---
+[INFO] 
+[INFO] --- resources:3.5.0:resources (default-resources) @ business-object-contracts ---
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\contracts\business-object-contracts\src\main\resources
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\contracts\business-object-contracts\src\main\resources
+[INFO] 
+[INFO] --- compiler:3.15.0:compile (default-compile) @ business-object-contracts ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- resources:3.5.0:testResources (default-testResources) @ business-object-contracts ---
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\contracts\business-object-contracts\src\test\resources
+[INFO] 
+[INFO] --- compiler:3.15.0:testCompile (default-testCompile) @ business-object-contracts ---
+[INFO] No sources to compile
+[INFO] 
+[INFO] --- surefire:3.5.6:test (default-test) @ business-object-contracts ---
+[INFO] No tests to run.
+[INFO] 
+[INFO] ----------------< com.appnexus:platform-authorization >-----------------
+[INFO] Building platform-authorization 0.1.0-SNAPSHOT                   [10/39]
+[INFO]   from services\platform-service\authorization\pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- enforcer:3.6.2:enforce (enforce-toolchain) @ platform-authorization ---
+[INFO] 
+[INFO] --- resources:3.5.0:resources (default-resources) @ platform-authorization ---
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\services\platform-service\authorization\src\main\resources
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\services\platform-service\authorization\src\main\resources
+[INFO] 
+[INFO] --- compiler:3.15.0:compile (default-compile) @ platform-authorization ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- resources:3.5.0:testResources (default-testResources) @ platform-authorization ---
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\services\platform-service\authorization\src\test\resources
+[INFO] 
+[INFO] --- compiler:3.15.0:testCompile (default-testCompile) @ platform-authorization ---
+[INFO] No sources to compile
+[INFO] 
+[INFO] --- surefire:3.5.6:test (default-test) @ platform-authorization ---
+[INFO] No tests to run.
+[INFO] 
+[INFO] --------------------< com.appnexus:platform-tenant >--------------------
+[INFO] Building platform-tenant 0.1.0-SNAPSHOT                          [11/39]
+[INFO]   from services\platform-service\tenant\pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- enforcer:3.6.2:enforce (enforce-toolchain) @ platform-tenant ---
+[INFO] 
+[INFO] --- resources:3.5.0:resources (default-resources) @ platform-tenant ---
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\services\platform-service\tenant\src\main\resources
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\services\platform-service\tenant\src\main\resources
+[INFO] 
+[INFO] --- compiler:3.15.0:compile (default-compile) @ platform-tenant ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- resources:3.5.0:testResources (default-testResources) @ platform-tenant ---
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\services\platform-service\tenant\src\test\resources
+[INFO] 
+[INFO] --- compiler:3.15.0:testCompile (default-testCompile) @ platform-tenant ---
+[INFO] No sources to compile
+[INFO] 
+[INFO] --- surefire:3.5.6:test (default-test) @ platform-tenant ---
+[INFO] No tests to run.
+[INFO] 
+[INFO] ----------------< com.appnexus:platform-configuration >-----------------
+[INFO] Building platform-configuration 0.1.0-SNAPSHOT                   [12/39]
+[INFO]   from services\platform-service\configuration\pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- enforcer:3.6.2:enforce (enforce-toolchain) @ platform-configuration ---
+[INFO] 
+[INFO] --- resources:3.5.0:resources (default-resources) @ platform-configuration ---
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\services\platform-service\configuration\src\main\resources
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\services\platform-service\configuration\src\main\resources
+[INFO] 
+[INFO] --- compiler:3.15.0:compile (default-compile) @ platform-configuration ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- resources:3.5.0:testResources (default-testResources) @ platform-configuration ---
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\services\platform-service\configuration\src\test\resources
+[INFO] 
+[INFO] --- compiler:3.15.0:testCompile (default-testCompile) @ platform-configuration ---
+[INFO] No sources to compile
+[INFO] 
+[INFO] --- surefire:3.5.6:test (default-test) @ platform-configuration ---
+[INFO] No tests to run.
+[INFO] 
+[INFO] ------------------< com.appnexus:operation-contracts >------------------
+[INFO] Building operation-contracts 0.1.0-SNAPSHOT                      [13/39]
+[INFO]   from contracts\operation-contracts\pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- enforcer:3.6.2:enforce (enforce-toolchain) @ operation-contracts ---
+[INFO] 
+[INFO] --- resources:3.5.0:resources (default-resources) @ operation-contracts ---
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\contracts\operation-contracts\src\main\resources
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\contracts\operation-contracts\src\main\resources
+[INFO] 
+[INFO] --- compiler:3.15.0:compile (default-compile) @ operation-contracts ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- resources:3.5.0:testResources (default-testResources) @ operation-contracts ---
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\contracts\operation-contracts\src\test\resources
+[INFO] 
+[INFO] --- compiler:3.15.0:testCompile (default-testCompile) @ operation-contracts ---
+[INFO] No sources to compile
+[INFO] 
+[INFO] --- surefire:3.5.6:test (default-test) @ operation-contracts ---
+[INFO] No tests to run.
+[INFO] 
+[INFO] -----------------< com.appnexus:platform-organization >-----------------
+[INFO] Building platform-organization 0.1.0-SNAPSHOT                    [14/39]
+[INFO]   from services\platform-service\organization\pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- enforcer:3.6.2:enforce (enforce-toolchain) @ platform-organization ---
+[INFO] 
+[INFO] --- resources:3.5.0:resources (default-resources) @ platform-organization ---
+[INFO] Copying 0 resource from src\main\resources to target-agent\classes
+[INFO] Copying 1 resource from src\main\resources to target-agent\classes
+[INFO] 
+[INFO] --- compiler:3.15.0:compile (default-compile) @ platform-organization ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- resources:3.5.0:testResources (default-testResources) @ platform-organization ---
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\services\platform-service\organization\src\test\resources
+[INFO] 
+[INFO] --- compiler:3.15.0:testCompile (default-testCompile) @ platform-organization ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- surefire:3.5.6:test (default-test) @ platform-organization ---
+[INFO] 
+[INFO] -----------------< com.appnexus:platform-localization >-----------------
+[INFO] Building platform-localization 0.1.0-SNAPSHOT                    [15/39]
+[INFO]   from services\platform-service\localization\pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- enforcer:3.6.2:enforce (enforce-toolchain) @ platform-localization ---
+[INFO] 
+[INFO] --- resources:3.5.0:resources (default-resources) @ platform-localization ---
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\services\platform-service\localization\src\main\resources
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\services\platform-service\localization\src\main\resources
+[INFO] 
+[INFO] --- compiler:3.15.0:compile (default-compile) @ platform-localization ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- resources:3.5.0:testResources (default-testResources) @ platform-localization ---
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\services\platform-service\localization\src\test\resources
+[INFO] 
+[INFO] --- compiler:3.15.0:testCompile (default-testCompile) @ platform-localization ---
+[INFO] No sources to compile
+[INFO] 
+[INFO] --- surefire:3.5.6:test (default-test) @ platform-localization ---
+[INFO] No tests to run.
+[INFO] 
+[INFO] --------------------< com.appnexus:platform-audit >---------------------
+[INFO] Building platform-audit 0.1.0-SNAPSHOT                           [16/39]
+[INFO]   from services\platform-service\audit\pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- enforcer:3.6.2:enforce (enforce-toolchain) @ platform-audit ---
+[INFO] 
+[INFO] --- resources:3.5.0:resources (default-resources) @ platform-audit ---
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\services\platform-service\audit\src\main\resources
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\services\platform-service\audit\src\main\resources
+[INFO] 
+[INFO] --- compiler:3.15.0:compile (default-compile) @ platform-audit ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- resources:3.5.0:testResources (default-testResources) @ platform-audit ---
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\services\platform-service\audit\src\test\resources
+[INFO] 
+[INFO] --- compiler:3.15.0:testCompile (default-testCompile) @ platform-audit ---
+[INFO] No sources to compile
+[INFO] 
+[INFO] --- surefire:3.5.6:test (default-test) @ platform-audit ---
+[INFO] No tests to run.
+[INFO] 
+[INFO] ------------------< com.appnexus:workflow-contracts >-------------------
+[INFO] Building workflow-contracts 0.1.0-SNAPSHOT                       [17/39]
+[INFO]   from contracts\workflow-contracts\pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- enforcer:3.6.2:enforce (enforce-toolchain) @ workflow-contracts ---
+[INFO] 
+[INFO] --- resources:3.5.0:resources (default-resources) @ workflow-contracts ---
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\contracts\workflow-contracts\src\main\resources
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\contracts\workflow-contracts\src\main\resources
+[INFO] 
+[INFO] --- compiler:3.15.0:compile (default-compile) @ workflow-contracts ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- resources:3.5.0:testResources (default-testResources) @ workflow-contracts ---
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\contracts\workflow-contracts\src\test\resources
+[INFO] 
+[INFO] --- compiler:3.15.0:testCompile (default-testCompile) @ workflow-contracts ---
+[INFO] No sources to compile
+[INFO] 
+[INFO] --- surefire:3.5.6:test (default-test) @ workflow-contracts ---
+[INFO] No tests to run.
+[INFO] 
+[INFO] --------------------< com.appnexus:print-contracts >--------------------
+[INFO] Building print-contracts 0.1.0-SNAPSHOT                          [18/39]
+[INFO]   from contracts\print-contracts\pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- enforcer:3.6.2:enforce (enforce-toolchain) @ print-contracts ---
+[INFO] 
+[INFO] --- resources:3.5.0:resources (default-resources) @ print-contracts ---
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\contracts\print-contracts\src\main\resources
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\contracts\print-contracts\src\main\resources
+[INFO] 
+[INFO] --- compiler:3.15.0:compile (default-compile) @ print-contracts ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- resources:3.5.0:testResources (default-testResources) @ print-contracts ---
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\contracts\print-contracts\src\test\resources
+[INFO] 
+[INFO] --- compiler:3.15.0:testCompile (default-testCompile) @ print-contracts ---
+[INFO] No sources to compile
+[INFO] 
+[INFO] --- surefire:3.5.6:test (default-test) @ print-contracts ---
+[INFO] No tests to run.
+[INFO] 
+[INFO] ---------------< com.appnexus:platform-business-object >----------------
+[INFO] Building platform-business-object 0.1.0-SNAPSHOT                 [19/39]
+[INFO]   from services\platform-service\business-object\pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- enforcer:3.6.2:enforce (enforce-toolchain) @ platform-business-object ---
+[INFO] 
+[INFO] --- resources:3.5.0:resources (default-resources) @ platform-business-object ---
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\services\platform-service\business-object\src\main\resources
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\services\platform-service\business-object\src\main\resources
+[INFO] 
+[INFO] --- compiler:3.15.0:compile (default-compile) @ platform-business-object ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- resources:3.5.0:testResources (default-testResources) @ platform-business-object ---
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\services\platform-service\business-object\src\test\resources
+[INFO] 
+[INFO] --- compiler:3.15.0:testCompile (default-testCompile) @ platform-business-object ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- surefire:3.5.6:test (default-test) @ platform-business-object ---
+[INFO] 
+[INFO] -------------------< com.appnexus:platform-adapters >-------------------
+[INFO] Building platform-adapters 0.1.0-SNAPSHOT                        [20/39]
+[INFO]   from services\platform-service\adapters\pom.xml
+[INFO] --------------------------------[ pom ]---------------------------------
+[INFO] 
+[INFO] --- enforcer:3.6.2:enforce (enforce-toolchain) @ platform-adapters ---
+[INFO] 
+[INFO] ---------------< com.appnexus:platform-app-api-adapter >----------------
+[INFO] Building platform-app-api-adapter 0.1.0-SNAPSHOT                 [21/39]
+[INFO]   from services\platform-service\adapters\app-api\pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- enforcer:3.6.2:enforce (enforce-toolchain) @ platform-app-api-adapter ---
+[INFO] 
+[INFO] --- resources:3.5.0:resources (default-resources) @ platform-app-api-adapter ---
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\services\platform-service\adapters\app-api\src\main\resources
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\services\platform-service\adapters\app-api\src\main\resources
+[INFO] 
+[INFO] --- compiler:3.15.0:compile (default-compile) @ platform-app-api-adapter ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- resources:3.5.0:testResources (default-testResources) @ platform-app-api-adapter ---
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\services\platform-service\adapters\app-api\src\test\resources
+[INFO] 
+[INFO] --- compiler:3.15.0:testCompile (default-testCompile) @ platform-app-api-adapter ---
+[INFO] No sources to compile
+[INFO] 
+[INFO] --- surefire:3.5.6:test (default-test) @ platform-app-api-adapter ---
+[INFO] No tests to run.
+[INFO] 
+[INFO] -------------< com.appnexus:platform-partner-api-adapter >--------------
+[INFO] Building platform-partner-api-adapter 0.1.0-SNAPSHOT             [22/39]
+[INFO]   from services\platform-service\adapters\partner-api\pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- enforcer:3.6.2:enforce (enforce-toolchain) @ platform-partner-api-adapter ---
+[INFO] 
+[INFO] --- resources:3.5.0:resources (default-resources) @ platform-partner-api-adapter ---
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\services\platform-service\adapters\partner-api\src\main\resources
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\services\platform-service\adapters\partner-api\src\main\resources
+[INFO] 
+[INFO] --- compiler:3.15.0:compile (default-compile) @ platform-partner-api-adapter ---
+[INFO] No sources to compile
+[INFO] 
+[INFO] --- resources:3.5.0:testResources (default-testResources) @ platform-partner-api-adapter ---
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\services\platform-service\adapters\partner-api\src\test\resources
+[INFO] 
+[INFO] --- compiler:3.15.0:testCompile (default-testCompile) @ platform-partner-api-adapter ---
+[INFO] No sources to compile
+[INFO] 
+[INFO] --- surefire:3.5.6:test (default-test) @ platform-partner-api-adapter ---
+[INFO] No tests to run.
+[INFO] 
+[INFO] ------------< com.appnexus:platform-management-api-adapter >------------
+[INFO] Building platform-management-api-adapter 0.1.0-SNAPSHOT          [23/39]
+[INFO]   from services\platform-service\adapters\platform-api\pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- enforcer:3.6.2:enforce (enforce-toolchain) @ platform-management-api-adapter ---
+[INFO] 
+[INFO] --- resources:3.5.0:resources (default-resources) @ platform-management-api-adapter ---
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\services\platform-service\adapters\platform-api\src\main\resources
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\services\platform-service\adapters\platform-api\src\main\resources
+[INFO] 
+[INFO] --- compiler:3.15.0:compile (default-compile) @ platform-management-api-adapter ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- resources:3.5.0:testResources (default-testResources) @ platform-management-api-adapter ---
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\services\platform-service\adapters\platform-api\src\test\resources
+[INFO] 
+[INFO] --- compiler:3.15.0:testCompile (default-testCompile) @ platform-management-api-adapter ---
+[INFO] No sources to compile
+[INFO] 
+[INFO] --- surefire:3.5.6:test (default-test) @ platform-management-api-adapter ---
+[INFO] No tests to run.
+[INFO] 
+[INFO] -------------< com.appnexus:platform-persistence-adapter >--------------
+[INFO] Building platform-persistence-adapter 0.1.0-SNAPSHOT             [24/39]
+[INFO]   from services\platform-service\adapters\persistence\pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- enforcer:3.6.2:enforce (enforce-toolchain) @ platform-persistence-adapter ---
+[INFO] 
+[INFO] --- resources:3.5.0:resources (default-resources) @ platform-persistence-adapter ---
+[INFO] Copying 0 resource from src\main\resources to target-agent\classes
+[INFO] Copying 80 resources from src\main\resources to target-agent\classes
+[INFO] 
+[INFO] --- compiler:3.15.0:compile (default-compile) @ platform-persistence-adapter ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- resources:3.5.0:testResources (default-testResources) @ platform-persistence-adapter ---
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\services\platform-service\adapters\persistence\src\test\resources
+[INFO] 
+[INFO] --- compiler:3.15.0:testCompile (default-testCompile) @ platform-persistence-adapter ---
+[INFO] No sources to compile
+[INFO] 
+[INFO] --- surefire:3.5.6:test (default-test) @ platform-persistence-adapter ---
+[INFO] No tests to run.
+[INFO] 
+[INFO] ---------------< com.appnexus:platform-security-adapter >---------------
+[INFO] Building platform-security-adapter 0.1.0-SNAPSHOT                [25/39]
+[INFO]   from services\platform-service\adapters\security\pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- enforcer:3.6.2:enforce (enforce-toolchain) @ platform-security-adapter ---
+[INFO] 
+[INFO] --- resources:3.5.0:resources (default-resources) @ platform-security-adapter ---
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\services\platform-service\adapters\security\src\main\resources
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\services\platform-service\adapters\security\src\main\resources
+[INFO] 
+[INFO] --- compiler:3.15.0:compile (default-compile) @ platform-security-adapter ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- resources:3.5.0:testResources (default-testResources) @ platform-security-adapter ---
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\services\platform-service\adapters\security\src\test\resources
+[INFO] 
+[INFO] --- compiler:3.15.0:testCompile (default-testCompile) @ platform-security-adapter ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- surefire:3.5.6:test (default-test) @ platform-security-adapter ---
+[INFO] 
+[INFO] ---------------< com.appnexus:platform-eventing-adapter >---------------
+[INFO] Building platform-eventing-adapter 0.1.0-SNAPSHOT                [26/39]
+[INFO]   from services\platform-service\adapters\eventing\pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- enforcer:3.6.2:enforce (enforce-toolchain) @ platform-eventing-adapter ---
+[INFO] 
+[INFO] --- resources:3.5.0:resources (default-resources) @ platform-eventing-adapter ---
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\services\platform-service\adapters\eventing\src\main\resources
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\services\platform-service\adapters\eventing\src\main\resources
+[INFO] 
+[INFO] --- compiler:3.15.0:compile (default-compile) @ platform-eventing-adapter ---
+[INFO] No sources to compile
+[INFO] 
+[INFO] --- resources:3.5.0:testResources (default-testResources) @ platform-eventing-adapter ---
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\services\platform-service\adapters\eventing\src\test\resources
+[INFO] 
+[INFO] --- compiler:3.15.0:testCompile (default-testCompile) @ platform-eventing-adapter ---
+[INFO] No sources to compile
+[INFO] 
+[INFO] --- surefire:3.5.6:test (default-test) @ platform-eventing-adapter ---
+[INFO] No tests to run.
+[INFO] 
+[INFO] ------------< com.appnexus:platform-observability-adapter >-------------
+[INFO] Building platform-observability-adapter 0.1.0-SNAPSHOT           [27/39]
+[INFO]   from services\platform-service\adapters\observability\pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- enforcer:3.6.2:enforce (enforce-toolchain) @ platform-observability-adapter ---
+[INFO] 
+[INFO] --- resources:3.5.0:resources (default-resources) @ platform-observability-adapter ---
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\services\platform-service\adapters\observability\src\main\resources
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\services\platform-service\adapters\observability\src\main\resources
+[INFO] 
+[INFO] --- compiler:3.15.0:compile (default-compile) @ platform-observability-adapter ---
+[INFO] No sources to compile
+[INFO] 
+[INFO] --- resources:3.5.0:testResources (default-testResources) @ platform-observability-adapter ---
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\services\platform-service\adapters\observability\src\test\resources
+[INFO] 
+[INFO] --- compiler:3.15.0:testCompile (default-testCompile) @ platform-observability-adapter ---
+[INFO] No sources to compile
+[INFO] 
+[INFO] --- surefire:3.5.6:test (default-test) @ platform-observability-adapter ---
+[INFO] No tests to run.
+[INFO] 
+[INFO] -------------------< com.appnexus:workflow-service >--------------------
+[INFO] Building workflow-service 0.1.0-SNAPSHOT                         [28/39]
+[INFO]   from services\workflow-service\pom.xml
+[INFO] --------------------------------[ pom ]---------------------------------
+[INFO] 
+[INFO] --- enforcer:3.6.2:enforce (enforce-toolchain) @ workflow-service ---
+[INFO] 
+[INFO] ---------------------< com.appnexus:workflow-core >---------------------
+[INFO] Building workflow-core 0.1.0-SNAPSHOT                            [29/39]
+[INFO]   from services\workflow-service\core\pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- enforcer:3.6.2:enforce (enforce-toolchain) @ workflow-core ---
+[INFO] 
+[INFO] --- resources:3.5.0:resources (default-resources) @ workflow-core ---
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\services\workflow-service\core\src\main\resources
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\services\workflow-service\core\src\main\resources
+[INFO] 
+[INFO] --- compiler:3.15.0:compile (default-compile) @ workflow-core ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- resources:3.5.0:testResources (default-testResources) @ workflow-core ---
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\services\workflow-service\core\src\test\resources
+[INFO] 
+[INFO] --- compiler:3.15.0:testCompile (default-testCompile) @ workflow-core ---
+[INFO] No sources to compile
+[INFO] 
+[INFO] --- surefire:3.5.6:test (default-test) @ workflow-core ---
+[INFO] No tests to run.
+[INFO] 
+[INFO] -------------------< com.appnexus:workflow-adapters >-------------------
+[INFO] Building workflow-adapters 0.1.0-SNAPSHOT                        [30/39]
+[INFO]   from services\workflow-service\adapters\pom.xml
+[INFO] --------------------------------[ pom ]---------------------------------
+[INFO] 
+[INFO] --- enforcer:3.6.2:enforce (enforce-toolchain) @ workflow-adapters ---
+[INFO] 
+[INFO] ---------------< com.appnexus:workflow-flowable-adapter >---------------
+[INFO] Building workflow-flowable-adapter 0.1.0-SNAPSHOT                [31/39]
+[INFO]   from services\workflow-service\adapters\flowable\pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- enforcer:3.6.2:enforce (enforce-toolchain) @ workflow-flowable-adapter ---
+[INFO] 
+[INFO] --- resources:3.5.0:resources (default-resources) @ workflow-flowable-adapter ---
+[INFO] Copying 0 resource from src\main\resources to target-agent\classes
+[INFO] Copying 6 resources from src\main\resources to target-agent\classes
+[INFO] 
+[INFO] --- compiler:3.15.0:compile (default-compile) @ workflow-flowable-adapter ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- resources:3.5.0:testResources (default-testResources) @ workflow-flowable-adapter ---
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\services\workflow-service\adapters\flowable\src\test\resources
+[INFO] 
+[INFO] --- compiler:3.15.0:testCompile (default-testCompile) @ workflow-flowable-adapter ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- surefire:3.5.6:test (default-test) @ workflow-flowable-adapter ---
+[INFO] 
+[INFO] ------------------< com.appnexus:master-data-service >------------------
+[INFO] Building master-data-service 0.1.0-SNAPSHOT                      [32/39]
+[INFO]   from services\master-data-service\pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- enforcer:3.6.2:enforce (enforce-toolchain) @ master-data-service ---
+[INFO] 
+[INFO] --- resources:3.5.0:resources (default-resources) @ master-data-service ---
+[INFO] Copying 0 resource from src\main\resources to target-agent\classes
+[INFO] Copying 41 resources from src\main\resources to target-agent\classes
+[INFO] 
+[INFO] --- compiler:3.15.0:compile (default-compile) @ master-data-service ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- resources:3.5.0:testResources (default-testResources) @ master-data-service ---
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\services\master-data-service\src\test\resources
+[INFO] 
+[INFO] --- compiler:3.15.0:testCompile (default-testCompile) @ master-data-service ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- surefire:3.5.6:test (default-test) @ master-data-service ---
+[INFO] 
+[INFO] -----------------------< com.appnexus:leave-poc >-----------------------
+[INFO] Building leave-poc 0.1.0-SNAPSHOT                                [33/39]
+[INFO]   from services\leave-poc\pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- enforcer:3.6.2:enforce (enforce-toolchain) @ leave-poc ---
+[INFO] 
+[INFO] --- resources:3.5.0:resources (default-resources) @ leave-poc ---
+[INFO] Copying 0 resource from src\main\resources to target-agent\classes
+[INFO] Copying 6 resources from src\main\resources to target-agent\classes
+[INFO] 
+[INFO] --- compiler:3.15.0:compile (default-compile) @ leave-poc ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- resources:3.5.0:testResources (default-testResources) @ leave-poc ---
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\services\leave-poc\src\test\resources
+[INFO] 
+[INFO] --- compiler:3.15.0:testCompile (default-testCompile) @ leave-poc ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- surefire:3.5.6:test (default-test) @ leave-poc ---
+[INFO] 
+[INFO] ---------------------< com.appnexus:print-service >---------------------
+[INFO] Building print-service 0.1.0-SNAPSHOT                            [34/39]
+[INFO]   from services\print-service\pom.xml
+[INFO] --------------------------------[ pom ]---------------------------------
+[INFO] 
+[INFO] --- enforcer:3.6.2:enforce (enforce-toolchain) @ print-service ---
+[INFO] 
+[INFO] ----------------------< com.appnexus:print-core >-----------------------
+[INFO] Building print-core 0.1.0-SNAPSHOT                               [35/39]
+[INFO]   from services\print-service\core\pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- enforcer:3.6.2:enforce (enforce-toolchain) @ print-core ---
+[INFO] 
+[INFO] --- resources:3.5.0:resources (default-resources) @ print-core ---
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\services\print-service\core\src\main\resources
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\services\print-service\core\src\main\resources
+[INFO] 
+[INFO] --- compiler:3.15.0:compile (default-compile) @ print-core ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- resources:3.5.0:testResources (default-testResources) @ print-core ---
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\services\print-service\core\src\test\resources
+[INFO] 
+[INFO] --- compiler:3.15.0:testCompile (default-testCompile) @ print-core ---
+[INFO] No sources to compile
+[INFO] 
+[INFO] --- surefire:3.5.6:test (default-test) @ print-core ---
+[INFO] No tests to run.
+[INFO] 
+[INFO] --------------------< com.appnexus:print-adapters >---------------------
+[INFO] Building print-adapters 0.1.0-SNAPSHOT                           [36/39]
+[INFO]   from services\print-service\adapters\pom.xml
+[INFO] --------------------------------[ pom ]---------------------------------
+[INFO] 
+[INFO] --- enforcer:3.6.2:enforce (enforce-toolchain) @ print-adapters ---
+[INFO] 
+[INFO] ------------------< com.appnexus:print-jdbc-adapter >-------------------
+[INFO] Building print-jdbc-adapter 0.1.0-SNAPSHOT                       [37/39]
+[INFO]   from services\print-service\adapters\jdbc\pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- enforcer:3.6.2:enforce (enforce-toolchain) @ print-jdbc-adapter ---
+[INFO] 
+[INFO] --- resources:3.5.0:resources (default-resources) @ print-jdbc-adapter ---
+[INFO] Copying 0 resource from src\main\resources to target-agent\classes
+[INFO] Copying 6 resources from src\main\resources to target-agent\classes
+[INFO] 
+[INFO] --- compiler:3.15.0:compile (default-compile) @ print-jdbc-adapter ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- resources:3.5.0:testResources (default-testResources) @ print-jdbc-adapter ---
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\services\print-service\adapters\jdbc\src\test\resources
+[INFO] 
+[INFO] --- compiler:3.15.0:testCompile (default-testCompile) @ print-jdbc-adapter ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- surefire:3.5.6:test (default-test) @ print-jdbc-adapter ---
+[INFO] 
+[INFO] ---------------------< com.appnexus:applications >----------------------
+[INFO] Building applications 0.1.0-SNAPSHOT                             [38/39]
+[INFO]   from applications\pom.xml
+[INFO] --------------------------------[ pom ]---------------------------------
+[INFO] 
+[INFO] --- enforcer:3.6.2:enforce (enforce-toolchain) @ applications ---
+[INFO] 
+[INFO] ---------------------< com.appnexus:monolith-app >----------------------
+[INFO] Building monolith-app 0.1.0-SNAPSHOT                             [39/39]
+[INFO]   from applications\monolith-app\pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- enforcer:3.6.2:enforce (enforce-toolchain) @ monolith-app ---
+[INFO] 
+[INFO] --- resources:3.5.0:resources (default-resources) @ monolith-app ---
+[INFO] Copying 2 resources from src\main\resources to target-agent\classes
+[INFO] Copying 0 resource from src\main\resources to target-agent\classes
+[INFO] 
+[INFO] --- compiler:3.15.0:compile (default-compile) @ monolith-app ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- resources:3.5.0:testResources (default-testResources) @ monolith-app ---
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\applications\monolith-app\src\test\resources
+[INFO] 
+[INFO] --- compiler:3.15.0:testCompile (default-testCompile) @ monolith-app ---
+[INFO] Recompiling the module because of changed source code.
+[INFO] Compiling 75 source files with javac [debug parameters release 21] to target-agent\test-classes
+[INFO] /D:/AppNexus/backend/applications/monolith-app/src/test/java/com/appnexus/platform/PersonnelIntegrationTest.java: ĳЩ�����ļ�ʹ�û򸲸����ѹ�ʱ�� API��
+[INFO] /D:/AppNexus/backend/applications/monolith-app/src/test/java/com/appnexus/platform/PersonnelIntegrationTest.java: �й���ϸ��Ϣ, ��ʹ�� -Xlint:deprecation ���±��롣
+[INFO] /D:/AppNexus/backend/applications/monolith-app/src/test/java/com/appnexus/platform/DatabaseTestSupport.java: ĳЩ�����ļ�ʹ����δ�����򲻰�ȫ�Ĳ�����
+[INFO] /D:/AppNexus/backend/applications/monolith-app/src/test/java/com/appnexus/platform/DatabaseTestSupport.java: �й���ϸ��Ϣ, ��ʹ�� -Xlint:unchecked ���±��롣
+[INFO] 
+[INFO] --- surefire:3.5.6:test (default-test) @ monolith-app ---
+[INFO] Using auto detected provider org.apache.maven.surefire.junitplatform.JUnitPlatformProvider
+[INFO] 
+[INFO] -------------------------------------------------------
+[INFO]  T E S T S
+[INFO] -------------------------------------------------------
+[INFO] Running com.appnexus.platform.RowAccessControlTest
+[INFO] Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.495 s -- in com.appnexus.platform.RowAccessControlTest
+[INFO] 
+[INFO] Results:
+[INFO] 
+[INFO] Tests run: 5, Failures: 0, Errors: 0, Skipped: 0
+[INFO] 
+[INFO] ------------------------------------------------------------------------
+[INFO] Reactor Summary for backend 0.1.0-SNAPSHOT:
+[INFO] 
+[INFO] backend ............................................ SUCCESS [  0.773 s]
+[INFO] building-blocks .................................... SUCCESS [  0.011 s]
+[INFO] mybatis-scope ...................................... SUCCESS [  1.428 s]
+[INFO] services ........................................... SUCCESS [  0.009 s]
+[INFO] platform-service ................................... SUCCESS [  0.006 s]
+[INFO] platform-identity .................................. SUCCESS [  0.061 s]
+[INFO] contracts .......................................... SUCCESS [  0.009 s]
+[INFO] data-contracts ..................................... SUCCESS [  0.269 s]
+[INFO] business-object-contracts .......................... SUCCESS [  0.061 s]
+[INFO] platform-authorization ............................. SUCCESS [  0.152 s]
+[INFO] platform-tenant .................................... SUCCESS [  0.131 s]
+[INFO] platform-configuration ............................. SUCCESS [  0.069 s]
+[INFO] operation-contracts ................................ SUCCESS [  0.059 s]
+[INFO] platform-organization .............................. SUCCESS [  0.890 s]
+[INFO] platform-localization .............................. SUCCESS [  0.028 s]
+[INFO] platform-audit ..................................... SUCCESS [  0.021 s]
+[INFO] workflow-contracts ................................. SUCCESS [  0.039 s]
+[INFO] print-contracts .................................... SUCCESS [  0.029 s]
+[INFO] platform-business-object ........................... SUCCESS [  0.206 s]
+[INFO] platform-adapters .................................. SUCCESS [  0.003 s]
+[INFO] platform-app-api-adapter ........................... SUCCESS [  0.144 s]
+[INFO] platform-partner-api-adapter ....................... SUCCESS [  0.012 s]
+[INFO] platform-management-api-adapter .................... SUCCESS [  0.233 s]
+[INFO] platform-persistence-adapter ....................... SUCCESS [  0.739 s]
+[INFO] platform-security-adapter .......................... SUCCESS [  1.842 s]
+[INFO] platform-eventing-adapter .......................... SUCCESS [  0.011 s]
+[INFO] platform-observability-adapter ..................... SUCCESS [  0.013 s]
+[INFO] workflow-service ................................... SUCCESS [  0.003 s]
+[INFO] workflow-core ...................................... SUCCESS [  0.029 s]
+[INFO] workflow-adapters .................................. SUCCESS [  0.002 s]
+[INFO] workflow-flowable-adapter .......................... SUCCESS [  1.270 s]
+[INFO] master-data-service ................................ SUCCESS [  0.805 s]
+[INFO] leave-poc .......................................... SUCCESS [  0.664 s]
+[INFO] print-service ...................................... SUCCESS [  0.002 s]
+[INFO] print-core ......................................... SUCCESS [  0.020 s]
+[INFO] print-adapters ..................................... SUCCESS [  0.001 s]
+[INFO] print-jdbc-adapter ................................. SUCCESS [  0.451 s]
+[INFO] applications ....................................... SUCCESS [  0.002 s]
+[INFO] monolith-app ....................................... SUCCESS [ 22.681 s]
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  34.660 s
+[INFO] Finished at: 2026-11-20T18:56:59+08:00
+[INFO] ------------------------------------------------------------------------

@@ -29,7 +29,7 @@ class BusinessValueDictionaryTest extends DatabaseTestSupport {
   jdbc.update("INSERT INTO platform_tenant(id,name) VALUES(UUID_TO_BIN(?),'字典独立测试租户')",tenant.toString());
   jdbc.update("INSERT INTO identity_account(id,username,display_name,password_hash) VALUES(UUID_TO_BIN(?),?,'字典测试账号','unused')",actor.toString(),"dict-"+actor);
   jdbc.update("INSERT INTO tenant_member(id,tenant_id,account_id) VALUES(UUID_TO_BIN(?),UUID_TO_BIN(?),UUID_TO_BIN(?))",member.toString(),tenant.toString(),actor.toString());
-  StandardDictionaryDefaults.seed(jdbc,tenant,actor);bootstrap.initialize(tenant,member);
+  DictionaryFixtures.seed(jdbc,tenant,actor);bootstrap.initialize(tenant,member);
   return new VerifiedTenantContext(actor,tenant,member,1);
  }
  @org.junit.jupiter.api.AfterEach void clearRequest(){org.springframework.web.context.request.RequestContextHolder.resetRequestAttributes();}
@@ -48,7 +48,7 @@ class BusinessValueDictionaryTest extends DatabaseTestSupport {
   String id=master.create(c,MasterData.Kind.PARTNER,new MasterData.Input("DYNAMIC","动态字典客商",attributes,0,null,null,organization)).get("id");
   assertThat(catalog.options(c.tenantId(),BusinessValueCatalog.PARTNER).get("partnerType")).anyMatch(row->row.value().equals("CUSTOM_ROLE")&&row.enabled());
   management.updateItem(context,dictionary.id(),option.id(),new DictionaryManagement.UpdateItem(null,"重命名类型",null,DictionaryManagement.Status.DISABLED,1,option.version()));
-  StandardDictionaryDefaults.seed(jdbc,c.tenantId(),null);
+  DictionaryFixtures.seed(jdbc,c.tenantId(),null);
   assertThat(catalog.options(c.tenantId(),BusinessValueCatalog.PARTNER).get("partnerType")).anyMatch(row->row.value().equals("CUSTOM_ROLE")&&!row.enabled()&&row.name().equals("重命名类型"));
   assertThatThrownBy(()->master.create(c,MasterData.Kind.PARTNER,new MasterData.Input("DENIED","停用新选",attributes,0,null,null,organization))).isInstanceOf(MasterData.Rejection.class);
   master.update(c,MasterData.Kind.PARTNER,id,new MasterData.Input("DYNAMIC","保留历史停用值",attributes,0));

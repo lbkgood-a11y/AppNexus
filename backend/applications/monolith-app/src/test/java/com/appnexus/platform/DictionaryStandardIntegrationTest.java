@@ -73,7 +73,7 @@ class DictionaryStandardIntegrationTest extends DatabaseTestSupport {
         assertThat(item(other, "partner_nature", "民营").get("code")).as("其他租户未被迁移当前租户的调用影响").asString().startsWith("v_");
         var snapshot = jdbc.queryForList("SELECT code,item_value,status,name,version,updated_at FROM tenant_dictionary_item WHERE tenant_id=UUID_TO_BIN(?) ORDER BY id", t);
         migrate(tenant);
-        StandardDictionaryDefaults.seed(jdbc, tenant, null);
+        DictionaryFixtures.seed(jdbc, tenant, null);
         assertThat(jdbc.queryForList("SELECT code,item_value,status,name,version,updated_at FROM tenant_dictionary_item WHERE tenant_id=UUID_TO_BIN(?) ORDER BY id", t)).isEqualTo(snapshot);
         assertThat(snapshot).allSatisfy(row -> {
             assertThat(DictionaryValueStandard.validCode((String) row.get("code"))).isTrue();

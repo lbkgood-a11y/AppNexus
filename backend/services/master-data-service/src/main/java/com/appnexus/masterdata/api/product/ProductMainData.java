@@ -17,11 +17,14 @@ public interface ProductMainData {
   * @param productForm PHYSICAL/SERVICE，可空；启用必填
   * @param unitId 实物启用必填，服务按配置规则
   * @param values 类型化属性值列表，可空即无值；已绑定配置下required可缺
+  * @param organizationId 新增必填的本租户启用归属组织UUID，必须处于create范围
   * @param barcode 条码文本，最多500字符，缺省空；保留前导零，不推导SKU
   */
- public record Input(String code,String name,String shortName,String categoryId,String configId,String productForm,String unitId,String description,String brand,String origin,List<Value> values,String barcode){
+ public record Input(String code,String name,String shortName,String categoryId,String configId,String productForm,String unitId,String description,String brand,String origin,List<Value> values,String barcode,String organizationId){
+  /** 原内部调用须显式补归属后方可保存；此构造仅保留源码兼容，不赋予默认组织。 */
+  public Input(String code,String name,String shortName,String categoryId,String configId,String productForm,String unitId,String description,String brand,String origin,List<Value> values,String barcode){this(code,name,shortName,categoryId,configId,productForm,unitId,description,brand,origin,values,barcode,null);}
   /** 内部原调用不提供条码时默认空；条码始终文本，不丢前导零。 */
-  public Input(String code,String name,String shortName,String categoryId,String configId,String productForm,String unitId,String description,String brand,String origin,List<Value> values){this(code,name,shortName,categoryId,configId,productForm,unitId,description,brand,origin,values,"");}
+  public Input(String code,String name,String shortName,String categoryId,String configId,String productForm,String unitId,String description,String brand,String origin,List<Value> values){this(code,name,shortName,categoryId,configId,productForm,unitId,description,brand,origin,values,"",null);}
  }
  /**
   * 动态属性输入；标量与选项互斥，不允许客户端指定类型/修订或单位。
@@ -42,10 +45,13 @@ public interface ProductMainData {
   * @param origin 产地，可空，最多200字符
   * @param values null 保留属性，空列表明确清空；非空逐项验证真实配置与类型
   * @param version 原非负并发版本，必填，冲突不覆盖
+  * @param organizationId 修改目标组织UUID；null保留，空串拒绝，原记录与目标分别校验update范围
   * @param barcode 条码最多500字符；null 保留原值，空串显式清空
   */
- public record Update(String name,String shortName,String description,String brand,String origin,List<Value> values,Long version,String barcode){
+ public record Update(String name,String shortName,String description,String brand,String origin,List<Value> values,Long version,String barcode,String organizationId){
+  /** 缺省归属保留原值，不允许传空串清除。 */
+  public Update(String name,String shortName,String description,String brand,String origin,List<Value> values,Long version,String barcode){this(name,shortName,description,brand,origin,values,version,barcode,null);}
   /** 原内部调用不修改条码，NULL保持原值。 */
-  public Update(String name,String shortName,String description,String brand,String origin,List<Value> values,long version){this(name,shortName,description,brand,origin,values,version,null);}
+  public Update(String name,String shortName,String description,String brand,String origin,List<Value> values,long version){this(name,shortName,description,brand,origin,values,version,null,null);}
  }
 }

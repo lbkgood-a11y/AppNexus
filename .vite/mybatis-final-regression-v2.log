@@ -1,0 +1,1412 @@
+[INFO] Scanning for projects...
+[INFO] ------------------------------------------------------------------------
+[INFO] Reactor Build Order:
+[INFO] 
+[INFO] backend                                                            [pom]
+[INFO] services                                                           [pom]
+[INFO] platform-service                                                   [pom]
+[INFO] platform-identity                                                  [jar]
+[INFO] contracts                                                          [pom]
+[INFO] data-contracts                                                     [jar]
+[INFO] business-object-contracts                                          [jar]
+[INFO] platform-authorization                                             [jar]
+[INFO] platform-tenant                                                    [jar]
+[INFO] platform-configuration                                             [jar]
+[INFO] operation-contracts                                                [jar]
+[INFO] platform-organization                                              [jar]
+[INFO] platform-localization                                              [jar]
+[INFO] platform-audit                                                     [jar]
+[INFO] workflow-contracts                                                 [jar]
+[INFO] print-contracts                                                    [jar]
+[INFO] platform-business-object                                           [jar]
+[INFO] platform-adapters                                                  [pom]
+[INFO] platform-app-api-adapter                                           [jar]
+[INFO] platform-partner-api-adapter                                       [jar]
+[INFO] platform-management-api-adapter                                    [jar]
+[INFO] platform-persistence-adapter                                       [jar]
+[INFO] platform-security-adapter                                          [jar]
+[INFO] platform-eventing-adapter                                          [jar]
+[INFO] platform-observability-adapter                                     [jar]
+[INFO] workflow-service                                                   [pom]
+[INFO] workflow-core                                                      [jar]
+[INFO] workflow-adapters                                                  [pom]
+[INFO] workflow-flowable-adapter                                          [jar]
+[INFO] master-data-service                                                [jar]
+[INFO] leave-poc                                                          [jar]
+[INFO] print-service                                                      [pom]
+[INFO] print-core                                                         [jar]
+[INFO] print-adapters                                                     [pom]
+[INFO] print-jdbc-adapter                                                 [jar]
+[INFO] applications                                                       [pom]
+[INFO] monolith-app                                                       [jar]
+[INFO] backend-architecture-tests                                         [jar]
+[INFO] 
+[INFO] ------------------------< com.appnexus:backend >------------------------
+[INFO] Building backend 0.1.0-SNAPSHOT                                   [1/38]
+[INFO]   from pom.xml
+[INFO] --------------------------------[ pom ]---------------------------------
+[INFO] 
+[INFO] --- enforcer:3.6.2:enforce (enforce-toolchain) @ backend ---
+[INFO] Rule 0: org.apache.maven.enforcer.rules.version.RequireJavaVersion passed
+[INFO] Rule 1: org.apache.maven.enforcer.rules.version.RequireMavenVersion passed
+[INFO] 
+[INFO] -----------------------< com.appnexus:services >------------------------
+[INFO] Building services 0.1.0-SNAPSHOT                                  [2/38]
+[INFO]   from services\pom.xml
+[INFO] --------------------------------[ pom ]---------------------------------
+[INFO] 
+[INFO] --- enforcer:3.6.2:enforce (enforce-toolchain) @ services ---
+[INFO] 
+[INFO] -------------------< com.appnexus:platform-service >--------------------
+[INFO] Building platform-service 0.1.0-SNAPSHOT                          [3/38]
+[INFO]   from services\platform-service\pom.xml
+[INFO] --------------------------------[ pom ]---------------------------------
+[INFO] 
+[INFO] --- enforcer:3.6.2:enforce (enforce-toolchain) @ platform-service ---
+[INFO] 
+[INFO] -------------------< com.appnexus:platform-identity >-------------------
+[INFO] Building platform-identity 0.1.0-SNAPSHOT                         [4/38]
+[INFO]   from services\platform-service\identity\pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- enforcer:3.6.2:enforce (enforce-toolchain) @ platform-identity ---
+[INFO] 
+[INFO] --- resources:3.5.0:resources (default-resources) @ platform-identity ---
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\services\platform-service\identity\src\main\resources
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\services\platform-service\identity\src\main\resources
+[INFO] 
+[INFO] --- compiler:3.15.0:compile (default-compile) @ platform-identity ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- resources:3.5.0:testResources (default-testResources) @ platform-identity ---
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\services\platform-service\identity\src\test\resources
+[INFO] 
+[INFO] --- compiler:3.15.0:testCompile (default-testCompile) @ platform-identity ---
+[INFO] No sources to compile
+[INFO] 
+[INFO] --- surefire:3.5.6:test (default-test) @ platform-identity ---
+[INFO] No tests to run.
+[INFO] 
+[INFO] -----------------------< com.appnexus:contracts >-----------------------
+[INFO] Building contracts 0.1.0-SNAPSHOT                                 [5/38]
+[INFO]   from contracts\pom.xml
+[INFO] --------------------------------[ pom ]---------------------------------
+[INFO] 
+[INFO] --- enforcer:3.6.2:enforce (enforce-toolchain) @ contracts ---
+[INFO] 
+[INFO] --------------------< com.appnexus:data-contracts >---------------------
+[INFO] Building data-contracts 0.1.0-SNAPSHOT                            [6/38]
+[INFO]   from contracts\data-contracts\pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- enforcer:3.6.2:enforce (enforce-toolchain) @ data-contracts ---
+[INFO] 
+[INFO] --- resources:3.5.0:resources (default-resources) @ data-contracts ---
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\contracts\data-contracts\src\main\resources
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\contracts\data-contracts\src\main\resources
+[INFO] 
+[INFO] --- compiler:3.15.0:compile (default-compile) @ data-contracts ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- resources:3.5.0:testResources (default-testResources) @ data-contracts ---
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\contracts\data-contracts\src\test\resources
+[INFO] 
+[INFO] --- compiler:3.15.0:testCompile (default-testCompile) @ data-contracts ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- surefire:3.5.6:test (default-test) @ data-contracts ---
+[INFO] 
+[INFO] ---------------< com.appnexus:business-object-contracts >---------------
+[INFO] Building business-object-contracts 0.1.0-SNAPSHOT                 [7/38]
+[INFO]   from contracts\business-object-contracts\pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- enforcer:3.6.2:enforce (enforce-toolchain) @ business-object-contracts ---
+[INFO] 
+[INFO] --- resources:3.5.0:resources (default-resources) @ business-object-contracts ---
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\contracts\business-object-contracts\src\main\resources
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\contracts\business-object-contracts\src\main\resources
+[INFO] 
+[INFO] --- compiler:3.15.0:compile (default-compile) @ business-object-contracts ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- resources:3.5.0:testResources (default-testResources) @ business-object-contracts ---
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\contracts\business-object-contracts\src\test\resources
+[INFO] 
+[INFO] --- compiler:3.15.0:testCompile (default-testCompile) @ business-object-contracts ---
+[INFO] No sources to compile
+[INFO] 
+[INFO] --- surefire:3.5.6:test (default-test) @ business-object-contracts ---
+[INFO] No tests to run.
+[INFO] 
+[INFO] ----------------< com.appnexus:platform-authorization >-----------------
+[INFO] Building platform-authorization 0.1.0-SNAPSHOT                    [8/38]
+[INFO]   from services\platform-service\authorization\pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- enforcer:3.6.2:enforce (enforce-toolchain) @ platform-authorization ---
+[INFO] 
+[INFO] --- resources:3.5.0:resources (default-resources) @ platform-authorization ---
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\services\platform-service\authorization\src\main\resources
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\services\platform-service\authorization\src\main\resources
+[INFO] 
+[INFO] --- compiler:3.15.0:compile (default-compile) @ platform-authorization ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- resources:3.5.0:testResources (default-testResources) @ platform-authorization ---
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\services\platform-service\authorization\src\test\resources
+[INFO] 
+[INFO] --- compiler:3.15.0:testCompile (default-testCompile) @ platform-authorization ---
+[INFO] No sources to compile
+[INFO] 
+[INFO] --- surefire:3.5.6:test (default-test) @ platform-authorization ---
+[INFO] No tests to run.
+[INFO] 
+[INFO] --------------------< com.appnexus:platform-tenant >--------------------
+[INFO] Building platform-tenant 0.1.0-SNAPSHOT                           [9/38]
+[INFO]   from services\platform-service\tenant\pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- enforcer:3.6.2:enforce (enforce-toolchain) @ platform-tenant ---
+[INFO] 
+[INFO] --- resources:3.5.0:resources (default-resources) @ platform-tenant ---
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\services\platform-service\tenant\src\main\resources
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\services\platform-service\tenant\src\main\resources
+[INFO] 
+[INFO] --- compiler:3.15.0:compile (default-compile) @ platform-tenant ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- resources:3.5.0:testResources (default-testResources) @ platform-tenant ---
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\services\platform-service\tenant\src\test\resources
+[INFO] 
+[INFO] --- compiler:3.15.0:testCompile (default-testCompile) @ platform-tenant ---
+[INFO] No sources to compile
+[INFO] 
+[INFO] --- surefire:3.5.6:test (default-test) @ platform-tenant ---
+[INFO] No tests to run.
+[INFO] 
+[INFO] ----------------< com.appnexus:platform-configuration >-----------------
+[INFO] Building platform-configuration 0.1.0-SNAPSHOT                   [10/38]
+[INFO]   from services\platform-service\configuration\pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- enforcer:3.6.2:enforce (enforce-toolchain) @ platform-configuration ---
+[INFO] 
+[INFO] --- resources:3.5.0:resources (default-resources) @ platform-configuration ---
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\services\platform-service\configuration\src\main\resources
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\services\platform-service\configuration\src\main\resources
+[INFO] 
+[INFO] --- compiler:3.15.0:compile (default-compile) @ platform-configuration ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- resources:3.5.0:testResources (default-testResources) @ platform-configuration ---
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\services\platform-service\configuration\src\test\resources
+[INFO] 
+[INFO] --- compiler:3.15.0:testCompile (default-testCompile) @ platform-configuration ---
+[INFO] No sources to compile
+[INFO] 
+[INFO] --- surefire:3.5.6:test (default-test) @ platform-configuration ---
+[INFO] No tests to run.
+[INFO] 
+[INFO] ------------------< com.appnexus:operation-contracts >------------------
+[INFO] Building operation-contracts 0.1.0-SNAPSHOT                      [11/38]
+[INFO]   from contracts\operation-contracts\pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- enforcer:3.6.2:enforce (enforce-toolchain) @ operation-contracts ---
+[INFO] 
+[INFO] --- resources:3.5.0:resources (default-resources) @ operation-contracts ---
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\contracts\operation-contracts\src\main\resources
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\contracts\operation-contracts\src\main\resources
+[INFO] 
+[INFO] --- compiler:3.15.0:compile (default-compile) @ operation-contracts ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- resources:3.5.0:testResources (default-testResources) @ operation-contracts ---
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\contracts\operation-contracts\src\test\resources
+[INFO] 
+[INFO] --- compiler:3.15.0:testCompile (default-testCompile) @ operation-contracts ---
+[INFO] No sources to compile
+[INFO] 
+[INFO] --- surefire:3.5.6:test (default-test) @ operation-contracts ---
+[INFO] No tests to run.
+[INFO] 
+[INFO] -----------------< com.appnexus:platform-organization >-----------------
+[INFO] Building platform-organization 0.1.0-SNAPSHOT                    [12/38]
+[INFO]   from services\platform-service\organization\pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- enforcer:3.6.2:enforce (enforce-toolchain) @ platform-organization ---
+[INFO] 
+[INFO] --- resources:3.5.0:resources (default-resources) @ platform-organization ---
+[INFO] Copying 0 resource from src\main\resources to target-agent\classes
+[INFO] Copying 1 resource from src\main\resources to target-agent\classes
+[INFO] 
+[INFO] --- compiler:3.15.0:compile (default-compile) @ platform-organization ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- resources:3.5.0:testResources (default-testResources) @ platform-organization ---
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\services\platform-service\organization\src\test\resources
+[INFO] 
+[INFO] --- compiler:3.15.0:testCompile (default-testCompile) @ platform-organization ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- surefire:3.5.6:test (default-test) @ platform-organization ---
+[INFO] 
+[INFO] -----------------< com.appnexus:platform-localization >-----------------
+[INFO] Building platform-localization 0.1.0-SNAPSHOT                    [13/38]
+[INFO]   from services\platform-service\localization\pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- enforcer:3.6.2:enforce (enforce-toolchain) @ platform-localization ---
+[INFO] 
+[INFO] --- resources:3.5.0:resources (default-resources) @ platform-localization ---
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\services\platform-service\localization\src\main\resources
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\services\platform-service\localization\src\main\resources
+[INFO] 
+[INFO] --- compiler:3.15.0:compile (default-compile) @ platform-localization ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- resources:3.5.0:testResources (default-testResources) @ platform-localization ---
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\services\platform-service\localization\src\test\resources
+[INFO] 
+[INFO] --- compiler:3.15.0:testCompile (default-testCompile) @ platform-localization ---
+[INFO] No sources to compile
+[INFO] 
+[INFO] --- surefire:3.5.6:test (default-test) @ platform-localization ---
+[INFO] No tests to run.
+[INFO] 
+[INFO] --------------------< com.appnexus:platform-audit >---------------------
+[INFO] Building platform-audit 0.1.0-SNAPSHOT                           [14/38]
+[INFO]   from services\platform-service\audit\pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- enforcer:3.6.2:enforce (enforce-toolchain) @ platform-audit ---
+[INFO] 
+[INFO] --- resources:3.5.0:resources (default-resources) @ platform-audit ---
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\services\platform-service\audit\src\main\resources
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\services\platform-service\audit\src\main\resources
+[INFO] 
+[INFO] --- compiler:3.15.0:compile (default-compile) @ platform-audit ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- resources:3.5.0:testResources (default-testResources) @ platform-audit ---
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\services\platform-service\audit\src\test\resources
+[INFO] 
+[INFO] --- compiler:3.15.0:testCompile (default-testCompile) @ platform-audit ---
+[INFO] No sources to compile
+[INFO] 
+[INFO] --- surefire:3.5.6:test (default-test) @ platform-audit ---
+[INFO] No tests to run.
+[INFO] 
+[INFO] ------------------< com.appnexus:workflow-contracts >-------------------
+[INFO] Building workflow-contracts 0.1.0-SNAPSHOT                       [15/38]
+[INFO]   from contracts\workflow-contracts\pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- enforcer:3.6.2:enforce (enforce-toolchain) @ workflow-contracts ---
+[INFO] 
+[INFO] --- resources:3.5.0:resources (default-resources) @ workflow-contracts ---
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\contracts\workflow-contracts\src\main\resources
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\contracts\workflow-contracts\src\main\resources
+[INFO] 
+[INFO] --- compiler:3.15.0:compile (default-compile) @ workflow-contracts ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- resources:3.5.0:testResources (default-testResources) @ workflow-contracts ---
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\contracts\workflow-contracts\src\test\resources
+[INFO] 
+[INFO] --- compiler:3.15.0:testCompile (default-testCompile) @ workflow-contracts ---
+[INFO] No sources to compile
+[INFO] 
+[INFO] --- surefire:3.5.6:test (default-test) @ workflow-contracts ---
+[INFO] No tests to run.
+[INFO] 
+[INFO] --------------------< com.appnexus:print-contracts >--------------------
+[INFO] Building print-contracts 0.1.0-SNAPSHOT                          [16/38]
+[INFO]   from contracts\print-contracts\pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- enforcer:3.6.2:enforce (enforce-toolchain) @ print-contracts ---
+[INFO] 
+[INFO] --- resources:3.5.0:resources (default-resources) @ print-contracts ---
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\contracts\print-contracts\src\main\resources
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\contracts\print-contracts\src\main\resources
+[INFO] 
+[INFO] --- compiler:3.15.0:compile (default-compile) @ print-contracts ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- resources:3.5.0:testResources (default-testResources) @ print-contracts ---
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\contracts\print-contracts\src\test\resources
+[INFO] 
+[INFO] --- compiler:3.15.0:testCompile (default-testCompile) @ print-contracts ---
+[INFO] No sources to compile
+[INFO] 
+[INFO] --- surefire:3.5.6:test (default-test) @ print-contracts ---
+[INFO] No tests to run.
+[INFO] 
+[INFO] ---------------< com.appnexus:platform-business-object >----------------
+[INFO] Building platform-business-object 0.1.0-SNAPSHOT                 [17/38]
+[INFO]   from services\platform-service\business-object\pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- enforcer:3.6.2:enforce (enforce-toolchain) @ platform-business-object ---
+[INFO] 
+[INFO] --- resources:3.5.0:resources (default-resources) @ platform-business-object ---
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\services\platform-service\business-object\src\main\resources
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\services\platform-service\business-object\src\main\resources
+[INFO] 
+[INFO] --- compiler:3.15.0:compile (default-compile) @ platform-business-object ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- resources:3.5.0:testResources (default-testResources) @ platform-business-object ---
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\services\platform-service\business-object\src\test\resources
+[INFO] 
+[INFO] --- compiler:3.15.0:testCompile (default-testCompile) @ platform-business-object ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- surefire:3.5.6:test (default-test) @ platform-business-object ---
+[INFO] 
+[INFO] -------------------< com.appnexus:platform-adapters >-------------------
+[INFO] Building platform-adapters 0.1.0-SNAPSHOT                        [18/38]
+[INFO]   from services\platform-service\adapters\pom.xml
+[INFO] --------------------------------[ pom ]---------------------------------
+[INFO] 
+[INFO] --- enforcer:3.6.2:enforce (enforce-toolchain) @ platform-adapters ---
+[INFO] 
+[INFO] ---------------< com.appnexus:platform-app-api-adapter >----------------
+[INFO] Building platform-app-api-adapter 0.1.0-SNAPSHOT                 [19/38]
+[INFO]   from services\platform-service\adapters\app-api\pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- enforcer:3.6.2:enforce (enforce-toolchain) @ platform-app-api-adapter ---
+[INFO] 
+[INFO] --- resources:3.5.0:resources (default-resources) @ platform-app-api-adapter ---
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\services\platform-service\adapters\app-api\src\main\resources
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\services\platform-service\adapters\app-api\src\main\resources
+[INFO] 
+[INFO] --- compiler:3.15.0:compile (default-compile) @ platform-app-api-adapter ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- resources:3.5.0:testResources (default-testResources) @ platform-app-api-adapter ---
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\services\platform-service\adapters\app-api\src\test\resources
+[INFO] 
+[INFO] --- compiler:3.15.0:testCompile (default-testCompile) @ platform-app-api-adapter ---
+[INFO] No sources to compile
+[INFO] 
+[INFO] --- surefire:3.5.6:test (default-test) @ platform-app-api-adapter ---
+[INFO] No tests to run.
+[INFO] 
+[INFO] -------------< com.appnexus:platform-partner-api-adapter >--------------
+[INFO] Building platform-partner-api-adapter 0.1.0-SNAPSHOT             [20/38]
+[INFO]   from services\platform-service\adapters\partner-api\pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- enforcer:3.6.2:enforce (enforce-toolchain) @ platform-partner-api-adapter ---
+[INFO] 
+[INFO] --- resources:3.5.0:resources (default-resources) @ platform-partner-api-adapter ---
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\services\platform-service\adapters\partner-api\src\main\resources
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\services\platform-service\adapters\partner-api\src\main\resources
+[INFO] 
+[INFO] --- compiler:3.15.0:compile (default-compile) @ platform-partner-api-adapter ---
+[INFO] No sources to compile
+[INFO] 
+[INFO] --- resources:3.5.0:testResources (default-testResources) @ platform-partner-api-adapter ---
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\services\platform-service\adapters\partner-api\src\test\resources
+[INFO] 
+[INFO] --- compiler:3.15.0:testCompile (default-testCompile) @ platform-partner-api-adapter ---
+[INFO] No sources to compile
+[INFO] 
+[INFO] --- surefire:3.5.6:test (default-test) @ platform-partner-api-adapter ---
+[INFO] No tests to run.
+[INFO] 
+[INFO] ------------< com.appnexus:platform-management-api-adapter >------------
+[INFO] Building platform-management-api-adapter 0.1.0-SNAPSHOT          [21/38]
+[INFO]   from services\platform-service\adapters\platform-api\pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- enforcer:3.6.2:enforce (enforce-toolchain) @ platform-management-api-adapter ---
+[INFO] 
+[INFO] --- resources:3.5.0:resources (default-resources) @ platform-management-api-adapter ---
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\services\platform-service\adapters\platform-api\src\main\resources
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\services\platform-service\adapters\platform-api\src\main\resources
+[INFO] 
+[INFO] --- compiler:3.15.0:compile (default-compile) @ platform-management-api-adapter ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- resources:3.5.0:testResources (default-testResources) @ platform-management-api-adapter ---
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\services\platform-service\adapters\platform-api\src\test\resources
+[INFO] 
+[INFO] --- compiler:3.15.0:testCompile (default-testCompile) @ platform-management-api-adapter ---
+[INFO] No sources to compile
+[INFO] 
+[INFO] --- surefire:3.5.6:test (default-test) @ platform-management-api-adapter ---
+[INFO] No tests to run.
+[INFO] 
+[INFO] -------------< com.appnexus:platform-persistence-adapter >--------------
+[INFO] Building platform-persistence-adapter 0.1.0-SNAPSHOT             [22/38]
+[INFO]   from services\platform-service\adapters\persistence\pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- enforcer:3.6.2:enforce (enforce-toolchain) @ platform-persistence-adapter ---
+[INFO] 
+[INFO] --- resources:3.5.0:resources (default-resources) @ platform-persistence-adapter ---
+[INFO] Copying 0 resource from src\main\resources to target-agent\classes
+[INFO] Copying 80 resources from src\main\resources to target-agent\classes
+[INFO] 
+[INFO] --- compiler:3.15.0:compile (default-compile) @ platform-persistence-adapter ---
+[INFO] Recompiling the module because of changed source code.
+[INFO] Compiling 94 source files with javac [debug parameters release 21] to target-agent\classes
+[INFO] 
+[INFO] --- resources:3.5.0:testResources (default-testResources) @ platform-persistence-adapter ---
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\services\platform-service\adapters\persistence\src\test\resources
+[INFO] 
+[INFO] --- compiler:3.15.0:testCompile (default-testCompile) @ platform-persistence-adapter ---
+[INFO] No sources to compile
+[INFO] 
+[INFO] --- surefire:3.5.6:test (default-test) @ platform-persistence-adapter ---
+[INFO] No tests to run.
+[INFO] 
+[INFO] ---------------< com.appnexus:platform-security-adapter >---------------
+[INFO] Building platform-security-adapter 0.1.0-SNAPSHOT                [23/38]
+[INFO]   from services\platform-service\adapters\security\pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- enforcer:3.6.2:enforce (enforce-toolchain) @ platform-security-adapter ---
+[INFO] 
+[INFO] --- resources:3.5.0:resources (default-resources) @ platform-security-adapter ---
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\services\platform-service\adapters\security\src\main\resources
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\services\platform-service\adapters\security\src\main\resources
+[INFO] 
+[INFO] --- compiler:3.15.0:compile (default-compile) @ platform-security-adapter ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- resources:3.5.0:testResources (default-testResources) @ platform-security-adapter ---
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\services\platform-service\adapters\security\src\test\resources
+[INFO] 
+[INFO] --- compiler:3.15.0:testCompile (default-testCompile) @ platform-security-adapter ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- surefire:3.5.6:test (default-test) @ platform-security-adapter ---
+[INFO] 
+[INFO] ---------------< com.appnexus:platform-eventing-adapter >---------------
+[INFO] Building platform-eventing-adapter 0.1.0-SNAPSHOT                [24/38]
+[INFO]   from services\platform-service\adapters\eventing\pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- enforcer:3.6.2:enforce (enforce-toolchain) @ platform-eventing-adapter ---
+[INFO] 
+[INFO] --- resources:3.5.0:resources (default-resources) @ platform-eventing-adapter ---
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\services\platform-service\adapters\eventing\src\main\resources
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\services\platform-service\adapters\eventing\src\main\resources
+[INFO] 
+[INFO] --- compiler:3.15.0:compile (default-compile) @ platform-eventing-adapter ---
+[INFO] No sources to compile
+[INFO] 
+[INFO] --- resources:3.5.0:testResources (default-testResources) @ platform-eventing-adapter ---
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\services\platform-service\adapters\eventing\src\test\resources
+[INFO] 
+[INFO] --- compiler:3.15.0:testCompile (default-testCompile) @ platform-eventing-adapter ---
+[INFO] No sources to compile
+[INFO] 
+[INFO] --- surefire:3.5.6:test (default-test) @ platform-eventing-adapter ---
+[INFO] No tests to run.
+[INFO] 
+[INFO] ------------< com.appnexus:platform-observability-adapter >-------------
+[INFO] Building platform-observability-adapter 0.1.0-SNAPSHOT           [25/38]
+[INFO]   from services\platform-service\adapters\observability\pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- enforcer:3.6.2:enforce (enforce-toolchain) @ platform-observability-adapter ---
+[INFO] 
+[INFO] --- resources:3.5.0:resources (default-resources) @ platform-observability-adapter ---
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\services\platform-service\adapters\observability\src\main\resources
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\services\platform-service\adapters\observability\src\main\resources
+[INFO] 
+[INFO] --- compiler:3.15.0:compile (default-compile) @ platform-observability-adapter ---
+[INFO] No sources to compile
+[INFO] 
+[INFO] --- resources:3.5.0:testResources (default-testResources) @ platform-observability-adapter ---
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\services\platform-service\adapters\observability\src\test\resources
+[INFO] 
+[INFO] --- compiler:3.15.0:testCompile (default-testCompile) @ platform-observability-adapter ---
+[INFO] No sources to compile
+[INFO] 
+[INFO] --- surefire:3.5.6:test (default-test) @ platform-observability-adapter ---
+[INFO] No tests to run.
+[INFO] 
+[INFO] -------------------< com.appnexus:workflow-service >--------------------
+[INFO] Building workflow-service 0.1.0-SNAPSHOT                         [26/38]
+[INFO]   from services\workflow-service\pom.xml
+[INFO] --------------------------------[ pom ]---------------------------------
+[INFO] 
+[INFO] --- enforcer:3.6.2:enforce (enforce-toolchain) @ workflow-service ---
+[INFO] 
+[INFO] ---------------------< com.appnexus:workflow-core >---------------------
+[INFO] Building workflow-core 0.1.0-SNAPSHOT                            [27/38]
+[INFO]   from services\workflow-service\core\pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- enforcer:3.6.2:enforce (enforce-toolchain) @ workflow-core ---
+[INFO] 
+[INFO] --- resources:3.5.0:resources (default-resources) @ workflow-core ---
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\services\workflow-service\core\src\main\resources
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\services\workflow-service\core\src\main\resources
+[INFO] 
+[INFO] --- compiler:3.15.0:compile (default-compile) @ workflow-core ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- resources:3.5.0:testResources (default-testResources) @ workflow-core ---
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\services\workflow-service\core\src\test\resources
+[INFO] 
+[INFO] --- compiler:3.15.0:testCompile (default-testCompile) @ workflow-core ---
+[INFO] No sources to compile
+[INFO] 
+[INFO] --- surefire:3.5.6:test (default-test) @ workflow-core ---
+[INFO] No tests to run.
+[INFO] 
+[INFO] -------------------< com.appnexus:workflow-adapters >-------------------
+[INFO] Building workflow-adapters 0.1.0-SNAPSHOT                        [28/38]
+[INFO]   from services\workflow-service\adapters\pom.xml
+[INFO] --------------------------------[ pom ]---------------------------------
+[INFO] 
+[INFO] --- enforcer:3.6.2:enforce (enforce-toolchain) @ workflow-adapters ---
+[INFO] 
+[INFO] ---------------< com.appnexus:workflow-flowable-adapter >---------------
+[INFO] Building workflow-flowable-adapter 0.1.0-SNAPSHOT                [29/38]
+[INFO]   from services\workflow-service\adapters\flowable\pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- enforcer:3.6.2:enforce (enforce-toolchain) @ workflow-flowable-adapter ---
+[INFO] 
+[INFO] --- resources:3.5.0:resources (default-resources) @ workflow-flowable-adapter ---
+[INFO] Copying 0 resource from src\main\resources to target-agent\classes
+[INFO] Copying 6 resources from src\main\resources to target-agent\classes
+[INFO] 
+[INFO] --- compiler:3.15.0:compile (default-compile) @ workflow-flowable-adapter ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- resources:3.5.0:testResources (default-testResources) @ workflow-flowable-adapter ---
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\services\workflow-service\adapters\flowable\src\test\resources
+[INFO] 
+[INFO] --- compiler:3.15.0:testCompile (default-testCompile) @ workflow-flowable-adapter ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- surefire:3.5.6:test (default-test) @ workflow-flowable-adapter ---
+[INFO] 
+[INFO] ------------------< com.appnexus:master-data-service >------------------
+[INFO] Building master-data-service 0.1.0-SNAPSHOT                      [30/38]
+[INFO]   from services\master-data-service\pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- enforcer:3.6.2:enforce (enforce-toolchain) @ master-data-service ---
+[INFO] 
+[INFO] --- resources:3.5.0:resources (default-resources) @ master-data-service ---
+[INFO] Copying 0 resource from src\main\resources to target-agent\classes
+[INFO] Copying 39 resources from src\main\resources to target-agent\classes
+[INFO] 
+[INFO] --- compiler:3.15.0:compile (default-compile) @ master-data-service ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- resources:3.5.0:testResources (default-testResources) @ master-data-service ---
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\services\master-data-service\src\test\resources
+[INFO] 
+[INFO] --- compiler:3.15.0:testCompile (default-testCompile) @ master-data-service ---
+[INFO] Recompiling the module because of changed dependency.
+[INFO] Compiling 22 source files with javac [debug parameters release 21] to target-agent\test-classes
+[INFO] /D:/AppNexus/backend/services/master-data-service/src/test/java/com/appnexus/masterdata/MasterDataServiceTest.java: D:\AppNexus\backend\services\master-data-service\src\test\java\com\appnexus\masterdata\MasterDataServiceTest.javaʹ�û򸲸����ѹ�ʱ�� API��
+[INFO] /D:/AppNexus/backend/services/master-data-service/src/test/java/com/appnexus/masterdata/MasterDataServiceTest.java: �й���ϸ��Ϣ, ��ʹ�� -Xlint:deprecation ���±��롣
+[INFO] /D:/AppNexus/backend/services/master-data-service/src/test/java/com/appnexus/masterdata/product/ProductCatalogMySqlTest.java: D:\AppNexus\backend\services\master-data-service\src\test\java\com\appnexus\masterdata\product\ProductCatalogMySqlTest.javaʹ����δ�����򲻰�ȫ�Ĳ�����
+[INFO] /D:/AppNexus/backend/services/master-data-service/src/test/java/com/appnexus/masterdata/product/ProductCatalogMySqlTest.java: �й���ϸ��Ϣ, ��ʹ�� -Xlint:unchecked ���±��롣
+[INFO] 
+[INFO] --- surefire:3.5.6:test (default-test) @ master-data-service ---
+[INFO] 
+[INFO] -----------------------< com.appnexus:leave-poc >-----------------------
+[INFO] Building leave-poc 0.1.0-SNAPSHOT                                [31/38]
+[INFO]   from services\leave-poc\pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- enforcer:3.6.2:enforce (enforce-toolchain) @ leave-poc ---
+[INFO] 
+[INFO] --- resources:3.5.0:resources (default-resources) @ leave-poc ---
+[INFO] Copying 0 resource from src\main\resources to target-agent\classes
+[INFO] Copying 6 resources from src\main\resources to target-agent\classes
+[INFO] 
+[INFO] --- compiler:3.15.0:compile (default-compile) @ leave-poc ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- resources:3.5.0:testResources (default-testResources) @ leave-poc ---
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\services\leave-poc\src\test\resources
+[INFO] 
+[INFO] --- compiler:3.15.0:testCompile (default-testCompile) @ leave-poc ---
+[INFO] Recompiling the module because of changed dependency.
+[INFO] Compiling 5 source files with javac [debug parameters release 21] to target-agent\test-classes
+[INFO] /D:/AppNexus/backend/services/leave-poc/src/test/java/com/appnexus/leave/BusinessObjectIntegrationTest.java: D:\AppNexus\backend\services\leave-poc\src\test\java\com\appnexus\leave\BusinessObjectIntegrationTest.javaʹ����δ�����򲻰�ȫ�Ĳ�����
+[INFO] /D:/AppNexus/backend/services/leave-poc/src/test/java/com/appnexus/leave/BusinessObjectIntegrationTest.java: �й���ϸ��Ϣ, ��ʹ�� -Xlint:unchecked ���±��롣
+[INFO] 
+[INFO] --- surefire:3.5.6:test (default-test) @ leave-poc ---
+[INFO] 
+[INFO] ---------------------< com.appnexus:print-service >---------------------
+[INFO] Building print-service 0.1.0-SNAPSHOT                            [32/38]
+[INFO]   from services\print-service\pom.xml
+[INFO] --------------------------------[ pom ]---------------------------------
+[INFO] 
+[INFO] --- enforcer:3.6.2:enforce (enforce-toolchain) @ print-service ---
+[INFO] 
+[INFO] ----------------------< com.appnexus:print-core >-----------------------
+[INFO] Building print-core 0.1.0-SNAPSHOT                               [33/38]
+[INFO]   from services\print-service\core\pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- enforcer:3.6.2:enforce (enforce-toolchain) @ print-core ---
+[INFO] 
+[INFO] --- resources:3.5.0:resources (default-resources) @ print-core ---
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\services\print-service\core\src\main\resources
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\services\print-service\core\src\main\resources
+[INFO] 
+[INFO] --- compiler:3.15.0:compile (default-compile) @ print-core ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- resources:3.5.0:testResources (default-testResources) @ print-core ---
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\services\print-service\core\src\test\resources
+[INFO] 
+[INFO] --- compiler:3.15.0:testCompile (default-testCompile) @ print-core ---
+[INFO] No sources to compile
+[INFO] 
+[INFO] --- surefire:3.5.6:test (default-test) @ print-core ---
+[INFO] No tests to run.
+[INFO] 
+[INFO] --------------------< com.appnexus:print-adapters >---------------------
+[INFO] Building print-adapters 0.1.0-SNAPSHOT                           [34/38]
+[INFO]   from services\print-service\adapters\pom.xml
+[INFO] --------------------------------[ pom ]---------------------------------
+[INFO] 
+[INFO] --- enforcer:3.6.2:enforce (enforce-toolchain) @ print-adapters ---
+[INFO] 
+[INFO] ------------------< com.appnexus:print-jdbc-adapter >-------------------
+[INFO] Building print-jdbc-adapter 0.1.0-SNAPSHOT                       [35/38]
+[INFO]   from services\print-service\adapters\jdbc\pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- enforcer:3.6.2:enforce (enforce-toolchain) @ print-jdbc-adapter ---
+[INFO] 
+[INFO] --- resources:3.5.0:resources (default-resources) @ print-jdbc-adapter ---
+[INFO] Copying 0 resource from src\main\resources to target-agent\classes
+[INFO] Copying 6 resources from src\main\resources to target-agent\classes
+[INFO] 
+[INFO] --- compiler:3.15.0:compile (default-compile) @ print-jdbc-adapter ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- resources:3.5.0:testResources (default-testResources) @ print-jdbc-adapter ---
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\services\print-service\adapters\jdbc\src\test\resources
+[INFO] 
+[INFO] --- compiler:3.15.0:testCompile (default-testCompile) @ print-jdbc-adapter ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- surefire:3.5.6:test (default-test) @ print-jdbc-adapter ---
+[INFO] 
+[INFO] ---------------------< com.appnexus:applications >----------------------
+[INFO] Building applications 0.1.0-SNAPSHOT                             [36/38]
+[INFO]   from applications\pom.xml
+[INFO] --------------------------------[ pom ]---------------------------------
+[INFO] 
+[INFO] --- enforcer:3.6.2:enforce (enforce-toolchain) @ applications ---
+[INFO] 
+[INFO] ---------------------< com.appnexus:monolith-app >----------------------
+[INFO] Building monolith-app 0.1.0-SNAPSHOT                             [37/38]
+[INFO]   from applications\monolith-app\pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- enforcer:3.6.2:enforce (enforce-toolchain) @ monolith-app ---
+[INFO] 
+[INFO] --- resources:3.5.0:resources (default-resources) @ monolith-app ---
+[INFO] Copying 2 resources from src\main\resources to target-agent\classes
+[INFO] Copying 0 resource from src\main\resources to target-agent\classes
+[INFO] 
+[INFO] --- compiler:3.15.0:compile (default-compile) @ monolith-app ---
+[INFO] Recompiling the module because of changed dependency.
+[INFO] Compiling 15 source files with javac [debug parameters release 21] to target-agent\classes
+[INFO] 
+[INFO] --- resources:3.5.0:testResources (default-testResources) @ monolith-app ---
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\applications\monolith-app\src\test\resources
+[INFO] 
+[INFO] --- compiler:3.15.0:testCompile (default-testCompile) @ monolith-app ---
+[INFO] Recompiling the module because of changed dependency.
+[INFO] Compiling 74 source files with javac [debug parameters release 21] to target-agent\test-classes
+[INFO] /D:/AppNexus/backend/applications/monolith-app/src/test/java/com/appnexus/platform/PersonnelIntegrationTest.java: ĳЩ�����ļ�ʹ�û򸲸����ѹ�ʱ�� API��
+[INFO] /D:/AppNexus/backend/applications/monolith-app/src/test/java/com/appnexus/platform/PersonnelIntegrationTest.java: �й���ϸ��Ϣ, ��ʹ�� -Xlint:deprecation ���±��롣
+[INFO] /D:/AppNexus/backend/applications/monolith-app/src/test/java/com/appnexus/platform/DatabaseTestSupport.java: ĳЩ�����ļ�ʹ����δ�����򲻰�ȫ�Ĳ�����
+[INFO] /D:/AppNexus/backend/applications/monolith-app/src/test/java/com/appnexus/platform/DatabaseTestSupport.java: �й���ϸ��Ϣ, ��ʹ�� -Xlint:unchecked ���±��롣
+[INFO] 
+[INFO] --- surefire:3.5.6:test (default-test) @ monolith-app ---
+[INFO] Using auto detected provider org.apache.maven.surefire.junitplatform.JUnitPlatformProvider
+[INFO] 
+[INFO] -------------------------------------------------------
+[INFO]  T E S T S
+[INFO] -------------------------------------------------------
+[INFO] Running com.appnexus.platform.BusinessValueDictionaryTest
+18:06:03.098 [main] INFO org.springframework.test.context.support.AnnotationConfigContextLoaderUtils -- Could not detect default configuration classes for test class [com.appnexus.platform.BusinessValueDictionaryTest]: BusinessValueDictionaryTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+18:06:05.304 [main] INFO org.springframework.boot.test.context.SpringBootTestContextBootstrapper -- Found @SpringBootConfiguration com.appnexus.platform.PlatformApplication for test class com.appnexus.platform.BusinessValueDictionaryTest
+18:06:05.525 [main] INFO org.springframework.test.context.support.AnnotationConfigContextLoaderUtils -- Could not detect default configuration classes for test class [com.appnexus.platform.BusinessValueDictionaryTest]: BusinessValueDictionaryTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+18:06:05.527 [main] INFO org.springframework.test.context.support.AnnotationConfigContextLoaderUtils -- Could not detect default configuration classes for test class [com.appnexus.platform.DatabaseTestSupport]: DatabaseTestSupport does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+18:06:05.532 [main] INFO org.springframework.boot.test.context.SpringBootTestContextBootstrapper -- Found @SpringBootConfiguration com.appnexus.platform.PlatformApplication for test class com.appnexus.platform.BusinessValueDictionaryTest
+18:06:05.670 [main] INFO org.testcontainers.images.PullPolicy -- Image pull policy will be performed by: DefaultPullPolicy()
+18:06:05.680 [main] INFO org.testcontainers.utility.ImageNameSubstitutor -- Image name substitution will be performed by: DefaultImageNameSubstitutor (composite of 'ConfigurationFileImageNameSubstitutor' and 'PrefixingImageNameSubstitutor')
+18:06:05.835 [main] INFO org.testcontainers.DockerClientFactory -- Testcontainers version: 2.0.5
+18:06:06.564 [main] INFO org.testcontainers.dockerclient.DockerClientProviderStrategy -- Loaded org.testcontainers.dockerclient.NpipeSocketClientProviderStrategy from ~/.testcontainers.properties, will try it first
+18:06:07.819 [main] INFO org.testcontainers.dockerclient.DockerClientProviderStrategy -- Found Docker environment with local Npipe socket (npipe:////./pipe/docker_engine)
+18:06:07.822 [main] INFO org.testcontainers.DockerClientFactory -- Docker host IP address is localhost
+18:06:07.862 [main] INFO org.testcontainers.DockerClientFactory -- Connected to docker: 
+  Server Version: 29.6.1
+  API Version: 1.55
+  Operating System: Docker Desktop
+  Total Memory: 15398 MB
+  Labels: 
+    com.docker.desktop.address=npipe://\\.\pipe\docker_cli
+18:06:08.228 [main] INFO tc.testcontainers/ryuk:0.14.0 -- Creating container for image: testcontainers/ryuk:0.14.0
+18:06:08.895 [main] INFO tc.testcontainers/ryuk:0.14.0 -- Container testcontainers/ryuk:0.14.0 is starting: 475801e7aae723c065826a991757301dfcdb86d0241d4036fbe1512e6ff896d4
+18:06:10.128 [main] INFO tc.testcontainers/ryuk:0.14.0 -- Container testcontainers/ryuk:0.14.0 started in PT1.8994486S
+18:06:10.145 [main] INFO org.testcontainers.utility.RyukResourceReaper -- Ryuk started - will monitor and terminate Testcontainers containers on JVM exit
+18:06:10.146 [main] INFO org.testcontainers.DockerClientFactory -- Checking the system...
+18:06:10.147 [main] INFO org.testcontainers.DockerClientFactory -- ?? Docker server version should be at least 1.6.0
+18:06:10.149 [main] INFO tc.mysql:8.4 -- Creating container for image: mysql:8.4
+18:06:10.327 [main] INFO tc.mysql:8.4 -- Container mysql:8.4 is starting: d9cfd526337a5b7583bac3905997d59781cc302061c9bdca8653c793f5214cda
+18:06:11.067 [main] INFO tc.mysql:8.4 -- Waiting for database connection to become available at jdbc:mysql://localhost:57697/test using query 'SELECT 1'
+18:06:30.083 [main] INFO tc.mysql:8.4 -- Container mysql:8.4 started in PT19.9336725S
+18:06:30.083 [main] INFO tc.mysql:8.4 -- Container is started (JDBC URL: jdbc:mysql://localhost:57697/test)
+18:06:30.084 [main] INFO tc.valkey/valkey:8-alpine -- Creating container for image: valkey/valkey:8-alpine
+18:06:30.195 [main] INFO tc.valkey/valkey:8-alpine -- Container valkey/valkey:8-alpine is starting: 313bdd7a536f4b7576a2a0500aa02dd111297c3052dda2b3a02d806deaea4dd4
+18:06:30.667 [main] INFO tc.valkey/valkey:8-alpine -- Container valkey/valkey:8-alpine started in PT0.5834609S
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v4.1.2)
+
+2026-11-20T18:06:34.127+08:00  INFO [traceId=] 59876 --- [           main] c.a.p.BusinessValueDictionaryTest        : Starting BusinessValueDictionaryTest using Java 21 with PID 59876 (started by lbkgo in D:\AppNexus\backend\applications\monolith-app)
+2026-11-20T18:06:34.134+08:00  INFO [traceId=] 59876 --- [           main] c.a.p.BusinessValueDictionaryTest        : The following 1 profile is active: "local"
+2026-11-20T18:06:38.624+08:00  INFO [traceId=] 59876 --- [           main] .s.d.r.c.RepositoryConfigurationDelegate : Multiple Spring Data modules found, entering strict repository configuration mode
+2026-11-20T18:06:38.630+08:00  INFO [traceId=] 59876 --- [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data Redis repositories in DEFAULT mode.
+2026-11-20T18:06:38.788+08:00  INFO [traceId=] 59876 --- [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 123 ms. Found 0 Redis repository interfaces.
+2026-11-20T18:06:41.638+08:00  INFO [traceId=] 59876 --- [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2026-11-20T18:06:42.084+08:00  INFO [traceId=] 59876 --- [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection com.mysql.cj.jdbc.ConnectionImpl@78c5ef58
+2026-11-20T18:06:42.089+08:00  INFO [traceId=] 59876 --- [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2026-11-20T18:06:42.142+08:00  INFO [traceId=] 59876 --- [           main] org.flywaydb.core.FlywayExecutor         : Database: jdbc:mysql://localhost:57697/test?preserveInstants=true&connectionTimeZone=UTC&forceConnectionTimeZoneToSession=true (MySQL 8.4)
+2026-11-20T18:06:43.402+08:00  INFO [traceId=] 59876 --- [           main] o.f.c.i.s.JdbcTableSchemaHistory         : Schema history table `test`.`flyway_schema_history` does not exist yet
+2026-11-20T18:06:43.416+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbValidate     : Successfully validated 131 migrations (execution time 00:00.273s)
+2026-11-20T18:06:43.472+08:00  INFO [traceId=] 59876 --- [           main] o.f.c.i.s.JdbcTableSchemaHistory         : Creating Schema History table `test`.`flyway_schema_history` ...
+2026-11-20T18:06:43.610+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Current version of schema `test`: << Empty Schema >>
+2026-11-20T18:06:43.639+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "1 - identity accounts"
+2026-11-20T18:06:43.903+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "2 - oauth authorizations"
+2026-11-20T18:06:44.208+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "3 - account security log"
+2026-11-20T18:06:44.325+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "4 - tenant membership"
+2026-11-20T18:06:44.493+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "5 - organization units"
+2026-11-20T18:06:44.597+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "6 - organization capability grants"
+2026-11-20T18:06:44.711+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "7 - organization grant revocation audit columns"
+2026-11-20T18:06:44.897+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "8 - organization grant audit"
+2026-11-20T18:06:45.024+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "9 - organization grant authority"
+2026-11-20T18:06:45.166+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "10 - organization administrator bootstrap"
+2026-11-20T18:06:45.247+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "11 - platform administration"
+2026-11-20T18:06:45.425+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "12 - member primary organization"
+2026-11-20T18:06:45.524+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "13 - platform menu management"
+2026-11-20T18:06:45.635+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "14 - access role management"
+2026-11-20T18:06:45.769+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "15 - account contacts"
+2026-11-20T18:06:45.916+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "16 - organization domain"
+2026-11-20T18:06:46.364+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "17 - organization permission center migration"
+2026-11-20T18:06:46.478+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "18 - tenant dictionary"
+2026-11-20T18:06:46.708+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "19 - system enum dictionaries"
+2026-11-20T18:06:46.763+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "20 - access permission catalog"
+2026-11-20T18:06:47.001+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "21 - access role bindings"
+2026-11-20T18:06:47.356+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "22 - subject authority version"
+2026-11-20T18:06:47.541+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "23 - access data policy"
+2026-11-20T18:06:47.693+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "24 - system role bootstrap"
+2026-11-20T18:06:47.766+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "25 - member authorization snapshot"
+2026-11-20T18:06:47.930+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "26 - role field security"
+2026-11-20T18:06:48.007+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "27 - navigation entries"
+2026-11-20T18:06:48.212+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "28 - dictionary operation permissions"
+2026-11-20T18:06:48.330+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "29 - tenant member removal"
+2026-11-20T18:06:48.530+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "30 - legacy organization grants to rbac"
+2026-11-20T18:06:48.625+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "31 - effective tenant permission view"
+2026-11-20T18:06:48.696+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "32 - navigation resource links"
+2026-11-20T18:06:48.863+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "33 - account mfa"
+2026-11-20T18:06:49.004+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "34 - password recovery"
+2026-11-20T18:06:49.095+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "35 - oauth refresh history"
+2026-11-20T18:06:49.204+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "36 - integration clients"
+2026-11-20T18:06:49.348+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "37 - integration call audit"
+2026-11-20T18:06:49.432+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "38 - partner reference idempotency"
+2026-11-20T18:06:49.530+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "39 - integration secret overlap"
+2026-11-20T18:06:49.662+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "40 - transactional outbox"
+2026-11-20T18:06:49.820+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "41 - authority outbox triggers"
+2026-11-20T18:06:49.902+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "42 - authorization policy templates"
+2026-11-20T18:06:50.014+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "43 - tenant parameters"
+2026-11-20T18:06:50.139+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "44 - tenant invitations"
+2026-11-20T18:06:50.228+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "45 - retire unimplemented menu operations"
+2026-11-20T18:06:50.288+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "46 - explicit management operations"
+2026-11-20T18:06:50.490+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "47 - workflow flowable 8"
+2026-11-20T18:06:50.524+08:00  WARN [traceId=] 59876 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8' is currently an alias for the character set UTF8MB3, but will be an alias for UTF8MB4 in a future release. Please consider using UTF8MB4 in order to be unambiguous. (SQL State: HY000 - Error Code: 3719)
+2026-11-20T18:06:50.524+08:00  WARN [traceId=] 59876 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8mb3_bin' is a collation of the deprecated character set UTF8MB3. Please consider using UTF8MB4 with an appropriate collation instead. (SQL State: HY000 - Error Code: 3778)
+2026-11-20T18:06:50.562+08:00  WARN [traceId=] 59876 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8' is currently an alias for the character set UTF8MB3, but will be an alias for UTF8MB4 in a future release. Please consider using UTF8MB4 in order to be unambiguous. (SQL State: HY000 - Error Code: 3719)
+2026-11-20T18:06:50.562+08:00  WARN [traceId=] 59876 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8mb3_bin' is a collation of the deprecated character set UTF8MB3. Please consider using UTF8MB4 with an appropriate collation instead. (SQL State: HY000 - Error Code: 3778)
+2026-11-20T18:06:50.612+08:00  WARN [traceId=] 59876 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8' is currently an alias for the character set UTF8MB3, but will be an alias for UTF8MB4 in a future release. Please consider using UTF8MB4 in order to be unambiguous. (SQL State: HY000 - Error Code: 3719)
+2026-11-20T18:06:50.613+08:00  WARN [traceId=] 59876 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8mb3_bin' is a collation of the deprecated character set UTF8MB3. Please consider using UTF8MB4 with an appropriate collation instead. (SQL State: HY000 - Error Code: 3778)
+2026-11-20T18:06:50.767+08:00  WARN [traceId=] 59876 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8' is currently an alias for the character set UTF8MB3, but will be an alias for UTF8MB4 in a future release. Please consider using UTF8MB4 in order to be unambiguous. (SQL State: HY000 - Error Code: 3719)
+2026-11-20T18:06:50.767+08:00  WARN [traceId=] 59876 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8mb3_bin' is a collation of the deprecated character set UTF8MB3. Please consider using UTF8MB4 with an appropriate collation instead. (SQL State: HY000 - Error Code: 3778)
+2026-11-20T18:06:50.898+08:00  WARN [traceId=] 59876 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8' is currently an alias for the character set UTF8MB3, but will be an alias for UTF8MB4 in a future release. Please consider using UTF8MB4 in order to be unambiguous. (SQL State: HY000 - Error Code: 3719)
+2026-11-20T18:06:50.899+08:00  WARN [traceId=] 59876 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8mb3_bin' is a collation of the deprecated character set UTF8MB3. Please consider using UTF8MB4 with an appropriate collation instead. (SQL State: HY000 - Error Code: 3778)
+2026-11-20T18:06:51.054+08:00  WARN [traceId=] 59876 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8' is currently an alias for the character set UTF8MB3, but will be an alias for UTF8MB4 in a future release. Please consider using UTF8MB4 in order to be unambiguous. (SQL State: HY000 - Error Code: 3719)
+2026-11-20T18:06:51.054+08:00  WARN [traceId=] 59876 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8mb3_bin' is a collation of the deprecated character set UTF8MB3. Please consider using UTF8MB4 with an appropriate collation instead. (SQL State: HY000 - Error Code: 3778)
+2026-11-20T18:06:51.202+08:00  WARN [traceId=] 59876 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8' is currently an alias for the character set UTF8MB3, but will be an alias for UTF8MB4 in a future release. Please consider using UTF8MB4 in order to be unambiguous. (SQL State: HY000 - Error Code: 3719)
+2026-11-20T18:06:51.202+08:00  WARN [traceId=] 59876 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8mb3_bin' is a collation of the deprecated character set UTF8MB3. Please consider using UTF8MB4 with an appropriate collation instead. (SQL State: HY000 - Error Code: 3778)
+2026-11-20T18:06:51.244+08:00  WARN [traceId=] 59876 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8' is currently an alias for the character set UTF8MB3, but will be an alias for UTF8MB4 in a future release. Please consider using UTF8MB4 in order to be unambiguous. (SQL State: HY000 - Error Code: 3719)
+2026-11-20T18:06:51.244+08:00  WARN [traceId=] 59876 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8mb3_bin' is a collation of the deprecated character set UTF8MB3. Please consider using UTF8MB4 with an appropriate collation instead. (SQL State: HY000 - Error Code: 3778)
+2026-11-20T18:06:51.296+08:00  WARN [traceId=] 59876 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8' is currently an alias for the character set UTF8MB3, but will be an alias for UTF8MB4 in a future release. Please consider using UTF8MB4 in order to be unambiguous. (SQL State: HY000 - Error Code: 3719)
+2026-11-20T18:06:51.297+08:00  WARN [traceId=] 59876 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8mb3_bin' is a collation of the deprecated character set UTF8MB3. Please consider using UTF8MB4 with an appropriate collation instead. (SQL State: HY000 - Error Code: 3778)
+2026-11-20T18:06:51.340+08:00  WARN [traceId=] 59876 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8' is currently an alias for the character set UTF8MB3, but will be an alias for UTF8MB4 in a future release. Please consider using UTF8MB4 in order to be unambiguous. (SQL State: HY000 - Error Code: 3719)
+2026-11-20T18:06:51.341+08:00  WARN [traceId=] 59876 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8mb3_bin' is a collation of the deprecated character set UTF8MB3. Please consider using UTF8MB4 with an appropriate collation instead. (SQL State: HY000 - Error Code: 3778)
+2026-11-20T18:06:51.385+08:00  WARN [traceId=] 59876 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8' is currently an alias for the character set UTF8MB3, but will be an alias for UTF8MB4 in a future release. Please consider using UTF8MB4 in order to be unambiguous. (SQL State: HY000 - Error Code: 3719)
+2026-11-20T18:06:51.385+08:00  WARN [traceId=] 59876 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8mb3_bin' is a collation of the deprecated character set UTF8MB3. Please consider using UTF8MB4 with an appropriate collation instead. (SQL State: HY000 - Error Code: 3778)
+2026-11-20T18:06:51.432+08:00  WARN [traceId=] 59876 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8' is currently an alias for the character set UTF8MB3, but will be an alias for UTF8MB4 in a future release. Please consider using UTF8MB4 in order to be unambiguous. (SQL State: HY000 - Error Code: 3719)
+2026-11-20T18:06:51.432+08:00  WARN [traceId=] 59876 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8mb3_bin' is a collation of the deprecated character set UTF8MB3. Please consider using UTF8MB4 with an appropriate collation instead. (SQL State: HY000 - Error Code: 3778)
+2026-11-20T18:06:54.015+08:00  WARN [traceId=] 59876 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8' is currently an alias for the character set UTF8MB3, but will be an alias for UTF8MB4 in a future release. Please consider using UTF8MB4 in order to be unambiguous. (SQL State: HY000 - Error Code: 3719)
+2026-11-20T18:06:54.015+08:00  WARN [traceId=] 59876 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8mb3_bin' is a collation of the deprecated character set UTF8MB3. Please consider using UTF8MB4 with an appropriate collation instead. (SQL State: HY000 - Error Code: 3778)
+2026-11-20T18:06:54.100+08:00  WARN [traceId=] 59876 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8' is currently an alias for the character set UTF8MB3, but will be an alias for UTF8MB4 in a future release. Please consider using UTF8MB4 in order to be unambiguous. (SQL State: HY000 - Error Code: 3719)
+2026-11-20T18:06:54.101+08:00  WARN [traceId=] 59876 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8mb3_bin' is a collation of the deprecated character set UTF8MB3. Please consider using UTF8MB4 with an appropriate collation instead. (SQL State: HY000 - Error Code: 3778)
+2026-11-20T18:06:54.385+08:00  WARN [traceId=] 59876 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8' is currently an alias for the character set UTF8MB3, but will be an alias for UTF8MB4 in a future release. Please consider using UTF8MB4 in order to be unambiguous. (SQL State: HY000 - Error Code: 3719)
+2026-11-20T18:06:54.385+08:00  WARN [traceId=] 59876 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8mb3_bin' is a collation of the deprecated character set UTF8MB3. Please consider using UTF8MB4 with an appropriate collation instead. (SQL State: HY000 - Error Code: 3778)
+2026-11-20T18:06:54.598+08:00  WARN [traceId=] 59876 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8' is currently an alias for the character set UTF8MB3, but will be an alias for UTF8MB4 in a future release. Please consider using UTF8MB4 in order to be unambiguous. (SQL State: HY000 - Error Code: 3719)
+2026-11-20T18:06:54.598+08:00  WARN [traceId=] 59876 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8mb3_bin' is a collation of the deprecated character set UTF8MB3. Please consider using UTF8MB4 with an appropriate collation instead. (SQL State: HY000 - Error Code: 3778)
+2026-11-20T18:06:54.654+08:00  WARN [traceId=] 59876 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8' is currently an alias for the character set UTF8MB3, but will be an alias for UTF8MB4 in a future release. Please consider using UTF8MB4 in order to be unambiguous. (SQL State: HY000 - Error Code: 3719)
+2026-11-20T18:06:54.654+08:00  WARN [traceId=] 59876 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8mb3_bin' is a collation of the deprecated character set UTF8MB3. Please consider using UTF8MB4 with an appropriate collation instead. (SQL State: HY000 - Error Code: 3778)
+2026-11-20T18:06:54.900+08:00  WARN [traceId=] 59876 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8' is currently an alias for the character set UTF8MB3, but will be an alias for UTF8MB4 in a future release. Please consider using UTF8MB4 in order to be unambiguous. (SQL State: HY000 - Error Code: 3719)
+2026-11-20T18:06:54.901+08:00  WARN [traceId=] 59876 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8mb3_bin' is a collation of the deprecated character set UTF8MB3. Please consider using UTF8MB4 with an appropriate collation instead. (SQL State: HY000 - Error Code: 3778)
+2026-11-20T18:06:55.225+08:00  WARN [traceId=] 59876 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8' is currently an alias for the character set UTF8MB3, but will be an alias for UTF8MB4 in a future release. Please consider using UTF8MB4 in order to be unambiguous. (SQL State: HY000 - Error Code: 3719)
+2026-11-20T18:06:55.225+08:00  WARN [traceId=] 59876 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8mb3_bin' is a collation of the deprecated character set UTF8MB3. Please consider using UTF8MB4 with an appropriate collation instead. (SQL State: HY000 - Error Code: 3778)
+2026-11-20T18:06:55.394+08:00  WARN [traceId=] 59876 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8' is currently an alias for the character set UTF8MB3, but will be an alias for UTF8MB4 in a future release. Please consider using UTF8MB4 in order to be unambiguous. (SQL State: HY000 - Error Code: 3719)
+2026-11-20T18:06:55.394+08:00  WARN [traceId=] 59876 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8mb3_bin' is a collation of the deprecated character set UTF8MB3. Please consider using UTF8MB4 with an appropriate collation instead. (SQL State: HY000 - Error Code: 3778)
+2026-11-20T18:06:55.577+08:00  WARN [traceId=] 59876 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8' is currently an alias for the character set UTF8MB3, but will be an alias for UTF8MB4 in a future release. Please consider using UTF8MB4 in order to be unambiguous. (SQL State: HY000 - Error Code: 3719)
+2026-11-20T18:06:55.577+08:00  WARN [traceId=] 59876 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8mb3_bin' is a collation of the deprecated character set UTF8MB3. Please consider using UTF8MB4 with an appropriate collation instead. (SQL State: HY000 - Error Code: 3778)
+2026-11-20T18:06:55.624+08:00  WARN [traceId=] 59876 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8' is currently an alias for the character set UTF8MB3, but will be an alias for UTF8MB4 in a future release. Please consider using UTF8MB4 in order to be unambiguous. (SQL State: HY000 - Error Code: 3719)
+2026-11-20T18:06:55.625+08:00  WARN [traceId=] 59876 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8mb3_bin' is a collation of the deprecated character set UTF8MB3. Please consider using UTF8MB4 with an appropriate collation instead. (SQL State: HY000 - Error Code: 3778)
+2026-11-20T18:06:55.670+08:00  WARN [traceId=] 59876 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8' is currently an alias for the character set UTF8MB3, but will be an alias for UTF8MB4 in a future release. Please consider using UTF8MB4 in order to be unambiguous. (SQL State: HY000 - Error Code: 3719)
+2026-11-20T18:06:55.671+08:00  WARN [traceId=] 59876 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8mb3_bin' is a collation of the deprecated character set UTF8MB3. Please consider using UTF8MB4 with an appropriate collation instead. (SQL State: HY000 - Error Code: 3778)
+2026-11-20T18:06:55.719+08:00  WARN [traceId=] 59876 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8' is currently an alias for the character set UTF8MB3, but will be an alias for UTF8MB4 in a future release. Please consider using UTF8MB4 in order to be unambiguous. (SQL State: HY000 - Error Code: 3719)
+2026-11-20T18:06:55.720+08:00  WARN [traceId=] 59876 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8mb3_bin' is a collation of the deprecated character set UTF8MB3. Please consider using UTF8MB4 with an appropriate collation instead. (SQL State: HY000 - Error Code: 3778)
+2026-11-20T18:06:55.769+08:00  WARN [traceId=] 59876 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8' is currently an alias for the character set UTF8MB3, but will be an alias for UTF8MB4 in a future release. Please consider using UTF8MB4 in order to be unambiguous. (SQL State: HY000 - Error Code: 3719)
+2026-11-20T18:06:55.769+08:00  WARN [traceId=] 59876 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8mb3_bin' is a collation of the deprecated character set UTF8MB3. Please consider using UTF8MB4 with an appropriate collation instead. (SQL State: HY000 - Error Code: 3778)
+2026-11-20T18:06:55.819+08:00  WARN [traceId=] 59876 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8' is currently an alias for the character set UTF8MB3, but will be an alias for UTF8MB4 in a future release. Please consider using UTF8MB4 in order to be unambiguous. (SQL State: HY000 - Error Code: 3719)
+2026-11-20T18:06:55.819+08:00  WARN [traceId=] 59876 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8mb3_bin' is a collation of the deprecated character set UTF8MB3. Please consider using UTF8MB4 with an appropriate collation instead. (SQL State: HY000 - Error Code: 3778)
+2026-11-20T18:06:55.870+08:00  WARN [traceId=] 59876 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8' is currently an alias for the character set UTF8MB3, but will be an alias for UTF8MB4 in a future release. Please consider using UTF8MB4 in order to be unambiguous. (SQL State: HY000 - Error Code: 3719)
+2026-11-20T18:06:55.870+08:00  WARN [traceId=] 59876 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8mb3_bin' is a collation of the deprecated character set UTF8MB3. Please consider using UTF8MB4 with an appropriate collation instead. (SQL State: HY000 - Error Code: 3778)
+2026-11-20T18:07:01.176+08:00  WARN [traceId=] 59876 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8' is currently an alias for the character set UTF8MB3, but will be an alias for UTF8MB4 in a future release. Please consider using UTF8MB4 in order to be unambiguous. (SQL State: HY000 - Error Code: 3719)
+2026-11-20T18:07:01.176+08:00  WARN [traceId=] 59876 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8mb3_bin' is a collation of the deprecated character set UTF8MB3. Please consider using UTF8MB4 with an appropriate collation instead. (SQL State: HY000 - Error Code: 3778)
+2026-11-20T18:07:01.217+08:00  WARN [traceId=] 59876 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8' is currently an alias for the character set UTF8MB3, but will be an alias for UTF8MB4 in a future release. Please consider using UTF8MB4 in order to be unambiguous. (SQL State: HY000 - Error Code: 3719)
+2026-11-20T18:07:01.217+08:00  WARN [traceId=] 59876 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8mb3_bin' is a collation of the deprecated character set UTF8MB3. Please consider using UTF8MB4 with an appropriate collation instead. (SQL State: HY000 - Error Code: 3778)
+2026-11-20T18:07:01.259+08:00  WARN [traceId=] 59876 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8' is currently an alias for the character set UTF8MB3, but will be an alias for UTF8MB4 in a future release. Please consider using UTF8MB4 in order to be unambiguous. (SQL State: HY000 - Error Code: 3719)
+2026-11-20T18:07:01.259+08:00  WARN [traceId=] 59876 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8mb3_bin' is a collation of the deprecated character set UTF8MB3. Please consider using UTF8MB4 with an appropriate collation instead. (SQL State: HY000 - Error Code: 3778)
+2026-11-20T18:07:01.297+08:00  WARN [traceId=] 59876 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8' is currently an alias for the character set UTF8MB3, but will be an alias for UTF8MB4 in a future release. Please consider using UTF8MB4 in order to be unambiguous. (SQL State: HY000 - Error Code: 3719)
+2026-11-20T18:07:01.297+08:00  WARN [traceId=] 59876 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8mb3_bin' is a collation of the deprecated character set UTF8MB3. Please consider using UTF8MB4 with an appropriate collation instead. (SQL State: HY000 - Error Code: 3778)
+2026-11-20T18:07:01.339+08:00  WARN [traceId=] 59876 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8' is currently an alias for the character set UTF8MB3, but will be an alias for UTF8MB4 in a future release. Please consider using UTF8MB4 in order to be unambiguous. (SQL State: HY000 - Error Code: 3719)
+2026-11-20T18:07:01.339+08:00  WARN [traceId=] 59876 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8mb3_bin' is a collation of the deprecated character set UTF8MB3. Please consider using UTF8MB4 with an appropriate collation instead. (SQL State: HY000 - Error Code: 3778)
+2026-11-20T18:07:01.964+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "48 - workflow application"
+2026-11-20T18:07:02.313+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "49 - workflow permissions navigation"
+2026-11-20T18:07:02.381+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "50 - workflow designer menu"
+2026-11-20T18:07:02.431+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "51 - printing platform"
+2026-11-20T18:07:02.686+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "52 - activate shared service navigation"
+2026-11-20T18:07:02.737+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "53 - print pdf artifact"
+2026-11-20T18:07:02.841+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "54 - workflow center directory"
+2026-11-20T18:07:02.935+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "55 - print configured flow"
+2026-11-20T18:07:03.236+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "56 - print preview requests"
+2026-11-20T18:07:03.341+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "57 - leave poc"
+2026-11-20T18:07:03.476+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "58 - leave poc navigation"
+2026-11-20T18:07:03.525+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "59 - document configuration"
+2026-11-20T18:07:03.799+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "60 - leave approval cycles"
+2026-11-20T18:07:03.926+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "61 - document navigation"
+2026-11-20T18:07:04.019+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "62 - document platform menu parent"
+2026-11-20T18:07:04.084+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "63 - document submission strategy"
+2026-11-20T18:07:04.191+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "64 - leave direct submission"
+2026-11-20T18:07:04.365+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "65 - document print binding"
+2026-11-20T18:07:04.489+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "66 - document page relationships"
+2026-11-20T18:07:04.561+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "67 - explicit interaction bindings"
+2026-11-20T18:07:04.675+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "68 - document entry controls"
+2026-11-20T18:07:04.829+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "69 - workflow data contract snapshots"
+2026-11-20T18:07:04.990+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "70 - print data contract snapshots"
+2026-11-20T18:07:05.179+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "71 - feature catalog navigation"
+2026-11-20T18:07:05.249+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "72 - remove retired menu role permissions"
+2026-11-20T18:07:05.320+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "73 - business object operation naming"
+2026-11-20T18:07:05.919+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "74 - business object management permissions"
+2026-11-20T18:07:05.975+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "75 - master data"
+2026-11-20T18:07:06.297+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "76 - personnel profiles"
+2026-11-20T18:07:06.516+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "77 - personnel identity model"
+2026-11-20T18:07:06.855+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "78 - leave personnel identity"
+2026-11-20T18:07:06.973+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "79 - workflow personnel audit"
+2026-11-20T18:07:07.085+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "80 - global record audit"
+2026-11-20T18:07:11.369+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "81 - global record audit"
+2026-11-20T18:07:11.992+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "82 - global record audit"
+2026-11-20T18:07:12.304+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "83 - global record audit"
+2026-11-20T18:07:13.401+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "84 - global record audit"
+2026-11-20T18:07:14.052+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "85 - global record audit"
+2026-11-20T18:07:14.780+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "86 - organization personnel module"
+2026-11-20T18:07:14.859+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "87 - partner profile details"
+2026-11-20T18:07:15.074+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "88 - dictionary system subject"
+2026-11-20T18:07:15.280+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "89 - business value defaults"
+2026-11-20T18:07:15.349+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "90 - warehouse profile"
+2026-11-20T18:07:15.452+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "91 - warehouse value defaults"
+2026-11-20T18:07:15.492+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "92 - international subdivisions"
+2026-11-20T18:07:15.616+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "93 - tenant parameter management"
+2026-11-20T18:07:15.670+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "94 - amap proxy path"
+2026-11-20T18:07:15.762+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "95 - geography value defaults"
+2026-11-20T18:07:15.823+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "96 - china administrative divisions"
+2026-11-20T18:07:15.888+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "97 - product catalog foundation"
+2026-11-20T18:07:16.214+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "98 - product attribute templates"
+2026-11-20T18:07:16.465+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "99 - product attribute templates"
+2026-11-20T18:07:16.670+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "100 - product category template binding"
+2026-11-20T18:07:16.783+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "101 - product v1 master"
+2026-11-20T18:07:16.955+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "102 - dictionary value standard"
+2026-11-20T18:07:17.004+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "103 - product value integrity"
+2026-11-20T18:07:18.249+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "104 - product draft permission"
+2026-11-20T18:07:18.280+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "105 - master data menu icons"
+2026-11-20T18:07:18.330+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "106 - product structure requests"
+2026-11-20T18:07:18.411+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "107 - editable geography parent"
+2026-11-20T18:07:18.628+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "108 - product legacy preservation"
+2026-11-20T18:07:18.945+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "109 - product configuration status permissions"
+2026-11-20T18:07:18.990+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "110 - product custom choices"
+2026-11-20T18:07:19.132+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "111 - product single writer cutover"
+2026-11-20T18:07:19.186+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "112 - product integrity hardening"
+2026-11-20T18:07:19.664+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "113 - product unit conversion"
+2026-11-20T18:07:19.777+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "114 - product images"
+2026-11-20T18:07:19.866+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "115 - product extended modes"
+2026-11-20T18:07:20.435+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "116 - product specifications components"
+2026-11-20T18:07:21.008+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "117 - product approval"
+2026-11-20T18:07:21.098+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "118 - storage hierarchy"
+2026-11-20T18:07:21.247+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "119 - product custom specification values"
+2026-11-20T18:07:21.511+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "120 - member data scope inheritance"
+2026-11-20T18:07:21.675+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "121 - business data access"
+2026-11-20T18:07:21.896+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "122 - partner data ownership"
+2026-11-20T18:07:22.011+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "123 - business object coding"
+2026-11-20T18:07:22.149+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "124 - combined data grant rules"
+2026-11-20T18:07:22.443+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "125 - partner grant condition index"
+2026-11-20T18:07:22.510+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "126 - independent coding rules"
+2026-11-20T18:07:22.721+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "127 - coding rule permission navigation"
+2026-11-20T18:07:22.791+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "128 - product sku navigation"
+2026-11-20T18:07:22.842+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "129 - object approval receipts"
+2026-11-20T18:07:23.112+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "130 - group product and warehouse navigation"
+2026-11-20T18:07:23.156+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "131 - object capability data permissions"
+2026-11-20T18:07:23.202+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Successfully applied 131 migrations to schema `test`, now at version v131 (execution time 00:34.017s)
+2026-11-20T18:07:32.123+08:00  INFO [traceId=] 59876 --- [           main] r$InitializeUserDetailsManagerConfigurer : Global AuthenticationManager configured with UserDetailsService bean with name accounts
+2026-11-20T18:07:36.509+08:00  WARN [traceId=] 59876 --- [           main] io.netty.bootstrap.Bootstrap             : Unknown channel option 'TCP_KEEPCOUNT' for channel '[id: 0x461c2d45]' of type 'class io.netty.channel.socket.nio.NioSocketChannel'
+2026-11-20T18:07:36.510+08:00  WARN [traceId=] 59876 --- [           main] io.netty.bootstrap.Bootstrap             : Unknown channel option 'TCP_KEEPIDLE' for channel '[id: 0x461c2d45]' of type 'class io.netty.channel.socket.nio.NioSocketChannel'
+2026-11-20T18:07:36.511+08:00  WARN [traceId=] 59876 --- [           main] io.netty.bootstrap.Bootstrap             : Unknown channel option 'TCP_KEEPINTERVAL' for channel '[id: 0x461c2d45]' of type 'class io.netty.channel.socket.nio.NioSocketChannel'
+2026-11-20T18:07:38.992+08:00  WARN [traceId=] 59876 --- [           main] io.netty.bootstrap.Bootstrap             : Unknown channel option 'TCP_KEEPCOUNT' for channel '[id: 0x3b787692]' of type 'class io.netty.channel.socket.nio.NioSocketChannel'
+2026-11-20T18:07:38.992+08:00  WARN [traceId=] 59876 --- [           main] io.netty.bootstrap.Bootstrap             : Unknown channel option 'TCP_KEEPIDLE' for channel '[id: 0x3b787692]' of type 'class io.netty.channel.socket.nio.NioSocketChannel'
+2026-11-20T18:07:38.992+08:00  WARN [traceId=] 59876 --- [           main] io.netty.bootstrap.Bootstrap             : Unknown channel option 'TCP_KEEPINTERVAL' for channel '[id: 0x3b787692]' of type 'class io.netty.channel.socket.nio.NioSocketChannel'
+2026-11-20T18:07:39.084+08:00  INFO [traceId=] 59876 --- [           main] c.a.p.BusinessValueDictionaryTest        : Started BusinessValueDictionaryTest in 66.323 seconds (process running for 98.686)
+2026-11-20T18:07:39.528+08:00  WARN [traceId=] 59876 --- [           main] o.s.core.events.SpringDocAppInitializer  : SpringDoc /v3/api-docs endpoint is enabled by default. To disable it in production, set the property 'springdoc.api-docs.enabled=false'
+Mockito is currently self-attaching to enable the inline-mock-maker. This will no longer work in future releases of the JDK. Please add Mockito as an agent to your build as described in Mockito's documentation: https://javadoc.io/doc/org.mockito/mockito-core/latest/org.mockito/org/mockito/Mockito.html#0.3
+WARNING: A Java agent has been loaded dynamically (C:\Users\lbkgo\.m2\repository\net\bytebuddy\byte-buddy-agent\1.18.15\byte-buddy-agent-1.18.15.jar)
+WARNING: If a serviceability tool is in use, please run with -XX:+EnableDynamicAgentLoading to hide this warning
+WARNING: If a serviceability tool is not in use, please run with -Djdk.instrument.traceUsage for more information
+WARNING: Dynamic loading of agents will be disallowed by default in a future release
+OpenJDK 64-Bit Server VM warning: Sharing is only supported for boot loader classes because bootstrap classpath has been appended
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 114.3 s -- in com.appnexus.platform.BusinessValueDictionaryTest
+[INFO] Running com.appnexus.platform.CodingCapabilityTest
+2026-11-20T18:07:56.835+08:00  INFO [traceId=] 59876 --- [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.appnexus.platform.CodingCapabilityTest]: CodingCapabilityTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-11-20T18:07:56.859+08:00  INFO [traceId=] 59876 --- [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.appnexus.platform.PlatformApplication for test class com.appnexus.platform.CodingCapabilityTest
+2026-11-20T18:07:56.863+08:00  INFO [traceId=] 59876 --- [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.appnexus.platform.CodingCapabilityTest]: CodingCapabilityTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-11-20T18:07:56.865+08:00  INFO [traceId=] 59876 --- [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.appnexus.platform.DatabaseTestSupport]: DatabaseTestSupport does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-11-20T18:07:56.871+08:00  INFO [traceId=] 59876 --- [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.appnexus.platform.PlatformApplication for test class com.appnexus.platform.CodingCapabilityTest
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v4.1.2)
+
+2026-11-20T18:07:57.007+08:00  INFO [traceId=] 59876 --- [           main] c.a.platform.CodingCapabilityTest        : Starting CodingCapabilityTest using Java 21 with PID 59876 (started by lbkgo in D:\AppNexus\backend\applications\monolith-app)
+2026-11-20T18:07:57.008+08:00  INFO [traceId=] 59876 --- [           main] c.a.platform.CodingCapabilityTest        : The following 1 profile is active: "local"
+2026-11-20T18:07:58.591+08:00  INFO [traceId=] 59876 --- [           main] .s.d.r.c.RepositoryConfigurationDelegate : Multiple Spring Data modules found, entering strict repository configuration mode
+2026-11-20T18:07:58.591+08:00  INFO [traceId=] 59876 --- [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data Redis repositories in DEFAULT mode.
+2026-11-20T18:07:58.698+08:00  INFO [traceId=] 59876 --- [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 101 ms. Found 0 Redis repository interfaces.
+2026-11-20T18:07:59.145+08:00  INFO [traceId=] 59876 --- [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-2 - Starting...
+2026-11-20T18:07:59.191+08:00  INFO [traceId=] 59876 --- [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-2 - Added connection com.mysql.cj.jdbc.ConnectionImpl@5d42e865
+2026-11-20T18:07:59.192+08:00  INFO [traceId=] 59876 --- [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-2 - Start completed.
+2026-11-20T18:07:59.195+08:00  INFO [traceId=] 59876 --- [           main] org.flywaydb.core.FlywayExecutor         : Database: jdbc:mysql://localhost:57697/test?preserveInstants=true&connectionTimeZone=UTC&forceConnectionTimeZoneToSession=true (MySQL 8.4)
+2026-11-20T18:07:59.779+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbValidate     : Successfully validated 131 migrations (execution time 00:00.503s)
+2026-11-20T18:07:59.832+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Current version of schema `test`: 131
+2026-11-20T18:07:59.838+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Schema `test` is up to date. No migration necessary.
+2026-11-20T18:08:00.071+08:00 ERROR [traceId=] 59876 --- [pring-session-1] o.s.s.s.TaskUtils$LoggingErrorHandler    : Unexpected error occurred in scheduled task
+
+java.lang.IllegalStateException: LettuceConnectionFactory has been STOPPED. Use start() to initialize it
+	at org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory.assertStarted(LettuceConnectionFactory.java:1460) ~[spring-data-redis-4.1.2.jar:4.1.2]
+	at org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory.getConnection(LettuceConnectionFactory.java:1050) ~[spring-data-redis-4.1.2.jar:4.1.2]
+	at org.springframework.data.redis.core.RedisConnectionUtils.fetchConnection(RedisConnectionUtils.java:195) ~[spring-data-redis-4.1.2.jar:4.1.2]
+	at org.springframework.data.redis.core.RedisConnectionUtils.doGetConnection(RedisConnectionUtils.java:144) ~[spring-data-redis-4.1.2.jar:4.1.2]
+	at org.springframework.data.redis.core.RedisConnectionUtils.getConnection(RedisConnectionUtils.java:105) ~[spring-data-redis-4.1.2.jar:4.1.2]
+	at org.springframework.data.redis.core.RedisTemplate.execute(RedisTemplate.java:405) ~[spring-data-redis-4.1.2.jar:4.1.2]
+	at org.springframework.data.redis.core.RedisTemplate.execute(RedisTemplate.java:385) ~[spring-data-redis-4.1.2.jar:4.1.2]
+	at org.springframework.data.redis.core.AbstractOperations.execute(AbstractOperations.java:166) ~[spring-data-redis-4.1.2.jar:4.1.2]
+	at org.springframework.data.redis.core.DefaultSetOperations.members(DefaultSetOperations.java:199) ~[spring-data-redis-4.1.2.jar:4.1.2]
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103) ~[na:na]
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580) ~[na:na]
+	at org.springframework.data.redis.core.BoundOperationsProxyFactory$BoundOperationsMethodInterceptor.doInvoke(BoundOperationsProxyFactory.java:178) ~[spring-data-redis-4.1.2.jar:4.1.2]
+	at org.springframework.data.redis.core.BoundOperationsProxyFactory$BoundOperationsMethodInterceptor.invoke(BoundOperationsProxyFactory.java:149) ~[spring-data-redis-4.1.2.jar:4.1.2]
+	at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:179) ~[spring-aop-7.0.10.jar:7.0.10]
+	at org.springframework.data.projection.DefaultMethodInvokingMethodInterceptor.invoke(DefaultMethodInvokingMethodInterceptor.java:69) ~[spring-data-commons-4.1.2.jar:4.1.2]
+	at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:179) ~[spring-aop-7.0.10.jar:7.0.10]
+	at org.springframework.aop.framework.JdkDynamicAopProxy.invoke(JdkDynamicAopProxy.java:219) ~[spring-aop-7.0.10.jar:7.0.10]
+	at jdk.proxy2/jdk.proxy2.$Proxy260.members(Unknown Source) ~[na:na]
+	at org.springframework.session.data.redis.RedisIndexedSessionRepository$MinuteBasedRedisSessionExpirationStore.cleanupExpiredSessions(RedisIndexedSessionRepository.java:1064) ~[spring-session-data-redis-4.1.1.jar:4.1.1]
+	at org.springframework.session.data.redis.RedisIndexedSessionRepository.cleanUpExpiredSessions(RedisIndexedSessionRepository.java:496) ~[spring-session-data-redis-4.1.1.jar:4.1.1]
+	at org.springframework.scheduling.support.DelegatingErrorHandlingRunnable.run(DelegatingErrorHandlingRunnable.java:54) ~[spring-context-7.0.10.jar:7.0.10]
+	at org.springframework.scheduling.concurrent.ReschedulingRunnable.run(ReschedulingRunnable.java:94) ~[spring-context-7.0.10.jar:7.0.10]
+	at java.base/java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:572) ~[na:na]
+	at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:317) ~[na:na]
+	at java.base/java.util.concurrent.ScheduledThreadPoolExecutor$ScheduledFutureTask.run(ScheduledThreadPoolExecutor.java:304) ~[na:na]
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144) ~[na:na]
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642) ~[na:na]
+	at java.base/java.lang.Thread.run(Thread.java:1583) ~[na:na]
+
+2026-11-20T18:08:02.138+08:00  INFO [traceId=] 59876 --- [           main] r$InitializeUserDetailsManagerConfigurer : Global AuthenticationManager configured with UserDetailsService bean with name accounts
+2026-11-20T18:08:02.843+08:00  INFO [traceId=] 59876 --- [           main] o.s.b.t.m.w.SpringBootMockServletContext : Initializing Spring TestDispatcherServlet ''
+2026-11-20T18:08:02.844+08:00  INFO [traceId=] 59876 --- [           main] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
+2026-11-20T18:08:02.851+08:00  INFO [traceId=] 59876 --- [           main] o.s.t.web.servlet.TestDispatcherServlet  : Completed initialization in 7 ms
+2026-11-20T18:08:02.992+08:00  WARN [traceId=] 59876 --- [           main] io.netty.bootstrap.Bootstrap             : Unknown channel option 'TCP_KEEPCOUNT' for channel '[id: 0xbd9823be]' of type 'class io.netty.channel.socket.nio.NioSocketChannel'
+2026-11-20T18:08:02.992+08:00  WARN [traceId=] 59876 --- [           main] io.netty.bootstrap.Bootstrap             : Unknown channel option 'TCP_KEEPIDLE' for channel '[id: 0xbd9823be]' of type 'class io.netty.channel.socket.nio.NioSocketChannel'
+2026-11-20T18:08:02.992+08:00  WARN [traceId=] 59876 --- [           main] io.netty.bootstrap.Bootstrap             : Unknown channel option 'TCP_KEEPINTERVAL' for channel '[id: 0xbd9823be]' of type 'class io.netty.channel.socket.nio.NioSocketChannel'
+2026-11-20T18:08:03.572+08:00  WARN [traceId=] 59876 --- [           main] io.netty.bootstrap.Bootstrap             : Unknown channel option 'TCP_KEEPCOUNT' for channel '[id: 0xe21a66ac]' of type 'class io.netty.channel.socket.nio.NioSocketChannel'
+2026-11-20T18:08:03.572+08:00  WARN [traceId=] 59876 --- [           main] io.netty.bootstrap.Bootstrap             : Unknown channel option 'TCP_KEEPIDLE' for channel '[id: 0xe21a66ac]' of type 'class io.netty.channel.socket.nio.NioSocketChannel'
+2026-11-20T18:08:03.572+08:00  WARN [traceId=] 59876 --- [           main] io.netty.bootstrap.Bootstrap             : Unknown channel option 'TCP_KEEPINTERVAL' for channel '[id: 0xe21a66ac]' of type 'class io.netty.channel.socket.nio.NioSocketChannel'
+2026-11-20T18:08:03.620+08:00  INFO [traceId=] 59876 --- [           main] c.a.platform.CodingCapabilityTest        : Started CodingCapabilityTest in 6.684 seconds (process running for 123.222)
+2026-11-20T18:08:03.980+08:00  WARN [traceId=] 59876 --- [           main] o.s.core.events.SpringDocAppInitializer  : SpringDoc /v3/api-docs endpoint is enabled by default. To disable it in production, set the property 'springdoc.api-docs.enabled=false'
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 44.84 s -- in com.appnexus.platform.CodingCapabilityTest
+[INFO] Running com.appnexus.platform.DataGrantQueryPlanTest
+2026-11-20T18:08:41.692+08:00  INFO [traceId=] 59876 --- [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.appnexus.platform.DataGrantQueryPlanTest]: DataGrantQueryPlanTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-11-20T18:08:41.706+08:00  INFO [traceId=] 59876 --- [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.appnexus.platform.PlatformApplication for test class com.appnexus.platform.DataGrantQueryPlanTest
+2026-11-20T18:08:41.710+08:00  INFO [traceId=] 59876 --- [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.appnexus.platform.DataGrantQueryPlanTest]: DataGrantQueryPlanTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-11-20T18:08:41.712+08:00  INFO [traceId=] 59876 --- [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.appnexus.platform.DatabaseTestSupport]: DatabaseTestSupport does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-11-20T18:08:41.718+08:00  INFO [traceId=] 59876 --- [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.appnexus.platform.PlatformApplication for test class com.appnexus.platform.DataGrantQueryPlanTest
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v4.1.2)
+
+2026-11-20T18:08:41.794+08:00  INFO [traceId=] 59876 --- [           main] c.a.platform.DataGrantQueryPlanTest      : Starting DataGrantQueryPlanTest using Java 21 with PID 59876 (started by lbkgo in D:\AppNexus\backend\applications\monolith-app)
+2026-11-20T18:08:41.794+08:00  INFO [traceId=] 59876 --- [           main] c.a.platform.DataGrantQueryPlanTest      : The following 1 profile is active: "local"
+2026-11-20T18:08:43.242+08:00  INFO [traceId=] 59876 --- [           main] .s.d.r.c.RepositoryConfigurationDelegate : Multiple Spring Data modules found, entering strict repository configuration mode
+2026-11-20T18:08:43.247+08:00  INFO [traceId=] 59876 --- [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data Redis repositories in DEFAULT mode.
+2026-11-20T18:08:43.364+08:00  INFO [traceId=] 59876 --- [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 106 ms. Found 0 Redis repository interfaces.
+2026-11-20T18:08:43.648+08:00  INFO [traceId=] 59876 --- [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-3 - Starting...
+2026-11-20T18:08:43.685+08:00  INFO [traceId=] 59876 --- [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-3 - Added connection com.mysql.cj.jdbc.ConnectionImpl@f23b785
+2026-11-20T18:08:43.685+08:00  INFO [traceId=] 59876 --- [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-3 - Start completed.
+2026-11-20T18:08:43.688+08:00  INFO [traceId=] 59876 --- [           main] org.flywaydb.core.FlywayExecutor         : Database: jdbc:mysql://localhost:57697/test?preserveInstants=true&connectionTimeZone=UTC&forceConnectionTimeZoneToSession=true (MySQL 8.4)
+2026-11-20T18:08:44.272+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbValidate     : Successfully validated 131 migrations (execution time 00:00.518s)
+2026-11-20T18:08:44.306+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Current version of schema `test`: 131
+2026-11-20T18:08:44.308+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Schema `test` is up to date. No migration necessary.
+2026-11-20T18:08:46.140+08:00  INFO [traceId=] 59876 --- [           main] r$InitializeUserDetailsManagerConfigurer : Global AuthenticationManager configured with UserDetailsService bean with name accounts
+2026-11-20T18:08:46.788+08:00  INFO [traceId=] 59876 --- [           main] o.s.b.t.m.w.SpringBootMockServletContext : Initializing Spring TestDispatcherServlet ''
+2026-11-20T18:08:46.788+08:00  INFO [traceId=] 59876 --- [           main] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
+2026-11-20T18:08:46.793+08:00  INFO [traceId=] 59876 --- [           main] o.s.t.web.servlet.TestDispatcherServlet  : Completed initialization in 5 ms
+2026-11-20T18:08:46.902+08:00  WARN [traceId=] 59876 --- [           main] io.netty.bootstrap.Bootstrap             : Unknown channel option 'TCP_KEEPCOUNT' for channel '[id: 0x3c487349]' of type 'class io.netty.channel.socket.nio.NioSocketChannel'
+2026-11-20T18:08:46.903+08:00  WARN [traceId=] 59876 --- [           main] io.netty.bootstrap.Bootstrap             : Unknown channel option 'TCP_KEEPIDLE' for channel '[id: 0x3c487349]' of type 'class io.netty.channel.socket.nio.NioSocketChannel'
+2026-11-20T18:08:46.903+08:00  WARN [traceId=] 59876 --- [           main] io.netty.bootstrap.Bootstrap             : Unknown channel option 'TCP_KEEPINTERVAL' for channel '[id: 0x3c487349]' of type 'class io.netty.channel.socket.nio.NioSocketChannel'
+2026-11-20T18:08:47.511+08:00  WARN [traceId=] 59876 --- [           main] io.netty.bootstrap.Bootstrap             : Unknown channel option 'TCP_KEEPCOUNT' for channel '[id: 0xc6d0bb60]' of type 'class io.netty.channel.socket.nio.NioSocketChannel'
+2026-11-20T18:08:47.511+08:00  WARN [traceId=] 59876 --- [           main] io.netty.bootstrap.Bootstrap             : Unknown channel option 'TCP_KEEPIDLE' for channel '[id: 0xc6d0bb60]' of type 'class io.netty.channel.socket.nio.NioSocketChannel'
+2026-11-20T18:08:47.512+08:00  WARN [traceId=] 59876 --- [           main] io.netty.bootstrap.Bootstrap             : Unknown channel option 'TCP_KEEPINTERVAL' for channel '[id: 0xc6d0bb60]' of type 'class io.netty.channel.socket.nio.NioSocketChannel'
+2026-11-20T18:08:47.543+08:00  INFO [traceId=] 59876 --- [           main] c.a.platform.DataGrantQueryPlanTest      : Started DataGrantQueryPlanTest in 5.806 seconds (process running for 167.144)
+2026-11-20T18:08:47.762+08:00  WARN [traceId=] 59876 --- [           main] o.s.core.events.SpringDocAppInitializer  : SpringDoc /v3/api-docs endpoint is enabled by default. To disable it in production, set the property 'springdoc.api-docs.enabled=false'
+DATA_GRANT_EXPLAIN code: -> Rows fetched before execution  (cost=0..0 rows=1) (actual time=0.0957..0.0959 rows=1 loops=1)
+
+DATA_GRANT_EXPLAIN name: -> Filter: (md_partner.tenant_id = <cache>(uuid_to_bin('99894843-7367-4351-8b38-6c925905af74')))  (cost=0.35 rows=1) (actual time=0.0209..0.0228 rows=1 loops=1)
+    -> Covering index lookup on md_partner using ix_partner_tenant_name (tenant_id=uuid_to_bin('99894843-7367-4351-8b38-6c925905af74'), name='Partner 500')  (cost=0.35 rows=1) (actual time=0.016..0.0178 rows=1 loops=1)
+
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 7.238 s -- in com.appnexus.platform.DataGrantQueryPlanTest
+[INFO] Running com.appnexus.platform.OrganizationSummaryTest
+2026-11-20T18:08:48.924+08:00  INFO [traceId=] 59876 --- [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.appnexus.platform.OrganizationSummaryTest]: OrganizationSummaryTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-11-20T18:08:48.928+08:00  INFO [traceId=] 59876 --- [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.appnexus.platform.PlatformApplication for test class com.appnexus.platform.OrganizationSummaryTest
+2026-11-20T18:08:48.931+08:00  INFO [traceId=] 59876 --- [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.appnexus.platform.OrganizationSummaryTest]: OrganizationSummaryTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-11-20T18:08:48.933+08:00  INFO [traceId=] 59876 --- [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.appnexus.platform.DatabaseTestSupport]: DatabaseTestSupport does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-11-20T18:08:48.936+08:00  INFO [traceId=] 59876 --- [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.appnexus.platform.PlatformApplication for test class com.appnexus.platform.OrganizationSummaryTest
+2026-11-20T18:08:49.027+08:00  WARN [traceId=] 59876 --- [           main] io.netty.bootstrap.Bootstrap             : Unknown channel option 'TCP_KEEPCOUNT' for channel '[id: 0x1917151a]' of type 'class io.netty.channel.socket.nio.NioSocketChannel'
+2026-11-20T18:08:49.027+08:00  WARN [traceId=] 59876 --- [           main] io.netty.bootstrap.Bootstrap             : Unknown channel option 'TCP_KEEPIDLE' for channel '[id: 0x1917151a]' of type 'class io.netty.channel.socket.nio.NioSocketChannel'
+2026-11-20T18:08:49.027+08:00  WARN [traceId=] 59876 --- [           main] io.netty.bootstrap.Bootstrap             : Unknown channel option 'TCP_KEEPINTERVAL' for channel '[id: 0x1917151a]' of type 'class io.netty.channel.socket.nio.NioSocketChannel'
+2026-11-20T18:08:49.044+08:00  WARN [traceId=] 59876 --- [           main] io.netty.bootstrap.Bootstrap             : Unknown channel option 'TCP_KEEPCOUNT' for channel '[id: 0xf11d839e]' of type 'class io.netty.channel.socket.nio.NioSocketChannel'
+2026-11-20T18:08:49.044+08:00  WARN [traceId=] 59876 --- [           main] io.netty.bootstrap.Bootstrap             : Unknown channel option 'TCP_KEEPIDLE' for channel '[id: 0xf11d839e]' of type 'class io.netty.channel.socket.nio.NioSocketChannel'
+2026-11-20T18:08:49.044+08:00  WARN [traceId=] 59876 --- [           main] io.netty.bootstrap.Bootstrap             : Unknown channel option 'TCP_KEEPINTERVAL' for channel '[id: 0xf11d839e]' of type 'class io.netty.channel.socket.nio.NioSocketChannel'
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 4.208 s -- in com.appnexus.platform.OrganizationSummaryTest
+[INFO] Running com.appnexus.platform.TenantSqlIsolationTest
+2026-11-20T18:08:53.173+08:00  INFO [traceId=] 59876 --- [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.appnexus.platform.TenantSqlIsolationTest]: TenantSqlIsolationTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-11-20T18:08:53.200+08:00  INFO [traceId=] 59876 --- [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.appnexus.platform.PlatformApplication for test class com.appnexus.platform.TenantSqlIsolationTest
+2026-11-20T18:08:53.212+08:00  INFO [traceId=] 59876 --- [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.appnexus.platform.TenantSqlIsolationTest]: TenantSqlIsolationTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-11-20T18:08:53.216+08:00  INFO [traceId=] 59876 --- [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.appnexus.platform.DatabaseTestSupport]: DatabaseTestSupport does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-11-20T18:08:53.226+08:00  INFO [traceId=] 59876 --- [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.appnexus.platform.PlatformApplication for test class com.appnexus.platform.TenantSqlIsolationTest
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v4.1.2)
+
+2026-11-20T18:08:53.640+08:00  INFO [traceId=] 59876 --- [           main] c.a.platform.TenantSqlIsolationTest      : Starting TenantSqlIsolationTest using Java 21 with PID 59876 (started by lbkgo in D:\AppNexus\backend\applications\monolith-app)
+2026-11-20T18:08:53.641+08:00  INFO [traceId=] 59876 --- [           main] c.a.platform.TenantSqlIsolationTest      : The following 1 profile is active: "local"
+2026-11-20T18:08:58.070+08:00  INFO [traceId=] 59876 --- [           main] .s.d.r.c.RepositoryConfigurationDelegate : Multiple Spring Data modules found, entering strict repository configuration mode
+2026-11-20T18:08:58.071+08:00  INFO [traceId=] 59876 --- [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data Redis repositories in DEFAULT mode.
+2026-11-20T18:08:58.189+08:00  INFO [traceId=] 59876 --- [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 112 ms. Found 0 Redis repository interfaces.
+2026-11-20T18:08:58.709+08:00  INFO [traceId=] 59876 --- [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-4 - Starting...
+2026-11-20T18:08:58.843+08:00  INFO [traceId=] 59876 --- [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-4 - Added connection com.mysql.cj.jdbc.ConnectionImpl@64f9b819
+2026-11-20T18:08:58.844+08:00  INFO [traceId=] 59876 --- [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-4 - Start completed.
+2026-11-20T18:08:58.851+08:00  INFO [traceId=] 59876 --- [           main] org.flywaydb.core.FlywayExecutor         : Database: jdbc:mysql://localhost:57697/test?preserveInstants=true&connectionTimeZone=UTC&forceConnectionTimeZoneToSession=true (MySQL 8.4)
+2026-11-20T18:08:59.534+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbValidate     : Successfully validated 131 migrations (execution time 00:00.592s)
+2026-11-20T18:08:59.663+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Current version of schema `test`: 131
+2026-11-20T18:08:59.667+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Schema `test` is up to date. No migration necessary.
+2026-11-20T18:09:00.008+08:00 ERROR [traceId=] 59876 --- [pring-session-1] o.s.s.s.TaskUtils$LoggingErrorHandler    : Unexpected error occurred in scheduled task
+
+java.lang.IllegalStateException: LettuceConnectionFactory has been STOPPED. Use start() to initialize it
+	at org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory.assertStarted(LettuceConnectionFactory.java:1460) ~[spring-data-redis-4.1.2.jar:4.1.2]
+	at org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory.getConnection(LettuceConnectionFactory.java:1050) ~[spring-data-redis-4.1.2.jar:4.1.2]
+	at org.springframework.data.redis.core.RedisConnectionUtils.fetchConnection(RedisConnectionUtils.java:195) ~[spring-data-redis-4.1.2.jar:4.1.2]
+	at org.springframework.data.redis.core.RedisConnectionUtils.doGetConnection(RedisConnectionUtils.java:144) ~[spring-data-redis-4.1.2.jar:4.1.2]
+	at org.springframework.data.redis.core.RedisConnectionUtils.getConnection(RedisConnectionUtils.java:105) ~[spring-data-redis-4.1.2.jar:4.1.2]
+	at org.springframework.data.redis.core.RedisTemplate.execute(RedisTemplate.java:405) ~[spring-data-redis-4.1.2.jar:4.1.2]
+	at org.springframework.data.redis.core.RedisTemplate.execute(RedisTemplate.java:385) ~[spring-data-redis-4.1.2.jar:4.1.2]
+	at org.springframework.data.redis.core.AbstractOperations.execute(AbstractOperations.java:166) ~[spring-data-redis-4.1.2.jar:4.1.2]
+	at org.springframework.data.redis.core.DefaultSetOperations.members(DefaultSetOperations.java:199) ~[spring-data-redis-4.1.2.jar:4.1.2]
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103) ~[na:na]
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580) ~[na:na]
+	at org.springframework.data.redis.core.BoundOperationsProxyFactory$BoundOperationsMethodInterceptor.doInvoke(BoundOperationsProxyFactory.java:178) ~[spring-data-redis-4.1.2.jar:4.1.2]
+	at org.springframework.data.redis.core.BoundOperationsProxyFactory$BoundOperationsMethodInterceptor.invoke(BoundOperationsProxyFactory.java:149) ~[spring-data-redis-4.1.2.jar:4.1.2]
+	at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:179) ~[spring-aop-7.0.10.jar:7.0.10]
+	at org.springframework.data.projection.DefaultMethodInvokingMethodInterceptor.invoke(DefaultMethodInvokingMethodInterceptor.java:69) ~[spring-data-commons-4.1.2.jar:4.1.2]
+	at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:179) ~[spring-aop-7.0.10.jar:7.0.10]
+	at org.springframework.aop.framework.JdkDynamicAopProxy.invoke(JdkDynamicAopProxy.java:219) ~[spring-aop-7.0.10.jar:7.0.10]
+	at jdk.proxy2/jdk.proxy2.$Proxy260.members(Unknown Source) ~[na:na]
+	at org.springframework.session.data.redis.RedisIndexedSessionRepository$MinuteBasedRedisSessionExpirationStore.cleanupExpiredSessions(RedisIndexedSessionRepository.java:1064) ~[spring-session-data-redis-4.1.1.jar:4.1.1]
+	at org.springframework.session.data.redis.RedisIndexedSessionRepository.cleanUpExpiredSessions(RedisIndexedSessionRepository.java:496) ~[spring-session-data-redis-4.1.1.jar:4.1.1]
+	at org.springframework.scheduling.support.DelegatingErrorHandlingRunnable.run(DelegatingErrorHandlingRunnable.java:54) ~[spring-context-7.0.10.jar:7.0.10]
+	at org.springframework.scheduling.concurrent.ReschedulingRunnable.run(ReschedulingRunnable.java:94) ~[spring-context-7.0.10.jar:7.0.10]
+	at java.base/java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:572) ~[na:na]
+	at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:317) ~[na:na]
+	at java.base/java.util.concurrent.ScheduledThreadPoolExecutor$ScheduledFutureTask.run(ScheduledThreadPoolExecutor.java:304) ~[na:na]
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144) ~[na:na]
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642) ~[na:na]
+	at java.base/java.lang.Thread.run(Thread.java:1583) ~[na:na]
+
+2026-11-20T18:09:00.010+08:00 ERROR [traceId=] 59876 --- [pring-session-1] o.s.s.s.TaskUtils$LoggingErrorHandler    : Unexpected error occurred in scheduled task
+
+java.lang.IllegalStateException: LettuceConnectionFactory has been STOPPED. Use start() to initialize it
+	at org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory.assertStarted(LettuceConnectionFactory.java:1460) ~[spring-data-redis-4.1.2.jar:4.1.2]
+	at org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory.getConnection(LettuceConnectionFactory.java:1050) ~[spring-data-redis-4.1.2.jar:4.1.2]
+	at org.springframework.data.redis.core.RedisConnectionUtils.fetchConnection(RedisConnectionUtils.java:195) ~[spring-data-redis-4.1.2.jar:4.1.2]
+	at org.springframework.data.redis.core.RedisConnectionUtils.doGetConnection(RedisConnectionUtils.java:144) ~[spring-data-redis-4.1.2.jar:4.1.2]
+	at org.springframework.data.redis.core.RedisConnectionUtils.getConnection(RedisConnectionUtils.java:105) ~[spring-data-redis-4.1.2.jar:4.1.2]
+	at org.springframework.data.redis.core.RedisTemplate.execute(RedisTemplate.java:405) ~[spring-data-redis-4.1.2.jar:4.1.2]
+	at org.springframework.data.redis.core.RedisTemplate.execute(RedisTemplate.java:385) ~[spring-data-redis-4.1.2.jar:4.1.2]
+	at org.springframework.data.redis.core.AbstractOperations.execute(AbstractOperations.java:166) ~[spring-data-redis-4.1.2.jar:4.1.2]
+	at org.springframework.data.redis.core.DefaultSetOperations.members(DefaultSetOperations.java:199) ~[spring-data-redis-4.1.2.jar:4.1.2]
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103) ~[na:na]
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580) ~[na:na]
+	at org.springframework.data.redis.core.BoundOperationsProxyFactory$BoundOperationsMethodInterceptor.doInvoke(BoundOperationsProxyFactory.java:178) ~[spring-data-redis-4.1.2.jar:4.1.2]
+	at org.springframework.data.redis.core.BoundOperationsProxyFactory$BoundOperationsMethodInterceptor.invoke(BoundOperationsProxyFactory.java:149) ~[spring-data-redis-4.1.2.jar:4.1.2]
+	at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:179) ~[spring-aop-7.0.10.jar:7.0.10]
+	at org.springframework.data.projection.DefaultMethodInvokingMethodInterceptor.invoke(DefaultMethodInvokingMethodInterceptor.java:69) ~[spring-data-commons-4.1.2.jar:4.1.2]
+	at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:179) ~[spring-aop-7.0.10.jar:7.0.10]
+	at org.springframework.aop.framework.JdkDynamicAopProxy.invoke(JdkDynamicAopProxy.java:219) ~[spring-aop-7.0.10.jar:7.0.10]
+	at jdk.proxy2/jdk.proxy2.$Proxy260.members(Unknown Source) ~[na:na]
+	at org.springframework.session.data.redis.RedisIndexedSessionRepository$MinuteBasedRedisSessionExpirationStore.cleanupExpiredSessions(RedisIndexedSessionRepository.java:1064) ~[spring-session-data-redis-4.1.1.jar:4.1.1]
+	at org.springframework.session.data.redis.RedisIndexedSessionRepository.cleanUpExpiredSessions(RedisIndexedSessionRepository.java:496) ~[spring-session-data-redis-4.1.1.jar:4.1.1]
+	at org.springframework.scheduling.support.DelegatingErrorHandlingRunnable.run(DelegatingErrorHandlingRunnable.java:54) ~[spring-context-7.0.10.jar:7.0.10]
+	at org.springframework.scheduling.concurrent.ReschedulingRunnable.run(ReschedulingRunnable.java:94) ~[spring-context-7.0.10.jar:7.0.10]
+	at java.base/java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:572) ~[na:na]
+	at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:317) ~[na:na]
+	at java.base/java.util.concurrent.ScheduledThreadPoolExecutor$ScheduledFutureTask.run(ScheduledThreadPoolExecutor.java:304) ~[na:na]
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144) ~[na:na]
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642) ~[na:na]
+	at java.base/java.lang.Thread.run(Thread.java:1583) ~[na:na]
+
+2026-11-20T18:09:00.025+08:00 ERROR [traceId=] 59876 --- [pring-session-1] o.s.s.s.TaskUtils$LoggingErrorHandler    : Unexpected error occurred in scheduled task
+
+java.lang.IllegalStateException: LettuceConnectionFactory has been STOPPED. Use start() to initialize it
+	at org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory.assertStarted(LettuceConnectionFactory.java:1460) ~[spring-data-redis-4.1.2.jar:4.1.2]
+	at org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory.getConnection(LettuceConnectionFactory.java:1050) ~[spring-data-redis-4.1.2.jar:4.1.2]
+	at org.springframework.data.redis.core.RedisConnectionUtils.fetchConnection(RedisConnectionUtils.java:195) ~[spring-data-redis-4.1.2.jar:4.1.2]
+	at org.springframework.data.redis.core.RedisConnectionUtils.doGetConnection(RedisConnectionUtils.java:144) ~[spring-data-redis-4.1.2.jar:4.1.2]
+	at org.springframework.data.redis.core.RedisConnectionUtils.getConnection(RedisConnectionUtils.java:105) ~[spring-data-redis-4.1.2.jar:4.1.2]
+	at org.springframework.data.redis.core.RedisTemplate.execute(RedisTemplate.java:405) ~[spring-data-redis-4.1.2.jar:4.1.2]
+	at org.springframework.data.redis.core.RedisTemplate.execute(RedisTemplate.java:385) ~[spring-data-redis-4.1.2.jar:4.1.2]
+	at org.springframework.data.redis.core.AbstractOperations.execute(AbstractOperations.java:166) ~[spring-data-redis-4.1.2.jar:4.1.2]
+	at org.springframework.data.redis.core.DefaultSetOperations.members(DefaultSetOperations.java:199) ~[spring-data-redis-4.1.2.jar:4.1.2]
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103) ~[na:na]
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580) ~[na:na]
+	at org.springframework.data.redis.core.BoundOperationsProxyFactory$BoundOperationsMethodInterceptor.doInvoke(BoundOperationsProxyFactory.java:178) ~[spring-data-redis-4.1.2.jar:4.1.2]
+	at org.springframework.data.redis.core.BoundOperationsProxyFactory$BoundOperationsMethodInterceptor.invoke(BoundOperationsProxyFactory.java:149) ~[spring-data-redis-4.1.2.jar:4.1.2]
+	at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:179) ~[spring-aop-7.0.10.jar:7.0.10]
+	at org.springframework.data.projection.DefaultMethodInvokingMethodInterceptor.invoke(DefaultMethodInvokingMethodInterceptor.java:69) ~[spring-data-commons-4.1.2.jar:4.1.2]
+	at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:179) ~[spring-aop-7.0.10.jar:7.0.10]
+	at org.springframework.aop.framework.JdkDynamicAopProxy.invoke(JdkDynamicAopProxy.java:219) ~[spring-aop-7.0.10.jar:7.0.10]
+	at jdk.proxy2/jdk.proxy2.$Proxy260.members(Unknown Source) ~[na:na]
+	at org.springframework.session.data.redis.RedisIndexedSessionRepository$MinuteBasedRedisSessionExpirationStore.cleanupExpiredSessions(RedisIndexedSessionRepository.java:1064) ~[spring-session-data-redis-4.1.1.jar:4.1.1]
+	at org.springframework.session.data.redis.RedisIndexedSessionRepository.cleanUpExpiredSessions(RedisIndexedSessionRepository.java:496) ~[spring-session-data-redis-4.1.1.jar:4.1.1]
+	at org.springframework.scheduling.support.DelegatingErrorHandlingRunnable.run(DelegatingErrorHandlingRunnable.java:54) ~[spring-context-7.0.10.jar:7.0.10]
+	at org.springframework.scheduling.concurrent.ReschedulingRunnable.run(ReschedulingRunnable.java:94) ~[spring-context-7.0.10.jar:7.0.10]
+	at java.base/java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:572) ~[na:na]
+	at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:317) ~[na:na]
+	at java.base/java.util.concurrent.ScheduledThreadPoolExecutor$ScheduledFutureTask.run(ScheduledThreadPoolExecutor.java:304) ~[na:na]
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144) ~[na:na]
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642) ~[na:na]
+	at java.base/java.lang.Thread.run(Thread.java:1583) ~[na:na]
+
+2026-11-20T18:09:02.392+08:00  INFO [traceId=] 59876 --- [           main] r$InitializeUserDetailsManagerConfigurer : Global AuthenticationManager configured with UserDetailsService bean with name accounts
+2026-11-20T18:09:04.312+08:00  WARN [traceId=] 59876 --- [           main] io.netty.bootstrap.Bootstrap             : Unknown channel option 'TCP_KEEPCOUNT' for channel '[id: 0xb773402e]' of type 'class io.netty.channel.socket.nio.NioSocketChannel'
+2026-11-20T18:09:04.312+08:00  WARN [traceId=] 59876 --- [           main] io.netty.bootstrap.Bootstrap             : Unknown channel option 'TCP_KEEPIDLE' for channel '[id: 0xb773402e]' of type 'class io.netty.channel.socket.nio.NioSocketChannel'
+2026-11-20T18:09:04.313+08:00  WARN [traceId=] 59876 --- [           main] io.netty.bootstrap.Bootstrap             : Unknown channel option 'TCP_KEEPINTERVAL' for channel '[id: 0xb773402e]' of type 'class io.netty.channel.socket.nio.NioSocketChannel'
+2026-11-20T18:09:05.465+08:00  WARN [traceId=] 59876 --- [           main] io.netty.bootstrap.Bootstrap             : Unknown channel option 'TCP_KEEPCOUNT' for channel '[id: 0x0bcf57a7]' of type 'class io.netty.channel.socket.nio.NioSocketChannel'
+2026-11-20T18:09:05.466+08:00  WARN [traceId=] 59876 --- [           main] io.netty.bootstrap.Bootstrap             : Unknown channel option 'TCP_KEEPIDLE' for channel '[id: 0x0bcf57a7]' of type 'class io.netty.channel.socket.nio.NioSocketChannel'
+2026-11-20T18:09:05.466+08:00  WARN [traceId=] 59876 --- [           main] io.netty.bootstrap.Bootstrap             : Unknown channel option 'TCP_KEEPINTERVAL' for channel '[id: 0x0bcf57a7]' of type 'class io.netty.channel.socket.nio.NioSocketChannel'
+2026-11-20T18:09:05.518+08:00  INFO [traceId=] 59876 --- [           main] c.a.platform.TenantSqlIsolationTest      : Started TenantSqlIsolationTest in 12.234 seconds (process running for 185.119)
+2026-11-20T18:09:05.855+08:00  WARN [traceId=] 59876 --- [           main] o.s.core.events.SpringDocAppInitializer  : SpringDoc /v3/api-docs endpoint is enabled by default. To disable it in production, set the property 'springdoc.api-docs.enabled=false'
+[INFO] Tests run: 6, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 15.48 s -- in com.appnexus.platform.TenantSqlIsolationTest
+[INFO] Running com.appnexus.platform.UnifiedFieldProtectionTest
+2026-11-20T18:09:08.647+08:00  INFO [traceId=] 59876 --- [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.appnexus.platform.PlatformApplication for test class com.appnexus.platform.UnifiedFieldProtectionTest
+2026-11-20T18:09:08.651+08:00  INFO [traceId=] 59876 --- [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.appnexus.platform.DatabaseTestSupport]: DatabaseTestSupport does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-11-20T18:09:08.654+08:00  INFO [traceId=] 59876 --- [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.appnexus.platform.PlatformApplication for test class com.appnexus.platform.UnifiedFieldProtectionTest
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v4.1.2)
+
+2026-11-20T18:09:08.731+08:00  INFO [traceId=] 59876 --- [           main] c.a.platform.UnifiedFieldProtectionTest  : Starting UnifiedFieldProtectionTest using Java 21 with PID 59876 (started by lbkgo in D:\AppNexus\backend\applications\monolith-app)
+2026-11-20T18:09:08.731+08:00  INFO [traceId=] 59876 --- [           main] c.a.platform.UnifiedFieldProtectionTest  : The following 1 profile is active: "local"
+2026-11-20T18:09:10.267+08:00  INFO [traceId=] 59876 --- [           main] .s.d.r.c.RepositoryConfigurationDelegate : Multiple Spring Data modules found, entering strict repository configuration mode
+2026-11-20T18:09:10.268+08:00  INFO [traceId=] 59876 --- [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data Redis repositories in DEFAULT mode.
+2026-11-20T18:09:10.357+08:00  INFO [traceId=] 59876 --- [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 84 ms. Found 0 Redis repository interfaces.
+2026-11-20T18:09:10.668+08:00  INFO [traceId=] 59876 --- [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-5 - Starting...
+2026-11-20T18:09:10.710+08:00  INFO [traceId=] 59876 --- [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-5 - Added connection com.mysql.cj.jdbc.ConnectionImpl@3bdefdf
+2026-11-20T18:09:10.711+08:00  INFO [traceId=] 59876 --- [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-5 - Start completed.
+2026-11-20T18:09:10.715+08:00  INFO [traceId=] 59876 --- [           main] org.flywaydb.core.FlywayExecutor         : Database: jdbc:mysql://localhost:57697/test?preserveInstants=true&connectionTimeZone=UTC&forceConnectionTimeZoneToSession=true (MySQL 8.4)
+2026-11-20T18:09:11.167+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbValidate     : Successfully validated 131 migrations (execution time 00:00.388s)
+2026-11-20T18:09:11.195+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Current version of schema `test`: 131
+2026-11-20T18:09:11.199+08:00  INFO [traceId=] 59876 --- [           main] o.f.core.internal.command.DbMigrate      : Schema `test` is up to date. No migration necessary.
+2026-11-20T18:09:12.400+08:00  INFO [traceId=] 59876 --- [           main] r$InitializeUserDetailsManagerConfigurer : Global AuthenticationManager configured with UserDetailsService bean with name accounts
+2026-11-20T18:09:13.155+08:00  WARN [traceId=] 59876 --- [           main] io.netty.bootstrap.Bootstrap             : Unknown channel option 'TCP_KEEPCOUNT' for channel '[id: 0x71d5c969]' of type 'class io.netty.channel.socket.nio.NioSocketChannel'
+2026-11-20T18:09:13.155+08:00  WARN [traceId=] 59876 --- [           main] io.netty.bootstrap.Bootstrap             : Unknown channel option 'TCP_KEEPIDLE' for channel '[id: 0x71d5c969]' of type 'class io.netty.channel.socket.nio.NioSocketChannel'
+2026-11-20T18:09:13.156+08:00  WARN [traceId=] 59876 --- [           main] io.netty.bootstrap.Bootstrap             : Unknown channel option 'TCP_KEEPINTERVAL' for channel '[id: 0x71d5c969]' of type 'class io.netty.channel.socket.nio.NioSocketChannel'
+2026-11-20T18:09:13.975+08:00  WARN [traceId=] 59876 --- [           main] io.netty.bootstrap.Bootstrap             : Unknown channel option 'TCP_KEEPCOUNT' for channel '[id: 0x8468fb0c]' of type 'class io.netty.channel.socket.nio.NioSocketChannel'
+2026-11-20T18:09:13.976+08:00  WARN [traceId=] 59876 --- [           main] io.netty.bootstrap.Bootstrap             : Unknown channel option 'TCP_KEEPIDLE' for channel '[id: 0x8468fb0c]' of type 'class io.netty.channel.socket.nio.NioSocketChannel'
+2026-11-20T18:09:13.977+08:00  WARN [traceId=] 59876 --- [           main] io.netty.bootstrap.Bootstrap             : Unknown channel option 'TCP_KEEPINTERVAL' for channel '[id: 0x8468fb0c]' of type 'class io.netty.channel.socket.nio.NioSocketChannel'
+2026-11-20T18:09:14.021+08:00  INFO [traceId=] 59876 --- [           main] c.a.platform.UnifiedFieldProtectionTest  : Started UnifiedFieldProtectionTest in 5.346 seconds (process running for 193.623)
+2026-11-20T18:09:14.553+08:00  WARN [traceId=] 59876 --- [           main] o.s.core.events.SpringDocAppInitializer  : SpringDoc /v3/api-docs endpoint is enabled by default. To disable it in production, set the property 'springdoc.api-docs.enabled=false'
+2026-11-20T18:09:15.894+08:00  INFO [traceId=] 59876 --- [           main] o.s.mock.web.MockServletContext          : Initializing Spring TestDispatcherServlet ''
+2026-11-20T18:09:15.895+08:00  INFO [traceId=] 59876 --- [           main] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
+2026-11-20T18:09:15.896+08:00  INFO [traceId=] 59876 --- [           main] o.s.t.web.servlet.TestDispatcherServlet  : Completed initialization in 1 ms
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 7.397 s -- in com.appnexus.platform.UnifiedFieldProtectionTest
+[INFO] 
+[INFO] Results:
+[INFO] 
+[INFO] Tests run: 12, Failures: 0, Errors: 0, Skipped: 0
+[INFO] 
+[INFO] 
+[INFO] --------------< com.appnexus:backend-architecture-tests >---------------
+[INFO] Building backend-architecture-tests 0.1.0-SNAPSHOT               [38/38]
+[INFO]   from architecture-tests\pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- enforcer:3.6.2:enforce (enforce-toolchain) @ backend-architecture-tests ---
+[INFO] 
+[INFO] --- resources:3.5.0:resources (default-resources) @ backend-architecture-tests ---
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\architecture-tests\src\main\resources
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\architecture-tests\src\main\resources
+[INFO] 
+[INFO] --- compiler:3.15.0:compile (default-compile) @ backend-architecture-tests ---
+[INFO] No sources to compile
+[INFO] 
+[INFO] --- resources:3.5.0:testResources (default-testResources) @ backend-architecture-tests ---
+[INFO] skip non existing resourceDirectory D:\AppNexus\backend\architecture-tests\src\test\resources
+[INFO] 
+[INFO] --- compiler:3.15.0:testCompile (default-testCompile) @ backend-architecture-tests ---
+[INFO] Recompiling the module because of changed dependency.
+[INFO] Compiling 4 source files with javac [debug parameters release 21] to target-agent\test-classes
+[INFO] 
+[INFO] --- surefire:3.5.6:test (default-test) @ backend-architecture-tests ---
+[INFO] Using auto detected provider org.apache.maven.surefire.junitplatform.JUnitPlatformProvider
+[INFO] 
+[INFO] -------------------------------------------------------
+[INFO]  T E S T S
+[INFO] -------------------------------------------------------
+[INFO] Running com.appnexus.platform.ArchitectureRulesTest
+18:09:24.910 [main] INFO com.tngtech.archunit.core.PluginLoader -- Detected Java version 21
+18:09:46.298 [main] INFO com.tngtech.archunit.core.PluginLoader -- Detected Java version 21
+[INFO] Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 21.62 s -- in com.appnexus.platform.ArchitectureRulesTest
+[INFO] Running com.appnexus.platform.PackageDocumentationTest
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.810 s -- in com.appnexus.platform.PackageDocumentationTest
+[INFO] Running com.appnexus.platform.ServiceLayerBoundaryTest
+[INFO] Tests run: 9, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 22.46 s -- in com.appnexus.platform.ServiceLayerBoundaryTest
+[INFO] 
+[INFO] Results:
+[INFO] 
+[INFO] Tests run: 15, Failures: 0, Errors: 0, Skipped: 0
+[INFO] 
+[INFO] ------------------------------------------------------------------------
+[INFO] Reactor Summary for backend 0.1.0-SNAPSHOT:
+[INFO] 
+[INFO] backend ............................................ SUCCESS [  0.932 s]
+[INFO] services ........................................... SUCCESS [  0.017 s]
+[INFO] platform-service ................................... SUCCESS [  0.013 s]
+[INFO] platform-identity .................................. SUCCESS [  1.387 s]
+[INFO] contracts .......................................... SUCCESS [  0.009 s]
+[INFO] data-contracts ..................................... SUCCESS [  0.359 s]
+[INFO] business-object-contracts .......................... SUCCESS [  0.119 s]
+[INFO] platform-authorization ............................. SUCCESS [  0.231 s]
+[INFO] platform-tenant .................................... SUCCESS [  0.262 s]
+[INFO] platform-configuration ............................. SUCCESS [  0.102 s]
+[INFO] operation-contracts ................................ SUCCESS [  0.066 s]
+[INFO] platform-organization .............................. SUCCESS [  1.263 s]
+[INFO] platform-localization .............................. SUCCESS [  0.025 s]
+[INFO] platform-audit ..................................... SUCCESS [  0.028 s]
+[INFO] workflow-contracts ................................. SUCCESS [  0.034 s]
+[INFO] print-contracts .................................... SUCCESS [  0.031 s]
+[INFO] platform-business-object ........................... SUCCESS [  0.371 s]
+[INFO] platform-adapters .................................. SUCCESS [  0.005 s]
+[INFO] platform-app-api-adapter ........................... SUCCESS [  0.294 s]
+[INFO] platform-partner-api-adapter ....................... SUCCESS [  0.022 s]
+[INFO] platform-management-api-adapter .................... SUCCESS [  0.293 s]
+[INFO] platform-persistence-adapter ....................... SUCCESS [ 14.838 s]
+[INFO] platform-security-adapter .......................... SUCCESS [  2.196 s]
+[INFO] platform-eventing-adapter .......................... SUCCESS [  0.039 s]
+[INFO] platform-observability-adapter ..................... SUCCESS [  0.032 s]
+[INFO] workflow-service ................................... SUCCESS [  0.006 s]
+[INFO] workflow-core ...................................... SUCCESS [  0.091 s]
+[INFO] workflow-adapters .................................. SUCCESS [  0.007 s]
+[INFO] workflow-flowable-adapter .......................... SUCCESS [  2.832 s]
+[INFO] master-data-service ................................ SUCCESS [ 10.503 s]
+[INFO] leave-poc .......................................... SUCCESS [  6.947 s]
+[INFO] print-service ...................................... SUCCESS [  0.005 s]
+[INFO] print-core ......................................... SUCCESS [  0.035 s]
+[INFO] print-adapters ..................................... SUCCESS [  0.004 s]
+[INFO] print-jdbc-adapter ................................. SUCCESS [  0.637 s]
+[INFO] applications ....................................... SUCCESS [  0.005 s]
+[INFO] monolith-app ....................................... SUCCESS [03:44 min]
+[INFO] backend-architecture-tests ......................... SUCCESS [ 52.869 s]
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  05:22 min
+[INFO] Finished at: 2026-11-20T18:10:09+08:00
+[INFO] ------------------------------------------------------------------------

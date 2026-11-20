@@ -3,7 +3,7 @@ package com.appnexus.masterdata;
 import com.appnexus.platform.authorization.*;
 import com.appnexus.platform.tenant.VerifiedTenantContext;
 import java.util.*;
-import org.springframework.jdbc.core.JdbcTemplate;
+
 import org.springframework.stereotype.Component;
 import static com.appnexus.masterdata.MasterData.*;
 import static com.appnexus.masterdata.BusinessPartnerDeclaration.*;
@@ -16,16 +16,16 @@ public final class PartnerDataAccess implements DataAccessDeclaration.Executor, 
         new RowAccessControl.Column("id",DataGrantRules.ValueType.UUID),new RowAccessControl.Column("organization_id",DataGrantRules.ValueType.UUID),
         Map.of("code",new RowAccessControl.Column("code",DataGrantRules.ValueType.TEXT),"name",new RowAccessControl.Column("name",DataGrantRules.ValueType.TEXT),
             "organizationId",new RowAccessControl.Column("organization_id",DataGrantRules.ValueType.UUID)));
-    private final AccessPlanning planning;private final FieldProtection protection;private final DataAccessReferences references;private final JdbcTemplate jdbc;private final DataAccessCatalog catalog;private final RowAccessControl rows;
+    private final AccessPlanning planning;private final FieldProtection protection;private final DataAccessReferences references;private final MasterReadMapper mapper;private final DataAccessCatalog catalog;private final RowAccessControl rows;
     /**
      * @param planning 当前主体、操作及资源的权威权限计划入口
      * @param protection 字段展示与写入的强制限制入口
      * @param references 可信租户内组织等授权引用目录
-     * @param jdbc 与客商用例事务共用的数据库访问器
+     * @param mapper 与客商用例事务共用的数据库访问器
      * @param catalog 统一业务对象派生的数据权限目录
      * @param rows 平台公共行范围执行能力；必须由装配注入，不能缺省绕过数据范围
      */
-    public PartnerDataAccess(AccessPlanning planning,FieldProtection protection,DataAccessReferences references,JdbcTemplate jdbc,DataAccessCatalog catalog,RowAccessControl rows){this.planning=planning;this.protection=protection;this.references=references;this.jdbc=jdbc;this.catalog=catalog;this.rows=Objects.requireNonNull(rows);}
+    public PartnerDataAccess(AccessPlanning planning,FieldProtection protection,DataAccessReferences references,MasterReadMapper mapper,DataAccessCatalog catalog,RowAccessControl rows){this.planning=planning;this.protection=protection;this.references=references;this.mapper=mapper;this.catalog=catalog;this.rows=Objects.requireNonNull(rows);}
     @Override public Set<String> enforcedResources(){return Set.of(ROOT,CONTACT,BANK);}
     private AccessAuthorization.Subject subject(VerifiedTenantContext c){return AccessAuthorization.Subject.tenant(c.accountId(),c.tenantId(),c.memberId());}
     /** 每次执行读取权威策略；无功能或无范围默认拒绝，不使用浏览器传入的权限计划。 */
@@ -35,10 +35,12 @@ public final class PartnerDataAccess implements DataAccessDeclaration.Executor, 
         var predicate=rows.predicate(plan,MAPPING);
         args.addAll(predicate.parameters());return predicate.sql();
     }
+    /** 只返回由统一执行器产生的固定映射谓词，供MyBatisProvider绑定参数；不接受客户端SQL。 */
+    public RowAccessControl.Predicate compiled(AccessPlan plan){return rows.predicate(plan,MAPPING);}
     /** 写入先锁定授权范围内父记录；无权与不存在统一冲突，不先泄露客商或明细内容。 */
     public String lock(VerifiedTenantContext c,String id,String action){
-        var args=new ArrayList<Object>(List.of(c.tenantId().toString(),id));String condition=predicate(plan(c,action),args);
-        var rows=jdbc.queryForList("SELECT BIN_TO_UUID(organization_id) organization_id FROM md_partner WHERE tenant_id=UUID_TO_BIN(?) AND id=UUID_TO_BIN(?)"+condition+" FOR UPDATE",args.toArray());
+        var query=new MasterReadMapper.Query(c.tenantId().toString(),MasterData.Kind.PARTNER,"",null,id,null,List.of(),null,compiled(plan(c,action)),1,0);
+        var rows=mapper.lock(query);
         if(rows.size()!=1)throw new Rejection(409,"MASTER_DATA_CHANGED");return (String)rows.getFirst().get("organization_id");
     }
     /**

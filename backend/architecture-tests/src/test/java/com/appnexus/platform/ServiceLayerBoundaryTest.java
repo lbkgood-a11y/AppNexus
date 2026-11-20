@@ -15,6 +15,32 @@ import org.junit.jupiter.api.Test;
  * 平台 application 是启动装配模块，不冒充领域用例层；存量未迁移服务不因本测试通过而视为完成。
  */
 class ServiceLayerBoundaryTest {
+  /** 中立SQL范围元数据不能反向引入平台领域、授权决策或框架实现。 */
+  @Test void mapperScopeMetadataRemainsIndependentOfBusinessAndFrameworks(){
+    assertTrue(classes.contain("com.appnexus.persistence.mybatis.TenantAggregateScoped"));
+    noClasses().that().resideInAPackage("com.appnexus.persistence.mybatis..")
+        .should().dependOnClassesThat().resideInAnyPackage("com.appnexus.platform..","com.appnexus.masterdata..","org.springframework..","org.apache.ibatis..","java.sql..")
+        .check(classes);
+  }
+  /** 已迁移存储不能重新引用JDBC客户端；此检查不把未迁移存量或权限覆盖缺口标记为通过。 */
+  @Test void migratedMyBatisStoresDoNotFallBackToJdbc(){
+    for(String name:java.util.List.of(
+        "com.appnexus.platform.persistence.businessobject.configuration.MyBatisConfigurationStore",
+        "com.appnexus.platform.persistence.businessobject.coding.MyBatisCodingStore",
+        "com.appnexus.platform.persistence.configuration.MyBatisBusinessValueCatalog",
+        "com.appnexus.platform.persistence.organization.MyBatisOrganizationMembership",
+        "com.appnexus.platform.persistence.organization.ScopedOrganizationSummary",
+        "com.appnexus.platform.persistence.platformscope.TransactionalAuthorityEvents",
+        "com.appnexus.masterdata.adapter.jdbc.MyBatisUnitConversionStore",
+        "com.appnexus.masterdata.adapter.jdbc.MyBatisProductRecords",
+        "com.appnexus.masterdata.adapter.jdbc.MyBatisProductCompleteness",
+        "com.appnexus.masterdata.adapter.jdbc.MyBatisProductSnapshot",
+        "com.appnexus.masterdata.adapter.jdbc.MyBatisProductHistory",
+        "com.appnexus.masterdata.adapter.jdbc.MyBatisProductList")){
+      assertTrue(classes.contain(name),()->"缺少已迁移存储："+name);
+      noClasses().that().haveFullyQualifiedName(name).should().dependOnClassesThat().resideInAnyPackage("org.springframework.jdbc..").check(classes);
+    }
+  }
   /** 业务对象不能重新增加工作流专用处理器，审批接入只能由公共对象桥接生成。 */
   @Test void businessObjectsDoNotImplementWorkflowHandlers() {
     noClasses().that().resideInAnyPackage("com.appnexus.leave..", "com.appnexus.masterdata..")
@@ -66,33 +92,35 @@ class ServiceLayerBoundaryTest {
         "com.appnexus.platform.businessobject.CodingManagement",
         "com.appnexus.platform.businessobject.internal.application.configuration.BusinessObjectService",
         "com.appnexus.platform.businessobject.internal.application.execution.ObjectExecutionService",
+        "com.appnexus.platform.businessobject.internal.application.execution.MappedObjectRuntime",
+        "com.appnexus.platform.persistence.businessobject.MappedObjectRuntimeFactory",
         "com.appnexus.platform.businessobject.internal.application.execution.StandardCapabilityDrivers",
         "com.appnexus.workflow.adapter.flowable.ObjectWorkflowAdapter",
         "com.appnexus.workflow.application.ObjectApprovalService",
         "com.appnexus.platform.businessobject.port.ConfigurationStore",
         "com.appnexus.platform.businessobject.internal.domain.configuration.ConfigurationRules",
-        "com.appnexus.platform.persistence.businessobject.configuration.JdbcConfigurationStore",
+        "com.appnexus.platform.persistence.businessobject.configuration.MyBatisConfigurationStore",
         "com.appnexus.platform.businessobject.internal.application.coding.CodingService",
         "com.appnexus.platform.businessobject.internal.domain.coding.CodingRules",
         "com.appnexus.platform.businessobject.port.CodingStore",
-        "com.appnexus.platform.persistence.businessobject.coding.JdbcCodingStore",
+        "com.appnexus.platform.persistence.businessobject.coding.MyBatisCodingStore",
         "com.appnexus.masterdata.domain.product.ProductLifecycle",
         "com.appnexus.masterdata.domain.product.ProductFilterRules",
         "com.appnexus.masterdata.domain.product.ProductCompletenessRules",
         "com.appnexus.masterdata.application.product.ProductListReads",
-        "com.appnexus.masterdata.adapter.jdbc.JdbcProductList",
-        "com.appnexus.masterdata.adapter.jdbc.JdbcProductCompleteness",
+        "com.appnexus.masterdata.adapter.jdbc.MyBatisProductList",
+        "com.appnexus.masterdata.adapter.jdbc.MyBatisProductCompleteness",
         "com.appnexus.masterdata.domain.product.AttributeRulePolicy",
         "com.appnexus.masterdata.application.product.ProductCatalogQueryService",
         "com.appnexus.masterdata.application.product.ProductCatalogReads",
-        "com.appnexus.masterdata.adapter.jdbc.JdbcProductCatalogReads",
+        "com.appnexus.masterdata.adapter.jdbc.MyBatisProductCatalogReads",
         "com.appnexus.masterdata.application.product.ProductPreviewService",
         "com.appnexus.masterdata.application.product.ProductPreviewPort",
-        "com.appnexus.masterdata.adapter.jdbc.JdbcProductAttributes",
-        "com.appnexus.masterdata.adapter.jdbc.JdbcProductHistory",
+        "com.appnexus.masterdata.adapter.jdbc.MyBatisProductAttributes",
+        "com.appnexus.masterdata.adapter.jdbc.MyBatisProductHistory",
         "com.appnexus.masterdata.application.product.ProductAttributePreparation",
         "com.appnexus.masterdata.application.product.ProductStructureService",
-        "com.appnexus.masterdata.adapter.jdbc.JdbcProductSnapshot",
+        "com.appnexus.masterdata.adapter.jdbc.MyBatisProductSnapshot",
         "com.appnexus.workflow.application.TaskReassignmentService",
         "com.appnexus.printing.application.TemplateEditingService",
         "com.appnexus.masterdata.application.product.ProductLifecycleService",

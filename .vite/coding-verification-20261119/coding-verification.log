@@ -1,0 +1,327 @@
+10:10:00.462 [main] INFO org.testcontainers.images.PullPolicy -- Image pull policy will be performed by: DefaultPullPolicy()
+10:10:00.478 [main] INFO org.testcontainers.utility.ImageNameSubstitutor -- Image name substitution will be performed by: DefaultImageNameSubstitutor (composite of 'ConfigurationFileImageNameSubstitutor' and 'PrefixingImageNameSubstitutor')
+10:10:00.640 [main] INFO org.testcontainers.DockerClientFactory -- Testcontainers version: 2.0.5
+10:10:01.927 [main] INFO org.testcontainers.dockerclient.DockerClientProviderStrategy -- Loaded org.testcontainers.dockerclient.NpipeSocketClientProviderStrategy from ~/.testcontainers.properties, will try it first
+10:10:03.398 [main] INFO org.testcontainers.dockerclient.DockerClientProviderStrategy -- Found Docker environment with local Npipe socket (npipe:////./pipe/docker_engine)
+10:10:03.406 [main] INFO org.testcontainers.DockerClientFactory -- Docker host IP address is localhost
+10:10:03.498 [main] INFO org.testcontainers.DockerClientFactory -- Connected to docker: 
+  Server Version: 29.6.1
+  API Version: 1.55
+  Operating System: Docker Desktop
+  Total Memory: 15398 MB
+  Labels: 
+    com.docker.desktop.address=npipe://\\.\pipe\docker_cli
+10:10:04.416 [main] INFO tc.testcontainers/ryuk:0.14.0 -- Creating container for image: testcontainers/ryuk:0.14.0
+10:10:05.803 [main] INFO tc.testcontainers/ryuk:0.14.0 -- Container testcontainers/ryuk:0.14.0 is starting: 89f67a9d5b351d42dc2fce3dea5d5dd446aca955bc7d16f4d3373ec1a853bfce
+10:10:07.871 [main] INFO tc.testcontainers/ryuk:0.14.0 -- Container testcontainers/ryuk:0.14.0 started in PT3.4543635S
+10:10:07.905 [main] INFO org.testcontainers.utility.RyukResourceReaper -- Ryuk started - will monitor and terminate Testcontainers containers on JVM exit
+10:10:07.906 [main] INFO org.testcontainers.DockerClientFactory -- Checking the system...
+10:10:07.908 [main] INFO org.testcontainers.DockerClientFactory -- ?? Docker server version should be at least 1.6.0
+10:10:07.911 [main] INFO tc.mysql:8.4 -- Creating container for image: mysql:8.4
+10:10:08.235 [main] INFO tc.mysql:8.4 -- Container mysql:8.4 is starting: 3e94aa23b9a25dbdac646d1ee770cd479c795349f00c2b623b09e217a4edb404
+10:10:10.375 [main] INFO tc.mysql:8.4 -- Waiting for database connection to become available at jdbc:mysql://localhost:49943/test using query 'SELECT 1'
+10:10:43.399 [main] INFO tc.mysql:8.4 -- Container mysql:8.4 started in PT35.4876458S
+10:10:43.399 [main] INFO tc.mysql:8.4 -- Container is started (JDBC URL: jdbc:mysql://localhost:49943/test)
+Mockito is currently self-attaching to enable the inline-mock-maker. This will no longer work in future releases of the JDK. Please add Mockito as an agent to your build as described in Mockito's documentation: https://javadoc.io/doc/org.mockito/mockito-core/latest/org.mockito/org/mockito/Mockito.html#0.3
+WARNING: A Java agent has been loaded dynamically (C:\Users\lbkgo\.m2\repository\net\bytebuddy\byte-buddy-agent\1.18.15\byte-buddy-agent-1.18.15.jar)
+WARNING: If a serviceability tool is in use, please run with -XX:+EnableDynamicAgentLoading to hide this warning
+WARNING: If a serviceability tool is not in use, please run with -Djdk.instrument.traceUsage for more information
+WARNING: Dynamic loading of agents will be disallowed by default in a future release
+OpenJDK 64-Bit Server VM warning: Sharing is only supported for boot loader classes because bootstrap classpath has been appended
+10:11:43.760 [main] INFO org.springframework.test.context.support.AnnotationConfigContextLoaderUtils -- Could not detect default configuration classes for test class [com.appnexus.platform.CodingCapabilityTest]: CodingCapabilityTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+10:11:46.486 [main] INFO org.springframework.boot.test.context.SpringBootTestContextBootstrapper -- Found @SpringBootConfiguration com.appnexus.platform.PlatformApplication for test class com.appnexus.platform.CodingCapabilityTest
+10:11:46.850 [main] INFO org.springframework.test.context.support.AnnotationConfigContextLoaderUtils -- Could not detect default configuration classes for test class [com.appnexus.platform.CodingCapabilityTest]: CodingCapabilityTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+10:11:46.854 [main] INFO org.springframework.test.context.support.AnnotationConfigContextLoaderUtils -- Could not detect default configuration classes for test class [com.appnexus.platform.DatabaseTestSupport]: DatabaseTestSupport does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+10:11:46.878 [main] INFO org.springframework.boot.test.context.SpringBootTestContextBootstrapper -- Found @SpringBootConfiguration com.appnexus.platform.PlatformApplication for test class com.appnexus.platform.CodingCapabilityTest
+10:11:47.185 [main] INFO org.testcontainers.images.PullPolicy -- Image pull policy will be performed by: DefaultPullPolicy()
+10:11:47.199 [main] INFO org.testcontainers.utility.ImageNameSubstitutor -- Image name substitution will be performed by: DefaultImageNameSubstitutor (composite of 'ConfigurationFileImageNameSubstitutor' and 'PrefixingImageNameSubstitutor')
+10:11:47.380 [main] INFO org.testcontainers.DockerClientFactory -- Testcontainers version: 2.0.5
+10:11:48.453 [main] INFO org.testcontainers.dockerclient.DockerClientProviderStrategy -- Loaded org.testcontainers.dockerclient.NpipeSocketClientProviderStrategy from ~/.testcontainers.properties, will try it first
+10:11:49.957 [main] INFO org.testcontainers.dockerclient.DockerClientProviderStrategy -- Found Docker environment with local Npipe socket (npipe:////./pipe/docker_engine)
+10:11:49.961 [main] INFO org.testcontainers.DockerClientFactory -- Docker host IP address is localhost
+10:11:50.035 [main] INFO org.testcontainers.DockerClientFactory -- Connected to docker: 
+  Server Version: 29.6.1
+  API Version: 1.55
+  Operating System: Docker Desktop
+  Total Memory: 15398 MB
+  Labels: 
+    com.docker.desktop.address=npipe://\\.\pipe\docker_cli
+10:11:50.705 [main] INFO tc.testcontainers/ryuk:0.14.0 -- Creating container for image: testcontainers/ryuk:0.14.0
+10:11:51.489 [main] INFO tc.testcontainers/ryuk:0.14.0 -- Container testcontainers/ryuk:0.14.0 is starting: b26f65a1b3a911988debc9e9058bc741df9f4300b5043b092188ce57e266eac1
+10:11:52.520 [main] INFO tc.testcontainers/ryuk:0.14.0 -- Container testcontainers/ryuk:0.14.0 started in PT1.8143047S
+10:11:52.542 [main] INFO org.testcontainers.utility.RyukResourceReaper -- Ryuk started - will monitor and terminate Testcontainers containers on JVM exit
+10:11:52.542 [main] INFO org.testcontainers.DockerClientFactory -- Checking the system...
+10:11:52.545 [main] INFO org.testcontainers.DockerClientFactory -- ?? Docker server version should be at least 1.6.0
+10:11:52.547 [main] INFO tc.mysql:8.4 -- Creating container for image: mysql:8.4
+10:11:52.731 [main] INFO tc.mysql:8.4 -- Container mysql:8.4 is starting: c0903ae09e93899673896a5a96f72ad0d574499b7da0d98e59a2cb6cc089fbad
+10:11:53.507 [main] INFO tc.mysql:8.4 -- Waiting for database connection to become available at jdbc:mysql://localhost:64399/test using query 'SELECT 1'
+10:12:09.663 [main] INFO tc.mysql:8.4 -- Container mysql:8.4 started in PT17.1159965S
+10:12:09.663 [main] INFO tc.mysql:8.4 -- Container is started (JDBC URL: jdbc:mysql://localhost:64399/test)
+10:12:09.664 [main] INFO tc.valkey/valkey:8-alpine -- Creating container for image: valkey/valkey:8-alpine
+10:12:09.765 [main] INFO tc.valkey/valkey:8-alpine -- Container valkey/valkey:8-alpine is starting: af685ab031dc43f5da50e07c6d9d67f95c82edf103c6f681a3ef169013aa4532
+10:12:10.349 [main] INFO tc.valkey/valkey:8-alpine -- Container valkey/valkey:8-alpine started in PT0.6848308S
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v4.1.2)
+
+2026-11-19T10:12:13.221+08:00  INFO [traceId=] 25240 --- [           main] c.a.platform.CodingCapabilityTest        : Starting CodingCapabilityTest using Java 21 with PID 25240 (started by lbkgo in D:\AppNexus\backend\services\platform-service\application)
+2026-11-19T10:12:13.224+08:00  INFO [traceId=] 25240 --- [           main] c.a.platform.CodingCapabilityTest        : The following 1 profile is active: "local"
+2026-11-19T10:12:17.002+08:00  INFO [traceId=] 25240 --- [           main] .s.d.r.c.RepositoryConfigurationDelegate : Multiple Spring Data modules found, entering strict repository configuration mode
+2026-11-19T10:12:17.012+08:00  INFO [traceId=] 25240 --- [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data Redis repositories in DEFAULT mode.
+2026-11-19T10:12:17.148+08:00  INFO [traceId=] 25240 --- [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 77 ms. Found 0 Redis repository interfaces.
+2026-11-19T10:12:20.731+08:00  INFO [traceId=] 25240 --- [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2026-11-19T10:12:21.259+08:00  INFO [traceId=] 25240 --- [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection com.mysql.cj.jdbc.ConnectionImpl@32d46229
+2026-11-19T10:12:21.265+08:00  INFO [traceId=] 25240 --- [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2026-11-19T10:12:21.366+08:00  INFO [traceId=] 25240 --- [           main] org.flywaydb.core.FlywayExecutor         : Database: jdbc:mysql://localhost:64399/test?preserveInstants=true&connectionTimeZone=UTC&forceConnectionTimeZoneToSession=true (MySQL 8.4)
+2026-11-19T10:12:23.243+08:00  INFO [traceId=] 25240 --- [           main] o.f.c.i.s.JdbcTableSchemaHistory         : Schema history table `test`.`flyway_schema_history` does not exist yet
+2026-11-19T10:12:23.257+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbValidate     : Successfully validated 123 migrations (execution time 00:00.354s)
+2026-11-19T10:12:23.307+08:00  INFO [traceId=] 25240 --- [           main] o.f.c.i.s.JdbcTableSchemaHistory         : Creating Schema History table `test`.`flyway_schema_history` ...
+2026-11-19T10:12:23.442+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbMigrate      : Current version of schema `test`: << Empty Schema >>
+2026-11-19T10:12:23.473+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "1 - identity accounts"
+2026-11-19T10:12:23.638+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "2 - oauth authorizations"
+2026-11-19T10:12:23.867+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "3 - account security log"
+2026-11-19T10:12:23.984+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "4 - tenant membership"
+2026-11-19T10:12:24.114+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "5 - organization units"
+2026-11-19T10:12:24.213+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "6 - organization capability grants"
+2026-11-19T10:12:24.311+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "7 - organization grant revocation audit columns"
+2026-11-19T10:12:24.445+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "8 - organization grant audit"
+2026-11-19T10:12:24.533+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "9 - organization grant authority"
+2026-11-19T10:12:24.668+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "10 - organization administrator bootstrap"
+2026-11-19T10:12:24.742+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "11 - platform administration"
+2026-11-19T10:12:24.910+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "12 - member primary organization"
+2026-11-19T10:12:24.993+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "13 - platform menu management"
+2026-11-19T10:12:25.125+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "14 - access role management"
+2026-11-19T10:12:25.278+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "15 - account contacts"
+2026-11-19T10:12:25.423+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "16 - organization domain"
+2026-11-19T10:12:26.028+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "17 - organization permission center migration"
+2026-11-19T10:12:26.190+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "18 - tenant dictionary"
+2026-11-19T10:12:26.539+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "19 - system enum dictionaries"
+2026-11-19T10:12:26.643+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "20 - access permission catalog"
+2026-11-19T10:12:26.988+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "21 - access role bindings"
+2026-11-19T10:12:27.531+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "22 - subject authority version"
+2026-11-19T10:12:27.921+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "23 - access data policy"
+2026-11-19T10:12:28.202+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "24 - system role bootstrap"
+2026-11-19T10:12:28.302+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "25 - member authorization snapshot"
+2026-11-19T10:12:28.597+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "26 - role field security"
+2026-11-19T10:12:28.729+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "27 - navigation entries"
+2026-11-19T10:12:28.988+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "28 - dictionary operation permissions"
+2026-11-19T10:12:29.081+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "29 - tenant member removal"
+2026-11-19T10:12:29.253+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "30 - legacy organization grants to rbac"
+2026-11-19T10:12:29.353+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "31 - effective tenant permission view"
+2026-11-19T10:12:29.446+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "32 - navigation resource links"
+2026-11-19T10:12:29.666+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "33 - account mfa"
+2026-11-19T10:12:29.834+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "34 - password recovery"
+2026-11-19T10:12:29.930+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "35 - oauth refresh history"
+2026-11-19T10:12:30.040+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "36 - integration clients"
+2026-11-19T10:12:30.177+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "37 - integration call audit"
+2026-11-19T10:12:30.312+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "38 - partner reference idempotency"
+2026-11-19T10:12:30.470+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "39 - integration secret overlap"
+2026-11-19T10:12:30.646+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "40 - transactional outbox"
+2026-11-19T10:12:30.871+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "41 - authority outbox triggers"
+2026-11-19T10:12:31.004+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "42 - authorization policy templates"
+2026-11-19T10:12:31.156+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "43 - tenant parameters"
+2026-11-19T10:12:31.355+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "44 - tenant invitations"
+2026-11-19T10:12:31.551+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "45 - retire unimplemented menu operations"
+2026-11-19T10:12:31.660+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "46 - explicit management operations"
+2026-11-19T10:12:32.109+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "47 - workflow flowable 8"
+2026-11-19T10:12:32.188+08:00  WARN [traceId=] 25240 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8' is currently an alias for the character set UTF8MB3, but will be an alias for UTF8MB4 in a future release. Please consider using UTF8MB4 in order to be unambiguous. (SQL State: HY000 - Error Code: 3719)
+2026-11-19T10:12:32.189+08:00  WARN [traceId=] 25240 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8mb3_bin' is a collation of the deprecated character set UTF8MB3. Please consider using UTF8MB4 with an appropriate collation instead. (SQL State: HY000 - Error Code: 3778)
+2026-11-19T10:12:32.250+08:00  WARN [traceId=] 25240 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8' is currently an alias for the character set UTF8MB3, but will be an alias for UTF8MB4 in a future release. Please consider using UTF8MB4 in order to be unambiguous. (SQL State: HY000 - Error Code: 3719)
+2026-11-19T10:12:32.250+08:00  WARN [traceId=] 25240 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8mb3_bin' is a collation of the deprecated character set UTF8MB3. Please consider using UTF8MB4 with an appropriate collation instead. (SQL State: HY000 - Error Code: 3778)
+2026-11-19T10:12:32.310+08:00  WARN [traceId=] 25240 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8' is currently an alias for the character set UTF8MB3, but will be an alias for UTF8MB4 in a future release. Please consider using UTF8MB4 in order to be unambiguous. (SQL State: HY000 - Error Code: 3719)
+2026-11-19T10:12:32.311+08:00  WARN [traceId=] 25240 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8mb3_bin' is a collation of the deprecated character set UTF8MB3. Please consider using UTF8MB4 with an appropriate collation instead. (SQL State: HY000 - Error Code: 3778)
+2026-11-19T10:12:32.477+08:00  WARN [traceId=] 25240 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8' is currently an alias for the character set UTF8MB3, but will be an alias for UTF8MB4 in a future release. Please consider using UTF8MB4 in order to be unambiguous. (SQL State: HY000 - Error Code: 3719)
+2026-11-19T10:12:32.478+08:00  WARN [traceId=] 25240 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8mb3_bin' is a collation of the deprecated character set UTF8MB3. Please consider using UTF8MB4 with an appropriate collation instead. (SQL State: HY000 - Error Code: 3778)
+2026-11-19T10:12:32.650+08:00  WARN [traceId=] 25240 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8' is currently an alias for the character set UTF8MB3, but will be an alias for UTF8MB4 in a future release. Please consider using UTF8MB4 in order to be unambiguous. (SQL State: HY000 - Error Code: 3719)
+2026-11-19T10:12:32.650+08:00  WARN [traceId=] 25240 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8mb3_bin' is a collation of the deprecated character set UTF8MB3. Please consider using UTF8MB4 with an appropriate collation instead. (SQL State: HY000 - Error Code: 3778)
+2026-11-19T10:12:32.844+08:00  WARN [traceId=] 25240 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8' is currently an alias for the character set UTF8MB3, but will be an alias for UTF8MB4 in a future release. Please consider using UTF8MB4 in order to be unambiguous. (SQL State: HY000 - Error Code: 3719)
+2026-11-19T10:12:32.844+08:00  WARN [traceId=] 25240 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8mb3_bin' is a collation of the deprecated character set UTF8MB3. Please consider using UTF8MB4 with an appropriate collation instead. (SQL State: HY000 - Error Code: 3778)
+2026-11-19T10:12:33.020+08:00  WARN [traceId=] 25240 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8' is currently an alias for the character set UTF8MB3, but will be an alias for UTF8MB4 in a future release. Please consider using UTF8MB4 in order to be unambiguous. (SQL State: HY000 - Error Code: 3719)
+2026-11-19T10:12:33.021+08:00  WARN [traceId=] 25240 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8mb3_bin' is a collation of the deprecated character set UTF8MB3. Please consider using UTF8MB4 with an appropriate collation instead. (SQL State: HY000 - Error Code: 3778)
+2026-11-19T10:12:33.062+08:00  WARN [traceId=] 25240 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8' is currently an alias for the character set UTF8MB3, but will be an alias for UTF8MB4 in a future release. Please consider using UTF8MB4 in order to be unambiguous. (SQL State: HY000 - Error Code: 3719)
+2026-11-19T10:12:33.063+08:00  WARN [traceId=] 25240 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8mb3_bin' is a collation of the deprecated character set UTF8MB3. Please consider using UTF8MB4 with an appropriate collation instead. (SQL State: HY000 - Error Code: 3778)
+2026-11-19T10:12:33.104+08:00  WARN [traceId=] 25240 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8' is currently an alias for the character set UTF8MB3, but will be an alias for UTF8MB4 in a future release. Please consider using UTF8MB4 in order to be unambiguous. (SQL State: HY000 - Error Code: 3719)
+2026-11-19T10:12:33.105+08:00  WARN [traceId=] 25240 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8mb3_bin' is a collation of the deprecated character set UTF8MB3. Please consider using UTF8MB4 with an appropriate collation instead. (SQL State: HY000 - Error Code: 3778)
+2026-11-19T10:12:33.145+08:00  WARN [traceId=] 25240 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8' is currently an alias for the character set UTF8MB3, but will be an alias for UTF8MB4 in a future release. Please consider using UTF8MB4 in order to be unambiguous. (SQL State: HY000 - Error Code: 3719)
+2026-11-19T10:12:33.145+08:00  WARN [traceId=] 25240 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8mb3_bin' is a collation of the deprecated character set UTF8MB3. Please consider using UTF8MB4 with an appropriate collation instead. (SQL State: HY000 - Error Code: 3778)
+2026-11-19T10:12:33.183+08:00  WARN [traceId=] 25240 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8' is currently an alias for the character set UTF8MB3, but will be an alias for UTF8MB4 in a future release. Please consider using UTF8MB4 in order to be unambiguous. (SQL State: HY000 - Error Code: 3719)
+2026-11-19T10:12:33.183+08:00  WARN [traceId=] 25240 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8mb3_bin' is a collation of the deprecated character set UTF8MB3. Please consider using UTF8MB4 with an appropriate collation instead. (SQL State: HY000 - Error Code: 3778)
+2026-11-19T10:12:33.229+08:00  WARN [traceId=] 25240 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8' is currently an alias for the character set UTF8MB3, but will be an alias for UTF8MB4 in a future release. Please consider using UTF8MB4 in order to be unambiguous. (SQL State: HY000 - Error Code: 3719)
+2026-11-19T10:12:33.229+08:00  WARN [traceId=] 25240 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8mb3_bin' is a collation of the deprecated character set UTF8MB3. Please consider using UTF8MB4 with an appropriate collation instead. (SQL State: HY000 - Error Code: 3778)
+2026-11-19T10:12:35.621+08:00  WARN [traceId=] 25240 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8' is currently an alias for the character set UTF8MB3, but will be an alias for UTF8MB4 in a future release. Please consider using UTF8MB4 in order to be unambiguous. (SQL State: HY000 - Error Code: 3719)
+2026-11-19T10:12:35.622+08:00  WARN [traceId=] 25240 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8mb3_bin' is a collation of the deprecated character set UTF8MB3. Please consider using UTF8MB4 with an appropriate collation instead. (SQL State: HY000 - Error Code: 3778)
+2026-11-19T10:12:35.669+08:00  WARN [traceId=] 25240 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8' is currently an alias for the character set UTF8MB3, but will be an alias for UTF8MB4 in a future release. Please consider using UTF8MB4 in order to be unambiguous. (SQL State: HY000 - Error Code: 3719)
+2026-11-19T10:12:35.669+08:00  WARN [traceId=] 25240 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8mb3_bin' is a collation of the deprecated character set UTF8MB3. Please consider using UTF8MB4 with an appropriate collation instead. (SQL State: HY000 - Error Code: 3778)
+2026-11-19T10:12:35.890+08:00  WARN [traceId=] 25240 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8' is currently an alias for the character set UTF8MB3, but will be an alias for UTF8MB4 in a future release. Please consider using UTF8MB4 in order to be unambiguous. (SQL State: HY000 - Error Code: 3719)
+2026-11-19T10:12:35.891+08:00  WARN [traceId=] 25240 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8mb3_bin' is a collation of the deprecated character set UTF8MB3. Please consider using UTF8MB4 with an appropriate collation instead. (SQL State: HY000 - Error Code: 3778)
+2026-11-19T10:12:36.077+08:00  WARN [traceId=] 25240 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8' is currently an alias for the character set UTF8MB3, but will be an alias for UTF8MB4 in a future release. Please consider using UTF8MB4 in order to be unambiguous. (SQL State: HY000 - Error Code: 3719)
+2026-11-19T10:12:36.077+08:00  WARN [traceId=] 25240 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8mb3_bin' is a collation of the deprecated character set UTF8MB3. Please consider using UTF8MB4 with an appropriate collation instead. (SQL State: HY000 - Error Code: 3778)
+2026-11-19T10:12:36.119+08:00  WARN [traceId=] 25240 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8' is currently an alias for the character set UTF8MB3, but will be an alias for UTF8MB4 in a future release. Please consider using UTF8MB4 in order to be unambiguous. (SQL State: HY000 - Error Code: 3719)
+2026-11-19T10:12:36.119+08:00  WARN [traceId=] 25240 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8mb3_bin' is a collation of the deprecated character set UTF8MB3. Please consider using UTF8MB4 with an appropriate collation instead. (SQL State: HY000 - Error Code: 3778)
+2026-11-19T10:12:36.321+08:00  WARN [traceId=] 25240 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8' is currently an alias for the character set UTF8MB3, but will be an alias for UTF8MB4 in a future release. Please consider using UTF8MB4 in order to be unambiguous. (SQL State: HY000 - Error Code: 3719)
+2026-11-19T10:12:36.322+08:00  WARN [traceId=] 25240 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8mb3_bin' is a collation of the deprecated character set UTF8MB3. Please consider using UTF8MB4 with an appropriate collation instead. (SQL State: HY000 - Error Code: 3778)
+2026-11-19T10:12:36.523+08:00  WARN [traceId=] 25240 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8' is currently an alias for the character set UTF8MB3, but will be an alias for UTF8MB4 in a future release. Please consider using UTF8MB4 in order to be unambiguous. (SQL State: HY000 - Error Code: 3719)
+2026-11-19T10:12:36.523+08:00  WARN [traceId=] 25240 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8mb3_bin' is a collation of the deprecated character set UTF8MB3. Please consider using UTF8MB4 with an appropriate collation instead. (SQL State: HY000 - Error Code: 3778)
+2026-11-19T10:12:36.654+08:00  WARN [traceId=] 25240 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8' is currently an alias for the character set UTF8MB3, but will be an alias for UTF8MB4 in a future release. Please consider using UTF8MB4 in order to be unambiguous. (SQL State: HY000 - Error Code: 3719)
+2026-11-19T10:12:36.654+08:00  WARN [traceId=] 25240 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8mb3_bin' is a collation of the deprecated character set UTF8MB3. Please consider using UTF8MB4 with an appropriate collation instead. (SQL State: HY000 - Error Code: 3778)
+2026-11-19T10:12:36.809+08:00  WARN [traceId=] 25240 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8' is currently an alias for the character set UTF8MB3, but will be an alias for UTF8MB4 in a future release. Please consider using UTF8MB4 in order to be unambiguous. (SQL State: HY000 - Error Code: 3719)
+2026-11-19T10:12:36.809+08:00  WARN [traceId=] 25240 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8mb3_bin' is a collation of the deprecated character set UTF8MB3. Please consider using UTF8MB4 with an appropriate collation instead. (SQL State: HY000 - Error Code: 3778)
+2026-11-19T10:12:36.848+08:00  WARN [traceId=] 25240 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8' is currently an alias for the character set UTF8MB3, but will be an alias for UTF8MB4 in a future release. Please consider using UTF8MB4 in order to be unambiguous. (SQL State: HY000 - Error Code: 3719)
+2026-11-19T10:12:36.848+08:00  WARN [traceId=] 25240 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8mb3_bin' is a collation of the deprecated character set UTF8MB3. Please consider using UTF8MB4 with an appropriate collation instead. (SQL State: HY000 - Error Code: 3778)
+2026-11-19T10:12:36.886+08:00  WARN [traceId=] 25240 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8' is currently an alias for the character set UTF8MB3, but will be an alias for UTF8MB4 in a future release. Please consider using UTF8MB4 in order to be unambiguous. (SQL State: HY000 - Error Code: 3719)
+2026-11-19T10:12:36.887+08:00  WARN [traceId=] 25240 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8mb3_bin' is a collation of the deprecated character set UTF8MB3. Please consider using UTF8MB4 with an appropriate collation instead. (SQL State: HY000 - Error Code: 3778)
+2026-11-19T10:12:36.925+08:00  WARN [traceId=] 25240 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8' is currently an alias for the character set UTF8MB3, but will be an alias for UTF8MB4 in a future release. Please consider using UTF8MB4 in order to be unambiguous. (SQL State: HY000 - Error Code: 3719)
+2026-11-19T10:12:36.925+08:00  WARN [traceId=] 25240 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8mb3_bin' is a collation of the deprecated character set UTF8MB3. Please consider using UTF8MB4 with an appropriate collation instead. (SQL State: HY000 - Error Code: 3778)
+2026-11-19T10:12:36.960+08:00  WARN [traceId=] 25240 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8' is currently an alias for the character set UTF8MB3, but will be an alias for UTF8MB4 in a future release. Please consider using UTF8MB4 in order to be unambiguous. (SQL State: HY000 - Error Code: 3719)
+2026-11-19T10:12:36.961+08:00  WARN [traceId=] 25240 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8mb3_bin' is a collation of the deprecated character set UTF8MB3. Please consider using UTF8MB4 with an appropriate collation instead. (SQL State: HY000 - Error Code: 3778)
+2026-11-19T10:12:37.001+08:00  WARN [traceId=] 25240 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8' is currently an alias for the character set UTF8MB3, but will be an alias for UTF8MB4 in a future release. Please consider using UTF8MB4 in order to be unambiguous. (SQL State: HY000 - Error Code: 3719)
+2026-11-19T10:12:37.001+08:00  WARN [traceId=] 25240 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8mb3_bin' is a collation of the deprecated character set UTF8MB3. Please consider using UTF8MB4 with an appropriate collation instead. (SQL State: HY000 - Error Code: 3778)
+2026-11-19T10:12:37.041+08:00  WARN [traceId=] 25240 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8' is currently an alias for the character set UTF8MB3, but will be an alias for UTF8MB4 in a future release. Please consider using UTF8MB4 in order to be unambiguous. (SQL State: HY000 - Error Code: 3719)
+2026-11-19T10:12:37.042+08:00  WARN [traceId=] 25240 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8mb3_bin' is a collation of the deprecated character set UTF8MB3. Please consider using UTF8MB4 with an appropriate collation instead. (SQL State: HY000 - Error Code: 3778)
+2026-11-19T10:12:42.228+08:00  WARN [traceId=] 25240 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8' is currently an alias for the character set UTF8MB3, but will be an alias for UTF8MB4 in a future release. Please consider using UTF8MB4 in order to be unambiguous. (SQL State: HY000 - Error Code: 3719)
+2026-11-19T10:12:42.228+08:00  WARN [traceId=] 25240 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8mb3_bin' is a collation of the deprecated character set UTF8MB3. Please consider using UTF8MB4 with an appropriate collation instead. (SQL State: HY000 - Error Code: 3778)
+2026-11-19T10:12:42.261+08:00  WARN [traceId=] 25240 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8' is currently an alias for the character set UTF8MB3, but will be an alias for UTF8MB4 in a future release. Please consider using UTF8MB4 in order to be unambiguous. (SQL State: HY000 - Error Code: 3719)
+2026-11-19T10:12:42.261+08:00  WARN [traceId=] 25240 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8mb3_bin' is a collation of the deprecated character set UTF8MB3. Please consider using UTF8MB4 with an appropriate collation instead. (SQL State: HY000 - Error Code: 3778)
+2026-11-19T10:12:42.295+08:00  WARN [traceId=] 25240 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8' is currently an alias for the character set UTF8MB3, but will be an alias for UTF8MB4 in a future release. Please consider using UTF8MB4 in order to be unambiguous. (SQL State: HY000 - Error Code: 3719)
+2026-11-19T10:12:42.295+08:00  WARN [traceId=] 25240 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8mb3_bin' is a collation of the deprecated character set UTF8MB3. Please consider using UTF8MB4 with an appropriate collation instead. (SQL State: HY000 - Error Code: 3778)
+2026-11-19T10:12:42.331+08:00  WARN [traceId=] 25240 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8' is currently an alias for the character set UTF8MB3, but will be an alias for UTF8MB4 in a future release. Please consider using UTF8MB4 in order to be unambiguous. (SQL State: HY000 - Error Code: 3719)
+2026-11-19T10:12:42.332+08:00  WARN [traceId=] 25240 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8mb3_bin' is a collation of the deprecated character set UTF8MB3. Please consider using UTF8MB4 with an appropriate collation instead. (SQL State: HY000 - Error Code: 3778)
+2026-11-19T10:12:42.365+08:00  WARN [traceId=] 25240 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8' is currently an alias for the character set UTF8MB3, but will be an alias for UTF8MB4 in a future release. Please consider using UTF8MB4 in order to be unambiguous. (SQL State: HY000 - Error Code: 3719)
+2026-11-19T10:12:42.365+08:00  WARN [traceId=] 25240 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: 'utf8mb3_bin' is a collation of the deprecated character set UTF8MB3. Please consider using UTF8MB4 with an appropriate collation instead. (SQL State: HY000 - Error Code: 3778)
+2026-11-19T10:12:42.908+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "48 - workflow application"
+2026-11-19T10:12:43.216+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "49 - workflow permissions navigation"
+2026-11-19T10:12:43.284+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "50 - workflow designer menu"
+2026-11-19T10:12:43.334+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "51 - printing platform"
+2026-11-19T10:12:43.553+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "52 - activate shared service navigation"
+2026-11-19T10:12:43.595+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "53 - print pdf artifact"
+2026-11-19T10:12:43.673+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "54 - workflow center directory"
+2026-11-19T10:12:43.768+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "55 - print configured flow"
+2026-11-19T10:12:44.028+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "56 - print preview requests"
+2026-11-19T10:12:44.130+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "57 - leave poc"
+2026-11-19T10:12:44.276+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "58 - leave poc navigation"
+2026-11-19T10:12:44.327+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "59 - document configuration"
+2026-11-19T10:12:44.590+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "60 - leave approval cycles"
+2026-11-19T10:12:44.693+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "61 - document navigation"
+2026-11-19T10:12:44.750+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "62 - document platform menu parent"
+2026-11-19T10:12:44.801+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "63 - document submission strategy"
+2026-11-19T10:12:44.933+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "64 - leave direct submission"
+2026-11-19T10:12:45.103+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "65 - document print binding"
+2026-11-19T10:12:45.202+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "66 - document page relationships"
+2026-11-19T10:12:45.265+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "67 - explicit interaction bindings"
+2026-11-19T10:12:45.354+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "68 - document entry controls"
+2026-11-19T10:12:45.461+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "69 - workflow data contract snapshots"
+2026-11-19T10:12:45.603+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "70 - print data contract snapshots"
+2026-11-19T10:12:45.906+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "71 - feature catalog navigation"
+2026-11-19T10:12:45.979+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "72 - remove retired menu role permissions"
+2026-11-19T10:12:46.052+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "73 - business object operation naming"
+2026-11-19T10:12:46.685+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "74 - business object management permissions"
+2026-11-19T10:12:46.760+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "75 - master data"
+2026-11-19T10:12:47.106+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "76 - personnel profiles"
+2026-11-19T10:12:47.316+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "77 - personnel identity model"
+2026-11-19T10:12:47.607+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "78 - leave personnel identity"
+2026-11-19T10:12:47.714+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "79 - workflow personnel audit"
+2026-11-19T10:12:47.811+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "80 - global record audit"
+2026-11-19T10:12:51.316+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "81 - global record audit"
+2026-11-19T10:12:51.860+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "82 - global record audit"
+2026-11-19T10:12:52.162+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "83 - global record audit"
+2026-11-19T10:12:53.117+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "84 - global record audit"
+2026-11-19T10:12:53.693+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "85 - global record audit"
+2026-11-19T10:12:54.396+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "86 - organization personnel module"
+2026-11-19T10:12:54.456+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "87 - partner profile details"
+2026-11-19T10:12:54.644+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "88 - dictionary system subject"
+2026-11-19T10:12:54.831+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "89 - business value defaults"
+2026-11-19T10:12:54.912+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "90 - warehouse profile"
+2026-11-19T10:12:55.014+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "91 - warehouse value defaults"
+2026-11-19T10:12:55.051+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "92 - international subdivisions"
+2026-11-19T10:12:55.169+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "93 - tenant parameter management"
+2026-11-19T10:12:55.230+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "94 - amap proxy path"
+2026-11-19T10:12:55.332+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "95 - geography value defaults"
+2026-11-19T10:12:55.401+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "96 - china administrative divisions"
+2026-11-19T10:12:55.458+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "97 - product catalog foundation"
+2026-11-19T10:12:55.951+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "98 - product attribute templates"
+2026-11-19T10:12:56.254+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "99 - product attribute templates"
+2026-11-19T10:12:56.475+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "100 - product category template binding"
+2026-11-19T10:12:56.563+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "101 - product v1 master"
+2026-11-19T10:12:56.739+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "102 - dictionary value standard"
+2026-11-19T10:12:56.784+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "103 - product value integrity"
+2026-11-19T10:12:58.189+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "104 - product draft permission"
+2026-11-19T10:12:58.238+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "105 - master data menu icons"
+2026-11-19T10:12:58.308+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "106 - product structure requests"
+2026-11-19T10:12:58.419+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "107 - editable geography parent"
+2026-11-19T10:12:58.696+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "108 - product legacy preservation"
+2026-11-19T10:12:59.014+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "109 - product configuration status permissions"
+2026-11-19T10:12:59.068+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "110 - product custom choices"
+2026-11-19T10:12:59.232+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "111 - product single writer cutover"
+2026-11-19T10:12:59.287+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "112 - product integrity hardening"
+2026-11-19T10:12:59.840+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "113 - product unit conversion"
+2026-11-19T10:12:59.942+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "114 - product images"
+2026-11-19T10:13:00.042+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "115 - product extended modes"
+2026-11-19T10:13:00.812+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "116 - product specifications components"
+2026-11-19T10:13:01.407+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "117 - product approval"
+2026-11-19T10:13:01.519+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "118 - storage hierarchy"
+2026-11-19T10:13:01.690+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "119 - product custom specification values"
+2026-11-19T10:13:02.018+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "120 - member data scope inheritance"
+2026-11-19T10:13:02.154+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "121 - business data access"
+2026-11-19T10:13:02.335+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "122 - partner data ownership"
+2026-11-19T10:13:02.443+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `test` to version "123 - business object coding"
+2026-11-19T10:13:02.593+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbMigrate      : Successfully applied 123 migrations to schema `test`, now at version v123 (execution time 00:33.377s)
+2026-11-19T10:13:08.475+08:00  INFO [traceId=] 25240 --- [           main] r$InitializeUserDetailsManagerConfigurer : Global AuthenticationManager configured with UserDetailsService bean with name accounts
+2026-11-19T10:13:10.619+08:00  INFO [traceId=] 25240 --- [           main] o.s.b.t.m.w.SpringBootMockServletContext : Initializing Spring TestDispatcherServlet ''
+2026-11-19T10:13:10.620+08:00  INFO [traceId=] 25240 --- [           main] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
+2026-11-19T10:13:10.625+08:00  INFO [traceId=] 25240 --- [           main] o.s.t.web.servlet.TestDispatcherServlet  : Completed initialization in 5 ms
+2026-11-19T10:13:11.374+08:00  WARN [traceId=] 25240 --- [           main] io.netty.bootstrap.Bootstrap             : Unknown channel option 'TCP_KEEPCOUNT' for channel '[id: 0x7d114ea3]' of type 'class io.netty.channel.socket.nio.NioSocketChannel'
+2026-11-19T10:13:11.374+08:00  WARN [traceId=] 25240 --- [           main] io.netty.bootstrap.Bootstrap             : Unknown channel option 'TCP_KEEPIDLE' for channel '[id: 0x7d114ea3]' of type 'class io.netty.channel.socket.nio.NioSocketChannel'
+2026-11-19T10:13:11.375+08:00  WARN [traceId=] 25240 --- [           main] io.netty.bootstrap.Bootstrap             : Unknown channel option 'TCP_KEEPINTERVAL' for channel '[id: 0x7d114ea3]' of type 'class io.netty.channel.socket.nio.NioSocketChannel'
+2026-11-19T10:13:12.311+08:00  WARN [traceId=] 25240 --- [           main] io.netty.bootstrap.Bootstrap             : Unknown channel option 'TCP_KEEPCOUNT' for channel '[id: 0xbcf4a0a0]' of type 'class io.netty.channel.socket.nio.NioSocketChannel'
+2026-11-19T10:13:12.311+08:00  WARN [traceId=] 25240 --- [           main] io.netty.bootstrap.Bootstrap             : Unknown channel option 'TCP_KEEPIDLE' for channel '[id: 0xbcf4a0a0]' of type 'class io.netty.channel.socket.nio.NioSocketChannel'
+2026-11-19T10:13:12.311+08:00  WARN [traceId=] 25240 --- [           main] io.netty.bootstrap.Bootstrap             : Unknown channel option 'TCP_KEEPINTERVAL' for channel '[id: 0xbcf4a0a0]' of type 'class io.netty.channel.socket.nio.NioSocketChannel'
+2026-11-19T10:13:12.363+08:00  INFO [traceId=] 25240 --- [           main] c.a.platform.CodingCapabilityTest        : Started CodingCapabilityTest in 60.182 seconds (process running for 92.124)
+2026-11-19T10:13:13.146+08:00  WARN [traceId=] 25240 --- [           main] o.s.core.events.SpringDocAppInitializer  : SpringDoc /v3/api-docs endpoint is enabled by default. To disable it in production, set the property 'springdoc.api-docs.enabled=false'
+Mockito is currently self-attaching to enable the inline-mock-maker. This will no longer work in future releases of the JDK. Please add Mockito as an agent to your build as described in Mockito's documentation: https://javadoc.io/doc/org.mockito/mockito-core/latest/org.mockito/org/mockito/Mockito.html#0.3
+WARNING: A Java agent has been loaded dynamically (C:\Users\lbkgo\.m2\repository\net\bytebuddy\byte-buddy-agent\1.18.15\byte-buddy-agent-1.18.15.jar)
+WARNING: If a serviceability tool is in use, please run with -XX:+EnableDynamicAgentLoading to hide this warning
+WARNING: If a serviceability tool is not in use, please run with -Djdk.instrument.traceUsage for more information
+WARNING: Dynamic loading of agents will be disallowed by default in a future release
+OpenJDK 64-Bit Server VM warning: Sharing is only supported for boot loader classes because bootstrap classpath has been appended
+2026-11-19T10:13:48.720+08:00  INFO [traceId=] 25240 --- [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.appnexus.platform.GlobalRecordAuditTest]: GlobalRecordAuditTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-11-19T10:13:48.725+08:00  INFO [traceId=] 25240 --- [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.appnexus.platform.PlatformApplication for test class com.appnexus.platform.GlobalRecordAuditTest
+2026-11-19T10:13:48.728+08:00  INFO [traceId=] 25240 --- [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.appnexus.platform.GlobalRecordAuditTest]: GlobalRecordAuditTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-11-19T10:13:48.729+08:00  INFO [traceId=] 25240 --- [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.appnexus.platform.DatabaseTestSupport]: DatabaseTestSupport does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-11-19T10:13:48.730+08:00  INFO [traceId=] 25240 --- [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.appnexus.platform.PlatformApplication for test class com.appnexus.platform.GlobalRecordAuditTest
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v4.1.2)
+
+2026-11-19T10:13:48.845+08:00  INFO [traceId=] 25240 --- [           main] c.a.platform.GlobalRecordAuditTest       : Starting GlobalRecordAuditTest using Java 21 with PID 25240 (started by lbkgo in D:\AppNexus\backend\services\platform-service\application)
+2026-11-19T10:13:48.846+08:00  INFO [traceId=] 25240 --- [           main] c.a.platform.GlobalRecordAuditTest       : The following 1 profile is active: "local"
+2026-11-19T10:13:49.740+08:00  INFO [traceId=] 25240 --- [           main] .s.d.r.c.RepositoryConfigurationDelegate : Multiple Spring Data modules found, entering strict repository configuration mode
+2026-11-19T10:13:49.741+08:00  INFO [traceId=] 25240 --- [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data Redis repositories in DEFAULT mode.
+2026-11-19T10:13:49.784+08:00  INFO [traceId=] 25240 --- [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 38 ms. Found 0 Redis repository interfaces.
+2026-11-19T10:13:50.102+08:00  INFO [traceId=] 25240 --- [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-2 - Starting...
+2026-11-19T10:13:50.159+08:00  INFO [traceId=] 25240 --- [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-2 - Added connection com.mysql.cj.jdbc.ConnectionImpl@6cfa1cb2
+2026-11-19T10:13:50.160+08:00  INFO [traceId=] 25240 --- [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-2 - Start completed.
+2026-11-19T10:13:50.164+08:00  INFO [traceId=] 25240 --- [           main] org.flywaydb.core.FlywayExecutor         : Database: jdbc:mysql://localhost:64399/test?preserveInstants=true&connectionTimeZone=UTC&forceConnectionTimeZoneToSession=true (MySQL 8.4)
+2026-11-19T10:13:50.776+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbValidate     : Successfully validated 123 migrations (execution time 00:00.527s)
+2026-11-19T10:13:50.811+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbMigrate      : Current version of schema `test`: 123
+2026-11-19T10:13:50.815+08:00  INFO [traceId=] 25240 --- [           main] o.f.core.internal.command.DbMigrate      : Schema `test` is up to date. No migration necessary.
+2026-11-19T10:13:52.593+08:00  INFO [traceId=] 25240 --- [           main] r$InitializeUserDetailsManagerConfigurer : Global AuthenticationManager configured with UserDetailsService bean with name accounts
+2026-11-19T10:13:53.440+08:00  WARN [traceId=] 25240 --- [           main] io.netty.bootstrap.Bootstrap             : Unknown channel option 'TCP_KEEPCOUNT' for channel '[id: 0x5baed5a0]' of type 'class io.netty.channel.socket.nio.NioSocketChannel'
+2026-11-19T10:13:53.440+08:00  WARN [traceId=] 25240 --- [           main] io.netty.bootstrap.Bootstrap             : Unknown channel option 'TCP_KEEPIDLE' for channel '[id: 0x5baed5a0]' of type 'class io.netty.channel.socket.nio.NioSocketChannel'
+2026-11-19T10:13:53.440+08:00  WARN [traceId=] 25240 --- [           main] io.netty.bootstrap.Bootstrap             : Unknown channel option 'TCP_KEEPINTERVAL' for channel '[id: 0x5baed5a0]' of type 'class io.netty.channel.socket.nio.NioSocketChannel'
+2026-11-19T10:13:53.659+08:00  WARN [traceId=] 25240 --- [           main] io.netty.bootstrap.Bootstrap             : Unknown channel option 'TCP_KEEPCOUNT' for channel '[id: 0x80361c24]' of type 'class io.netty.channel.socket.nio.NioSocketChannel'
+2026-11-19T10:13:53.659+08:00  WARN [traceId=] 25240 --- [           main] io.netty.bootstrap.Bootstrap             : Unknown channel option 'TCP_KEEPIDLE' for channel '[id: 0x80361c24]' of type 'class io.netty.channel.socket.nio.NioSocketChannel'
+2026-11-19T10:13:53.659+08:00  WARN [traceId=] 25240 --- [           main] io.netty.bootstrap.Bootstrap             : Unknown channel option 'TCP_KEEPINTERVAL' for channel '[id: 0x80361c24]' of type 'class io.netty.channel.socket.nio.NioSocketChannel'
+2026-11-19T10:13:53.683+08:00  INFO [traceId=] 25240 --- [           main] c.a.platform.GlobalRecordAuditTest       : Started GlobalRecordAuditTest in 4.906 seconds (process running for 133.444)
+2026-11-19T10:13:53.916+08:00  WARN [traceId=] 25240 --- [           main] o.s.core.events.SpringDocAppInitializer  : SpringDoc /v3/api-docs endpoint is enabled by default. To disable it in production, set the property 'springdoc.api-docs.enabled=false'

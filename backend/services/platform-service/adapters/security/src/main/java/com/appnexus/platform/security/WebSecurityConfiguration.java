@@ -1,6 +1,6 @@
 package com.appnexus.platform.security;
 
-import org.springframework.jdbc.core.JdbcTemplate;
+
 import org.springframework.security.oauth2.server.authorization.*;
 import org.springframework.security.oauth2.client.*;
 import org.springframework.security.oauth2.client.web.*;
@@ -43,7 +43,7 @@ public class WebSecurityConfiguration {
     SecurityFilterChain authorizationServer(HttpSecurity http, @Value("${app.frontend-url}") String frontendUrl, com.appnexus.platform.identity.AccountRepository accounts,
             org.springframework.security.oauth2.server.resource.introspection.OpaqueTokenIntrospector introspection,
             RegisteredClientRepository clients,RotatingAuthorizationService authorizations,
-            PasswordEncoder encoder,JdbcTemplate jdbc,
+            PasswordEncoder encoder,ClientSecretMapper clientSecrets,
             SessionLifetime lifetime) throws Exception {
         var server = new OAuth2AuthorizationServerConfigurer();
         // 授权端点可能直接签发授权码并结束链，必须在它执行前拒绝缺少认证时间的旧会话。
@@ -55,7 +55,7 @@ public class WebSecurityConfiguration {
                     .authenticationProviders(providers->{
                         providers.add(0,new NativeRefreshAuthentication(clients));
                         for(var provider:providers)if(provider instanceof org.springframework.security.oauth2.server.authorization.authentication.ClientSecretAuthenticationProvider secret)
-                            secret.setPasswordEncoder(new RotatingClientPasswordEncoder(encoder,jdbc));
+                            secret.setPasswordEncoder(new RotatingClientPasswordEncoder(encoder,clientSecrets));
                     }))
                 .tokenEndpoint(endpoint->endpoint.authenticationProviders(providers->{
                     for(int index=0;index<providers.size();index++)
@@ -77,13 +77,13 @@ public class WebSecurityConfiguration {
     @Order(2)
     SecurityFilterChain partnerApi(HttpSecurity http,
             org.springframework.security.oauth2.server.resource.introspection.OpaqueTokenIntrospector introspection,
-            JdbcTemplate jdbc,org.springframework.data.redis.core.StringRedisTemplate redis)throws Exception{
+            PartnerCallFilterSqlMapper partnerCalls,org.springframework.data.redis.core.StringRedisTemplate redis)throws Exception{
         http.securityMatcher("/v1/**")
             .sessionManagement(session->session.sessionCreationPolicy(org.springframework.security.config.http.SessionCreationPolicy.STATELESS))
             // 外部接口仅接受 Bearer 机密客户端，Cookie 不参与，不允许跨接口面借用 Web 登录。
             .csrf(csrf->csrf.disable()).requestCache(cache->cache.disable())
             .oauth2ResourceServer(resource->resource.opaqueToken(token->token.introspector(introspection)))
-            .addFilterAfter(new PartnerCallFilter(jdbc,redis),org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter.class)
+            .addFilterAfter(new PartnerCallFilter(redis,partnerCalls),org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter.class)
             .authorizeHttpRequests(auth->auth.anyRequest().hasAuthority("PARTNER_CLIENT"));
         return http.build();
     }
@@ -194,9 +194,9 @@ public class WebSecurityConfiguration {
     @org.springframework.boot.sql.init.dependency.DependsOnDatabaseInitialization
     RegisteredClientRepository registeredClients(PasswordEncoder encoder,
             @Value("${app.bff-secret}") String secret,
-            @Value("${app.public-url}") String publicUrl, JdbcTemplate jdbc,
+            @Value("${app.public-url}") String publicUrl, OAuthRepositoryMapper oauth,
             @Value("${app.native.redirect-uri:}") String nativeRedirect) {
-        var repository = new JdbcRegisteredClientRepository(jdbc);
+        var repository = new MyBatisRegisteredClients(oauth);
         var client = RegisteredClient.withId("appnexus-bff")
             .clientId("appnexus-bff").clientSecret(encoder.encode(secret))
             .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
@@ -239,9 +239,9 @@ public class WebSecurityConfiguration {
     }
 
     @Bean
-    RotatingAuthorizationService authorizationService(JdbcTemplate jdbc, RegisteredClientRepository clients,
+    RotatingAuthorizationService authorizationService(OAuthRepositoryMapper oauth, RegisteredClientRepository clients,RotatingAuthorizationServiceSqlMapper statements,
             org.springframework.transaction.PlatformTransactionManager transactions,com.appnexus.platform.audit.SecurityLogRepository logs) {
-        return new RotatingAuthorizationService(new JdbcOAuth2AuthorizationService(jdbc, clients),jdbc,transactions,logs);
+        return new RotatingAuthorizationService(new MyBatisAuthorizations(oauth,clients),transactions,logs,statements);
     }
     /**
      * 标准 Token 生成管线；公开原生客户端仅在强制 PKCE 注册下获得可轮换刷新凭证。
@@ -318,8 +318,8 @@ public class WebSecurityConfiguration {
         };
     }
     @Bean
-    OAuth2AuthorizationConsentService consentService(JdbcTemplate jdbc, RegisteredClientRepository clients) {
-        return new JdbcOAuth2AuthorizationConsentService(jdbc, clients);
+    OAuth2AuthorizationConsentService consentService(OAuthRepositoryMapper oauth, RegisteredClientRepository clients) {
+        return new MyBatisAuthorizationConsents(oauth,clients);
     }
     @Bean
     OAuth2AuthorizedClientRepository authorizedClients() {

@@ -32,11 +32,6 @@ public final class LeavePocController {
   /** 本人单据可执行性，不能用于枚举其他人的对象。 */
   /** 本人生命周期及专业服务关联摘要，不泄漏打印快照。 */
   @GetMapping("/{id}/timeline") public Object timeline(HttpServletRequest r,@PathVariable String id){return reply(()->service.timeline(context(r),id));}
-  /** 业务供数打印只接受操作标识，不允许浏览器替换数据或模板；统一预览需另行确认。 */
-  @com.appnexus.contracts.operation.OperationBinding(id="LeaveRequest.print",reference=true)
-  @PostMapping("/{id}/print")
-  public Object print(HttpServletRequest r,@PathVariable String id,@RequestBody SubmitOperation input){return reply(()->service.print(context(r),id,input.operationId()));}
-
   /** 创建草稿，仅校验表单业务值和标识格式；组织任职在审批提交时核验，不隐式创建组织或人员。 */
   @com.appnexus.contracts.operation.OperationBinding(id="LeaveRequest.create",objectType="LeaveRequest",operationCode="create",pages={"workflow/leave"},nameZh="新建请假单",nameEn="Create leave request",permissions={"leave.request:submit"},policy="原服务逐请求复核有效成员、功能权限、对象归属、版本与业务状态")
   @PostMapping

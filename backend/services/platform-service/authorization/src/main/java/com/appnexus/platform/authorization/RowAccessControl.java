@@ -10,6 +10,24 @@ import java.util.UUID;
  */
 public interface RowAccessControl {
     /**
+     * 为固定MyBatis条件生成已解析的组织范围；只负责计划转换，不重新决定角色或合并策略。
+     * @param plan 当前操作的可信计划；null、DENY、未解析子树或RULES均失败关闭
+     * @return ALL或已解析组织UUID集合；空集合且非ALL表示拒绝
+     */
+    default OrganizationRange organizationRange(AccessPlan plan){
+        if(plan==null)return new OrganizationRange(false,List.of());
+        if(plan.rows().type()==DataScopeAuthorization.ScopeType.ALL)return new OrganizationRange(true,List.of());
+        if(plan.rows().type()==DataScopeAuthorization.ScopeType.ORGANIZATION)
+            return new OrganizationRange(false,plan.rows().organizationIds().stream().sorted().map(UUID::toString).toList());
+        return new OrganizationRange(false,List.of());
+    }
+    /**
+     * 固定Mapper可消费的范围值，不承载SQL或客户端策略。
+     * @param all 只有可信计划为ALL时才为true；租户条件始终独立强制
+     * @param ids 已解析的组织UUID字符串；非ALL空集合表示拒绝，不作全部范围回退
+     */
+    record OrganizationRange(boolean all,List<String> ids){public OrganizationRange{ids=List.copyOf(ids);}}
+    /**
      * 编译已匹配主体的组合规则，组内 AND、组间 OR；租户条件仍必须由业务查询独立强制。
      * @param plan 本次操作的可信权限计划
      * @param mapping 业务代码固定列映射，不能由请求或授权配置构造

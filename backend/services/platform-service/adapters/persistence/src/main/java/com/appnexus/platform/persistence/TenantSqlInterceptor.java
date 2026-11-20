@@ -1,5 +1,6 @@
 package com.appnexus.platform.persistence;
 import com.appnexus.platform.tenant.VerifiedTenantContext;
+import com.appnexus.persistence.mybatis.*;
 import java.sql.Connection;
 import java.util.*;
 import org.apache.ibatis.executor.statement.StatementHandler;
@@ -65,8 +66,15 @@ public final class TenantSqlInterceptor implements Interceptor {
             BoundSql boundSql=handler.getBoundSql();
             if(boundSql.getParameterMappings().stream().noneMatch(mapping->mapping.getProperty().equals("__verifiedTenant")))
                 throw new IllegalStateException("Tenant aggregate binding missing");
-            boundSql.setAdditionalParameter("__verifiedTenant",java.nio.ByteBuffer.allocate(16)
-                .putLong(context.tenantId().getMostSignificantBits()).putLong(context.tenantId().getLeastSignificantBits()).array());
+            byte[] trustedTenant=java.nio.ByteBuffer.allocate(16)
+                .putLong(context.tenantId().getMostSignificantBits()).putLong(context.tenantId().getLeastSignificantBits()).array();
+            // 已迁移业务端口传递的是可信租户；不允许以A的业务权限执行B上下文重新绑定后的查询。
+            if(aggregate.requireTenantMatch()){
+                Object supplied=boundSql.getParameterObject() instanceof Map<?,?> parameters?parameters.get("__verifiedTenant"):null;
+                if(!(supplied instanceof byte[] bytes)||!Arrays.equals(bytes,trustedTenant))
+                    throw new SecurityException("Mapper tenant does not match verified context");
+            }
+            boundSql.setAdditionalParameter("__verifiedTenant",trustedTenant);
             return invocation.proceed();
         }
         if(declaration==null) {
@@ -74,6 +82,11 @@ public final class TenantSqlInterceptor implements Interceptor {
             if(platform != null) {
                 var allowed = Set.of(platform.tables());
                 if(allowed.isEmpty()) throw new IllegalStateException("Platform mapper table allowlist required");
+                // 仅编码 Mapper 的固定数据库时钟可不访问表；不允许任意常量查询、会话变量或客户端 SQL。
+                if(statement.getId().equals("com.appnexus.platform.persistence.businessobject.coding.CodingMapper.now")
+                    &&statement.getSqlCommandType()==org.apache.ibatis.mapping.SqlCommandType.SELECT
+                    &&normalized.equals("select current_timestamp(6)")&&handler.getBoundSql().getParameterMappings().isEmpty())
+                    return invocation.proceed();
                 Set<String> referenced;
                 try { referenced = net.sf.jsqlparser.util.TablesNamesFinder.findTables(normalized).stream()
                     .map(name -> name.toLowerCase(Locale.ROOT)).collect(java.util.stream.Collectors.toSet()); }

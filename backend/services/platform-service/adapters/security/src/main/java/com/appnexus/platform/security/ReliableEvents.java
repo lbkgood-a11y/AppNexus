@@ -1,7 +1,7 @@
 package com.appnexus.platform.security;
 
 import java.util.*;
-import org.springframework.jdbc.core.JdbcTemplate;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.*;
 
@@ -11,11 +11,13 @@ import org.springframework.transaction.annotation.*;
  */
 @Service
 public class ReliableEvents {
+    private final ReliableEventsSqlMapper statements;
+
     /** 零 UUID 为平台级事件边界，不允许租户业务使用其绕过隔离。 */
     public static final UUID PLATFORM=new UUID(0,0);
     private static final Set<String> TYPES=Set.of("AUTHORITY_INVALIDATED","INTEGRATION_AUTHORITY_CHANGED");
-    private final JdbcTemplate jdbc;
-    public ReliableEvents(JdbcTemplate jdbc){this.jdbc=jdbc;}
+    
+    public ReliableEvents(ReliableEventsSqlMapper statements){this.statements=statements;}
     /** 租约令牌必须与领取时一致；租户和聚合均由数据库记录返回。 */
     public record Event(UUID id,UUID tenant,String type,String aggregate,int attempts,String lease){}
     /**
@@ -28,7 +30,7 @@ public class ReliableEvents {
     @Transactional(propagation=Propagation.MANDATORY)
     public UUID publish(UUID tenant,String type,String aggregate){
         if(tenant==null||!TYPES.contains(type)||aggregate==null||!aggregate.matches("[A-Za-z0-9._:-]{1,100}"))throw new IllegalArgumentException("Invalid event metadata");
-        UUID id=UUID.randomUUID();jdbc.update("INSERT INTO platform_outbox(id,tenant_id,event_type,aggregate_id) VALUES(UUID_TO_BIN(?),UUID_TO_BIN(?),?,?)",id.toString(),tenant.toString(),type,aggregate);return id;
+        UUID id=UUID.randomUUID();statements.statement1(id.toString(),tenant.toString(),type,aggregate);return id;
     }
     /**
      * 多实例 SKIP LOCKED 领取单条事件，30 秒租约；超过 5 次转人工，不静默丢弃。
@@ -36,10 +38,10 @@ public class ReliableEvents {
      */
     @Transactional
     public Optional<Event> claim(){
-        jdbc.update("UPDATE platform_outbox SET status='MANUAL',failure_code='ATTEMPTS_EXHAUSTED',lease_token=NULL,lease_until=NULL WHERE attempts>=5 AND (status='PENDING' OR (status='PROCESSING' AND lease_until<=CURRENT_TIMESTAMP(6)))");
-        var rows=jdbc.queryForList("SELECT BIN_TO_UUID(id) id,BIN_TO_UUID(tenant_id) tenant,event_type,aggregate_id,attempts FROM platform_outbox WHERE attempts<5 AND ((status='PENDING' AND available_at<=CURRENT_TIMESTAMP(6)) OR (status='PROCESSING' AND lease_until<=CURRENT_TIMESTAMP(6))) ORDER BY created_at,id LIMIT 1 FOR UPDATE SKIP LOCKED");
+        statements.statement2();
+        var rows=statements.statement3();
         if(rows.isEmpty())return Optional.empty();var row=rows.getFirst();String lease=UUID.randomUUID().toString();
-        String id=(String)row.get("id");jdbc.update("UPDATE platform_outbox SET status='PROCESSING',attempts=attempts+1,lease_token=?,lease_until=CURRENT_TIMESTAMP(6)+INTERVAL 30 SECOND WHERE id=UUID_TO_BIN(?)",lease,id);
+        String id=(String)row.get("id");statements.statement4(lease,id);
         return Optional.of(new Event(UUID.fromString(id),UUID.fromString((String)row.get("tenant")),(String)row.get("event_type"),(String)row.get("aggregate_id"),((Number)row.get("attempts")).intValue()+1,lease));
     }
     /**
@@ -53,12 +55,12 @@ public class ReliableEvents {
     @Transactional
     public boolean consume(Event event,String consumer,UUID expectedTenant,Runnable effect){
         if(!consumer.matches("[A-Za-z0-9._:-]{1,100}")||!event.tenant().equals(expectedTenant))throw new SecurityException("Event tenant mismatch");
-        var rows=jdbc.queryForList("SELECT BIN_TO_UUID(tenant_id) tenant FROM platform_outbox WHERE id=UUID_TO_BIN(?) AND status='PROCESSING' AND lease_token=? AND lease_until>CURRENT_TIMESTAMP(6) FOR UPDATE",event.id().toString(),event.lease());
+        var rows=statements.statement5(event.id().toString(),event.lease());
         if(rows.isEmpty())return false;
         if(!expectedTenant.toString().equals(rows.getFirst().get("tenant")))throw new SecurityException("Event tenant mismatch");
-        int inserted=jdbc.update("INSERT IGNORE INTO platform_event_consumption(tenant_id,event_id,consumer) VALUES(UUID_TO_BIN(?),UUID_TO_BIN(?),?)",expectedTenant.toString(),event.id().toString(),consumer);
+        int inserted=statements.statement6(expectedTenant.toString(),event.id().toString(),consumer);
         if(inserted==1)effect.run();
-        jdbc.update("UPDATE platform_outbox SET status='DONE',lease_token=NULL,lease_until=NULL,failure_code=NULL WHERE id=UUID_TO_BIN(?) AND lease_token=?",event.id().toString(),event.lease());
+        statements.statement7(event.id().toString(),event.lease());
         return inserted==1;
     }
     /**
@@ -70,8 +72,7 @@ public class ReliableEvents {
     @Transactional
     public boolean fail(Event event,boolean permanent){
         boolean manual=permanent||event.attempts()>=5;
-        return jdbc.update("UPDATE platform_outbox SET status=?,failure_code=?,available_at=TIMESTAMPADD(SECOND,?,CURRENT_TIMESTAMP(6)),lease_token=NULL,lease_until=NULL WHERE id=UUID_TO_BIN(?) AND lease_token=? AND status='PROCESSING'",
-            manual?"MANUAL":"PENDING",permanent?"PERMANENT":"TRANSIENT",Math.min(300,event.attempts()*10),event.id().toString(),event.lease())==1;
+        return statements.statement8(manual?"MANUAL":"PENDING",permanent?"PERMANENT":"TRANSIENT",Math.min(300,event.attempts()*10),event.id().toString(),event.lease())==1;
     }
     /**
      * 平台运维只读任务摘要，不返回敏感 payload。
@@ -80,8 +81,7 @@ public class ReliableEvents {
      */
     public List<Task> tasks(int limit){
         if(limit<1||limit>100)throw new IllegalArgumentException("Invalid task limit");
-        return jdbc.query("SELECT BIN_TO_UUID(id) id,BIN_TO_UUID(tenant_id) tenant,event_type,status,attempts,failure_code FROM platform_outbox ORDER BY created_at DESC,id DESC LIMIT ?",
-            (row,index)->new Task(UUID.fromString(row.getString("id")),UUID.fromString(row.getString("tenant")),row.getString("event_type"),row.getString("status"),row.getInt("attempts"),row.getString("failure_code")),limit);
+        return statements.summaries(limit).stream().map(row->new Task(UUID.fromString((String)row.get("id")),UUID.fromString((String)row.get("tenant")),(String)row.get("event_type"),(String)row.get("status"),((Number)row.get("attempts")).intValue(),(String)row.get("failure_code"))).toList();
     }
     /** 任务元数据摘要，不暴露租约令牌或业务原值。 */
     public record Task(UUID id,UUID tenant,String type,String status,int attempts,String failureCode){}
@@ -91,5 +91,5 @@ public class ReliableEvents {
      * @return 当前确为人工状态且已恢复时为 true
      */
     @Transactional
-    public boolean retry(UUID id){return jdbc.update("UPDATE platform_outbox SET status='PENDING',attempts=0,available_at=CURRENT_TIMESTAMP(6),failure_code=NULL,lease_token=NULL,lease_until=NULL WHERE id=UUID_TO_BIN(?) AND status='MANUAL'",id.toString())==1;}
+    public boolean retry(UUID id){return statements.statement9(id.toString())==1;}
 }

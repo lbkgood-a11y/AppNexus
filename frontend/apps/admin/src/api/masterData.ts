@@ -1,3 +1,4 @@
+import { executeObjectCommand } from "./objectExecution";
 import { http } from "@/utils/http";
 import type { MasterDataApi, MasterDataKind } from "@appnexus/master-data";
 /** 固定主数据路径，租户与操作者只由服务端会话确定。 */
@@ -10,10 +11,7 @@ async function mutate<T>(method:"post"|"put"|"delete",url:string,data:object):Pr
 /** 真实后端适配器；操作入口来自统一准入，读取及写入仍在业务服务复核。 */
 export const masterDataApi:MasterDataApi={
   codingOptions:(type,field)=>http.request("get",`/api/business-objects/${encodeURIComponent(type)}/coding-options`,{params:{field}}),
-  issueCode:async(type,key,requestId)=>{
-    const csrf=await http.request<{headerName:string;token:string}>("get","/bff/csrf");
-    return http.request("post",`/api/business-objects/${encodeURIComponent(type)}/encoders/${encodeURIComponent(key)}/issue`,{data:{},headers:{[csrf.headerName]:csrf.token,"Idempotency-Key":requestId}});
-  },
+  issueCode:(type,key,requestId)=>executeObjectCommand(`/api/business-objects/${encodeURIComponent(type)}/encoders/${encodeURIComponent(key)}/issue`,{},requestId),
   partnerAccess:()=>http.request("get",path("partner"),{params:{dataAccess:true}}),
   geographyDirectory:kind=>http.request("get",path(kind),{params:{geography:true}}),
   readPartner:async id=>{const result=await http.request<{rows:import("@appnexus/master-data").MasterDataRow[]}>("get",path("partner"),{params:{id,page:1,size:1}});if(!result.rows[0])throw new Error("MASTER_DATA_CHANGED");return result.rows[0];},

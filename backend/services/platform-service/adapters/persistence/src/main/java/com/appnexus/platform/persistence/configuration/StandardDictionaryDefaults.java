@@ -3,7 +3,6 @@ package com.appnexus.platform.persistence.configuration;
 import com.appnexus.platform.configuration.DictionaryValueStandard;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
-import org.springframework.jdbc.core.JdbcTemplate;
 
 /** V102 起的预置唯一来源；旧 V89/V91 初始化器只供历史迁移使用，禁止改写其资源或执行语义。 */
 public final class StandardDictionaryDefaults {
@@ -50,37 +49,4 @@ public final class StandardDictionaryDefaults {
         return List.copyOf(result);
     }
 
-    /**
-     * 新租户开通同事务补预置；永久占用的编码和值（含软删除）都不复用，不恢复停用项。
-     * @param jdbc 宿主开通事务的数据库访问器
-     * @param tenant 可信租户 UUID，不接受业务请求指定其他租户
-     * @param actor 真实开通账号；系统执行为空，不伪造账号
-     */
-    public static void seed(JdbcTemplate jdbc, UUID tenant, UUID actor) {
-        String tenantId = tenant.toString(), actorId = actor == null ? null : actor.toString();
-        int order = 0;
-        for (var entry : entries()) {
-            order++;
-            String dictionary = stableId(tenantId + ":" + entry.dictionaryCode());
-            jdbc.update("INSERT INTO tenant_dictionary(id,tenant_id,code,name,description,status,sort_order,created_by,updated_by) "
-                + "SELECT UUID_TO_BIN(?),UUID_TO_BIN(?),?,?,?,'ENABLED',?,UUID_TO_BIN(?),UUID_TO_BIN(?) "
-                + "WHERE NOT EXISTS(SELECT 1 FROM tenant_dictionary WHERE tenant_id=UUID_TO_BIN(?) AND code=?)",
-                dictionary, tenantId, entry.dictionaryCode(), entry.dictionaryName(), "统一标准预置；编码和业务值创建后不可修改。",
-                order, actorId, actorId, tenantId, entry.dictionaryCode());
-            var dictionaries = jdbc.queryForList("SELECT BIN_TO_UUID(id) FROM tenant_dictionary WHERE tenant_id=UUID_TO_BIN(?) AND code=? AND deleted_at IS NULL",
-                String.class, tenantId, entry.dictionaryCode());
-            if (dictionaries.isEmpty()) continue;
-            dictionary = dictionaries.getFirst();
-            String item = stableId(tenantId + ":" + entry.dictionaryCode() + ":" + entry.value());
-            jdbc.update("INSERT INTO tenant_dictionary_item(id,tenant_id,dictionary_id,code,item_value,name,status,sort_order,created_by,updated_by) "
-                + "SELECT UUID_TO_BIN(?),UUID_TO_BIN(?),UUID_TO_BIN(?),?,?,?,'ENABLED',?,UUID_TO_BIN(?),UUID_TO_BIN(?) "
-                + "WHERE NOT EXISTS(SELECT 1 FROM tenant_dictionary_item WHERE tenant_id=UUID_TO_BIN(?) AND dictionary_id=UUID_TO_BIN(?) AND (code=? OR item_value=?))",
-                item, tenantId, dictionary, entry.code(), entry.value(), entry.name(), order, actorId, actorId,
-                tenantId, dictionary, entry.code(), entry.value());
-        }
-    }
-
-    private static String stableId(String source) {
-        return UUID.nameUUIDFromBytes(source.getBytes(StandardCharsets.UTF_8)).toString();
-    }
 }

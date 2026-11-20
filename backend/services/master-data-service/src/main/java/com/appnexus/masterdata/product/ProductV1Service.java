@@ -1,4 +1,5 @@
 package com.appnexus.masterdata.product;
+import com.appnexus.masterdata.adapter.jdbc.ProductV1ServiceSqlMapper;
 
 import com.appnexus.masterdata.api.product.ProductMainData.*;
 import com.appnexus.masterdata.api.product.ProductStructureData.*;
@@ -10,7 +11,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.*;
 import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.jdbc.core.JdbcTemplate;
+
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.transaction.PlatformTransactionManager;
 import tools.jackson.databind.ObjectMapper;
@@ -25,7 +26,16 @@ import java.time.Instant;
  */
 @org.springframework.stereotype.Service
 public final class ProductV1Service {
- private final JdbcTemplate jdbc;
+ private final ProductV1ServiceSqlMapper statements;
+
+ private final com.appnexus.masterdata.adapter.jdbc.ProductCompletenessMapper completenessMapper;
+ private final com.appnexus.masterdata.adapter.jdbc.ProductSnapshotMapper snapshotMapper;
+ private final com.appnexus.masterdata.adapter.jdbc.ProductHistoryMapper historyMapper;
+ private final com.appnexus.masterdata.adapter.jdbc.ProductListMapper listMapper;
+ private final com.appnexus.masterdata.adapter.jdbc.ProductCatalogReadMapper catalogMapper;
+ private final com.appnexus.masterdata.adapter.jdbc.ProductAccess productAccess;
+ private final com.appnexus.masterdata.adapter.jdbc.ProductAttributeValueMapper attributeValues;
+ 
  private final com.appnexus.masterdata.application.product.ProductRecords records;
  private final AccessAuthorization access;
  private final TransactionTemplate tx;
@@ -44,17 +54,21 @@ public final class ProductV1Service {
   public Version(long version){this(Long.valueOf(version));}
  }
 
- /** @param jdbc 宿主UTC数据源 @param access 公开授权端口 @param manager 宿主事务管理器 */
- public ProductV1Service(JdbcTemplate jdbc,AccessAuthorization access,PlatformTransactionManager manager,OperationPreviewProof previewProof){this(jdbc,access,manager,previewProof,new com.appnexus.masterdata.adapter.jdbc.JdbcProductRecords(jdbc));}
  /**
   * @param jdbc 商品扩展现有数据源，必须与记录端口共用事务
   * @param access 可信授权公开端口，每个用例独立复核
   * @param manager 宿主事务管理器；结构迁移超时仍为10秒
   * @param previewProof 结构预检绑定公开端口，不信任客户端事实
   * @param records 父记录输出端口，负责租户、行锁、CAS 与数据库审计时间
+  * @param completenessMapper 已授权聚合内读取完整性事实的固定映射，与记录端口同事务
+  * @param snapshotMapper 父商品快照固定映射，不接收任意业务SQL
+  * @param historyMapper 商品追加历史固定映射，与父修改共同回滚
+  * @param listMapper 列表、总数及属性筛选固定映射，不接受SQL片段
+  * @param catalogMapper 已授权商品操作的引用目录与锁定预检映射
+  * @param productAccess 统一商品范围执行器，所有正文入口必须实际接通
   */
  @org.springframework.beans.factory.annotation.Autowired
- public ProductV1Service(JdbcTemplate jdbc,AccessAuthorization access,PlatformTransactionManager manager,OperationPreviewProof previewProof,com.appnexus.masterdata.application.product.ProductRecords records){this.jdbc=jdbc;this.records=records;this.access=access;this.tx=new TransactionTemplate(manager);this.migrationTx=new TransactionTemplate(manager);this.migrationTx.setTimeout(10);this.previewProof=previewProof;}
+ public ProductV1Service(AccessAuthorization access,PlatformTransactionManager manager,OperationPreviewProof previewProof,com.appnexus.masterdata.application.product.ProductRecords records,com.appnexus.masterdata.adapter.jdbc.ProductCompletenessMapper completenessMapper,com.appnexus.masterdata.adapter.jdbc.ProductSnapshotMapper snapshotMapper,com.appnexus.masterdata.adapter.jdbc.ProductHistoryMapper historyMapper,com.appnexus.masterdata.adapter.jdbc.ProductListMapper listMapper,com.appnexus.masterdata.adapter.jdbc.ProductCatalogReadMapper catalogMapper,com.appnexus.masterdata.adapter.jdbc.ProductAccess productAccess,ProductV1ServiceSqlMapper statements,com.appnexus.masterdata.adapter.jdbc.ProductAttributeValueMapper attributeValues){this.attributeValues=attributeValues;this.statements=statements;this.productAccess=productAccess;this.catalogMapper=catalogMapper;this.listMapper=listMapper;this.historyMapper=historyMapper;this.snapshotMapper=snapshotMapper;this.completenessMapper=completenessMapper;this.records=records;this.access=access;this.tx=new TransactionTemplate(manager);this.migrationTx=new TransactionTemplate(manager);this.migrationTx.setTimeout(10);this.previewProof=previewProof;}
 
  /**
   * 商品分页；编码/名称分别筛选，未归档默认可见，真实total不以固定100条代替。
@@ -69,7 +83,7 @@ public final class ProductV1Service {
   */
  public Object list(VerifiedTenantContext c,String name,String code,String categoryId,String form,String status,boolean archived,int page,int size){return list(c,name,code,categoryId,form,status,archived,page,size,null,null);}
  public Object list(VerifiedTenantContext c,String name,String code,String categoryId,String form,String status,boolean archived,int page,int size,String configId,String filtersJson){
-  require(c,"read");return new com.appnexus.masterdata.adapter.jdbc.JdbcProductList(jdbc,json).list(c,name,code,categoryId,form,status,archived,page,size,configId,filtersJson);
+  require(c,"read");return new com.appnexus.masterdata.adapter.jdbc.MyBatisProductList(listMapper,json,productAccess).list(c,name,code,categoryId,form,status,archived,page,size,configId,filtersJson);
  }
  /** 保留内部调用入口的默认分页；HTTP参数由固定Controller声明。 */
  public Object list(VerifiedTenantContext c){return list(c,"","",null,null,null,false,1,20);}
@@ -86,9 +100,9 @@ public final class ProductV1Service {
  /** 固定版本字段目录，包含历史定义但不授予写权限。 */
  public Map<String,Object> configuration(VerifiedTenantContext c,String id){return catalogReads().configuration(c,id);}
  /** 组合公开读取用例与固定目录SQL，不在应用反向获取技术实现。 */
- private com.appnexus.masterdata.application.product.ProductCatalogQueryService catalogReads(){return new com.appnexus.masterdata.application.product.ProductCatalogQueryService(new com.appnexus.masterdata.adapter.jdbc.JdbcProductCatalogReads(jdbc),access);}
+ private com.appnexus.masterdata.application.product.ProductCatalogQueryService catalogReads(){return new com.appnexus.masterdata.application.product.ProductCatalogQueryService(new com.appnexus.masterdata.adapter.jdbc.MyBatisProductCatalogReads(catalogMapper),access);}
  /** 授权详情，包括固定配置、动态值、completionIssues与可信审计，不能以列表快照替代。 */
- public Map<String,Object> read(VerifiedTenantContext c,String id){require(c,"read");uuid(id);return snapshot(c,id);}
+ public Map<String,Object> read(VerifiedTenantContext c,String id){require(c,"read");uuid(id);authorizeRecord(c,id,"read",false);return snapshot(c,id);}
  /** 创建仅DRAFT；已填始终合法，缺必填不阻止草稿；返回数据库真实版本和完整性。 */
  public Map<String,Object> create(VerifiedTenantContext c,Input i){
   return mainData().create(c,i);
@@ -100,14 +114,14 @@ public final class ProductV1Service {
   return new com.appnexus.masterdata.application.product.ProductMainService(new com.appnexus.masterdata.application.product.ProductMainPort(){
    private Map<String,Object> before;
    @Override public <T>T atomic(java.util.function.Supplier<T> work){return write(work);}
-   @Override public void references(VerifiedTenantContext c,Input input){validateReferences(c,input.categoryId(),input.configId(),input.productForm(),input.unitId(),true);}
+   @Override public void references(VerifiedTenantContext c,Input input){productAccess.target(c,input.organizationId(),"create",true);validateReferences(c,input.categoryId(),input.configId(),input.productForm(),input.unitId(),true);}
    @Override public void insert(VerifiedTenantContext c,String id,Input input){
-    jdbc.update("INSERT INTO md_product_v1(id,tenant_id,code,name,short_name,category_id,category_config_id,product_form,base_unit_id,description,brand,origin_text,barcode,created_by,updated_by) VALUES(UUID_TO_BIN(?),UUID_TO_BIN(?),?,?,?,UUID_TO_BIN(?),UUID_TO_BIN(?),?,UUID_TO_BIN(?),?,?,?,?,UUID_TO_BIN(?),UUID_TO_BIN(?))",id,tenant(c),input.code().trim(),input.name().trim(),input.shortName(),input.categoryId(),input.configId(),input.productForm(),input.unitId(),input.description(),input.brand(),input.origin(),Objects.toString(input.barcode(),""),actor(c),actor(c));
+    statements.statement1(id,tenant(c),input.code().trim(),input.name().trim(),input.shortName(),input.categoryId(),input.configId(),input.productForm(),input.unitId(),input.description(),input.brand(),input.origin(),Objects.toString(input.barcode(),""),input.organizationId(),actor(c),actor(c));
    }
-   @Override public Map<String,Object> lock(VerifiedTenantContext c,String id,long version){before=locked(c,id,version);return before;}
+   @Override public Map<String,Object> lock(VerifiedTenantContext c,String id,long version){authorizeRecord(c,id,"update",true);before=locked(c,id,version);return before;}
    @Override public void unfrozen(VerifiedTenantContext c,String id){ensureNotInApproval(c,id);}
-   @Override public void updateFields(VerifiedTenantContext c,String id,Update input){
-    jdbc.update("UPDATE md_product_v1 SET name=?,short_name=?,description=?,brand=?,origin_text=?,barcode=COALESCE(?,barcode) WHERE tenant_id=UUID_TO_BIN(?) AND id=UUID_TO_BIN(?)",input.name().trim(),input.shortName(),input.description(),input.brand(),input.origin(),input.barcode(),tenant(c),id);
+   @Override public void updateFields(VerifiedTenantContext c,String id,Update input){productAccess.target(c,input.organizationId(),"update",false);
+    statements.statement2(input.name().trim(),input.shortName(),input.description(),input.brand(),input.origin(),input.barcode(),input.organizationId(),tenant(c),id);
    }
    @Override public void values(VerifiedTenantContext c,String id,String config,List<Value> values){saveValues(c,id,config,values);}
    @Override public List<String> completeness(VerifiedTenantContext c,String id){return refreshCompleteness(c,id);}
@@ -121,14 +135,14 @@ public final class ProductV1Service {
  public Map<String,Object> updateStatus(VerifiedTenantContext c,String id,Status input){
   var service=lifecycle();
   service.authorize(c,id,input==null?null:input.version(),input==null?null:input.status(),false);
-  return write(()->service.status(c,id,input.version(),input.status()));
+  return write(()->{authorizeRecord(c,id,"set_status",true);return service.status(c,id,input.version(),input.status());});
  }
  /** 人工归档/恢复仅DRAFT，保留编码和历史，不运行自动清理。
   * @param c 可信主体与租户 @param id 当前租户商品UUID @param input 原并发版本 @param archived 显式归档或恢复 @return 当前真实快照
   */
  public Map<String,Object> archive(VerifiedTenantContext c,String id,Version input,boolean archived){
   var service=lifecycle();service.authorize(c,id,input==null?null:input.version(),null,true);
-  return write(()->service.archive(c,id,input.version(),archived));
+  return write(()->{authorizeRecord(c,id,"manage_draft",true);return service.archive(c,id,input.version(),archived);});
  }
  /** 过渡输出适配；父锁和复杂快照协作者仍由原商品适配承担，禁止应用反向引用本类。 */
  private com.appnexus.masterdata.application.product.ProductLifecycleService lifecycle(){
@@ -140,7 +154,7 @@ public final class ProductV1Service {
    }
    @Override public void requireUnfrozen(VerifiedTenantContext context,String id){ensureNotInApproval(context,id);}
    @Override public void requireApproved(VerifiedTenantContext context,String id,long version){
-    var reviews=jdbc.queryForList("SELECT state,product_version FROM md_product_approval WHERE tenant_id=UUID_TO_BIN(?) AND product_id=UUID_TO_BIN(?) ORDER BY created_at DESC LIMIT 1",tenant(context),id);
+    var reviews=statements.statement3(tenant(context),id);
     if(!reviews.isEmpty()&&(!"APPROVED".equals(reviews.getFirst().get("state"))||((Number)reviews.getFirst().get("product_version")).longValue()!=version))throw problem("PRODUCT_APPROVAL_REQUIRED");
    }
    @Override public void requireComplete(VerifiedTenantContext context,String id){
@@ -148,10 +162,10 @@ public final class ProductV1Service {
     if(!refreshCompleteness(context,id).isEmpty())throw new MasterData.Rejection(400,"PRODUCT_COMPLETION_REQUIRED");
    }
    @Override public void status(VerifiedTenantContext context,String id,String target){
-    jdbc.update("UPDATE md_product_v1 SET status=? WHERE tenant_id=UUID_TO_BIN(?) AND id=UUID_TO_BIN(?)",target,tenant(context),id);
+    statements.statement4(target,tenant(context),id);
    }
    @Override public void archive(VerifiedTenantContext context,String id,boolean archived){
-    jdbc.update("UPDATE md_product_v1 SET draft_archived_at="+(archived?"CURRENT_TIMESTAMP(6)":"NULL")+" WHERE tenant_id=UUID_TO_BIN(?) AND id=UUID_TO_BIN(?)",tenant(context),id);
+    statements.archive(tenant(context),id,archived);
    }
    @Override public Map<String,Object> commit(VerifiedTenantContext context,String id,long version,String type){
     bump(context,id,version);event(context,id,type,before);return snapshot(context,id);
@@ -161,9 +175,9 @@ public final class ProductV1Service {
 
  /** 原读取权限内的追加历史；只读、分页，不提供任意表审计入口。 */
  public Object changes(VerifiedTenantContext c,String id,int page,int size){
-  require(c,"read");uuid(id);if(page<1||page>1000000||size<1||size>100)throw invalid();row(c,id,false);
-  var rows=jdbc.queryForList("SELECT BIN_TO_UUID(id) id,to_version version,event_type eventType,CAST(before_snapshot AS CHAR) beforeSnapshot,CAST(after_snapshot AS CHAR) afterSnapshot,schema_version schemaVersion,created_at createdAt,BIN_TO_UUID(created_by) createdBy FROM md_product_v1_change WHERE tenant_id=UUID_TO_BIN(?) AND product_id=UUID_TO_BIN(?) ORDER BY to_version DESC LIMIT ? OFFSET ?",tenant(c),id,size,(page-1)*size);
-  return Map.of("rows",rows,"total",jdbc.queryForObject("SELECT COUNT(*) FROM md_product_v1_change WHERE tenant_id=UUID_TO_BIN(?) AND product_id=UUID_TO_BIN(?)",Long.class,tenant(c),id));
+  require(c,"read");uuid(id);authorizeRecord(c,id,"read",false);if(page<1||page>1000000||size<1||size>100)throw invalid();row(c,id,false);
+  var tenantId=c.tenantId();var tenantBytes=java.nio.ByteBuffer.allocate(16).putLong(tenantId.getMostSignificantBits()).putLong(tenantId.getLeastSignificantBits()).array();
+  return Map.of("rows",historyMapper.list(tenantBytes,id,size,(page-1)*size),"total",historyMapper.count(tenantBytes,id));
  }
 
 
@@ -173,7 +187,7 @@ public final class ProductV1Service {
   * @return 源摘要、目标、完整性问题、退出项、签名及UTC到期点；不承诺执行必成功
   */
  public Map<String,Object> previewStructure(VerifiedTenantContext c,String id,Migration change){
-  require(c,"migrate_structure");require(c,"read");uuid(id);validateMigration(change);
+  require(c,"migrate_structure");require(c,"read");uuid(id);authorizeRecord(c,id,"read",false);authorizeRecord(c,id,"migrate_structure",false);validateMigration(change);
   var readOnly=new TransactionTemplate(tx.getTransactionManager());readOnly.setReadOnly(true);
   return readOnly.execute(status->{
    return new com.appnexus.masterdata.application.product.ProductPreviewService(new com.appnexus.masterdata.application.product.ProductPreviewPort(){
@@ -195,7 +209,7 @@ public final class ProductV1Service {
   * @throws MasterData.Rejection 异载荷同键/过期预览/源版本变化为409；错误值与未确认退出为拒绝
   */
  public Map<String,Object> migrateStructure(VerifiedTenantContext c,String id,MigrationCommand command,String key){
-  require(c,"migrate_structure");require(c,"read");uuid(id);uuid(key);
+  require(c,"migrate_structure");require(c,"read");uuid(id);authorizeRecord(c,id,"read",false);authorizeRecord(c,id,"migrate_structure",false);uuid(key);
   if(command==null||command.change()==null)throw invalid();Migration change=command.change();validateMigration(change);
   row(c,id,false);String digest=payloadDigest(change);
   var existing=requestResult(c,id,key,digest,false);if(existing!=null)return existing;
@@ -204,7 +218,7 @@ public final class ProductV1Service {
     var service=new com.appnexus.masterdata.application.product.ProductStructureService(new com.appnexus.masterdata.application.product.ProductStructurePort(){
      private Map<String,Object> before;
      @Override public Map<String,Object> replay(){
-      row(c,id,true);ensureNotInApproval(c,id);
+      authorizeRecord(c,id,"migrate_structure",true);row(c,id,true);ensureNotInApproval(c,id);
       return requestResult(c,id,key,digest,true);
      }
      @Override public Map<String,Object> source(){before=snapshot(c,id);return before;}
@@ -216,17 +230,15 @@ public final class ProductV1Service {
      @Override public Map<String,Object> apply(Migration target){
     // MySQL没有延迟外键；先撤旧值再改父配置，再写目标值，中间态仅存在于同一事务。
     var originalAudit=valueHistory(c,id);clearValues(c,id);
-    jdbc.update("UPDATE md_product_v1 SET category_id=UUID_TO_BIN(?),category_config_id=UUID_TO_BIN(?),product_form=?,base_unit_id=UUID_TO_BIN(?),structure_state='INCOMPLETE',structure_revision=structure_revision+1,legacy_specification_disposition=CASE WHEN legacy_enabled_snapshot IS NOT NULL THEN COALESCE(?,legacy_specification_disposition) ELSE legacy_specification_disposition END WHERE tenant_id=UUID_TO_BIN(?) AND id=UUID_TO_BIN(?)",
-     target.categoryId(),target.configId(),target.productForm(),target.unitId(),target.legacyDisposition(),tenant(c),id);
-    if(target.retiredSpecificationIds()!=null)for(String spec:target.retiredSpecificationIds())jdbc.update("UPDATE md_product_specification SET retired_at=CURRENT_TIMESTAMP(6),enabled=FALSE,version=version+1,updated_by=UUID_TO_BIN(?),updated_at=CURRENT_TIMESTAMP(6) WHERE tenant_id=UUID_TO_BIN(?) AND product_id=UUID_TO_BIN(?) AND id=UUID_TO_BIN(?) AND retired_at IS NULL",actor(c),tenant(c),id,spec);
-    if(target.specificationMode()!=null)jdbc.update("UPDATE md_product_v1 SET specification_mode=? WHERE tenant_id=UUID_TO_BIN(?) AND id=UUID_TO_BIN(?)",target.specificationMode(),tenant(c),id);
-    if(!"COMPOSITE".equals(target.productForm()))jdbc.update("UPDATE md_product_component SET enabled=FALSE,version=version+1,updated_by=UUID_TO_BIN(?),updated_at=CURRENT_TIMESTAMP(6) WHERE tenant_id=UUID_TO_BIN(?) AND product_id=UUID_TO_BIN(?) AND enabled=TRUE",actor(c),tenant(c),id);
+    statements.statement5(target.categoryId(),target.configId(),target.productForm(),target.unitId(),target.legacyDisposition(),tenant(c),id);
+    if(target.retiredSpecificationIds()!=null)for(String spec:target.retiredSpecificationIds())statements.statement6(actor(c),tenant(c),id,spec);
+    if(target.specificationMode()!=null)statements.statement7(target.specificationMode(),tenant(c),id);
+    if(!"COMPOSITE".equals(target.productForm()))statements.statement8(actor(c),tenant(c),id);
     saveValues(c,id,target.configId(),target.values(),originalAudit);refreshCompleteness(c,id);bump(c,id,target.sourceVersion());
     String eventId=event(c,id,"STRUCTURE",before,target.reason());
     long version=target.sourceVersion()+1,revision=target.sourceStructureRevision()+1;
     var result=new LinkedHashMap<String,Object>();result.put("productId",id);result.put("resultVersion",version);result.put("resultStructureRevision",revision);result.put("changeId",eventId);
-    jdbc.update("INSERT INTO md_product_structure_request(id,tenant_id,account_id,product_id,request_key,payload_digest,result_product_version,result_structure_revision,change_id,result_json,expires_at,created_by,updated_by) VALUES(UUID_TO_BIN(?),UUID_TO_BIN(?),UUID_TO_BIN(?),UUID_TO_BIN(?),UUID_TO_BIN(?),UNHEX(?),?,?,UUID_TO_BIN(?),?,TIMESTAMPADD(DAY,7,CURRENT_TIMESTAMP(6)),UUID_TO_BIN(?),UUID_TO_BIN(?))",
-     UUID.randomUUID().toString(),tenant(c),actor(c),id,key,digest,version,revision,eventId,json.writeValueAsString(result),actor(c),actor(c));
+    statements.statement9(UUID.randomUUID().toString(),tenant(c),actor(c),id,key,digest,version,revision,eventId,json.writeValueAsString(result),actor(c),actor(c));
     var completed=requestResult(c,id,key,digest,true);completed.put("replayed",false);return completed;
      }
     });
@@ -238,7 +250,7 @@ public final class ProductV1Service {
  }
 
  private Map<String,Object> requestResult(VerifiedTenantContext c,String id,String key,String digest,boolean lock){
-  var rows=jdbc.queryForList("SELECT HEX(payload_digest) digest,result_product_version version,result_structure_revision revision,BIN_TO_UUID(change_id) changeId,expires_at,expires_at>CURRENT_TIMESTAMP(6) valid FROM md_product_structure_request WHERE tenant_id=UUID_TO_BIN(?) AND account_id=UUID_TO_BIN(?) AND product_id=UUID_TO_BIN(?) AND operation_code='migrateStructure' AND request_key=UUID_TO_BIN(?)"+(lock?" FOR UPDATE":""),tenant(c),actor(c),id,key);
+  var rows=statements.replay(tenant(c),actor(c),id,key,lock);
   if(rows.isEmpty())return null;var record=rows.getFirst();
   if(!digest.equalsIgnoreCase((String)record.get("digest")))throw problem("PRODUCT_IDEMPOTENCY_KEY_REUSED");
   if(((Number)record.get("valid")).intValue()!=1)throw problem("PRODUCT_IDEMPOTENCY_WINDOW_EXPIRED");
@@ -268,10 +280,10 @@ public final class ProductV1Service {
   var result=new ArrayList<String>();
   if(change.categoryId()==null)result.add("categoryId");if(change.configId()==null)result.add("categoryConfigId");if(change.productForm()==null)result.add("productForm");
   boolean required=Set.of("PHYSICAL","COMPOSITE").contains(Objects.toString(change.productForm(),""));
-  if(change.configId()!=null)required|=Boolean.TRUE.equals(jdbc.queryForObject("SELECT service_unit_required FROM md_product_category_config WHERE tenant_id=UUID_TO_BIN(?) AND id=UUID_TO_BIN(?)",Boolean.class,tenant(c),change.configId()));
+  if(change.configId()!=null)required|=Boolean.TRUE.equals(statements.statement10(tenant(c),change.configId()));
   if(required&&change.unitId()==null)result.add("baseUnitId");
   var supplied=change.values().stream().map(Value::templateItemId).collect(java.util.stream.Collectors.toSet());
-  if(change.configId()!=null)for(String item:jdbc.queryForList("SELECT BIN_TO_UUID(i.id) FROM md_product_category_config_item ci JOIN md_product_template_item i ON i.tenant_id=ci.tenant_id AND i.id=ci.template_item_id WHERE ci.tenant_id=UUID_TO_BIN(?) AND ci.config_id=UUID_TO_BIN(?) AND ci.purpose<>'SPEC' AND i.required_flag=TRUE",String.class,tenant(c),change.configId()))if(!supplied.contains(item))result.add("attribute:"+item);
+  if(change.configId()!=null)for(String item:statements.statement11(tenant(c),change.configId()))if(!supplied.contains(item))result.add("attribute:"+item);
   return result;
  }
  @SuppressWarnings("unchecked")
@@ -290,9 +302,9 @@ public final class ProductV1Service {
  }
  private String binding(VerifiedTenantContext c,String id,Migration change){
   var admission=new TreeMap<String,Object>();
-  if(change.categoryId()!=null)admission.put("category",jdbc.queryForList("SELECT enabled,version FROM md_product_category WHERE tenant_id=UUID_TO_BIN(?) AND id=UUID_TO_BIN(?)",tenant(c),change.categoryId()));
-  if(change.configId()!=null)admission.put("templates",jdbc.queryForList("SELECT BIN_TO_UUID(v.id) id,v.state,t.enabled,t.version FROM md_product_category_template b JOIN md_product_template_version v ON v.tenant_id=b.tenant_id AND v.id=b.template_version_id JOIN md_product_template t ON t.tenant_id=v.tenant_id AND t.id=v.template_id WHERE b.tenant_id=UUID_TO_BIN(?) AND b.config_id=UUID_TO_BIN(?) ORDER BY v.id",tenant(c),change.configId()));
-  if(change.unitId()!=null)admission.put("unit",jdbc.queryForList("SELECT enabled,version FROM md_product_unit WHERE tenant_id=UUID_TO_BIN(?) AND id=UUID_TO_BIN(?)",tenant(c),change.unitId()));
+  if(change.categoryId()!=null)admission.put("category",statements.statement12(tenant(c),change.categoryId()));
+  if(change.configId()!=null)admission.put("templates",statements.statement13(tenant(c),change.configId()));
+  if(change.unitId()!=null)admission.put("unit",statements.statement14(tenant(c),change.unitId()));
   return hash("product-structure:v1:"+tenant(c)+":"+actor(c)+":"+id+":"+payloadDigest(change)+":"+json.writeValueAsString(admission));
  }
  private static String hash(String text){
@@ -300,8 +312,8 @@ public final class ProductV1Service {
   catch(java.security.NoSuchAlgorithmException impossible){throw new IllegalStateException(impossible);}
  }
  private void clearValues(VerifiedTenantContext c,String id){
-  jdbc.update("DELETE ch FROM md_product_v1_attribute_choice ch JOIN md_product_v1_attribute_value v ON v.tenant_id=ch.tenant_id AND v.id=ch.value_id WHERE ch.tenant_id=UUID_TO_BIN(?) AND v.product_id=UUID_TO_BIN(?)",tenant(c),id);
-  jdbc.update("DELETE FROM md_product_v1_attribute_value WHERE tenant_id=UUID_TO_BIN(?) AND product_id=UUID_TO_BIN(?)",tenant(c),id);
+  statements.statement15(tenant(c),id);
+  statements.statement16(tenant(c),id);
  }
  private static MasterData.Rejection problem(String code){return new MasterData.Rejection(409,code);}
 
@@ -315,13 +327,13 @@ public final class ProductV1Service {
  public record LegacyReview(String disposition,String reason,Long version){}
  /** 原读取权与结构迁移权双重校验，不能用普通编辑权改历史事实。 */
  public Map<String,Object> reviewLegacySpecification(VerifiedTenantContext c,String id,LegacyReview input){
-  require(c,"migrate_structure");require(c,"read");uuid(id);
+  require(c,"migrate_structure");require(c,"read");uuid(id);authorizeRecord(c,id,"read",false);authorizeRecord(c,id,"migrate_structure",false);
   if(input==null||input.version()==null||input.version()<0||input.disposition()==null||!Set.of("CONFIRMED_NONE","DEFERRED_SPEC").contains(input.disposition()))throw invalid();
   text(input.reason(),1000,true);
   return write(()->{
    var before=locked(c,id,input.version());ensureNotInApproval(c,id);
    if(before.get("legacyEnabled")==null||!"LEGACY_PENDING".equals(before.get("structureState")))throw problem("PRODUCT_LEGACY_REVIEW_NOT_APPLICABLE");
-   jdbc.update("UPDATE md_product_v1 SET legacy_specification_disposition=? WHERE tenant_id=UUID_TO_BIN(?) AND id=UUID_TO_BIN(?)",input.disposition(),tenant(c),id);
+   statements.statement17(input.disposition(),tenant(c),id);
    bump(c,id,input.version());event(c,id,"LEGACY_REVIEW",before,input.reason());return snapshot(c,id);
   });
  }
@@ -333,13 +345,13 @@ public final class ProductV1Service {
   * @return 完整原文/审计保留的LEGACY_PENDING档案；不是新模型启用验收
   */
  public Map<String,Object> stageLegacy(VerifiedTenantContext c,String id){
-  require(c,"stage_legacy");require(c,"read");uuid(id);
+  require(c,"stage_legacy");require(c,"read");productAccess.requireAll(c,"stage_legacy");uuid(id);
   return write(()->{
-   var source=jdbc.queryForList("SELECT BIN_TO_UUID(id) id FROM md_product WHERE tenant_id=UUID_TO_BIN(?) AND id=UUID_TO_BIN(?) FOR UPDATE",tenant(c),id);
+   var source=statements.statement18(tenant(c),id);
    if(source.isEmpty())throw changed();
-   if(jdbc.queryForObject("SELECT COUNT(*) FROM md_product_v1 WHERE tenant_id=UUID_TO_BIN(?) AND id=UUID_TO_BIN(?)",Integer.class,tenant(c),id)!=0)throw problem("PRODUCT_LEGACY_ALREADY_STAGED");
+   if(statements.statement19(tenant(c),id)!=0)throw problem("PRODUCT_LEGACY_ALREADY_STAGED");
    // 显式列出审计以绕过缺省填充，NULL原样保留；源version只作对账，不伪造旧change事件。
-   jdbc.update("INSERT INTO md_product_v1(id,tenant_id,code,name,barcode,status,structure_state,version,legacy_enabled_snapshot,legacy_specification_original,legacy_specification_disposition,legacy_unit_original,legacy_source_version,legacy_name_original,legacy_updated_by_original,legacy_updated_at_original,created_by,created_at,updated_by,updated_at) SELECT id,tenant_id,code,name,barcode,CASE WHEN enabled THEN 'ENABLED' ELSE 'DISABLED' END,'LEGACY_PENDING',version,enabled,specification,'UNREVIEWED',unit,version,name,updated_by,updated_at,created_by,created_at,updated_by,updated_at FROM md_product WHERE tenant_id=UUID_TO_BIN(?) AND id=UUID_TO_BIN(?)",tenant(c),id);
+   statements.statement20(tenant(c),id);
    return snapshot(c,id);
   });
  }
@@ -348,19 +360,19 @@ public final class ProductV1Service {
   * @return 每个旧商品missing/matched/sourceChanged及当前租户新增旧商品缺口；不自动覆盖已人工审查的数据
   */
  public Object reconcileLegacy(VerifiedTenantContext c,int page,int size){
-  require(c,"stage_legacy");require(c,"read");if(page<1||page>1000000||size<1||size>100)throw invalid();
-  var rows=jdbc.queryForList("SELECT BIN_TO_UUID(o.id) id,o.code,CASE WHEN p.id IS NULL THEN 'MISSING' WHEN p.legacy_source_version<>o.version OR NOT(BINARY p.code<=>BINARY o.code) OR NOT(BINARY p.legacy_name_original<=>BINARY o.name) OR NOT(BINARY p.barcode<=>BINARY o.barcode) OR NOT(BINARY p.legacy_specification_original<=>BINARY o.specification) OR NOT(BINARY p.legacy_unit_original<=>BINARY o.unit) OR NOT(p.legacy_enabled_snapshot<=>o.enabled) OR NOT(p.created_by<=>o.created_by) OR NOT(p.created_at<=>o.created_at) OR NOT(p.legacy_updated_by_original<=>o.updated_by) OR NOT(p.legacy_updated_at_original<=>o.updated_at) THEN 'SOURCE_CHANGED' ELSE 'MATCHED' END result FROM md_product o LEFT JOIN md_product_v1 p ON p.tenant_id=o.tenant_id AND p.id=o.id WHERE o.tenant_id=UUID_TO_BIN(?) ORDER BY o.code,o.id LIMIT ? OFFSET ?",tenant(c),size,(page-1)*size);
-  return Map.of("rows",rows,"total",jdbc.queryForObject("SELECT COUNT(*) FROM md_product WHERE tenant_id=UUID_TO_BIN(?)",Long.class,tenant(c)));
+  require(c,"stage_legacy");require(c,"read");productAccess.requireAll(c,"stage_legacy");if(page<1||page>1000000||size<1||size>100)throw invalid();
+  var rows=statements.statement21(tenant(c),size,(page-1)*size);
+  return Map.of("rows",rows,"total",statements.statement22(tenant(c)));
  }
 
  private Map<String,Object> row(VerifiedTenantContext c,String id,boolean lock){return records.load(c,id,lock);}
  private Map<String,Object> snapshot(VerifiedTenantContext c,String id){
-  return new com.appnexus.masterdata.adapter.jdbc.JdbcProductSnapshot(jdbc,records,this::issues).load(c,id);
+  return new com.appnexus.masterdata.adapter.jdbc.MyBatisProductSnapshot(snapshotMapper,records,this::issues).load(c,id);
  }
  private Map<String,Object> locked(VerifiedTenantContext c,String id,long version){if(version<0)throw invalid();var before=row(c,id,true);if(((Number)before.get("version")).longValue()!=version)throw changed();return snapshot(c,id);}
  private static void mutable(Map<String,Object> row){com.appnexus.masterdata.domain.product.ProductLifecycle.requireMutable(row.get("archivedAt")!=null,(String)row.get("structureState"));}
  /** 处理中快照冻结所有商品扩展和普通写；审批结果不会自动授予启用权限。 */
- void ensureNotInApproval(VerifiedTenantContext c,String id){if(jdbc.queryForObject("SELECT COUNT(*) FROM md_product_approval WHERE tenant_id=UUID_TO_BIN(?) AND product_id=UUID_TO_BIN(?) AND state='SUBMITTED'",Integer.class,tenant(c),id)>0)throw problem("PRODUCT_APPROVAL_IN_PROGRESS");}
+ void ensureNotInApproval(VerifiedTenantContext c,String id){if(statements.statement23(tenant(c),id)>0)throw problem("PRODUCT_APPROVAL_IN_PROGRESS");}
  private void bump(VerifiedTenantContext c,String id,long version){records.advance(c,id,version);}
  /** 审核提交在父锁下重验动态必填和组成版本，不能信任上次保存的完整性标记。 */
  void requireCompleteForApproval(VerifiedTenantContext c,String id){if(!issues(c,row(c,id,false)).isEmpty())throw new MasterData.Rejection(400,"PRODUCT_COMPLETION_REQUIRED");}
@@ -369,26 +381,26 @@ public final class ProductV1Service {
  /** 同父聚合事务追加扩展事件，失败必须与扩展正文及CAS一起回滚。 */
  void extensionEvent(VerifiedTenantContext c,String id,String type,Map<String,Object> before){refreshCompleteness(c,id);event(c,id,type,before);}
  private String event(VerifiedTenantContext c,String id,String type,Map<String,Object> before){return event(c,id,type,before,null);}
- private String event(VerifiedTenantContext c,String id,String type,Map<String,Object> before,String reason){return new com.appnexus.masterdata.adapter.jdbc.JdbcProductHistory(jdbc,json,this::snapshot).append(c,id,type,before,reason);}
+ private String event(VerifiedTenantContext c,String id,String type,Map<String,Object> before,String reason){return new com.appnexus.masterdata.adapter.jdbc.MyBatisProductHistory(historyMapper,json,this::snapshot).append(c,id,type,before,reason);}
  private void validateReferences(VerifiedTenantContext c,String category,String config,String form,String unit,boolean fresh){validateReferences(c,category,config,form,unit,fresh,true);}
- private void validateReferences(VerifiedTenantContext c,String category,String config,String form,String unit,boolean fresh,boolean locks){new com.appnexus.masterdata.adapter.jdbc.JdbcProductCatalogReads(jdbc).validate(c,category,config,form,unit,fresh,locks);}
- private List<String> issues(VerifiedTenantContext c,Map<String,Object> row){return new com.appnexus.masterdata.adapter.jdbc.JdbcProductCompleteness(jdbc,records).issues(c,row);}
- private List<String> refreshCompleteness(VerifiedTenantContext c,String id){return new com.appnexus.masterdata.adapter.jdbc.JdbcProductCompleteness(jdbc,records).refresh(c,id);}
- private com.appnexus.masterdata.adapter.jdbc.JdbcProductAttributes.ValueHistory valueHistory(VerifiedTenantContext c,String id){return new com.appnexus.masterdata.adapter.jdbc.JdbcProductAttributes(jdbc).history(c,id);}
+ private void validateReferences(VerifiedTenantContext c,String category,String config,String form,String unit,boolean fresh,boolean locks){new com.appnexus.masterdata.adapter.jdbc.MyBatisProductCatalogReads(catalogMapper).validate(c,category,config,form,unit,fresh,locks);}
+ private List<String> issues(VerifiedTenantContext c,Map<String,Object> row){return new com.appnexus.masterdata.adapter.jdbc.MyBatisProductCompleteness(completenessMapper,records).issues(c,row);}
+ private List<String> refreshCompleteness(VerifiedTenantContext c,String id){return new com.appnexus.masterdata.adapter.jdbc.MyBatisProductCompleteness(completenessMapper,records).refresh(c,id);}
+ private com.appnexus.masterdata.adapter.jdbc.MyBatisProductAttributes.ValueHistory valueHistory(VerifiedTenantContext c,String id){return new com.appnexus.masterdata.adapter.jdbc.MyBatisProductAttributes(attributeValues).history(c,id);}
  private void saveValues(VerifiedTenantContext c,String id,String config,List<Value> values){saveValues(c,id,config,values,null);}
- private void saveValues(VerifiedTenantContext c,String id,String config,List<Value> values,com.appnexus.masterdata.adapter.jdbc.JdbcProductAttributes.ValueHistory preserved){
+ private void saveValues(VerifiedTenantContext c,String id,String config,List<Value> values,com.appnexus.masterdata.adapter.jdbc.MyBatisProductAttributes.ValueHistory preserved){
   var prepared=prepareValues(c,config,values);
-  new com.appnexus.masterdata.adapter.jdbc.JdbcProductAttributes(jdbc).replace(c,id,config,prepared,preserved);
+  new com.appnexus.masterdata.adapter.jdbc.MyBatisProductAttributes(attributeValues).replace(c,id,config,prepared,preserved);
  }
 
  /** 类型化校验只读复用，预览不插入临时值或使用写后回滚模拟校验。 */
  private List<com.appnexus.masterdata.application.product.ProductAttributePreparation.PreparedValue> prepareValues(VerifiedTenantContext c,String config,List<Value> values){
   return new com.appnexus.masterdata.application.product.ProductAttributePreparation(new com.appnexus.masterdata.application.product.ProductAttributePreparationPort(){
    @Override public List<Map<String,Object>> definitions(VerifiedTenantContext context,String configuration,String item){
-   var definitions=jdbc.queryForList("SELECT BIN_TO_UUID(ci.attribute_revision_id) revision,r.data_type,r.numeric_scale,CAST(r.validation_json AS CHAR) validation,i.allow_custom FROM md_product_category_config_item ci JOIN md_product_template_item i ON i.tenant_id=ci.tenant_id AND i.id=ci.template_item_id JOIN md_product_attribute_revision r ON r.tenant_id=ci.tenant_id AND r.id=ci.attribute_revision_id WHERE ci.tenant_id=UUID_TO_BIN(?) AND ci.config_id=UUID_TO_BIN(?) AND ci.purpose<>'SPEC' AND ci.template_item_id=UUID_TO_BIN(?)",tenant(context),configuration,item);
+   var definitions=statements.statement24(tenant(context),configuration,item);
     return definitions;
    }
-   @Override public int optionCount(VerifiedTenantContext context,String revision,String option){return jdbc.queryForObject("SELECT COUNT(*) FROM md_product_attribute_option WHERE tenant_id=UUID_TO_BIN(?) AND revision_id=UUID_TO_BIN(?) AND id=UUID_TO_BIN(?) AND enabled=TRUE",Integer.class,tenant(context),revision,option);}
+   @Override public int optionCount(VerifiedTenantContext context,String revision,String option){return statements.statement25(tenant(context),revision,option);}
    @Override public void validateRule(String type,String validation,String value,int count){ProductAttributeRules.value(type,validation,value,count);}
   }).prepare(c,config,values);
  }
@@ -402,4 +414,9 @@ public final class ProductV1Service {
  private static String tenant(VerifiedTenantContext c){return c.tenantId().toString();}
  private static MasterData.Rejection invalid(){return new MasterData.Rejection(400,"PRODUCT_V1_INPUT_INVALID");}
  private static MasterData.Rejection changed(){return new MasterData.Rejection(409,"PRODUCT_V1_CHANGED");}
+
+ /** 所有商品扩展读取正文前使用当前真实操作，写用例在原事务锁定授权父行。 */
+ void authorizeRecord(VerifiedTenantContext c,String id,String action,boolean lock){productAccess.authorize(c,id,action,lock);}
+ /** @param c 可信主体 @param action create/update独立准入 @return 处于对应范围内的启用组织候选 */
+ public Object organizations(VerifiedTenantContext c,String action){return productAccess.organizations(c,action);}
 }

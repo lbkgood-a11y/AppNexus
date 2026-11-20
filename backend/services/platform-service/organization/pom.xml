@@ -1,4 +1,7 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"><modelVersion>4.0.0</modelVersion><parent><groupId>com.appnexus</groupId><artifactId>platform-service</artifactId><version>0.1.0-SNAPSHOT</version></parent><artifactId>platform-organization</artifactId><dependencies>
+<!-- 人员固定Mapper使用中立SQL范围元数据，不依赖平台存储实现。 -->
+<dependency><groupId>com.appnexus</groupId><artifactId>mybatis-scope</artifactId><version>${project.version}</version></dependency>
+<dependency><groupId>org.mybatis.spring.boot</groupId><artifactId>mybatis-spring-boot-starter</artifactId><version>${mybatis-spring-boot.version}</version></dependency>
 <!-- 字典选项与引用通过配置公开契约读取，禁止跨模块读取字典表。 -->
 <dependency><groupId>com.appnexus</groupId><artifactId>platform-configuration</artifactId><version>${project.version}</version></dependency>
 <!-- 人员与组织合并：业务实现依赖公开租户、操作和宿主事务，不依赖其他主数据服务。 -->

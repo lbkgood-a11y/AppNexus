@@ -9,7 +9,7 @@ import org.springframework.core.annotation.Order;
 import org.springframework.http.*;
 import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.http.server.*;
-import org.springframework.jdbc.core.JdbcTemplate;
+
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.servlet.HandlerMapping;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyAdvice;
@@ -22,11 +22,11 @@ import tools.jackson.databind.json.JsonMapper;
 @Order(100)
 @RestControllerAdvice
 public final class RecordAuditResponseAdvice implements ResponseBodyAdvice<Object> {
-    private final JdbcTemplate jdbc;
+    private final com.appnexus.platform.persistence.AuditProjectionMapper mapper;
     private final HttpServletRequest request;
     private final JsonMapper json=JsonMapper.builder().build();
-    /** @param jdbc 已统一装配的数据源 @param request 仅读取安全链上下文及受控路由变量 */
-    public RecordAuditResponseAdvice(JdbcTemplate jdbc,HttpServletRequest request){this.jdbc=jdbc;this.request=request;}
+    /** @param mapper 已统一装配的数据源 @param request 仅读取安全链上下文及受控路由变量 */
+    public RecordAuditResponseAdvice(com.appnexus.platform.persistence.AuditProjectionMapper mapper,HttpServletRequest request){this.mapper=mapper;this.request=request;}
     @Override public boolean supports(MethodParameter method,Class<? extends HttpMessageConverter<?>> converter){return method.hasMethodAnnotation(RecordAuditSource.class);}
     @Override public Object beforeBodyWrite(Object body,MethodParameter method,MediaType type,Class<? extends HttpMessageConverter<?>> converter,ServerHttpRequest source,ServerHttpResponse response){
         var declaration=method.getMethodAnnotation(RecordAuditSource.class);
@@ -51,15 +51,11 @@ public final class RecordAuditResponseAdvice implements ResponseBodyAdvice<Objec
         // 每批最多 200 条，适配完整树而不生成无限 IN 参数；只返回最小审计元数据。
         for(int offset=0;offset<ids.size();offset+=200){
             var batch=ids.subList(offset,Math.min(ids.size(),offset+200));
-            var args=new ArrayList<Object>();if(tenant!=null)args.add(tenant);args.addAll(batch);
-            String key=declaration.binaryKey()?"BIN_TO_UUID("+declaration.key()+")":declaration.key();
-            String where=tenant==null?"":"tenant_id="+(declaration.binaryTenant()?"UUID_TO_BIN(?)":"?")+" AND ";
-            String placeholders=String.join(",",Collections.nCopies(batch.size(),declaration.binaryKey()?"UUID_TO_BIN(?)":"?"));
-            jdbc.query("SELECT "+key+" audit_id,BIN_TO_UUID(created_by) creator,created_at,BIN_TO_UUID(updated_by) updater,updated_at FROM "+declaration.table()+" WHERE "+where+declaration.key()+" IN ("+placeholders+")",rs->{
-                var audit=new LinkedHashMap<String,Object>();audit.put("createdBy",rs.getString("creator"));audit.put("updatedBy",rs.getString("updater"));
-                for(String field:List.of("created_at","updated_at")){var timestamp=rs.getTimestamp(field);audit.put(field.equals("created_at")?"createdAt":"updatedAt",timestamp==null?null:timestamp.toInstant().toString());}
-                audits.put(rs.getString("audit_id").toLowerCase(Locale.ROOT),audit);
-            },args.toArray());
+            for(var raw:mapper.read(declaration,tenant,batch)){
+                var audit=new LinkedHashMap<String,Object>();audit.put("createdBy",raw.get("creator"));audit.put("updatedBy",raw.get("updater"));
+                for(String field:List.of("created_at","updated_at")){Object timestamp=raw.get(field);audit.put(field.equals("created_at")?"createdAt":"updatedAt",timestamp==null?null:((java.sql.Timestamp)timestamp).toInstant().toString());}
+                audits.put(((String)raw.get("audit_id")).toLowerCase(Locale.ROOT),audit);
+            }
         }
         rows.forEach(row->{Object id=identifier(row,declaration.id());if(id!=null){var audit=audits.get(id.toString().toLowerCase(Locale.ROOT));if(audit!=null)row.put("audit",audit);}});
         response.getHeaders().setCacheControl(CacheControl.noStore());

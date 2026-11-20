@@ -1,0 +1,1 @@
+import{On as e,k as t,mt as n,v as r}from"./runtime-core.esm-bundler-BWKH3opg.js";import{t as i}from"./Administration-CiB6Of06.js";import{t as a}from"./administration-CmLUOgGI.js";import{r as o}from"./http-A7lxFL0x.js";var s=t({__name:`users`,setup(t){return(t,s)=>(n(),r(e(i),{section:`users`,api:e(a),"error-text":e(o)},null,8,[`api`,`error-text`]))}});export{s as default};

@@ -1,0 +1,280 @@
+frontend/modules\authorization\src\AuthorizationCenter.vue:263:.role-heading{display:flex;align-items:center;justify-content:space-between;gap:8px;min-width:0}
+frontend/modules\authorization\src\AuthorizationCenter.vue:266:.authorization-content.is-role-editor{display:flex;flex:1;flex-direction:column;min-height:0;overflow:hidden}
+frontend/modules\authorization\src\AuthorizationCenter.vue:269:.is-role-editor .authorization-grid{flex:1;min-height:0;overflow:hidden}
+frontend/modules\authorization\src\AuthorizationCenter.vue:270:.is-role-editor .permission-pane{flex:1;min-height:0;overflow:auto}
+frontend/modules\authorization\src\AuthorizationCenter.vue:274:.is-field-editor .field-policy-table{flex:1;min-height:180px}
+frontend/modules\authorization\src\AuthorizationCenter.vue:275:.summary-actions{display:flex;align-items:center;flex-wrap:wrap;gap:8px 16px}
+frontend/modules\authorization\src\AuthorizationCenter.vue:277:.authorization-content.is-role-users{display:flex;flex:1;flex-direction:column;min-height:0}
+frontend/modules\authorization\src\AuthorizationCenter.vue:281:.role-browser{display:flex;flex:1;flex-direction:column;gap:12px;min-width:0;min-height:0;overflow:hidden}
+frontend/modules\authorization\src\AuthorizationCenter.vue:283:.role-list-scroll{flex:1;min-height:0;overflow:auto}
+frontend/modules\authorization\src\AuthorizationCenter.vue:285:.role-node{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;width:100%;height:auto;min-height:48px;padding:6px 8px;margin:0;overflow:hidden}
+frontend/modules\authorization\src\AuthorizationCenter.vue:288:.role-browser :deep(.el-tree-node__content){height:auto;min-height:48px}
+frontend/modules\authorization\src\AuthorizationCenter.vue:294:.authorization-pane{min-width:0;padding:var(--app-content-padding,12px);background:var(--el-bg-color)}
+frontend/modules\authorization\src\AuthorizationCenter.vue:296:h2{font-size:var(--el-font-size-medium);margin:0;font-weight:600}
+frontend/modules\authorization\src\AuthorizationCenter.vue:297:.role-context{display:flex;align-items:center;justify-content:space-between;gap:24px;background:var(--el-fill-color-lighter)}
+frontend/modules\authorization\src\AuthorizationCenter.vue:298:.role-context-label{display:flex;flex-direction:column;gap:6px;min-width:0}
+frontend/modules\authorization\src\AuthorizationCenter.vue:301:.editor-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:var(--app-section-gap,8px)}
+frontend/modules\authorization\src\AuthorizationCenter.vue:302:.permission-filter{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;padding:4px 8px;background:var(--el-fill-color-lighter);margin-bottom:4px;border-radius:var(--el-border-radius-base)}
+frontend/modules\authorization\src\AuthorizationCenter.vue:303:.permission-filter .el-form-item{margin:0;flex:1;max-width:520px;min-width:200px}
+frontend/modules\authorization\src\AuthorizationCenter.vue:305:.permission-group-heading{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px 16px;padding:4px 12px;background:var(--el-fill-color-lighter)}
+frontend/modules\authorization\src\AuthorizationCenter.vue:306:.permission-group h3{margin:0;font-size:14px;font-weight:600;overflow-wrap:anywhere;color:var(--el-text-color-regular)}
+frontend/modules\authorization\src\AuthorizationCenter.vue:307:.permission-items{padding:0 16px}
+frontend/modules\authorization\src\AuthorizationCenter.vue:309:.permission-items-functions{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0 16px}
+frontend/modules\authorization\src\AuthorizationCenter.vue:310:.permission-row{display:grid;grid-template-columns:minmax(180px,1fr) minmax(160px,1fr) minmax(180px,1.5fr);gap:16px;align-items:center;padding:12px 0;border-bottom:1px solid var(--el-border-color-lighter)}
+frontend/modules\authorization\src\AuthorizationCenter.vue:315:.permission-row.function-row{grid-template-columns:1fr;padding:4px 0}
+frontend/modules\authorization\src\AuthorizationCenter.vue:316:.permission-row :deep(.el-checkbox){max-width:100%;height:auto;min-height:40px;align-items:flex-start}
+frontend/modules\authorization\src\AuthorizationCenter.vue:318:.permission-row :deep(.el-checkbox__label){display:flex;flex-direction:column;gap:4px;white-space:normal;overflow-wrap:anywhere}
+frontend/modules\authorization\src\AuthorizationCenter.vue:321:.field-filter{display:flex;flex-wrap:wrap;gap:12px;padding:8px;background:var(--el-fill-color-lighter);margin:8px 0;border-radius:var(--el-border-radius-base)}
+frontend/modules\authorization\src\AuthorizationCenter.vue:325:.summary-pane{display:flex;flex-direction:column;gap:8px}
+frontend/modules\authorization\src\AuthorizationCenter.vue:326:.save-summary{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:0}
+frontend/modules\authorization\src\AuthorizationCenter.vue:328:.save-form{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;align-items:end}
+frontend/modules\authorization\src\AuthorizationCenter.vue:335:@media(max-width:700px){.authorization-content.is-role-editor{overflow:auto}.is-role-editor .authorization-grid{flex:none;overflow:visible}.is-role-editor .permission-pane,.is-field-editor .permission-pane{flex:none;overflow:visible}.is-field-editor .field-policy-table{flex:none;min-height:260px}.summary-actions{align-items:stretch;flex-direction:column}.authorization-pane{padding:var(--app-content-padding,12px)}.role-context{align-items:stretch;flex-direction:column;gap:12px}.role-context>.el-select{width:100%}.permission-items-functions{grid-template-columns:1fr}.permission-group-heading{align-items:flex-start;flex-direction:column}.permission-filter{align-items:stretch;flex-direction:column}.permission-filter .el-form-item{max-width:none;min-width:0}.permission-row{grid-template-columns:1fr}.permission-row>.el-select:last-child{grid-column:auto}.save-form{grid-template-columns:1fr}.save-button{width:100%}.field-filter{flex-direction:column}.field-filter .el-form-item{min-width:0}:deep(.el-button){min-height:44px}}
+frontend/modules\business-object\src\BusinessObjectManagement.vue:202:.business-object-search{margin-left:auto;display:flex;gap:8px} .el-form--inline{display:flex;flex-wrap:wrap} .el-pagination{justify-content:flex-end;margin-top:16px}
+frontend/modules\business-object\src\BusinessObjectManagement.vue:203:.business-object-binding{margin-top:16px;padding:var(--app-content-padding,12px);border:1px solid var(--el-border-color);border-radius:var(--el-border-radius-base)}
+frontend/modules\business-object\src\BusinessObjectManagement.vue:204:.business-object-condition{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}.business-object-condition>*{flex:1;min-width:100px}.el-descriptions{margin-bottom:var(--app-section-gap,8px)}
+frontend/modules\business-object\src\BusinessObjectManagement.vue:206:.object-contract-sections{display:flex;flex-direction:column;gap:8px}
+frontend/modules\business-object\src\BusinessObjectManagement.vue:208:.object-contract-section :deep(.el-card__header){padding:8px 12px;border-bottom:0}
+frontend/modules\business-object\src\BusinessObjectManagement.vue:209:.object-contract-section :deep(.el-card__body){padding:0 12px 8px}
+frontend/modules\business-object\src\BusinessObjectManagement.vue:210:.object-contract-section h3{display:flex;align-items:center;gap:8px;margin:0;font-size:var(--el-font-size-medium);font-weight:600}
+frontend/modules\business-object\src\BusinessObjectManagement.vue:211:.object-contract-section .el-descriptions{margin:0}
+frontend/modules\business-object\src\BusinessObjectManagement.vue:213:.object-grant-form{display:flex;align-items:flex-end;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+frontend/modules\business-object\src\BusinessObjectManagement.vue:214:.object-grant-form .el-form-item{flex:1;min-width:200px;margin:0}
+frontend/modules\business-object\src\BusinessObjectManagement.vue:217:.object-contract-section :deep(.el-descriptions__cell){padding:6px 10px!important}
+frontend/modules\business-object\src\BusinessObjectManagement.vue:219:.object-contract-section h3::before{content:"";width:3px;height:16px;background:var(--el-color-primary);border-radius:var(--el-border-radius-small)}
+frontend/modules\business-object\src\BusinessObjectManagement.vue:220:@media(max-width:700px){.object-contract-section :deep(.el-card__header){padding:8px 12px}.object-contract-section :deep(.el-card__body){padding:0 12px 8px}.object-grant-form>.el-button{min-height:44px}}
+frontend/modules\business-object\src\CodingConfiguration.vue:60:.encoder-tools{display:flex;align-items:center;gap:var(--app-section-gap,8px);flex-wrap:wrap;margin-block:var(--app-section-gap,8px)}
+frontend/modules\business-object\src\CodingConfiguration.vue:61:.encoder-fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:var(--app-section-gap,8px)}
+frontend/modules\business-object\src\CodingConfiguration.vue:62:.encoder-segment{display:flex;align-items:center;gap:var(--app-section-gap,8px);flex-wrap:wrap}.encoder-segment>.el-form-item{flex:1;min-width:160px}
+frontend/modules\authorization\src\DataGrantRuleEditor.vue:48:.grant-rules{width:100%;min-width:0;display:flex;flex-direction:column;gap:8px}
+frontend/modules\authorization\src\DataGrantRuleEditor.vue:49:.grant-heading{display:flex;align-items:center;justify-content:space-between;gap:8px}
+frontend/modules\authorization\src\DataGrantRuleEditor.vue:50:.grant-rule{padding:8px;border:1px solid var(--el-border-color);border-radius:var(--el-border-radius-base);display:flex;flex-direction:column;gap:8px}
+frontend/modules\authorization\src\DataGrantRuleEditor.vue:52:.grant-condition{display:grid;grid-template-columns:minmax(100px,1fr) 100px minmax(120px,2fr) auto;gap:8px;align-items:start}
+frontend/modules\authorization\src\MemberGrantEditor.vue:127:.member-grant-editor{display:flex;flex-direction:column;flex:1;min-height:0;padding:var(--app-content-padding,8px);min-width:0;overflow:auto}
+frontend/modules\authorization\src\MemberGrantEditor.vue:128:.member-grant-form{flex:1;min-height:0;display:flex;flex-direction:column;gap:var(--app-section-gap,8px);min-width:0}
+frontend/modules\authorization\src\MemberGrantEditor.vue:130:.member-body{display:grid;grid-template-columns:var(--app-category-width,220px) minmax(0,1fr);flex:1;min-height:0;gap:var(--app-section-gap,8px)}
+frontend/modules\authorization\src\MemberGrantEditor.vue:131:.member-users{display:flex;flex-direction:column;gap:8px;min-height:0;min-width:0;padding-right:8px;border-right:1px solid var(--el-border-color-lighter)}
+frontend/modules\authorization\src\MemberGrantEditor.vue:132:.member-users-heading{display:flex;align-items:center;gap:8px;min-height:32px}
+frontend/modules\authorization\src\MemberGrantEditor.vue:133:.member-users-list{flex:1;min-height:0;overflow:auto}
+frontend/modules\authorization\src\MemberGrantEditor.vue:134:.member-users-list>.el-button{display:flex;justify-content:flex-start;width:100%;min-height:40px;margin:0;overflow:hidden}
+frontend/modules\authorization\src\MemberGrantEditor.vue:138:.member-detail{display:flex;flex-direction:column;gap:8px;min-height:0;min-width:0;overflow:hidden}
+frontend/modules\authorization\src\MemberGrantEditor.vue:139:.member-context .el-form-item,.member-submit .el-form-item{margin:0}
+frontend/modules\authorization\src\MemberGrantEditor.vue:142:.member-operations{flex:1;min-height:0;overflow:auto;min-width:0}
+frontend/modules\authorization\src\MemberGrantEditor.vue:143:.member-scope-settings{align-content:start;flex:1;min-height:0;overflow:auto;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 12px;min-width:0}
+frontend/modules\authorization\src\MemberGrantEditor.vue:145:.member-scope-settings>.member-reason{display:flex;align-items:center;margin:0;padding:8px;background:var(--el-fill-color-lighter)}
+frontend/modules\authorization\src\MemberGrantEditor.vue:146:.member-scope-row{margin:0;padding:8px;border:1px solid var(--el-border-color-lighter);border-radius:var(--el-border-radius-base)}
+frontend/modules\authorization\src\MemberGrantEditor.vue:147:.scope-inputs{display:flex;flex-direction:column;gap:8px;width:100%}
+frontend/modules\authorization\src\MemberGrantEditor.vue:150:.member-role-context{display:flex;align-items:center;gap:12px;color:var(--el-text-color-secondary)}
+frontend/modules\authorization\src\MemberGrantEditor.vue:152:.member-submit{flex:none;margin-top:auto;display:grid;grid-template-columns:minmax(0,1fr) 240px auto;gap:4px 12px;align-items:center;padding-top:4px;border-top:1px solid var(--el-border-color-lighter)}
+frontend/modules\authorization\src\MemberGrantEditor.vue:158:.member-submit>.member-reason :deep(.el-textarea__inner){min-height:36px}
+frontend/modules\authorization\src\MemberGrantEditor.vue:159:.member-submit-heading h2{font-size:var(--el-font-size-medium);margin:0}
+frontend/modules\authorization\src\MemberGrantEditor.vue:164:@media(max-width:700px){.member-body{grid-template-columns:1fr;flex:none}.member-users{max-height:260px;padding-right:0;border-right:0;border-bottom:1px solid var(--el-border-color-lighter)}.member-detail{overflow:visible}.member-users-list>.el-button{min-height:44px}.member-submit{grid-template-columns:minmax(0,1fr) auto;gap:8px}.member-submit-expiry{grid-column:1;grid-row:2}.member-submit-heading>.el-button{grid-column:2;grid-row:2}.member-submit>.member-reason{grid-row:3}.member-context{grid-template-columns:1fr}.member-grant-form{min-height:auto}.member-scope-settings,.member-operations{flex:none;overflow:visible}.member-submit-heading>.el-button{min-height:44px}.member-scope-settings>.member-reason{align-items:flex-start}}
+frontend/modules\master-data\src\PartnerEditor.vue:98:     <el-card v-for="group in groups" :key="group.key" shadow="never" class="detail-section" :body-style="group.key==='additional'&&!expanded?{padding:'0'}:undefined">
+frontend/modules\configuration\src\VxeDictionaryTable.vue:136:.dictionary-fullscreen-dialog .el-dialog__body{height:100%;padding:0}
+frontend/modules\configuration\src\VxeDictionaryTable.vue:137:.dictionary-fullscreen-host{height:100%;min-height:0}
+frontend/modules\configuration\src\VxeDictionaryTable.vue:140:.dictionary-grid-fullscreen{height:100%;box-sizing:border-box}
+frontend/modules\configuration\src\VxeDictionaryTable.vue:141:.management-table-tools{display:flex;align-items:center;gap:4px}
+frontend/modules\configuration\src\VxeDictionaryTable.vue:142:.management-table-tools :deep(.el-button){width:32px;height:32px;padding:0}
+frontend/modules\configuration\src\VxeDictionaryTable.vue:143:.management-column-heading,.management-column-row{display:flex;align-items:center;gap:6px}
+frontend/modules\configuration\src\VxeDictionaryTable.vue:145:.management-column-row .el-checkbox{flex:1;min-width:0;margin:0}
+frontend/modules\configuration\src\VxeDictionaryTable.vue:147:.management-column-row .el-button{padding:4px;margin:0}
+frontend/modules\configuration\src\VxeDictionaryTable.vue:150:.dictionary-grid{display:flex;flex-direction:column;min-height:0;overflow:hidden}
+frontend/modules\configuration\src\VxeDictionaryTable.vue:152:.dictionary-grid-viewport{position:relative;flex:1;min-height:0;overflow:hidden}
+frontend/modules\configuration\src\VxeDictionaryTable.vue:153:.dictionary-grid-viewport > :deep(.vxe-table){position:absolute;inset:0;width:100%;height:100%}
+frontend/modules\configuration\src\VxeDictionaryTable.vue:163:.dictionary-grid-toolbar,.dictionary-grid-heading,.dictionary-grid-actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+frontend/modules\configuration\src\VxeDictionaryTable.vue:165:.dictionary-grid-heading h2{margin:0;font-size:14px;font-weight:600}
+frontend/modules\configuration\src\VxeDictionaryTable.vue:167:@media(max-width:600px){.dictionary-grid-actions{width:100%}.dictionary-grid-actions :deep(.el-button){min-height:44px}}
+frontend/modules\configuration\src\VxeDictionaryTable.vue:176:.dictionary-grid{padding:12px;border:1px solid var(--el-border-color-lighter);border-radius:var(--app-card-radius, 8px);background:var(--el-bg-color)}
+frontend/modules\configuration\src\VxeDictionaryTable.vue:182:@media(max-width:600px){.dictionary-grid-pagination :deep(.el-pager li),.dictionary-grid-pagination :deep(.btn-prev),.dictionary-grid-pagination :deep(.btn-next){min-width:44px;height:44px}}
+frontend/modules\configuration\src\VxeDictionaryTable.vue:185:.dictionary-grid.is-embedded { padding:0; border:0; border-radius:0; }
+frontend/modules\authorization\src\SubjectAuthorization.vue:152:.subject-workspace { min-height:0; height:100%; display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(320px, 1fr); align-items: stretch; overflow:hidden; }
+frontend/modules\authorization\src\SubjectAuthorization.vue:153:.subject-directory { min-width: 0; min-height:0; display:flex; flex-direction:column; overflow:hidden; }
+frontend/modules\authorization\src\SubjectAuthorization.vue:154:.subject-search { display: flex; flex-wrap: wrap; gap: 12px; padding:var(--app-content-padding,12px); background: var(--el-fill-color-lighter); border-bottom: 1px solid var(--el-border-color-lighter); }
+frontend/modules\authorization\src\SubjectAuthorization.vue:157:.subject-editor { display:flex; flex-direction:column; gap:var(--app-section-gap,8px); min-width: 0; min-height:0; overflow:hidden; padding:var(--app-content-padding,12px); border-left: 1px solid var(--el-border-color); }
+frontend/modules\authorization\src\SubjectAuthorization.vue:158:.subject-editor h2 { font-size: 16px; margin: 0 0 20px; }
+frontend/modules\authorization\src\SubjectAuthorization.vue:160:.subject-directory>:deep(.management-table){flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden}
+frontend/modules\authorization\src\SubjectAuthorization.vue:161:.subject-directory :deep(.management-table-surface),.subject-directory :deep(.management-table-surface>.el-card__body){display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden}
+frontend/modules\authorization\src\SubjectAuthorization.vue:162:.subject-directory :deep(.management-table-region){flex:1;min-height:0;overflow:auto}
+frontend/modules\authorization\src\SubjectAuthorization.vue:164:.subject-role-panel{flex:none;max-height:55%;overflow:auto;border-bottom:1px solid var(--el-border-color-lighter)}
+frontend/modules\authorization\src\SubjectAuthorization.vue:165:.subject-role-heading{display:flex;align-items:center;justify-content:space-between;gap:8px}
+frontend/modules\authorization\src\SubjectAuthorization.vue:166:.subject-role-heading h2{margin:0}
+frontend/modules\authorization\src\SubjectAuthorization.vue:167:.subject-analysis{display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden}
+frontend/modules\authorization\src\SubjectAuthorization.vue:169:.subject-analysis-scroll{flex:1;min-height:0;overflow:auto}
+frontend/modules\authorization\src\SubjectAuthorization.vue:170:.subject-editor h2.explanation-heading{margin:0 0 20px}
+frontend/modules\authorization\src\SubjectAuthorization.vue:173:.permission-source { display: flex; flex-wrap: wrap; gap: 8px 16px; padding: 8px 0; color: var(--el-text-color-regular); }
+frontend/modules\authorization\src\SubjectAuthorization.vue:176:.subject-search { padding: 12px; } .subject-search :deep(.el-input) { width: 100%; } .subject-editor :deep(.el-button) { min-height: 44px; } }
+frontend/modules\authorization\src\PolicyTemplateActions.vue:66:.template-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; min-width: 0; }
+frontend/modules\authorization\src\PolicyTemplateActions.vue:67:.template-actions h3 { display: flex; align-items: center; gap: 4px; font-size: var(--el-font-size-base); font-weight: 500; margin: 0; }
+frontend/modules\authorization\src\PolicyTemplateActions.vue:68:.template-forms { display: flex; flex-wrap: wrap; gap: 8px 16px; min-width: 0; }
+frontend/modules\authorization\src\PolicyTemplateActions.vue:69:.template-forms .el-form { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; min-width: 0; }
+frontend/modules\authorization\src\PolicyTemplateActions.vue:70:.template-forms .el-form-item { margin: 0; min-width: 0; }
+frontend/modules\authorization\src\PolicyTemplateActions.vue:76:  .template-forms :deep(.el-button) { min-height: 44px; }
+frontend/modules\organization\src\Management.vue:253:.organization-management :deep(.tree-list-template__tree-header) { padding: 6px 8px; min-height: 44px; }
+frontend/modules\organization\src\Management.vue:254:.organization-management :deep(.tree-list-template__tree) { padding: 6px; }
+frontend/modules\organization\src\Management.vue:257:.organization-management :deep(.el-tree-node__content) { min-height: 36px; border-radius: var(--el-border-radius-small); font-size: 13px; }
+frontend/modules\organization\src\Management.vue:259:.organization-detail { gap: var(--app-section-gap, 12px); }
+frontend/modules\organization\src\Management.vue:263:.organization-management :deep(.business-workspace__data) { padding: 0; }
+frontend/modules\organization\src\Management.vue:265:.organization-management, .organization-list-view, .organization-detail { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+frontend/modules\organization\src\Management.vue:268:.organization-detail > .management-table { flex: 1 0 260px; min-height: 260px; }
+frontend/modules\organization\src\Management.vue:271:.organization-tree-controls { display: grid; gap: 8px; margin-bottom: 12px; }
+frontend/modules\organization\src\Management.vue:272:.organization-tree-node { display: flex; min-width: 0; width: 100%; align-items: center; justify-content: space-between; gap: 8px; }
+frontend/modules\organization\src\Management.vue:275:.organization-unit-header { justify-content: space-between; gap: 20px; }
+frontend/modules\organization\src\Management.vue:276:.organization-unit-heading { min-width: 0; gap: 10px; }
+frontend/modules\organization\src\Management.vue:277:.organization-unit-heading h2 { margin: 0; font-size: var(--el-font-size-large); }
+frontend/modules\organization\src\Management.vue:278:.organization-unit-heading p { margin: 4px 0 0; color: var(--el-text-color-secondary); font-size: var(--el-font-size-small); }
+frontend/modules\organization\src\Management.vue:279:.organization-unit-actions { flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+frontend/modules\organization\src\Management.vue:283:.organization-list-view { min-width: 0; padding:var(--app-content-padding,12px); }
+frontend/modules\organization\src\Management.vue:284:.organization-filter { display: flex; justify-content: flex-end; gap: 12px; margin-bottom:var(--app-section-gap,8px); padding:var(--app-content-padding,12px); border: 1px solid var(--el-border-color-lighter); border-radius: var(--el-border-radius-base); background: var(--el-fill-color-extra-light); }
+frontend/modules\organization\src\Management.vue:287:.relation-direction { gap: 6px; color: var(--el-text-color-secondary); }
+frontend/modules\organization\src\Management.vue:296:  .organization-list-view { padding:var(--app-content-padding,12px); }
+frontend/modules\configuration\src\FeatureCatalog.vue:119:.feature-navigation{display:flex;align-items:center;gap:12px}
+frontend/modules\configuration\src\FeatureCatalog.vue:121:.feature-help-button{flex:none;width:32px;height:32px;padding:0;color:var(--el-text-color-secondary)}
+frontend/modules\configuration\src\FeatureCatalog.vue:122:.feature-help-content{margin:0;line-height:1.7;color:var(--el-text-color-regular);font-size:13px}
+frontend/modules\configuration\src\FeatureCatalog.vue:123:@media(pointer:coarse){.feature-help-button{width:44px;height:44px}}
+frontend/modules\configuration\src\DictionaryManagement.vue:75:.sample-type { display:flex; flex:1; min-width:0; flex-direction:column; line-height:1.5; }
+frontend/modules\configuration\src\DictionaryManagement.vue:81:.dictionary-type-browser {display:flex;flex:1;flex-direction:column;gap:var(--app-section-gap,8px);min-width:0;min-height:0;}
+frontend/modules\configuration\src\DictionaryManagement.vue:82:.dictionary-sample :deep(.tree-list-template__tree) {display:flex;flex-direction:column;min-height:0;}
+frontend/modules\configuration\src\DictionaryManagement.vue:83:.dictionary-type-browser :deep(.el-menu) {flex:1;min-height:0;overflow:auto;}
+frontend/modules\configuration\src\DictionaryManagement.vue:86:.sample-summary .management-filter-header { margin:0; min-height:32px; }
+frontend/modules\configuration\src\DictionaryManagement.vue:87:.sample-selection { display:flex; align-items:center; flex-wrap:wrap; gap:8px; min-width:0; }
+frontend/modules\configuration\src\DictionaryManagement.vue:89:.sample-description { display:block; margin:4px 0 0; font-size:13px; line-height:20px; color:var(--el-text-color-secondary); }
+frontend/modules\configuration\src\DictionaryManagement.vue:91:.tree-heading,.management-filter-header { justify-content:space-between; gap:8px; }
+frontend/modules\configuration\src\DictionaryManagement.vue:92:.type-actions,.dialog-actions { gap:8px; }
+frontend/modules\configuration\src\DictionaryManagement.vue:94:.type-actions :deep(.el-button) { margin:0; }
+frontend/modules\configuration\src\DictionaryManagement.vue:95:.dictionary-item-actions { display:flex; align-items:center; gap:8px; white-space:nowrap; }
+frontend/modules\configuration\src\DictionaryManagement.vue:98:.form-row,.form-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:0 16px; }
+frontend/modules\configuration\src\DictionaryManagement.vue:99:.sample-context { display:flex; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:var(--app-section-gap,8px); padding-bottom:var(--app-section-gap,8px); border-bottom:1px solid var(--el-border-color-lighter); }
+frontend/modules\configuration\src\DictionaryManagement.vue:104:.dictionary-sample :deep(.dictionary-grid) { display:flex; flex-direction:column; flex:1; min-height:0; }
+frontend/modules\configuration\src\DictionaryManagement.vue:106:.dictionary-tree-add { width:32px; height:32px; padding:0; }
+frontend/modules\configuration\src\DictionaryManagement.vue:111:  :deep(.el-button) { min-height:44px; }
+frontend/modules\configuration\src\DictionaryManagement.vue:112:  .dictionary-tree-add { width:44px; height:44px; }
+frontend/modules\workflow\src\LeaveRequests.vue:407:  gap: 8px;
+frontend/modules\configuration\src\MenuManagement.vue:110:.menu-dialog-title { display: inline-flex; align-items: center; gap: 8px; }
+frontend/modules\configuration\src\MenuManagement.vue:112:.menu-tree-heading,.menu-tree-node,.menu-switches{display:flex;align-items:center}.menu-tree-heading{justify-content:space-between;gap:8px}.menu-tree-heading strong{font-size:var(--el-font-size-medium)}.menu-tree-all{justify-content:flex-start;width:100%;height:36px;margin-bottom:4px;padding:0 12px}.menu-tree-all.is-active{color:var(--el-color-primary);background:var(--el-color-primary-light-9)}.menu-tree-node{justify-content:space-between;gap:8px;width:100%;min-width:0}.menu-tree-node-label{overflow:hidden;text-overflow:ellipsis}.menu-tree-node small{flex:none;color:var(--el-text-color-secondary)}:deep(.el-tree-node__content){height:36px;border-radius:var(--el-border-radius-base)}:deep(.el-tree-node__content:hover){background:var(--el-fill-color-light)}:deep(.el-tree-node.is-current>.el-tree-node__content){color:var(--el-color-primary);background:var(--el-color-primary-light-9)}.menu-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 16px}.menu-switches{gap:32px}@media(max-width:600px){.menu-form-grid{grid-template-columns:minmax(0,1fr)}:deep(.el-button){min-height:44px}}
+frontend/modules\configuration\src\MenuManagement.vue:114:.menu-workspace :deep(.tree-list-template__tree-header){padding:8px 12px;min-height:52px}
+frontend/modules\configuration\src\MenuManagement.vue:116:.menu-tree-add,.menu-workspace :deep(.tree-list-template__toggle){width:32px;height:32px;min-height:32px;flex:0 0 32px;padding:0;border:1px solid var(--el-border-color-light);border-radius:6px;background:var(--el-bg-color);color:var(--el-text-color-regular)}
+frontend/modules\configuration\src\MenuManagement.vue:118:.management-filter :deep(.el-form){gap:12px}
+frontend/modules\configuration\src\MenuManagement.vue:121:@media(max-width:600px){.menu-tree-add,.menu-workspace :deep(.tree-list-template__toggle){width:44px;height:44px;flex-basis:44px}}
+frontend/modules\authorization\src\RoleUsers.vue:102:.role-users{display:flex;flex-direction:column;flex:1;min-height:0;min-width:0;gap:var(--app-section-gap,8px)}
+frontend/modules\authorization\src\RoleUsers.vue:103:.role-users-table{flex:1 1 0;min-height:220px}
+frontend/modules\authorization\src\RoleUsers.vue:105:.role-users-context{padding:var(--app-content-padding,8px)}
+frontend/modules\authorization\src\RoleUsers.vue:106:.role-users-search{display:flex;flex-wrap:wrap;gap:8px;padding:var(--app-content-padding,8px);background:var(--el-fill-color-lighter)}
+frontend/modules\authorization\src\RoleUsers.vue:107:.role-users-search .el-form-item{margin:0}
+frontend/modules\workflow\src\WorkflowDesigner.vue:1032:  padding: 12px 20px;
+frontend/modules\workflow\src\WorkflowDesigner.vue:1053:  gap: 12px;
+frontend/modules\workflow\src\WorkflowDesigner.vue:1054:  padding:var(--app-content-padding,12px);
+frontend/modules\workflow\src\WorkflowDesigner.vue:1065:  gap: 8px;
+frontend/modules\workflow\src\WorkflowDesigner.vue:1073:  padding: 0 16px;
+frontend/modules\workflow\src\WorkflowDesigner.vue:1082:  min-height: 620px;
+frontend/modules\workflow\src\WorkflowDesigner.vue:1083:  height: calc(100vh - 240px);
+frontend/modules\workflow\src\WorkflowDesigner.vue:1084:  max-height: 1000px;
+frontend/modules\workflow\src\WorkflowDesigner.vue:1087:  padding:var(--app-content-padding,12px);
+frontend/modules\workflow\src\WorkflowDesigner.vue:1094:  margin: 0 0 12px;
+frontend/modules\workflow\src\WorkflowDesigner.vue:1100:  gap: 8px;
+frontend/modules\workflow\src\WorkflowDesigner.vue:1105:  margin: 0;
+frontend/modules\workflow\src\WorkflowDesigner.vue:1107:  min-height: 36px;
+frontend/modules\workflow\src\WorkflowDesigner.vue:1118:  padding: 12px;
+frontend/modules\workflow\src\WorkflowDesigner.vue:1127:  gap: 4px;
+frontend/modules\workflow\src\WorkflowDesigner.vue:1139:  padding: 8px 12px;
+frontend/modules\workflow\src\WorkflowDesigner.vue:1145:  min-height: 250px;
+frontend/modules\workflow\src\WorkflowDesigner.vue:1148:  padding: 24px;
+frontend/modules\workflow\src\WorkflowDesigner.vue:1159:  margin: 0;
+frontend/modules\workflow\src\WorkflowDesigner.vue:1160:  padding: 0 12px;
+frontend/modules\workflow\src\WorkflowDesigner.vue:1167:  padding:var(--app-content-padding,12px);
+frontend/modules\workflow\src\WorkflowDesigner.vue:1173:  gap: 0 12px;
+frontend/modules\workflow\src\WorkflowDesigner.vue:1196:  padding: 12px;
+frontend/modules\workflow\src\WorkflowDesigner.vue:1207:  max-height: 360px;
+frontend/modules\workflow\src\WorkflowDesigner.vue:1213:  margin: 16px 0 12px;
+frontend/modules\workflow\src\WorkflowDesigner.vue:1220:    padding: 12px;
+frontend/modules\workflow\src\WorkflowDesigner.vue:1228:    height: auto;
+frontend/modules\workflow\src\WorkflowDesigner.vue:1229:    max-height: none;
+frontend/modules\workflow\src\WorkflowDesigner.vue:1236:    max-height: none;
+frontend/modules\workflow\src\WorkflowDesigner.vue:1240:    min-height: 420px;
+frontend/modules\workflow\src\WorkflowDesigner.vue:1243:    max-height: 480px;
+frontend/modules\workflow\src\WorkflowDesigner.vue:1257:    max-height: none;
+frontend/modules\workflow\src\WorkflowDesigner.vue:1268:    min-height: 380px;
+frontend/modules\workflow\src\WorkflowDesigner.vue:1279:    min-height: 44px;
+frontend/modules\workflow\src\WorkflowDesigner.vue:1282:    padding: 12px;
+frontend/modules\workflow\src\WorkflowDesigner.vue:1285:    gap: 12px;
+frontend/modules\workflow\src\WorkflowDesigner.vue:1288:    min-height: 36px;
+frontend/modules\print\src\TemplateDesigner.vue:111:  panel.printElements=[...elements,{options:{title:fixedText.value.trim(),top:40,left:24,width:250,height:24,fontSize:12},printElementType:{type:"text",title:""}}];
+frontend/modules\print\src\TemplateDesigner.vue:232:.native-designer{display:flex;height:100%;min-height:0;flex-direction:column;overflow:hidden;background:var(--el-bg-color)}
+frontend/modules\print\src\TemplateDesigner.vue:233:.workbench-title{height:38px;flex:none;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 16px;border-bottom:1px solid var(--el-border-color-lighter)}
+frontend/modules\print\src\TemplateDesigner.vue:234:.workbench-title :deep(.el-button){height:28px;padding:4px 12px}.workbench-title :deep(.el-tag){height:22px}
+frontend/modules\print\src\TemplateDesigner.vue:235:.workbench-identity,.title-actions{display:flex;align-items:center;gap:8px;min-width:0}.workbench-identity strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.title-actions{flex:none}
+frontend/modules\print\src\TemplateDesigner.vue:236:.native-toolbar{height:50px;flex:none;display:flex;align-items:center;gap:12px;padding:0 12px;border-bottom:1px solid var(--el-border-color-lighter);overflow-x:auto;white-space:nowrap}
+frontend/modules\print\src\TemplateDesigner.vue:237:.toolbar-group{display:flex;align-items:center;flex:none;gap:4px;padding-right:12px;border-right:1px solid var(--el-border-color-lighter)}.native-toolbar :deep(.el-button){margin:0;height:32px}.toolbar-preview{display:flex;gap:8px;margin-left:auto;align-items:center;flex:none}
+frontend/modules\print\src\TemplateDesigner.vue:238:.canvas-area{position:relative;display:flex;flex:1;min-height:0;overflow:hidden}.native-canvas{flex:1;min-width:0;min-height:0;overflow:hidden;background:var(--el-fill-color-light)}
+frontend/modules\print\src\TemplateDesigner.vue:240:.workbench-status{height:40px;flex:none;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:0 12px;border-top:1px solid var(--el-border-color-lighter);font-size:12px;color:var(--el-text-color-secondary)}
+frontend/modules\print\src\TemplateDesigner.vue:242:.canvas-controls,.canvas-aids,.zoom-controls{display:flex;align-items:center;flex:none;gap:8px;white-space:nowrap}
+frontend/modules\print\src\TemplateDesigner.vue:243:.canvas-aids{gap:12px;padding-right:12px;border-right:1px solid var(--el-border-color-lighter)}
+frontend/modules\print\src\TemplateDesigner.vue:244:.canvas-aids :deep(.el-checkbox){height:28px;margin:0}.canvas-aids :deep(.el-checkbox__label){font-size:12px;padding-left:6px}
+frontend/modules\print\src\TemplateDesigner.vue:245:.canvas-controls :deep(.el-button){height:28px;margin:0;padding:4px 8px}.canvas-controls :deep(.canvas-settings){width:28px;padding:4px}
+frontend/modules\print\src\TemplateDesigner.vue:246:.zoom-controls{gap:4px}.zoom-percentage{min-width:44px;text-align:center;font-variant-numeric:tabular-nums}.grid-settings-form :deep(.el-form-item){margin-bottom:0}
+frontend/modules\print\src\TemplateDesigner.vue:247:.tool-group-label{margin-right:4px;color:var(--el-text-color-secondary);font-size:12px}.tool-button-anchor{display:inline-flex}.alignment-tools{gap:2px}.alignment-tools :deep(.alignment-button){width:32px;padding:0}
+frontend/modules\print\src\TemplateDesigner.vue:249:.authoring-grid{display:flex;flex-direction:column;gap:14px}.authoring-grid :deep(.el-form-item){margin:0}.quick-actions{display:flex;flex-wrap:wrap;gap:8px}.quick-actions :deep(.el-button){margin:0}.paper-summary{width:100%;color:var(--el-text-color-secondary)}
+frontend/modules\print\src\TemplateDesigner.vue:250:@media(max-width:700px){.workbench-title{padding:0 8px}.native-toolbar{gap:4px;padding:0 4px}.toolbar-group{gap:0;padding-right:4px}.workbench-status{height:auto;min-height:40px;align-items:stretch;flex-direction:column;gap:0;padding:4px 8px}.status-summary{line-height:24px}.canvas-controls{max-width:100%;overflow-x:auto;justify-content:flex-end}.canvas-aids{gap:8px;padding-right:8px}.title-actions{gap:4px}}
+frontend/modules\print\src\TemplateDesigner.vue:254:.quick-panel{position:absolute;right:0;top:0;bottom:0;z-index:3;width:360px;flex:none;display:flex;flex-direction:column;min-height:0;border-left:1px solid var(--el-border-color-lighter);background:var(--el-bg-color)}
+frontend/modules\print\src\TemplateDesigner.vue:255:.quick-panel-header{height:64px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 16px;border-bottom:1px solid var(--el-border-color-lighter)}.quick-panel-header strong{font-size:16px;font-weight:600}.quick-panel-header p{margin:4px 0 0;font-size:12px;color:var(--el-text-color-secondary)}
+frontend/modules\print\src\TemplateDesigner.vue:256:.quick-panel-tabs{padding:0 16px;flex:none}.quick-panel-tabs :deep(.el-tabs__header){margin:0}.quick-panel-tabs :deep(.el-tabs__item){height:40px;font-size:13px}.quick-panel-tabs :deep(.el-tabs__item.is-active){background:var(--el-color-primary-light-9)}
+frontend/modules\print\src\TemplateDesigner.vue:257:.quick-panel-content{padding:var(--app-content-padding,12px) 16px;flex:1;min-height:0;overflow:auto}.quick-panel-content :deep(.el-input-number),.quick-panel-content :deep(.el-select){width:100%}.paper-dimensions{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px}.quick-note{font-size:12px;color:var(--el-text-color-secondary);line-height:1.6}.quick-panel-footer{min-height:56px;flex:none;display:flex;align-items:center;justify-content:flex-end;padding:8px 16px;border-top:1px solid var(--el-border-color-lighter)}.field-list{display:flex;flex-direction:column;align-items:stretch}.field-list :deep(.el-radio){height:auto;min-height:44px;margin:0;padding:8px 0}.field-list small{display:block;color:var(--el-text-color-secondary);font-size:12px;margin-top:4px}
+frontend/modules\organization\src\personnel\PersonnelEditor.vue:149:     <el-card v-for="group in profileGroups" :key="group.key" shadow="never" class="detail-section" :body-style="group.key==='details'&&!detailsExpanded?{padding:'0'}:undefined">
+frontend/modules\organization\src\personnel\PersonnelEditor.vue:214:.personnel-inline-hint {color:var(--el-text-color-secondary);margin:8px 0;font-size:13px;}
+frontend/modules\print\src\PrintPreview.vue:49:<style scoped>.pdf-preview{width:100%;height:calc(100% - 24px);min-height:400px;overflow:auto;border:1px solid var(--el-border-color);background:var(--el-fill-color)}.pdf-preview canvas{display:block;max-width:100%;height:auto;margin:0 auto 16px}</style>
+frontend/modules\print\src\PrintManagement.vue:139:.print-management{min-width:0}.print-search,.print-panel{padding:0}.print-search :deep(.el-form){display:flex;align-items:flex-start;gap:12px}.print-search-actions{display:flex;gap:8px;margin-left:auto}.print-toolbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}.print-toolbar h2{margin:0;font-size:16px}.print-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 16px}.dialog-buttons{display:flex;justify-content:flex-end;gap:8px;margin-top:var(--app-section-gap,8px)}
+frontend/modules\print\src\PrintManagement.vue:140:@media(max-width:760px){.print-grid{grid-template-columns:1fr}.print-search :deep(.el-form){display:block}.print-search-actions{justify-content:flex-end}.print-panel{padding:0}}
+frontend/modules\workflow\src\BusinessWorkflowConfiguration.vue:392:  padding:var(--app-content-padding,12px);
+frontend/modules\workflow\src\BusinessWorkflowConfiguration.vue:401:  gap: 16px;
+frontend/modules\workflow\src\BusinessWorkflowConfiguration.vue:408:  margin: 0;
+frontend/modules\workflow\src\BusinessWorkflowConfiguration.vue:414:  padding:var(--app-content-padding,12px);
+frontend/modules\workflow\src\BusinessWorkflowConfiguration.vue:415:  margin: 0;
+frontend/modules\workflow\src\BusinessWorkflowConfiguration.vue:417:  gap: 16px;
+frontend/modules\workflow\src\BusinessWorkflowConfiguration.vue:425:  gap: 8px;
+frontend/modules\workflow\src\BusinessWorkflowConfiguration.vue:438:  line-height: 1.6;
+frontend/modules\workflow\src\BusinessWorkflowConfiguration.vue:441:  max-height: 680px;
+frontend/modules\workflow\src\BusinessWorkflowConfiguration.vue:445:  margin: 8px 0 0;
+frontend/modules\workflow\src\BusinessWorkflowConfiguration.vue:466:    padding: 12px;
+frontend/modules\authorization\src\RoleManagement.vue:44:<style scoped>.role-filter-select{width:180px}.role-readonly{font-family:monospace;color:var(--el-text-color-regular)}small{display:block;color:var(--el-text-color-secondary);margin-top:4px}@media(max-width:600px){.role-filter-select{width:100%}:deep(.el-button){min-height:44px}}</style>
+frontend/modules\authorization\src\MenuPermissionBranch.vue:23:.menu-permission-branch{border-top:0;margin:0 0 4px;border:1px solid var(--el-border-color-lighter);border-radius:var(--el-border-radius-base);padding:0 8px}
+frontend/modules\authorization\src\MenuPermissionBranch.vue:25:.menu-permission-branch :deep(.el-collapse-item__header){min-height:32px;height:auto;padding:0}
+frontend/modules\authorization\src\MenuPermissionBranch.vue:27:.branch-heading{display:flex;align-items:center;justify-content:space-between;gap:16px;width:100%;padding-right:12px;text-align:left;font-weight:600}
+frontend/modules\authorization\src\MenuPermissionBranch.vue:29:.menu-operation-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0 16px;padding:4px 0}
+frontend/modules\authorization\src\MenuPermissionBranch.vue:30:.menu-operation-grid :deep(.el-checkbox){height:auto;min-height:40px;margin:0;align-items:flex-start}
+frontend/modules\authorization\src\MenuPermissionBranch.vue:32:.menu-operation-grid :deep(.el-checkbox__label){display:flex;flex-direction:column;gap:2px;white-space:normal;overflow-wrap:anywhere}
+frontend/modules\authorization\src\MenuPermissionBranch.vue:35:@media(max-width:700px){.menu-operation-grid{grid-template-columns:1fr}.menu-operation-grid :deep(.el-checkbox){min-height:44px}/* 收紧分组边缘留白；移动端仍保留 44px 标题和勾选命中高度。 */
+frontend/modules\authorization\src\MenuPermissionBranch.vue:36:.menu-permission-branch :deep(.el-collapse-item__header){min-height:44px;height:auto;padding:0}
+frontend/modules\authorization\src\MenuPermissionBranch.vue:38:.branch-heading{flex-wrap:wrap;gap:4px}.menu-permission-branch{padding:0 8px}}
+frontend/modules\print\src\PrintFlowWorkspace.vue:133:.scene-identifier{user-select:text;overflow-wrap:anywhere;margin-inline-end:8px}.flow-workspace{padding:0;min-width:0}.flow-workspace header,header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:var(--app-section-gap,8px) 0}.flow-workspace>header:first-child{margin-top:0}h2,h3{margin:0;font-size:var(--el-font-size-medium)}footer{display:flex;justify-content:flex-end;gap:8px;margin-top:var(--app-section-gap,8px)}.flow-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 16px}@media(max-width:700px){.flow-grid{grid-template-columns:1fr}header{flex-wrap:wrap}}
+frontend/modules\master-data\src\WarehouseMapPicker.vue:83:.map-search{display:flex;gap:8px;margin:8px 0;}.map-results{display:flex;flex-direction:column;align-items:stretch;max-height:160px;overflow:auto;}.map-results .el-button{margin:0;justify-content:flex-start;white-space:normal;height:auto;min-height:36px;text-align:left;}
+frontend/modules\master-data\src\WarehouseMapPicker.vue:84:.warehouse-map { height: min(52vh, 480px); min-height: 240px; width: 100%; border: 1px solid var(--el-border-color); border-radius: var(--el-border-radius-base); }
+frontend/modules\workflow\src\WorkflowCanvas.vue:202:    :style="{ width: width * zoom + 'px', height: height * zoom + 'px' }"
+frontend/modules\workflow\src\WorkflowCanvas.vue:211:        height: height + 'px',
+frontend/modules\workflow\src\WorkflowCanvas.vue:312:  min-height: 100%;
+frontend/modules\workflow\src\WorkflowCanvas.vue:322:  height: 100%;
+frontend/modules\workflow\src\WorkflowCanvas.vue:356:  height: 60px;
+frontend/modules\workflow\src\WorkflowCanvas.vue:359:  margin: 0;
+frontend/modules\workflow\src\WorkflowCanvas.vue:361:  height: 60px;
+frontend/modules\workflow\src\WorkflowCanvas.vue:365:  padding: 8px 18px;
+frontend/modules\workflow\src\WorkflowCanvas.vue:385:  max-height: 44px;
+frontend/modules\workflow\src\WorkflowCanvas.vue:391:  height: 26px;
+frontend/modules\workflow\src\WorkflowCanvas.vue:393:  padding: 0;
+frontend/modules\workflow\src\WorkflowCanvas.vue:394:  margin: 0;
+frontend/modules\workflow\src\WorkflowCanvas.vue:412:  height: 1px;
+frontend/modules\workflow\src\WorkflowCenter.vue:637:  gap: 16px;
+frontend/modules\workflow\src\WorkflowCenter.vue:641:.workflow-data { display:flex; flex-direction:column; flex:1 1 0; min-height:0; min-width:0; gap:var(--app-section-gap,12px); }
+frontend/modules\workflow\src\WorkflowCenter.vue:647:  margin: 0;
+frontend/modules\workflow\src\WorkflowCenter.vue:652:  margin: 0;
+frontend/modules\workflow\src\WorkflowCenter.vue:658:  gap: 8px;
+frontend/modules\workflow\src\WorkflowCenter.vue:662:  margin: 16px 0;
+frontend/modules\workflow\src\WorkflowCenter.vue:669:    min-height: 44px;
+frontend/modules\master-data\src\WarehouseEditor.vue:80:     <el-card v-for="(fields,group) in warehouseGroups" :key="group" shadow="never" class="detail-section" :body-style="!expanded[group]?{padding:'0'}:undefined">
+frontend/modules\tenant\src\Administration.vue:224:.contact-cell { display: flex; align-items: center; gap: 8px; min-width: 0; }
+frontend/modules\tenant\src\Administration.vue:227:@media(max-width:600px){.platform-administration :deep(.el-button){min-height:44px;}}
+frontend/modules\tenant\src\IntegrationClients.vue:83:.client-secret { display: grid; gap: 16px; padding: 16px 0; }
+frontend/modules\master-data\src\product\CatalogManagement.vue:186:.product-page{display:flex;flex-direction:column;flex:1;min-height:0;min-width:0}
+frontend/modules\master-data\src\product\ProductAttributes.vue:53:.product-attribute-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:16px}
+frontend/modules\master-data\src\product\ProductEditor.vue:182:.product-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px 24px}
+frontend/modules\master-data\src\product\ProductEditor.vue:183:.completion-note{padding:8px 0;color:var(--el-text-color-secondary)}pre{white-space:pre-wrap;overflow-wrap:anywhere;margin:0;font:inherit}
+frontend/modules\master-data\src\product\ProductImages.vue:9:const emit=defineEmits<{changed:[]}>();const {t}=useI18n();const rows=ref<Array<{id:string;width:number;height:number}>>([]),busy=ref(false),error=ref("");
+frontend/modules\master-data\src\product\ProductImages.vue:19:.product-images{display:flex;flex-wrap:wrap;gap:16px}.product-images>div{display:flex;flex-direction:column;gap:8px;max-width:100%}.el-image{width:160px;height:120px;background:var(--el-fill-color-light)}
+frontend/modules\master-data\src\product\ProductManagement.vue:71:.product-page{display:flex;flex-direction:column;flex:1;min-height:0;min-width:0}
+frontend/modules\master-data\src\product\ProductManagement.vue:72:.attribute-filter-row{display:flex;flex-wrap:wrap;gap:8px;margin-block:8px}.attribute-filter-row>*{flex:1;min-width:140px}

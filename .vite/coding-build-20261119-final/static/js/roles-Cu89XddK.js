@@ -1,0 +1,1 @@
+import{On as e,k as t,mt as n,v as r}from"./runtime-core.esm-bundler-BWKH3opg.js";import{t as i}from"./RoleManagement-CVA8zQuU.js";import{n as a}from"./roleManagement-DsJXNo2l.js";import{r as o}from"./http-A7lxFL0x.js";var s=t({__name:`index`,setup(t){return(t,s)=>(n(),r(e(i),{api:e(a),"error-text":e(o)},null,8,[`api`,`error-text`]))}});export{s as default};

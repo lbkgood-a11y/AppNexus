@@ -1,0 +1,152 @@
+.                                        | [WARN] Unsupported engine: wanted: {"node":">=24 <27"} (current: {"node":"v22.18.0","pnpm":"11.25.0"})
+(!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+  - import "./build/plugins" without a file extension (vite.config.ts:1:32). Add the file extension
+  - import "./build/optimize" without a file extension (vite.config.ts:2:34). Add the file extension
+  - import "./build/utils" without a file extension (vite.config.ts:10:8). Add the file extension
+  - JSON import "../package.json" without import attributes (build/utils.ts:12:8). Add `with { type: 'json' }`
+  - import "./utils" without a file extension (build/plugins.ts:2:29). Add the file extension
+  - import "./info" without a file extension (build/plugins.ts:3:31). Add the file extension
+  - import "./compress" without a file extension (build/plugins.ts:9:38). Add the file extension
+  - import "./cdn" without a file extension (build/plugins.ts:44:30). Add the file extension
+  - import "./utils" without a file extension (build/info.ts:3:32). Add the file extension
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+vite v8.3.5 building client environment for production...
+╭─────────────────────────────────────────────╮
+│ 您好! 欢迎使用 pure-admin 开源项目          │
+│ 我们为您精心准备了下面两个贴心的保姆级文档  │
+│ https://pure-admin.cn                       │
+│ https://pure-admin-utils.netlify.app        │
+╰─────────────────────────────────────────────╯
+transforming...
+✓ 3198 modules transformed.
+
+(!) outDir D:\AppNexus\.vite\coding-build-20261119-final is not inside project root and will not be emptied.
+Use --emptyOutDir to override.
+
+rendering chunks...
+computing gzip size...
+../../../.vite/coding-build-20261119-final/index.html                                            3.69 kB │ gzip:   1.62 kB
+../../../.vite/coding-build-20261119-final/static/woff/iconfont.1794628246781-CP3KGbRQ.woff     32.62 kB
+../../../.vite/coding-build-20261119-final/static/ttf/iconfont.1794628246781-CUciZ-UB.ttf       57.48 kB
+../../../.vite/coding-build-20261119-final/static/js/JsBarcode.all.min-Cw7qsh-Z.js              66.42 kB
+../../../.vite/coding-build-20261119-final/static/js/jquery.min-CK9_Gmfi.js                     87.53 kB
+../../../.vite/coding-build-20261119-final/static/png/version-bg-Bb367lV-.png                  118.05 kB
+../../../.vite/coding-build-20261119-final/static/js/vue-plugin-hiprint-Brwmw_1s.js            950.60 kB
+../../../.vite/coding-build-20261119-final/static/js/bwip-js-min-JYz114sm.js                 1,107.46 kB
+../../../.vite/coding-build-20261119-final/static/mjs/pdf.worker.min-CIqJB0yW.mjs            1,271.91 kB
+../../../.vite/coding-build-20261119-final/static/css/403-CP2tVvFQ.css                           0.05 kB │ gzip:   0.07 kB
+../../../.vite/coding-build-20261119-final/static/css/404-B_u8eL3m.css                           0.05 kB │ gzip:   0.07 kB
+../../../.vite/coding-build-20261119-final/static/css/500-zNlDq9eM.css                           0.05 kB │ gzip:   0.07 kB
+../../../.vite/coding-build-20261119-final/static/css/productCatalog-Lz8VR3nE.css                0.09 kB │ gzip:   0.11 kB
+../../../.vite/coding-build-20261119-final/static/css/storage-DbQuJUAd.css                       0.13 kB │ gzip:   0.10 kB
+../../../.vite/coding-build-20261119-final/static/css/ThemeToggle-CJWMkggn.css                   0.16 kB │ gzip:   0.13 kB
+../../../.vite/coding-build-20261119-final/static/css/personnel-o4pZFpXc.css                     0.16 kB │ gzip:   0.14 kB
+../../../.vite/coding-build-20261119-final/static/css/designer-BleWyJeq.css                      0.17 kB │ gzip:   0.13 kB
+../../../.vite/coding-build-20261119-final/static/css/welcome-BsMVTwYj.css                       0.18 kB │ gzip:   0.14 kB
+../../../.vite/coding-build-20261119-final/static/css/printing-DOPLW_Nu.css                      0.26 kB │ gzip:   0.19 kB
+../../../.vite/coding-build-20261119-final/static/css/leave-DNNOib19.css                         0.29 kB │ gzip:   0.19 kB
+../../../.vite/coding-build-20261119-final/static/css/RoleManagement-Dz2JZrux.css                0.34 kB │ gzip:   0.21 kB
+../../../.vite/coding-build-20261119-final/static/css/features-DMp5jFWV.css                      0.57 kB │ gzip:   0.30 kB
+../../../.vite/coding-build-20261119-final/static/css/Administration-CVFgI8Fi.css                0.67 kB │ gzip:   0.36 kB
+../../../.vite/coding-build-20261119-final/static/css/router-CH-8wlT8.css                        0.93 kB │ gzip:   0.41 kB
+../../../.vite/coding-build-20261119-final/static/css/masterData-9Pn6htgy.css                    1.24 kB │ gzip:   0.49 kB
+../../../.vite/coding-build-20261119-final/static/css/parameters-C2ecp6Jq.css                    1.47 kB │ gzip:   0.49 kB
+../../../.vite/coding-build-20261119-final/static/css/product-Bsy2avb3.css                       1.54 kB │ gzip:   0.55 kB
+../../../.vite/coding-build-20261119-final/static/css/menus-Dutk_sxk.css                         2.17 kB │ gzip:   0.67 kB
+../../../.vite/coding-build-20261119-final/static/css/businessObjects-BPc-IKBE.css               2.59 kB │ gzip:   0.74 kB
+../../../.vite/coding-build-20261119-final/static/css/organization-BfNEMyLS.css                  3.91 kB │ gzip:   0.94 kB
+../../../.vite/coding-build-20261119-final/static/css/login-CqYeY_Qt.css                         4.37 kB │ gzip:   1.20 kB
+../../../.vite/coding-build-20261119-final/static/css/print-lock-Bu4bpTGq.css                    5.27 kB │ gzip:   1.22 kB
+../../../.vite/coding-build-20261119-final/static/css/account-B0fKr3b6.css                       5.85 kB │ gzip:   1.26 kB
+../../../.vite/coding-build-20261119-final/static/css/dictionaries-C0FuSHyq.css                  7.58 kB │ gzip:   1.53 kB
+../../../.vite/coding-build-20261119-final/static/css/print-CpbGuAFX.css                         8.94 kB │ gzip:   1.75 kB
+../../../.vite/coding-build-20261119-final/static/css/WorkflowCenter-B2-liCiR.css               10.24 kB │ gzip:   2.18 kB
+../../../.vite/coding-build-20261119-final/static/css/authorizationCenter-BpkZIHA5.css          11.77 kB │ gzip:   2.18 kB
+../../../.vite/coding-build-20261119-final/static/css/layout-q1ZxqF8X.css                       47.08 kB │ gzip:   7.49 kB
+../../../.vite/coding-build-20261119-final/static/css/index-BGoAH_C2.css                     1,203.46 kB │ gzip: 181.21 kB
+../../../.vite/coding-build-20261119-final/static/js/jquery.min-Dncvm7p0.js                      0.06 kB │ gzip:   0.08 kB
+../../../.vite/coding-build-20261119-final/static/js/bwip-js-min-CAQ1ia2l.js                     0.06 kB │ gzip:   0.08 kB
+../../../.vite/coding-build-20261119-final/static/js/print-lock-CmmSm_9_.js                      0.06 kB │ gzip:   0.08 kB
+../../../.vite/coding-build-20261119-final/static/js/JsBarcode.all.min-g7Mf_Uq6.js               0.07 kB │ gzip:   0.09 kB
+../../../.vite/coding-build-20261119-final/static/js/vue-plugin-hiprint-D9Hyt-Fy.js              0.07 kB │ gzip:   0.09 kB
+../../../.vite/coding-build-20261119-final/static/js/_plugin-vue_export-helper-BDNMzG2s.js       0.08 kB │ gzip:   0.09 kB
+../../../.vite/coding-build-20261119-final/static/js/types-B7QMwHJ8.js                           0.25 kB │ gzip:   0.21 kB
+../../../.vite/coding-build-20261119-final/static/js/business-objects-CtqOpAvO.js                0.32 kB │ gzip:   0.25 kB
+../../../.vite/coding-build-20261119-final/static/js/partner-9mF5XzOK.js                         0.33 kB │ gzip:   0.24 kB
+../../../.vite/coding-build-20261119-final/static/js/warehouse-4mADsPdQ.js                       0.33 kB │ gzip:   0.25 kB
+../../../.vite/coding-build-20261119-final/static/js/product-unit-Bc7nwDQX.js                    0.33 kB │ gzip:   0.25 kB
+../../../.vite/coding-build-20261119-final/static/js/subdivision-DpMokgqH.js                     0.33 kB │ gzip:   0.25 kB
+../../../.vite/coding-build-20261119-final/static/js/country-region-CoGuRNR5.js                  0.34 kB │ gzip:   0.25 kB
+../../../.vite/coding-build-20261119-final/static/js/product-category-c7sc_LDh.js                0.34 kB │ gzip:   0.25 kB
+../../../.vite/coding-build-20261119-final/static/js/product-template-BtdTBZyR.js                0.34 kB │ gzip:   0.25 kB
+../../../.vite/coding-build-20261119-final/static/js/product-attribute-C_2msGBY.js               0.34 kB │ gzip:   0.25 kB
+../../../.vite/coding-build-20261119-final/static/js/business-objects-DS7ruYvE.js                0.35 kB │ gzip:   0.26 kB
+../../../.vite/coding-build-20261119-final/static/js/workflow-C3YNvh5j.js                        0.35 kB │ gzip:   0.25 kB
+../../../.vite/coding-build-20261119-final/static/js/operationGroups-hia8w3XK.js                 0.35 kB │ gzip:   0.25 kB
+../../../.vite/coding-build-20261119-final/static/js/roles-CsZNcrLI.js                           0.36 kB │ gzip:   0.25 kB
+../../../.vite/coding-build-20261119-final/static/js/roles-Cu89XddK.js                           0.36 kB │ gzip:   0.26 kB
+../../../.vite/coding-build-20261119-final/static/js/users-DeGbZ7JH.js                           0.37 kB │ gzip:   0.26 kB
+../../../.vite/coding-build-20261119-final/static/js/redirect-8dkGxWXz.js                        0.42 kB │ gzip:   0.31 kB
+../../../.vite/coding-build-20261119-final/static/js/authorization-DPPzD2VA.js                   0.61 kB │ gzip:   0.40 kB
+../../../.vite/coding-build-20261119-final/static/js/authorization-DySs8I0z.js                   0.61 kB │ gzip:   0.40 kB
+../../../.vite/coding-build-20261119-final/static/js/welcome-DP-eNTVZ.js                         0.70 kB │ gzip:   0.44 kB
+../../../.vite/coding-build-20261119-final/static/js/roleManagement-DsJXNo2l.js                  0.72 kB │ gzip:   0.40 kB
+../../../.vite/coding-build-20261119-final/static/js/rolldown-runtime-XKyaHtl9.js                0.72 kB │ gzip:   0.42 kB
+../../../.vite/coding-build-20261119-final/static/js/session-CrnS0jql.js                         0.77 kB │ gzip:   0.41 kB
+../../../.vite/coding-build-20261119-final/static/js/useApi-CUWMwLLw-Cv9maWEg.js                 0.88 kB │ gzip:   0.48 kB
+../../../.vite/coding-build-20261119-final/static/js/tenants-CfQl3PME.js                         0.89 kB │ gzip:   0.52 kB
+../../../.vite/coding-build-20261119-final/static/js/designer-aAgqP7Ro.js                        0.89 kB │ gzip:   0.56 kB
+../../../.vite/coding-build-20261119-final/static/js/LanguageSwitch-BDKMu8E0.js                  0.98 kB │ gzip:   0.55 kB
+../../../.vite/coding-build-20261119-final/static/js/displayFormat-DAXN-fNI.js                   1.07 kB │ gzip:   0.56 kB
+../../../.vite/coding-build-20261119-final/static/js/objectSpread2-Cp9FhHJ8.js                   1.28 kB │ gzip:   0.58 kB
+../../../.vite/coding-build-20261119-final/static/js/tenant-yyPz6uGL.js                          1.35 kB │ gzip:   0.60 kB
+../../../.vite/coding-build-20261119-final/static/js/TabbedDetailTemplate-B40c-Hij.js            1.67 kB │ gzip:   0.76 kB
+../../../.vite/coding-build-20261119-final/static/js/workflow-0f6rDfl6.js                        1.68 kB │ gzip:   0.75 kB
+../../../.vite/coding-build-20261119-final/static/js/menuManagement-B7bv4zMu.js                  1.95 kB │ gzip:   0.87 kB
+../../../.vite/coding-build-20261119-final/static/js/administration-CmLUOgGI.js                  2.21 kB │ gzip:   0.71 kB
+../../../.vite/coding-build-20261119-final/static/js/sessionLifecycle-hFfDcCtC.js                3.30 kB │ gzip:   1.26 kB
+../../../.vite/coding-build-20261119-final/static/js/tenant-CvBowYYh.js                          3.48 kB │ gzip:   1.54 kB
+../../../.vite/coding-build-20261119-final/static/js/en-2Iu3J7S3.js                              3.79 kB │ gzip:   1.52 kB
+../../../.vite/coding-build-20261119-final/static/js/storage-Cg578E8c.js                         5.44 kB │ gzip:   2.02 kB
+../../../.vite/coding-build-20261119-final/static/js/devtools-CxgSYwGp-DtZX0wfa.js               5.79 kB │ gzip:   2.63 kB
+../../../.vite/coding-build-20261119-final/static/js/tenantContext-DXhV0MfQ.js                   5.86 kB │ gzip:   2.45 kB
+../../../.vite/coding-build-20261119-final/static/js/features-BJ05JbsZ.js                        7.98 kB │ gzip:   2.94 kB
+../../../.vite/coding-build-20261119-final/static/js/parameters-oauEG2si.js                      8.57 kB │ gzip:   3.32 kB
+../../../.vite/coding-build-20261119-final/static/js/403-CQ5N-ti1.js                            12.01 kB │ gzip:   5.36 kB
+../../../.vite/coding-build-20261119-final/static/js/404-CDB5qNHD.js                            13.11 kB │ gzip:   5.78 kB
+../../../.vite/coding-build-20261119-final/static/js/RoleManagement-CVA8zQuU.js                 13.73 kB │ gzip:   3.76 kB
+../../../.vite/coding-build-20261119-final/static/js/500-DXurTUt7.js                            15.09 kB │ gzip:   6.18 kB
+../../../.vite/coding-build-20261119-final/static/js/leave-DONZ66ty.js                          16.08 kB │ gzip:   4.89 kB
+../../../.vite/coding-build-20261119-final/static/js/menus-COCiBOGY.js                          16.57 kB │ gzip:   4.98 kB
+../../../.vite/coding-build-20261119-final/static/js/login-StWf-0OO.js                          17.47 kB │ gzip:   6.12 kB
+../../../.vite/coding-build-20261119-final/static/js/ThemeToggle-D-2EJGMX.js                    17.61 kB │ gzip:   9.15 kB
+../../../.vite/coding-build-20261119-final/static/js/Administration-CiB6Of06.js                 27.52 kB │ gzip:   6.66 kB
+../../../.vite/coding-build-20261119-final/static/js/account-B3xla9ID.js                        28.13 kB │ gzip:   7.33 kB
+../../../.vite/coding-build-20261119-final/static/js/personnel-DPlfg45g.js                      31.00 kB │ gzip:   8.63 kB
+../../../.vite/coding-build-20261119-final/static/js/organization-Btz5qqXd.js                   32.76 kB │ gzip:   7.42 kB
+../../../.vite/coding-build-20261119-final/static/js/businessObjects-BAV8bw2F.js                37.58 kB │ gzip:   9.08 kB
+../../../.vite/coding-build-20261119-final/static/js/axios-BZbqlBhc.js                          40.04 kB │ gzip:  15.42 kB
+../../../.vite/coding-build-20261119-final/static/js/dist-Bs04_dGg.js                           42.51 kB │ gzip:  16.46 kB
+../../../.vite/coding-build-20261119-final/static/js/productCatalog--zLbBbEc.js                 43.81 kB │ gzip:  10.06 kB
+../../../.vite/coding-build-20261119-final/static/js/dictionaries-Bfnpxn2R.js                   48.34 kB │ gzip:  14.50 kB
+../../../.vite/coding-build-20261119-final/static/js/vue-i18n.runtime-DL-eUTcV.js               50.51 kB │ gzip:  17.38 kB
+../../../.vite/coding-build-20261119-final/static/js/router-CQNX8H1v.js                         57.43 kB │ gzip:  20.63 kB
+../../../.vite/coding-build-20261119-final/static/js/authorizationCenter-Dn0ZIuCs.js            57.92 kB │ gzip:  14.12 kB
+../../../.vite/coding-build-20261119-final/static/js/message-box-gxyen37h.js                    61.69 kB │ gzip:  21.91 kB
+../../../.vite/coding-build-20261119-final/static/js/masterData-K6lfOS0O.js                     65.15 kB │ gzip:  17.34 kB
+../../../.vite/coding-build-20261119-final/static/js/message-f0Wqvseb.js                        67.45 kB │ gzip:  23.45 kB
+../../../.vite/coding-build-20261119-final/static/js/product-FwqJLqQ5.js                        68.39 kB │ gzip:  16.25 kB
+../../../.vite/coding-build-20261119-final/static/js/WorkflowCenter-Di2olKGI.js                 69.70 kB │ gzip:  16.93 kB
+../../../.vite/coding-build-20261119-final/static/js/runtime-core.esm-bundler-BWKH3opg.js       87.62 kB │ gzip:  34.07 kB
+../../../.vite/coding-build-20261119-final/static/js/print-yIAN-t0r.js                         108.15 kB │ gzip:  28.28 kB
+../../../.vite/coding-build-20261119-final/static/js/layout-Bl44opWS.js                        302.01 kB │ gzip: 133.39 kB
+../../../.vite/coding-build-20261119-final/static/js/http-A7lxFL0x.js                          381.65 kB │ gzip:  93.45 kB
+../../../.vite/coding-build-20261119-final/static/js/printing-CQMga7P4.js                      500.98 kB │ gzip: 148.48 kB
+../../../.vite/coding-build-20261119-final/static/js/index-BRQDmNIe.js                       2,373.18 kB │ gzip: 732.00 kB
+
+[INEFFECTIVE_DYNAMIC_IMPORT] src/router/navigation.ts is dynamically imported by src/api/menuManagement.ts, src/router/utils.ts, src/utils/sessionLifecycle.ts, src/utils/tenantContext.ts but also statically imported by src/router/index.ts, dynamic import will not move module into another chunk.
+
+✓ built in 1m 24s
+╭────────────────────────────────────────────────────────────╮
+│ 🎉 恭喜打包完成（总用时01分23秒，打包后的大小为56.04 MB）  │
+╰────────────────────────────────────────────────────────────╯

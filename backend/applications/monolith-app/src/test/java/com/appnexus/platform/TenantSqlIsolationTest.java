@@ -9,7 +9,7 @@ import org.apache.ibatis.annotations.*;
 import org.apache.ibatis.session.SqlSessionFactory;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.web.context.request.*;
-import com.appnexus.platform.persistence.TenantScoped;
+import com.appnexus.persistence.mybatis.TenantScoped;
 import com.appnexus.platform.tenant.VerifiedTenantContext;
 import static org.assertj.core.api.Assertions.*;
 
@@ -19,8 +19,23 @@ import static org.assertj.core.api.Assertions.*;
 class TenantSqlIsolationTest extends DatabaseTestSupport {
  @Autowired JdbcTemplate jdbc;
  @Autowired SqlSessionFactory factory;
+ /** 编码时钟是唯一允许的无表固定语句；仍经过生产拦截器，禁止通过通用SQL入口取时钟。 */
+ @Test void codingClockUsesReviewedFixedStatement(){
+  try(var session=factory.openSession()){
+   assertThat(session.getMapper(com.appnexus.platform.persistence.businessobject.coding.CodingMapper.class).now()).isNotNull();
+  }
+ }
+ /** 已授权业务端口传入的租户与HTTP安全链必须一致，不能用A的权限执行重绑定后的B查询。 */
+ @Test void migratedBusinessMapperRejectsMismatchedTrustedTenant(){
+  UUID tenant=UUID.randomUUID(),foreign=UUID.randomUUID();context(tenant);
+  byte[] bytes=java.nio.ByteBuffer.allocate(16).putLong(foreign.getMostSignificantBits()).putLong(foreign.getLeastSignificantBits()).array();
+  try(var session=factory.openSession()){
+   assertThatThrownBy(()->session.getMapper(com.appnexus.masterdata.adapter.jdbc.ProductRecordMapper.class).load(bytes,UUID.randomUUID().toString(),false))
+    .hasStackTraceContaining("Mapper tenant does not match verified context");
+  }finally{RequestContextHolder.resetRequestAttributes();}
+ }
  interface UnsafeMapper { @Select("SELECT id FROM identity_account WHERE id=UUID_TO_BIN('00000000-0000-0000-0000-000000000001')") Map<String,Object> read(); }
- @com.appnexus.platform.persistence.PlatformScoped(tables={"account_security_log"})
+ @com.appnexus.persistence.mybatis.PlatformScoped(tables={"account_security_log"})
  interface PlatformMapper {
   @Select("SELECT id FROM account_security_log LIMIT 1") List<Long> allowed();
   @Select("SELECT l.id FROM account_security_log l JOIN identity_account a ON a.id=l.account_id LIMIT 1") int outside();
@@ -86,7 +101,8 @@ class TenantSqlIsolationTest extends DatabaseTestSupport {
  @org.springframework.beans.factory.annotation.Autowired com.appnexus.platform.persistence.organization.OrganizationAdministratorBootstrap organizationBootstrap;
  /** 类型树拒绝循环移动和使用中类型停用，证明核心生命周期约束在正式 MySQL 上生效。 */
  @Test void organizationTreePreservesTypeAndCycleInvariants() {
-  context(UUID.randomUUID());
+  UUID tenant=UUID.randomUUID();var admin=authorizedMember(tenant);
+  context(admin[0],tenant,admin[1]);
   var type=structure.createType("TEST_"+UUID.randomUUID().toString().substring(0,8),"测试类型");
   var root=structure.createUnit("ROOT_"+UUID.randomUUID().toString().substring(0,8),type.id(),null,"根组织");
   var child=structure.createUnit("CHILD_"+UUID.randomUUID().toString().substring(0,8),type.id(),root.id(),"子组织");

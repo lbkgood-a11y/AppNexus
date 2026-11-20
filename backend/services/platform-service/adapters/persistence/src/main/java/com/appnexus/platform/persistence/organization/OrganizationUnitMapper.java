@@ -1,7 +1,7 @@
 package com.appnexus.platform.persistence.organization;
 import java.util.*;
 import org.apache.ibatis.annotations.*;
-import com.appnexus.platform.persistence.TenantAggregateScoped;
+import com.appnexus.persistence.mybatis.TenantAggregateScoped;
 /** 单表组织单元 SQL；固定语句形状由 TenantSqlInterceptor 再次校验。 */
 @TenantAggregateScoped(tables={"tenant_organization_unit","tenant_organization_type"},statements={"findAll","findExact","findSubtree","create","rename","renameExact","renameSubtree","delete","deleteExact","deleteSubtree"})
 @Mapper

@@ -39,7 +39,7 @@ class CodingMySqlTest {
     var declaration=new CodingDeclaration().descriptor();
     var descriptor=new Descriptor("TestDocument","测试单据","Test document","test",1,Category.TRANSACTION,List.of(),List.of(new Operation("create","新增","Create","test:create","TestDocument.create",null,List.of(),new InteractionContract("TestDocument.create",1,"TestDocument","create","新增","Create",InteractionContract.Trigger.USER_ACTION,List.of(new InteractionContract.Capability(InteractionContract.Service.BUSINESS,InteractionContract.Completion.SYNCHRONOUS,"TestDocument.create","",List.of(),Set.of(),"test.document.create",1))))),null,List.of(new CodingField("code","create",64)));
     var objects=org.mockito.Mockito.mock(BusinessObjectManagement.class);
-    service=com.appnexus.platform.persistence.businessobject.BusinessObjectPersistence.coding(jdbc,new DataSourceTransactionManager(source),new BusinessObjectPlatform(){
+    service=com.appnexus.platform.persistence.businessobject.BusinessObjectPersistence.coding(codingMapper(),new DataSourceTransactionManager(source),new BusinessObjectPlatform(){
       public boolean platformAdministrator(String a){return false;}
       public boolean tenantAdministrator(Context c){return allowed;}
       public boolean active(Context c){return allowed;}
@@ -149,5 +149,20 @@ class CodingMySqlTest {
     assertThatThrownBy(()->service.issue(context(),"TestDocument","other")).hasMessage("CODING_CODE_OR_REQUEST_CONFLICT");
     assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM business_object_code_counter WHERE tenant_id=UUID_TO_BIN(?) AND encoder_key='other'",Integer.class,tenant)).isZero();
     assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM business_object_code_issue WHERE tenant_id=UUID_TO_BIN(?) AND encoder_key='other'",Integer.class,tenant)).isZero();
+  }
+
+  /** 隔离测试使用生产 Mapper 和 Spring 事务连接，流水不得独立提交。 */
+  private com.appnexus.platform.persistence.businessobject.coding.CodingMapper codingMapper() {
+    try {
+      var factory=new org.mybatis.spring.SqlSessionFactoryBean();
+      factory.setDataSource(java.util.Objects.requireNonNull(jdbc.getDataSource()));
+      var config=new org.apache.ibatis.session.Configuration();
+      config.setLocalCacheScope(org.apache.ibatis.session.LocalCacheScope.STATEMENT);
+      config.setCacheEnabled(false);
+      config.setCallSettersOnNulls(true);
+      config.addMapper(com.appnexus.platform.persistence.businessobject.coding.CodingMapper.class);
+      factory.setConfiguration(config);
+      return new org.mybatis.spring.SqlSessionTemplate(factory.getObject()).getMapper(com.appnexus.platform.persistence.businessobject.coding.CodingMapper.class);
+    } catch(Exception error){throw new IllegalStateException("Cannot assemble coding mapper",error);}
   }
 }

@@ -4,7 +4,6 @@ import com.appnexus.platform.authorization.*;
 import com.appnexus.platform.tenant.*;
 import java.util.*;
 import org.springframework.http.HttpStatus;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,14 +26,14 @@ public class TenantParameters {
         "display.currency",new Parameter("display.currency","CNY","CNY","金额默认展示币种，ISO 4217 三位代码，默认 CNY；不执行汇率折算、不改业务金额及其原始币种。",-1),
         "display.page-size",new Parameter("display.page-size","20","20","列表建议每页条数，单位条，默认 20，范围 10–100；实际接口仍执行各自最大条数，修改不改变权限范围。",-1)
     );
-    private final JdbcTemplate jdbc;
+    private final TenantParameterMapper mapper;
     private final AccessAuthorization authorization;
     private final TenantAccess tenants;
-    public TenantParameters(JdbcTemplate jdbc,AccessAuthorization authorization,TenantAccess tenants){this.jdbc=jdbc;this.authorization=authorization;this.tenants=tenants;}
+    public TenantParameters(TenantParameterMapper mapper,AccessAuthorization authorization,TenantAccess tenants){this.mapper=mapper;this.authorization=authorization;this.tenants=tenants;}
     /** 有效成员可读非敏感展示参数；没有配置的项返回定义默认值，不能伪造已保存版本。 */
     public List<Parameter> list(VerifiedTenantContext context){
         active(context);
-        var rows=jdbc.queryForList("SELECT parameter_key,parameter_value,version FROM tenant_parameter WHERE tenant_id=UUID_TO_BIN(?)",context.tenantId().toString());
+        var rows=mapper.list(context.tenantId().toString());
         Map<String,Map<String,Object>> values=new HashMap<>();rows.forEach(row->values.put((String)row.get("parameter_key"),row));
         return DEFINITIONS.values().stream().sorted(Comparator.comparing(Parameter::key)).map(definition->{var row=values.get(definition.key());return row==null?definition:new Parameter(definition.key(),(String)row.get("parameter_value"),definition.defaultValue(),definition.description(),((Number)row.get("version")).intValue());}).toList();
     }
@@ -63,13 +62,13 @@ public class TenantParameters {
             }
         }catch(IllegalArgumentException bad){throw invalid();}
         // 与租户停用共用租户行锁；成员状态再次复核，不能在失效上下文中写配置。
-        if(jdbc.queryForList("SELECT id FROM platform_tenant WHERE id=UUID_TO_BIN(?) AND enabled=TRUE FOR UPDATE",context.tenantId().toString()).isEmpty())throw invalid();
+        if(mapper.lockTenant(context.tenantId().toString()).isEmpty())throw invalid();
         active(context);
         try{
-            if(version==-1)jdbc.update("INSERT INTO tenant_parameter(tenant_id,parameter_key,parameter_value,updated_by,created_by,created_at) VALUES(UUID_TO_BIN(?),?,?,UUID_TO_BIN(?),UUID_TO_BIN(?),CURRENT_TIMESTAMP(6))",context.tenantId().toString(),key,value,context.accountId().toString(),context.accountId().toString());
-            else if(jdbc.update("UPDATE tenant_parameter SET parameter_value=?,version=version+1,updated_by=UUID_TO_BIN(?) WHERE tenant_id=UUID_TO_BIN(?) AND parameter_key=? AND version=?",value,context.accountId().toString(),context.tenantId().toString(),key,version)!=1)throw conflict();
+            if(version==-1)mapper.create(context.tenantId().toString(),key,value,context.accountId().toString());
+            else if(mapper.update(value,context.accountId().toString(),context.tenantId().toString(),key,version)!=1)throw conflict();
         }catch(org.springframework.dao.DuplicateKeyException duplicate){throw conflict();}
-        int next=version+1;jdbc.update("INSERT INTO tenant_parameter_audit(tenant_id,actor_id,parameter_key,version,created_by,created_at,updated_by,updated_at) VALUES(UUID_TO_BIN(?),UUID_TO_BIN(?),?,?,UUID_TO_BIN(?),CURRENT_TIMESTAMP(6),UUID_TO_BIN(?),CURRENT_TIMESTAMP(6))",context.tenantId().toString(),context.accountId().toString(),key,next,context.accountId().toString(),context.accountId().toString());
+        int next=version+1;mapper.audit(context.tenantId().toString(),context.accountId().toString(),key,next);
         return new Parameter(key,value,definition.defaultValue(),definition.description(),next);
     }
     private void active(VerifiedTenantContext context){if(context==null||tenants.available(context.accountId()).stream().noneMatch(value->value.tenantId().equals(context.tenantId())&&value.memberId().equals(context.memberId())))throw AccountSettingsController.problem(HttpStatus.FORBIDDEN,"TENANT_UNAVAILABLE","租户不可访问");}

@@ -5,6 +5,12 @@
   <parent><groupId>com.appnexus</groupId><artifactId>services</artifactId><version>0.1.0-SNAPSHOT</version></parent>
   <artifactId>master-data-service</artifactId>
   <dependencies>
+    <!-- 历史Java迁移复用Flyway连接，不改变事务所有权或迁移资源。 -->
+    <dependency><groupId>com.appnexus</groupId><artifactId>mybatis-migration</artifactId><version>${project.version}</version></dependency>
+    <!-- 沿用全仓MyBatis版本；存储通过宿主SqlSession和Spring事务执行。 -->
+    <dependency><groupId>org.mybatis.spring.boot</groupId><artifactId>mybatis-spring-boot-starter</artifactId><version>${mybatis-spring-boot.version}</version></dependency>
+    <!-- 固定Mapper的中立范围元数据，不引入平台持久化或其他业务实现。 -->
+    <dependency><groupId>com.appnexus</groupId><artifactId>mybatis-scope</artifactId><version>${project.version}</version></dependency>
     <!-- 商品审核集成测试使用公共对象审批桥接；正式主数据不依赖引擎实现。 -->
     <dependency><groupId>com.appnexus</groupId><artifactId>workflow-flowable-adapter</artifactId><version>${project.version}</version><scope>test</scope></dependency>
     <!-- 存储集成测试使用生产公共行范围实现；正式业务仅依赖授权公开契约。 -->

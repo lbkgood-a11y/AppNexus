@@ -1,7 +1,7 @@
 package com.appnexus.masterdata;
 
 import java.util.*;
-import org.springframework.jdbc.core.JdbcTemplate;
+
 import static com.appnexus.masterdata.MasterData.*;
 
 /** 租户地理图：标准目录作为底图，当前租户的名称及父级覆盖底图；不修改共享标准快照。 */
@@ -13,11 +13,11 @@ final class TenantGeography {
   private final Map<String,String> paths=new HashMap<>();
 
   /**
-   * @param jdbc 租户绑定的数据访问器
+   * @param mapper 租户绑定的数据访问器
    * @param tenantId 可信租户 UUID
    * @param lock 写入事务内为 true，按固定表和编码顺序锁定现有节点，防止并发移动形成环
    */
-  TenantGeography(JdbcTemplate jdbc,UUID tenantId,boolean lock) {
+  TenantGeography(GeographyMapper mapper,UUID tenantId,boolean lock) {
     for(var node:GeographyHierarchy.children("",1,100).rows())items.put(node.code(),new Item(node.code(),node.name(),"",false));
     for(boolean subdivision:List.of(false,true))for(var entry:GeographyStandards.entries(subdivision)){
       originals.put(entry.code(),entry.name());
@@ -26,14 +26,12 @@ final class TenantGeography {
       items.put(entry.code(),new Item(entry.code(),GeographyHierarchy.displayName(entry.code(),entry.name()),parent,!subdivision));
     }
     for(boolean country:List.of(true,false)){
-      String table=country?"md_country_region":"md_subdivision";
-      jdbc.query("SELECT code,name,parent_code"+(country?"":",country_code")+" FROM "+table+" WHERE tenant_id=UUID_TO_BIN(?) ORDER BY code"+(lock?" FOR UPDATE":""),r->{
-        String code=r.getString("code"),parent=r.getString("parent_code");
-        if(parent.isEmpty())parent=items.containsKey(code)?items.get(code).parent():country?"":r.getString("country_code");
-        String name=r.getString("name");
-        if(name.equals(originals.get(code)))name=GeographyHierarchy.displayName(code,name);
+      for(var row:mapper.nodes(tenantId.toString(),country,lock)){
+        String code=(String)row.get("code"),parent=(String)row.get("parent_code");
+        if(parent.isEmpty())parent=items.containsKey(code)?items.get(code).parent():country?"":(String)row.get("country_code");
+        String name=(String)row.get("name");if(name.equals(originals.get(code)))name=GeographyHierarchy.displayName(code,name);
         items.put(code,new Item(code,name,parent,country));
-      },tenantId.toString());
+      }
     }
   }
 

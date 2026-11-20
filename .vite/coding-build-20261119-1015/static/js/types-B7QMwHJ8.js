@@ -1,0 +1,1 @@
+import{n as e}from"./rolldown-runtime-XKyaHtl9.js";var t=e({routerArrays:()=>r}),{VITE_HIDE_HOME:n}={VITE_HIDE_HOME:`false`},r=n===`false`?[{path:`/welcome`,name:`Welcome`,meta:{title:`menus.pureHome`,icon:`ep/home-filled`}}]:[];export{t as n,r as t};

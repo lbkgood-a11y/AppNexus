@@ -50,6 +50,17 @@ async function controlEntry(operation:string){
   try{reason=(await ElMessageBox.prompt(t('businessObject.controlReason'),t(enabled?'businessObject.enableEntry':'businessObject.disableEntry'),{inputValidator:value=>!!value?.trim()&&value.length<=200, inputErrorMessage:t('businessObject.controlReason'),type:'warning'})).value;}catch{return;}
   await run(async()=>{pageEditor.value=await props.api.controlPage(selected.value!.objectType,pageEditor.value.revision,operation,enabled,reason);ElMessage.success(t('businessObject.saved'));});
 }
+/** 能力概览直接读取同一对象声明及关联，不维护另一套可编辑目录。 */
+const capabilityRows=computed(()=>{
+ if(!selected.value)return [];
+ const entries=selected.value.operations.flatMap(operation=>operation.interaction.capabilities.map(capability=>({
+  key:operation.operationId+":"+capability.service,operation:locale.value.startsWith("zh")?operation.nameZh:operation.nameEn,
+  service:capability.service,contract:capability.reference,
+  bindings:bindings.value.filter(binding=>binding.operationCode===operation.operationCode&&binding.service===capability.service).length
+ })));
+ for(const field of selected.value.codingFields??[])entries.push({key:"CODING:"+field.field,operation:field.field,service:"CODING",contract:field.operationCode,bindings:0});
+ return entries;
+});
 const printScenes=ref<Record<string,Awaited<ReturnType<BusinessObjectApi['scenes']>>>>({});
 const operationAction=(d:Descriptor,key:string)=>pageOperations(d).find(a=>a.operationId===key);
 /** 按绑定 ID 管理在场表单，避免弹窗重开/重载后数组残留旧表单造成静默校验失败。 */
@@ -169,6 +180,17 @@ onMounted(async()=>{await load();const type=router.currentRoute.value.query.type
       </vxe-table>
       </section>
       </div>
+      </el-tab-pane>
+      <el-tab-pane :label="t('businessObject.capabilityOverview')" name="capabilities">
+       <header><h3>{{t('businessObject.capabilityOverview')}}<InfoHint :content="t('businessObject.capabilityOverviewHint')" /></h3></header>
+       <vxe-table :data="capabilityRows" border="inner" :column-config="{resizable:true}">
+        <vxe-column field="operation" :title="t('businessObject.action')" min-width="150" />
+        <vxe-column field="service" :title="t('businessObject.service')" min-width="120" />
+        <vxe-column field="contract" :title="t('businessObject.contractReference')" min-width="200" />
+        <vxe-column :title="t('businessObject.operations')" min-width="170"><template #default="{row}">
+         <el-button v-if="!platform" link type="primary" @click="detailTab=row.service==='CODING'?'coding':'configuration'">{{t('businessObject.configureCapability')}}</el-button>
+        </template></vxe-column>
+       </vxe-table>
       </el-tab-pane>
       <el-tab-pane v-if="!platform && selected.codingFields?.length" :label="t('coding.bindingsTitle')" name="coding" lazy>
        <CodingConfiguration :key="selected.objectType" :descriptor="selected" :api="api" :error-text="errorText" />

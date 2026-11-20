@@ -1,0 +1,2 @@
+.                                        | [WARN] Unsupported engine: wanted: {"node":">=24 <27"} (current: {"node":"v22.18.0","pnpm":"11.25.0"})
+$ vue-tsc --noEmit --skipLibCheck

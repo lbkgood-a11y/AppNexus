@@ -48,7 +48,22 @@ class ProductCatalogMySqlTest {
    var gram=service.createUnit(c,new UnitInput("G","克","MASS",3,0));
    var kilogram=unit;
    var hour=service.createUnit(c,new UnitInput("HOUR","小时","TIME",2,0));
-   var conversion=com.appnexus.masterdata.MasterDataConfiguration.conversions(jdbc,allow,new DataSourceTransactionManager(source));
+   var mapperFactory=new org.mybatis.spring.SqlSessionFactoryBean();
+   mapperFactory.setDataSource(source);
+   var mapperConfig=new org.apache.ibatis.session.Configuration();
+      mapperConfig.setLocalCacheScope(org.apache.ibatis.session.LocalCacheScope.STATEMENT);
+      mapperConfig.setCacheEnabled(false);
+      mapperConfig.setCallSettersOnNulls(true);
+   mapperConfig.addMapper(com.appnexus.masterdata.adapter.jdbc.UnitConversionMapper.class);
+   mapperConfig.addMapper(com.appnexus.masterdata.adapter.jdbc.ProductRecordMapper.class);
+   mapperConfig.addMapper(com.appnexus.masterdata.adapter.jdbc.ProductCompletenessMapper.class);
+   mapperConfig.addMapper(com.appnexus.masterdata.adapter.jdbc.ProductSnapshotMapper.class);
+   mapperConfig.addMapper(com.appnexus.masterdata.adapter.jdbc.ProductHistoryMapper.class);
+   mapperConfig.addMapper(com.appnexus.masterdata.adapter.jdbc.ProductListMapper.class);
+   mapperConfig.addMapper(com.appnexus.masterdata.adapter.jdbc.ProductCatalogReadMapper.class);
+   mapperFactory.setConfiguration(mapperConfig);
+   var conversionMapper=new org.mybatis.spring.SqlSessionTemplate(mapperFactory.getObject()).getMapper(com.appnexus.masterdata.adapter.jdbc.UnitConversionMapper.class);
+   var conversion=com.appnexus.masterdata.MasterDataConfiguration.conversions(conversionMapper,allow,new DataSourceTransactionManager(source));
    @SuppressWarnings("unchecked") var converted=(Map<String,String>)conversion.create(c,new com.appnexus.masterdata.api.product.UnitConversions.Input(gram.id(),kilogram.id(),"0.001"));
    assertThat(conversion.calculate(c,converted.get("id"),"1234.5").toString()).contains("1.2345","1.235");
    assertThatThrownBy(()->conversion.create(c,new com.appnexus.masterdata.api.product.UnitConversions.Input(gram.id(),hour.id(),"1"))).isInstanceOf(Rejection.class);
@@ -103,7 +118,7 @@ class ProductCatalogMySqlTest {
     public Proof issue(String binding){String token=UUID.randomUUID().toString();tokens.put(token,binding);return new Proof(token,java.time.Instant.now().plusSeconds(900));}
     public boolean verify(String token,String binding){return validProof.get()&&Objects.equals(tokens.get(token),binding);}
    };
-   var products=new ProductV1Service(jdbc,allow,manager,proofs);
+   var products=new ProductV1Service(jdbc,allow,manager,proofs,new com.appnexus.masterdata.adapter.jdbc.MyBatisProductRecords(new org.mybatis.spring.SqlSessionTemplate(mapperFactory.getObject()).getMapper(com.appnexus.masterdata.adapter.jdbc.ProductRecordMapper.class)),new org.mybatis.spring.SqlSessionTemplate(mapperFactory.getObject()).getMapper(com.appnexus.masterdata.adapter.jdbc.ProductCompletenessMapper.class),new org.mybatis.spring.SqlSessionTemplate(mapperFactory.getObject()).getMapper(com.appnexus.masterdata.adapter.jdbc.ProductSnapshotMapper.class),new org.mybatis.spring.SqlSessionTemplate(mapperFactory.getObject()).getMapper(com.appnexus.masterdata.adapter.jdbc.ProductHistoryMapper.class),new org.mybatis.spring.SqlSessionTemplate(mapperFactory.getObject()).getMapper(com.appnexus.masterdata.adapter.jdbc.ProductListMapper.class),new org.mybatis.spring.SqlSessionTemplate(mapperFactory.getObject()).getMapper(com.appnexus.masterdata.adapter.jdbc.ProductCatalogReadMapper.class));
    // 图片真实解码重编码、父CAS和历史同事务；跨租户、非法内容和旧版本均拒绝。
    var imageProduct=products.create(c,new com.appnexus.masterdata.api.product.ProductMainData.Input("IMAGE","图片测试",null,null,null,null,null,null,null,null,null));
    String imageProductId=(String)imageProduct.get("id");
@@ -147,6 +162,7 @@ class ProductCatalogMySqlTest {
    var bindingPort=org.mockito.Mockito.mock(com.appnexus.contracts.businessobject.BusinessObjectBindings.class);org.mockito.Mockito.when(bindingPort.resolveOperation(org.mockito.ArgumentMatchers.any(),org.mockito.ArgumentMatchers.anyString(),org.mockito.ArgumentMatchers.anyString(),org.mockito.ArgumentMatchers.anyString(),org.mockito.ArgumentMatchers.anyLong(),org.mockito.ArgumentMatchers.anyMap())).thenAnswer(invocation->new com.appnexus.contracts.businessobject.BusinessObjects.Resolution("test-resolution",c.tenantId().toString(),"ProductApproval",invocation.getArgument(3),invocation.getArgument(4),1,"test-definition",1,invocation.getArgument(5),"submit","WORKFLOW","","product.approval"));
    var executionFactory=new org.springframework.beans.factory.support.StaticListableBeanFactory();var taskFactory=new org.springframework.beans.factory.support.StaticListableBeanFactory();taskFactory.addBean("tasks",taskPort);
    var approvals=new ProductApprovalService(jdbc,manager,products,workflowPlatform,executionFactory.getBeanProvider(com.appnexus.contracts.businessobject.BusinessObjectExecution.class),taskFactory.getBeanProvider(com.appnexus.contracts.workflow.WorkflowTaskAccess.class));
+   approvals.runtimeFactory(new com.appnexus.platform.persistence.businessobject.MappedObjectRuntimeFactory(jdbc));
    executionFactory.addBean("execution",com.appnexus.platform.businessobject.BusinessObjectUseCases.execution(List.of(approvals),bindingPort,new com.appnexus.platform.persistence.businessobject.configuration.JdbcConfigurationTransaction(manager),new com.appnexus.contracts.businessobject.BusinessObjectPlatform(){
      public boolean platformAdministrator(String actor){return false;}
      public boolean tenantAdministrator(com.appnexus.contracts.businessobject.BusinessObjects.Context context){return false;}
@@ -295,7 +311,7 @@ class ProductCatalogMySqlTest {
    assertThat(((Number)products.read(c,productId).get("version")).longValue()).isEqualTo(6);
    jdbc.update("UPDATE md_product_structure_request SET expires_at=TIMESTAMPADD(SECOND,-1,CURRENT_TIMESTAMP(6)) WHERE tenant_id=UUID_TO_BIN(?) AND request_key=UUID_TO_BIN(?)",c.tenantId().toString(),nextKey);
    assertThatThrownBy(()->products.migrateStructure(c,productId,nextCommand,nextKey)).hasMessage("PRODUCT_IDEMPOTENCY_WINDOW_EXPIRED");
-   var noPermission=new ProductV1Service(jdbc,(subject,permission)->false,manager,proofs);
+   var noPermission=new ProductV1Service(jdbc,(subject,permission)->false,manager,proofs,new com.appnexus.masterdata.adapter.jdbc.MyBatisProductRecords(new org.mybatis.spring.SqlSessionTemplate(mapperFactory.getObject()).getMapper(com.appnexus.masterdata.adapter.jdbc.ProductRecordMapper.class)),new org.mybatis.spring.SqlSessionTemplate(mapperFactory.getObject()).getMapper(com.appnexus.masterdata.adapter.jdbc.ProductCompletenessMapper.class),new org.mybatis.spring.SqlSessionTemplate(mapperFactory.getObject()).getMapper(com.appnexus.masterdata.adapter.jdbc.ProductSnapshotMapper.class),new org.mybatis.spring.SqlSessionTemplate(mapperFactory.getObject()).getMapper(com.appnexus.masterdata.adapter.jdbc.ProductHistoryMapper.class),new org.mybatis.spring.SqlSessionTemplate(mapperFactory.getObject()).getMapper(com.appnexus.masterdata.adapter.jdbc.ProductListMapper.class),new org.mybatis.spring.SqlSessionTemplate(mapperFactory.getObject()).getMapper(com.appnexus.masterdata.adapter.jdbc.ProductCatalogReadMapper.class));
    assertThatThrownBy(()->noPermission.migrateStructure(c,productId,command,key)).hasMessage("MASTER_DATA_DENIED");
 
    String legacyId=UUID.randomUUID().toString(),original="  旧规格\n直径 00.50  ";

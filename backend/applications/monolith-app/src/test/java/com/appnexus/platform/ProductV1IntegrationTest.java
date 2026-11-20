@@ -15,6 +15,8 @@ import org.springframework.test.context.ActiveProfiles;
 @ActiveProfiles("local")
 @org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 class ProductV1IntegrationTest extends DatabaseTestSupport {
+ /** 防止直接用例测试的可信请求属性泄漏到下一测试。 */
+ @org.junit.jupiter.api.AfterEach void clearDirectContext(){org.springframework.web.context.request.RequestContextHolder.resetRequestAttributes();}
  @Autowired JdbcTemplate jdbc;
  @Autowired org.springframework.test.web.servlet.MockMvc mvc;
  @Autowired ProductCatalogService catalog;
@@ -32,6 +34,10 @@ class ProductV1IntegrationTest extends DatabaseTestSupport {
   bootstrap.initialize(tenant,member);
   var admin=new VerifiedTenantContext(account,tenant,member,1);
   var ordinary=new VerifiedTenantContext(ordinaryAccount,tenant,ordinaryMember,1);
+  // 正式Mapper执行可信请求门禁；直接用例回归也必须建立与真实已授权成员一致的服务端上下文。
+  var directRequest=new org.springframework.mock.web.MockHttpServletRequest();
+  directRequest.setAttribute(VerifiedTenantContext.class.getName(),admin);
+  org.springframework.web.context.request.RequestContextHolder.setRequestAttributes(new org.springframework.web.context.request.ServletRequestAttributes(directRequest));
   var category=catalog.createCategory(admin,new CatalogData.CategoryInput("ROOT","商品分类",null,0));
   assertThat(category.audit().createdBy()).isEqualTo(account.toString());
   var slots=new LinkedHashMap<String,String>();for(String purpose:List.of("BASIC","SPEC","QUALITY","EXTENSION"))slots.put(purpose,null);

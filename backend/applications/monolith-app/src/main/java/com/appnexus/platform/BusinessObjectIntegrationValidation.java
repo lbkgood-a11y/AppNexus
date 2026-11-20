@@ -23,6 +23,8 @@ public class BusinessObjectIntegrationValidation {
         boolean found=mappings.getHandlerMethods().keySet().stream().anyMatch(mapping->mapping.getPatternValues().contains(operation.apiPath())&&mapping.getMethodsCondition().getMethods().stream().anyMatch(method->method.name().equals(operation.method())));
         if(!found)throw new IllegalStateException("BUSINESS_OBJECT_API_REGISTRATION_INVALID:"+action.operationId());
         boolean bound=mappings.getHandlerMethods().entrySet().stream().anyMatch(entry->entry.getKey().getPatternValues().contains(operation.apiPath())&&java.util.Arrays.stream(entry.getValue().getMethod().getAnnotationsByType(com.appnexus.contracts.operation.OperationBinding.class)).anyMatch(binding->binding.reference()?binding.id().equals(action.operationId()):java.util.Arrays.asList(binding.pages()).contains(operation.pageKey())&&java.util.Arrays.asList(binding.permissions()).contains(action.permissionCode())));
+        // 公共入口按请求中的唯一对象操作动态准入；只认可构建内固定控制器，不能配置任意URL绕过校验。
+        if(!bound&&operation.apiPath().equals("/api/business-object-executions"))bound=mappings.getHandlerMethods().entrySet().stream().anyMatch(entry->entry.getKey().getPatternValues().contains(operation.apiPath())&&entry.getValue().getBeanType().equals(com.appnexus.platform.appapi.businessobject.ObjectExecutionController.class));
         if(!bound)throw new IllegalStateException("BUSINESS_OBJECT_OPERATION_BINDING_INVALID:"+action.operationId());
 
       }

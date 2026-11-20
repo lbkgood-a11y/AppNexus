@@ -24,7 +24,8 @@ const configurations=ref<Array<{id:string;revision:number;path:string}>>([]),con
 const categoryLoading=ref(false),unitLoading=ref(false),reason=ref("");
 const attributesValid=ref(true);
 const values=reactive<Record<string,string|string[]>>({});
-const draft=reactive<ProductDraft>({code:"",name:"",barcode:"",shortName:null,categoryId:null,configId:null,productForm:null,unitId:null,description:null,brand:null,origin:null,values:[]});
+const organizationOptions=ref<Array<{id:string;name:string}>>([]);
+const draft=reactive<ProductDraft>({organizationId:null,code:"",name:"",barcode:"",shortName:null,categoryId:null,configId:null,productForm:null,unitId:null,description:null,brand:null,origin:null,values:[]});
 const completion=ref<string[]>([]),changes=ref<ProductChange[]>([]),historyPage=ref(1),historyTotal=ref(0),tab=ref("history");
 const canUpdate=computed(()=>props.mode!=="view"&&!record.value?.approvalPending&&operations.value.includes(id.value?"Product.update":"Product.create")&&!failed.value&&!record.value?.archivedAt&&record.value?.structureState!=="LEGACY_PENDING");
 const canStructure=computed(()=>props.mode!=="view"&&!record.value?.approvalPending&&operations.value.includes("Product.previewStructure")&&operations.value.includes("Product.migrateStructure")&&!failed.value&&!record.value?.archivedAt&&record.value?.status!=="ENABLED"&&(record.value?.structureState!=="LEGACY_PENDING"||record.value?.legacyDisposition==="CONFIRMED_NONE"));
@@ -44,13 +45,13 @@ async function confirmDiscard(){if(!dirty.value)return true;try{await ElMessageB
 async function close(){if(busy.value||!await confirmDiscard())return;emit("close");}
 /** 按记录固定配置解释，不追分类当前指针；0与false规范为字符串保留。 */
 async function accept(row:ProductRecord){
- record.value=row;Object.assign(draft,{code:row.code,name:row.name,barcode:row.barcode??"",shortName:row.shortName,categoryId:row.categoryId,configId:row.configId,productForm:row.productForm,unitId:row.unitId,description:row.description,brand:row.brand,origin:row.origin,values:[]});
+ record.value=row;Object.assign(draft,{organizationId:row.organizationId??null,code:row.code,name:row.name,barcode:row.barcode??"",shortName:row.shortName,categoryId:row.categoryId,configId:row.configId,productForm:row.productForm,unitId:row.unitId,description:row.description,brand:row.brand,origin:row.origin,values:[]});
  config.value=row.configId?await props.api.configuration(row.configId):undefined;
  for(const key of Object.keys(values))delete values[key];
  for(const value of row.values){const field=groupFields.value.find(f=>f.templateItemId===value.templateItemId);if(!field)continue;if(["SINGLE_SELECT","MULTI_SELECT"].includes(field.dataType))values[field.templateItemId]=row.choices.filter(c=>c.templateItemId===field.templateItemId).map(c=>c.customText?"custom:"+c.customText:c.optionId);else values[field.templateItemId]=value.textValue??value.integerValue??value.decimalValue??(value.booleanValue===null?null:String(value.booleanValue))??value.dateValue??"";}
  completion.value=row.completionIssues;reason.value="";migrationMode.value=false;invalidate();baseline.value=state();if(operations.value.includes("Product.readChanges"))await readHistory();
 }
-async function load(){loading.value=true;failed.value=false;try{operations.value=await props.api.operations();if(id.value)await accept(await props.api.read(id.value));else baseline.value=state();}catch(e){failed.value=true;await fail(e);}finally{loading.value=false;}}
+async function load(){loading.value=true;failed.value=false;try{operations.value=await props.api.operations();if(operations.value.includes(id.value?"Product.update":"Product.create"))organizationOptions.value=await props.api.organizations(id.value?"update":"create");if(id.value)await accept(await props.api.read(id.value));else baseline.value=state();}catch(e){failed.value=true;await fail(e);}finally{loading.value=false;}}
 async function fail(e:unknown){if((e as {response?:{status:number}})?.response?.status===403){record.value=undefined;config.value=undefined;operations.value=[];draft.name="";draft.code="";for(const key of Object.keys(values))delete values[key];}await setErrorFeedback(error,props.errorText(e));}
 async function options(kind:"category"|"unit",keyword:string,page=1){
  const isCategory=kind==="category";if(isCategory){categoryLoading.value=true;categoryKeyword.value=keyword;categoryPage.value=page;}else{unitLoading.value=true;unitKeyword.value=keyword;unitPage.value=page;}
@@ -68,7 +69,7 @@ async function chooseCategory(value:string|null){
  const option=categoryOptions.value.find(o=>o.id===value);if(value&&!option){await setErrorFeedback(error,t("productV1.optionChanged"));return;}
  try{const next=option?.configId?await props.api.configuration(option.configId):undefined;draft.categoryId=value||null;configurations.value=[];configurationTotal.value=0;draft.configId=option?.configId??null;config.value=next;for(const key of Object.keys(values))delete values[key];invalidate();}catch(e){await fail(e);}
 }
-async function save(){if(busy.value||!attributesValid.value||!editing.value||!await form.value?.validate().catch(()=>false))return;busy.value=true;try{let row:ProductRecord;if(id.value)row=await props.api.update(id.value,{name:draft.name,barcode:draft.barcode,shortName:draft.shortName,description:draft.description,brand:draft.brand,origin:draft.origin,values:collect(),version:record.value!.version});else row=await props.api.create({...draft,values:collect()});id.value=row.id;await accept(row);ElMessage.success(t("masterData.saved"));}catch(e){await fail(e);}finally{busy.value=false;}}
+async function save(){if(busy.value||!attributesValid.value||!editing.value||!await form.value?.validate().catch(()=>false))return;busy.value=true;try{let row:ProductRecord;if(id.value)row=await props.api.update(id.value,{organizationId:draft.organizationId,name:draft.name,barcode:draft.barcode,shortName:draft.shortName,description:draft.description,brand:draft.brand,origin:draft.origin,values:collect(),version:record.value!.version});else row=await props.api.create({...draft,values:collect()});id.value=row.id;await accept(row);ElMessage.success(t("masterData.saved"));}catch(e){await fail(e);}finally{busy.value=false;}}
 async function startMigration(){if(!await confirmDiscard())return;try{if(record.value)await accept(await props.api.read(id.value));targetMode.value=record.value?.specificationMode??"NONE";retireSpecifications.value=false;migrationMode.value=true;reason.value="";baseline.value=state();}catch(e){await fail(e);}}
 async function cancelMigration(){if(!await confirmDiscard())return;try{if(record.value)await accept(await props.api.read(id.value));}catch(e){await fail(e);}}
 /** 退出确认覆盖所有源模板项，不将隐藏字段视为自动删除。 */
@@ -127,6 +128,12 @@ onMounted(load);
 <el-skeleton v-if="loading" :rows="6" animated/>
 <el-result v-else-if="failed" icon="error" :title="t('masterData.unavailable')"/>
 <el-form v-else ref="form" class="business-border-label-form" :model="draft" label-position="top" @submit.prevent="migrationMode?previewMigration():save()">
+<el-form-item :label="t('productV1.organizationId')" prop="organizationId" :rules="!id?[{required:true,message:t('productV1.organizationRequired'),trigger:'change'}]:[]">
+ <el-select v-model="draft.organizationId" :disabled="!editing||migrationMode" filterable :placeholder="t('productV1.organizationRequired')">
+  <el-option v-for="organization in organizationOptions" :key="organization.id" :value="organization.id" :label="organization.name"/>
+ </el-select>
+ <span v-if="id&&!draft.organizationId" class="text-[var(--el-text-color-secondary)]">{{t('productV1.organizationUnknown')}}</span>
+</el-form-item>
 <el-card shadow="never"><h3>{{t('productV1.basic')}}</h3>
 <el-tag v-if="record">{{t('productV1.'+record.status)}} · {{t('productV1.'+record.structureState)}}</el-tag>
 <el-tag v-if="record?.approvalPending" type="warning">{{t('productApproval.SUBMITTED')}}</el-tag>

@@ -10,6 +10,19 @@ import static org.assertj.core.api.Assertions.*;
 /** 公共执行边界验证：未知范围失败关闭、参数绑定及业务固定列映射不能引入表达式。 */
 class RowAccessControlTest {
     private final RowAccessControl control = new MySqlRowAccessControl();
+    /** MyBatis固定条件只接受公共执行器转换后的ALL或已解析组织；未知范围不能退化为全部记录。 */
+    @Test void mapperOrganizationRangesFailClosedWithoutResolvedPlan(){
+        UUID id=UUID.randomUUID();
+        assertThat(control.organizationRange(null).all()).isFalse();
+        assertThat(control.organizationRange(null).ids()).isEmpty();
+        assertThat(control.organizationRange(plan(DataScopeAuthorization.ScopeType.ALL,Set.of())).all()).isTrue();
+        assertThat(control.organizationRange(plan(DataScopeAuthorization.ScopeType.ORGANIZATION,Set.of(id))).ids()).containsExactly(id.toString());
+        for(var type:List.of(DataScopeAuthorization.ScopeType.DENY,DataScopeAuthorization.ScopeType.SELF,DataScopeAuthorization.ScopeType.ORGANIZATION_SUBTREE,DataScopeAuthorization.ScopeType.RULES)){
+            var range=control.organizationRange(plan(type,Set.of(id)));
+            assertThat(range.all()).isFalse();assertThat(range.ids()).isEmpty();
+        }
+        assertThatThrownBy(()->control.organizationRange(plan(DataScopeAuthorization.ScopeType.ORGANIZATION,Set.of(id))).ids().clear()).isInstanceOf(UnsupportedOperationException.class);
+    }
 
     private AccessPlan plan(DataScopeAuthorization.ScopeType type, Set<UUID> ids) {
         return new AccessPlan(AccessAuthorization.Subject.tenant(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID()),

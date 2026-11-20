@@ -48,11 +48,11 @@ public class WorkflowEngineConfiguration {
   /** 显式端口装配入口；真实应用必须装配单据绑定公开契约。 */
   public WorkflowRuntime workflowRuntime(ProcessEngine engine,DataSource source,PlatformTransactionManager manager,
       com.appnexus.contracts.workflow.WorkflowPlatform platform,
-      java.util.List<com.appnexus.contracts.workflow.WorkflowBusiness> businesses,WorkflowBridge bridge) {
+      java.util.List<com.appnexus.contracts.workflow.WorkflowBusiness> businesses,WorkflowBridge bridge,WorkflowRecordMapper statements) {
     var runtime =
         new WorkflowRuntime(
             engine,
-            new org.springframework.jdbc.core.JdbcTemplate(source),
+            statements,
             manager,
             platform,
             businesses);

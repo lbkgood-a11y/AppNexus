@@ -6,6 +6,12 @@
  <update id="updateType">UPDATE tenant_organization_type SET name=#{name},enabled=#{enabled},version=version+1 WHERE tenant_id=#{__verifiedTenant} AND id=UUID_TO_BIN(#{id}) AND version=#{version}</update>
  <select id="typeUsage" resultType="int">SELECT COUNT(*) FROM tenant_organization_unit WHERE tenant_id=#{__verifiedTenant} AND type_id=UUID_TO_BIN(#{id})</select>
  <select id="units" resultType="map">SELECT BIN_TO_UUID(id) id,code,BIN_TO_UUID(type_id) typeId,BIN_TO_UUID(parent_id) parentId,name,enabled,version FROM tenant_organization_unit WHERE tenant_id=#{__verifiedTenant} ORDER BY type_id,parent_id,name</select>
+ <!-- 所有展示入口使用相同可信租户和已解析范围；空集合拒绝，不在Java中过滤后分页。 -->
+ <select id="scopedUnits" resultType="map">
+ SELECT BIN_TO_UUID(id) id,code,BIN_TO_UUID(type_id) typeId,BIN_TO_UUID(parent_id) parentId,name,enabled,version FROM tenant_organization_unit WHERE tenant_id=#{__verifiedTenant}
+ <if test="!all"><choose><when test="ids != null and !ids.isEmpty()"> AND id IN <foreach collection="ids" item="id" open="(" separator="," close=")">UUID_TO_BIN(#{id})</foreach></when><otherwise> AND 1=0</otherwise></choose></if>
+ ORDER BY type_id,parent_id,name
+ </select>
  <select id="lockUnits" resultType="string">SELECT BIN_TO_UUID(id) FROM tenant_organization_unit WHERE tenant_id=#{__verifiedTenant} ORDER BY id FOR UPDATE</select>
  <insert id="createUnit">INSERT INTO tenant_organization_unit(tenant_id,id,code,type_id,parent_id,name) VALUES(#{__verifiedTenant},UUID_TO_BIN(#{id}),#{code},UUID_TO_BIN(#{typeId}),UUID_TO_BIN(#{parentId}),#{name})</insert>
  <update id="updateUnit">UPDATE tenant_organization_unit SET name=#{name},enabled=#{enabled},version=version+1 WHERE tenant_id=#{__verifiedTenant} AND id=UUID_TO_BIN(#{id}) AND version=#{version}</update>

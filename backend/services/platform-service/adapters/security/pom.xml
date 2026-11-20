@@ -8,6 +8,9 @@
   </parent>
   <artifactId>platform-security-adapter</artifactId>
   <dependencies>
+    <!-- 安全适配器固定Mapper仅共享中立范围元数据，不依赖平台存储实现。 -->
+    <dependency><groupId>com.appnexus</groupId><artifactId>mybatis-scope</artifactId><version>${project.version}</version></dependency>
+    <dependency><groupId>org.mybatis.spring.boot</groupId><artifactId>mybatis-spring-boot-starter</artifactId><version>${mybatis-spring-boot.version}</version></dependency>
     <!-- 页面操作元数据经公开契约登记，不改变真实授权执行。 -->
     <dependency><groupId>com.appnexus</groupId><artifactId>operation-contracts</artifactId><version>${project.version}</version></dependency>
     <!-- 单据服务仅通过公开契约集成，业务执行仍归业务模块。 -->

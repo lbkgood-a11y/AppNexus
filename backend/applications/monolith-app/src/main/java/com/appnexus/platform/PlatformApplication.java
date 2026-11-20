@@ -12,6 +12,8 @@ import org.springframework.context.annotation.Import;
  * 保留平台扫描范围，通过显式导入装配共享服务，避免扩大扫描引入无关组件。
  */
 @SpringBootApplication
+// 显式扫描已接入的存储适配器，不能仅依赖启动类包范围而漏掉平台外业务Mapper。
+@org.mybatis.spring.annotation.MapperScan(basePackages={"com.appnexus.platform.persistence","com.appnexus.masterdata","com.appnexus.printing.adapter.jdbc","com.appnexus.platform.security","com.appnexus.leave","com.appnexus.workflow.adapter.flowable","com.appnexus.platform.organization.personnel"},annotationClass=org.apache.ibatis.annotations.Mapper.class)
 @Import({com.appnexus.platform.organization.personnel.PersonnelConfiguration.class, com.appnexus.masterdata.MasterDataConfiguration.class, WorkflowEngineConfiguration.class, PrintConfiguration.class, com.appnexus.platform.bootstrap.businessobject.BusinessObjectConfiguration.class, com.appnexus.leave.LeavePocConfiguration.class})
 public class PlatformApplication {
     /**

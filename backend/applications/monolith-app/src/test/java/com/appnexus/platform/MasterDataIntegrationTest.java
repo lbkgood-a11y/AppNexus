@@ -21,7 +21,7 @@ class MasterDataIntegrationTest extends DatabaseTestSupport {
   @Test void administratorCanManageButOrdinaryAndRevokedMembersCannot(){
     UUID tenant=UUID.randomUUID(),adminAccount=UUID.randomUUID(),adminMember=UUID.randomUUID(),ordinaryAccount=UUID.randomUUID(),ordinaryMember=UUID.randomUUID();
     jdbc.update("INSERT INTO platform_tenant(id,name) VALUES(UUID_TO_BIN(?),'主数据集成测试租户')",tenant.toString());
-    com.appnexus.platform.persistence.configuration.StandardDictionaryDefaults.seed(jdbc,tenant,null);
+    DictionaryFixtures.seed(jdbc,tenant,null);
     for(var pair:List.of(Map.entry(adminAccount,adminMember),Map.entry(ordinaryAccount,ordinaryMember))){
       jdbc.update("INSERT INTO identity_account(id,username,display_name,password_hash) VALUES(UUID_TO_BIN(?),?,'独立测试成员','unused')",pair.getKey().toString(),"md-"+pair.getKey());
       jdbc.update("INSERT INTO tenant_member(id,tenant_id,account_id) VALUES(UUID_TO_BIN(?),UUID_TO_BIN(?),UUID_TO_BIN(?))",pair.getValue().toString(),tenant.toString(),pair.getKey().toString());

@@ -1,0 +1,1 @@
+var e=`/static/js/vue-plugin-hiprint-Brwmw_1s.js`;export{e as default};

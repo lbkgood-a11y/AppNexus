@@ -64,6 +64,7 @@ class LeavePocTest {
       }
     };
     service = new LeavePocService(jdbc, manager, platform, () -> runtime);
+    service.runtimeFactory(new com.appnexus.platform.persistence.businessobject.MappedObjectRuntimeFactory(jdbc));
     var bridge = new WorkflowBridge();
     engine = new WorkflowEngineConfiguration().workflowProcessEngine(source, manager, bridge);
     approval=new ObjectWorkflowAdapter(service,LeavePocService.SUBMIT_OPERATION,platform,()->runtime,manager);
@@ -76,7 +77,7 @@ class LeavePocTest {
       public boolean tenantAdministrator(com.appnexus.contracts.businessobject.BusinessObjects.Context context) { return active(context); }
       public boolean tenantExists(String tenant) { return tenant.equals("019a65d0-0061-7000-8000-000000000001"); }
     };
-    var documents = com.appnexus.platform.persistence.businessobject.BusinessObjectPersistence.create(jdbc,manager,objectPlatform,()->runtime,List.of(service));
+    var documents = com.appnexus.platform.persistence.businessobject.BusinessObjectPersistence.create(configurationMapper(),manager,objectPlatform,()->runtime,List.of(service));
     service.bindings(() -> documents);
     service.execution(()->com.appnexus.platform.businessobject.BusinessObjectUseCases.execution(List.of(service),documents,new com.appnexus.platform.persistence.businessobject.configuration.JdbcConfigurationTransaction(manager),objectPlatform,()->runtime,()->null));
     runtime.documentBindings(() -> documents);
@@ -226,7 +227,7 @@ class LeavePocTest {
     String id=create(2).get("id").toString();String instance=service.submit(c("applicant"),id).get("instance_id").toString();
     jdbc.update("DELETE FROM leave_poc_approval_cycle WHERE object_id=?",id);
     var invocation=new WorkflowBusiness.Invocation(UUID.randomUUID().toString(),c("applicant"),"LeaveRequest",id,ORG,0,"EXECUTE","",new WorkflowBusiness.Reference(instance,"leave-poc",1,null,"APPROVAL","APPROVED"),null,Map.of());
-    assertThatThrownBy(()->approval.execute(invocation)).isInstanceOf(IllegalArgumentException.class);
+    assertThatThrownBy(()->approval.execute(invocation)).isInstanceOf(com.appnexus.contracts.businessobject.BusinessObjects.Rejection.class);
     assertThat(service.read(c("applicant"),id,null).get("state")).isEqualTo("SUBMITTED");
     assertThat(jdbc.queryForObject("SELECT last_delivery_id FROM leave_poc_request WHERE id=?",String.class,id)).isNull();
   }
@@ -251,4 +252,20 @@ class LeavePocTest {
     assertThat(jdbc.queryForObject("SELECT result FROM leave_poc_approval_cycle WHERE object_id=?",String.class,id)).isEqualTo(state);
   }
 
+
+  /** 隔离测试使用真实 MyBatis/Spring 事务；不使用直连 SqlSession 造成独立提交。 */
+  private static com.appnexus.platform.persistence.businessobject.configuration.ConfigurationMapper configurationMapper() {
+    try {
+      var factory = new org.mybatis.spring.SqlSessionFactoryBean();
+      factory.setDataSource(java.util.Objects.requireNonNull(jdbc.getDataSource()));
+      var configuration = new org.apache.ibatis.session.Configuration();
+      configuration.setLocalCacheScope(org.apache.ibatis.session.LocalCacheScope.STATEMENT);
+      configuration.setCacheEnabled(false);
+      configuration.setCallSettersOnNulls(true);
+      configuration.addMapper(com.appnexus.platform.persistence.businessobject.configuration.ConfigurationMapper.class);
+      factory.setConfiguration(configuration);
+      return new org.mybatis.spring.SqlSessionTemplate(factory.getObject())
+          .getMapper(com.appnexus.platform.persistence.businessobject.configuration.ConfigurationMapper.class);
+    } catch (Exception error) { throw new IllegalStateException("Cannot assemble configuration mapper", error); }
+  }
 }

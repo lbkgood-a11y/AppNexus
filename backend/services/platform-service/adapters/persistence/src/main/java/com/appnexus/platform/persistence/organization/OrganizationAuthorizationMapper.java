@@ -1,6 +1,6 @@
 package com.appnexus.platform.persistence.organization;
 import org.apache.ibatis.annotations.*;
-import com.appnexus.platform.persistence.PlatformScoped;
+import com.appnexus.persistence.mybatis.PlatformScoped;
 /** 仅查询授权存在性，不读取授权人或其他租户的授权详情。 */
 @PlatformScoped(tables={"organization_capability_grant","organization_grant_audit","tenant_member","platform_tenant","organization_administrator_bootstrap","identity_account","tenant_person_organization","tenant_person_position","tenant_organization_position","tenant_organization_unit","platform_administration_audit","access_member_permission","access_permission","access_role","access_role_permission","access_role_data_policy","access_permission_scope_type","access_member_role","access_member_authorization","access_member_authorization_permission","access_effective_tenant_permission"})
 @Mapper

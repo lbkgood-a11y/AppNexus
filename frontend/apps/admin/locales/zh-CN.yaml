@@ -1670,6 +1670,10 @@ businessWorkflow:
   removeReview: 移除此审批步骤
   removeConfirm: 移除此审批步骤及其独立条件（如有）？发布后影响新提交单据。
 businessObject:
+  capabilityOverview: 通用能力
+  capabilityOverviewHint: 能力来自业务对象契约。关联配置选择已发布流程、打印场景或编码规则；字段与操作无需重复定义。
+  contractReference: 契约引用
+  configureCapability: 维护关联配置
   partnerOperations:
     list: "查询客商"
     create: "新增客商"
@@ -2241,6 +2245,9 @@ productCatalog:
   maxItems: "最多选项数"
 
 productV1:
+  organizationId: 归属组织
+  organizationRequired: 请选择有权的归属组织
+  organizationUnknown: 历史归属未知；请按实际业务归属维护
   event_COMPONENT_REPLACE: "更新组合明细"
   specifications: "至少一条有效标准规格"
   components: "有效且版本一致的组成商品"

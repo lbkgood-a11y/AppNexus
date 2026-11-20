@@ -2,7 +2,7 @@ package com.appnexus.platform.persistence.identity;
 import java.util.*;
 import org.apache.ibatis.annotations.*;
 /** 显式关联账号成员和租户状态，不能仅根据客户端 tenantId 读取租户。 */
-@com.appnexus.platform.persistence.PlatformScoped(tables={"tenant_member","platform_tenant"})
+@com.appnexus.persistence.mybatis.PlatformScoped(tables={"tenant_member","platform_tenant"})
 @Mapper
 public interface TenantAccessMapper {
     /** @param tenant 平台配置用例已授权的目标租户 UUID @return 记录是否存在，不代替成员与业务授权 */

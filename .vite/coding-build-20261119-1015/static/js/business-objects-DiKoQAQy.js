@@ -1,0 +1,1 @@
+import{On as e,k as t,mt as n,v as r}from"./runtime-core.esm-bundler-BWKH3opg.js";import{n as i,t as a}from"./businessObjects-BiM29VaN.js";import{r as o}from"./http-D9lbZTPu.js";var s=t({__name:`index`,setup(t){let s=a();return(t,a)=>(n(),r(e(i),{api:e(s),"error-text":e(o)},null,8,[`api`,`error-text`]))}});export{s as default};

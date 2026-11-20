@@ -1,3 +1,4 @@
+import { executeObjectOperation, executeObjectCommand } from "./objectExecution";
 import { http } from "@/utils/http";
 import type { LeaveApi } from "@appnexus/workflow";
 
@@ -30,8 +31,12 @@ export const leaveApi: LeaveApi = {
   organizations: () => http.request("get", "/api/leave-poc/organizations"),
   list: () => http.request("get", "/api/leave-poc"),
   create: (input) => write("", input),
-  submit: (id,operationId) => write("/" + encodeURIComponent(id) + "/submit",{operationId}),
-  print:(id,operationId)=>write('/'+encodeURIComponent(id)+'/print',{operationId}),
+  submit: (id,operationId) => executeObjectCommand("/api/leave-poc/" + encodeURIComponent(id) + "/submit",{operationId}),
+  print:async(id,operationId)=>{
+    const row=await http.request<{basis_version:number}>("get","/api/leave-poc/"+encodeURIComponent(id));
+    const result=await executeObjectOperation({objectType:"LeaveRequest",objectId:id,operationCode:"print",operationId,basisVersion:row.basis_version});
+    return result.output as {id:string;previewUrl:string};
+  },
   update: (id,basisVersion,input)=>write('/'+encodeURIComponent(id),{basisVersion,input},'put'),
   cycles: id=>http.request('get','/api/leave-poc/'+encodeURIComponent(id)+'/cycles'),
   read: (id, taskId) =>

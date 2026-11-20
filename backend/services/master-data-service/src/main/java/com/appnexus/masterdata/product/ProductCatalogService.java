@@ -1,4 +1,5 @@
 package com.appnexus.masterdata.product;
+import com.appnexus.masterdata.adapter.jdbc.ProductCatalogServiceSqlMapper;
 
 import com.appnexus.masterdata.MasterData;
 import com.appnexus.platform.authorization.AccessAuthorization;
@@ -7,7 +8,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
 import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.jdbc.core.JdbcTemplate;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -20,15 +21,17 @@ import static com.appnexus.masterdata.product.CatalogData.*;
  */
 @Service
 public final class ProductCatalogService {
-  private final JdbcTemplate jdbc;
+ private final ProductCatalogServiceSqlMapper statements;
+
+  
   private final AccessAuthorization access;
   private final TransactionTemplate tx;
   private static final Set<String> PURPOSES=Set.of("BASIC","SPEC","QUALITY","EXTENSION");
   private static final String AUDIT_SELECT="BIN_TO_UUID(created_by) creator,created_at,BIN_TO_UUID(updated_by) updater,updated_at";
 
   /** @param jdbc 宿主JDBC，连接时区须为UTC @param access 公开授权端口 @param manager 宿主事务管理器 */
-  public ProductCatalogService(JdbcTemplate jdbc,AccessAuthorization access,PlatformTransactionManager manager){
-    this.jdbc=jdbc;this.access=access;this.tx=new TransactionTemplate(manager);
+  public ProductCatalogService(AccessAuthorization access,PlatformTransactionManager manager,ProductCatalogServiceSqlMapper statements){this.statements=statements;
+    this.access=access;this.tx=new TransactionTemplate(manager);
   }
 
   /** 单位分页结果；总数使用与行完全相同的租户/筛选条件。 */
@@ -41,8 +44,8 @@ public final class ProductCatalogService {
     require(c,"productunit","read");page(keyword,page,size);
     var args=new Object[]{tenant(c),keyword.trim(),keyword.trim()};
     String where=" WHERE tenant_id=UUID_TO_BIN(?) AND (LOCATE(?,code)>0 OR LOCATE(?,name)>0)";
-    long total=jdbc.queryForObject("SELECT COUNT(*) FROM md_product_unit"+where,Long.class,args);
-    var rows=jdbc.query("SELECT BIN_TO_UUID(id) id,code,name,dimension_code,precision_scale,enabled,version,"+AUDIT_SELECT+" FROM md_product_unit"+where+" ORDER BY code,id LIMIT ? OFFSET ?",(r,n)->unit(r),tenant(c),keyword.trim(),keyword.trim(),size,(page-1)*size);
+    long total=statements.unitCount(tenant(c),keyword.trim());
+    var rows=statements.units(tenant(c),keyword.trim(),size,(page-1)*size).stream().map(ProductCatalogService::unit).toList();
     return new UnitPage(rows,total);
   }
 
@@ -50,8 +53,7 @@ public final class ProductCatalogService {
   public Unit createUnit(VerifiedTenantContext c,UnitInput input){
     require(c,"productunit","create");unitInput(input);String id=UUID.randomUUID().toString();
     return integrity(()->tx.execute(status->{
-      jdbc.update("INSERT INTO md_product_unit(id,tenant_id,code,name,dimension_code,precision_scale,created_by,updated_by) VALUES(UUID_TO_BIN(?),UUID_TO_BIN(?),?,?,?,?,UUID_TO_BIN(?),UUID_TO_BIN(?))",
-        id,tenant(c),input.code().trim(),input.name().trim(),input.dimensionCode().trim(),input.precisionScale(),actor(c),actor(c));
+      statements.statement1(id,tenant(c),input.code().trim(),input.name().trim(),input.dimensionCode().trim(),input.precisionScale(),actor(c),actor(c));
       return readUnit(c,id);
     }));
   }
@@ -64,8 +66,7 @@ public final class ProductCatalogService {
   public Unit updateUnit(VerifiedTenantContext c,String id,UnitInput input){
     require(c,"productunit","update");uuid(id);unitInput(input);
     return tx.execute(status->{
-      int count=jdbc.update("UPDATE md_product_unit SET name=?,version=version+1,updated_by=UUID_TO_BIN(?),updated_at=CURRENT_TIMESTAMP(6) WHERE tenant_id=UUID_TO_BIN(?) AND id=UUID_TO_BIN(?) AND code=? AND dimension_code=? AND precision_scale=? AND version=?",
-        input.name().trim(),actor(c),tenant(c),id,input.code().trim(),input.dimensionCode().trim(),input.precisionScale(),input.version());
+      int count=statements.statement2(input.name().trim(),actor(c),tenant(c),id,input.code().trim(),input.dimensionCode().trim(),input.precisionScale(),input.version());
       changed(count);return readUnit(c,id);
     });
   }
@@ -74,7 +75,7 @@ public final class ProductCatalogService {
   public Unit statusUnit(VerifiedTenantContext c,String id,Status input){
     require(c,"productunit","set_status");uuid(id);statusInput(input);
     return tx.execute(status->{
-      changed(jdbc.update("UPDATE md_product_unit SET enabled=?,version=version+1,updated_by=UUID_TO_BIN(?),updated_at=CURRENT_TIMESTAMP(6) WHERE tenant_id=UUID_TO_BIN(?) AND id=UUID_TO_BIN(?) AND version=?",input.enabled(),actor(c),tenant(c),id,input.version()));
+      changed(statements.statement3(input.enabled(),actor(c),tenant(c),id,input.version()));
       return readUnit(c,id);
     });
   }
@@ -98,8 +99,7 @@ public final class ProductCatalogService {
     require(c,"productcategory","create");categoryInput(input);String id=UUID.randomUUID().toString();
     return integrity(()->tx.execute(status->{
       lockTree(c);var all=readTree(c);validateParent(all,input.parentId());depthFor(all,input.parentId());
-      jdbc.update("INSERT INTO md_product_category(id,tenant_id,code,name,parent_id,created_by,updated_by) VALUES(UUID_TO_BIN(?),UUID_TO_BIN(?),?,?,UUID_TO_BIN(?),UUID_TO_BIN(?),UUID_TO_BIN(?))",
-        id,tenant(c),input.code().trim(),input.name().trim(),input.parentId(),actor(c),actor(c));
+      statements.statement4(id,tenant(c),input.code().trim(),input.name().trim(),input.parentId(),actor(c),actor(c));
       return readTree(c).get(id);
     }));
   }
@@ -114,8 +114,7 @@ public final class ProductCatalogService {
       var proposed=new LinkedHashMap<>(all);
       proposed.put(id,new Category(id,old.code(),input.name().trim(),input.parentId(),0,old.enabled(),old.currentConfigId(),old.version(),old.audit()));
       for(var row:proposed.values())depth(proposed,row.id(),new HashSet<>());
-      changed(jdbc.update("UPDATE md_product_category SET name=?,parent_id=UUID_TO_BIN(?),version=version+1,updated_by=UUID_TO_BIN(?),updated_at=CURRENT_TIMESTAMP(6) WHERE tenant_id=UUID_TO_BIN(?) AND id=UUID_TO_BIN(?) AND version=?",
-        input.name().trim(),input.parentId(),actor(c),tenant(c),id,input.version()));
+      changed(statements.statement5(input.name().trim(),input.parentId(),actor(c),tenant(c),id,input.version()));
       return readTree(c).get(id);
     }));
   }
@@ -128,8 +127,7 @@ public final class ProductCatalogService {
       if(current==null||current.version()!=input.version())throw changed();
       if(input.enabled())validateParent(all,current.parentId());
       else for(var row:all.values())if(row.enabled()&&!row.id().equals(id)&&isDescendant(all,row,id))throw invalid("PRODUCT_CATEGORY_HAS_ENABLED_CHILD");
-      changed(jdbc.update("UPDATE md_product_category SET enabled=?,version=version+1,updated_by=UUID_TO_BIN(?),updated_at=CURRENT_TIMESTAMP(6) WHERE tenant_id=UUID_TO_BIN(?) AND id=UUID_TO_BIN(?) AND version=?",
-        input.enabled(),actor(c),tenant(c),id,input.version()));
+      changed(statements.statement6(input.enabled(),actor(c),tenant(c),id,input.version()));
       return readTree(c).get(id);
     });
   }
@@ -149,19 +147,19 @@ public final class ProductCatalogService {
       var selected=new LinkedHashMap<String,String>();var attributes=new HashSet<String>();
       for(String purpose:List.of("BASIC","SPEC","QUALITY","EXTENSION")){
         String versionId=input.templates().get(purpose);if(versionId==null)continue;uuid(versionId);
-        var versions=jdbc.queryForList("SELECT tv.state,t.purpose,t.enabled FROM md_product_template_version tv JOIN md_product_template t ON t.tenant_id=tv.tenant_id AND t.id=tv.template_id WHERE tv.tenant_id=UUID_TO_BIN(?) AND tv.id=UUID_TO_BIN(?) FOR UPDATE",tenant(c),versionId);
+        var versions=statements.statement7(tenant(c),versionId);
         if(versions.size()!=1||!"PUBLISHED".equals(versions.getFirst().get("state"))||!purpose.equals(versions.getFirst().get("purpose"))||!Boolean.TRUE.equals(versions.getFirst().get("enabled")))throw invalid("PRODUCT_TEMPLATE_NOT_PUBLISHED");
-        var items=jdbc.queryForList("SELECT BIN_TO_UUID(attribute_id) id FROM md_product_template_item WHERE tenant_id=UUID_TO_BIN(?) AND template_version_id=UUID_TO_BIN(?)",String.class,tenant(c),versionId);
+        var items=statements.statement8(tenant(c),versionId);
         if(items.isEmpty())throw invalid("PRODUCT_TEMPLATE_EMPTY");
         for(String attribute:items)if(!attributes.add(attribute))throw invalid("PRODUCT_CONFIG_ATTRIBUTE_DUPLICATED");
         selected.put(purpose,versionId);
       }
-      long revision=jdbc.queryForObject("SELECT COALESCE(MAX(revision_no),0)+1 FROM md_product_category_config WHERE tenant_id=UUID_TO_BIN(?) AND category_id=UUID_TO_BIN(?)",Long.class,tenant(c),id);
+      long revision=statements.statement9(tenant(c),id);
       String configId=UUID.randomUUID().toString();
-      jdbc.update("INSERT INTO md_product_category_config(id,tenant_id,category_id,revision_no,display_path_snapshot,service_unit_required,created_by,updated_by) VALUES(UUID_TO_BIN(?),UUID_TO_BIN(?),UUID_TO_BIN(?),?,?,?,UUID_TO_BIN(?),UUID_TO_BIN(?))",configId,tenant(c),id,revision,path(all,id),input.serviceUnitRequired(),actor(c),actor(c));
-      for(var entry:selected.entrySet())jdbc.update("INSERT INTO md_product_category_template(id,tenant_id,config_id,purpose,template_version_id,created_by,updated_by) VALUES(UUID_TO_BIN(?),UUID_TO_BIN(?),UUID_TO_BIN(?),?,UUID_TO_BIN(?),UUID_TO_BIN(?),UUID_TO_BIN(?))",UUID.randomUUID().toString(),tenant(c),configId,entry.getKey(),entry.getValue(),actor(c),actor(c));
-      jdbc.update("INSERT INTO md_product_category_config_item(id,tenant_id,config_id,purpose,template_version_id,template_item_id,attribute_id,attribute_revision_id,data_type,created_by,updated_by) SELECT UUID_TO_BIN(UUID()),b.tenant_id,b.config_id,b.purpose,b.template_version_id,i.id,i.attribute_id,i.attribute_revision_id,i.data_type,UUID_TO_BIN(?),UUID_TO_BIN(?) FROM md_product_category_template b JOIN md_product_template_item i ON i.tenant_id=b.tenant_id AND i.template_version_id=b.template_version_id WHERE b.tenant_id=UUID_TO_BIN(?) AND b.config_id=UUID_TO_BIN(?)",actor(c),actor(c),tenant(c),configId);
-      changed(jdbc.update("UPDATE md_product_category SET current_config_id=UUID_TO_BIN(?),version=version+1,updated_by=UUID_TO_BIN(?),updated_at=CURRENT_TIMESTAMP(6) WHERE tenant_id=UUID_TO_BIN(?) AND id=UUID_TO_BIN(?) AND version=?",configId,actor(c),tenant(c),id,input.version()));
+      statements.statement10(configId,tenant(c),id,revision,path(all,id),input.serviceUnitRequired(),actor(c),actor(c));
+      for(var entry:selected.entrySet())statements.statement11(UUID.randomUUID().toString(),tenant(c),configId,entry.getKey(),entry.getValue(),actor(c),actor(c));
+      statements.statement12(actor(c),actor(c),tenant(c),configId);
+      changed(statements.statement13(configId,actor(c),tenant(c),id,input.version()));
       return configRow(c,id,configId);
     }));
   }
@@ -173,19 +171,17 @@ public final class ProductCatalogService {
   }
 
   private Configuration configRow(VerifiedTenantContext c,String categoryId,String configId){
-    var rows=jdbc.query("SELECT BIN_TO_UUID(id) id,revision_no,display_path_snapshot,service_unit_required,"+AUDIT_SELECT+" FROM md_product_category_config WHERE tenant_id=UUID_TO_BIN(?) AND category_id=UUID_TO_BIN(?) AND id=UUID_TO_BIN(?)",
-      (r,n)->new Configuration(r.getString("id"),categoryId,r.getLong("revision_no"),r.getString("display_path_snapshot"),r.getBoolean("service_unit_required"),slots(c,configId),audit(r)),tenant(c),categoryId,configId);
+    var rows=statements.configuration(tenant(c),categoryId,configId).stream().map(row->new Configuration((String)row.get("id"),categoryId,((Number)row.get("revision_no")).longValue(),(String)row.get("display_path_snapshot"),Boolean.TRUE.equals(row.get("service_unit_required")),slots(c,configId),audit(row))).toList();
     if(rows.isEmpty())throw changed();return rows.getFirst();
   }
 
   /** 事务锚点不借用其他领域表；INSERT IGNORE仅建首次锁行，不更新其创建责任。 */
   private void lockTree(VerifiedTenantContext c){
-    jdbc.update("INSERT IGNORE INTO md_product_category_guard(tenant_id,created_by,updated_by) VALUES(UUID_TO_BIN(?),UUID_TO_BIN(?),UUID_TO_BIN(?))",tenant(c),actor(c),actor(c));
-    jdbc.queryForObject("SELECT BIN_TO_UUID(tenant_id) FROM md_product_category_guard WHERE tenant_id=UUID_TO_BIN(?) FOR UPDATE",String.class,tenant(c));
+    statements.statement14(tenant(c),actor(c),actor(c));
+    statements.statement15(tenant(c));
   }
   private Map<String,Category> readTree(VerifiedTenantContext c){
-    var rows=jdbc.query("SELECT BIN_TO_UUID(id) id,code,name,BIN_TO_UUID(parent_id) parent,enabled,BIN_TO_UUID(current_config_id) config,version,"+AUDIT_SELECT+" FROM md_product_category WHERE tenant_id=UUID_TO_BIN(?)",
-      (r,n)->new Category(r.getString("id"),r.getString("code"),r.getString("name"),r.getString("parent"),0,r.getBoolean("enabled"),r.getString("config"),r.getLong("version"),audit(r)),tenant(c));
+    var rows=statements.tree(tenant(c)).stream().map(row->new Category((String)row.get("id"),(String)row.get("code"),(String)row.get("name"),(String)row.get("parent"),0,Boolean.TRUE.equals(row.get("enabled")),(String)row.get("config"),((Number)row.get("version")).longValue(),audit(row))).toList();
     var all=new LinkedHashMap<String,Category>();for(var row:rows)all.put(row.id(),row);
     var result=new LinkedHashMap<String,Category>();
     for(var row:rows)result.put(row.id(),new Category(row.id(),row.code(),row.name(),row.parentId(),depth(all,row.id(),new HashSet<>()),row.enabled(),row.currentConfigId(),row.version(),row.audit()));
@@ -210,16 +206,15 @@ public final class ProductCatalogService {
     var parts=new LinkedList<String>();while(id!=null){var row=all.get(id);parts.addFirst(row.name());id=row.parentId();}return String.join(" / ",parts);
   }
   private Unit readUnit(VerifiedTenantContext c,String id){
-    var rows=jdbc.query("SELECT BIN_TO_UUID(id) id,code,name,dimension_code,precision_scale,enabled,version,"+AUDIT_SELECT+" FROM md_product_unit WHERE tenant_id=UUID_TO_BIN(?) AND id=UUID_TO_BIN(?)",(r,n)->unit(r),tenant(c),id);
+    var rows=statements.unit(tenant(c),id).stream().map(ProductCatalogService::unit).toList();
     if(rows.isEmpty())throw changed();return rows.getFirst();
   }
-  private static Unit unit(ResultSet r)throws SQLException{return new Unit(r.getString("id"),r.getString("code"),r.getString("name"),r.getString("dimension_code"),r.getInt("precision_scale"),r.getBoolean("enabled"),r.getLong("version"),audit(r));}
-  private static MasterData.Audit audit(ResultSet r)throws SQLException{
-    return new MasterData.Audit(r.getString("creator"),r.getTimestamp("created_at")==null?null:r.getTimestamp("created_at").toInstant().toString(),r.getString("updater"),r.getTimestamp("updated_at")==null?null:r.getTimestamp("updated_at").toInstant().toString());
-  }
+  private static Unit unit(Map<String,Object> row){return new Unit((String)row.get("id"),(String)row.get("code"),(String)row.get("name"),(String)row.get("dimension_code"),((Number)row.get("precision_scale")).intValue(),Boolean.TRUE.equals(row.get("enabled")),((Number)row.get("version")).longValue(),audit(row));}
+  private static MasterData.Audit audit(Map<String,Object> row){return new MasterData.Audit((String)row.get("creator"),utc(row.get("created_at")),(String)row.get("updater"),utc(row.get("updated_at")));}
+  private static String utc(Object value){return value==null?null:((java.sql.Timestamp)value).toInstant().toString();}
   private Map<String,String> slots(VerifiedTenantContext c,String configId){
     var slots=emptySlots();
-    jdbc.query("SELECT purpose,BIN_TO_UUID(template_version_id) version_id FROM md_product_category_template WHERE tenant_id=UUID_TO_BIN(?) AND config_id=UUID_TO_BIN(?)",rs->{slots.put(rs.getString("purpose"),rs.getString("version_id"));},tenant(c),configId);
+    for(var row:statements.slots(tenant(c),configId))slots.put((String)row.get("purpose"),(String)row.get("version_id"));
     return slots;
   }
   private static Map<String,String> emptySlots(){var result=new LinkedHashMap<String,String>();for(String purpose:List.of("BASIC","SPEC","QUALITY","EXTENSION"))result.put(purpose,null);return result;}

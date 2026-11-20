@@ -1,3 +1,4 @@
+import { executeObjectCommand } from "./objectExecution";
 import {http} from "@/utils/http";
 import type {ProductApi} from "@appnexus/master-data/product-types";
 const base="/api/master-data/product";
@@ -8,6 +9,7 @@ async function mutate<T>(method:"post"|"put",url:string,data:object,key?:string)
  return http.request<T>(method,url,{data,headers:{[csrf.headerName]:csrf.token,...(key?{"Idempotency-Key":key}:{})}});
 }
 export const productV1Api:ProductApi={
+ organizations:action=>http.request("get",base+"/organizations/"+action),
  images:id=>http.request("get",object(id)+"/images"),
  imageUrl:(id,image)=>object(id)+"/images/"+encodeURIComponent(image)+"/content",
  uploadImage:async(id,version,file)=>{const csrf=await http.request<{headerName:string;token:string}>("get","/bff/csrf");return http.request("post",object(id)+"/images",{params:{version},data:file,headers:{[csrf.headerName]:csrf.token,"Content-Type":file.type}});},
@@ -20,7 +22,7 @@ export const productV1Api:ProductApi={
  approvalSnapshot:(id,taskId)=>http.request("get",base+"/approval-requests/"+encodeURIComponent(id),{params:{taskId}}),
  approvals:id=>http.request("get",object(id)+"/approvals"),
  approvalOrganizations:()=>http.request("get",base+"/approval-organizations"),
- submitApproval:(id,version,organizationId,key)=>mutate("post",object(id)+"/approval",{version,organizationId},key),
+ submitApproval:(id,version,organizationId,key)=>executeObjectCommand(object(id)+"/approval",{version,organizationId},key),
  operations:()=>http.request("get","/api/operation-decisions"),
  list:query=>http.request("get",base,{params:query}),
  read:id=>http.request("get",object(id)),

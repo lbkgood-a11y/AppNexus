@@ -1,0 +1,1 @@
+import{t as e}from"./http-A7lxFL0x.js";import{i as t}from"./axios-BZbqlBhc.js";function n(e,t){return r.apply(this,arguments)}function r(){return r=t(function*(t,n){let r=new Set(yield e.request(`get`,t===`platform`?`/bff/operation-decisions`:`/api/operation-decisions`));return Object.keys(n).filter(e=>r.has(n[e]))}),r.apply(this,arguments)}export{n as t};

@@ -1,5 +1,5 @@
 package com.appnexus.platform.persistence.platformscope;
-import com.appnexus.platform.persistence.PlatformScoped;
+import com.appnexus.persistence.mybatis.PlatformScoped;
 import java.util.*;
 import org.apache.ibatis.annotations.*;
 /** 数据范围解析 Mapper；只返回已通过有效主体、角色和权限连接验证的结构化策略。 */

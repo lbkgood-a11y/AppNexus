@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.appnexus.masterdata.PartnerDetailMapper">
+<select id="read" resultType="map"><choose>
+<when test="bank">SELECT BIN_TO_UUID(id) id,tax_account taxAccount,basic_account basicAccount,is_default isDefault,bank_name bankName,account_number accountNumber,account_alias accountAlias,currency currency,cnaps cnaps,swift_code swiftCode,remarks remarks,BIN_TO_UUID(created_by) creator,created_at,BIN_TO_UUID(updated_by) updater,updated_at FROM md_partner_bank_account WHERE tenant_id=UUID_TO_BIN(#{tenant}) AND partner_id=UUID_TO_BIN(#{parent}) AND deleted=FALSE ORDER BY created_at,id</when>
+<otherwise>SELECT BIN_TO_UUID(id) id,contact_type contactType,contact_name contactName,phone phone,address address,is_default isDefault,email email,remarks remarks,BIN_TO_UUID(created_by) creator,created_at,BIN_TO_UUID(updated_by) updater,updated_at FROM md_partner_contact WHERE tenant_id=UUID_TO_BIN(#{tenant}) AND partner_id=UUID_TO_BIN(#{parent}) AND deleted=FALSE ORDER BY created_at,id</otherwise>
+</choose></select>
+<insert id="create"><choose>
+<when test="bank">INSERT INTO md_partner_bank_account(tax_account,basic_account,is_default,bank_name,account_number,account_alias,currency,cnaps,swift_code,remarks,created_by,updated_by,id,tenant_id,partner_id) VALUES(#{values.taxAccount},#{values.basicAccount},#{values.isDefault},#{values.bankName},#{values.accountNumber},#{values.accountAlias},#{values.currency},#{values.cnaps},#{values.swiftCode},#{values.remarks},UUID_TO_BIN(#{actor}),UUID_TO_BIN(#{actor}),UUID_TO_BIN(#{id}),UUID_TO_BIN(#{tenant}),UUID_TO_BIN(#{parent}))</when>
+<otherwise>INSERT INTO md_partner_contact(contact_type,contact_name,phone,address,is_default,email,remarks,created_by,updated_by,id,tenant_id,partner_id) VALUES(#{values.contactType},#{values.contactName},#{values.phone},#{values.address},#{values.isDefault},#{values.email},#{values.remarks},UUID_TO_BIN(#{actor}),UUID_TO_BIN(#{actor}),UUID_TO_BIN(#{id}),UUID_TO_BIN(#{tenant}),UUID_TO_BIN(#{parent}))</otherwise>
+</choose></insert>
+<update id="update"><choose>
+<when test="bank">UPDATE md_partner_bank_account SET tax_account=#{values.taxAccount},basic_account=#{values.basicAccount},is_default=#{values.isDefault},bank_name=#{values.bankName},account_number=#{values.accountNumber},account_alias=#{values.accountAlias},currency=#{values.currency},cnaps=#{values.cnaps},swift_code=#{values.swiftCode},remarks=#{values.remarks},updated_by=UUID_TO_BIN(#{actor}),updated_at=CURRENT_TIMESTAMP(6) WHERE tenant_id=UUID_TO_BIN(#{tenant}) AND partner_id=UUID_TO_BIN(#{parent}) AND id=UUID_TO_BIN(#{id})</when>
+<otherwise>UPDATE md_partner_contact SET contact_type=#{values.contactType},contact_name=#{values.contactName},phone=#{values.phone},address=#{values.address},is_default=#{values.isDefault},email=#{values.email},remarks=#{values.remarks},updated_by=UUID_TO_BIN(#{actor}),updated_at=CURRENT_TIMESTAMP(6) WHERE tenant_id=UUID_TO_BIN(#{tenant}) AND partner_id=UUID_TO_BIN(#{parent}) AND id=UUID_TO_BIN(#{id})</otherwise>
+</choose></update>
+<update id="delete"><choose>
+<when test="bank">UPDATE md_partner_bank_account SET deleted=TRUE,updated_by=UUID_TO_BIN(#{actor}),updated_at=CURRENT_TIMESTAMP(6) WHERE tenant_id=UUID_TO_BIN(#{tenant}) AND partner_id=UUID_TO_BIN(#{parent}) AND id=UUID_TO_BIN(#{id})</when>
+<otherwise>UPDATE md_partner_contact SET deleted=TRUE,updated_by=UUID_TO_BIN(#{actor}),updated_at=CURRENT_TIMESTAMP(6) WHERE tenant_id=UUID_TO_BIN(#{tenant}) AND partner_id=UUID_TO_BIN(#{parent}) AND id=UUID_TO_BIN(#{id})</otherwise>
+</choose></update>
+</mapper>

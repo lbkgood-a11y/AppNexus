@@ -2,7 +2,7 @@ package com.appnexus.platform.security;
 
 import java.util.*;
 import org.springframework.http.*;
-import org.springframework.jdbc.core.JdbcTemplate;
+
 import org.springframework.security.core.Authentication;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
@@ -13,10 +13,12 @@ import com.appnexus.platform.tenant.PlatformAdministration;
 @EndpointPolicy(EndpointPolicy.Domain.PLATFORM_ADMINISTRATION)
 @RequestMapping("/bff/platform/tasks")
 public class TaskManagementController {
+    private final TaskManagementControllerSqlMapper statements;
+
     private final ReliableEvents events;
     private final PlatformAdministration platform;
-    private final JdbcTemplate jdbc;
-    public TaskManagementController(ReliableEvents events,PlatformAdministration platform,JdbcTemplate jdbc){this.events=events;this.platform=platform;this.jdbc=jdbc;}
+    
+    public TaskManagementController(ReliableEvents events,PlatformAdministration platform,TaskManagementControllerSqlMapper statements){this.statements=statements;this.events=events;this.platform=platform;}
     /** 最近任务最多 50 条；平台级运维入口，不提供租户普通成员访问。 */
     @EndpointOperation("platform.task:read") @com.appnexus.contracts.operation.RecordAuditSource(table="platform_outbox",tenant=false)
  @GetMapping
@@ -26,7 +28,7 @@ public class TaskManagementController {
     ResponseEntity<Void> retry(Authentication auth,@PathVariable UUID id){
         require(auth);
         if(!events.retry(id))throw AccountSettingsController.problem(HttpStatus.CONFLICT,"TASK_NOT_MANUAL","任务不处于人工处理状态");
-        jdbc.update("INSERT INTO platform_administration_audit(actor_account_id,action,target_id,tenant_id) VALUES(UUID_TO_BIN(?),'OUTBOX_RETRIED',UUID_TO_BIN(?),NULL)",auth.getName(),id.toString());
+        statements.statement1(auth.getName(),id.toString());
         return ResponseEntity.noContent().cacheControl(CacheControl.noStore()).build();
     }
     private void require(Authentication auth){if(!platform.isAdministrator(UUID.fromString(auth.getName())))throw AccountSettingsController.problem(HttpStatus.FORBIDDEN,"PLATFORM_DENIED","无平台管理权限");}

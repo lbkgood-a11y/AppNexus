@@ -4,7 +4,7 @@ export interface ProductValue {templateItemId:string;value:string|null;optionIds
 export interface ProductField {templateItemId:string;attributeId:string;revisionId:string;purpose:"BASIC"|"SPEC"|"QUALITY"|"EXTENSION";name:string;dataType:string;numericScale:number|null;validationJson?:string|null;groupCode:string;groupName:string;requiredFlag:boolean;allowCustom:boolean;searchable:boolean;unitId:string|null;unitCode:string|null;unitName:string|null;options:Array<{id:string;code:string;label:string;enabled:boolean}>}
 export interface ProductConfiguration {id:string;categoryId:string;revision:number;path:string;serviceUnitRequired:boolean;fields:ProductField[];templates:Record<string,string|null>}
 export interface ProductOption {id:string;code:string;name:string;configId?:string|null}
-export interface ProductRow {audit?:RecordAudit;id:string;code:string;name:string;productForm:string|null;status:"DRAFT"|"ENABLED"|"DISABLED";structureState:string;archivedAt:string|null;version:number}
+export interface ProductRow {organizationId?:string|null;audit?:RecordAudit;id:string;code:string;name:string;productForm:string|null;status:"DRAFT"|"ENABLED"|"DISABLED";structureState:string;archivedAt:string|null;version:number}
 export interface ProductRecord extends ProductRow {approvalPending?:boolean;specificationMode?:"NONE"|"STANDARD"|"CUSTOM";
  barcode?:string;shortName:string|null;description:string|null;brand:string|null;origin:string|null;categoryId:string|null;configId:string|null;unitId:string|null;structureRevision:number;
  completionIssues:string[];audit:RecordAudit;
@@ -13,8 +13,8 @@ export interface ProductRecord extends ProductRow {approvalPending?:boolean;spec
  baseUnit?:{code:string;name:string};categoryConfiguration?:{revision:number;path:string};
  legacyEnabled:boolean|null;legacySpecificationOriginal:string|null;legacyDisposition:string|null;
 }
-export interface ProductDraft {code:string;name:string;barcode?:string;shortName:string|null;categoryId:string|null;configId:string|null;productForm:string|null;unitId:string|null;description:string|null;brand:string|null;origin:string|null;values:ProductValue[]}
-export interface ProductUpdate {name:string;barcode?:string;shortName:string|null;description:string|null;brand:string|null;origin:string|null;values:ProductValue[];version:number}
+export interface ProductDraft {organizationId:string|null;code:string;name:string;barcode?:string;shortName:string|null;categoryId:string|null;configId:string|null;productForm:string|null;unitId:string|null;description:string|null;brand:string|null;origin:string|null;values:ProductValue[]}
+export interface ProductUpdate {organizationId?:string|null;name:string;barcode?:string;shortName:string|null;description:string|null;brand:string|null;origin:string|null;values:ProductValue[];version:number}
 /** 迁移源版本与完整目标固定绑定；退出项由预览显示并经用户明确确认。 */
 export interface ProductMigration {specificationMode?:"NONE"|"STANDARD"|"CUSTOM";retiredSpecificationIds?:string[];sourceVersion:number;sourceStructureRevision:number;sourceCategoryConfigId:string|null;categoryId:string|null;configId:string|null;productForm:string|null;unitId:string|null;values:ProductValue[];droppedItemIds:string[];reason:string;legacyDisposition:string|null}
 export interface ProductPreview {sourceVersion:number;sourceStructureRevision:number;target:ProductMigration;completionIssues:string[];droppedItemIds:string[];previewToken:string;expiresAt:string;executable:boolean}
@@ -23,6 +23,8 @@ export interface ProductChange {id:string;version:number;eventType:string;before
 export interface ProductQuery {name:string;code:string;form?:string;status?:string;categoryId?:string;archived:boolean;page:number;size:number;configId?:string;attributeFilters?:string}
 /** 所有API由应用壳注入真实Cookie/CSRF；组件不持久化token，不自动重放写入。 */
 export interface ProductApi {
+ /** 当前操作可写归属组织；来源为服务端统一权限范围，不依赖组织管理权限。 */
+ organizations(action:"create"|"update"):Promise<Array<{id:string;name:string}>>;
  operations():Promise<string[]>;
  approvalSnapshot(id:string,taskId?:string):Promise<{state:string;productVersion:number;snapshot:Record<string,any>}>;
  approvals(id:string):Promise<Array<Record<string,any>>>;

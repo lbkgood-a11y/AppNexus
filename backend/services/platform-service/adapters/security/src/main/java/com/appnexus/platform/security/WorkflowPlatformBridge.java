@@ -4,7 +4,6 @@ import com.appnexus.contracts.workflow.*;
 import com.appnexus.platform.authorization.AccessAuthorization;
 import com.appnexus.platform.tenant.TenantAccess;
 import java.util.*;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
 /** 平台公开契约适配：组织查询显式带租户与有效期，不授予单据数据权，也不读取工作流表。 */
@@ -12,22 +11,22 @@ import org.springframework.stereotype.Component;
 public final class WorkflowPlatformBridge implements WorkflowPlatform {
   private final AccessAuthorization access;
   private final TenantAccess tenants;
-  private final JdbcTemplate jdbc;
+  private final CapabilityDirectoryMapper mapper;
   private final org.springframework.beans.factory.ObjectProvider<com.appnexus.platform.authorization.FieldProtection> fields;
   private final com.appnexus.platform.organization.PersonnelExecution personnel;
 
   /**
    * @param access 统一功能授权端口，逐次核验
    * @param tenants 可信有效成员目录，禁止使用客户端成员标识
-   * @param jdbc 组织最小目录的固定租户查询
+   * @param mapper 组织最小目录的固定租户查询
    * @param personnel 已选择人员及任职验证公开端口
    * @param fields 延迟统一字段保护，避免对象目录与平台桥接形成初始化循环；不可缺省放行
    */
   public WorkflowPlatformBridge(
-      AccessAuthorization access, TenantAccess tenants, JdbcTemplate jdbc,com.appnexus.platform.organization.PersonnelExecution personnel,org.springframework.beans.factory.ObjectProvider<com.appnexus.platform.authorization.FieldProtection> fields) {
+      AccessAuthorization access, TenantAccess tenants, CapabilityDirectoryMapper mapper,com.appnexus.platform.organization.PersonnelExecution personnel,org.springframework.beans.factory.ObjectProvider<com.appnexus.platform.authorization.FieldProtection> fields) {
     this.access = access;
     this.tenants = tenants;
-    this.jdbc = jdbc;this.personnel=personnel;this.fields=fields;
+    this.mapper = mapper;this.personnel=personnel;this.fields=fields;
   }
   /** 任务准入由工作流先验证，字段限制仍逐次消费统一权限策略，不能用审批身份绕过。 */
   @Override public Map<String,Object> projectData(WorkflowContext c,String resource,Map<String,Object> values){
@@ -41,17 +40,9 @@ public final class WorkflowPlatformBridge implements WorkflowPlatform {
   public Map<String, List<WorkflowPlatform.Option>> configurationOptions(WorkflowContext c) {
     if (!allowed(c, "workflow:read")) throw new SecurityException("WORKFLOW_CONFIGURATION_DENIED");
     // 流程配置人员需要按名称选人；仅开放有效租户成员名称，不授予人员管理或原文读取权限。
-    var members = jdbc.query("SELECT BIN_TO_UUID(a.id) id,a.display_name name FROM tenant_member m"
-        + " JOIN identity_account a ON a.id=m.account_id WHERE m.tenant_id=UUID_TO_BIN(?)"
-        + " AND m.enabled=TRUE AND m.removed_at IS NULL AND a.enabled=TRUE ORDER BY a.display_name,a.id",
-        (r, n) -> new WorkflowPlatform.Option(r.getString("id"), r.getString("name")), c.tenantId());
-    var organizations = jdbc.query("SELECT BIN_TO_UUID(id) id,name FROM tenant_organization_unit"
-        + " WHERE tenant_id=UUID_TO_BIN(?) AND enabled=TRUE ORDER BY name,id",
-        (r, n) -> new WorkflowPlatform.Option(r.getString("id"), r.getString("name")), c.tenantId());
-    var positions = jdbc.query("SELECT BIN_TO_UUID(p.id) id,CONCAT(u.name,' / ',p.name) name"
-        + " FROM tenant_organization_position p JOIN tenant_organization_unit u ON u.tenant_id=p.tenant_id"
-        + " AND u.id=p.organization_id WHERE p.tenant_id=UUID_TO_BIN(?) AND p.enabled=TRUE AND u.enabled=TRUE ORDER BY u.name,p.name,p.id",
-        (r, n) -> new WorkflowPlatform.Option(r.getString("id"), r.getString("name")), c.tenantId());
+    var members=mapper.members(c.tenantId());
+    var organizations=mapper.organizations(c.tenantId());
+    var positions=mapper.positions(c.tenantId());
     return Map.of("members", members, "organizations", organizations, "positions", positions);
   }
 
@@ -63,7 +54,7 @@ public final class WorkflowPlatformBridge implements WorkflowPlatform {
     if(c.personId()==null||c.organizationId()==null)return List.of();
     var memberships=tenants.available(UUID.fromString(c.actorId())).stream().filter(m->m.tenantId().toString().equals(c.tenantId())).toList();
     if(memberships.isEmpty()||!personnel.allowed(UUID.fromString(c.tenantId()),memberships.getFirst().memberId(),UUID.fromString(c.personId()),UUID.fromString(c.organizationId())))return List.of();
-    return jdbc.query("SELECT BIN_TO_UUID(id) id,name FROM tenant_organization_unit WHERE tenant_id=UUID_TO_BIN(?) AND id=UUID_TO_BIN(?) AND enabled=TRUE",(rs,n)->new WorkflowPlatform.Option(rs.getString("id"),rs.getString("name")),c.tenantId(),c.organizationId());
+    return mapper.organization(c.tenantId(),c.organizationId());
   }
 
   @Override
@@ -72,10 +63,7 @@ public final class WorkflowPlatformBridge implements WorkflowPlatform {
       return tenants.available(UUID.fromString(actor)).stream()
               .anyMatch(m -> m.tenantId().toString().equals(tenant))
           && Boolean.TRUE.equals(
-              jdbc.queryForObject(
-                  "SELECT enabled FROM identity_account WHERE id=UUID_TO_BIN(?)",
-                  Boolean.class,
-                  actor));
+              mapper.activeAccount(actor));
     } catch (IllegalArgumentException e) {
       return false;
     }

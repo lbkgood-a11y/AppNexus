@@ -1,0 +1,1 @@
+import{On as e,k as t,mt as n,v as r}from"./runtime-core.esm-bundler-BWKH3opg.js";import{t as i}from"./WorkflowCenter-CaP5KUnQ.js";import{t as a}from"./workflow-CKNM-bL1.js";import{r as o}from"./http-D9lbZTPu.js";var s=t({__name:`index`,setup(t){return(t,s)=>(n(),r(e(i),{api:e(a),"error-text":e(o)},null,8,[`api`,`error-text`]))}});export{s as default};

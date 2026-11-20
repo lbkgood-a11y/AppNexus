@@ -1,0 +1,5 @@
+from pathlib import Path
+p=Path('backend/services/platform-service/adapters/persistence/src/main/java/com/appnexus/platform/persistence/businessobject/MappedObjectRuntimeFactory.java');s=p.read_text(encoding='utf-8').replace('import org.springframework.jdbc.core.JdbcTemplate;','').replace('private final JdbcTemplate jdbc;','private final ObjectRecordMapper mapper;').replace('MappedObjectRuntimeFactory(JdbcTemplate jdbc){this.jdbc=jdbc;}','MappedObjectRuntimeFactory(ObjectRecordMapper mapper){this.mapper=mapper;}').replace('@param jdbc','@param mapper')
+start=s.index('    var columns=new ArrayList');end=s.index('    if(rows.size()',start);s=s[:start]+'    var rows=mapper.read(m,c,id,lock);\n'+s[end:]
+start=s.index('    var args=new ArrayList');end=s.index('    if(changed!=1)',start);s=s[:start]+'    int changed=mapper.transition(m,c,id,version,from,to,invocation,instance);\n'+s[end:]
+start=s.index('      changed=jdbc.update(');end=s.index(';',start);s=s[:start]+'      changed=mapper.receipt(m,c,id,version,to,invocation,instance)'+s[end:];p.write_text(s,encoding='utf-8')

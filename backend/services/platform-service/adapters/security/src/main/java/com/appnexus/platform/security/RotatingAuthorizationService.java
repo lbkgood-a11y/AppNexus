@@ -4,7 +4,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.*;
 import java.sql.Timestamp;
 import java.util.Objects;
-import org.springframework.jdbc.core.JdbcTemplate;
+
 import org.springframework.security.oauth2.server.authorization.*;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -18,10 +18,12 @@ import org.springframework.security.oauth2.server.authorization.authentication.*
  * 刷新在权威授权行锁中执行，旧摘要保留到族到期；重放删除对应设备授权，不撤销其他设备。
  */
 public final class RotatingAuthorizationService implements OAuth2AuthorizationService {
+    private final RotatingAuthorizationServiceSqlMapper statements;
+
     /** 授权记录中的可信租户、成员和版本；由受控绑定用例写入，不能来自任意请求头。 */
     public static final String TENANT="appnexus.nativeTenant",MEMBER="appnexus.nativeMember",VERSION="appnexus.nativeVersion";
     private final OAuth2AuthorizationService delegate;
-    private final JdbcTemplate jdbc;
+    
     private final TransactionTemplate transactions;
     private final com.appnexus.platform.audit.SecurityLogRepository logs;
     /**
@@ -30,9 +32,9 @@ public final class RotatingAuthorizationService implements OAuth2AuthorizationSe
      * @param manager 与账号、OAuth 授权和安全审计共用的事务管理器
      * @param logs 重放撤销审计端口；记录失败时拒绝刷新，不返回新凭证
      */
-    public RotatingAuthorizationService(OAuth2AuthorizationService delegate,JdbcTemplate jdbc,PlatformTransactionManager manager,
-            com.appnexus.platform.audit.SecurityLogRepository logs){
-        this.delegate=delegate;this.jdbc=jdbc;this.transactions=new TransactionTemplate(manager);this.logs=logs;
+    public RotatingAuthorizationService(OAuth2AuthorizationService delegate,PlatformTransactionManager manager,
+            com.appnexus.platform.audit.SecurityLogRepository logs,RotatingAuthorizationServiceSqlMapper statements){this.statements=statements;
+        this.delegate=delegate;this.transactions=new TransactionTemplate(manager);this.logs=logs;
         // 等待账号/授权锁后必须读取最新提交状态，不能使用首次查询创建的旧快照。
         this.transactions.setIsolationLevel(org.springframework.transaction.TransactionDefinition.ISOLATION_READ_COMMITTED);
     }
@@ -43,8 +45,7 @@ public final class RotatingAuthorizationService implements OAuth2AuthorizationSe
             var refresh=authorization.getRefreshToken();
             if(refresh!=null){
                 var token=refresh.getToken();
-                jdbc.update("INSERT IGNORE INTO identity_refresh_history(token_hash,authorization_id,registered_client_id,expires_at) VALUES(?,?,?,?)",
-                    hash(token.getTokenValue()),authorization.getId(),authorization.getRegisteredClientId(),Timestamp.from(token.getExpiresAt()));
+                statements.statement1(hash(token.getTokenValue()),authorization.getId(),authorization.getRegisteredClientId(),Timestamp.from(token.getExpiresAt()));
             }
         });
     }
@@ -70,10 +71,10 @@ public final class RotatingAuthorizationService implements OAuth2AuthorizationSe
     public NativeTenantContextController.Context bindTenant(String token,java.util.UUID account,java.util.UUID tenant,long expectedVersion,
             com.appnexus.platform.tenant.TenantAccess tenants){
         return transactions.execute(status->{
-            if(jdbc.queryForList("SELECT id FROM identity_account WHERE id=UUID_TO_BIN(?) AND enabled=TRUE FOR UPDATE",account.toString()).isEmpty())throw invalid();
+            if(statements.statement2(account.toString()).isEmpty())throw invalid();
             var existing=delegate.findByToken(token,OAuth2TokenType.ACCESS_TOKEN);
             if(existing==null||!account.toString().equals(existing.getPrincipalName()))throw invalid();
-            jdbc.queryForList("SELECT id FROM oauth2_authorization WHERE id=? FOR UPDATE",existing.getId());
+            statements.statement3(existing.getId());
             existing=delegate.findById(existing.getId());
             if(existing==null||existing.getAccessToken()==null||!existing.getAccessToken().isActive()||!existing.getAccessToken().getToken().getTokenValue().equals(token))throw invalid();
             long version=existing.getAttribute(VERSION) instanceof Number number?number.longValue():0;
@@ -102,19 +103,19 @@ public final class RotatingAuthorizationService implements OAuth2AuthorizationSe
                 // 重放撤销必须提交后才抛 OAuth 错误，否则运行时异常会回滚撤销操作。
                 Authentication result=transactions.execute(status->{
                     // 历史行使用锁定读，避免 MySQL REPEATABLE READ 的早期快照在等待后仍读到旧授权。
-                    var history=jdbc.queryForList("SELECT authorization_id,registered_client_id,expires_at FROM identity_refresh_history WHERE token_hash=? FOR UPDATE",hash(request.getRefreshToken()));
+                    var history=statements.statement4(hash(request.getRefreshToken()));
                     if(history.size()!=1)return null;
                     var entry=history.getFirst();
                     if(!Objects.equals(entry.get("registered_client_id"),client.getRegisteredClient().getId())||
                             !((Timestamp)entry.get("expires_at")).toInstant().isAfter(java.time.Instant.now()))return null;
                     String id=(String)entry.get("authorization_id");
-                    var owners=jdbc.queryForList("SELECT principal_name FROM oauth2_authorization WHERE id=?",id);
+                    var owners=statements.statement5(id);
                     if(owners.isEmpty())return null;
                     String owner=(String)owners.getFirst().get("principal_name");
                     // 与改密、MFA 和管理员撤销统一先锁账号再锁授权；停用账号不能继续刷新。
-                    var active=jdbc.queryForList("SELECT id FROM identity_account WHERE id=UUID_TO_BIN(?) AND enabled=TRUE FOR UPDATE",owner);
+                    var active=statements.statement6(owner);
                     if(active.isEmpty())return null;
-                    var rows=jdbc.queryForList("SELECT id FROM oauth2_authorization WHERE id=? FOR UPDATE",id);
+                    var rows=statements.statement7(id);
                     if(rows.isEmpty())return null;
                     var current=delegate.findById(id);
                     if(current==null)return null;

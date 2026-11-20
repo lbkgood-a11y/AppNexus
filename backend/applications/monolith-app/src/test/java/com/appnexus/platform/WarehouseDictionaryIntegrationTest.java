@@ -22,7 +22,7 @@ class WarehouseDictionaryIntegrationTest extends DatabaseTestSupport {
   jdbc.update("INSERT INTO platform_tenant(id,name) VALUES(UUID_TO_BIN(?),'仓库测试租户')",tenant.toString());
   jdbc.update("INSERT INTO identity_account(id,username,display_name,password_hash) VALUES(UUID_TO_BIN(?),?,'仓库测试账号','unused')",actor.toString(),"warehouse-"+actor);
   jdbc.update("INSERT INTO tenant_member(id,tenant_id,account_id) VALUES(UUID_TO_BIN(?),UUID_TO_BIN(?),UUID_TO_BIN(?))",member.toString(),tenant.toString(),actor.toString());
-  StandardDictionaryDefaults.seed(jdbc,tenant,actor);bootstrap.initialize(tenant,member);
+  DictionaryFixtures.seed(jdbc,tenant,actor);bootstrap.initialize(tenant,member);
   return new VerifiedTenantContext(actor,tenant,member,1);
  }
  private void request(VerifiedTenantContext c){var r=new org.springframework.mock.web.MockHttpServletRequest();r.setAttribute(VerifiedTenantContext.class.getName(),c);org.springframework.web.context.request.RequestContextHolder.setRequestAttributes(new org.springframework.web.context.request.ServletRequestAttributes(r));}

@@ -4,8 +4,8 @@ import com.appnexus.platform.persistence.configuration.DictionaryStandardMigrati
 import com.appnexus.platform.persistence.configuration.StandardDictionaryDefaults;
 import java.util.UUID;
 import org.flywaydb.core.api.migration.*;
-import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.datasource.SingleConnectionDataSource;
+
+
 
 /** 统一全部租户字典标准及业务引用；仅 DML，整批事务失败回滚，保留历史迁移及其资源校验和。 */
 public final class V102__dictionary_value_standard extends BaseJavaMigration {
@@ -21,9 +21,10 @@ public final class V102__dictionary_value_standard extends BaseJavaMigration {
         boolean ownTransaction = connection.getAutoCommit();
         if (ownTransaction) connection.setAutoCommit(false);
         try {
-            var jdbc = new JdbcTemplate(new SingleConnectionDataSource(connection, true));
-            for (String tenant : jdbc.queryForList("SELECT BIN_TO_UUID(id) FROM platform_tenant ORDER BY id", String.class))
-                DictionaryStandardMigration.migrateTenant(jdbc, UUID.fromString(tenant));
+            try(var session=new com.appnexus.persistence.migration.MigrationSession(connection,com.appnexus.platform.persistence.configuration.HistoricalDictionaryMapper.class)){
+                var mapper=session.mapper(com.appnexus.platform.persistence.configuration.HistoricalDictionaryMapper.class);
+                for(String tenant:mapper.tenants())DictionaryStandardMigration.migrateTenant(mapper,UUID.fromString(tenant));
+            }
             if (ownTransaction) connection.commit();
         } catch (Exception error) {
             if (ownTransaction) connection.rollback();

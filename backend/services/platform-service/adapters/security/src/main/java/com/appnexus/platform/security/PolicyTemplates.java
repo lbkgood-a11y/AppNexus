@@ -2,7 +2,7 @@ package com.appnexus.platform.security;
 
 import com.appnexus.platform.authorization.*;
 import java.util.*;
-import org.springframework.jdbc.core.JdbcTemplate;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.databind.json.JsonMapper;
@@ -10,11 +10,13 @@ import tools.jackson.databind.json.JsonMapper;
 /** 角色策略快照模板；复用正式授权保存，模板不能绕过当前权限目录、组织归属或字段执行支持。 */
 @Service
 public class PolicyTemplates {
+    private final PolicyTemplatesSqlMapper statements;
+
     private final RolePermissionManagement roles;
-    private final JdbcTemplate jdbc;
+    
     private final DataAccessCatalog dataAccess;
     private final JsonMapper json=JsonMapper.builder().findAndAddModules().build();
-    public PolicyTemplates(RolePermissionManagement roles,JdbcTemplate jdbc,DataAccessCatalog dataAccess){this.dataAccess=dataAccess;this.roles=roles;this.jdbc=jdbc;}
+    public PolicyTemplates(RolePermissionManagement roles,DataAccessCatalog dataAccess,PolicyTemplatesSqlMapper statements){this.statements=statements;this.dataAccess=dataAccess;this.roles=roles;}
     /** 模板摘要，不返回授权快照给无管理权主体。 */
     public record View(UUID id,String name){}
     /**
@@ -28,7 +30,7 @@ public class PolicyTemplates {
     public View save(RoleManagement.Context context,UUID role,String name){
         if(name==null||name.isBlank()||name.length()>100||name.codePoints().anyMatch(Character::isISOControl))throw invalid();
         var assignment=roles.getAuthorization(context,role);UUID id=UUID.randomUUID();
-        jdbc.update("INSERT INTO access_policy_template(id,owner_id,name,policy_json,created_by) VALUES(UUID_TO_BIN(?),UUID_TO_BIN(?),?,?,UUID_TO_BIN(?))",id.toString(),owner(context).toString(),name.strip(),json.writeValueAsString(assignment),context.actorAccountId().toString());
+        statements.statement1(id.toString(),owner(context).toString(),name.strip(),json.writeValueAsString(assignment),context.actorAccountId().toString());
         return new View(id,name.strip());
     }
     /**
@@ -39,7 +41,7 @@ public class PolicyTemplates {
      */
     public List<View> list(RoleManagement.Context context,UUID role){
         roles.getAuthorization(context,role);
-        return jdbc.query("SELECT BIN_TO_UUID(id) id,name FROM access_policy_template WHERE owner_id=UUID_TO_BIN(?) ORDER BY created_at DESC,id LIMIT 100",(row,index)->new View(UUID.fromString(row.getString("id")),row.getString("name")),owner(context).toString());
+        return statements.summaries(owner(context).toString()).stream().map(row->new View(UUID.fromString((String)row.get("id")),(String)row.get("name"))).toList();
     }
     /**
      * 使用当前目标角色版本覆盖保存模板；所有旧权限和组织字段再次校验，失败不部分应用。
@@ -53,7 +55,7 @@ public class PolicyTemplates {
     @Transactional
     public RolePermissionManagement.AuthorizationAssignment apply(RoleManagement.Context context,UUID role,UUID template,long version,String reason){
         roles.getAuthorization(context,role);
-        var values=jdbc.queryForList("SELECT policy_json FROM access_policy_template WHERE id=UUID_TO_BIN(?) AND owner_id=UUID_TO_BIN(?)",String.class,template.toString(),owner(context).toString());
+        var values=statements.statement2(template.toString(),owner(context).toString());
         if(values.size()!=1)throw invalid();
         var value=json.readValue(values.getFirst(),RolePermissionManagement.AuthorizationAssignment.class);
         if(value.dataPolicies().stream().anyMatch(p->!p.resourceType().equals("organization.unit"))&&!Objects.equals(value.dataAccessVersion(),dataAccess.version()))throw invalid();

@@ -2,7 +2,7 @@ package com.appnexus.platform.persistence.identity;
 import java.util.*;
 import org.apache.ibatis.annotations.*;
 /** 日志 SQL 显式带认证账号条件，不提供跨账号或敏感载荷字段。 */
-@com.appnexus.platform.persistence.PlatformScoped(tables={"account_security_log"})
+@com.appnexus.persistence.mybatis.PlatformScoped(tables={"account_security_log"})
 @Mapper
 public interface SecurityLogMapper {
     /** 参数 action 仅接受服务端枚举名称。 */

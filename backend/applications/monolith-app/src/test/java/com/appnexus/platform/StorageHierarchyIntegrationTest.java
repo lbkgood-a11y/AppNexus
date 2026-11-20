@@ -24,7 +24,7 @@ class StorageHierarchyIntegrationTest extends DatabaseTestSupport {
   @Test void storagePermissionsAreRealAndRevocable(){
     UUID tenant=UUID.randomUUID(),account=UUID.randomUUID(),member=UUID.randomUUID(),ordinaryAccount=UUID.randomUUID(),ordinaryMember=UUID.randomUUID();
     jdbc.update("INSERT INTO platform_tenant(id,name) VALUES(UUID_TO_BIN(?),'库区库位独立测试租户')",tenant.toString());
-    com.appnexus.platform.persistence.configuration.StandardDictionaryDefaults.seed(jdbc,tenant,null);
+    DictionaryFixtures.seed(jdbc,tenant,null);
     for(var pair:List.of(Map.entry(account,member),Map.entry(ordinaryAccount,ordinaryMember))){
       jdbc.update("INSERT INTO identity_account(id,username,display_name,password_hash) VALUES(UUID_TO_BIN(?),?,'库区库位测试成员','unused')",pair.getKey().toString(),"storage-"+pair.getKey());
       jdbc.update("INSERT INTO tenant_member(id,tenant_id,account_id) VALUES(UUID_TO_BIN(?),UUID_TO_BIN(?),UUID_TO_BIN(?))",pair.getValue().toString(),tenant.toString(),pair.getKey().toString());

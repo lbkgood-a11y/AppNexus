@@ -1,0 +1,370 @@
+[
+  {
+    "code": "list",
+    "id": "Product.list",
+    "zh": "查询商品",
+    "en": "List V1 products",
+    "permission": "masterdata.product:read",
+    "preconditions": [],
+    "method": "GET",
+    "path": "/api/master-data/product",
+    "pages": [
+      "master-data/product",
+      "master-data/product-sku"
+    ],
+    "file": "ProductController.java"
+  },
+  {
+    "code": "create",
+    "id": "Product.create",
+    "zh": "新增商品",
+    "en": "Create V1 product",
+    "permission": "masterdata.product:create",
+    "preconditions": [],
+    "method": "POST",
+    "path": "/api/master-data/product",
+    "pages": [
+      "master-data/product"
+    ],
+    "file": "ProductController.java"
+  },
+  {
+    "code": "setStatus",
+    "id": "Product.setStatus",
+    "zh": "启停商品",
+    "en": "Set V1 product status",
+    "permission": "masterdata.product:set_status",
+    "preconditions": [],
+    "method": "PUT",
+    "path": "/api/master-data/product/{id}/status",
+    "pages": [
+      "master-data/product"
+    ],
+    "file": "ProductController.java"
+  },
+  {
+    "code": "read",
+    "id": "Product.read",
+    "zh": "查看商品",
+    "en": "Read V1 product",
+    "permission": "masterdata.product:read",
+    "preconditions": [],
+    "method": "GET",
+    "path": "/api/master-data/product/{id}",
+    "pages": [
+      "master-data/product",
+      "master-data/product-sku"
+    ],
+    "file": "ProductController.java"
+  },
+  {
+    "code": "update",
+    "id": "Product.update",
+    "zh": "编辑商品",
+    "en": "Update V1 product",
+    "permission": "masterdata.product:update",
+    "preconditions": [],
+    "method": "PUT",
+    "path": "/api/master-data/product/{id}",
+    "pages": [
+      "master-data/product"
+    ],
+    "file": "ProductController.java"
+  },
+  {
+    "code": "archiveDraft",
+    "id": "Product.archiveDraft",
+    "zh": "归档商品草稿",
+    "en": "Archive V1 draft",
+    "permission": "masterdata.product:manage_draft",
+    "preconditions": [],
+    "method": "PUT",
+    "path": "/api/master-data/product/{id}/draft-archive",
+    "pages": [
+      "master-data/product"
+    ],
+    "file": "ProductController.java"
+  },
+  {
+    "code": "restoreDraft",
+    "id": "Product.restoreDraft",
+    "zh": "恢复商品草稿",
+    "en": "Restore V1 draft",
+    "permission": "masterdata.product:manage_draft",
+    "preconditions": [],
+    "method": "PUT",
+    "path": "/api/master-data/product/{id}/draft-restore",
+    "pages": [
+      "master-data/product"
+    ],
+    "file": "ProductController.java"
+  },
+  {
+    "code": "readChanges",
+    "id": "Product.readChanges",
+    "zh": "查看商品历史",
+    "en": "Read V1 product changes",
+    "permission": "masterdata.product:read",
+    "preconditions": [],
+    "method": "GET",
+    "path": "/api/master-data/product/{id}/changes",
+    "pages": [
+      "master-data/product"
+    ],
+    "file": "ProductController.java"
+  },
+  {
+    "code": "previewStructure",
+    "id": "Product.previewStructure",
+    "zh": "预览商品结构迁移",
+    "en": "Preview V1 product structure",
+    "permission": "masterdata.product:migrate_structure",
+    "preconditions": [
+      "masterdata.product:read"
+    ],
+    "method": "POST",
+    "path": "/api/master-data/product/{id}/structure-preview",
+    "pages": [
+      "master-data/product"
+    ],
+    "file": "ProductController.java"
+  },
+  {
+    "code": "migrateStructure",
+    "id": "Product.migrateStructure",
+    "zh": "迁移商品结构",
+    "en": "Migrate V1 product structure",
+    "permission": "masterdata.product:migrate_structure",
+    "preconditions": [
+      "masterdata.product:read"
+    ],
+    "method": "PUT",
+    "path": "/api/master-data/product/{id}/structure",
+    "pages": [
+      "master-data/product"
+    ],
+    "file": "ProductController.java"
+  },
+  {
+    "code": "options",
+    "id": "Product.options",
+    "zh": "读取商品配置候选",
+    "en": "Read product options",
+    "permission": "masterdata.product:read",
+    "preconditions": [],
+    "method": "GET",
+    "path": "/api/master-data/product/options",
+    "pages": [
+      "master-data/product"
+    ],
+    "file": "ProductController.java"
+  },
+  {
+    "code": "readConfiguration",
+    "id": "Product.readConfiguration",
+    "zh": "读取商品固定配置",
+    "en": "Read product fixed configuration",
+    "permission": "masterdata.product:read",
+    "preconditions": [],
+    "method": "GET",
+    "path": "/api/master-data/product/configurations/{id}",
+    "pages": [
+      "master-data/product",
+      "master-data/product-sku"
+    ],
+    "file": "ProductController.java"
+  },
+  {
+    "code": "listConfigurations",
+    "id": "Product.listConfigurations",
+    "zh": "查询商品配置版本",
+    "en": "List product configuration versions",
+    "permission": "masterdata.product:read",
+    "preconditions": [],
+    "method": "GET",
+    "path": "/api/master-data/product/categories/{id}/configurations",
+    "pages": [
+      "master-data/product"
+    ],
+    "file": "ProductController.java"
+  },
+  {
+    "code": "reviewLegacySpecification",
+    "id": "Product.reviewLegacySpecification",
+    "zh": "确认旧商品规格原文",
+    "en": "Review legacy product specification",
+    "permission": "masterdata.product:migrate_structure",
+    "preconditions": [
+      "masterdata.product:read"
+    ],
+    "method": "PUT",
+    "path": "/api/master-data/product/{id}/legacy-specification-review",
+    "pages": [
+      "master-data/product"
+    ],
+    "file": "ProductController.java"
+  },
+  {
+    "code": "stageLegacy",
+    "id": "Product.stageLegacy",
+    "zh": "暂存旧商品",
+    "en": "Stage legacy product",
+    "permission": "masterdata.product:stage_legacy",
+    "preconditions": [
+      "masterdata.product:read"
+    ],
+    "method": "POST",
+    "path": "/api/master-data/product/legacy/{id}/stage",
+    "pages": [
+      "master-data/product"
+    ],
+    "file": "ProductController.java"
+  },
+  {
+    "code": "reconcileLegacy",
+    "id": "Product.reconcileLegacy",
+    "zh": "核对旧商品",
+    "en": "Reconcile legacy products",
+    "permission": "masterdata.product:stage_legacy",
+    "preconditions": [
+      "masterdata.product:read"
+    ],
+    "method": "GET",
+    "path": "/api/master-data/product/legacy/reconciliation",
+    "pages": [
+      "master-data/product"
+    ],
+    "file": "ProductController.java"
+  },
+  {
+    "code": "readStructure",
+    "id": "Product.readStructure",
+    "zh": "查询商品结构",
+    "en": "Read structure",
+    "permission": "masterdata.product:read",
+    "preconditions": [],
+    "method": "GET",
+    "path": "/api/master-data/product/{product}/structure-records",
+    "pages": [
+      "master-data/product",
+      "master-data/product-sku"
+    ],
+    "file": "ProductStructureController.java"
+  },
+  {
+    "code": "createSpecification",
+    "id": "Product.createSpecification",
+    "zh": "新增商品规格",
+    "en": "Create specification",
+    "permission": "masterdata.product:manage_structure",
+    "preconditions": [],
+    "method": "POST",
+    "path": "/api/master-data/product/{product}/structure-records/specifications",
+    "pages": [
+      "master-data/product",
+      "master-data/product-sku"
+    ],
+    "file": "ProductStructureController.java"
+  },
+  {
+    "code": "createSku",
+    "id": "Product.createSku",
+    "zh": "新增商品SKU",
+    "en": "Create SKU",
+    "permission": "masterdata.product:manage_structure",
+    "preconditions": [],
+    "method": "POST",
+    "path": "/api/master-data/product/{product}/structure-records/skus",
+    "pages": [
+      "master-data/product",
+      "master-data/product-sku"
+    ],
+    "file": "ProductStructureController.java"
+  },
+  {
+    "code": "addComponent",
+    "id": "Product.addComponent",
+    "zh": "新增组合明细",
+    "en": "Add component",
+    "permission": "masterdata.product:manage_structure",
+    "preconditions": [],
+    "method": "POST",
+    "path": "/api/master-data/product/{product}/structure-records/components",
+    "pages": [
+      "master-data/product",
+      "master-data/product-sku"
+    ],
+    "file": "ProductStructureController.java"
+  },
+  {
+    "code": "setStructureState",
+    "id": "Product.setStructureState",
+    "zh": "启停结构记录",
+    "en": "Set structure state",
+    "permission": "masterdata.product:manage_structure",
+    "preconditions": [],
+    "method": "PUT",
+    "path": "/api/master-data/product/{product}/structure-records/{kind}/{id}/status",
+    "pages": [
+      "master-data/product",
+      "master-data/product-sku"
+    ],
+    "file": "ProductStructureController.java"
+  },
+  {
+    "code": "listImages",
+    "id": "Product.listImages",
+    "zh": "查询商品图片",
+    "en": "List images",
+    "permission": "masterdata.product:read",
+    "preconditions": [],
+    "method": "GET",
+    "path": "/api/master-data/product/{product}/images",
+    "pages": [
+      "master-data/product"
+    ],
+    "file": "ProductImageController.java"
+  },
+  {
+    "code": "uploadImage",
+    "id": "Product.uploadImage",
+    "zh": "上传商品图片",
+    "en": "Upload image",
+    "permission": "masterdata.product:update",
+    "preconditions": [],
+    "method": "POST",
+    "path": "/api/master-data/product/{product}/images",
+    "pages": [
+      "master-data/product"
+    ],
+    "file": "ProductImageController.java"
+  },
+  {
+    "code": "readImage",
+    "id": "Product.readImage",
+    "zh": "查看商品图片",
+    "en": "Read image",
+    "permission": "masterdata.product:read",
+    "preconditions": [],
+    "method": "GET",
+    "path": "/api/master-data/product/{product}/images/{id}/content",
+    "pages": [
+      "master-data/product"
+    ],
+    "file": "ProductImageController.java"
+  },
+  {
+    "code": "detachImage",
+    "id": "Product.detachImage",
+    "zh": "移除商品图片",
+    "en": "Detach image",
+    "permission": "masterdata.product:update",
+    "preconditions": [],
+    "method": "PUT",
+    "path": "/api/master-data/product/{product}/images/{id}/detach",
+    "pages": [
+      "master-data/product"
+    ],
+    "file": "ProductImageController.java"
+  }
+]

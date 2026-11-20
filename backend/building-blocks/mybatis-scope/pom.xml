@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- 仅共享固定SQL范围注解；不依赖业务领域或提供数据库执行入口。 -->
+<project xmlns="http://maven.apache.org/POM/4.0.0">
+  <modelVersion>4.0.0</modelVersion>
+  <parent><groupId>com.appnexus</groupId><artifactId>building-blocks</artifactId><version>0.1.0-SNAPSHOT</version></parent>
+  <artifactId>mybatis-scope</artifactId>
+</project>

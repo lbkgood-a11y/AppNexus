@@ -69,12 +69,13 @@ class BusinessObjectIntegrationTest {
       public boolean tenantExists(String t){return Set.of(TENANT,OTHER).contains(t);}
     };
     leave=new LeavePocService(jdbc,tx,platform,()->runtime);
+    leave.runtimeFactory(new com.appnexus.platform.persistence.businessobject.MappedObjectRuntimeFactory(jdbc));
     Provider order=()->new Descriptor("Order","订单","Order","sales",1,Category.TRANSACTION,List.of(new Field("amount","金额","Amount","NUMBER","元",true)),List.of(
       new Operation("confirm","确认","Confirm","order:confirm","Order.confirm",null,List.of(new OperationAlias("Order.detail.confirm",new PageOperation("order/detail","/orders/detail","订单详情","Order details","POST","/api/orders/{id}/confirm"))),new com.appnexus.contracts.businessobject.InteractionContract("Order.confirm",1,"Order","confirm","确认","Confirm",com.appnexus.contracts.businessobject.InteractionContract.Trigger.USER_ACTION,java.util.List.of(new com.appnexus.contracts.businessobject.InteractionContract.Capability(com.appnexus.contracts.businessobject.InteractionContract.Service.BUSINESS,com.appnexus.contracts.businessobject.InteractionContract.Completion.SYNCHRONOUS,"Order.confirm","",java.util.List.of(),java.util.Set.of(), "Order.confirm.data", 1)))),
       new Operation("print","打印","Print","order:print","Order.print",null,List.of(),new com.appnexus.contracts.businessobject.InteractionContract("Order.print",1,"Order","print","打印","Print",com.appnexus.contracts.businessobject.InteractionContract.Trigger.USER_ACTION,java.util.List.of(new com.appnexus.contracts.businessobject.InteractionContract.Capability(com.appnexus.contracts.businessobject.InteractionContract.Service.PRINT,com.appnexus.contracts.businessobject.InteractionContract.Completion.CONFIRMATION,"order.v1","",java.util.List.of(),java.util.Set.of(), "order.v1", 1)))),
       new Operation("cancel","取消","Cancel","order:cancel","Order.cancel",null,java.util.List.of(),new com.appnexus.contracts.businessobject.InteractionContract("Order.cancel",1,"Order","cancel","取消","Cancel",com.appnexus.contracts.businessobject.InteractionContract.Trigger.USER_ACTION,java.util.List.of(new com.appnexus.contracts.businessobject.InteractionContract.Capability(com.appnexus.contracts.businessobject.InteractionContract.Service.BUSINESS,com.appnexus.contracts.businessobject.InteractionContract.Completion.SYNCHRONOUS,"Order.cancel","",java.util.List.of(),java.util.Set.of(), "Order.cancel.data", 1)))),
       new Operation("release","放行","Release","order:release","Order.release",null,java.util.List.of(),new com.appnexus.contracts.businessobject.InteractionContract("Order.release",1,"Order","release","放行","Release",com.appnexus.contracts.businessobject.InteractionContract.Trigger.USER_ACTION,java.util.List.of(new com.appnexus.contracts.businessobject.InteractionContract.Capability(com.appnexus.contracts.businessobject.InteractionContract.Service.WORKFLOW,com.appnexus.contracts.businessobject.InteractionContract.Completion.CALLBACK,"orderRelease","releaseApproval",java.util.List.of(),Set.of("APPROVED","REJECTED"), "orderRelease.data", 1))))));
-    documents=com.appnexus.platform.persistence.businessobject.BusinessObjectPersistence.create(jdbc,tx,dp,()->runtime,List.of(leave,order),printingPort::get);leave.bindings(()->documents);
+    documents=com.appnexus.platform.persistence.businessobject.BusinessObjectPersistence.create(configurationMapper(),tx,dp,()->runtime,List.of(leave,order),printingPort::get);leave.bindings(()->documents);
     leave.execution(()->com.appnexus.platform.businessobject.BusinessObjectUseCases.execution(List.of(leave,order),documents,new com.appnexus.platform.persistence.businessobject.configuration.JdbcConfigurationTransaction(tx),dp,()->runtime,printingPort::get));
     documents.savePageRelationships(dc("platform"),"LeaveRequest",-1,List.of(new PageRelationship("submit","LeaveRequest.submit"),new PageRelationship("print","LeaveRequest.print"),new PageRelationship("print","LeaveRequest.detail.print")));
     var bridge=new WorkflowBridge();var config=new WorkflowEngineConfiguration();engine=config.workflowProcessEngine(source,tx,bridge);
@@ -125,7 +126,7 @@ class BusinessObjectIntegrationTest {
     };
     // 重用同一登记目录验证行为契约传给专业服务，而不是使用单据级默认用途。
     var source=(javax.sql.DataSource)jdbc.getDataSource();
-    var generic=com.appnexus.platform.persistence.businessobject.BusinessObjectPersistence.create(jdbc,new DataSourceTransactionManager(source),new BusinessObjectPlatform(){
+    var generic=com.appnexus.platform.persistence.businessobject.BusinessObjectPersistence.create(configurationMapper(),new DataSourceTransactionManager(source),new BusinessObjectPlatform(){
       public boolean platformAdministrator(String a){return true;}public boolean tenantAdministrator(Context context){return true;}public boolean active(Context context){return true;}public boolean tenantExists(String t){return true;}
     },()->catalog,List.of(()->(Descriptor)documents.catalog(dc("platform"),true).stream().map(r->r.get("descriptor")).filter(d->((Descriptor)d).objectType().equals("Order")).findFirst().orElseThrow()));
     assertThat(generic.options(dc("manager"),"Order","release")).hasSize(1);
@@ -276,5 +277,21 @@ class BusinessObjectIntegrationTest {
     assertThat(documents.configuration(dc("manager"),"LeaveRequest").get("bindings")).isNotNull();
     assertThatThrownBy(()->configure(List.of(new Binding(UUID.randomUUID().toString(),"已移除",null,0,List.of(),"print","PRINT","LeaveRequest.detail.print","leave-scene")))).hasMessage("BUSINESS_OBJECT_PAGE_RELATION_DISABLED");
     documents.savePageRelationships(platformContext,"LeaveRequest",2,List.of(new PageRelationship("submit","LeaveRequest.submit"),new PageRelationship("print","LeaveRequest.print"),new PageRelationship("print","LeaveRequest.detail.print")));
+  }
+
+  /** 隔离测试使用真实 MyBatis/Spring 事务；不使用直连 SqlSession 造成独立提交。 */
+  private static com.appnexus.platform.persistence.businessobject.configuration.ConfigurationMapper configurationMapper() {
+    try {
+      var factory = new org.mybatis.spring.SqlSessionFactoryBean();
+      factory.setDataSource(java.util.Objects.requireNonNull(jdbc.getDataSource()));
+      var configuration = new org.apache.ibatis.session.Configuration();
+      configuration.setLocalCacheScope(org.apache.ibatis.session.LocalCacheScope.STATEMENT);
+      configuration.setCacheEnabled(false);
+      configuration.setCallSettersOnNulls(true);
+      configuration.addMapper(com.appnexus.platform.persistence.businessobject.configuration.ConfigurationMapper.class);
+      factory.setConfiguration(configuration);
+      return new org.mybatis.spring.SqlSessionTemplate(factory.getObject())
+          .getMapper(com.appnexus.platform.persistence.businessobject.configuration.ConfigurationMapper.class);
+    } catch (Exception error) { throw new IllegalStateException("Cannot assemble configuration mapper", error); }
   }
 }

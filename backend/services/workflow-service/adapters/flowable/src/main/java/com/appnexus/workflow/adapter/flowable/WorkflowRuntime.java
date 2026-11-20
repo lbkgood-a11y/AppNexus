@@ -12,7 +12,7 @@ import java.util.function.Supplier;
 import org.flowable.engine.ProcessEngine;
 import org.flowable.engine.delegate.DelegateExecution;
 import org.flowable.task.service.delegate.DelegateTask;
-import org.springframework.jdbc.core.JdbcTemplate;
+
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
@@ -31,7 +31,7 @@ public final class WorkflowRuntime implements WorkflowResults, WorkflowTaskAcces
   /** 本租户兼容发布版本目录，管理端是否可调用由公开目录宿主鉴权。 */
   @Override public List<WorkflowDefinitionCatalog.Option> published(WorkflowContext c,String type,String purpose,String entry,Set<String> outcomes) {
     requireActive(c);
-    return jdbc.queryForList("SELECT v.*,d.enabled FROM wf_version v JOIN wf_definition d ON d.tenant_id=v.tenant_id AND d.id=v.definition_id WHERE v.tenant_id=? AND d.enabled=TRUE ORDER BY v.definition_id,v.version DESC",c.tenantId()).stream()
+    return statements.statement1(c.tenantId()).stream()
       .filter(r->{var m=model(r);return (r.get("data_contract_schema")==null||WorkflowJson.read(r.get("data_contract_schema").toString(),com.appnexus.contracts.data.DataContract.class).equals(dataSchema(businesses.get(entry),entry)))&&m.objectType().equals(type)&&m.purpose().equals(purpose)&&m.entryCapability().equals(entry)
         &&m.mode()==Mode.APPROVAL&&m.terminalActions()!=null&&outcomes.stream().allMatch(o->entry.equals(m.terminalActions().get(o)))
         &&(m.matches()==null||m.matches().isEmpty());})
@@ -43,7 +43,7 @@ public final class WorkflowRuntime implements WorkflowResults, WorkflowTaskAcces
     return String.valueOf(((Map<?,?>)startInternal(c,type,object,version,organization,purpose,entry,resolution)).get("id"));
   }
   private final ProcessEngine engine;
-  private final JdbcTemplate jdbc;
+  private final WorkflowRecordMapper statements;
   private final TransactionTemplate tx;
   private final WorkflowPlatform platform;
   private final Map<String, WorkflowBusiness> businesses;
@@ -55,12 +55,12 @@ public final class WorkflowRuntime implements WorkflowResults, WorkflowTaskAcces
    */
   public WorkflowRuntime(
       ProcessEngine engine,
-      JdbcTemplate jdbc,
+      WorkflowRecordMapper statements,
       PlatformTransactionManager manager,
       WorkflowPlatform platform,
       List<WorkflowBusiness> handlers) {
     this.engine = engine;
-    this.jdbc = jdbc;
+    this.statements = statements;
     this.tx = new TransactionTemplate(manager);
     this.platform = platform;
     var map = new HashMap<String, WorkflowBusiness>();
@@ -111,11 +111,7 @@ public final class WorkflowRuntime implements WorkflowResults, WorkflowTaskAcces
       boolean write) {
     requireActive(c);
     var rows =
-        jdbc.queryForList(
-            "SELECT * FROM wf_task WHERE tenant_id=? AND id=? AND actor=? AND state='OPEN'",
-            c.tenantId(),
-            taskId,
-            c.actorId());
+        statements.statement2(c.tenantId(),taskId,c.actorId());
     if (rows.isEmpty()) return false;
     var t = rows.getFirst();
     var i = instance(c.tenantId(), str(t, "instance_id"), false);
@@ -186,10 +182,7 @@ public final class WorkflowRuntime implements WorkflowResults, WorkflowTaskAcces
   /** 最多100个定义；支持按名称筛选，分页由HTTP约束。 */
   public List<Map<String, Object>> definitions(WorkflowContext c) {
     require(c, "read");
-    return jdbc.queryForList(
-        "SELECT id,revision,model,enabled,published FROM wf_definition WHERE tenant_id=? ORDER BY"
-            + " id LIMIT 100",
-        c.tenantId());
+    return statements.statement3(c.tenantId());
   }
 
   /** 校验草稿，不部署；输入输出和权限由当前能力目录再校验。 */
@@ -228,21 +221,11 @@ public final class WorkflowRuntime implements WorkflowResults, WorkflowTaskAcces
         "SAVE:" + id + ":" + revision + ":" + WorkflowJson.write(m),
         () -> {
           if (revision < 0) {
-            jdbc.update(
-                "INSERT INTO wf_definition(tenant_id,id,model) VALUES(?,?,?)",
-                c.tenantId(),
-                id,
-                WorkflowJson.write(m));
+            statements.statement4(c.tenantId(),id,WorkflowJson.write(m));
             revisionAudit(c, "DRAFT_CREATED", id);
             return Map.of("revision", 0);
           }
-          if (jdbc.update(
-                  "UPDATE wf_definition SET model=?,revision=revision+1 WHERE tenant_id=? AND id=?"
-                      + " AND revision=?",
-                  WorkflowJson.write(m),
-                  c.tenantId(),
-                  id,
-                  revision)
+          if (statements.statement5(WorkflowJson.write(m),c.tenantId(),id,revision)
               != 1) throw fail("VERSION_CONFLICT", 409);
           revisionAudit(c, "DRAFT_SAVED", id);
           return Map.of("revision", revision + 1);
@@ -257,10 +240,7 @@ public final class WorkflowRuntime implements WorkflowResults, WorkflowTaskAcces
         "PUBLISH:" + id + ":" + revision,
         () -> {
           var row =
-              one(
-                  "SELECT * FROM wf_definition WHERE tenant_id=? AND id=? FOR UPDATE",
-                  c.tenantId(),
-                  id);
+              required(statements.unique0(c.tenantId(),id));
           if (number(row, "revision") != revision) throw fail("VERSION_CONFLICT", 409);
           var model = model(row);
           var errors = validateInternal(c, model);
@@ -282,24 +262,8 @@ public final class WorkflowRuntime implements WorkflowResults, WorkflowTaskAcces
                   .deploymentId(deployment.getId())
                   .processDefinitionTenantId(c.tenantId())
                   .singleResult();
-          jdbc.update(
-              "INSERT INTO"
-                  + " wf_version(tenant_id,definition_id,version,model,bpmn,engine_definition,published_by,data_contract_schema)"
-                  + " VALUES(?,?,?,?,?,?,?,?)",
-              c.tenantId(),
-              id,
-              version,
-              WorkflowJson.write(model),
-              new String(bpmn, StandardCharsets.UTF_8),
-              definition.getId(),
-              c.actorId(),
-              dataSchema(businesses.get(model.entryCapability()),model.entryCapability())==null?null:WorkflowJson.write(dataSchema(businesses.get(model.entryCapability()),model.entryCapability())));
-          jdbc.update(
-              "UPDATE wf_definition SET published=?,enabled=TRUE,revision=revision+1 WHERE"
-                  + " tenant_id=? AND id=?",
-              version,
-              c.tenantId(),
-              id);
+          statements.statement6(c.tenantId(),id,version,WorkflowJson.write(model),new String(bpmn, StandardCharsets.UTF_8),definition.getId(),c.actorId(),dataSchema(businesses.get(model.entryCapability()),model.entryCapability())==null?null:WorkflowJson.write(dataSchema(businesses.get(model.entryCapability()),model.entryCapability())));
+          statements.statement7(version,c.tenantId(),id);
           revisionAudit(c, "PUBLISHED", id);
           return Map.of("version", version, "revision", revision + 1);
         });
@@ -313,12 +277,7 @@ public final class WorkflowRuntime implements WorkflowResults, WorkflowTaskAcces
         c,
         "DISABLE:" + id + ":" + revision + ":" + reason,
         () -> {
-          if (jdbc.update(
-                  "UPDATE wf_definition SET enabled=FALSE,revision=revision+1 WHERE tenant_id=? AND"
-                      + " id=? AND revision=?",
-                  c.tenantId(),
-                  id,
-                  revision)
+          if (statements.statement8(c.tenantId(),id,revision)
               != 1) throw fail("VERSION_CONFLICT", 409);
           audit(c, null, "DISABLED", id, reason);
           return Map.of("revision", revision + 1);
@@ -328,11 +287,7 @@ public final class WorkflowRuntime implements WorkflowResults, WorkflowTaskAcces
   /** 发布版本用于比较，历史只读；不暴露原生引擎部署接口。 */
   public List<Map<String, Object>> versions(WorkflowContext c, String id) {
     require(c, "read");
-    return jdbc.queryForList(
-        "SELECT version,model,published_by,created_at FROM wf_version WHERE tenant_id=? AND"
-            + " definition_id=? ORDER BY version DESC LIMIT 100",
-        c.tenantId(),
-        id);
+    return statements.statement9(c.tenantId(),id);
   }
 
   /** 发起时只接收业务身份，流转依据由已授权入口能力从业务存储重读。 单据同用途活动唯一键处理并发，重复请求和业务调用分别幂等。 */
@@ -394,12 +349,7 @@ public final class WorkflowRuntime implements WorkflowResults, WorkflowTaskAcces
               new com.appnexus.contracts.businessobject.BusinessObjects.Context(c.tenantId(),c.actorId(),c.requestId()),
               resolution,objectType,objectId,objectVersion,snapshot,purpose,entry);
           var rows =
-              jdbc.queryForList(
-                  "SELECT v.*,d.id FROM wf_definition d JOIN wf_version v ON"
-                      + " v.tenant_id=d.tenant_id AND v.definition_id=d.id AND"
-                      + (bound==null?" v.version=d.published":" v.version="+bound.definitionVersion())
-                      + " WHERE d.tenant_id=? AND d.enabled=TRUE FOR SHARE",
-                  c.tenantId());
+              statements.publishedCandidates(c.tenantId(),bound==null?null:bound.definitionVersion());
           var matching =
               rows.stream()
                   .filter(
@@ -423,33 +373,13 @@ public final class WorkflowRuntime implements WorkflowResults, WorkflowTaskAcces
           Object frozenSchema=selected.get("data_contract_schema");
           if(frozenSchema!=null&&!WorkflowJson.read(frozenSchema.toString(),com.appnexus.contracts.data.DataContract.class).equals(currentSchema))throw fail("DATA_CONTRACT_CHANGED",409);
           String id = UUID.randomUUID().toString();
-          jdbc.update(
-              "INSERT INTO"
-                  + " wf_instance(tenant_id,id,definition_id,definition_version,object_type,object_id,object_version,purpose,organization_id,starter,active_key,snapshot,data_contract_schema)"
-                  + " VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)",
-              c.tenantId(),
-              id,
-              selected.get("definition_id"),
-              selected.get("version"),
-              objectType,
-              objectId,
-              objectVersion,
-              purpose,
-              organization,
-              c.actorId(),
-              hash(objectType + ":" + objectId + ":" + purpose),
-              WorkflowJson.write(snapshot),
-              currentSchema==null?null:WorkflowJson.write(currentSchema));
+          statements.statement10(c.tenantId(),id,selected.get("definition_id"),selected.get("version"),objectType,objectId,objectVersion,purpose,organization,c.actorId(),hash(objectType + ":" + objectId + ":" + purpose),WorkflowJson.write(snapshot),currentSchema==null?null:WorkflowJson.write(currentSchema));
           if (m.copies() != null)
             for (var rule : m.copies())
               for (var actor :
                   platform.resolve(c.tenantId(), organization, rule.kind(), rule.reference()))
                 if (platform.active(c.tenantId(), actor))
-                  jdbc.update(
-                      "INSERT IGNORE INTO wf_copy(tenant_id,instance_id,actor) VALUES(?,?,?)",
-                      c.tenantId(),
-                      id,
-                      actor);
+                  statements.statement11(c.tenantId(),id,actor);
           var vars = new HashMap<String, Object>();
           vars.put("wf_id", id);
           vars.put("wf_fields", new HashMap<>(snapshot));
@@ -459,11 +389,7 @@ public final class WorkflowRuntime implements WorkflowResults, WorkflowTaskAcces
                   .getRuntimeService()
                   .startProcessInstanceById(
                       String.valueOf(selected.get("engine_definition")), id, vars);
-          jdbc.update(
-              "UPDATE wf_instance SET engine_id=? WHERE tenant_id=? AND id=?",
-              process.getId(),
-              c.tenantId(),
-              id);
+          statements.statement12(process.getId(),c.tenantId(),id);
           audit(c, id, "STARTED", id, "");
           return Map.of("id", id);
         });
@@ -475,35 +401,16 @@ public final class WorkflowRuntime implements WorkflowResults, WorkflowTaskAcces
     if (!Set.of("todo", "done", "started", "copied").contains(view))
       throw fail("VIEW_INVALID", 400);
     if (view.equals("copied"))
-      return jdbc.queryForList(
-          "SELECT i.id,i.object_type,i.object_id,i.purpose,i.state,i.result,i.created_at FROM"
-              + " wf_instance i JOIN wf_copy c ON c.tenant_id=i.tenant_id AND c.instance_id=i.id"
-              + " WHERE c.tenant_id=? AND c.actor=? ORDER BY i.created_at DESC LIMIT 100",
-          c.tenantId(),
-          c.actorId());
+      return statements.statement13(c.tenantId(),c.actorId());
     if (view.equals("started"))
-      return jdbc.queryForList(
-          "SELECT id,object_type,object_id,object_version,purpose,state,result,created_at FROM"
-              + " wf_instance WHERE tenant_id=? AND starter=? ORDER BY created_at DESC LIMIT 100",
-          c.tenantId(),
-          c.actorId());
-    return jdbc.queryForList(
-        "SELECT t.*,i.object_type,i.object_id,i.object_version FROM wf_task t JOIN wf_instance i ON"
-            + " i.tenant_id=t.tenant_id AND i.id=t.instance_id WHERE t.tenant_id=? AND t.actor=?"
-            + " AND t.state "
-            + (view.equals("todo") ? "='OPEN'" : "IN('DONE','CANCELLED')")
-            + " ORDER BY t.created_at DESC LIMIT 100",
-        c.tenantId(),
-        c.actorId());
+      return statements.statement14(c.tenantId(),c.actorId());
+    return statements.actorTasks(c.tenantId(),c.actorId(),view.equals("todo"));
   }
 
   /** 运维列表不返回单据原文；详细业务数据仍由业务端单独授权读取。 */
   public List<Map<String, Object>> instances(WorkflowContext c) {
     require(c, "operate");
-    return jdbc.queryForList(
-        "SELECT id,object_type,object_id,object_version,purpose,state,result,created_at,ended_at"
-            + " FROM wf_instance WHERE tenant_id=? ORDER BY created_at DESC LIMIT 100",
-        c.tenantId());
+    return statements.statement15(c.tenantId());
   }
 
   /** 实例事实与历史受参与者或运维权限保护；业务原文不在此接口返回。 */
@@ -515,51 +422,24 @@ public final class WorkflowRuntime implements WorkflowResults, WorkflowTaskAcces
     result.put("instance", publicInstance(row));
     result.put(
         "tasks",
-        jdbc.queryForList(
-            "SELECT"
-                + " id,node_id,node_name,actor,state,decision,comment,deadline,created_at,completed_at"
-                + " FROM wf_task WHERE tenant_id=? AND instance_id=? ORDER BY created_at",
-            c.tenantId(),
-            id));
+        statements.statement16(c.tenantId(),id));
     result.put(
         "history",
-        jdbc.queryForList(
-            "SELECT actor,action,target,detail,from_actor,to_actor,created_at FROM wf_audit WHERE"
-                + " tenant_id=? AND instance_id=? ORDER BY id",
-            c.tenantId(),
-            id));
+        statements.statement17(c.tenantId(),id));
     if (platform.allowed(c, "workflow:operate"))
       result.put(
           "jobs",
-          jdbc.queryForList(
-              "SELECT id,node_id,capability,kind,state,attempts,error_code,deadline FROM wf_job"
-                  + " WHERE tenant_id=? AND instance_id=? ORDER BY due_at",
-              c.tenantId(),
-              id));
+          statements.statement18(c.tenantId(),id));
     result.put(
         "relatedInstances",
-        jdbc.queryForList(
-            "SELECT i.id,i.definition_version,i.state,i.result,i.created_at FROM wf_instance i"
-                + " WHERE i.tenant_id=? AND i.object_type=? AND i.object_id=? AND i.purpose=? AND"
-                + " (i.starter=? OR ?=TRUE OR EXISTS(SELECT 1 FROM wf_task t WHERE"
-                + " t.tenant_id=i.tenant_id AND t.instance_id=i.id AND t.actor=?) OR EXISTS(SELECT"
-                + " 1 FROM wf_copy cp WHERE cp.tenant_id=i.tenant_id AND cp.instance_id=i.id AND"
-                + " cp.actor=?)) ORDER BY i.created_at DESC LIMIT 100",
-            c.tenantId(),
-            row.get("object_type"),
-            row.get("object_id"),
-            row.get("purpose"),
-            c.actorId(),
-            platform.allowed(c, "workflow:operate"),
-            c.actorId(),
-            c.actorId()));
+        statements.statement19(c.tenantId(),row.get("object_type"),row.get("object_id"),row.get("purpose"),c.actorId(),platform.allowed(c, "workflow:operate"),c.actorId(),c.actorId()));
     return result;
   }
 
   /** 任务只返回业务能力声明，不返回原始单据内容；业务页面仍执行字段和强制限制。 */
   public Map<String, Object> task(WorkflowContext c, String taskId) {
     requireActive(c);
-    var t = one("SELECT * FROM wf_task WHERE tenant_id=? AND id=?", c.tenantId(), taskId);
+    var t = required(statements.unique1(c.tenantId(),taskId));
     if (!c.actorId().equals(t.get("actor"))) throw fail("TASK_DENIED", 403);
     var i = instance(c.tenantId(), str(t, "instance_id"), false);
     var n = definition(i).node(str(t, "node_id"));
@@ -599,9 +479,9 @@ public final class WorkflowRuntime implements WorkflowResults, WorkflowTaskAcces
             private WorkflowModel.Node node;
             private String nodeId;
             @Override public Task lock(WorkflowContext context,String id){
-              var task=one("SELECT * FROM wf_task WHERE tenant_id=? AND id=?",context.tenantId(),id);
+              var task=required(statements.unique2(context.tenantId(),id));
               instance=instance(context.tenantId(),str(task,"instance_id"),true);
-              task=one("SELECT * FROM wf_task WHERE tenant_id=? AND id=? FOR UPDATE",context.tenantId(),id);
+              task=required(statements.unique3(context.tenantId(),id));
               // 模型仅在状态通过后加载，避免已关闭实例改变原拒绝顺序。
               node=null;nodeId=str(task,"node_id");
               return new Task(str(instance,"id"),str(instance,"state"),str(task,"state"),str(task,"actor"));
@@ -628,11 +508,7 @@ public final class WorkflowRuntime implements WorkflowResults, WorkflowTaskAcces
               return outputs(business,result.outputs());
             }
             @Override public void save(WorkflowContext context,Task task,String id,String opinion){
-            jdbc.update(
-                "UPDATE wf_task SET comment=? WHERE tenant_id=? AND id=?",
-                opinion,
-                context.tenantId(),
-                id);
+            statements.statement20(opinion,context.tenantId(),id);
             audit(context, str(instance, "id"), "TASK_SAVED", id, "");
 
             }
@@ -643,23 +519,12 @@ public final class WorkflowRuntime implements WorkflowResults, WorkflowTaskAcces
           engine.getRuntimeService().setVariable(str(instance, "engine_id"), "wf_fields", fields);
           if (operation.equals("REJECT"))
             engine.getRuntimeService().setVariable(str(instance, "engine_id"), "wf_result", "REJECTED");
-          jdbc.update(
-              "UPDATE wf_task SET"
-                  + " state='DONE',decision=?,comment=?,completed_at=CURRENT_TIMESTAMP(6) WHERE"
-                  + " tenant_id=? AND id=? AND state='OPEN'",
-              operation,
-              opinion,
-              context.tenantId(),
-              id);
+          statements.statement21(operation,opinion,context.tenantId(),id);
           audit(context, str(instance, "id"), "TASK_COMPLETED", id, operation);
           if (operation.equals("REJECT")) {
             finish(instance, "REJECTED");
             engine.getRuntimeService().deleteProcessInstance(str(instance, "engine_id"), "REJECTED");
-            jdbc.update(
-                "UPDATE wf_job SET state='CANCELLED',lease_token=NULL WHERE tenant_id=? AND"
-                    + " instance_id=? AND kind<>'TERMINAL' AND state<>'DONE'",
-                context.tenantId(),
-                instance.get("id"));
+            statements.statement22(context.tenantId(),instance.get("id"));
           } else engine.getTaskService().complete(id);
           reconcileTasks(context.tenantId(), str(instance, "id"));
 
@@ -682,36 +547,24 @@ public final class WorkflowRuntime implements WorkflowResults, WorkflowTaskAcces
             private Map<String,Object> t,i;
             private WorkflowModel.Node n;
             @Override public Task lock(WorkflowContext context,String id){
-          t = one("SELECT * FROM wf_task WHERE tenant_id=? AND id=?", c.tenantId(), taskId);
+          t = required(statements.unique4(c.tenantId(),taskId));
           i = instance(c.tenantId(), str(t, "instance_id"), true);
           // 锁实例后重读任务；等待锁的另一请求不能沿用锁前OPEN快照重复调用业务。
           t =
-              one(
-                  "SELECT * FROM wf_task WHERE tenant_id=? AND id=? FOR UPDATE",
-                  c.tenantId(),
-                  taskId);
+              required(statements.unique5(c.tenantId(),taskId));
           n = definition(i).node(str(t, "node_id"));
 
               return new Task("OPEN".equals(t.get("state")),(String)t.get("actor"));
             }
             @Override public boolean candidate(WorkflowContext context,String target){return resolve(i,n).contains(target);}
             @Override public boolean duplicate(WorkflowContext context,String id,String target){
-              return jdbc.queryForObject(
-                  "SELECT COUNT(*) FROM wf_task WHERE tenant_id=? AND instance_id=? AND node_id=?"
-                      + " AND actor=? AND state='OPEN' AND id<>?",
-                  Long.class,
-                  c.tenantId(),
-                  i.get("id"),
-                  n.id(),
-                  actor,
-                  taskId)
+              return statements.statement23(c.tenantId(),i.get("id"),n.id(),actor,taskId)
               > 0;
 
             }
             @Override public void assign(WorkflowContext context,String id,String target,String previous,String cause){
           engine.getTaskService().setAssignee(taskId, actor);
-          jdbc.update(
-              "UPDATE wf_task SET actor=? WHERE tenant_id=? AND id=?", actor, c.tenantId(), taskId);
+          statements.statement24(actor,c.tenantId(),taskId);
           auditAssignment(
               c, str(i, "id"), "REASSIGNED", taskId, reason, previous, actor);
 
@@ -731,15 +584,10 @@ public final class WorkflowRuntime implements WorkflowResults, WorkflowTaskAcces
         "RETRY:" + id + ":" + reason,
         () -> {
           var job =
-              one("SELECT * FROM wf_job WHERE tenant_id=? AND id=? FOR UPDATE", c.tenantId(), id);
+              required(statements.unique6(c.tenantId(),id));
           if (!Set.of("MANUAL", "TIMEOUT").contains(str(job, "state")))
             throw fail("JOB_NOT_MANUAL", 409);
-          jdbc.update(
-              "UPDATE wf_job SET"
-                  + " state='READY',attempts=0,due_at=CURRENT_TIMESTAMP(6),deadline=DATE_ADD(CURRENT_TIMESTAMP(6),INTERVAL"
-                  + " 1 DAY),error_code=NULL WHERE tenant_id=? AND id=?",
-              c.tenantId(),
-              id);
+          statements.statement25(c.tenantId(),id);
           audit(c, str(job, "instance_id"), "JOB_RETRIED", id, reason);
           return Map.of("retried", true);
         });
@@ -765,11 +613,7 @@ public final class WorkflowRuntime implements WorkflowResults, WorkflowTaskAcces
           if (result.pending()) throw fail("BUSINESS_CONFIRMATION_REQUIRED", 409);
           finish(i, "WITHDRAWN");
           engine.getRuntimeService().deleteProcessInstance(str(i, "engine_id"), "WITHDRAWN");
-          jdbc.update(
-              "UPDATE wf_job SET state='CANCELLED',lease_token=NULL WHERE tenant_id=? AND"
-                  + " instance_id=? AND kind<>'TERMINAL' AND state<>'DONE'",
-              c.tenantId(),
-              id);
+          statements.statement26(c.tenantId(),id);
           reconcileTasks(c.tenantId(), id);
           audit(c, id, "WITHDRAWN", id, reason);
           return Map.of("withdrawn", true);
@@ -779,11 +623,7 @@ public final class WorkflowRuntime implements WorkflowResults, WorkflowTaskAcces
   /** 每次发起或运行节点从冻结版本读取模型，不受后续草稿修改影响。 */
   WorkflowModel definition(Map<String, Object> instance) {
     return model(
-        one(
-            "SELECT model FROM wf_version WHERE tenant_id=? AND definition_id=? AND version=?",
-            instance.get("tenant_id"),
-            instance.get("definition_id"),
-            instance.get("definition_version")));
+        required(statements.unique7(instance.get("tenant_id"),instance.get("definition_id"),instance.get("definition_version"))));
   }
 
   List<String> people(DelegateExecution e, String node) {
@@ -814,16 +654,7 @@ public final class WorkflowRuntime implements WorkflowResults, WorkflowTaskAcces
       task.setAssignee(null);
       actor = null;
     }
-    jdbc.update(
-        "INSERT INTO wf_task(tenant_id,id,instance_id,node_id,node_name,actor,deadline)"
-            + " VALUES(?,?,?,?,?,?,?)",
-        tenant,
-        task.getId(),
-        id,
-        n.id(),
-        n.name(),
-        actor,
-        java.sql.Timestamp.from(Instant.now().plusSeconds(n.timeoutSeconds())));
+    statements.statement27(tenant,task.getId(),id,n.id(),n.name(),actor,java.sql.Timestamp.from(Instant.now().plusSeconds(n.timeoutSeconds())));
     auditAssignment(
         new WorkflowContext(tenant, str(i, "starter"), UUID.randomUUID().toString()),
         id,
@@ -869,13 +700,7 @@ public final class WorkflowRuntime implements WorkflowResults, WorkflowTaskAcces
   }
 
   private void finish(Map<String, Object> i, String result) {
-    jdbc.update(
-        "UPDATE wf_instance SET"
-            + " state='ENDED',result=?,active_key=NULL,ended_at=CURRENT_TIMESTAMP(6) WHERE"
-            + " tenant_id=? AND id=? AND state='RUNNING'",
-        result,
-        i.get("tenant_id"),
-        i.get("id"));
+    statements.statement28(result,i.get("tenant_id"),i.get("id"));
     var model = definition(i);
     if (model.mode() == Mode.APPROVAL
         && model.terminalActions() != null
@@ -906,20 +731,7 @@ public final class WorkflowRuntime implements WorkflowResults, WorkflowTaskAcces
       Map<String, String> payload,
       int attempts,
       int timeout) {
-    jdbc.update(
-        "INSERT INTO"
-            + " wf_job(tenant_id,id,instance_id,node_id,execution_id,capability,kind,payload,max_attempts,deadline)"
-            + " VALUES(?,?,?,?,?,?,?,?,?,?)",
-        i.get("tenant_id"),
-        UUID.randomUUID().toString(),
-        i.get("id"),
-        node,
-        execution,
-        capability,
-        kind,
-        WorkflowJson.write(payload),
-        attempts,
-        java.sql.Timestamp.from(Instant.now().plusSeconds(timeout)));
+    statements.statement29(i.get("tenant_id"),UUID.randomUUID().toString(),i.get("id"),node,execution,capability,kind,WorkflowJson.write(payload),attempts,java.sql.Timestamp.from(Instant.now().plusSeconds(timeout)));
   }
 
   /** 领取后在事务外调用业务；成功回写与引擎推进同事务。租约令牌防止过期执行者覆盖新结果。 宕机后可再次执行，因此业务适配器必须按job.id持久化幂等，不能承诺外部副作用恰好一次。 */
@@ -928,29 +740,15 @@ public final class WorkflowRuntime implements WorkflowResults, WorkflowTaskAcces
         tx.execute(
             s -> {
               var rows =
-                  jdbc.queryForList(
-                      "SELECT * FROM wf_job WHERE deadline>CURRENT_TIMESTAMP(6) AND ((state='READY'"
-                          + " AND due_at<=CURRENT_TIMESTAMP(6)) OR (state='RUNNING' AND"
-                          + " lease_until<CURRENT_TIMESTAMP(6))) ORDER BY due_at LIMIT 1 FOR UPDATE"
-                          + " SKIP LOCKED");
+                  statements.statement30();
               if (rows.isEmpty()) return null;
               var j = rows.getFirst();
               if (number(j, "attempts") >= number(j, "max_attempts")) {
-                jdbc.update(
-                    "UPDATE wf_job SET state='MANUAL',error_code='LEASE_EXHAUSTED' WHERE"
-                        + " tenant_id=? AND id=?",
-                    j.get("tenant_id"),
-                    j.get("id"));
+                statements.statement31(j.get("tenant_id"),j.get("id"));
                 return null;
               }
               String token = UUID.randomUUID().toString();
-              jdbc.update(
-                  "UPDATE wf_job SET"
-                      + " state='RUNNING',attempts=attempts+1,lease_token=?,lease_until=DATE_ADD(CURRENT_TIMESTAMP(6),INTERVAL"
-                      + " 120 SECOND) WHERE tenant_id=? AND id=?",
-                  token,
-                  j.get("tenant_id"),
-                  j.get("id"));
+              statements.statement32(token,j.get("tenant_id"),j.get("id"));
               j.put("lease_token", token);
               return j;
             });
@@ -980,29 +778,15 @@ public final class WorkflowRuntime implements WorkflowResults, WorkflowTaskAcces
     tx.executeWithoutResult(
         s -> {
           var j =
-              one(
-                  "SELECT * FROM wf_job WHERE tenant_id=? AND id=? FOR UPDATE",
-                  job.get("tenant_id"),
-                  job.get("id"));
+              required(statements.unique8(job.get("tenant_id"),job.get("id")));
           if (!"RUNNING".equals(j.get("state"))
               || !job.get("lease_token").equals(j.get("lease_token"))) return;
           if (completed != null) {
             if (completed.pending())
-              jdbc.update(
-                  "UPDATE wf_job SET state='WAITING',result=? WHERE tenant_id=? AND id=?",
-                  WorkflowJson.write(completed.outputs()),
-                  j.get("tenant_id"),
-                  j.get("id"));
+              statements.statement33(WorkflowJson.write(completed.outputs()),j.get("tenant_id"),j.get("id"));
             else acknowledge(j, completed.outputs());
           } else
-            jdbc.update(
-                "UPDATE wf_job SET"
-                    + " state=?,error_code=?,due_at=DATE_ADD(CURRENT_TIMESTAMP(6),INTERVAL 30"
-                    + " SECOND),lease_token=NULL WHERE tenant_id=? AND id=?",
-                manual || number(j, "attempts") >= number(j, "max_attempts") ? "MANUAL" : "READY",
-                code,
-                j.get("tenant_id"),
-                j.get("id"));
+            statements.statement34(manual || number(j, "attempts") >= number(j, "max_attempts") ? "MANUAL" : "READY",code,j.get("tenant_id"),j.get("id"));
         });
     return true;
   }
@@ -1019,7 +803,7 @@ public final class WorkflowRuntime implements WorkflowResults, WorkflowTaskAcces
       String tenant, String jobId, String capability, Map<String, String> outputs) {
     tx.executeWithoutResult(
         s -> {
-          var j = one("SELECT * FROM wf_job WHERE tenant_id=? AND id=? FOR UPDATE", tenant, jobId);
+          var j = required(statements.unique9(tenant,jobId));
           if (!capability.equals(j.get("capability"))) throw fail("CALLBACK_DENIED", 403);
           var b = businesses.get(capability);
           if (b == null) throw fail("CAPABILITY_UNAVAILABLE", 409);
@@ -1044,12 +828,7 @@ public final class WorkflowRuntime implements WorkflowResults, WorkflowTaskAcces
       engine.getRuntimeService().setVariable(str(i, "engine_id"), "wf_fields", fields);
       engine.getRuntimeService().trigger(str(j, "execution_id"));
     }
-    jdbc.update(
-        "UPDATE wf_job SET state='DONE',result=?,lease_token=NULL,error_code=NULL WHERE tenant_id=?"
-            + " AND id=?",
-        WorkflowJson.write(output),
-        j.get("tenant_id"),
-        j.get("id"));
+    statements.statement35(WorkflowJson.write(output),j.get("tenant_id"),j.get("id"));
     audit(
         new WorkflowContext(str(j, "tenant_id"), str(i, "starter"), str(j, "id")),
         str(i, "id"),
@@ -1062,34 +841,19 @@ public final class WorkflowRuntime implements WorkflowResults, WorkflowTaskAcces
   public void maintain() {
     tx.executeWithoutResult(
         s -> {
-          jdbc.update(
-              "INSERT INTO wf_audit(tenant_id,instance_id,actor,action,target,detail) SELECT"
-                  + " t.tenant_id,t.instance_id,'system','TASK_OVERDUE',t.id,'' FROM wf_task t"
-                  + " WHERE t.state='OPEN' AND t.deadline<CURRENT_TIMESTAMP(6) AND NOT"
-                  + " EXISTS(SELECT 1 FROM wf_audit a WHERE a.tenant_id=t.tenant_id AND"
-                  + " a.action='TASK_OVERDUE' AND a.target=t.id)");
-          jdbc.update(
-              "UPDATE wf_job SET state='TIMEOUT',error_code='WAIT_TIMEOUT',lease_token=NULL WHERE"
-                  + " state IN('READY','WAITING','RUNNING') AND deadline<CURRENT_TIMESTAMP(6)");
+          statements.statement36();
+          statements.statement37();
           var rows =
-              jdbc.queryForList(
-                  "SELECT t.* FROM wf_task t WHERE t.state='OPEN' AND (t.actor IS NOT NULL OR"
-                      + " t.deadline<CURRENT_TIMESTAMP(6)) ORDER BY t.checked_at,t.id LIMIT 100");
+              statements.statement38();
           for (var t : rows) {
-            jdbc.update(
-                "UPDATE wf_task SET checked_at=CURRENT_TIMESTAMP(6) WHERE tenant_id=? AND id=?",
-                t.get("tenant_id"),
-                t.get("id"));
+            statements.statement39(t.get("tenant_id"),t.get("id"));
             var i = instance(str(t, "tenant_id"), str(t, "instance_id"), true);
             if (!"RUNNING".equals(i.get("state"))) continue;
             var n = definition(i).node(str(t, "node_id"));
             String actor = (String) t.get("actor");
             if (actor != null && !resolve(i, n).contains(actor)) {
               engine.getTaskService().setAssignee(str(t, "id"), null);
-              jdbc.update(
-                  "UPDATE wf_task SET actor=NULL WHERE tenant_id=? AND id=?",
-                  t.get("tenant_id"),
-                  t.get("id"));
+              statements.statement40(t.get("tenant_id"),t.get("id"));
               auditAssignment(
                   new WorkflowContext(
                       str(t, "tenant_id"), str(i, "starter"), UUID.randomUUID().toString()),
@@ -1106,10 +870,7 @@ public final class WorkflowRuntime implements WorkflowResults, WorkflowTaskAcces
 
   private void reconcileTasks(String tenant, String id) {
     for (var row :
-        jdbc.queryForList(
-            "SELECT id FROM wf_task WHERE tenant_id=? AND instance_id=? AND state='OPEN'",
-            tenant,
-            id))
+        statements.statement41(tenant,id))
       if (engine
               .getTaskService()
               .createTaskQuery()
@@ -1117,11 +878,7 @@ public final class WorkflowRuntime implements WorkflowResults, WorkflowTaskAcces
               .taskTenantId(tenant)
               .count()
           == 0)
-        jdbc.update(
-            "UPDATE wf_task SET state='CANCELLED',completed_at=CURRENT_TIMESTAMP(6) WHERE"
-                + " tenant_id=? AND id=?",
-            tenant,
-            row.get("id"));
+        statements.statement42(tenant,row.get("id"));
   }
 
   private WorkflowBusiness business(WorkflowContext c, String key) {
@@ -1143,7 +900,7 @@ public final class WorkflowRuntime implements WorkflowResults, WorkflowTaskAcces
     String workItemKey = key;
     if (task != null) {
       var taskRow =
-          one("SELECT node_id FROM wf_task WHERE tenant_id=? AND id=?", c.tenantId(), task);
+          required(statements.unique10(c.tenantId(),task));
       var node = definition(i).node(str(taskRow, "node_id"));
       workItemKey = node.separate() ? task : str(i, "id") + ":" + node.id();
     }
@@ -1151,12 +908,11 @@ public final class WorkflowRuntime implements WorkflowResults, WorkflowTaskAcces
     if (task != null)
       nodeId =
           str(
-              one("SELECT node_id FROM wf_task WHERE tenant_id=? AND id=?", c.tenantId(), task),
+              required(statements.unique11(c.tenantId(),task)),
               "node_id");
     else {
       var jobs =
-          jdbc.queryForList(
-              "SELECT node_id FROM wf_job WHERE tenant_id=? AND id=?", c.tenantId(), key);
+          statements.statement43(c.tenantId(),key);
       if (!jobs.isEmpty()) nodeId = str(jobs.getFirst(), "node_id");
     }
     var reference =
@@ -1223,34 +979,17 @@ public final class WorkflowRuntime implements WorkflowResults, WorkflowTaskAcces
 
   private void canRead(WorkflowContext c, Map<String, Object> i) {
     if (c.actorId().equals(i.get("starter")) || platform.allowed(c, "workflow:operate")) return;
-    if (jdbc.queryForObject(
-            "SELECT COUNT(*) FROM wf_copy WHERE tenant_id=? AND instance_id=? AND actor=?",
-            Long.class,
-            c.tenantId(),
-            i.get("id"),
-            c.actorId())
+    if (statements.statement44(c.tenantId(),i.get("id"),c.actorId())
         > 0) return;
-    if (jdbc.queryForObject(
-            "SELECT COUNT(*) FROM wf_task WHERE tenant_id=? AND instance_id=? AND actor=?",
-            Long.class,
-            c.tenantId(),
-            i.get("id"),
-            c.actorId())
+    if (statements.statement45(c.tenantId(),i.get("id"),c.actorId())
         == 0) throw fail("INSTANCE_DENIED", 403);
   }
 
   private Map<String, Object> instance(String tenant, String id, boolean lock) {
-    return one(
-        "SELECT * FROM wf_instance WHERE tenant_id=? AND id=?" + (lock ? " FOR UPDATE" : ""),
-        tenant,
-        id);
+    return required(statements.unique12(tenant,id,lock));
   }
 
-  private Map<String, Object> one(String sql, Object... values) {
-    var rows = jdbc.queryForList(sql, values);
-    if (rows.size() != 1) throw fail("WORKFLOW_NOT_FOUND", 404);
-    return rows.getFirst();
-  }
+  private Map<String,Object> required(List<Map<String,Object>> rows){if(rows.size()!=1)throw fail("WORKFLOW_NOT_FOUND",404);return rows.getFirst();}
 
   private WorkflowModel model(Map<String, Object> row) {
     return WorkflowJson.read(str(row, "model"), WorkflowModel.class);
@@ -1270,30 +1009,14 @@ public final class WorkflowRuntime implements WorkflowResults, WorkflowTaskAcces
     String hash = hash(Objects.toString(c.personId(),"")+"|"+Objects.toString(c.organizationId(),"")+"|"+fingerprint);
     return tx.execute(
         s -> {
-          jdbc.update(
-              "INSERT INTO wf_request(tenant_id,actor,request_id,fingerprint) VALUES(?,?,?,?) ON"
-                  + " DUPLICATE KEY UPDATE request_id=request_id",
-              c.tenantId(),
-              c.actorId(),
-              c.requestId(),
-              hash);
+          statements.statement46(c.tenantId(),c.actorId(),c.requestId(),hash);
           var row =
-              one(
-                  "SELECT * FROM wf_request WHERE tenant_id=? AND actor=? AND request_id=? FOR"
-                      + " UPDATE",
-                  c.tenantId(),
-                  c.actorId(),
-                  c.requestId());
+              required(statements.unique13(c.tenantId(),c.actorId(),c.requestId()));
           if (!hash.equals(row.get("fingerprint"))) throw fail("IDEMPOTENCY_CONFLICT", 409);
           if (row.get("response") != null)
             return WorkflowJson.read(str(row, "response"), Object.class);
           Object result = work.get();
-          jdbc.update(
-              "UPDATE wf_request SET response=? WHERE tenant_id=? AND actor=? AND request_id=?",
-              WorkflowJson.write(result),
-              c.tenantId(),
-              c.actorId(),
-              c.requestId());
+          statements.statement47(WorkflowJson.write(result),c.tenantId(),c.actorId(),c.requestId());
           return result;
         });
   }
@@ -1307,17 +1030,7 @@ public final class WorkflowRuntime implements WorkflowResults, WorkflowTaskAcces
       String reason,
       String previous,
       String next) {
-    jdbc.update(
-        "INSERT INTO wf_audit(tenant_id,instance_id,actor,action,target,detail,from_actor,to_actor)"
-            + " VALUES(?,?,?,?,?,?,?,?)",
-        c.tenantId(),
-        instance,
-        c.actorId(),
-        action,
-        target,
-        reason,
-        previous,
-        next);
+    statements.statement48(c.tenantId(),instance,c.actorId(),action,target,reason,previous,next);
   }
 
   private void revisionAudit(WorkflowContext c, String action, String id) {
@@ -1326,7 +1039,7 @@ public final class WorkflowRuntime implements WorkflowResults, WorkflowTaskAcces
 
   /** 审计记录真实执行账号和已选业务人员，不把流程分配账号解释为人员唯一身份。 */
   private void audit(WorkflowContext c,String instance,String action,String target,String detail){
-    jdbc.update("INSERT INTO wf_audit(tenant_id,instance_id,actor,action,target,detail,person_id,business_organization_id) VALUES(?,?,?,?,?,?,?,?)",c.tenantId(),instance,c.actorId(),action,target,detail,c.personId(),c.organizationId());
+    statements.statement49(c.tenantId(),instance,c.actorId(),action,target,detail,c.personId(),c.organizationId());
   }
 
   private static String hash(String value) {

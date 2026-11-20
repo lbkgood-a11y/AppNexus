@@ -1,6 +1,6 @@
 package com.appnexus.platform.persistence.platformscope;
 
-import com.appnexus.platform.persistence.PlatformScoped;
+import com.appnexus.persistence.mybatis.PlatformScoped;
 import org.apache.ibatis.annotations.*;
 
 /** 平台认证撤销专用仓储；只能在已锁定操作者和目标账号的管理事务中调用。 */

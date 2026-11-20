@@ -1,7 +1,7 @@
 package com.appnexus.platform.persistence.identity;
 import java.util.Map;
 import org.apache.ibatis.annotations.*;
-@com.appnexus.platform.persistence.PlatformScoped(tables={"identity_account","identity_bootstrap","oauth2_authorization"})
+@com.appnexus.persistence.mybatis.PlatformScoped(tables={"identity_account","identity_bootstrap","oauth2_authorization"})
 @Mapper
 public interface AccountMapper {
     @Select("SELECT BIN_TO_UUID(id) AS id, username, display_name, password_hash, enabled, version FROM identity_account WHERE username = #{username}")

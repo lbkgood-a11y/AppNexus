@@ -1779,6 +1779,10 @@ businessWorkflow:
   removeReview: Remove approval step
   removeConfirm: Remove this step and its independent condition, if any? Publishing affects new submissions.
 businessObject:
+  capabilityOverview: Shared capabilities
+  capabilityOverviewHint: Capabilities come from the business object contract. Bind published workflows, print scenes or coding rules without redefining fields or operations.
+  contractReference: Contract reference
+  configureCapability: Configure binding
   partnerOperations:
     list: "Query business partners"
     create: "Create business partner"
@@ -2350,6 +2354,9 @@ productCatalog:
   maxItems: "Maximum choices"
 
 productV1:
+  organizationId: Owning organization
+  organizationRequired: Select an authorized organization
+  organizationUnknown: Historical ownership is unknown; assign the actual business organization
   event_COMPONENT_REPLACE: "Component updated"
   specifications: "At least one enabled standard specification"
   components: "Enabled component products with matching versions"

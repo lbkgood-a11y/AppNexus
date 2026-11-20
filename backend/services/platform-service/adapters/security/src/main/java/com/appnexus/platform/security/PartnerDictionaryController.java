@@ -2,7 +2,7 @@ package com.appnexus.platform.security;
 
 import java.util.*;
 import org.springframework.http.*;
-import org.springframework.jdbc.core.JdbcTemplate;
+
 import org.springframework.security.oauth2.server.resource.authentication.BearerTokenAuthentication;
 import org.springframework.web.bind.annotation.*;
 
@@ -14,8 +14,8 @@ import org.springframework.web.bind.annotation.*;
 @EndpointPolicy(EndpointPolicy.Domain.TENANT_BUSINESS)
 @RequestMapping("/v1/dictionaries")
 public class PartnerDictionaryController {
-    private final JdbcTemplate jdbc;
-    public PartnerDictionaryController(JdbcTemplate jdbc){this.jdbc=jdbc;}
+    private final PartnerDictionaryMapper mapper;
+    public PartnerDictionaryController(PartnerDictionaryMapper mapper){this.mapper=mapper;}
     /** 对外字典项，只发布稳定业务值和名称；不返回内部主键、租户、操作者或权限字段。 */
     public record Item(String code,String value,String name){}
     /** 标准分页结果；page 从 1 开始，pageSize 最大 100，总数受相同租户/状态谓词保护。 */
@@ -37,10 +37,8 @@ public class PartnerDictionaryController {
             throw AccountSettingsController.problem(HttpStatus.BAD_REQUEST,"INVALID_PARTNER_QUERY","查询参数不正确");
         String tenant=(String)auth.getTokenAttributes().get("tenantId");
         try{
-            String condition=" FROM tenant_dictionary d JOIN tenant_dictionary_item i ON i.dictionary_id=d.id AND i.tenant_id=d.tenant_id WHERE d.tenant_id=UUID_TO_BIN(?) AND i.tenant_id=UUID_TO_BIN(?) AND d.code=? AND d.status='ENABLED' AND d.deleted_at IS NULL AND i.status='ENABLED' AND i.deleted_at IS NULL";
-            var items=jdbc.query("SELECT i.code,i.item_value,i.name"+condition+" ORDER BY i.sort_order,i.code LIMIT ? OFFSET ?",
-                (row,index)->new Item(row.getString("code"),row.getString("item_value"),row.getString("name")),tenant,tenant,code,pageSize,(long)(page-1)*pageSize);
-            long total=Objects.requireNonNull(jdbc.queryForObject("SELECT COUNT(*)"+condition,Long.class,tenant,tenant,code));
+            var items=mapper.items(tenant,code,pageSize,(long)(page-1)*pageSize).stream().map(row->new Item((String)row.get("code"),(String)row.get("value"),(String)row.get("name"))).toList();
+            long total=mapper.count(tenant,code);
             return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(new Page(items,total,page,pageSize));
         }catch(org.springframework.dao.DataAccessException unavailable){
             throw AccountSettingsController.problem(HttpStatus.SERVICE_UNAVAILABLE,"PARTNER_UNAVAILABLE","集成服务暂不可用");

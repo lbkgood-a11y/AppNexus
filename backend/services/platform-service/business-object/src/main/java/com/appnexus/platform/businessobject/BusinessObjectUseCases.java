@@ -10,6 +10,18 @@ import java.util.function.Supplier;
 public final class BusinessObjectUseCases {
   private BusinessObjectUseCases() {}
   /**
+   * 从对象所有者固定映射装配运行器，不创建第二套对象或能力声明。
+   * @param provider 唯一对象声明
+   * @param mapping 构建期固定映射
+   * @param store 实际同事务存储
+   * @param hook 特有业务约束，标准对象使用空约束
+   * @return 所有专业能力共用的对象运行器
+   */
+  public static BusinessObjectRuntime mappedRuntime(BusinessObjects.Provider provider,ObjectRecordMapping mapping,ObjectRecordStore store,ObjectRecordRuntimeFactory.Hook hook){
+    return new com.appnexus.platform.businessobject.internal.application.execution.MappedObjectRuntime(provider,mapping,store,hook);
+  }
+
+  /**
    * 组装公共对象执行器；所有能力共用对象运行端口和真实事务。
    * @param providers 唯一对象契约和运行能力
    * @param bindings 现有对象关联解析端口

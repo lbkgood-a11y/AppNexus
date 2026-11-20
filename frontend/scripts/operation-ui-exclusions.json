@@ -983,8 +983,12 @@
     "key": "[\"frontend/modules/master-data/src/product/ProductSkuManagement.vue\",\"el-button\",\"reset\",null,null,\"{{t('masterData.reset')}}\"]",
     "reason": "仅清空当前商品明细的本地货号、规格及状态过滤和页码，不发起接口请求、不改变商品/SKU；读取与写入继续使用既有Product操作。"
   },
-{
-  "key": "[\"frontend/modules/business-object/src/CodingRuleManagement.vue\",\"el-button\",\"dialog=false\",null,null,\"{{t('coding.cancel')}}\"]",
-  "reason": "关闭编码规则草稿弹窗，仅改变本地显示状态，不调用 API 或执行业务写入"
-}
+  {
+    "key": "[\"frontend/modules/business-object/src/CodingRuleManagement.vue\",\"el-button\",\"dialog=false\",null,null,\"{{t('coding.cancel')}}\"]",
+    "reason": "关闭编码规则草稿弹窗，仅改变本地显示状态，不调用 API 或执行业务写入"
+  },
+  {
+    "key": "[\"frontend/modules/business-object/src/BusinessObjectManagement.vue\",\"el-button\",\"detailTab=row.service==='CODING'?'coding':'configuration'\",null,null,\"{{t('businessObject.configureCapability')}}\"]",
+    "reason": "通用能力概览切换到既有配置页签，仅改变本地展示，不发出保存或发布请求；实际维护操作仍使用原对象操作准入。"
+  }
 ]

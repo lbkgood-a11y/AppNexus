@@ -5,7 +5,7 @@ import com.appnexus.platform.tenant.VerifiedTenantContext;
 import java.util.*;
 import com.appnexus.platform.configuration.BusinessValueCatalog;
 import org.springframework.dao.DuplicateKeyException;
-import org.springframework.jdbc.core.JdbcTemplate;
+
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 import static com.appnexus.platform.organization.personnel.PersonData.*;
@@ -16,16 +16,16 @@ import static com.appnexus.platform.organization.personnel.PersonData.*;
  */
 public final class PersonDataService {
   private final BusinessValueCatalog dictionaries;
-  private final JdbcTemplate jdbc;
+  private final PersonRecordMapper mapper;
   private final AccessAuthorization access;
   private final TransactionTemplate transaction;
   /**
-   * @param jdbc 宿主数据源
+   * @param mapper 宿主数据源
    * @param access 公开授权端口
    * @param dictionaries 字典公开端口；不回退前端硬编码选项
    * @param manager 宿主事务管理器 */
-  public PersonDataService(JdbcTemplate jdbc,AccessAuthorization access,PlatformTransactionManager manager,BusinessValueCatalog dictionaries) {
-    this.dictionaries=dictionaries;this.jdbc=jdbc;this.access=access;this.transaction=new TransactionTemplate(manager);
+  public PersonDataService(PersonRecordMapper mapper,AccessAuthorization access,PlatformTransactionManager manager,BusinessValueCatalog dictionaries) {
+    this.dictionaries=dictionaries;this.mapper=mapper;this.access=access;this.transaction=new TransactionTemplate(manager);
   }
 
   /**
@@ -49,17 +49,11 @@ public final class PersonDataService {
   public Page list(VerifiedTenantContext c,Kind kind,String keyword,Boolean enabled,int page,int size) {
     require(c,kind,"read");
     if(page<1||page>1000000||size<1||size>100||keyword==null||keyword.length()>200)throw invalid();
-    String where=" WHERE tenant_id=UUID_TO_BIN(?) AND (LOCATE(?,code)>0 OR LOCATE(?,name)>0)"+(enabled==null?"":" AND enabled=?");
-    var args=new ArrayList<Object>(List.of(c.tenantId().toString(),keyword.trim(),keyword.trim()));
-    if(enabled!=null)args.add(enabled);
-    long total=jdbc.queryForObject("SELECT COUNT(*) FROM "+kind.table()+where,Long.class,args.toArray());
-    args.add(size);args.add((page-1)*size);
-    // 人员列表只返回摘要，证件、家庭及履历字段仅经详情授权读取。
-    var listFields=kind==Kind.PERSON?List.of("englishName","phone","email","employmentStatus"):kind.fields;
-    var rows=jdbc.query("SELECT BIN_TO_UUID(id) id,code,name,enabled,version,BIN_TO_UUID(created_by) audit_created_by,created_at,BIN_TO_UUID(updated_by) audit_updated_by,updated_at,"+String.join(",",listFields.stream().map(kind::column).toList())+" FROM "+kind.table()+where+" ORDER BY code,id LIMIT ? OFFSET ?",(r,n)->{
-      var attributes=new LinkedHashMap<String,String>();for(String field:listFields)attributes.put(field,r.getString(kind.column(field)));
-      return new Row(r.getString("id"),r.getString("code"),r.getString("name"),attributes,r.getBoolean("enabled"),r.getLong("version"),new Audit(r.getString("audit_created_by"),r.getTimestamp("created_at")==null?null:r.getTimestamp("created_at").toInstant().toString(),r.getString("audit_updated_by"),r.getTimestamp("updated_at")==null?null:r.getTimestamp("updated_at").toInstant().toString()));
-    },args.toArray());
+    long total=mapper.count(c.tenantId().toString(),keyword.trim(),enabled);
+    var rows=mapper.list(c.tenantId().toString(),keyword.trim(),enabled,size,(page-1)*size).stream().map(row->{
+      var attributes=new LinkedHashMap<String,String>();for(String field:List.of("englishName","phone","email","employmentStatus"))attributes.put(field,(String)row.get(field));
+      return new Row((String)row.get("id"),(String)row.get("code"),(String)row.get("name"),attributes,Boolean.TRUE.equals(row.get("enabled")),((Number)row.get("version")).longValue(),new Audit((String)row.get("audit_created_by"),utc(row.get("created_at")),(String)row.get("audit_updated_by"),utc(row.get("updated_at"))));
+    }).toList();
     return new Page(rows,total);
   }
 
@@ -77,10 +71,7 @@ public final class PersonDataService {
     require(c,kind,"create");var values=validate(kind,input);String id=UUID.randomUUID().toString();
     try {
       return transaction.execute(status->{
-        var args=new ArrayList<Object>(List.of(id,c.tenantId().toString(),input.code().trim(),input.name().trim()));args.addAll(values.values());
-        jdbc.update("INSERT INTO "+kind.table()+"(id,tenant_id,code,name,"+String.join(",",kind.fields.stream().map(kind::column).toList())+") VALUES(UUID_TO_BIN(?),UUID_TO_BIN(?),?,?,"+String.join(",",Collections.nCopies(kind.fields.size(),"?"))+")",args.toArray());
-        // 审计主体来自可信会话；四个字段均在同一事务内写入，系统任务可通过 NULL 表达未知主体。
-        jdbc.update("UPDATE "+kind.table()+" SET created_by=UUID_TO_BIN(?),created_at=CURRENT_TIMESTAMP(6),updated_by=UUID_TO_BIN(?),updated_at=CURRENT_TIMESTAMP(6) WHERE tenant_id=UUID_TO_BIN(?) AND id=UUID_TO_BIN(?)",c.accountId().toString(),c.accountId().toString(),c.tenantId().toString(),id);
+        mapper.create(c.tenantId().toString(),id,input,values,c.accountId().toString());
         dictionaryReferences(c,id,values,Map.of());
         return Map.of("id",id);
       });
@@ -100,9 +91,7 @@ public final class PersonDataService {
     require(c,kind,"update");uuid(id);var values=validate(kind,input);
     transaction.executeWithoutResult(status->{
       var previous=previousValues(c,id);
-      var args=new ArrayList<Object>(List.of(input.name().trim()));args.addAll(values.values());
-      args.add(c.tenantId().toString());args.add(id);args.add(input.version());args.add(input.code().trim());
-      int count=jdbc.update("UPDATE "+kind.table()+" SET name=?,"+String.join(",",kind.fields.stream().map(f->kind.column(f)+"=?").toList())+",version=version+1 WHERE tenant_id=UUID_TO_BIN(?) AND id=UUID_TO_BIN(?) AND version=? AND code=?",args.toArray());
+      int count=mapper.update(c.tenantId().toString(),id,input,values);
       if(count!=1)throw new Rejection(409,"MASTER_DATA_CHANGED");
       dictionaryReferences(c,id,values,previous);
       audit(c,kind,id);
@@ -122,7 +111,7 @@ public final class PersonDataService {
     require(c,kind,"set_status");uuid(id);
     if(input==null||input.enabled()==null||input.version()<0)throw invalid();
     transaction.executeWithoutResult(status->{
-      if(jdbc.update("UPDATE "+kind.table()+" SET enabled=?,version=version+1 WHERE tenant_id=UUID_TO_BIN(?) AND id=UUID_TO_BIN(?) AND version=?",input.enabled(),c.tenantId().toString(),id,input.version())!=1)
+      if(mapper.status(c.tenantId().toString(),id,input.enabled(),input.version())!=1)
         throw new Rejection(409,"MASTER_DATA_CHANGED");
       audit(c,kind,id);
     });
@@ -150,7 +139,7 @@ public final class PersonDataService {
 
   /** 旧值只从已授权父对象读取，供停用项保持不变时放行；事务中仍需父版本成功。 */
   private Map<String,String> previousValues(VerifiedTenantContext c,String id){
-    var fields=Kind.PERSON.fields;var rows=jdbc.query("SELECT "+String.join(",",fields.stream().map(Kind.PERSON::column).toList())+" FROM md_person WHERE tenant_id=UUID_TO_BIN(?) AND id=UUID_TO_BIN(?)",(r,n)->{var result=new HashMap<String,String>();for(String field:fields)result.put(field,r.getString(Kind.PERSON.column(field)));return result;},c.tenantId().toString(),id);
+    var rows=mapper.previous(c.tenantId().toString(),id);
     return rows.isEmpty()?Map.of():rows.getFirst();
   }
   /** 字典校验与引用在业务写事务内执行；未知新值拒绝，已有停用值可保留。 */
@@ -159,7 +148,8 @@ public final class PersonDataService {
   }
 
   /** 更新人员档案的最后修改主体；时间由数据库生成，避免客户端时钟漂移。 */
-  private void audit(VerifiedTenantContext c,Kind kind,String id){jdbc.update("UPDATE "+kind.table()+" SET updated_by=UUID_TO_BIN(?),updated_at=CURRENT_TIMESTAMP(6) WHERE tenant_id=UUID_TO_BIN(?) AND id=UUID_TO_BIN(?)",c.accountId().toString(),c.tenantId().toString(),id);}
+  private void audit(VerifiedTenantContext c,Kind kind,String id){mapper.audit(c.tenantId().toString(),id,c.accountId().toString());}
   private static void uuid(String id){try{if(!UUID.fromString(id).toString().equalsIgnoreCase(id))throw invalid();}catch(IllegalArgumentException|NullPointerException e){throw invalid();}}
   private static Rejection invalid(){return new Rejection(400,"MASTER_DATA_INPUT_INVALID");}
+ private static String utc(Object value){return value==null?null:((java.sql.Timestamp)value).toInstant().toString();}
 }

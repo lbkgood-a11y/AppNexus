@@ -1,6 +1,6 @@
 package com.appnexus.platform.persistence.platformscope;
 
-import com.appnexus.platform.persistence.PlatformScoped;
+import com.appnexus.persistence.mybatis.PlatformScoped;
 import java.util.List;
 import java.util.Map;
 import org.apache.ibatis.annotations.Mapper;
