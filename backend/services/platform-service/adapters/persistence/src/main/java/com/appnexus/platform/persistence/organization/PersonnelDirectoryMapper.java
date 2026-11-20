@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.Map;
 /** 人员目录固定SQL映射；不接收任意SQL或客户端表名。 */
 @Mapper
-@PlatformScoped(tables={"tenant_person_leader","identity_account","tenant_member","tenant_organization_position","tenant_organization_unit","tenant_person_leader","tenant_person_organization","tenant_person_position"})
+@PlatformScoped(tables={"identity_account","tenant_member","tenant_organization_position","tenant_organization_unit","tenant_person_leader","tenant_person_organization","tenant_person_position"})
 public interface PersonnelDirectoryMapper {
  /** 固定人员关系SQL；操作、租户、人员及组织有效性由公开端口复核，不复制授权规则。 */
  @Select("SELECT BIN_TO_UUID(id) id,name,enabled FROM tenant_organization_unit WHERE tenant_id=UUID_TO_BIN(#{p0}) ORDER BY code")
