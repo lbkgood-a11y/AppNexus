@@ -1,4 +1,4 @@
-package com.appnexus.platform.security;
+package com.appnexus.platform.appapi.configuration;
 import com.appnexus.platform.configuration.TenantParameters;
 import com.appnexus.platform.appapi.configuration.AmapProxyController;
 

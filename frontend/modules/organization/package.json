@@ -12,13 +12,15 @@
     "./personnel": "./src/personnel/PersonnelManagement.vue"
   },
   "scripts": {
-    "build": "tsc --noEmit",
-    "typecheck": "tsc --noEmit",
+    "build": "vue-tsc --noEmit --skipLibCheck",
+    "typecheck": "vue-tsc --noEmit --skipLibCheck",
     "test": "vitest run"
   },
   "devDependencies": {
     "typescript": "^6.0.0",
-    "vitest": "^4.0.0"
+    "vitest": "^4.0.0",
+    "vue-tsc": "^3.1.4",
+    "vite": "^8.0.3"
   },
   "peerDependencies": {
     "element-plus": "^2.13.6",

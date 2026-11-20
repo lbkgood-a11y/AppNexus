@@ -27,13 +27,13 @@ class DictionaryStandardIntegrationTest extends DatabaseTestSupport {
     private UUID oldTenant() {
         UUID tenant = UUID.randomUUID();
         jdbc.update("INSERT INTO platform_tenant(id,name) VALUES(UUID_TO_BIN(?),'字典升级测试租户')", tenant.toString());
-        BusinessValueDefaults.seed(jdbc, tenant, null);
-        WarehouseValueDefaults.seed(jdbc, tenant, null);
+        BusinessValueDefaults.seed(MapperFixtures.mapper(jdbc,com.appnexus.platform.persistence.configuration.HistoricalDictionaryMapper.class), tenant, null);
+        WarehouseValueDefaults.seed(MapperFixtures.mapper(jdbc,com.appnexus.platform.persistence.configuration.HistoricalDictionaryMapper.class), tenant, null);
         return tenant;
     }
 
     private void migrate(UUID tenant) {
-        new TransactionTemplate(transactions).executeWithoutResult(status -> DictionaryStandardMigration.migrateTenant(jdbc, tenant));
+        new TransactionTemplate(transactions).executeWithoutResult(status -> DictionaryStandardMigration.migrateTenant(MapperFixtures.mapper(jdbc,com.appnexus.platform.persistence.configuration.HistoricalDictionaryMapper.class), tenant));
     }
 
     private Map<String,Object> item(UUID tenant, String dictionary, String value) {
@@ -52,7 +52,7 @@ class DictionaryStandardIntegrationTest extends DatabaseTestSupport {
         jdbc.update("INSERT INTO md_person(id,tenant_id,code,name,ethnicity,political_status) VALUES(UUID_TO_BIN(?),UUID_TO_BIN(?),'PERSON','人员','汉族','群众')", person, t);
         jdbc.update("INSERT INTO md_person_detail(id,tenant_id,person_id,section_code,content) VALUES(UUID_TO_BIN(?),UUID_TO_BIN(?),UUID_TO_BIN(?),'contacts',?)",
             UUID.randomUUID().toString(), t, person, "{\"contactType\":\"电话\",\"remarks\":\"电话\",\"contactValue\":\"不应替换\"}");
-        new TransactionTemplate(transactions).executeWithoutResult(status -> BusinessValueDefaults.legacy(jdbc, tenant));
+        new TransactionTemplate(transactions).executeWithoutResult(status -> BusinessValueDefaults.legacy(MapperFixtures.mapper(jdbc,com.appnexus.platform.persistence.configuration.HistoricalDictionaryMapper.class), tenant));
         var before = item(tenant, "partner_nature", "民营");
         jdbc.update("UPDATE tenant_dictionary_item SET name='租户自定义名称',status='DISABLED',sort_order=7 WHERE tenant_id=UUID_TO_BIN(?) AND id=UUID_TO_BIN(?)", t, before.get("id"));
         var references = jdbc.queryForList("SELECT HEX(item_id) item_id,consumer,reference_key FROM tenant_dictionary_item_reference WHERE tenant_id=UUID_TO_BIN(?) ORDER BY item_id,consumer,reference_key", t);
@@ -88,8 +88,8 @@ class DictionaryStandardIntegrationTest extends DatabaseTestSupport {
         var before = jdbc.queryForList("SELECT code,item_value,version,updated_at FROM tenant_dictionary_item WHERE tenant_id=UUID_TO_BIN(?) ORDER BY id", t);
         var firstBefore = item(first, "partner_nature", "民营");
         assertThatThrownBy(() -> new TransactionTemplate(transactions).executeWithoutResult(status -> {
-            DictionaryStandardMigration.migrateTenant(jdbc, first);
-            DictionaryStandardMigration.migrateTenant(jdbc, tenant);
+            DictionaryStandardMigration.migrateTenant(MapperFixtures.mapper(jdbc,com.appnexus.platform.persistence.configuration.HistoricalDictionaryMapper.class), first);
+            DictionaryStandardMigration.migrateTenant(MapperFixtures.mapper(jdbc,com.appnexus.platform.persistence.configuration.HistoricalDictionaryMapper.class), tenant);
         })).hasMessageContaining("DICTIONARY_STANDARD_CONFLICT");
         assertThat(jdbc.queryForList("SELECT code,item_value,version,updated_at FROM tenant_dictionary_item WHERE tenant_id=UUID_TO_BIN(?) ORDER BY id", t)).isEqualTo(before);
         assertThat(item(first, "partner_nature", "民营")).isEqualTo(firstBefore);
@@ -98,7 +98,7 @@ class DictionaryStandardIntegrationTest extends DatabaseTestSupport {
     @Test void unmappedHistoryIsRetainedButUnavailableForNewSelection() {
         UUID tenant = oldTenant(); String id = UUID.randomUUID().toString();
         jdbc.update("INSERT INTO md_partner(id,tenant_id,code,name,nature) VALUES(UUID_TO_BIN(?),UUID_TO_BIN(?),'HISTORY','历史','历史特殊性质')", id, tenant.toString());
-        new TransactionTemplate(transactions).executeWithoutResult(status -> BusinessValueDefaults.legacy(jdbc, tenant));
+        new TransactionTemplate(transactions).executeWithoutResult(status -> BusinessValueDefaults.legacy(MapperFixtures.mapper(jdbc,com.appnexus.platform.persistence.configuration.HistoricalDictionaryMapper.class), tenant));
         String itemId = (String) item(tenant, "partner_nature", "历史特殊性质").get("id");
         migrate(tenant);
         assertThat(item(tenant, "partner_nature", "历史特殊性质")).containsEntry("id", itemId).containsEntry("status", "DISABLED");

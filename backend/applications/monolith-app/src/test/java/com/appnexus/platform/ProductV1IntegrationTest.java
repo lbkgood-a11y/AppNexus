@@ -4,7 +4,7 @@ import com.appnexus.masterdata.application.product.ProductService;
 import com.appnexus.platform.security.operation.OperationRegistry;
 
 import static org.assertj.core.api.Assertions.*;
-import com.appnexus.masterdata.product.*;
+import com.appnexus.masterdata.application.product.*;
 import com.appnexus.platform.tenant.VerifiedTenantContext;
 import java.util.*;
 import org.junit.jupiter.api.Test;

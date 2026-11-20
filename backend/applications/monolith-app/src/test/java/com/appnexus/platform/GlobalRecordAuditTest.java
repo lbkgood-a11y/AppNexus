@@ -105,7 +105,7 @@ class GlobalRecordAuditTest extends DatabaseTestSupport {
             jdbc.update("INSERT INTO md_warehouse(id,tenant_id,code,name) VALUES(UUID_TO_BIN(?),UUID_TO_BIN(?),'READ','读取')",id,tenant);
             var request=new org.springframework.mock.web.MockHttpServletRequest("GET","/test-audit");
             request.setAttribute(com.appnexus.platform.tenant.VerifiedTenantContext.class.getName(),new com.appnexus.platform.tenant.VerifiedTenantContext(actor,UUID.fromString(tenant),UUID.randomUUID(),1));
-            var advice=new RecordAuditResponseAdvice(jdbc,request);
+            var advice=new RecordAuditResponseAdvice(MapperFixtures.mapper(jdbc,com.appnexus.platform.persistence.AuditProjectionMapper.class),request);
             var method=new org.springframework.core.MethodParameter(getClass().getDeclaredMethod("auditedRows"),-1);
             var response=new org.springframework.http.server.ServletServerHttpResponse(new org.springframework.mock.web.MockHttpServletResponse());
             Object projected=advice.beforeBodyWrite(List.of(Map.of("id",id)),method,org.springframework.http.MediaType.APPLICATION_JSON,null,null,response);

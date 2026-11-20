@@ -4,7 +4,7 @@ import com.appnexus.platform.organization.PersonnelManagement;
 import com.appnexus.platform.organization.PersonManagement;
 import com.appnexus.platform.organization.PersonData;
 
-import com.appnexus.platform.organization.personnel.*;
+
 import com.appnexus.platform.tenant.VerifiedTenantContext;
 import com.appnexus.platform.persistence.organization.OrganizationAdministratorBootstrap;
 import java.util.*;

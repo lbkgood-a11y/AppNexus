@@ -1,0 +1,1246 @@
+[
+  {
+    "path": "backend/applications/monolith-app/src/main/java/com/appnexus/platform/bootstrap/audit/package-info.java",
+    "types": [
+      "AuditQueryConfiguration"
+    ],
+    "imports": [
+      "com.appnexus.platform.audit.*",
+      "com.appnexus.platform.audit.port.AuditRecords",
+      "com.appnexus.platform.authorization.AccessAuthorization",
+      "com.appnexus.platform.tenant.*",
+      "org.springframework.context.annotation.*"
+    ],
+    "change": "修订职责、边界与迁移状态"
+  },
+  {
+    "path": "backend/applications/monolith-app/src/main/java/com/appnexus/platform/bootstrap/authorization/package-info.java",
+    "types": [
+      "PolicyTemplateConfiguration"
+    ],
+    "imports": [
+      "com.appnexus.platform.authorization.*",
+      "com.appnexus.platform.authorization.port.PolicyTemplateStorage",
+      "org.springframework.context.annotation.*"
+    ],
+    "change": "新增说明"
+  },
+  {
+    "path": "backend/applications/monolith-app/src/main/java/com/appnexus/platform/bootstrap/parameter/package-info.java",
+    "types": [
+      "TenantParameterConfiguration"
+    ],
+    "imports": [
+      "com.appnexus.platform.authorization.AccessAuthorization",
+      "com.appnexus.platform.configuration.*",
+      "com.appnexus.platform.configuration.port.*",
+      "com.appnexus.platform.tenant.TenantAccess",
+      "org.springframework.context.annotation.*"
+    ],
+    "change": "修订职责、边界与迁移状态"
+  },
+  {
+    "path": "backend/applications/monolith-app/src/main/java/com/appnexus/platform/bootstrap/task/package-info.java",
+    "types": [
+      "TaskManagementConfiguration"
+    ],
+    "imports": [
+      "com.appnexus.platform.tenant.*",
+      "com.appnexus.platform.tenant.port.TaskOperations",
+      "org.springframework.context.annotation.*"
+    ],
+    "change": "修订职责、边界与迁移状态"
+  },
+  {
+    "path": "backend/applications/monolith-app/src/main/java/com/appnexus/platform/bootstrap/tenant/package-info.java",
+    "types": [
+      "InvitationConfiguration"
+    ],
+    "imports": [
+      "com.appnexus.platform.tenant.*",
+      "com.appnexus.platform.tenant.port.*",
+      "org.springframework.context.annotation.*"
+    ],
+    "change": "修订职责、边界与迁移状态"
+  },
+  {
+    "path": "backend/services/leave-poc/src/main/java/com/appnexus/leave/adapter/integration/package-info.java",
+    "types": [
+      "LeaveDeclaration"
+    ],
+    "imports": [
+      "com.appnexus.contracts.businessobject.*",
+      "com.appnexus.contracts.businessobject.BusinessObjects.Field",
+      "com.appnexus.contracts.businessobject.ObjectRecordMapping.*",
+      "com.appnexus.leave.api.LeaveOperations.*",
+      "java.util.*"
+    ],
+    "change": "修订职责、边界与迁移状态"
+  },
+  {
+    "path": "backend/services/leave-poc/src/main/java/com/appnexus/leave/adapter/persistence/package-info.java",
+    "types": [
+      "LeaveRecordMapper",
+      "LeaveStorageValues",
+      "MyBatisLeaveRepository"
+    ],
+    "imports": [
+      "com.appnexus.leave.application.LeaveRepository",
+      "com.appnexus.persistence.mybatis.PlatformScoped",
+      "java.time.LocalDate",
+      "java.util.*",
+      "java.util.List",
+      "java.util.Map",
+      "org.apache.ibatis.annotations.*"
+    ],
+    "change": "修订职责、边界与迁移状态"
+  },
+  {
+    "path": "backend/services/leave-poc/src/main/java/com/appnexus/leave/adapter/transaction/package-info.java",
+    "types": [
+      "SpringLeaveTransaction"
+    ],
+    "imports": [
+      "com.appnexus.leave.application.LeaveTransaction",
+      "java.util.function.Supplier",
+      "org.springframework.transaction.PlatformTransactionManager",
+      "org.springframework.transaction.support.TransactionTemplate"
+    ],
+    "change": "修订职责、边界与迁移状态"
+  },
+  {
+    "path": "backend/services/leave-poc/src/main/java/com/appnexus/leave/api/package-info.java",
+    "types": [
+      "LeaveData",
+      "LeaveManagement",
+      "LeaveOperations"
+    ],
+    "imports": [
+      "com.appnexus.contracts.businessobject.*",
+      "com.appnexus.contracts.businessobject.BusinessObjects.Field",
+      "com.appnexus.contracts.workflow.WorkflowContext",
+      "com.appnexus.contracts.workflow.WorkflowPlatform",
+      "com.appnexus.leave.api.LeaveData.*",
+      "java.time.LocalDate",
+      "java.util.*"
+    ],
+    "change": "修订职责、边界与迁移状态"
+  },
+  {
+    "path": "backend/services/leave-poc/src/main/java/com/appnexus/leave/application/package-info.java",
+    "types": [
+      "LeavePocService",
+      "LeaveRepository",
+      "LeaveTransaction"
+    ],
+    "imports": [
+      "com.appnexus.contracts.businessobject.*",
+      "com.appnexus.contracts.businessobject.BusinessObjects.Context",
+      "com.appnexus.contracts.workflow.*",
+      "com.appnexus.leave.LeaveContractData",
+      "com.appnexus.leave.api.LeaveData.*",
+      "com.appnexus.leave.api.LeaveOperations.*",
+      "java.time.LocalDate",
+      "java.time.temporal.ChronoUnit",
+      "java.util.*",
+      "java.util.function.Supplier"
+    ],
+    "change": "修订职责、边界与迁移状态"
+  },
+  {
+    "path": "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/adapter/codec/package-info.java",
+    "types": [
+      "JacksonAttributeRuleContent",
+      "JacksonProductContent"
+    ],
+    "imports": [
+      "com.appnexus.masterdata.api.masterdata.MasterData",
+      "com.appnexus.masterdata.application.product.AttributeRuleContent",
+      "com.appnexus.masterdata.application.product.ProductContent",
+      "com.appnexus.masterdata.domain.product.AttributeRulePolicy",
+      "java.util.*",
+      "java.util.Map",
+      "org.springframework.stereotype.Component",
+      "tools.jackson.databind.*",
+      "tools.jackson.databind.ObjectMapper"
+    ],
+    "change": "修订职责、边界与迁移状态"
+  },
+  {
+    "path": "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/adapter/integration/partner/package-info.java",
+    "types": [
+      "BusinessPartnerDeclaration"
+    ],
+    "imports": [
+      "com.appnexus.contracts.businessobject.*",
+      "com.appnexus.contracts.businessobject.BusinessObjects.*",
+      "com.appnexus.masterdata.api.masterdata.MasterData",
+      "com.appnexus.masterdata.domain.partner.PartnerRules",
+      "java.util.*",
+      "org.springframework.stereotype.Component"
+    ],
+    "change": "修订职责、边界与迁移状态"
+  },
+  {
+    "path": "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/adapter/integration/product/package-info.java",
+    "types": [
+      "ProductApprovalDeclaration",
+      "ProductDeclaration",
+      "ProductRuntime"
+    ],
+    "imports": [
+      "com.appnexus.contracts.businessobject.*",
+      "com.appnexus.contracts.businessobject.BusinessObjects.*",
+      "com.appnexus.contracts.businessobject.ObjectRecordMapping.*",
+      "com.appnexus.masterdata.api.product.*",
+      "com.appnexus.masterdata.api.product.ProductCommandData.Version",
+      "com.appnexus.masterdata.application.product.ProductAuthorization",
+      "com.appnexus.masterdata.application.product.ProductRepository",
+      "com.appnexus.platform.configuration.NavigationPages",
+      "com.appnexus.platform.tenant.*",
+      "java.util.*",
+      "org.springframework.boot.autoconfigure.condition.ConditionalOnProperty",
+      "org.springframework.stereotype.Component"
+    ],
+    "change": "修订职责、边界与迁移状态"
+  },
+  {
+    "path": "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/adapter/media/package-info.java",
+    "types": [
+      "ImageIoProductImageContent"
+    ],
+    "imports": [
+      "com.appnexus.masterdata.api.masterdata.MasterData",
+      "com.appnexus.masterdata.application.product.ProductImageContent",
+      "java.io.*",
+      "java.util.*",
+      "javax.imageio.ImageIO",
+      "org.springframework.stereotype.Component"
+    ],
+    "change": "修订职责、边界与迁移状态"
+  },
+  {
+    "path": "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/adapter/persistence/masterdata/package-info.java",
+    "types": [
+      "GeographyDefaults",
+      "MyBatisGeographyCatalog",
+      "MyBatisMasterDataRelations",
+      "PartnerDataAccess",
+      "PartnerDetails",
+      "StorageHierarchy",
+      "TenantGeography"
+    ],
+    "imports": [
+      "com.appnexus.masterdata.adapter.integration.partner.BusinessPartnerDeclaration.*",
+      "com.appnexus.masterdata.adapter.persistence.GeographyMapper",
+      "com.appnexus.masterdata.adapter.persistence.MasterReadMapper",
+      "com.appnexus.masterdata.adapter.persistence.PartnerDetailMapper",
+      "com.appnexus.masterdata.adapter.persistence.StorageHierarchyMapper",
+      "com.appnexus.masterdata.adapter.persistence.masterdata.MyBatisGeographyCatalog",
+      "com.appnexus.masterdata.adapter.persistence.masterdata.PartnerDataAccess",
+      "com.appnexus.masterdata.adapter.persistence.masterdata.PartnerDetails",
+      "com.appnexus.masterdata.adapter.persistence.masterdata.StorageHierarchy",
+      "com.appnexus.masterdata.adapter.persistence.masterdata.TenantGeography",
+      "com.appnexus.masterdata.api.masterdata.MasterData",
+      "com.appnexus.masterdata.api.masterdata.MasterData.*",
+      "com.appnexus.masterdata.application.MasterDataRelations",
+      "com.appnexus.masterdata.domain.geography.GeographyHierarchy",
+      "com.appnexus.masterdata.domain.geography.GeographyStandards",
+      "com.appnexus.platform.authorization.*",
+      "com.appnexus.platform.configuration.BusinessValueCatalog",
+      "com.appnexus.platform.configuration.GeographyCatalog",
+      "com.appnexus.platform.tenant.VerifiedTenantContext",
+      "java.time.LocalDate",
+      "java.util.*",
+      "java.util.UUID",
+      "org.springframework.stereotype.Component"
+    ],
+    "change": "修订职责、边界与迁移状态"
+  },
+  {
+    "path": "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/adapter/transaction/package-info.java",
+    "types": [
+      "SpringProductAttributeTransaction",
+      "SpringProductCatalogTransaction",
+      "SpringProductExecutionTransaction",
+      "SpringProductStructureTransaction",
+      "SpringProductTemplateTransaction",
+      "SpringRecordTransaction"
+    ],
+    "imports": [
+      "com.appnexus.masterdata.api.masterdata.MasterData",
+      "com.appnexus.masterdata.api.masterdata.MasterData.Rejection",
+      "com.appnexus.masterdata.application.RecordTransaction",
+      "com.appnexus.masterdata.application.product.ProductAttributeTransaction",
+      "com.appnexus.masterdata.application.product.ProductCatalogTransaction",
+      "com.appnexus.masterdata.application.product.ProductExecutionTransaction",
+      "com.appnexus.masterdata.application.product.ProductStructureTransaction",
+      "com.appnexus.masterdata.application.product.ProductTemplateTransaction",
+      "java.util.function.Supplier",
+      "org.springframework.dao.*",
+      "org.springframework.dao.DataIntegrityViolationException",
+      "org.springframework.dao.DuplicateKeyException",
+      "org.springframework.stereotype.Component",
+      "org.springframework.transaction.*",
+      "org.springframework.transaction.PlatformTransactionManager",
+      "org.springframework.transaction.support.TransactionTemplate"
+    ],
+    "change": "修订职责、边界与迁移状态"
+  },
+  {
+    "path": "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/adapter/web/package-info.java",
+    "types": [
+      "MasterDataCachePolicy",
+      "MasterDataErrors"
+    ],
+    "imports": [
+      "com.appnexus.masterdata.api.masterdata.MasterData",
+      "org.springframework.core.MethodParameter",
+      "org.springframework.http.*",
+      "org.springframework.http.converter.HttpMessageConverter",
+      "org.springframework.http.server.*",
+      "org.springframework.web.bind.annotation.*",
+      "org.springframework.web.bind.annotation.ControllerAdvice",
+      "org.springframework.web.servlet.mvc.method.annotation.ResponseBodyAdvice"
+    ],
+    "change": "修订职责、边界与迁移状态"
+  },
+  {
+    "path": "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/adapter/web/masterdata/package-info.java",
+    "types": [
+      "BusinessPartnerController",
+      "CountryRegionController",
+      "StorageAreaController",
+      "StorageLocationController",
+      "SubdivisionController",
+      "WarehouseController"
+    ],
+    "imports": [
+      "com.appnexus.contracts.operation.*",
+      "com.appnexus.masterdata.api.masterdata.MasterData.*",
+      "com.appnexus.masterdata.api.masterdata.MasterDataManagement",
+      "com.appnexus.platform.tenant.VerifiedTenantContext",
+      "jakarta.servlet.http.*",
+      "org.springframework.web.bind.annotation.*"
+    ],
+    "change": "修订职责、边界与迁移状态"
+  },
+  {
+    "path": "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/adapter/web/product/package-info.java",
+    "types": [
+      "ProductApprovalController",
+      "ProductAttributeController",
+      "ProductCategoryController",
+      "ProductController",
+      "ProductImageController",
+      "ProductStructureController",
+      "ProductTemplateController",
+      "ProductUnitController",
+      "ProductUnitConversionController"
+    ],
+    "imports": [
+      "com.appnexus.contracts.operation.*",
+      "com.appnexus.masterdata.api.masterdata.MasterData",
+      "com.appnexus.masterdata.api.masterdata.MasterData.Rejection",
+      "com.appnexus.masterdata.api.product.*",
+      "com.appnexus.masterdata.api.product.ProductCatalogData",
+      "com.appnexus.masterdata.api.product.ProductCatalogData.*",
+      "com.appnexus.masterdata.api.product.ProductMainData.*",
+      "com.appnexus.masterdata.api.product.ProductManagement",
+      "com.appnexus.masterdata.api.product.ProductStructureData.*",
+      "com.appnexus.platform.tenant.VerifiedTenantContext",
+      "jakarta.servlet.http.HttpServletRequest",
+      "org.springframework.http.*",
+      "org.springframework.web.bind.annotation.*"
+    ],
+    "change": "修订职责、边界与迁移状态"
+  },
+  {
+    "path": "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/api/masterdata/package-info.java",
+    "types": [
+      "MasterData",
+      "MasterDataManagement"
+    ],
+    "imports": [
+      "com.appnexus.masterdata.api.masterdata.MasterData.*",
+      "com.appnexus.platform.tenant.VerifiedTenantContext",
+      "java.util.*"
+    ],
+    "change": "修订职责、边界与迁移状态"
+  },
+  {
+    "path": "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/application/masterdata/package-info.java",
+    "types": [
+      "MasterDataRepository",
+      "MasterDataService"
+    ],
+    "imports": [
+      "com.appnexus.masterdata.api.masterdata.MasterData.*",
+      "com.appnexus.masterdata.application.*",
+      "com.appnexus.masterdata.domain.geography.GeographyStandards",
+      "com.appnexus.platform.authorization.AccessAuthorization",
+      "com.appnexus.platform.configuration.BusinessValueCatalog",
+      "com.appnexus.platform.tenant.VerifiedTenantContext",
+      "java.util.*",
+      "java.util.Map"
+    ],
+    "change": "修订职责、边界与迁移状态"
+  },
+  {
+    "path": "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/bootstrap/package-info.java",
+    "types": [
+      "MasterDataConfiguration",
+      "ProductApprovalConfiguration"
+    ],
+    "imports": [
+      "com.appnexus.contracts.businessobject.BusinessObjectExecution",
+      "com.appnexus.contracts.workflow.*",
+      "com.appnexus.masterdata.adapter.persistence.GeographyMapper",
+      "com.appnexus.masterdata.adapter.persistence.MasterReadMapper",
+      "com.appnexus.masterdata.adapter.persistence.PartnerDetailMapper",
+      "com.appnexus.masterdata.adapter.persistence.StorageHierarchyMapper",
+      "com.appnexus.masterdata.adapter.persistence.masterdata.GeographyDefaults",
+      "com.appnexus.masterdata.adapter.persistence.masterdata.MyBatisMasterDataRelations",
+      "com.appnexus.masterdata.adapter.persistence.masterdata.PartnerDataAccess",
+      "com.appnexus.masterdata.api.product.*",
+      "com.appnexus.masterdata.application.masterdata.MasterDataService",
+      "com.appnexus.masterdata.application.product.*",
+      "com.appnexus.platform.authorization.AccessAuthorization",
+      "org.springframework.beans.factory.ObjectProvider",
+      "org.springframework.boot.autoconfigure.condition.ConditionalOnProperty",
+      "org.springframework.context.annotation.*",
+      "org.springframework.transaction.PlatformTransactionManager"
+    ],
+    "change": "修订职责、边界与迁移状态"
+  },
+  {
+    "path": "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/domain/geography/package-info.java",
+    "types": [
+      "GeographyHierarchy",
+      "GeographyStandards"
+    ],
+    "imports": [
+      "com.appnexus.masterdata.api.masterdata.MasterData",
+      "com.appnexus.masterdata.domain.geography.GeographyHierarchy",
+      "com.appnexus.masterdata.domain.geography.GeographyStandards",
+      "java.io.*",
+      "java.nio.charset.StandardCharsets",
+      "java.util.*"
+    ],
+    "change": "修订职责、边界与迁移状态"
+  },
+  {
+    "path": "backend/services/master-data-service/src/test/java/com/appnexus/masterdata/adapter/codec/package-info.java",
+    "types": [
+      "ProductAttributeRulesTest"
+    ],
+    "imports": [
+      "com.appnexus.masterdata.domain.product.AttributeRulePolicy",
+      "org.assertj.core.api.Assertions.*",
+      "org.junit.jupiter.api.Test"
+    ],
+    "change": "修订职责、边界与迁移状态"
+  },
+  {
+    "path": "backend/services/platform-service/adapters/app-api/src/main/java/com/appnexus/platform/appapi/administration/package-info.java",
+    "types": [
+      "InvitationErrors",
+      "SecurityLogController"
+    ],
+    "imports": [
+      "com.appnexus.platform.audit.port.SecurityLogRepository",
+      "com.appnexus.platform.security.*",
+      "com.appnexus.platform.tenant.TenantInvitations",
+      "java.util.UUID",
+      "org.springframework.http.*",
+      "org.springframework.security.core.Authentication",
+      "org.springframework.web.bind.annotation.*"
+    ],
+    "change": "修订职责、边界与迁移状态"
+  },
+  {
+    "path": "backend/services/platform-service/adapters/app-api/src/main/java/com/appnexus/platform/appapi/configuration/package-info.java",
+    "types": [
+      "AmapProxyController",
+      "DictionaryManagementController",
+      "NavigationController",
+      "TenantParameterController",
+      "TenantParameterErrors"
+    ],
+    "imports": [
+      "com.appnexus.platform.configuration.DictionaryManagement",
+      "com.appnexus.platform.configuration.DictionaryManagementException",
+      "com.appnexus.platform.configuration.NavigationQuery",
+      "com.appnexus.platform.configuration.TenantParameters",
+      "com.appnexus.platform.security.*",
+      "com.appnexus.platform.tenant.TenantAccess",
+      "com.appnexus.platform.tenant.VerifiedTenantContext",
+      "jakarta.servlet.http.HttpServletRequest",
+      "java.net.URI",
+      "java.net.URLEncoder",
+      "java.net.http.*",
+      "java.nio.charset.StandardCharsets",
+      "java.nio.file.*",
+      "java.time.Duration",
+      "java.util.*",
+      "java.util.List",
+      "java.util.UUID",
+      "java.util.concurrent.Semaphore",
+      "java.util.function.Supplier",
+      "org.springframework.beans.factory.annotation.Value",
+      "org.springframework.dao.*",
+      "org.springframework.http.*",
+      "org.springframework.http.CacheControl",
+      "org.springframework.http.HttpStatus",
+      "org.springframework.http.MediaType",
+      "org.springframework.http.ResponseEntity",
+      "org.springframework.security.core.Authentication",
+      "org.springframework.web.bind.annotation.*"
+    ],
+    "change": "修订职责、边界与迁移状态"
+  },
+  {
+    "path": "backend/services/platform-service/adapters/app-api/src/main/java/com/appnexus/platform/appapi/operation/package-info.java",
+    "types": [
+      "ObjectDiagnosticsController",
+      "OperationDecisionController"
+    ],
+    "imports": [
+      "com.appnexus.contracts.operation.ObjectDiagnostics",
+      "com.appnexus.platform.authorization.AccessAuthorization",
+      "com.appnexus.platform.security.EndpointPolicy",
+      "com.appnexus.platform.security.operation.OperationRegistry",
+      "com.appnexus.platform.tenant.VerifiedTenantContext",
+      "jakarta.servlet.http.HttpServletRequest",
+      "java.util.*",
+      "org.springframework.http.*",
+      "org.springframework.security.core.Authentication",
+      "org.springframework.web.bind.annotation.*"
+    ],
+    "change": "修订职责、边界与迁移状态"
+  },
+  {
+    "path": "backend/services/platform-service/adapters/app-api/src/main/java/com/appnexus/platform/appapi/organization/package-info.java",
+    "types": [
+      "OrganizationController",
+      "OrganizationDomainController",
+      "OrganizationDomainErrors",
+      "OrganizationGrantController",
+      "OrganizationSummaryController",
+      "PersonController",
+      "PersonnelCachePolicy",
+      "PersonnelErrors"
+    ],
+    "imports": [
+      "com.appnexus.contracts.operation.*",
+      "com.appnexus.platform.appapi.organization.OrganizationDomainController",
+      "com.appnexus.platform.authorization.*",
+      "com.appnexus.platform.authorization.AccessAuthorization",
+      "com.appnexus.platform.organization.*",
+      "com.appnexus.platform.organization.OrganizationStructure",
+      "com.appnexus.platform.organization.OrganizationSummary",
+      "com.appnexus.platform.organization.PersonData",
+      "com.appnexus.platform.organization.PersonData.*",
+      "com.appnexus.platform.organization.PersonManagement",
+      "com.appnexus.platform.organization.PersonnelManagement",
+      "com.appnexus.platform.organization.port.OrganizationUnitRepository",
+      "com.appnexus.platform.security.*",
+      "com.appnexus.platform.tenant.VerifiedTenantContext",
+      "jakarta.servlet.http.*",
+      "jakarta.servlet.http.HttpServletRequest",
+      "java.time.Instant",
+      "java.util.*",
+      "java.util.List",
+      "java.util.NoSuchElementException",
+      "org.springframework.core.MethodParameter",
+      "org.springframework.dao.*",
+      "org.springframework.http.*",
+      "org.springframework.http.HttpStatus",
+      "org.springframework.http.ProblemDetail",
+      "org.springframework.http.ResponseEntity",
+      "org.springframework.http.converter.HttpMessageConverter",
+      "org.springframework.http.server.*",
+      "org.springframework.web.bind.annotation.*",
+      "org.springframework.web.bind.annotation.ControllerAdvice",
+      "org.springframework.web.servlet.mvc.method.annotation.ResponseBodyAdvice"
+    ],
+    "change": "修订职责、边界与迁移状态"
+  },
+  {
+    "path": "backend/services/platform-service/adapters/partner-api/src/main/java/com/appnexus/platform/partnerapi/administration/package-info.java",
+    "types": [
+      "PartnerReferenceController"
+    ],
+    "imports": [
+      "com.appnexus.platform.configuration.PartnerReferences",
+      "com.appnexus.platform.security.*",
+      "java.util.*",
+      "org.springframework.http.*",
+      "org.springframework.security.oauth2.server.resource.authentication.BearerTokenAuthentication",
+      "org.springframework.web.bind.annotation.*"
+    ],
+    "change": "修订职责、边界与迁移状态"
+  },
+  {
+    "path": "backend/services/platform-service/adapters/partner-api/src/main/java/com/appnexus/platform/partnerapi/configuration/package-info.java",
+    "types": [
+      "PartnerDictionaryController"
+    ],
+    "imports": [
+      "com.appnexus.platform.configuration.PartnerDictionaryQueries",
+      "com.appnexus.platform.security.*",
+      "org.springframework.http.*",
+      "org.springframework.security.oauth2.server.resource.authentication.BearerTokenAuthentication",
+      "org.springframework.web.bind.annotation.*"
+    ],
+    "change": "修订职责、边界与迁移状态"
+  },
+  {
+    "path": "backend/services/platform-service/adapters/persistence/src/main/java/com/appnexus/platform/persistence/audit/package-info.java",
+    "types": [
+      "AuditQueriesMapper",
+      "MyBatisAuditRecords",
+      "TaskAuditMapper"
+    ],
+    "imports": [
+      "com.appnexus.persistence.mybatis.PlatformScoped",
+      "com.appnexus.platform.audit.AuditQueries",
+      "com.appnexus.platform.audit.port.AuditRecords",
+      "java.util.*",
+      "java.util.List",
+      "java.util.Map",
+      "org.apache.ibatis.annotations.*",
+      "org.springframework.stereotype.Component"
+    ],
+    "change": "修订职责、边界与迁移状态"
+  },
+  {
+    "path": "backend/services/platform-service/adapters/persistence/src/main/java/com/appnexus/platform/persistence/authorization/package-info.java",
+    "types": [
+      "AuthorizationTemplateMapper",
+      "MyBatisPolicyTemplateStorage"
+    ],
+    "imports": [
+      "com.appnexus.persistence.mybatis.PlatformScoped",
+      "com.appnexus.platform.authorization.*",
+      "com.appnexus.platform.authorization.PolicyTemplates",
+      "com.appnexus.platform.authorization.port.PolicyTemplateStorage",
+      "java.util.*",
+      "java.util.List",
+      "java.util.Map",
+      "org.apache.ibatis.annotations.*",
+      "org.springframework.stereotype.Component",
+      "org.springframework.transaction.PlatformTransactionManager",
+      "org.springframework.transaction.support.TransactionTemplate",
+      "tools.jackson.databind.json.JsonMapper"
+    ],
+    "change": "修订职责、边界与迁移状态"
+  },
+  {
+    "path": "backend/services/platform-service/adapters/persistence/src/main/java/com/appnexus/platform/persistence/capability/package-info.java",
+    "types": [
+      "CapabilityDirectoryMapper"
+    ],
+    "imports": [
+      "com.appnexus.contracts.workflow.WorkflowPlatform.Option",
+      "com.appnexus.persistence.mybatis.PlatformScoped",
+      "java.util.List",
+      "org.apache.ibatis.annotations.*"
+    ],
+    "change": "修订职责、边界与迁移状态"
+  },
+  {
+    "path": "backend/services/platform-service/adapters/persistence/src/main/java/com/appnexus/platform/persistence/configuration/partner/package-info.java",
+    "types": [
+      "PartnerDictionaryMapper",
+      "PartnerReferenceMapper"
+    ],
+    "imports": [
+      "com.appnexus.persistence.mybatis.PlatformScoped",
+      "java.util.List",
+      "java.util.Map",
+      "org.apache.ibatis.annotations.*"
+    ],
+    "change": "修订职责、边界与迁移状态"
+  },
+  {
+    "path": "backend/services/platform-service/adapters/persistence/src/main/java/com/appnexus/platform/persistence/eventing/package-info.java",
+    "types": [
+      "OutboxMapper"
+    ],
+    "imports": [
+      "com.appnexus.persistence.mybatis.PlatformScoped",
+      "java.util.List",
+      "java.util.Map",
+      "org.apache.ibatis.annotations.*"
+    ],
+    "change": "修订职责、边界与迁移状态"
+  },
+  {
+    "path": "backend/services/platform-service/adapters/persistence/src/main/java/com/appnexus/platform/persistence/identity/integration/package-info.java",
+    "types": [
+      "ClientSecretMapper",
+      "IntegrationClientMapper",
+      "PartnerClientAuthorityMapper"
+    ],
+    "imports": [
+      "com.appnexus.persistence.mybatis.PlatformScoped",
+      "java.util.List",
+      "java.util.Map",
+      "org.apache.ibatis.annotations.*"
+    ],
+    "change": "修订职责、边界与迁移状态"
+  },
+  {
+    "path": "backend/services/platform-service/adapters/persistence/src/main/java/com/appnexus/platform/persistence/identity/oauth/package-info.java",
+    "types": [
+      "OAuthAuthorizationMapper",
+      "OAuthAuthorizationRepositoryMapper"
+    ],
+    "imports": [
+      "com.appnexus.persistence.mybatis.PlatformScoped",
+      "java.util.List",
+      "java.util.Map",
+      "org.apache.ibatis.annotations.*"
+    ],
+    "change": "修订职责、边界与迁移状态"
+  },
+  {
+    "path": "backend/services/platform-service/adapters/persistence/src/main/java/com/appnexus/platform/persistence/organization/personnel/package-info.java",
+    "types": [
+      "JacksonPersonnelContent",
+      "MyBatisPersonnelRepository",
+      "MyBatisPersonRepository",
+      "PersonnelCatalogAdapter",
+      "PersonnelConfiguration",
+      "PersonnelExecutionAdapter",
+      "PersonnelExecutionMapper",
+      "PersonnelIdentityMapper",
+      "PersonnelMapper",
+      "PersonnelStorageValues",
+      "PersonRecordMapper",
+      "SpringPersonnelTransaction"
+    ],
+    "imports": [
+      "com.appnexus.persistence.mybatis.PlatformScoped",
+      "com.appnexus.platform.authorization.AccessAuthorization",
+      "com.appnexus.platform.configuration.BusinessValueCatalog",
+      "com.appnexus.platform.organization.*",
+      "com.appnexus.platform.organization.PersonData",
+      "com.appnexus.platform.organization.PersonData.*",
+      "com.appnexus.platform.organization.PersonData.Input",
+      "com.appnexus.platform.organization.PersonnelCatalog",
+      "com.appnexus.platform.organization.port.personnel.*",
+      "com.appnexus.platform.organization.port.personnel.PersonRepository",
+      "com.appnexus.platform.organization.port.personnel.PersonnelContent",
+      "com.appnexus.platform.organization.port.personnel.PersonnelExecutionRecords",
+      "com.appnexus.platform.organization.port.personnel.PersonnelIdentityQueries",
+      "com.appnexus.platform.organization.port.personnel.PersonnelRepository",
+      "com.appnexus.platform.organization.port.personnel.PersonnelTransaction",
+      "java.util.*",
+      "java.util.List",
+      "java.util.Map",
+      "java.util.function.Supplier",
+      "org.apache.ibatis.annotations.*",
+      "org.springframework.context.annotation.*",
+      "org.springframework.dao.DuplicateKeyException",
+      "org.springframework.stereotype.Component",
+      "org.springframework.transaction.PlatformTransactionManager",
+      "org.springframework.transaction.support.TransactionTemplate",
+      "tools.jackson.databind.json.JsonMapper"
+    ],
+    "change": "修订职责、边界与迁移状态"
+  },
+  {
+    "path": "backend/services/platform-service/adapters/persistence/src/main/java/com/appnexus/platform/persistence/security/package-info.java",
+    "types": [],
+    "imports": [],
+    "change": "修订职责、边界与迁移状态"
+  },
+  {
+    "path": "backend/services/platform-service/adapters/persistence/src/main/java/com/appnexus/platform/persistence/tenant/package-info.java",
+    "types": [
+      "MyBatisInvitationRecords",
+      "SpringInvitationTransaction",
+      "TenantInvitationMapper"
+    ],
+    "imports": [
+      "com.appnexus.persistence.mybatis.PlatformScoped",
+      "com.appnexus.platform.tenant.TenantInvitations",
+      "com.appnexus.platform.tenant.port.InvitationRecords",
+      "com.appnexus.platform.tenant.port.InvitationTransaction",
+      "java.time.Instant",
+      "java.util.*",
+      "java.util.List",
+      "java.util.Map",
+      "java.util.function.Supplier",
+      "org.apache.ibatis.annotations.*",
+      "org.springframework.stereotype.Component",
+      "org.springframework.transaction.PlatformTransactionManager",
+      "org.springframework.transaction.support.TransactionTemplate"
+    ],
+    "change": "修订职责、边界与迁移状态"
+  },
+  {
+    "path": "backend/services/platform-service/adapters/platform-api/src/main/java/com/appnexus/platform/managementapi/administration/package-info.java",
+    "types": [
+      "AuditQueryController",
+      "AuditQueryErrors",
+      "AuthorizationManagementController",
+      "IntegrationClientController",
+      "PlatformAdministrationController",
+      "PolicyTemplateController",
+      "PolicyTemplateErrors",
+      "RoleManagementController",
+      "TaskManagementController",
+      "TenantInvitationController"
+    ],
+    "imports": [
+      "com.appnexus.platform.audit.AuditQueries",
+      "com.appnexus.platform.authorization.*",
+      "com.appnexus.platform.authorization.PolicyTemplates",
+      "com.appnexus.platform.authorization.RoleManagement",
+      "com.appnexus.platform.authorization.RoleManagementException",
+      "com.appnexus.platform.configuration.MenuManagement",
+      "com.appnexus.platform.configuration.NavigationQuery",
+      "com.appnexus.platform.security.*",
+      "com.appnexus.platform.tenant.PlatformAdministration",
+      "com.appnexus.platform.tenant.TaskManagement",
+      "com.appnexus.platform.tenant.TenantInvitations",
+      "com.appnexus.platform.tenant.VerifiedTenantContext",
+      "jakarta.servlet.http.HttpServletRequest",
+      "java.util.*",
+      "java.util.Objects",
+      "java.util.UUID",
+      "java.util.function.Supplier",
+      "org.springframework.dao.DataIntegrityViolationException",
+      "org.springframework.dao.DuplicateKeyException",
+      "org.springframework.http.*",
+      "org.springframework.http.CacheControl",
+      "org.springframework.http.HttpStatus",
+      "org.springframework.http.ResponseEntity",
+      "org.springframework.security.core.Authentication",
+      "org.springframework.security.crypto.password.PasswordEncoder",
+      "org.springframework.web.bind.annotation.*"
+    ],
+    "change": "修订职责、边界与迁移状态"
+  },
+  {
+    "path": "backend/services/platform-service/adapters/platform-api/src/main/java/com/appnexus/platform/managementapi/configuration/package-info.java",
+    "types": [
+      "MenuManagementController"
+    ],
+    "imports": [
+      "com.appnexus.platform.configuration.MenuManagement",
+      "com.appnexus.platform.configuration.NavigationPages",
+      "com.appnexus.platform.security.*",
+      "java.util.*",
+      "java.util.function.Supplier",
+      "org.springframework.http.*",
+      "org.springframework.security.core.Authentication",
+      "org.springframework.web.bind.annotation.*"
+    ],
+    "change": "修订职责、边界与迁移状态"
+  },
+  {
+    "path": "backend/services/platform-service/adapters/platform-api/src/main/java/com/appnexus/platform/managementapi/operation/package-info.java",
+    "types": [
+      "OperationCatalogController",
+      "OperationDiagnosticsController"
+    ],
+    "imports": [
+      "com.appnexus.platform.authorization.*",
+      "com.appnexus.platform.configuration.MenuManagement",
+      "com.appnexus.platform.security.EndpointOperation",
+      "com.appnexus.platform.security.EndpointPolicy",
+      "com.appnexus.platform.security.operation.OperationRegistry",
+      "com.appnexus.platform.tenant.VerifiedTenantContext",
+      "jakarta.servlet.http.HttpServletRequest",
+      "java.util.*",
+      "org.springframework.http.*",
+      "org.springframework.security.core.Authentication",
+      "org.springframework.web.bind.annotation.*"
+    ],
+    "change": "修订职责、边界与迁移状态"
+  },
+  {
+    "path": "backend/services/platform-service/adapters/security/src/main/java/com/appnexus/platform/security/operation/package-info.java",
+    "types": [
+      "OperationRegistry"
+    ],
+    "imports": [
+      "com.appnexus.contracts.operation.OperationBinding",
+      "java.util.*",
+      "org.springframework.beans.factory.annotation.Qualifier",
+      "org.springframework.stereotype.Component",
+      "org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping"
+    ],
+    "change": "修订职责、边界与迁移状态"
+  },
+  {
+    "path": "backend/services/platform-service/audit/src/main/java/com/appnexus/platform/audit/internal/application/query/package-info.java",
+    "types": [
+      "AuditQueryService"
+    ],
+    "imports": [
+      "com.appnexus.platform.audit.AuditQueries",
+      "com.appnexus.platform.audit.AuditQueries.*",
+      "com.appnexus.platform.audit.port.AuditRecords",
+      "com.appnexus.platform.authorization.*",
+      "com.appnexus.platform.tenant.*",
+      "java.time.Instant",
+      "java.util.*"
+    ],
+    "change": "修订职责、边界与迁移状态"
+  },
+  {
+    "path": "backend/services/platform-service/audit/src/main/java/com/appnexus/platform/audit/port/package-info.java",
+    "types": [
+      "AuditRecords",
+      "SecurityLogRepository"
+    ],
+    "imports": [
+      "com.appnexus.platform.audit.*",
+      "java.util.*"
+    ],
+    "change": "修订职责、边界与迁移状态"
+  },
+  {
+    "path": "backend/services/platform-service/authorization/src/main/java/com/appnexus/platform/authorization/port/package-info.java",
+    "types": [
+      "PolicyTemplateStorage"
+    ],
+    "imports": [
+      "com.appnexus.platform.authorization.*",
+      "com.appnexus.platform.authorization.PolicyTemplates",
+      "java.util.*"
+    ],
+    "change": "新增说明"
+  },
+  {
+    "path": "backend/services/platform-service/configuration/src/main/java/com/appnexus/platform/configuration/internal/application/parameter/package-info.java",
+    "types": [
+      "TenantParameterService"
+    ],
+    "imports": [
+      "com.appnexus.platform.authorization.*",
+      "com.appnexus.platform.configuration.TenantParameters",
+      "com.appnexus.platform.configuration.TenantParameters.*",
+      "com.appnexus.platform.configuration.port.*",
+      "com.appnexus.platform.tenant.*",
+      "java.util.*"
+    ],
+    "change": "修订职责、边界与迁移状态"
+  },
+  {
+    "path": "backend/services/platform-service/identity/src/main/java/com/appnexus/platform/identity/port/package-info.java",
+    "types": [
+      "AccountRepository"
+    ],
+    "imports": [
+      "com.appnexus.platform.identity.*",
+      "java.util.Optional",
+      "java.util.UUID"
+    ],
+    "change": "修订职责、边界与迁移状态"
+  },
+  {
+    "path": "backend/services/platform-service/organization/src/main/java/com/appnexus/platform/organization/internal/application/personnel/package-info.java",
+    "types": [
+      "PersonDataService",
+      "PersonnelService"
+    ],
+    "imports": [
+      "com.appnexus.platform.authorization.AccessAuthorization",
+      "com.appnexus.platform.configuration.BusinessValueCatalog",
+      "com.appnexus.platform.organization.PersonData",
+      "com.appnexus.platform.organization.PersonData.*",
+      "com.appnexus.platform.organization.PersonnelData.*",
+      "com.appnexus.platform.organization.PersonnelData.Audit",
+      "com.appnexus.platform.organization.PersonnelDirectory",
+      "com.appnexus.platform.organization.internal.domain.personnel.PersonnelSchema",
+      "com.appnexus.platform.organization.internal.domain.personnel.PersonnelSchema.*",
+      "com.appnexus.platform.organization.port.personnel.PersonRepository",
+      "com.appnexus.platform.organization.port.personnel.PersonnelRepository",
+      "com.appnexus.platform.tenant.VerifiedTenantContext",
+      "java.util.*"
+    ],
+    "change": "修订职责、边界与迁移状态"
+  },
+  {
+    "path": "backend/services/platform-service/organization/src/main/java/com/appnexus/platform/organization/internal/domain/personnel/package-info.java",
+    "types": [
+      "PersonnelSchema"
+    ],
+    "imports": [
+      "com.appnexus.platform.organization.PersonData",
+      "com.appnexus.platform.organization.PersonData.*",
+      "java.time.*",
+      "java.time.format.DateTimeParseException",
+      "java.util.*"
+    ],
+    "change": "修订职责、边界与迁移状态"
+  },
+  {
+    "path": "backend/services/platform-service/organization/src/main/java/com/appnexus/platform/organization/port/package-info.java",
+    "types": [
+      "OrganizationUnitRepository"
+    ],
+    "imports": [
+      "com.appnexus.platform.organization.*",
+      "java.util.*"
+    ],
+    "change": "修订职责、边界与迁移状态"
+  },
+  {
+    "path": "backend/services/platform-service/organization/src/main/java/com/appnexus/platform/organization/port/personnel/package-info.java",
+    "types": [
+      "PersonnelContent",
+      "PersonnelExecutionRecords",
+      "PersonnelIdentityQueries",
+      "PersonnelRepository",
+      "PersonnelTransaction",
+      "PersonRepository"
+    ],
+    "imports": [
+      "com.appnexus.platform.organization.PersonData",
+      "com.appnexus.platform.organization.PersonData.Input",
+      "java.util.*",
+      "java.util.Map",
+      "java.util.function.Supplier"
+    ],
+    "change": "修订职责、边界与迁移状态"
+  },
+  {
+    "path": "backend/services/platform-service/organization/src/test/java/com/appnexus/platform/organization/internal/application/personnel/package-info.java",
+    "types": [
+      "PersonDataServiceTest"
+    ],
+    "imports": [
+      "com.appnexus.platform.authorization.AccessAuthorization",
+      "com.appnexus.platform.organization.PersonData",
+      "com.appnexus.platform.organization.PersonData.*",
+      "com.appnexus.platform.organization.internal.application.personnel.PersonDataService",
+      "com.appnexus.platform.organization.port.personnel.PersonRepository",
+      "com.appnexus.platform.organization.port.personnel.PersonnelTransaction",
+      "com.appnexus.platform.tenant.VerifiedTenantContext",
+      "java.util.*",
+      "org.assertj.core.api.Assertions.*",
+      "org.junit.jupiter.api.*",
+      "org.mockito.Mockito.*"
+    ],
+    "change": "修订职责、边界与迁移状态"
+  },
+  {
+    "path": "backend/services/platform-service/tenant/src/main/java/com/appnexus/platform/tenant/internal/application/invitation/package-info.java",
+    "types": [
+      "InvitationService"
+    ],
+    "imports": [
+      "com.appnexus.platform.tenant.PlatformAdministration",
+      "com.appnexus.platform.tenant.TenantInvitations",
+      "com.appnexus.platform.tenant.TenantInvitations.*",
+      "com.appnexus.platform.tenant.port.*",
+      "java.nio.charset.StandardCharsets",
+      "java.security.*",
+      "java.time.Instant",
+      "java.util.*"
+    ],
+    "change": "修订职责、边界与迁移状态"
+  },
+  {
+    "path": "backend/services/platform-service/tenant/src/main/java/com/appnexus/platform/tenant/internal/application/task/package-info.java",
+    "types": [
+      "TaskManagementService"
+    ],
+    "imports": [
+      "com.appnexus.platform.tenant.*",
+      "com.appnexus.platform.tenant.port.TaskOperations",
+      "java.util.*"
+    ],
+    "change": "修订职责、边界与迁移状态"
+  },
+  {
+    "path": "backend/services/platform-service/tenant/src/main/java/com/appnexus/platform/tenant/port/package-info.java",
+    "types": [
+      "InvitationRecords",
+      "InvitationTransaction",
+      "TaskOperations"
+    ],
+    "imports": [
+      "com.appnexus.platform.tenant.TaskManagement.Task",
+      "java.time.Instant",
+      "java.util.*",
+      "java.util.function.Supplier"
+    ],
+    "change": "修订职责、边界与迁移状态"
+  },
+  {
+    "path": "backend/services/print-service/adapters/persistence/src/main/java/com/appnexus/printing/adapter/codec/package-info.java",
+    "types": [
+      "JacksonPrintPayloadContent",
+      "JacksonPrintRuntimeContent",
+      "JacksonPrintSceneContent",
+      "PrintJson"
+    ],
+    "imports": [
+      "com.appnexus.contracts.printing.PrintRejection",
+      "com.appnexus.printing.application.PrintPayloadContent",
+      "com.appnexus.printing.application.PrintRuntimeContent",
+      "com.appnexus.printing.application.PrintSceneContent",
+      "tools.jackson.core.JacksonException",
+      "tools.jackson.databind.*",
+      "tools.jackson.databind.json.JsonMapper"
+    ],
+    "change": "修订职责、边界与迁移状态"
+  },
+  {
+    "path": "backend/services/print-service/adapters/persistence/src/main/java/com/appnexus/printing/adapter/transaction/package-info.java",
+    "types": [
+      "SpringPrintTransaction"
+    ],
+    "imports": [
+      "com.appnexus.printing.application.PrintTransaction",
+      "java.util.function.Supplier",
+      "org.springframework.transaction.PlatformTransactionManager",
+      "org.springframework.transaction.support.TransactionTemplate"
+    ],
+    "change": "修订职责、边界与迁移状态"
+  },
+  {
+    "path": "backend/services/print-service/adapters/persistence/src/main/java/com/appnexus/printing/bootstrap/package-info.java",
+    "types": [
+      "PrintConfiguration"
+    ],
+    "imports": [
+      "com.appnexus.contracts.printing.PrintPlatform",
+      "com.appnexus.printing.adapter.persistence.*",
+      "com.appnexus.printing.adapter.persistence.BusinessPrintingMapper",
+      "com.appnexus.printing.adapter.persistence.PrintFlowMapper",
+      "com.appnexus.printing.adapter.persistence.PrintOutputsMapper",
+      "com.appnexus.printing.adapter.persistence.PrintReceiptMapper",
+      "com.appnexus.printing.adapter.persistence.PrintRuntimeMapper",
+      "com.appnexus.printing.adapter.web.PrintController",
+      "com.appnexus.printing.application.PrintOutputService",
+      "com.appnexus.printing.application.PrintRuntimeService",
+      "com.appnexus.printing.application.PrintSceneService",
+      "javax.sql.DataSource",
+      "org.springframework.boot.sql.init.dependency.DependsOnDatabaseInitialization",
+      "org.springframework.context.annotation.*"
+    ],
+    "change": "修订职责、边界与迁移状态"
+  },
+  {
+    "path": "backend/services/print-service/core/src/main/java/com/appnexus/printing/api/package-info.java",
+    "types": [
+      "PrintData",
+      "PrintOutputManagement",
+      "PrintRuntimeManagement",
+      "PrintSceneManagement"
+    ],
+    "imports": [
+      "com.appnexus.contracts.printing.PrintContext",
+      "com.appnexus.printing.api.PrintData.*",
+      "java.util.*"
+    ],
+    "change": "修订职责、边界与迁移状态"
+  },
+  {
+    "path": "backend/services/print-service/core/src/main/java/com/appnexus/printing/core/design/package-info.java",
+    "types": [
+      "PrintDesignCatalog"
+    ],
+    "imports": [
+      "java.util.List",
+      "java.util.Map"
+    ],
+    "change": "修订职责、边界与迁移状态"
+  },
+  {
+    "path": "backend/services/workflow-service/adapters/flowable/src/main/java/com/appnexus/workflow/adapter/persistence/package-info.java",
+    "types": [
+      "MyBatisWorkflowRecords",
+      "WorkflowRecordMapper"
+    ],
+    "imports": [
+      "com.appnexus.persistence.mybatis.PlatformScoped",
+      "com.appnexus.workflow.application.WorkflowRecords",
+      "java.time.Instant",
+      "java.util.*",
+      "java.util.List",
+      "java.util.Map",
+      "org.apache.ibatis.annotations.*"
+    ],
+    "change": "修订职责、边界与迁移状态"
+  },
+  {
+    "path": "backend/services/workflow-service/adapters/flowable/src/main/java/com/appnexus/workflow/adapter/transaction/package-info.java",
+    "types": [
+      "SpringWorkflowTransaction"
+    ],
+    "imports": [
+      "com.appnexus.workflow.application.WorkflowTransaction",
+      "java.util.function.Supplier",
+      "org.springframework.transaction.PlatformTransactionManager",
+      "org.springframework.transaction.support.TransactionTemplate"
+    ],
+    "change": "修订职责、边界与迁移状态"
+  },
+  {
+    "path": "backend/services/workflow-service/core/src/main/java/com/appnexus/workflow/api/package-info.java",
+    "types": [
+      "WorkflowManagement"
+    ],
+    "imports": [
+      "com.appnexus.contracts.workflow.*",
+      "com.appnexus.workflow.core.WorkflowModel",
+      "java.util.*"
+    ],
+    "change": "修订职责、边界与迁移状态"
+  },
+  {
+    "path": "backend/services/workflow-service/core/src/main/java/com/appnexus/workflow/application/package-info.java",
+    "types": [
+      "ObjectApprovalService",
+      "TaskCompletionPort",
+      "TaskCompletionService",
+      "TaskReassignmentPort",
+      "TaskReassignmentService",
+      "WorkflowCompilation",
+      "WorkflowContent",
+      "WorkflowEngineCommands",
+      "WorkflowModelValidation",
+      "WorkflowRecords",
+      "WorkflowRuntime",
+      "WorkflowTransaction"
+    ],
+    "imports": [
+      "com.appnexus.contracts.businessobject.*",
+      "com.appnexus.contracts.businessobject.BusinessObjects.*",
+      "com.appnexus.contracts.data.DataContract",
+      "com.appnexus.contracts.workflow.*",
+      "com.appnexus.contracts.workflow.WorkflowBusiness",
+      "com.appnexus.contracts.workflow.WorkflowBusinessProfile",
+      "com.appnexus.contracts.workflow.WorkflowContext",
+      "com.appnexus.contracts.workflow.WorkflowRejection",
+      "com.appnexus.workflow.application.WorkflowContent",
+      "com.appnexus.workflow.application.WorkflowEngineCommands",
+      "com.appnexus.workflow.application.WorkflowRecords",
+      "com.appnexus.workflow.application.WorkflowTransaction",
+      "com.appnexus.workflow.core.*",
+      "com.appnexus.workflow.core.WorkflowModel",
+      "com.appnexus.workflow.core.WorkflowModel.*",
+      "com.appnexus.workflow.core.WorkflowModel.Kind.*",
+      "com.appnexus.workflow.core.WorkflowModel.Node",
+      "java.nio.charset.StandardCharsets",
+      "java.security.MessageDigest",
+      "java.time.*",
+      "java.time.Instant",
+      "java.util.*",
+      "java.util.Map",
+      "java.util.Set",
+      "java.util.function.Supplier"
+    ],
+    "change": "修订职责、边界与迁移状态"
+  }
+]

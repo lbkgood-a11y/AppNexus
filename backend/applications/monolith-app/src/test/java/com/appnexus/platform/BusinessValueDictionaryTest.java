@@ -3,7 +3,7 @@ import com.appnexus.masterdata.application.masterdata.MasterDataService;
 import com.appnexus.masterdata.api.masterdata.MasterData;
 import com.appnexus.platform.configuration.*;
 import com.appnexus.platform.persistence.configuration.BusinessValueDefaults;
-import com.appnexus.masterdata.*;
+
 import com.appnexus.platform.tenant.VerifiedTenantContext;
 import java.util.*;
 import org.junit.jupiter.api.Test;
@@ -70,7 +70,7 @@ class BusinessValueDictionaryTest extends DatabaseTestSupport {
  @Test void legacyTextBecomesAnAuditedReferencedDictionaryValue(){
   var c=tenant();String id=UUID.randomUUID().toString();
   jdbc.update("INSERT INTO md_partner(id,tenant_id,code,name,partner_type,nature) VALUES(UUID_TO_BIN(?),UUID_TO_BIN(?),'LEGACY','历史测试','BOTH','历史特殊性质')",id,c.tenantId().toString());
-  new TransactionTemplate(manager).executeWithoutResult(status->BusinessValueDefaults.legacy(jdbc,c.tenantId()));
+  new TransactionTemplate(manager).executeWithoutResult(status->BusinessValueDefaults.legacy(MapperFixtures.mapper(jdbc,com.appnexus.platform.persistence.configuration.HistoricalDictionaryMapper.class),c.tenantId()));
   assertThat(catalog.options(c.tenantId(),BusinessValueCatalog.PARTNER).get("nature")).anyMatch(row->row.value().equals("历史特殊性质"));
   assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM tenant_dictionary_item_reference WHERE tenant_id=UUID_TO_BIN(?) AND reference_key=?",Integer.class,c.tenantId().toString(),id)).isGreaterThanOrEqualTo(3);
   assertThat(jdbc.queryForObject("SELECT nature FROM md_partner WHERE id=UUID_TO_BIN(?)",String.class,id)).isEqualTo("历史特殊性质");

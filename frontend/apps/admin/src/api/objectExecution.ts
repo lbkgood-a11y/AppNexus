@@ -18,7 +18,7 @@ export interface ObjectExecutionResult {
  * @param input 已保存记录的声明操作
  * @param requestId UUID幂等键，缺省在本次用户操作生成
  */
-export async function executeObjectOperation(input: ObjectExecutionRequest, requestId = crypto.randomUUID()): Promise<ObjectExecutionResult> {
+export async function executeObjectOperation(input: ObjectExecutionRequest, requestId: string = crypto.randomUUID()): Promise<ObjectExecutionResult> {
   return executeObjectCommand("/api/business-object-executions", input, requestId);
 }
 /**
@@ -27,7 +27,7 @@ export async function executeObjectOperation(input: ObjectExecutionRequest, requ
  * @param input 命令输入，不包含可信主体或能力快照
  * @param requestId 同一用户命令的UUID，重试保留原值
  */
-export async function executeObjectCommand<T>(path: string, input: unknown, requestId = crypto.randomUUID()): Promise<T> {
+export async function executeObjectCommand<T>(path: string, input: unknown, requestId: string = crypto.randomUUID()): Promise<T> {
   const csrf = await http.request<{ token: string; headerName: string }>("get", "/bff/csrf");
   return http.request("post", path, {data: input,headers: {[csrf.headerName]: csrf.token,"Idempotency-Key": requestId}});
 }

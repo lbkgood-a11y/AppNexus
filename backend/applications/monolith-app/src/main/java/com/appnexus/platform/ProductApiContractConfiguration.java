@@ -5,7 +5,6 @@ import com.appnexus.masterdata.adapter.web.product.ProductImageController;
 import com.appnexus.masterdata.adapter.web.product.ProductController;
 import com.appnexus.masterdata.adapter.web.product.ProductApprovalController;
 
-import com.appnexus.masterdata.product.*;
 import org.springdoc.core.customizers.GlobalOperationCustomizer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

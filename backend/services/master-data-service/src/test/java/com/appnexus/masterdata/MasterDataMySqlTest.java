@@ -72,7 +72,13 @@ class MasterDataMySqlTest {
       UUID testOrganization=UUID.randomUUID();
       com.appnexus.platform.authorization.DataAccessReferences references=(subject,permission)->List.of(new com.appnexus.platform.authorization.DataAccessReferences.Organization(testOrganization,"隔离测试组织"));
       var dataCatalog=com.appnexus.platform.authorization.DataAccessCatalog.fromObjects(List.of(new BusinessPartnerDeclaration()));
-      var service=MasterDataConfiguration.create(jdbc,access,new DataSourceTransactionManager(source),catalog,new PartnerDataAccess(planning,fields,references,jdbc,dataCatalog,new com.appnexus.platform.persistence.platformscope.MySqlRowAccessControl()));
+      // 固定 Mapper 使用同一数据源，事务仍与原授权及审计写入保持一致。
+      var factory=new org.mybatis.spring.SqlSessionFactoryBean();factory.setDataSource(source);
+      var config=new org.apache.ibatis.session.Configuration();config.setLocalCacheScope(org.apache.ibatis.session.LocalCacheScope.STATEMENT);config.setCacheEnabled(false);config.setCallSettersOnNulls(true);
+      for(Class<?> type:List.of(com.appnexus.masterdata.adapter.persistence.MasterRecordMapper.class,com.appnexus.masterdata.adapter.persistence.MasterReadMapper.class,com.appnexus.masterdata.adapter.persistence.GeographyMapper.class,com.appnexus.masterdata.adapter.persistence.StorageHierarchyMapper.class,com.appnexus.masterdata.adapter.persistence.PartnerDetailMapper.class))config.addMapper(type);
+      factory.setConfiguration(config);var session=new org.mybatis.spring.SqlSessionTemplate(factory.getObject());
+      var records=session.getMapper(com.appnexus.masterdata.adapter.persistence.MasterRecordMapper.class);var reads=session.getMapper(com.appnexus.masterdata.adapter.persistence.MasterReadMapper.class);var geography=session.getMapper(com.appnexus.masterdata.adapter.persistence.GeographyMapper.class);var storage=session.getMapper(com.appnexus.masterdata.adapter.persistence.StorageHierarchyMapper.class);var details=session.getMapper(com.appnexus.masterdata.adapter.persistence.PartnerDetailMapper.class);
+      var service=MasterDataConfiguration.create(records,reads,geography,storage,details,access,new DataSourceTransactionManager(source),catalog,new PartnerDataAccess(planning,fields,references,reads,dataCatalog,new com.appnexus.platform.persistence.platformscope.MySqlRowAccessControl(),details));
       verifyStorageHierarchy(service,jdbc);
       for(var kind:Kind.values()){
         // 通用档案测试先前已停用上级；恢复父级后才能验证下一级的独立写入。
@@ -133,7 +139,7 @@ class MasterDataMySqlTest {
       assertThat(service.list(c,Kind.SUBDIVISION,"LOCAL",null,1,20,null,"CN-FJ").total()).isZero();
       assertThatThrownBy(()->service.update(c,Kind.SUBDIVISION,county,new Input("LOCAL_COUNTY","过期",Map.of("parentCode","US"),0))).isInstanceOf(Rejection.class);
       assertThat(((GeographyHierarchy.Page)service.geographyTree(c,Kind.SUBDIVISION,"CUSTOM_COUNTRY",1,50)).rows()).extracting(GeographyHierarchy.Node::code).containsExactly("LOCAL_CITY");
-      var summary=new JdbcGeographyCatalog(jdbc).nodes(c.tenantId());
+      var summary=new com.appnexus.masterdata.adapter.persistence.masterdata.MyBatisGeographyCatalog(geography).nodes(c.tenantId());
       assertThat(summary.stream().filter(n->n.code().equals("LOCAL_CITY")).findFirst().orElseThrow().parentCode()).isEqualTo("CUSTOM_COUNTRY");
       service.update(c,Kind.COUNTRY_REGION,customCountry,new Input("CUSTOM_COUNTRY","移动国别",Map.of("parentCode","continent:EU"),0));
       assertThat(service.list(c,Kind.SUBDIVISION,"EU-CUSTOM_COUNTRY",null,1,20).total()).isEqualTo(2);

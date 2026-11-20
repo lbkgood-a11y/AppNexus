@@ -1,6 +1,7 @@
 /**
- * 按业务所有权组织的固定存储或事务技术适配。
- * <p>允许依赖所属业务输出端口、稳定类型及必要技术框架；禁止 Web 入口、跨上下文内部实现及任意 SQL。
- * <p>当前状态：完成职责命名与包迁移，完整运行及安全验证在全量迁移后统一执行。
+ * 主数据记录及商品属性、目录、结构和模板的完整事务适配。
+ * <p>职责：主数据记录及商品属性、目录、结构和模板的完整事务适配；当前类型：SpringProductAttributeTransaction、SpringProductCatalogTransaction、SpringProductExecutionTransaction、SpringProductStructureTransaction、SpringProductTemplateTransaction、SpringRecordTransaction。
+ * <p>公开边界与依赖：允许 Spring 事务设施及本服务事务输出端口；仅由应用完整用例调用，保持同数据源事务与异常回滚，禁止承担业务授权、状态决策或缩小事务范围。
+ * <p>迁移状态：完成职责命名与包迁移，完整运行及安全验证在全量迁移后统一执行。 本次仅补文档，不宣告新增运行验收。
  */
 package com.appnexus.masterdata.adapter.transaction;

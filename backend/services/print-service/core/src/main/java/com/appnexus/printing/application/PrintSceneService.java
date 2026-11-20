@@ -118,7 +118,7 @@ public class PrintSceneService implements com.appnexus.printing.api.PrintSceneMa
   /**
    * 配置租户字段契约；只增不改，防止已有发布模板因字段重命名失效。
    * @param c 当前设计人员可信上下文
-   * @param definition 名称、带版本编码和最多 50 个文本/明细字段；不接受脚本、URL 数据源或 SQL
+   * @param definitionValue 名称、带版本编码和最多 50 个文本/明细字段；不接受脚本、URL 数据源或 SQL
    * @return 新契约目录；编码冲突由控制器返回 409
    */
   
@@ -126,7 +126,8 @@ public class PrintSceneService implements com.appnexus.printing.api.PrintSceneMa
     Object normalized=content.plain(definitionValue);allow(c,"print.template:design");
     var reserved=new HashSet<Object>();PrintDesignCatalog.contracts().forEach(value->reserved.add(value.get("code")));
     var clean=PrintDataPolicy.cleanContract(normalized,reserved);
-    statements.createContract(c.tenantId(),clean.get("code"),content.object(clean),c.actorId());return contracts(c);
+    // 领域清洗已验证 code 为字符串，存储端口继续使用语义明确的字符串契约。
+    statements.createContract(c.tenantId(),(String)clean.get("code"),content.object(clean),c.actorId());return contracts(c);
   });}
 
   /** 字段键限制为直接标识符，拒绝路径表达式与原型键；明细不允许再嵌套明细。 */

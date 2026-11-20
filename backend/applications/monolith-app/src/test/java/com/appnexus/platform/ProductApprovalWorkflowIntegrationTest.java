@@ -7,7 +7,7 @@ import com.appnexus.workflow.core.WorkflowModel.*;
 import com.appnexus.masterdata.api.masterdata.MasterData;
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
-import com.appnexus.masterdata.product.*;
+import com.appnexus.masterdata.application.product.*;
 import com.appnexus.platform.tenant.VerifiedTenantContext;
 import com.appnexus.contracts.workflow.*;
 import com.appnexus.contracts.businessobject.*;

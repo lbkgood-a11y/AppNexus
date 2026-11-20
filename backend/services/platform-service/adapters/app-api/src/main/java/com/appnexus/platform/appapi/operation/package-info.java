@@ -1,6 +1,7 @@
 /**
- * 对象与操作目录的 MVC 技术聚合及 HTTP 协议边界。
- * <p>允许依赖稳定对象、操作及授权公开契约；不授予执行权限，不直接访问业务数据库。
- * <p>当前状态：从部署组合迁出实际实现，运行装配与契约验证在全量迁移后统一执行。
+ * 对象及操作资格的只读诊断 HTTP 映射。
+ * <p>职责：对象及操作资格的只读诊断 HTTP 映射；当前类型：ObjectDiagnosticsController、OperationDecisionController。
+ * <p>公开边界与依赖：允许稳定业务公开契约、安全入口契约与 Spring Web；对外边界为既有 HTTP 路由，禁止新增直接 Mapper/SQL 访问、内部用例依赖或平行授权规则。
+ * <p>迁移状态：从部署组合迁出实际实现，运行装配与契约验证在全量迁移后统一执行。 本次仅补文档，不宣告新增运行验收。
  */
 package com.appnexus.platform.appapi.operation;

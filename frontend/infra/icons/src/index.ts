@@ -1,3 +1,6 @@
+/// <reference types="unplugin-icons/types/vue" />
+
+/** 图标入口携带虚拟 SVG 模块类型，供跨工作区源码消费者共同解析。 */
 import { defineComponent, h, type PropType } from "vue";
 import Information from "~icons/ri/error-warning-line";
 import Edit from "~icons/ri/edit-line";
