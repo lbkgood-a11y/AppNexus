@@ -71,6 +71,20 @@ public final class OperationRegistry implements com.appnexus.platform.configurat
     var prior=result.putIfAbsent(value.id(),value);
     if(prior!=null&&!prior.equals(value))throw new IllegalStateException("重复操作契约："+value.id());
    }
-  });snapshot=List.copyOf(result.values());return snapshot;
+  });
+  // 公共对象执行入口不为每个对象重复标注 Controller；仍须证明声明指向真实 MVC 路由。
+  for(var provider:providers){
+   var descriptor=provider.descriptor();
+   for(var operation:descriptor.operations()){
+    if(result.containsKey(operation.operationId()))continue;
+    var page=operation.pageOperation();
+    if(page==null||!"POST".equals(page.method())||!"/api/business-object-executions".equals(page.apiPath())||operation.supportedServices().isEmpty())continue;
+    boolean mapped=mappings.getHandlerMethods().keySet().stream().anyMatch(mapping->mapping.getPatternValues().contains(page.apiPath())&&mapping.getMethodsCondition().getMethods().contains(org.springframework.web.bind.annotation.RequestMethod.POST));
+    if(!mapped)throw new IllegalStateException("OBJECT_EXECUTION_ENDPOINT_MISSING:"+operation.operationId());
+    var pages=new TreeSet<String>();pages.add(page.pageKey());operation.aliases().forEach(alias->pages.add(alias.pageOperation().pageKey()));
+    result.put(operation.operationId(),new Definition(operation.operationId(),descriptor.objectType(),operation.operationCode(),List.copyOf(pages),operation.nameZh(),operation.nameEn(),List.of(operation.permissionCode()),"公共执行器复核对象权限、字段、版本及业务状态",List.of("POST "+page.apiPath()),OperationBinding.Eligibility.OBJECT));
+   }
+  }
+  snapshot=List.copyOf(result.values());return snapshot;
  }
 }

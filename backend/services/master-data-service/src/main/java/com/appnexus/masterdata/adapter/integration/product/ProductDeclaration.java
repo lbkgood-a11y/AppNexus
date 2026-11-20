@@ -4,12 +4,22 @@ import com.appnexus.contracts.businessobject.*;
 import com.appnexus.platform.configuration.NavigationPages;
 import java.util.*;
 import org.springframework.stereotype.Component;
+import org.springframework.context.annotation.Lazy;
 /** 商品唯一声明；主档、规格SKU、图片与历史继承父商品组织范围，不授予未声明的RULES或字段能力。 */
 @Component
 public final class ProductDeclaration implements BusinessObjects.Provider {
  private final BusinessObjectRuntime runtime;
- /** 原商品用例和同一授权端口装配；不增加第二Provider或逐操作专业驱动。 */
- public ProductDeclaration(com.appnexus.masterdata.api.product.ProductManagement products,com.appnexus.masterdata.api.product.ProductStructureManagement structures,com.appnexus.masterdata.api.product.ProductImageManagement images,com.appnexus.masterdata.application.product.ProductAuthorization authorization,com.appnexus.masterdata.application.product.ProductRepository records,com.appnexus.platform.tenant.TenantAccess tenants){
+ /**
+  * 目录构建只读取声明；延迟连接运行端口，避免目录初始化反向创建依赖目录的授权执行器。
+  * 代理仅在真实运行调用时解析原 Bean，保留同一用例及实时授权，不缓存权限或放宽循环依赖设置。
+  * @param products 原商品主档公开用例
+  * @param structures 原商品结构公开用例
+  * @param images 原商品图片公开用例
+  * @param authorization 原统一商品记录授权端口
+  * @param records 原商品父记录仓储端口
+  * @param tenants 权威租户成员公开端口
+  */
+ public ProductDeclaration(@Lazy com.appnexus.masterdata.api.product.ProductManagement products,@Lazy com.appnexus.masterdata.api.product.ProductStructureManagement structures,@Lazy com.appnexus.masterdata.api.product.ProductImageManagement images,@Lazy com.appnexus.masterdata.application.product.ProductAuthorization authorization,@Lazy com.appnexus.masterdata.application.product.ProductRepository records,@Lazy com.appnexus.platform.tenant.TenantAccess tenants){
   var actions=new HashMap<String,String>();
   for(var operation:descriptor().operations())if(ProductRuntime.OPERATIONS.contains(operation.operationCode()))actions.put(operation.operationCode(),operation.permissionCode().substring("masterdata.product:".length()));
   runtime=new ProductRuntime(products,structures,images,authorization,records,tenants,actions);
@@ -57,6 +67,7 @@ public final class ProductDeclaration implements BusinessObjects.Provider {
   // 公共请求不携带命令数据；不能把创建、表单修改、上传等原API操作虚假登记为可零参数执行。
   var capabilities=ProductRuntime.OPERATIONS.contains(code)?List.of(new InteractionContract.Capability(InteractionContract.Service.BUSINESS,InteractionContract.Completion.SYNCHRONOUS,id,"",List.of(),Set.of(),"product."+code,2)):List.<InteractionContract.Capability>of();
   var interaction=new InteractionContract(id,2,"Product",code,zh,en,InteractionContract.Trigger.USER_ACTION,capabilities);
-  return new Operation(code,zh,en,permission,id,views.getFirst(),views.stream().skip(1).map(v->new OperationAlias(id,v)).toList(),interaction);
+  // 同一业务操作的页面别名使用页面键区分，避免与主操作标识重复。
+  return new Operation(code,zh,en,permission,id,views.getFirst(),views.stream().skip(1).map(v->new OperationAlias(id+"@"+v.pageKey(),v)).toList(),interaction);
  }
 }

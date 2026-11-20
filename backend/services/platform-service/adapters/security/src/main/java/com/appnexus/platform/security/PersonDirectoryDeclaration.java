@@ -20,6 +20,7 @@ public final class PersonDirectoryDeclaration implements BusinessObjects.Provide
         String id="PersonDirectory"+"."+code;
         var interaction=new InteractionContract(id,1,"PersonDirectory",code,zh,en,InteractionContract.Trigger.USER_ACTION,List.of(new InteractionContract.Capability(InteractionContract.Service.BUSINESS,InteractionContract.Completion.SYNCHRONOUS,id,"",List.of(),Set.of(),id,1)));
         var views=pages.stream().map(key->{var page=Objects.requireNonNull(NavigationPages.find(key));return new PageOperation(key,page.path(),page.titleZh(),page.titleEn(),method,path);}).toList();
-        return new Operation(code,zh,en,permission,id,views.getFirst(),views.stream().skip(1).map(view->new OperationAlias(id,view)).toList(),interaction);
+        // 同一业务操作的页面别名使用页面键区分，避免与主操作标识重复。
+  return new Operation(code,zh,en,permission,id,views.getFirst(),views.stream().skip(1).map(view->new OperationAlias(id+"@"+view.pageKey(),view)).toList(),interaction);
     }
 }
