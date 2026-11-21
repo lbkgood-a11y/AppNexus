@@ -45,6 +45,38 @@ class PersonnelIntegrationTest extends DatabaseTestSupport {
   }
   private String person(Fixture f,String code){return master.create(f.admin(),Kind.PERSON,new Input(code,"测试业务人员",Map.of("birthDate","2000-01-01","employmentStatus","ACTIVE","identityNumber","TEST-DOCUMENT"),0)).get("id");}
   private long version(Fixture f,String id){return personnel.read(f.admin(),id).person().version();}
+  /** 校验同一角色策略同时作用于列表、详情、表单预加载和不可绕过的写入路径。 */
+  @Test void fieldPoliciesProtectPersonnelProfileAndDetail() {
+    var f=fixture();var c=f.admin();
+    String id=master.create(c,Kind.PERSON,new Input("FIELD-PERSON","测试人员",
+        Map.of("phone","13800138000","identityNumber","TEST-DOCUMENT"),0)).get("id");
+    String detail=personnel.saveDetail(c,id,"contacts",null,new com.appnexus.platform.organization.PersonnelData.DetailInput(
+        0,Map.of("contactType","PHONE","contactValue","13900139000"))).get("id");
+    assertThat(personnel.read(c,id).person().attributes()).containsEntry("identityNumber","TEST-DOCUMENT");
+    for(var item:List.of(List.of("masterdata.person","identityNumber","HIDDEN"),
+        List.of("masterdata.person","phone","MASKED"),List.of("masterdata.person.detail","contactValue","HIDDEN"))){
+      assertThat(jdbc.update("INSERT INTO access_role_field_security(role_id,resource_type,field_code,display_mode) "+
+          "SELECT role_id,?,?,? FROM access_member_role WHERE tenant_id=UUID_TO_BIN(?) AND member_id=UUID_TO_BIN(?)",
+          item.get(0),item.get(1),item.get(2),c.tenantId().toString(),c.memberId().toString())).isPositive();
+    }
+    assertThat(master.fieldRestrictions(c)).containsKey("phone");
+    assertThatThrownBy(()->master.fieldRestrictions(f.user())).hasMessage("MASTER_DATA_DENIED");
+    var result=personnel.read(c,id);
+    assertThat(result.person().attributes()).doesNotContainKey("identityNumber");
+    assertThat(result.person().attributes().get("phone")).isNotEqualTo("13800138000");
+    assertThat(result.details()).anySatisfy(row->assertThat(row.values()).doesNotContainKey("contactValue"));
+    assertThat(master.list(c,Kind.PERSON,"FIELD-PERSON",null,1,20).rows().getFirst().attributes().get("phone"))
+        .isNotEqualTo("13800138000");
+    long version=result.person().version();
+    assertThatThrownBy(()->master.update(c,Kind.PERSON,id,new Input("FIELD-PERSON","改名",Map.of("identityNumber","TEST-DOCUMENT"),version)))
+        .hasMessage("DATA_FIELD_WRITE_DENIED");
+    assertThatThrownBy(()->personnel.deleteDetail(c,id,"contacts",detail,version)).hasMessage("DATA_FIELD_WRITE_DENIED");
+    assertThat(personnel.read(c,id).person().version()).isEqualTo(version);
+    personnel.saveDetail(c,id,"contacts",detail,new com.appnexus.platform.organization.PersonnelData.DetailInput(
+        version,Map.of("contactType","PHONE","remarks","只修改备注")));
+    assertThat(jdbc.queryForObject("SELECT identity_number FROM md_person WHERE tenant_id=UUID_TO_BIN(?) AND id=UUID_TO_BIN(?)",
+         String.class,c.tenantId().toString(),id)).isEqualTo("TEST-DOCUMENT");
+  }
   /** 真实 Valkey Cookie 会话驱动安全过滤链，验证详情/目录映射、no-store、普通成员拒绝和 CSRF。 */
   @Test void httpRequestsKeepRealSessionTenantAndCsrfBoundaries() throws Exception {
     var f=fixture();String id=person(f,"HTTP-PERSON");

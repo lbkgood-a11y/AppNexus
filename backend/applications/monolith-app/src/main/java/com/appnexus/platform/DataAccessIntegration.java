@@ -16,7 +16,7 @@ public class DataAccessIntegration {
      * 系统投影无人工账号，审计账号保持 NULL；时间由数据库 UTC 生成。
      */
     @Bean public SmartInitializingSingleton validateDataAccess(DataAccessCatalog catalog,OperationRegistry operations,
-            List<DataAccessDeclaration.Executor> executors,com.appnexus.platform.persistence.platformscope.DataAccessRegistrationMapper mapper,PlatformTransactionManager manager){
+            List<com.appnexus.contracts.businessobject.BusinessObjects.DataAccessExecutor> executors,com.appnexus.platform.persistence.platformscope.DataAccessRegistrationMapper mapper,PlatformTransactionManager manager){
         return ()->new TransactionTemplate(manager).executeWithoutResult(status->{
             var enforced=new HashSet<String>();executors.forEach(e->enforced.addAll(e.enforcedResources()));
             for(var scope:PermissionCatalog.ScopeType.values())for(var d:catalog.list(scope)){

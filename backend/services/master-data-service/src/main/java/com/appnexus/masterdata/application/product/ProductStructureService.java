@@ -14,8 +14,95 @@ import com.appnexus.masterdata.api.product.ProductStructureCommands.State;
 
 /** 规格、可选SKU和组合结构领域服务；父锁/CAS及追加历史同事务，不触及库存、定价或拆装。 */
 public final class ProductStructureService implements com.appnexus.masterdata.api.product.ProductStructureManagement {
+ /** {@inheritDoc} */
+ public Object measurement(VerifiedTenantContext c,String product){
+  require(c,"read");
+  var parent=parent(c,product,false,null);
+  var result=new LinkedHashMap<String,Object>();
+  result.put("baseUnitId",parent.get("unitId"));
+  result.put("version",parent.get("version"));
+  result.put("configuration",measurementConfiguration(parent));
+  return result;
+ }
+
+ /** {@inheritDoc} */
+ public Object saveMeasurement(VerifiedTenantContext c,String product,com.appnexus.masterdata.api.product.ProductMeasurement.Change input){
+  require(c,"manage_structure");
+  if(input==null||input.units()==null||input.packaging()==null||input.units().size()>200||input.packaging().size()>200)throw invalid();
+  return write(()->{
+   var parent=parent(c,product,true,input.version());
+   String base=(String)parent.get("unitId");
+   if(base==null&&(!input.units().isEmpty()||!input.packaging().isEmpty()))throw invalid();
+   Integer scale=base==null?null:statements.unitPrecision(tenant(c),base);
+   var defaults=new HashSet<String>();
+   var selections=new HashSet<List<String>>();
+   var packagingUnits=new HashSet<String>();
+   var codes=new HashSet<String>();
+   for(var pack:input.packaging()){
+    if(pack==null||pack.code()==null||!pack.code().matches("[A-Za-z0-9][A-Za-z0-9._-]{0,63}")||!codes.add(pack.code())
+        ||pack.name()==null||pack.name().isBlank()||pack.name().length()>200||base.equals(pack.unitId()))throw invalid();
+    requireMeasurementUnit(c,pack.unitId());
+    var quantity=com.appnexus.masterdata.domain.product.UnitConversionRules.decimal(pack.quantity(),true);
+    if(scale==null||quantity.stripTrailingZeros().scale()>scale)throw invalid();
+    packagingUnits.add(pack.unitId());
+   }
+   for(var unit:input.units()){
+    if(unit==null||unit.scene()==null||unit.method()==null
+        ||!Set.of("ARRIVAL","INBOUND","OUTBOUND").contains(unit.scene())
+        ||!Set.of("DIRECT","CONVERSION","PACKAGING","MEASURED").contains(unit.method()))throw invalid();
+    requireMeasurementUnit(c,unit.unitId());
+    if(!selections.add(List.of(unit.scene(),unit.unitId()))||(unit.defaultUnit()&&!defaults.add(unit.scene()))
+        ||("DIRECT".equals(unit.method())&&!base.equals(unit.unitId()))
+        ||("PACKAGING".equals(unit.method())&&!packagingUnits.contains(unit.unitId()))
+        ||("CONVERSION".equals(unit.method())&&!statements.hasMeasurementConversion(tenant(c),unit.unitId(),base)))throw invalid();
+   }
+   var before=products.extensionSnapshot(c,product);
+   String configuration=input.units().isEmpty()&&input.packaging().isEmpty()?null:
+       measurementContent.encode(Map.of("units",input.units(),"packaging",input.packaging()));
+   statements.saveMeasurement(tenant(c),product,configuration);
+   finish(c,product,input.version(),"MEASUREMENT_UPDATE",before);
+   return Map.of("version",input.version()+1);
+  });
+ }
+
+ /** {@inheritDoc} */
+ public Object calculatePackaging(VerifiedTenantContext c,String product,String code,String amount){
+  require(c,"read");
+  var parent=parent(c,product,false,null);
+  Object rows=measurementConfiguration(parent).get("packaging");
+  if(!(rows instanceof List<?> packaging)||parent.get("unitId")==null)throw invalid();
+  String base=(String)parent.get("unitId");
+  int scale=requireMeasurementUnit(c,base);
+  var quantity=com.appnexus.masterdata.domain.product.UnitConversionRules.decimal(amount,true);
+  for(Object value:packaging){
+   if(value instanceof Map<?,?> pack&&Objects.equals(code,pack.get("code"))){
+    int sourceScale=requireMeasurementUnit(c,(String)pack.get("unitId"));
+    if(quantity.stripTrailingZeros().scale()>sourceScale)throw invalid();
+    var factor=com.appnexus.masterdata.domain.product.UnitConversionRules.decimal((String)pack.get("quantity"),true);
+    var result=new LinkedHashMap<String,Object>(com.appnexus.masterdata.domain.product.UnitConversionRules.calculate(quantity,factor,scale));
+    result.put("baseUnitId",base);
+    result.put("version",parent.get("version"));
+    return result;
+   }
+  }
+  throw invalid();
+ }
+
+ private Map<?,?> measurementConfiguration(Map<String,Object> parent){
+  Object raw=parent.get("measurementConfig");
+  return raw instanceof String json?(Map<?,?>)measurementContent.decode(json):
+      Map.of("units",List.of(),"packaging",List.of());
+ }
+
+ private int requireMeasurementUnit(VerifiedTenantContext c,String unit){
+  uuid(unit);
+  Integer precision=statements.unitPrecision(tenant(c),unit);
+  if(precision==null)throw invalid();
+  return precision;
+ }
  private final ProductStructureRepository statements;
  private final AttributeRuleContent ruleContent;
+ private final ProductContent measurementContent;
 
  private final AccessAuthorization access;private final ProductStructureTransaction tx;private final ProductAggregateAccess products;
  /** 商品结构完整用例装配。
@@ -25,7 +112,7 @@ public final class ProductStructureService implements com.appnexus.masterdata.ap
   * @param statements 固定结构仓储，不接受数据库表名
   * @param ruleContent 固定规则解析端口，业务校验由领域执行
   */
- public ProductStructureService(AccessAuthorization access,ProductStructureTransaction transaction,ProductAggregateAccess products,ProductStructureRepository statements,AttributeRuleContent ruleContent){this.ruleContent=ruleContent;this.statements=statements;this.access=access;this.tx=transaction;this.products=products;}
+ public ProductStructureService(AccessAuthorization access,ProductStructureTransaction transaction,ProductAggregateAccess products,ProductStructureRepository statements,AttributeRuleContent ruleContent,ProductContent measurementContent){this.measurementContent=measurementContent;this.ruleContent=ruleContent;this.statements=statements;this.access=access;this.tx=transaction;this.products=products;}
  
  
  
@@ -67,7 +154,22 @@ public final class ProductStructureService implements com.appnexus.masterdata.ap
  }
  private void insertChoice(VerifiedTenantContext c,String value,String revision,String type,String option,String custom){statements.createChoice(UUID.randomUUID().toString(),tenant(c),value,revision,type,option,custom,actor(c),actor(c));}
  /** 仅原商品读取权限内投影规格值和固定名称；包含历史退役规格，不追最新模板。 */
- @SuppressWarnings("unchecked") private void attachSpecificationValues(VerifiedTenantContext c,Map<String,Object> output){for(var spec:(List<Map<String,Object>>)output.get("specifications")){var values=statements.specificationValues(tenant(c),spec.get("id").toString());for(var value:values){var choices=statements.customChoices(tenant(c),value.get("id").toString());if(value.get("optionId")!=null)choices.addAll(statements.standardChoices(tenant(c),value.get("optionId").toString()));value.put("choices",choices);}spec.put("values",values);}}
+ /** 在响应中合并自定义与标准选项，避免修改仓储返回的只读列表。 */
+ @SuppressWarnings("unchecked")
+ private void attachSpecificationValues(VerifiedTenantContext c, Map<String, Object> output) {
+  String tenantId = tenant(c);
+  for (var spec : (List<Map<String, Object>>) output.get("specifications")) {
+   var values = statements.specificationValues(tenantId, spec.get("id").toString());
+   for (var value : values) {
+    var choices = new ArrayList<>(statements.customChoices(tenantId, value.get("id").toString()));
+    if (value.get("optionId") != null) {
+     choices.addAll(statements.standardChoices(tenantId, value.get("optionId").toString()));
+    }
+    value.put("choices", choices);
+   }
+   spec.put("values", values);
+  }
+ }
  /** 只有显式动作才创建SKU；父子归属复合外键兜底，SKU身份创建后不可修改。 */
  public Object createSku(VerifiedTenantContext c,String product,Sku i){require(c,"manage_structure");if(i==null||i.version()==null||i.code()==null||!i.code().matches("[A-Za-z0-9][A-Za-z0-9._-]{0,63}"))throw invalid();uuid(i.specificationId());return write(()->{parent(c,product,true,i.version());var before=products.extensionSnapshot(c,product);if(statements.specificationCount(tenant(c),product,i.specificationId())!=1)throw invalid();String id=UUID.randomUUID().toString();statements.createSku(id,tenant(c),product,i.specificationId(),i.code(),actor(c),actor(c));finish(c,product,i.version(),"SKU_CREATE",before);return Map.of("id",id);});}
  /** 组合写入共用租户图锁，防止并发互加形成环；数量按组成基础单位精度，不自动换算。 */

@@ -2,6 +2,12 @@ package com.appnexus.platform.tenant;
 import java.util.*;
 /** 平台可靠任务管理公开用例；每次读取和恢复均复核可信操作者的平台管理资格。 */
 public interface TaskManagement {
+ /** 平台任务的数据权限资源标识，覆盖平台摘要及人工恢复。 */
+ String RESOURCE = "platform.task";
+ /** 平台事件扫描的固定系统操作。 */
+ String PROCESS_EVENTS = "PlatformTask.processEvents";
+ /** 仅由进程内平台事件调度入口持有的准入标识。 */
+ String EVENT_WORKER_AUTHORITY = "system.platform.task:process";
  /** 无框架装配入口，外部不访问内部实现。 @param platform 平台管理资格公开端口 @param operations 可靠任务输出端口 @return 任务管理用例 */
  static TaskManagement create(PlatformAdministration platform,com.appnexus.platform.tenant.port.TaskOperations operations){return new com.appnexus.platform.tenant.internal.application.task.TaskManagementService(platform,operations);}
 

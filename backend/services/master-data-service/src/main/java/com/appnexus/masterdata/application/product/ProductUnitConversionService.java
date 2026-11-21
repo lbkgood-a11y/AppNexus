@@ -46,7 +46,10 @@ public final class ProductUnitConversionService implements UnitConversions {
       if (input.enabled()) {
         var relation = store.relation(c.tenantId().toString(), id); if (relation == null) throw invalid();
         // 与新建相同顺序固定两端单位，避免反向并发启用越过往返检查。
-        for (var unit : List.of(relation.source(), relation.target()).stream().sorted().toList()) enabled(c, unit);
+        var ids = List.of(relation.source(), relation.target()).stream().sorted().toList();
+        var first = enabled(c, ids.getFirst());
+        var second = enabled(c, ids.getLast());
+        sameDimension(first.dimension(), second.dimension());
         reciprocal(relation.factor(), store.reverse(c.tenantId().toString(), relation.target(), relation.source()));
       }
       if (store.status(c.tenantId().toString(), id, input.enabled(), input.version(), c.accountId().toString()) != 1)

@@ -12,6 +12,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 
 /** 完整组合应用及真实RBAC验证商品配置/草稿；不修改共享库或管理员凭据。 */
 @SpringBootTest
@@ -35,6 +38,7 @@ class ProductV1IntegrationTest extends DatabaseTestSupport {
    jdbc.update("INSERT INTO tenant_member(id,tenant_id,account_id) VALUES(UUID_TO_BIN(?),UUID_TO_BIN(?),UUID_TO_BIN(?))",pair.getValue().toString(),tenant.toString(),pair.getKey().toString());
   }
   bootstrap.initialize(tenant,member);
+  String organization=ProductOrganizationFixture.create(jdbc,tenant);
   var admin=new VerifiedTenantContext(account,tenant,member,1);
   var ordinary=new VerifiedTenantContext(ordinaryAccount,tenant,ordinaryMember,1);
   // 正式Mapper执行可信请求门禁；直接用例回归也必须建立与真实已授权成员一致的服务端上下文。
@@ -45,7 +49,7 @@ class ProductV1IntegrationTest extends DatabaseTestSupport {
   assertThat(category.audit().createdBy()).isEqualTo(account.toString());
   var slots=new LinkedHashMap<String,String>();for(String purpose:List.of("BASIC","SPEC","QUALITY","EXTENSION"))slots.put(purpose,null);
   var config=catalog.publish(admin,category.id(),new ProductCatalogData.Publish(slots,false,0));
-  var draft=products.create(admin,new com.appnexus.masterdata.api.product.ProductMainData.Input("SERVICE","无规格服务",null,category.id(),config.id(),"SERVICE",null,null,null,null,null));
+  var draft=products.create(admin,new com.appnexus.masterdata.api.product.ProductMainData.Input("SERVICE","无规格服务",null,category.id(),config.id(),"SERVICE",null,null,null,null,null,null,organization));
   String id=(String)draft.get("id");
   assertThat(draft.get("status")).isEqualTo("DRAFT");
   assertThat(products.updateStatus(admin,id,new com.appnexus.masterdata.api.product.ProductCommandData.Status("ENABLED",0)).get("status")).isEqualTo("ENABLED");
@@ -59,6 +63,7 @@ class ProductV1IntegrationTest extends DatabaseTestSupport {
    .contentType("application/json").content(json.writeValueAsString(Map.of("tenantId",tenant.toString())))).andReturn().getResponse();
   assertThat(selected.getStatus()).isEqualTo(200);
   var cookie=selected.getCookie("JSESSIONID");
+  verifyAttributeCreation(cookie,json,tenant);
   // 列表已授权行才投影记录审计，供公共ManagementTable显示审计查询，不增加自由表查询入口。
   var listing=mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get("/api/master-data/product").cookie(cookie)).andReturn().getResponse();
   assertThat(listing.getStatus()).isEqualTo(200);
@@ -67,7 +72,7 @@ class ProductV1IntegrationTest extends DatabaseTestSupport {
   assertThat(listed.path("createdBy").asText()).isEqualTo(account.toString());
   assertThat(listed.path("createdAt").asText()).isNotBlank();
   // 真实HTTP图片链路：原始二进制、CSRF、受权读取和父CAS，不以模拟上传代替接口验收。
-  String imageProduct=(String)products.create(admin,new com.appnexus.masterdata.api.product.ProductMainData.Input("HTTP-IMAGE","图片接口",null,null,null,null,null,null,null,null,null)).get("id");
+  String imageProduct=(String)products.create(admin,new com.appnexus.masterdata.api.product.ProductMainData.Input("HTTP-IMAGE","图片接口",null,null,null,null,null,null,null,null,null,null,organization)).get("id");
   var bytes=new java.io.ByteArrayOutputStream();javax.imageio.ImageIO.write(new java.awt.image.BufferedImage(2,2,java.awt.image.BufferedImage.TYPE_INT_RGB),"png",bytes);
   assertThat(mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/api/master-data/product/"+imageProduct+"/images?version=0").cookie(cookie).contentType("image/png").content(bytes.toByteArray())).andReturn().getResponse().getStatus()).isEqualTo(403);
   var uploaded=mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/api/master-data/product/"+imageProduct+"/images?version=0").cookie(cookie).with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf()).contentType("image/png").content(bytes.toByteArray())).andReturn().getResponse();assertThat(uploaded.getStatus()).isEqualTo(200);String image=json.readTree(uploaded.getContentAsString()).path("id").asText();
@@ -81,6 +86,8 @@ class ProductV1IntegrationTest extends DatabaseTestSupport {
    .with(authenticated(ordinaryAccount.toString(),0)).with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf())
    .contentType("application/json").content(json.writeValueAsString(Map.of("tenantId",tenant.toString())))).andReturn().getResponse();
   assertThat(ordinarySession.getStatus()).isEqualTo(200);
+  assertThat(mvc.perform(get("/api/master-data/product-attribute").cookie(ordinarySession.getCookie("JSESSIONID")))
+    .andReturn().getResponse().getStatus()).isEqualTo(403);
   assertThat(mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get("/api/master-data/product/"+id).cookie(ordinarySession.getCookie("JSESSIONID"))).andReturn().getResponse().getStatus()).isEqualTo(403);
   String oldId=UUID.randomUUID().toString();
   String original="  legacy specification 0005  ";
@@ -104,6 +111,37 @@ class ProductV1IntegrationTest extends DatabaseTestSupport {
   assertThatThrownBy(()->products.read(admin,id)).hasMessage("MASTER_DATA_DENIED");
   assertThatThrownBy(()->catalog.units(admin,"",1,20)).hasMessage("MASTER_DATA_DENIED");
   assertThatThrownBy(()->products.migrateStructure(admin,id,command,key)).hasMessage("MASTER_DATA_DENIED");
+ }
+
+ /** 通过真实写入和查询端点覆盖首个草稿、选项与数据库回滚。 */
+ private void verifyAttributeCreation(jakarta.servlet.http.Cookie cookie,tools.jackson.databind.ObjectMapper json,UUID tenant) throws Exception {
+  String path="/api/master-data/product-attribute";
+  var option=Map.of("code","black","label","黑色");
+  var initial=Map.of("name","颜色","dataType","SINGLE_SELECT","validationJson","{}","options",List.of(option),"version",0);
+  var rejected=new HashMap<String,Object>(initial);
+  rejected.put("options",List.of(option,option));
+  var failed=mvc.perform(post(path).cookie(cookie).with(csrf()).contentType("application/json")
+    .content(json.writeValueAsString(Map.of("code","COLOR-REJECTED","version",0,"initialRevision",rejected)))).andReturn().getResponse();
+  assertThat(failed.getStatus()).as(failed.getContentAsString()).isEqualTo(409);
+  assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM md_product_attribute WHERE tenant_id=UUID_TO_BIN(?) AND code='COLOR-REJECTED'",
+    Integer.class,tenant.toString())).isZero();
+  var created=mvc.perform(post(path).cookie(cookie).with(csrf()).contentType("application/json")
+    .content(json.writeValueAsString(Map.of("code","COLOR","version",0,"initialRevision",initial)))).andReturn().getResponse();
+  assertThat(created.getStatus()).as(created.getContentAsString()).isEqualTo(200);
+  String id=json.readTree(created.getContentAsString()).path("id").asText();
+  var list=mvc.perform(get(path).cookie(cookie)).andReturn().getResponse();
+  assertThat(list.getStatus()).isEqualTo(200);
+  var row=json.readTree(list.getContentAsString()).get(0);
+  assertThat(row.path("id").asText()).isEqualToIgnoringCase(id);
+  assertThat(row.path("name").asText()).isEqualTo("颜色");
+  assertThat(row.path("dataType").asText()).isEqualTo("SINGLE_SELECT");
+  var revisions=mvc.perform(get(path+"/"+id+"/revisions").cookie(cookie)).andReturn().getResponse();
+  assertThat(revisions.getStatus()).isEqualTo(200);
+  var revision=json.readTree(revisions.getContentAsString()).get(0);
+  assertThat(revision.path("state").asText()).isEqualTo("DRAFT");
+  var options=mvc.perform(get(path+"/revisions/"+revision.path("id").asText()+"/options").cookie(cookie)).andReturn().getResponse();
+  assertThat(options.getStatus()).isEqualTo(200);
+  assertThat(json.readTree(options.getContentAsString()).get(0).path("label").asText()).isEqualTo("黑色");
  }
 
  @Test void installedProductOperationsReferenceRealPermissionsAndPages(){

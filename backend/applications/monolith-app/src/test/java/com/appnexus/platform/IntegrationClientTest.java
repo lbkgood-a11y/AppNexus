@@ -29,6 +29,38 @@ class IntegrationClientTest extends DatabaseTestSupport {
     private UUID actor;
     @BeforeEach void initialize(){administration.initializeAdministrator("admin-test");actor=UUID.fromString(jdbc.queryForObject("SELECT BIN_TO_UUID(id) FROM identity_account WHERE username='admin-test'",String.class));}
     private UUID tenant(){UUID id=UUID.randomUUID();jdbc.update("INSERT INTO platform_tenant(id,name) VALUES(UUID_TO_BIN(?),'Partner tenant')",id.toString());return id;}
+    /** 统一目录和管理入口使用原权限，摘要无密钥，轮换校验授权版本。 */
+    @Test void integrationClientProviderUsesExistingManagementBoundary() throws Exception {
+        UUID tenant=tenant(), ordinary=UUID.randomUUID();
+        jdbc.update("INSERT INTO identity_account(id,username,display_name,password_hash) VALUES(UUID_TO_BIN(?),?,'Client test','unused')",
+                ordinary.toString(),"client-"+ordinary);
+        var actorSession=authenticated(actor.toString(),0);
+        var ordinarySession=authenticated(ordinary.toString(),0);
+        String collection="/bff/platform/tenants/"+tenant+"/clients";
+        String draft="{\"name\":\"Provider client\",\"scopes\":[\"dictionaries:read\"]}";
+        mvc.perform(get("/bff/platform/business-objects").with(actorSession)).andExpect(status().isOk())
+                .andExpect(jsonPath("$[?(@.descriptor.objectType == 'IntegrationClient')]").isNotEmpty());
+        mvc.perform(get(collection).with(ordinarySession)).andExpect(status().isForbidden());
+        mvc.perform(post(collection).with(ordinarySession).with(csrf()).contentType("application/json").content(draft))
+                .andExpect(status().isForbidden());
+        assertThat(clients.list(actor,tenant)).isEmpty();
+        mvc.perform(post(collection).with(actorSession).with(csrf()).contentType("application/json").content(draft))
+                .andExpect(status().isCreated()).andExpect(jsonPath("$.secret").isNotEmpty());
+        var client=clients.list(actor,tenant).getFirst();
+        mvc.perform(get(collection).with(actorSession)).andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id").value(client.id()))
+                .andExpect(jsonPath("$[0].secret").doesNotExist())
+                .andExpect(jsonPath("$[0].clientSecret").doesNotExist());
+        String path="/bff/platform/clients/"+client.id();
+        mvc.perform(put(path).with(actorSession).with(csrf()).contentType("application/json")
+                .content("{\"version\":0,\"enabled\":true,\"scopes\":[\"dictionaries:read\"]}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.version").value(1))
+                .andExpect(jsonPath("$.secret").doesNotExist());
+        mvc.perform(post(path+"/secret-rotation").with(actorSession).with(csrf()).contentType("application/json")
+                .content("{\"version\":0}")).andExpect(status().isConflict());
+        mvc.perform(post(path+"/secret-rotation").with(actorSession).with(csrf()).contentType("application/json")
+                .content("{\"version\":1}")).andExpect(status().isOk()).andExpect(jsonPath("$.client.version").value(2));
+    }
     /** 专用服务 scope 只开放解析入口，Token 固定租户，不能访问人员配置或伪装任意账号。 */
     @Test void documentScopeOnlyAllowsResolution() throws Exception {
         var client=clients.create(actor,tenant(),"Document service",Set.of("business-object:resolve"));String bearer=token(client);
@@ -129,6 +161,15 @@ class IntegrationClientTest extends DatabaseTestSupport {
         var first=mvc.perform(post("/v1/dictionary-item-references").header("Authorization","Bearer "+bearer).header("Idempotency-Key",key).contentType("application/json").content(body))
             .andExpect(status().isCreated()).andReturn().getResponse();
         String response=first.getContentAsString();
+        String location=first.getHeader("Location");
+        mvc.perform(get(location).header("Authorization","Bearer "+bearer))
+            .andExpect(status().isOk()).andExpect(content().json(response));
+        String sameTenant=token(clients.create(actor,tenant,"Same tenant",Set.of("dictionary-references:write")));
+        mvc.perform(get(location).header("Authorization","Bearer "+sameTenant)).andExpect(status().isNotFound());
+        String reader=token(clients.create(actor,tenant,"Dictionary reader",Set.of("dictionaries:read")));
+        mvc.perform(get(location).header("Authorization","Bearer "+reader)).andExpect(status().isForbidden());
+        mvc.perform(post("/v1/dictionary-item-references").header("Authorization","Bearer "+reader)
+            .header("Idempotency-Key",key).contentType("application/json").content(body)).andExpect(status().isForbidden());
         mvc.perform(post("/v1/dictionary-item-references").header("Authorization","Bearer "+bearer).header("Idempotency-Key",key).contentType("application/json").content(body))
             .andExpect(status().isCreated()).andExpect(content().json(response));
         assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM tenant_dictionary_item_reference WHERE consumer=?",Integer.class,client.client().id())).isEqualTo(1);

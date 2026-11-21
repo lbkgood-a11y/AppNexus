@@ -19,6 +19,7 @@ public final class ObjectDiagnosticsController {
   * @param request 认证链写入的当前可信租户及成员
   * @return 不缓存的分层诊断，不是后续执行凭据
   */
+ @com.appnexus.contracts.operation.OperationBinding(id="BusinessObject.inspectOperation", reference=true, eligibility=com.appnexus.contracts.operation.OperationBinding.Eligibility.OBJECT)
  @GetMapping("/api/operations/{operationId}/objects/{objectId}/diagnostics")
  public ResponseEntity<List<ObjectDiagnostics.Check>> inspect(@PathVariable String operationId,@PathVariable String objectId,HttpServletRequest request){
   if(!(request.getAttribute(VerifiedTenantContext.class.getName()) instanceof VerifiedTenantContext c))return ResponseEntity.status(409).build();

@@ -38,9 +38,11 @@ public final class OperationDiagnosticsController {
   */
  public record Diagnosis(OperationRegistry.Definition operation,String status,List<EffectiveAuthorizationQuery.Explanation> permissions,List<String> unchecked,List<com.appnexus.platform.configuration.NavigationQuery.PageCheck> pages,List<DataCheck> data) {}
  /** 平台他人查询先复用主体授权管理校验，不能仅凭目标 UUID 枚举权限。 */
+ @com.appnexus.contracts.operation.OperationBinding(id="Account.operationDiagnostics", reference=true, eligibility=com.appnexus.contracts.operation.OperationBinding.Eligibility.OBJECT)
  @GetMapping("/bff/platform/users/{account}/operation-diagnostics")
  public ResponseEntity<List<Diagnosis>> platform(Authentication authentication,@PathVariable UUID account){return result(()->{subjects.accountRoles(UUID.fromString(authentication.getName()),account);return explain(explanations.platformAccount(account),false,navigation.inspect(account,null,null),AccessAuthorization.Subject.platform(account));});}
  /** 租户身份仅来自可信过滤器；目标成员仍由管理用例复核同租户边界。 */
+ @com.appnexus.contracts.operation.OperationBinding(id="TenantMember.operationDiagnostics", reference=true, eligibility=com.appnexus.contracts.operation.OperationBinding.Eligibility.OBJECT)
  @GetMapping("/api/access/members/{member}/operation-diagnostics")
  public ResponseEntity<List<Diagnosis>> tenant(Authentication authentication,HttpServletRequest request,@PathVariable UUID member){
   if(!(request.getAttribute(VerifiedTenantContext.class.getName()) instanceof VerifiedTenantContext c))return ResponseEntity.status(409).build();

@@ -12,6 +12,39 @@ let contextGeneration = 0;
 /** 每个错误状态的最后更新身份；并发更新仅允许最新一次完成。 */
 const stateUpdates = new WeakMap<Ref<string>, symbol>();
 
+/** 内容区加载失败的展示状态；文案由调用方按业务错误契约安全转换。 */
+export interface LoadIssue {
+  /** 已国际化并安全过滤的文案。 */
+  message: string;
+  /** 是否允许在内容区重试；无权时不提供重试。 */
+  retryable: boolean;
+}
+
+/**
+ * 为一次加载失败选择唯一出口。内容无法使用或无权时占用原数据区域，
+ * 仍可使用旧数据时走统一浮层。独立操作的反馈继续使用 setErrorFeedback。
+ * @param floating 当前页面的浮层状态；内容区反馈不覆盖独立操作已发布的提示。
+ * @param inline 当前加载区域的结果状态；开始下一次加载时由调用方清空。
+ * @param text 已安全转换的文案；空字符串表示取消或交由会话流程处理。
+ * @param blocking 当前是否缺少可显示的数据。
+ * @param denied 当前加载是否被拒绝；无权时优先显示内容区状态。
+ */
+export async function presentLoadError(
+  floating: Ref<string>,
+  inline: Ref<LoadIssue | undefined>,
+  text: string,
+  blocking: boolean,
+  denied = false
+): Promise<void> {
+  inline.value = undefined;
+  if (!text) return;
+  if (blocking || denied) {
+    inline.value = { message: text, retryable: !denied };
+    return;
+  }
+  await setErrorFeedback(floating, text);
+}
+
 /**
  * 展示纯文本业务异常；仅同一显式身份共享实例，禁止不同对象按文案合并。
  * @param text 已完成国际化及安全过滤的文案；空字符串不展示。

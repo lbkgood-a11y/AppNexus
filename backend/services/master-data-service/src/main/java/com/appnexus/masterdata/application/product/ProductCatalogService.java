@@ -35,18 +35,52 @@ public final class ProductCatalogService implements com.appnexus.masterdata.api.
   
 
   /** @param c 可信上下文 @param keyword 字面关键词，最大200字符 @param page 1起页码 @param size 1至100条 @return 真实单位分页 */
-  public UnitPage units(VerifiedTenantContext c,String keyword,int page,int size){
+  public UnitPage units(VerifiedTenantContext c,String keyword,int page,int size,String group){
     require(c,"productunit","read");page(keyword,page,size);
-    var args=new Object[]{tenant(c),keyword.trim(),keyword.trim()};
-    long total=statements.unitCount(tenant(c),keyword.trim());
-    var rows=statements.units(tenant(c),keyword.trim(),size,(page-1)*size).stream().map(ProductCatalogService::unit).toList();
+    if(group!=null&&group.length()>64)throw invalid("PRODUCT_CATALOG_INVALID");
+    long total=statements.unitCount(tenant(c),keyword.trim(),group);
+    var rows=statements.units(tenant(c),keyword.trim(),group,size,(page-1)*size).stream().map(ProductCatalogService::unit).toList();
     return new UnitPage(rows,total);
+  }
+
+  /** {@inheritDoc} */
+  public List<Map<String,Object>> unitGroups(VerifiedTenantContext c){
+    require(c,"productunit","read");
+    return statements.unitGroups(tenant(c));
+  }
+
+  /** {@inheritDoc} */
+  public void createUnitGroup(VerifiedTenantContext c,UnitGroupInput input){
+    require(c,"productunit","create");
+    if(input==null||input.code()==null||!input.code().matches("[A-Za-z0-9][A-Za-z0-9._-]{0,63}"))throw invalid("PRODUCT_CATALOG_INVALID");
+    String name=groupName(input);
+    integrity(()->tx.required(()->{
+      statements.createUnitGroup(tenant(c),input.code(),name,actor(c));
+      return true;
+    }));
+  }
+
+  /** {@inheritDoc} */
+  public void renameUnitGroup(VerifiedTenantContext c,String code,UnitGroupInput input){
+    require(c,"productunit","update");
+    String name=groupName(input);
+    if(code==null||code.length()>64||input.version()==null||input.version()<0)throw invalid("PRODUCT_CATALOG_INVALID");
+    tx.required(()->{
+      changed(statements.renameUnitGroup(tenant(c),code,name,actor(c),input.version()));
+      return true;
+    });
+  }
+
+  private static String groupName(UnitGroupInput input){
+    if(input==null||input.name()==null||input.name().isBlank()||input.name().trim().length()>200)throw invalid("PRODUCT_CATALOG_INVALID");
+    return input.name().trim();
   }
 
   /** 创建单位；同租户编码唯一由数据库兜底，创建与审计同事务。 */
   public Unit createUnit(VerifiedTenantContext c,UnitInput input){
     require(c,"productunit","create");unitInput(input);String id=UUID.randomUUID().toString();
     return integrity(()->tx.required(()->{
+      statements.ensureUnitGroup(tenant(c),input.dimensionCode().trim(),actor(c));
       statements.createUnit(id,tenant(c),input.code().trim(),input.name().trim(),input.dimensionCode().trim(),input.precisionScale(),actor(c),actor(c));
       return readUnit(c,id);
     }));

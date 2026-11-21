@@ -8,7 +8,9 @@ import com.appnexus.persistence.mybatis.PlatformScoped;
 /** 平台对象配置固定 SQL 映射；不接收 SQL 或列名，锁、版本与审计复用用例事务。 */
 @Mapper
 @PlatformScoped(tables={"business_object_audit","business_object_configuration","business_object_configuration_version","business_object_entry_control_audit","business_object_page_relationships","business_object_resolution","business_object_tenant_grant","business_object_type"})
-public interface ConfigurationMapper {
+public interface ConfigurationMapper extends com.appnexus.platform.authorization.DataAccessDeclaration.Executor {
+ /** @return 由原权限用例和该适配器的固定数据边界共同约束的资源编码 */
+ @Override default java.util.Set<String> enforcedResources(){return java.util.Set.of("business.object.catalog", "business.object.configuration");}
   /**
    * typeEnabled 对应原配置存储契约；平台配置范围由用例校验，所有值参数绑定。
    * @param type 已登记业务对象类型编码，不是表名

@@ -4,6 +4,8 @@ import java.util.*;
 
 /** 平台用户与租户开通端口；每个操作独立验证平台管理员，不允许平台身份绕过租户业务隔离。 */
 public interface PlatformAdministration {
+    /** 平台租户档案资源，覆盖目录读取和管理，不包含租户内业务数据。 */
+    String TENANT_RESOURCE = "tenant";
     /** 平台账号摘要；联系方式与登录识别符分离，不含认证凭据。 */
     record User(UUID id, String username, String displayName,
                 String email, boolean emailVerified,

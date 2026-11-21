@@ -2,13 +2,17 @@ package com.appnexus.masterdata.adapter.persistence;
 import com.appnexus.masterdata.api.masterdata.MasterData.*;
 import com.appnexus.masterdata.api.masterdata.MasterData;
 import com.appnexus.persistence.mybatis.PlatformScoped;
+import com.appnexus.platform.authorization.DataAccessDeclaration;
 import org.apache.ibatis.annotations.*;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 /** 主数据固定枚举展开的Mapper；XML无自由表列替换，原用例负责行/字段准入和完整事务。 */
 @Mapper
 @PlatformScoped(tables={"md_partner","md_warehouse","md_storage_area","md_storage_location","md_country_region","md_subdivision"})
-public interface MasterRecordMapper {
+public interface MasterRecordMapper extends DataAccessDeclaration.Executor {
+ /** @return 地理和仓储层级对象由固定租户条件和专用业务授权保护的资源，不开放额外可配置行范围 */
+ @Override default Set<String> enforcedResources(){return Set.of(Kind.COUNTRY_REGION.resource(),Kind.SUBDIVISION.resource(),Kind.STORAGE_AREA.resource(),Kind.STORAGE_LOCATION.resource(), Kind.WAREHOUSE.resource());}
  /** 固定对象新增，创建与修改审计来自实际主体，SQL时间为UTC。 */
  int create(@Param("tenant") String tenant,@Param("kind") com.appnexus.masterdata.api.masterdata.MasterData.Kind kind,@Param("id") String id,@Param("input") Input input,@Param("values") Map<String,String> values,@Param("actor") String actor);
  /** 固定对象CAS修改；编码不可改变，失败返回冲突。 */

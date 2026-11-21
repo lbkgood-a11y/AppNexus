@@ -136,7 +136,7 @@ onMounted(load);
             <el-input id="account-phone" v-model="phoneNumber" maxlength="16" autocomplete="tel" placeholder="+8613800000000" size="large" />
             <p class="field-hint"><el-tag size="small" :type="profile.phoneVerified ? 'success' : 'info'">{{ t(profile.phoneVerified ? "account.verified" : "account.unverified") }}</el-tag> {{ t("account.phoneHint") }}</p></div>
           <div class="account-field"><label>{{ t("account.id") }}</label><code>{{ profile.id }}</code></div>
-          <el-button v-operation="'AccountProfile.update'" type="primary" native-type="submit" :loading="saving" :disabled="loading || !displayName.trim()">{{ t("account.save") }}</el-button>
+          <el-button v-operation="'Account.profileUpdate'" type="primary" native-type="submit" :loading="saving" :disabled="loading || !displayName.trim()">{{ t("account.save") }}</el-button>
         </form>
         <TenantInvitationAcceptance />
       </section>
@@ -170,7 +170,7 @@ onMounted(load);
             <el-input id="new-password" v-model="passwords.next" type="password" show-password autocomplete="new-password" minlength="12" maxlength="128" required size="large" /></div>
           <div class="account-field"><label for="confirm-password">{{ t("account.confirmPassword") }}</label>
             <el-input id="confirm-password" v-model="passwords.confirm" type="password" show-password autocomplete="new-password" minlength="12" maxlength="128" required size="large" /></div>
-          <el-button v-operation="'AccountProfile.changePassword'" type="primary" native-type="submit" :loading="changing">{{ t("account.changePassword") }}</el-button>
+          <el-button v-operation="'Account.profileChangePassword'" type="primary" native-type="submit" :loading="changing">{{ t("account.changePassword") }}</el-button>
           <el-button :disabled="changing" @click="editingPassword = false">{{ t("account.cancel") }}</el-button>
         </form>
         <div class="setting-row"><div><h2>{{ t("account.sessionProtection") }}</h2><p>{{ t("account.sessionHint") }}</p></div>

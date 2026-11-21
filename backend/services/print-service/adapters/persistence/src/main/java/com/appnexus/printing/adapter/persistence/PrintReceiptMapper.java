@@ -6,7 +6,9 @@ import com.appnexus.persistence.mybatis.PlatformScoped;
 /** 打印设备回执固定SQL；准入由PrintPlatform负责，支持后台租约，不伪造HTTP租户成员。 */
 @Mapper
 @PlatformScoped(tables={"print_job"})
-public interface PrintReceiptMapper {
+public interface PrintReceiptMapper extends com.appnexus.contracts.businessobject.BusinessObjects.DataAccessExecutor {
+ /** @return 受原用例身份复核和固定存储约束保护的专业服务资源 */
+ @Override default java.util.Set<String> enforcedResources(){return java.util.Set.of("print.job.receipt");}
  /** @param tenant 平台验证的租户UUID @param id 租户内任务UUID @return 原事务锁定状态，缺失由存储端口返回404 */
  @Select("SELECT state,claimed_by,CAST(result_json AS CHAR) resultJson,(claim_expires_at<CURRENT_TIMESTAMP(6)) expired FROM print_job WHERE tenant_id=UUID_TO_BIN(#{tenant}) AND id=UUID_TO_BIN(#{id}) FOR UPDATE")
  List<Map<String,Object>> lock(@Param("tenant") String tenant,@Param("id") String id);

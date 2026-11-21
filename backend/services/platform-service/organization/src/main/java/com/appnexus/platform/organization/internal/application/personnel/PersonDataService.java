@@ -19,6 +19,7 @@ public final class PersonDataService implements com.appnexus.platform.organizati
   private final BusinessValueCatalog dictionaries;
   private final PersonRepository mapper;
   private final AccessAuthorization access;
+  private final PersonFieldPolicy fieldPolicy;
   private final com.appnexus.platform.organization.port.personnel.PersonnelTransaction transaction;
   /** 人员或商品完整用例依赖装配；所有输出参与原业务安全与事务约束。
   * @param mapper 固定人员仓储，可信租户及审计由存储适配器强制
@@ -27,7 +28,19 @@ public final class PersonDataService implements com.appnexus.platform.organizati
   * @param dictionaries 字典及引用公开端口，不读取其他上下文私表
   */
  public PersonDataService(PersonRepository mapper,AccessAuthorization access,com.appnexus.platform.organization.port.personnel.PersonnelTransaction transaction,BusinessValueCatalog dictionaries) {
+    this(mapper,access,transaction,dictionaries,null,null);
+  }
+
+  /** 读取人员新增表单限制，继续要求原人员读取权限。 */
+  @Override public Map<String,com.appnexus.platform.authorization.FieldSecurity.Mode> fieldRestrictions(VerifiedTenantContext context){
+    require(context,Kind.PERSON,"read");
+    return fieldPolicy.modes(context,PersonFieldPolicy.PERSON);
+  }
+  /** @param protection 统一实时字段执行端口 @param catalog 权威声明目录 */
+  public PersonDataService(PersonRepository mapper,AccessAuthorization access,com.appnexus.platform.organization.port.personnel.PersonnelTransaction transaction,BusinessValueCatalog dictionaries,
+      com.appnexus.platform.authorization.FieldProtection protection,com.appnexus.platform.authorization.DataAccessCatalog catalog) {
     this.dictionaries=dictionaries;this.mapper=mapper;this.access=access;this.transaction=transaction;
+    this.fieldPolicy=new PersonFieldPolicy(protection,catalog);
   }
 
   /**
@@ -52,9 +65,10 @@ public final class PersonDataService implements com.appnexus.platform.organizati
     require(c,kind,"read");
     if(page<1||page>1000000||size<1||size>100||keyword==null||keyword.length()>200)throw invalid();
     long total=mapper.count(c.tenantId().toString(),keyword.trim(),enabled);
+    var modes=fieldPolicy.modes(c,PersonFieldPolicy.PERSON);
     var rows=mapper.list(c.tenantId().toString(),keyword.trim(),enabled,size,(page-1)*size).stream().map(row->{
       var attributes=new LinkedHashMap<String,String>();for(String field:List.of("englishName","phone","email","employmentStatus"))attributes.put(field,(String)row.get(field));
-      return new Row((String)row.get("id"),(String)row.get("code"),(String)row.get("name"),attributes,Boolean.TRUE.equals(row.get("enabled")),((Number)row.get("version")).longValue(),new Audit((String)row.get("audit_created_by"),utc(row.get("created_at")),(String)row.get("audit_updated_by"),utc(row.get("updated_at"))));
+      return fieldPolicy.project(new Row((String)row.get("id"),(String)row.get("code"),(String)row.get("name"),attributes,Boolean.TRUE.equals(row.get("enabled")),((Number)row.get("version")).longValue(),new Audit((String)row.get("audit_created_by"),utc(row.get("created_at")),(String)row.get("audit_updated_by"),utc(row.get("updated_at")))),modes);
     }).toList();
     return new Page(rows,total);
   }
@@ -70,9 +84,10 @@ public final class PersonDataService implements com.appnexus.platform.organizati
    * @return 新建档案标识；编码冲突返回 409，输入错误返回 400
    */
   public Map<String,String> create(VerifiedTenantContext c,Kind kind,Input input) {
-    require(c,kind,"create");var values=validate(kind,input);String id=UUID.randomUUID().toString();
+    require(c,kind,"create");if(input==null)throw invalid();String id=UUID.randomUUID().toString();
     try {
       return transaction.required(()->{
+        var values=validate(kind,protectedInput(c,input,Map.of()));
         mapper.create(c.tenantId().toString(),id,input,values,c.accountId().toString());
         dictionaryReferences(c,id,values,Map.of());
         return Map.of("id",id);
@@ -90,9 +105,10 @@ public final class PersonDataService implements com.appnexus.platform.organizati
    * @throws Rejection 无编辑权限返回 403，输入非法返回 400，版本变化或对象不可更新返回 409
    */
   public void update(VerifiedTenantContext c,Kind kind,String id,Input input) {
-    require(c,kind,"update");uuid(id);var values=validate(kind,input);
+    require(c,kind,"update");uuid(id);if(input==null)throw invalid();
     transaction.run(()->{
       var previous=previousValues(c,id);
+      var values=validate(kind,protectedInput(c,input,previous));
       int count=mapper.update(c.tenantId().toString(),id,input,values);
       if(count!=1)throw new Rejection(409,"MASTER_DATA_CHANGED");
       dictionaryReferences(c,id,values,previous);
@@ -117,6 +133,11 @@ public final class PersonDataService implements com.appnexus.platform.organizati
         throw new Rejection(409,"MASTER_DATA_CHANGED");
       audit(c,kind,id);
     });
+  }
+
+  private Input protectedInput(VerifiedTenantContext context,Input input,Map<String,String> previous){
+    var values=fieldPolicy.preserve(input.attributes(),previous,fieldPolicy.modes(context,PersonFieldPolicy.PERSON));
+    return new Input(input.code(),input.name(),values,input.version());
   }
 
   /** 权限每次经公开端口复核；未知权限、无效成员和缺少上下文一律拒绝。 */

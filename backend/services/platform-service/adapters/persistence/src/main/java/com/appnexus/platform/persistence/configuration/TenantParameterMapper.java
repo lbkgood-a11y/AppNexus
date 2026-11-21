@@ -6,7 +6,9 @@ import org.apache.ibatis.annotations.*;
 /** 租户展示参数固定持久化；不提供系统安全配置或任意SQL入口。 */
 @Mapper
 @PlatformScoped(tables={"tenant_parameter","tenant_parameter_audit","platform_tenant"})
-public interface TenantParameterMapper extends com.appnexus.platform.configuration.port.TenantParameterRepository {
+public interface TenantParameterMapper extends com.appnexus.platform.configuration.port.TenantParameterRepository, com.appnexus.platform.authorization.DataAccessDeclaration.Executor {
+ /** @return 参数读写以权威租户为条件，应用用例限制公开参数键 */
+ @Override default java.util.Set<String> enforcedResources(){return java.util.Set.of("configuration.parameter");}
  /** list 固定SQL；可信租户及实际操作者由用例验证，写入及审计保持同事务。 */
  @Select("SELECT parameter_key,parameter_value,version FROM tenant_parameter WHERE tenant_id=UUID_TO_BIN(#{tenant})")
  List<Map<String,Object>> list(@Param("tenant") String tenant);

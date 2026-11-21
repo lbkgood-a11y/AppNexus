@@ -53,7 +53,7 @@ public final class ProductService implements com.appnexus.masterdata.api.product
   * 商品分页；编码/名称分别筛选，未归档默认可见，真实total不以固定100条代替。
   * @param name 名称字面包含，最多200字符，默认空
   * @param code 编码字面包含，最多64字符，默认空
-  * @param categoryId 可选分类UUID，只缩小原租户范围
+  * @param categoryId 可选分类UUID，默认限定本级，只缩小原租户范围
   * @param form 可选PHYSICAL/SERVICE
   * @param status 可选DRAFT/ENABLED/DISABLED
   * @param archived 默认false只看未归档，true只看归档
@@ -62,7 +62,11 @@ public final class ProductService implements com.appnexus.masterdata.api.product
   */
  public Object list(VerifiedTenantContext c,String name,String code,String categoryId,String form,String status,boolean archived,int page,int size){return list(c,name,code,categoryId,form,status,archived,page,size,null,null);}
  public Object list(VerifiedTenantContext c,String name,String code,String categoryId,String form,String status,boolean archived,int page,int size,String configId,String filtersJson){
-  require(c,"read");return listQueries.list(c,name,code,categoryId,form,status,archived,page,size,configId,filtersJson);
+  return list(c,name,code,categoryId,form,status,archived,page,size,configId,filtersJson,false);
+ }
+ /** {@inheritDoc} */
+ public Object list(VerifiedTenantContext c,String name,String code,String categoryId,String form,String status,boolean archived,int page,int size,String configId,String filtersJson,boolean includeDescendants){
+  require(c,"read");return listQueries.list(c,name,code,categoryId,form,status,archived,page,size,configId,filtersJson,includeDescendants);
  }
  /** 保留内部调用入口的默认分页；HTTP参数由固定Controller声明。 */
  public Object list(VerifiedTenantContext c){return list(c,"","",null,null,null,false,1,20);}
@@ -243,6 +247,9 @@ public final class ProductService implements com.appnexus.masterdata.api.product
  /** 父锁下事实转换为领域输入；不把 JDBC 映射或应用请求类型传入领域策略。 */
  @SuppressWarnings("unchecked")
  private void migrationSource(Map<String,Object> before,Migration change){
+  // 先清空旧计量配置，再迁移基础单位，避免既有包装比例被解释为另一种单位。
+  if(before.get("measurementConfig")!=null&&!Objects.equals(before.get("unitId"),change.unitId()))
+   throw new MasterData.Rejection(409,"MASTER_DATA_CHANGED");
   var specs=(List<Map<String,Object>>)before.get("specifications");
   var active=specs.stream().filter(r->r.get("retiredAt")==null).map(r->(String)r.get("id")).collect(java.util.stream.Collectors.toSet());
   var source=new com.appnexus.masterdata.domain.product.ProductStructurePolicy.Source(

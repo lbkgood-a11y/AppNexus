@@ -5,8 +5,16 @@ import java.util.List;
 import java.util.Map;
 /** ProductStructureService固定SQL映射；不接收SQL或标识符，原用例逐次验证可信租户及操作。 */
 @Mapper
-@PlatformScoped(tables={"md_product_attribute_option","md_product_attribute_revision","md_product_category_config_item","md_product_category_guard","md_product_component","md_product_sku","md_product_spec_choice","md_product_spec_value","md_product_specification","md_product_template_item","md_product_unit","md_product_v1","tenant_id"})
+@PlatformScoped(tables={"md_product_attribute_option","md_product_attribute_revision","md_product_category_config_item","md_product_category_guard","md_product_component","md_product_sku","md_product_spec_choice","md_product_spec_value","md_product_specification","md_product_template_item","md_product_unit","md_product_unit_conversion","md_product_v1","tenant_id"})
 public interface ProductStructureMapper {
+ /** 当前父商品已加锁；调用方同事务推进父版本与审计。 */
+ @Update("UPDATE md_product_v1 SET measurement_config=CAST(#{configuration} AS JSON) WHERE tenant_id=UUID_TO_BIN(#{tenant}) AND id=UUID_TO_BIN(#{product})")
+ int saveMeasurement(@Param("tenant") String tenant,@Param("product") String product,@Param("configuration") String configuration);
+
+ /** 固定方向关联要求两端同组、同租户并启用。 */
+ @Select("SELECT EXISTS(SELECT 1 FROM md_product_unit_conversion x JOIN md_product_unit s ON s.tenant_id=x.tenant_id AND s.id=x.source_unit_id JOIN md_product_unit t ON t.tenant_id=x.tenant_id AND t.id=x.target_unit_id WHERE x.tenant_id=UUID_TO_BIN(#{tenant}) AND s.id=UUID_TO_BIN(#{source}) AND t.id=UUID_TO_BIN(#{target}) AND x.enabled AND s.enabled AND t.enabled AND s.dimension_code=t.dimension_code)")
+ boolean hasMeasurementConversion(@Param("tenant") String tenant,@Param("source") String source,@Param("target") String target);
+
  /** 固定业务语句1；准入、参数规则、聚合锁及事务由原用例负责，所有值绑定。 */
  @Select("SELECT BIN_TO_UUID(s.id) id,s.name,s.description,s.mode,s.enabled,s.version,s.retired_at retiredAt,(s.enabled AND s.retired_at IS NULL AND p.status='ENABLED') effective FROM md_product_specification s JOIN md_product_v1 p ON p.tenant_id=s.tenant_id AND p.id=s.product_id WHERE s.tenant_id=UUID_TO_BIN(#{p0}) AND s.product_id=UUID_TO_BIN(#{p1}) ORDER BY s.created_at,s.id")
  List<Map<String,Object>> specifications(@Param("p0") Object p0,@Param("p1") Object p1);
@@ -107,7 +115,7 @@ public interface ProductStructureMapper {
  @Update({"<script>","UPDATE <choose><when test=\"kind == 'specification'\">md_product_specification</when><when test=\"kind == 'sku'\">md_product_sku</when><otherwise>md_product_component</otherwise></choose> SET enabled=#{enabled},version=version+1,updated_by=UUID_TO_BIN(#{actor}),updated_at=CURRENT_TIMESTAMP(6) WHERE tenant_id=UUID_TO_BIN(#{tenant}) AND product_id=UUID_TO_BIN(#{product}) AND id=UUID_TO_BIN(#{id}) AND version=#{version} AND enabled&lt;&gt;#{enabled}<if test=\"kind == 'specification'\"> AND retired_at IS NULL</if>","</script>"})
  int state(@Param("kind") String kind,@Param("enabled") boolean enabled,@Param("actor") String actor,@Param("tenant") String tenant,@Param("product") String product,@Param("id") String id,@Param("version") long version);
  /** 已授权主商品父行状态，不通过子记录ID扩大范围。 */
- @Select({"<script>","SELECT product_form,specification_mode,BIN_TO_UUID(category_config_id) configId,BIN_TO_UUID(base_unit_id) unitId,status,draft_archived_at archived,structure_state structure,version FROM md_product_v1 WHERE tenant_id=UUID_TO_BIN(#{tenant}) AND id=UUID_TO_BIN(#{id})","<if test='lock'> FOR UPDATE</if>","</script>"}) List<Map<String,Object>> parent(@Param("tenant") String tenant,@Param("id") String id,@Param("lock") boolean lock);
+ @Select({"<script>","SELECT product_form,specification_mode,BIN_TO_UUID(category_config_id) configId,BIN_TO_UUID(base_unit_id) unitId,status,draft_archived_at archived,structure_state structure,version,CAST(measurement_config AS CHAR) measurementConfig FROM md_product_v1 WHERE tenant_id=UUID_TO_BIN(#{tenant}) AND id=UUID_TO_BIN(#{id})","<if test='lock'> FOR UPDATE</if>","</script>"}) List<Map<String,Object>> parent(@Param("tenant") String tenant,@Param("id") String id,@Param("lock") boolean lock);
  /** 固定子表审计投影，表名仅由构建内三类choose选择。 */
  @Select({"<script>","SELECT BIN_TO_UUID(created_by) createdBy,created_at createdAt,BIN_TO_UUID(updated_by) updatedBy,updated_at updatedAt FROM <choose><when test=\"table == 'md_product_specification'\">md_product_specification</when><when test=\"table == 'md_product_sku'\">md_product_sku</when><otherwise>md_product_component</otherwise></choose> WHERE tenant_id=UUID_TO_BIN(#{tenant}) AND id=UUID_TO_BIN(#{id})","</script>"}) List<Map<String,Object>> audit(@Param("table") String table,@Param("tenant") String tenant,@Param("id") Object id);
 }

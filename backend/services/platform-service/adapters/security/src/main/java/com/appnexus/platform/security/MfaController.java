@@ -39,8 +39,8 @@ public class MfaController {
     /** 恢复码仅在成功激活时显示一次，之后无法查询原文。 */
     public record Recovery(List<String> codes){@Override public String toString(){return "Recovery[redacted]";}}
     /** 操作契约关联下方真实接口；仅供展示与一致性校验，主体、权限及业务约束仍由原用例执行。 */
-    @com.appnexus.contracts.operation.BusinessObjectType(code="AccountMfa",nameZh="多因素认证",nameEn="Account Mfa",category=com.appnexus.contracts.operation.BusinessObjectType.Category.SYSTEM,module="identity")
- @com.appnexus.contracts.operation.OperationBinding(id="AccountMfa.read",objectType="AccountMfa",operationCode="read",pages={"account/profile"},nameZh="多因素认证：查看",nameEn="View MFA",eligibility=com.appnexus.contracts.operation.OperationBinding.Eligibility.SELF,policy="当前会话本人身份；写操作继续校验 CSRF、当前密码及所需二次验证")
+
+ @com.appnexus.contracts.operation.OperationBinding(id="Account.mfaRead", reference=true, eligibility=com.appnexus.contracts.operation.OperationBinding.Eligibility.SELF)
     @GetMapping
     ResponseEntity<Status> status(Authentication auth,HttpServletRequest request){
         Object verified=request.getSession().getAttribute(VERIFIED_AT);
@@ -48,13 +48,13 @@ public class MfaController {
         return noStore(new Status(mfa.available(),mfa.enabled(id(auth)),recent,platformRequired,List.of("TOTP","RECOVERY_CODE")));
     }
     /** 当前密码复核后建立 10 分钟待确认绑定，已有有效因子不可覆盖。 */
-    @com.appnexus.contracts.operation.OperationBinding(id="AccountMfa.enroll",objectType="AccountMfa",operationCode="enroll",pages={"account/profile"},nameZh="多因素认证：建立绑定",nameEn="Enroll MFA",eligibility=com.appnexus.contracts.operation.OperationBinding.Eligibility.SELF,policy="当前会话本人身份；写操作继续校验 CSRF、当前密码及所需二次验证")
+    @com.appnexus.contracts.operation.OperationBinding(id="Account.mfaEnroll", reference=true, eligibility=com.appnexus.contracts.operation.OperationBinding.Eligibility.SELF)
     @PostMapping("/enrollment")
     ResponseEntity<Enrollment> enroll(Authentication auth,@RequestBody Challenge input){
         password(auth,input);return execute(()->new Enrollment(mfa.begin(id(auth))));
     }
     /** 激活并撤销旧认证；当前已证明密码与第二因子的会话轮换后保留，供一次性保存恢复码。 */
-    @com.appnexus.contracts.operation.OperationBinding(id="AccountMfa.activate",objectType="AccountMfa",operationCode="activate",pages={"account/profile"},nameZh="多因素认证：激活绑定",nameEn="Activate MFA",eligibility=com.appnexus.contracts.operation.OperationBinding.Eligibility.SELF,policy="当前会话本人身份；写操作继续校验 CSRF、当前密码及所需二次验证")
+    @com.appnexus.contracts.operation.OperationBinding(id="Account.mfaActivate", reference=true, eligibility=com.appnexus.contracts.operation.OperationBinding.Eligibility.SELF)
     @PostMapping("/activation")
     ResponseEntity<Recovery> activate(Authentication auth,@RequestBody Challenge input,HttpServletRequest request,HttpServletResponse response){
         password(auth,input);
@@ -66,7 +66,7 @@ public class MfaController {
         request.getSession().setAttribute(VERIFIED_AT,Instant.now());return result;
     }
     /** 当前密码和第二因子共同通过后轮换会话 ID，重新认证窗口固定为 5 分钟。 */
-    @com.appnexus.contracts.operation.OperationBinding(id="AccountMfa.stepUp",objectType="AccountMfa",operationCode="stepUp",pages={"account/profile"},nameZh="多因素认证：二次验证",nameEn="Step up",eligibility=com.appnexus.contracts.operation.OperationBinding.Eligibility.SELF,policy="当前会话本人身份；写操作继续校验 CSRF、当前密码及所需二次验证")
+    @com.appnexus.contracts.operation.OperationBinding(id="Account.mfaStepUp", reference=true, eligibility=com.appnexus.contracts.operation.OperationBinding.Eligibility.SELF)
     @PostMapping("/step-up")
     ResponseEntity<Void> stepUp(Authentication auth,@RequestBody Challenge input,HttpServletRequest request){
         password(auth,input);
@@ -75,7 +75,7 @@ public class MfaController {
         request.changeSessionId();request.getSession().setAttribute(VERIFIED_AT,Instant.now());return noStore(null);
     }
     /** 关闭需复核密码及第二因子，成功后注销当前会话和全部旧授权。 */
-    @com.appnexus.contracts.operation.OperationBinding(id="AccountMfa.disable",objectType="AccountMfa",operationCode="disable",pages={"account/profile"},nameZh="多因素认证：停用",nameEn="Disable MFA",eligibility=com.appnexus.contracts.operation.OperationBinding.Eligibility.SELF,policy="当前会话本人身份；写操作继续校验 CSRF、当前密码及所需二次验证")
+    @com.appnexus.contracts.operation.OperationBinding(id="Account.mfaDisable", reference=true, eligibility=com.appnexus.contracts.operation.OperationBinding.Eligibility.SELF)
     @PostMapping("/disable")
     ResponseEntity<Void> disable(Authentication auth,@RequestBody Challenge input,HttpServletRequest request,HttpServletResponse response){
         password(auth,input);

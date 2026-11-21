@@ -15,7 +15,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 /** 角色生命周期实现；管理权威锁、条件更新与追加审计在同一 MySQL 事务完成。 */
 @Service
-public class MyBatisRoleManagement implements RoleManagement {
+public class MyBatisRoleManagement implements RoleManagement, com.appnexus.platform.authorization.DataAccessDeclaration.Executor {
+    /** @return 平台角色与可信租户角色按原所有者和专用授权隔离的资源 */
+    @Override public java.util.Set<String> enforcedResources(){return java.util.Set.of("access.role", "access.tenant.role");}
     private static final String PLATFORM_OWNER="00000000-0000-0000-0000-000000000000";
     private final RoleMapper mapper;
     private final com.appnexus.platform.authorization.AuthorityEvents events;

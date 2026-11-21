@@ -102,7 +102,21 @@ public interface ProductAttributeMapper {
  /** @param tenant 可信租户 @return 属性组摘要，原独立功能准入保持 */
  @Select("SELECT BIN_TO_UUID(id) id,code,name,enabled,version FROM md_product_attribute_group WHERE tenant_id=UUID_TO_BIN(#{tenant}) ORDER BY code,id") List<Map<String,Object>> groups(@Param("tenant") String tenant);
  /** @param tenant 可信租户 @return 属性摘要；空组UUID用空字符串保持旧协议 */
- @Select("SELECT BIN_TO_UUID(id) id,code,COALESCE(BIN_TO_UUID(group_id),'') groupId,enabled,version FROM md_product_attribute WHERE tenant_id=UUID_TO_BIN(#{tenant}) ORDER BY code,id") List<Map<String,Object>> attributes(@Param("tenant") String tenant);
+ /** 列表优先显示最新发布修订，尚未发布时展示最新草稿；无修订的历史属性仍返回。 */
+ @Select("""
+     SELECT BIN_TO_UUID(a.id) id,a.code,COALESCE(BIN_TO_UUID(a.group_id),'') groupId,
+            a.enabled,a.version,r.name,r.data_type dataType
+     FROM md_product_attribute a
+     LEFT JOIN md_product_attribute_revision r ON r.tenant_id=a.tenant_id AND r.id=(
+         SELECT candidate.id FROM md_product_attribute_revision candidate
+         WHERE candidate.tenant_id=a.tenant_id AND candidate.attribute_id=a.id
+         ORDER BY CASE candidate.state WHEN 'PUBLISHED' THEN 0 WHEN 'DRAFT' THEN 1 ELSE 2 END,
+                  candidate.revision_no DESC
+         LIMIT 1
+     )
+     WHERE a.tenant_id=UUID_TO_BIN(#{tenant}) ORDER BY a.code,a.id
+     """)
+ List<Map<String,Object>> attributes(@Param("tenant") String tenant);
  /** @param group 构建内对象选择，不接收表名 @param tenant 可信租户 @param id 已校验UUID @param enabled 目标状态 @param actor 实际账号 @param version 原CAS版本 @return 更新行数 */
  @Update({"<script>","UPDATE <choose><when test='group'>md_product_attribute_group</when><otherwise>md_product_attribute</otherwise></choose> SET enabled=#{enabled},version=version+1,updated_by=UUID_TO_BIN(#{actor}),updated_at=CURRENT_TIMESTAMP(6) WHERE tenant_id=UUID_TO_BIN(#{tenant}) AND id=UUID_TO_BIN(#{id}) AND version=#{version}","</script>"})
  int status(@Param("group") boolean group,@Param("tenant") String tenant,@Param("id") String id,@Param("enabled") boolean enabled,@Param("actor") String actor,@Param("version") long version);

@@ -2,10 +2,30 @@ import { h, ref, watch, nextTick } from "vue";
 import { afterEach, describe, expect, it, vi } from "vitest";
 const shown = vi.hoisted(() => ({ message: vi.fn(), notification: vi.fn() }));
 vi.mock("element-plus", () => ({ ElMessage: shown.message, ElNotification: shown.notification }));
-import { clearErrorFeedback, reportError, setErrorFeedback } from "../../../infra/ui/src/errorFeedback";
+import { clearErrorFeedback, presentLoadError, reportError, setErrorFeedback, type LoadIssue } from "../../../infra/ui/src/errorFeedback";
 
 describe("统一浮层生命周期", () => {
   afterEach(() => { clearErrorFeedback(); vi.clearAllMocks(); });
+  it("阻断加载只更新内容区，保留独立操作反馈", async () => {
+    const floating = ref("保存失败");
+    const inline = ref<LoadIssue>();
+    await presentLoadError(floating, inline, "服务不可用", true);
+    expect(inline.value).toEqual({ message: "服务不可用", retryable: true });
+    expect(floating.value).toBe("保存失败");
+  });
+  it("有旧数据的刷新失败只更新浮层，无权和静默失败遵守各自契约", async () => {
+    const floating = ref("");
+    const inline = ref<LoadIssue>();
+    await presentLoadError(floating, inline, "刷新失败", false);
+    expect(floating.value).toBe("刷新失败");
+    expect(inline.value).toBeUndefined();
+    floating.value = "";
+    await presentLoadError(floating, inline, "无权", false, true);
+    expect(inline.value).toEqual({ message: "无权", retryable: false });
+    await presentLoadError(floating, inline, "", true);
+    expect(inline.value).toBeUndefined();
+    expect(floating.value).toBe("");
+  });
   it("多个展示位置共享实例，最后一个释放时才关闭", () => {
     const close = vi.fn();
     shown.message.mockReturnValue({ close });

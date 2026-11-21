@@ -25,9 +25,22 @@ public final class LeaveDeclaration implements BusinessObjects.Provider {
       new Receipt("leave_poc_approval_cycle",new Column("tenant_id",text),new Column("object_id",text),"basis_version","instance_id","delivery_id","result","completed_at"),false);
   }
   @Override public com.appnexus.contracts.businessobject.BusinessObjects.Descriptor descriptor() {
-    return new com.appnexus.contracts.businessobject.BusinessObjects.Descriptor("LeaveRequest","请假单","Leave request","leave",2,com.appnexus.contracts.businessobject.BusinessObjects.Category.TRANSACTION,
+    return new com.appnexus.contracts.businessobject.BusinessObjects.Descriptor("LeaveRequest","请假单","Leave request","leave",3,com.appnexus.contracts.businessobject.BusinessObjects.Category.TRANSACTION,
       List.of(new com.appnexus.contracts.businessobject.BusinessObjects.Field("days","请假天数","Leave days","NUMBER","天",true),new com.appnexus.contracts.businessobject.BusinessObjects.Field("requiresHr","是否超过三天","More than three days","BOOLEAN","",true)),
-      List.of(SUBMIT_OPERATION,PRINT_OPERATION),new com.appnexus.contracts.businessobject.BusinessObjects.DataAccess("TENANT",List.of(
+      List.of(SUBMIT_OPERATION,PRINT_OPERATION,
+        com.appnexus.contracts.businessobject.DedicatedOperations.operation("LeaveRequest", "list", "查看请假列表", "View leave requests", "",
+          new com.appnexus.contracts.businessobject.BusinessObjects.PageOperation("workflow/leave", "/workflow/leave", "查看请假列表", "View leave requests", "GET", "/api/leave-poc")),
+        com.appnexus.contracts.businessobject.DedicatedOperations.operation("LeaveRequest", "create", "新建请假单", "Create leave request", "leave.request:submit",
+          new com.appnexus.contracts.businessobject.BusinessObjects.PageOperation("workflow/leave", "/workflow/leave", "新建请假单", "Create leave request", "POST", "/api/leave-poc")),
+        com.appnexus.contracts.businessobject.DedicatedOperations.operation("LeaveRequest", "read", "查看请假单", "View leave request", "",
+          new com.appnexus.contracts.businessobject.BusinessObjects.PageOperation("workflow/leave", "/workflow/leave", "查看请假单", "View leave request", "GET", "/api/leave-poc/{id}")),
+        com.appnexus.contracts.businessobject.DedicatedOperations.operation("LeaveRequest", "update", "修改请假单", "Edit leave request", "leave.request:submit",
+          new com.appnexus.contracts.businessobject.BusinessObjects.PageOperation("workflow/leave", "/workflow/leave", "修改请假单", "Edit leave request", "PUT", "/api/leave-poc/{id}")),
+        com.appnexus.contracts.businessobject.DedicatedOperations.operation("LeaveRequest", "approvalHistory", "查看审批历史", "View approval history", "",
+          new com.appnexus.contracts.businessobject.BusinessObjects.PageOperation("workflow/leave", "/workflow/leave", "查看审批历史", "View approval history", "GET", "/api/leave-poc/{id}/cycles")),
+                com.appnexus.contracts.businessobject.DedicatedOperations.operation("LeaveRequest", "organizationOptions", "可选组织", "Organization options", ""),
+                com.appnexus.contracts.businessobject.DedicatedOperations.operation("LeaveRequest", "availableActions", "可用请假操作", "Available leave actions", ""),
+                com.appnexus.contracts.businessobject.DedicatedOperations.operation("LeaveRequest", "timeline", "请假时间线", "Leave timeline", "")),new com.appnexus.contracts.businessobject.BusinessObjects.DataAccess("TENANT",List.of(
         new com.appnexus.contracts.businessobject.BusinessObjects.DataResource("leave.request","","请假请求","Leave requests",List.of(
           protectedField("days","天数","Days",false),protectedField("requiresHr","人事审批条件","HR condition",false),protectedField("documentNumber","单据标识","Document number",true),
           protectedField("startDate","开始日期","Start date",true),protectedField("endDate","结束日期","End date",true),protectedField("state","状态","State",true)))),

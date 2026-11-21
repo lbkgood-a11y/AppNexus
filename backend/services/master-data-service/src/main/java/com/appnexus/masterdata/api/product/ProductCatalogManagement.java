@@ -10,7 +10,19 @@ import com.appnexus.masterdata.api.product.ProductCatalogPages.CategoryPage;
 /** 商品公开用例，HTTP入口不得依赖内部应用实现或SQL映射。 */
 public interface ProductCatalogManagement {
  /** 商品公开操作；沿用可信主体、功能权限、记录范围、字段保护及版本事务约束。 */
- UnitPage units(VerifiedTenantContext c,String keyword,int page,int size);
+ default UnitPage units(VerifiedTenantContext c,String keyword,int page,int size){
+   return units(c,keyword,page,size,null);
+ }
+ /** 分组编码为空时查询全部；分页语义与原查询一致。 */
+ UnitPage units(VerifiedTenantContext c,String keyword,int page,int size,String group);
+ /** 分组名称和创建后不可变的编码；更新须提交当前非负版本。 */
+ record UnitGroupInput(String code,String name,Long version) {}
+ /** 查询同租户分组，由计量单位查询权限控制。 */
+ List<Map<String,Object>> unitGroups(VerifiedTenantContext c);
+ /** 创建分组，由计量单位创建权限控制。 */
+ void createUnitGroup(VerifiedTenantContext c,UnitGroupInput input);
+ /** 修改分组名称，由计量单位编辑权限控制。 */
+ void renameUnitGroup(VerifiedTenantContext c,String code,UnitGroupInput input);
  /** 商品公开操作；沿用可信主体、功能权限、记录范围、字段保护及版本事务约束。 */
  Unit createUnit(VerifiedTenantContext c,UnitInput input);
  /** 商品公开操作；沿用可信主体、功能权限、记录范围、字段保护及版本事务约束。 */

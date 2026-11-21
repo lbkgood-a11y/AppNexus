@@ -4,7 +4,9 @@ import com.appnexus.platform.tenant.VerifiedTenantContext;
 import java.nio.ByteBuffer; import java.sql.Timestamp; import java.time.Instant; import java.util.*;
 import org.springframework.stereotype.Repository; import org.springframework.transaction.annotation.Transactional; import org.springframework.web.context.request.*;
 /** 组织领域持久化适配器；跨聚合写入在事务中校验，租户标识不接受客户端输入。 */
-@Repository public class MyBatisOrganizationDomain implements OrganizationStructure {
+@Repository public class MyBatisOrganizationDomain implements OrganizationStructure, com.appnexus.platform.authorization.DataAccessDeclaration.Executor {
+ /** @return 原组织领域固定租户查询与写入条件保护的三个配置资源 */
+ @Override public java.util.Set<String> enforcedResources(){return java.util.Set.of("organization.type","organization.relation","organization.position", "organization.assignment");}
  private final OrganizationDomainMapper mapper;
  private final com.appnexus.platform.organization.PersonnelCatalog persons;
  private final com.appnexus.platform.authorization.AccessPlanning planning;

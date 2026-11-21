@@ -16,6 +16,7 @@ import static com.appnexus.platform.organization.internal.domain.personnel.Perso
 
 /** 人员详情、十类明细和账号人员关联；真实执行账号与被代表人员始终分别保存，不冒充登录身份。 */
 public final class PersonnelService implements com.appnexus.platform.organization.PersonnelManagement {
+  private final PersonFieldPolicy fieldPolicy;
  private final PersonnelRepository statements;
 
   private final BusinessValueCatalog dictionaries;
@@ -34,7 +35,7 @@ public final class PersonnelService implements com.appnexus.platform.organizatio
   * @param content 固定明细存储内容编解码，不接受任意目标类型
   * @param identities 权威可代表身份端口，不在用例中构造技术适配器
   */
- public PersonnelService(AccessAuthorization access,PersonnelDirectory directory,com.appnexus.platform.organization.port.personnel.PersonnelTransaction transaction,BusinessValueCatalog dictionaries,PersonnelRepository statements,com.appnexus.platform.organization.port.personnel.PersonnelContent content,com.appnexus.platform.organization.PersonnelExecution identities){this.content=content;this.identities=identities;this.statements=statements;this.dictionaries=dictionaries;this.access=access;this.directory=directory;this.tx=transaction;}
+ public PersonnelService(AccessAuthorization access,PersonnelDirectory directory,com.appnexus.platform.organization.port.personnel.PersonnelTransaction transaction,BusinessValueCatalog dictionaries,PersonnelRepository statements,com.appnexus.platform.organization.port.personnel.PersonnelContent content,com.appnexus.platform.organization.PersonnelExecution identities,com.appnexus.platform.authorization.FieldProtection protection,com.appnexus.platform.authorization.DataAccessCatalog catalog){this.fieldPolicy=new PersonFieldPolicy(protection,catalog);this.content=content;this.identities=identities;this.statements=statements;this.dictionaries=dictionaries;this.access=access;this.directory=directory;this.tx=transaction;}
   
   
   
@@ -71,7 +72,11 @@ public final class PersonnelService implements com.appnexus.platform.organizatio
     for(var affiliation:directory.affiliations(c.tenantId(),uuid(id)))details.add(new Detail(affiliation.id(),affiliation.section(),affiliation.values()));
     var catalog=directory.catalog(c.tenantId());
     var assignments=statements.assignments(c.tenantId().toString(),id).stream().map(row->{String member=(String)row.get("member_text");var user=catalog.users().stream().filter(value->value.memberId().equalsIgnoreCase(member)).findFirst();return new Assignment((String)row.get("id"),member,user.map(PersonnelDirectory.User::name).orElse(""),user.isPresent());}).toList();
-    return new Profile(people.getFirst(),audit,details,assignments);
+    var personModes=fieldPolicy.modes(c,PersonFieldPolicy.PERSON);
+    var detailModes=fieldPolicy.modes(c,PersonFieldPolicy.DETAIL);
+    var projected=details.stream().map(detail->new Detail(detail.id(),detail.section(),
+        fieldPolicy.project(PersonFieldPolicy.DETAIL,detail.values(),detailModes))).toList();
+    return new Profile(fieldPolicy.project(people.getFirst(),personModes),audit,projected,assignments,detailModes);
   }
   /**
    * 创建或编辑固定分类明细；组织和岗位仅通过组织公开目录校验，不创建账号任职。
@@ -87,13 +92,14 @@ public final class PersonnelService implements com.appnexus.platform.organizatio
    */
   public Map<String,String> saveDetail(VerifiedTenantContext c,String person,String sectionCode,String id,DetailInput input){
     require(c,id==null?"detail_create":"detail_update");uuid(person);if(id!=null)uuid(id);
-    var section=Section.parse(sectionCode);if(input==null)throw invalid();var values=validate(section,input.values());
-    validateReferences(c,section,values);
+    var section=Section.parse(sectionCode);if(input==null)throw invalid();
     String key=id==null?UUID.randomUUID().toString():id;
     return tx.required(()->{
       bump(c,person,input.version());
       var previous=Map.<String,String>of();
       if(id!=null){var old=statements.readDetailContent(c.tenantId().toString(),person,id,section.code);if(!old.isEmpty())previous=decode(old.getFirst());}
+      var values=validate(section,fieldPolicy.preserve(input.values(),previous,fieldPolicy.modes(c,PersonFieldPolicy.DETAIL)));
+      validateReferences(c,section,values);
       if(!dictionaries.reference(c.tenantId(),c.accountId(),"PersonDetail",person+":"+key,BusinessValueCatalog.PERSON,values,previous))throw invalid();
       if(section==Section.ORGANIZATIONS||section==Section.POSITIONS){
         if(!directory.saveAffiliation(c.tenantId(),uuid(person),section.code,uuid(key),id==null,values))throw changed();
@@ -112,7 +118,7 @@ public final class PersonnelService implements com.appnexus.platform.organizatio
    * @param version 当前人员非负版本 */
   public void deleteDetail(VerifiedTenantContext c,String person,String sectionCode,String id,long version){
     require(c,"detail_delete");uuid(person);uuid(id);var section=Section.parse(sectionCode);
-    tx.run(()->{bump(c,person,version);if(section==Section.ORGANIZATIONS||section==Section.POSITIONS){if(!directory.deleteAffiliation(c.tenantId(),uuid(person),section.code,uuid(id)))throw changed();return;}if(statements.deleteDetail(c.tenantId().toString(),person,id,section.code)!=1)throw changed();});
+    tx.run(()->{if(section.fields.stream().anyMatch(fieldPolicy.modes(c,PersonFieldPolicy.DETAIL)::containsKey))throw PersonFieldPolicy.denied();bump(c,person,version);if(section==Section.ORGANIZATIONS||section==Section.POSITIONS){if(!directory.deleteAffiliation(c.tenantId(),uuid(person),section.code,uuid(id)))throw changed();return;}if(statements.deleteDetail(c.tenantId().toString(),person,id,section.code)!=1)throw changed();});
   }
   /**
    * @param c 可信主体

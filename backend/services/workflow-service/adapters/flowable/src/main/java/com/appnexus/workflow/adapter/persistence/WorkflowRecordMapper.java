@@ -6,7 +6,9 @@ import java.util.Map;
 /** 工作流应用自有表固定映射；后台交付保持可信实例和幂等复核，不接收任意SQL。 */
 @Mapper
 @PlatformScoped(tables={"SKIP","request_id","wf_audit","wf_copy","wf_definition","wf_instance","wf_job","wf_request","wf_task","wf_version"})
-public interface WorkflowRecordMapper {
+public interface WorkflowRecordMapper extends com.appnexus.contracts.businessobject.BusinessObjects.DataAccessExecutor {
+ /** @return 受原用例身份复核和固定存储约束保护的专业服务资源 */
+ @Override default java.util.Set<String> enforcedResources(){return java.util.Set.of("workflow.definition", "workflow.definition.version", "workflow.instance", "workflow.instance.actor", "workflow.task", "workflow.task.assignment", "workflow.job");}
  /** 固定工作流语句1；可信租户、参与者和任务准入仍由原用例验证，业务及引擎共享原事务。 */
  @Select("SELECT v.*,d.enabled FROM wf_version v JOIN wf_definition d ON d.tenant_id=v.tenant_id AND d.id=v.definition_id WHERE v.tenant_id=#{p0} AND d.enabled=TRUE ORDER BY v.definition_id,v.version DESC")
  List<Map<String,Object>> publishedDefinitions(@Param("p0") Object p0);

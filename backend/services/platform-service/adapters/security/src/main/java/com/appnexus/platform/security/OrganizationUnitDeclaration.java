@@ -1,5 +1,6 @@
 package com.appnexus.platform.security;
 import com.appnexus.contracts.businessobject.BusinessObjects.*;
+import com.appnexus.contracts.businessobject.DedicatedOperations;
 
 import com.appnexus.contracts.businessobject.*;
 import java.util.*;
@@ -19,11 +20,15 @@ public final class OrganizationUnitDeclaration implements BusinessObjects.Provid
             operation("update","组织单元：修改","organization.unit:update","PUT","/api/organization/domain/units/{id}"),
             operation("move","组织单元：移动","organization.unit:update","POST","/api/organization/domain/units/{id}/move"),
             operation("inspectImpact","查看组织","organization.unit:read","GET","/api/organization/domain/units/{id}/impact"),
-            operation("summary","组织单元：查看摘要","organization.unit:read","GET","/api/organization/summaries"));
+            operation("summary","组织单元：查看摘要","organization.unit:read","GET","/api/organization/summaries"),
+                DedicatedOperations.operation("OrganizationUnit", "listLeaders", "组织负责人：查看列表", "Read organization units", "organization.unit:read",
+                        new PageOperation("organization/index", "/organization/manage", "组织负责人：查看列表", "Read organization units", "GET", "/api/organization/domain/leaders")),
+                DedicatedOperations.operation("OrganizationUnit", "setLeader", "组织负责人：设置", "Update organization units", "organization.unit:update",
+                        new PageOperation("organization/index", "/organization/manage", "组织负责人：设置", "Update organization units", "PUT", "/api/organization/domain/leaders")));
         var scopes=new TreeMap<String,Set<String>>();
         operations.forEach(op->scopes.put(op.operationCode(),op.permissionCode().equals("organization.unit:create")?Set.of("ALL"):Set.of("ALL","ORGANIZATION","ORGANIZATION_SUBTREE")));
         var access=new DataAccess("TENANT",List.of(new DataResource("organization.unit","","组织单元","Organization unit",List.of())),scopes);
-        return new Descriptor("OrganizationUnit","组织单元","Organization unit","organization",1,Category.MASTER_DATA,List.of(),operations,access);
+        return new Descriptor("OrganizationUnit","组织单元","Organization unit","organization",2,Category.MASTER_DATA,List.of(),operations,access);
     }
     /** 只保留已接通的直接执行；页面控制不能创建免鉴权入口，也不提供未接通审批或打印。 */
     private static Operation operation(String code,String zh,String permission,String method,String path){

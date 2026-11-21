@@ -3,7 +3,7 @@ import {computed,onMounted,reactive,ref} from "vue";
 import {useI18n} from "vue-i18n";
 import {ElMessage,type FormInstance,type FormRules} from "element-plus";
 import {AppIcon} from "@appnexus/icons";
-import {FloatingError,InfoHint,ManagementTable,ManagedDialog,RecordAuditDetails,setErrorFeedback,type ManagementColumn} from "@appnexus/ui";
+import {BusinessWorkspace,FloatingError,InfoHint,ManagementTable,ManagedDialog,RecordAuditDetails,setErrorFeedback,type ManagementColumn} from "@appnexus/ui";
 import type {BusinessObjectApi,CodingRuleInput,CodingRuleRow,CodingSegment} from "./index";
 /**
  * 独立编码规则版本管理；复用原分段编辑能力和公共表格、弹窗。
@@ -18,9 +18,24 @@ const rules=computed<FormRules>(()=>({name:[{required:true,whitespace:true,max:1
 const preview=computed(()=>draft.rule.segments.map(s=>s.kind==='TEXT'?s.value:s.kind==='DATE'?({yyyy:'2026',yyyyMM:'202611',yyyyMMdd:'20261109'}[s.value]??''):"1".padStart(s.width,'0')).join(''));
 async function load(){loading.value=true;error.value="";try{rows.value=await props.api.codingRules();}catch(e){await setErrorFeedback(error,props.errorText(e));}finally{loading.value=false;}}
 const dialog=ref(false);
+const keyword = ref("");
+const appliedKeyword = ref("");
+const visibleRows = computed(() => rows.value.filter(row =>
+ [row.ruleKey, row.name].some(value => value.toLowerCase().includes(appliedKeyword.value))
+));
+
+/** 筛选已授权的完整版本列表；追加版本仍从完整列表计算并发校验版本。 */
+function search() {
+ appliedKeyword.value = keyword.value.trim().toLowerCase();
+}
+
+function resetSearch() {
+ keyword.value = "";
+ search();
+}
 const columns=computed<ManagementColumn[]>(()=>[
- {key:'ruleKey',label:t('coding.ruleKey'),minWidth:160},{key:'name',label:t('businessObject.name'),minWidth:160},
- {key:'ruleVersion',label:t('coding.version'),width:100},{key:'operations',label:t('businessObject.operations'),width:160,fixed:'right'}
+ {key:'ruleKey',prop:'ruleKey',label:t('coding.ruleKey'),minWidth:160},{key:'name',prop:'name',label:t('businessObject.name'),minWidth:160},
+ {key:'ruleVersion',prop:'ruleVersion',label:t('coding.version'),width:100},{key:'operations',label:t('businessObject.operations'),width:160,fixed:'right'}
 ]);
 function select(row?:CodingRuleRow){existing.value=row;key.value=row?.ruleKey??"";
  Object.assign(draft,row?{revision:Math.max(...rows.value.filter(r=>r.ruleKey===row.ruleKey).map(r=>r.ruleVersion)),name:row.name,rule:JSON.parse(JSON.stringify(row.rule))}:{revision:-1,name:"",rule:{segments:[{kind:"TEXT",value:"PU",width:0},{kind:"DATE",value:"yyyyMMdd",width:0},{kind:"SEQUENCE",value:"",width:6}],reset:"DAY",zoneId:"Asia/Shanghai"}});
@@ -36,13 +51,28 @@ async function save(){
 onMounted(load);
 </script>
 <template>
- <div>
+ <div class="management-page">
+ <BusinessWorkspace :title="t('coding.rulesTitle')">
+ <template #search>
+  <el-form inline class="management-filter" @submit.prevent="search">
+   <el-form-item :label="t('coding.ruleSearch')">
+    <el-input v-model="keyword" clearable maxlength="100" />
+   </el-form-item>
+   <div class="management-filter-actions">
+    <el-button v-operation="'CodingRule.list'" type="primary" native-type="submit" :disabled="loading||busy">{{t('masterData.search')}}</el-button>
+    <el-button v-operation="'CodingRule.list'" :disabled="loading||busy" @click="resetSearch">{{t('masterData.reset')}}</el-button>
+   </div>
+  </el-form>
+ </template>
+ <template #data>
  <FloatingError v-if="error" :title="error" scope="error" type="error" :closable="false" />
- <ManagementTable :title="t('coding.rulesTitle')" :rows="rows" :columns="columns" :loading="loading" :busy="busy" embedded @refresh="load">
+ <ManagementTable :title="t('coding.rulesTitle')" :rows="visibleRows" :columns="columns" :loading="loading" :busy="busy" embedded @refresh="load">
   <template #titleHelp><InfoHint :content="t('coding.rulesHint')" /></template>
-  <template #actions><el-button v-operation="'CodingRule.save'" type="primary" :disabled="busy" @click="select()">{{t('coding.newRule')}}</el-button></template>
-  <template #operations="{row}"><el-button v-operation="'CodingRule.save'" link type="primary" :disabled="busy" @click="select(row)">{{t('coding.newVersion')}}</el-button></template>
+  <template #actions><el-button v-operation="'CodingRule.save'" type="primary" :disabled="loading||busy" @click="select()">{{t('coding.newRule')}}</el-button></template>
+  <template #operations="{row}"><el-button v-operation="'CodingRule.save'" link type="primary" :disabled="loading||busy" @click="select(row)">{{t('coding.newVersion')}}</el-button></template>
  </ManagementTable>
+ </template>
+ </BusinessWorkspace>
  <ManagedDialog v-model="dialog" :title="t(existing?'coding.newVersion':'coding.newRule')" width="min(1000px, calc(100vw - 32px))" :close-on-click-modal="false" :close-on-press-escape="!busy" :busy="busy">
   <el-form ref="form" :model="draft" :rules="rules" label-position="top" class="business-border-label-form encoder-form">
    <h3 class="encoder-heading">{{t('coding.basicInfo')}}</h3>

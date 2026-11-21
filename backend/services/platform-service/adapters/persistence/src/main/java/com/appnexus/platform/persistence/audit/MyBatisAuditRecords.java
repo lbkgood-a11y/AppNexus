@@ -5,7 +5,9 @@ import com.appnexus.platform.audit.port.AuditRecords;
 import org.springframework.stereotype.Component;
 /** 审计固定读模型存储适配，数据库时间在边界按UTC转Instant，不在应用泄漏JDBC类型。 */
 @Component
-public final class MyBatisAuditRecords implements AuditRecords {
+public final class MyBatisAuditRecords implements AuditRecords, com.appnexus.platform.authorization.DataAccessDeclaration.Executor {
+ /** @return 由原权限用例和该适配器的固定数据边界共同约束的资源编码 */
+ @Override public java.util.Set<String> enforcedResources(){return java.util.Set.of("audit.platform", "audit.tenant");}
  private final AuditQueriesMapper mapper;
  /** @param mapper 原固定审计SQL映射 */
  public MyBatisAuditRecords(AuditQueriesMapper mapper){this.mapper=mapper;}

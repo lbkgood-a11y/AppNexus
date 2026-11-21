@@ -11,6 +11,8 @@
     <dependency><groupId>com.appnexus</groupId><artifactId>mybatis-scope</artifactId><version>${project.version}</version></dependency>
     <!-- 页面操作元数据经公开契约登记，不改变真实授权执行。 -->
     <dependency><groupId>com.appnexus</groupId><artifactId>operation-contracts</artifactId><version>${project.version}</version></dependency>
+    <!-- 打印管理对象通过统一公开契约声明，不依赖平台权限实现。 -->
+    <dependency><groupId>com.appnexus</groupId><artifactId>business-object-contracts</artifactId><version>${project.version}</version></dependency>
     <!-- 发布校验与状态回归使用 JUnit/AssertJ；仅测试期生效，不进入运行产物。 -->
     <dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-test</artifactId><scope>test</scope></dependency>
     <dependency><groupId>com.appnexus</groupId><artifactId>print-core</artifactId><version>${project.version}</version></dependency>

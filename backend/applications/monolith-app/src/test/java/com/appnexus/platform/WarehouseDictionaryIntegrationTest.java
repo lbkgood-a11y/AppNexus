@@ -27,6 +27,42 @@ class WarehouseDictionaryIntegrationTest extends DatabaseTestSupport {
   return new VerifiedTenantContext(actor,tenant,member,1);
  }
  private void request(VerifiedTenantContext c){var r=new org.springframework.mock.web.MockHttpServletRequest();r.setAttribute(VerifiedTenantContext.class.getName(),c);org.springframework.web.context.request.RequestContextHolder.setRequestAttributes(new org.springframework.web.context.request.ServletRequestAttributes(r));}
+ /** 当前租户字段策略在查询与更新执行，省略受限字段只能保留原值。 */
+ @Test void warehouseFieldPolicyProtectsReadAndRejectsOverwrite(){
+  var c=tenant();request(c);
+  try{
+   var kind=MasterData.Kind.WAREHOUSE;
+   assertThat(master.warehouseFieldRestrictions(c)).isEmpty();
+   var input=new MasterData.Input("PROTECTED","字段测试",Map.of("phone","13800138000","email","fixture@example.test"),0);
+   String id=master.create(c,kind,input).get("id");
+   assertThat(master.list(c,kind,"",null,1,1,id).rows().getFirst().attributes())
+       .containsEntry("phone","13800138000").containsEntry("email","fixture@example.test");
+   for(var entry:Map.of("phone","MASKED","email","HIDDEN").entrySet()){
+    int inserted=jdbc.update("INSERT INTO access_role_field_security(role_id,resource_type,field_code,display_mode) "+
+        "SELECT role_id,'masterdata.warehouse',?,? FROM access_member_role WHERE tenant_id=UUID_TO_BIN(?) AND member_id=UUID_TO_BIN(?)",
+        entry.getKey(),entry.getValue(),c.tenantId().toString(),c.memberId().toString());
+    assertThat(inserted).isPositive();
+   }
+   var detail=master.list(c,kind,"",null,1,1,id).rows().getFirst();
+   assertThat(master.warehouseFieldRestrictions(c)).containsKeys("phone","email");
+   assertThatThrownBy(()->master.warehouseFieldRestrictions(null)).hasMessage("MASTER_DATA_DENIED");
+   assertThat(detail.attributes()).doesNotContainKey("email").containsKey("phone");
+   assertThat(detail.attributes().get("phone")).isNotEqualTo("13800138000");
+   assertThat(master.list(c,kind,"",null,1,20).rows()).allSatisfy(row->assertThat(row.attributes()).doesNotContainKey("email"));
+   assertThatThrownBy(()->master.update(c,kind,id,new MasterData.Input("PROTECTED","拒绝",Map.of("email",""),detail.version())))
+       .isInstanceOf(MasterData.Rejection.class).hasMessage("DATA_FIELD_WRITE_DENIED");
+   assertThatThrownBy(()->master.update(c,kind,id,input))
+       .isInstanceOf(MasterData.Rejection.class).hasMessage("DATA_FIELD_WRITE_DENIED");
+   assertThatThrownBy(()->master.create(c,kind,new MasterData.Input("CREATE-DENIED","禁止创建",input.attributes(),0)))
+       .isInstanceOf(MasterData.Rejection.class).hasMessage("DATA_FIELD_WRITE_DENIED");
+   var afterRejection=master.list(c,kind,"",null,1,1,id).rows().getFirst();
+   assertThat(afterRejection.version()).isEqualTo(detail.version());
+   assertThat(afterRejection.audit()).isEqualTo(detail.audit());
+   master.update(c,kind,id,new MasterData.Input("PROTECTED","允许改名",Map.of(),detail.version()));
+   assertThat(jdbc.queryForObject("SELECT email FROM md_warehouse WHERE tenant_id=UUID_TO_BIN(?) AND id=UUID_TO_BIN(?)",
+       String.class,c.tenantId().toString(),id)).isEqualTo("fixture@example.test");
+  }finally{org.springframework.web.context.request.RequestContextHolder.resetRequestAttributes();}
+ }
  @Test void dictionaryLifecycleAndIsolation(){
   var c=tenant();request(c);
   try{

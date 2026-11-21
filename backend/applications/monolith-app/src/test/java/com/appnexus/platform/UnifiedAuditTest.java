@@ -17,13 +17,52 @@ class UnifiedAuditTest extends DatabaseTestSupport {
     @Autowired AuditQueries audit;
     @Autowired JdbcTemplate jdbc;
     @Autowired MyBatisPlatformAdministration administration;
+    @Autowired com.appnexus.platform.persistence.organization.OrganizationAdministratorBootstrap bootstrap;
+
+    /** 平台代查与租户本人查询使用各自角色策略，同一审计摘要不会跨管理域套用字段权限。 */
+    @Test void auditTargetIsProtectedInEachActorDomain(){
+        administration.initializeAdministrator("admin-test");
+        String platform=jdbc.queryForObject("SELECT BIN_TO_UUID(id) FROM identity_account WHERE username='admin-test'",String.class);
+        UUID tenant=UUID.randomUUID(),tenantActor=UUID.randomUUID(),member=UUID.randomUUID(),target=UUID.randomUUID(),role=UUID.randomUUID();
+        jdbc.update("INSERT INTO platform_tenant(id,name) VALUES(UUID_TO_BIN(?),'Audit field test')",tenant.toString());
+        jdbc.update("INSERT INTO identity_account(id,username,display_name,password_hash) VALUES(UUID_TO_BIN(?),?,'Audit field test','unused')",tenantActor.toString(),"audit-"+tenantActor);
+        jdbc.update("INSERT INTO tenant_member(id,tenant_id,account_id) VALUES(UUID_TO_BIN(?),UUID_TO_BIN(?),UUID_TO_BIN(?))",member.toString(),tenant.toString(),tenantActor.toString());
+        bootstrap.initialize(tenant,member);
+        jdbc.update("INSERT INTO platform_administration_audit(actor_account_id,tenant_id,target_id,action) VALUES(UUID_TO_BIN(?),UUID_TO_BIN(?),UUID_TO_BIN(?),'AUDIT_FIELD_TEST')",platform,tenant.toString(),target.toString());
+        var current=new com.appnexus.platform.tenant.VerifiedTenantContext(tenantActor,tenant,member,1);
+        assertThat(target(audit.platform(UUID.fromString(platform),tenant,1,20))).isEqualToIgnoringCase(target.toString());
+        assertThat(target(audit.tenant(current,1,20))).isEqualToIgnoringCase(target.toString());
+        jdbc.update("INSERT INTO access_role(id,scope_type,role_type,code,name,status) VALUES(UUID_TO_BIN(?),'PLATFORM','CUSTOM',?,'Audit field test','ENABLED')",role.toString(),"audit_"+role.toString().replace("-",""));
+        jdbc.update("INSERT INTO access_account_role(account_id,role_id,scope_type,assigned_by) VALUES(UUID_TO_BIN(?),UUID_TO_BIN(?),'PLATFORM',UUID_TO_BIN(?))",platform,role.toString(),platform);
+        jdbc.update("INSERT INTO access_role_field_security(role_id,resource_type,field_code,display_mode) VALUES(UUID_TO_BIN(?),'audit.platform','target','HIDDEN')",role.toString());
+        try{
+            assertThat(target(audit.platform(UUID.fromString(platform),tenant,1,20))).isNull();
+            assertThat(target(audit.tenant(current,1,20))).isEqualToIgnoringCase(target.toString());
+            assertThat(jdbc.update("INSERT INTO access_role_field_security(role_id,resource_type,field_code,display_mode) "+
+                "SELECT role_id,'audit.tenant','target','HIDDEN' FROM access_member_role WHERE tenant_id=UUID_TO_BIN(?) AND member_id=UUID_TO_BIN(?)",
+                tenant.toString(),member.toString())).isPositive();
+            assertThat(target(audit.tenant(current,1,20))).isNull();
+        }finally{
+            jdbc.update("DELETE FROM access_role_field_security WHERE role_id=UUID_TO_BIN(?)",role.toString());
+        }
+    }
+
+    private String target(AuditQueries.Page page){
+        return page.items().stream().filter(entry->entry.action().equals("AUDIT_FIELD_TEST")).findFirst().orElseThrow().target();
+    }
     @Test void platformTenantQueryCannotMixForeignAuditAndRetainsTrace(){
         administration.initializeAdministrator("admin-test");UUID actor=UUID.fromString(jdbc.queryForObject("SELECT BIN_TO_UUID(id) FROM identity_account WHERE username='admin-test'",String.class));
         UUID a=UUID.randomUUID(),b=UUID.randomUUID();String trace=UUID.randomUUID().toString().replace("-","");
         jdbc.update("INSERT INTO integration_call_audit(tenant_id,client_id,operation,trace_id,status) VALUES(UUID_TO_BIN(?),'test-a','dictionaries.items:read',?,200)",a.toString(),trace);
         jdbc.update("INSERT INTO integration_call_audit(tenant_id,client_id,operation,trace_id,status) VALUES(UUID_TO_BIN(?),'test-b','dictionary.references',?,201)",b.toString(),UUID.randomUUID().toString().replace("-",""));
         var result=audit.platform(actor,a,1,20);assertThat(result.total()).isEqualTo(1);assertThat(result.items().getFirst().traceId()).isEqualTo(trace);assertThat(result.items().getFirst().actor()).isEqualTo("test-a");
-        assertThatThrownBy(()->audit.platform(UUID.randomUUID(),a,1,20)).isInstanceOf(org.springframework.web.ErrorResponseException.class);
-        assertThatThrownBy(()->audit.platform(actor,a,0,20)).isInstanceOf(org.springframework.web.ErrorResponseException.class);
+        assertThatThrownBy(()->audit.platform(UUID.randomUUID(),a,1,20)).isInstanceOfSatisfying(com.appnexus.platform.audit.AuditQueries.Rejection.class, error -> {
+            assertThat(error.status()).isEqualTo(403);
+            assertThat(error).hasMessage("AUDIT_QUERY_DENIED");
+        });
+        assertThatThrownBy(()->audit.platform(actor,a,0,20)).isInstanceOfSatisfying(com.appnexus.platform.audit.AuditQueries.Rejection.class, error -> {
+            assertThat(error.status()).isEqualTo(400);
+            assertThat(error).hasMessage("INVALID_AUDIT_QUERY");
+        });
     }
 }

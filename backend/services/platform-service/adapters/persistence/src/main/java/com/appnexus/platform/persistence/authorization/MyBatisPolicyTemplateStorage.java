@@ -9,7 +9,9 @@ import org.springframework.transaction.support.TransactionTemplate;
 import tools.jackson.databind.json.JsonMapper;
 /** 模板固定SQL、JSON与REQUIRED事务技术适配，角色替换仍使用正式统一权限用例。 */
 @Component
-public final class MyBatisPolicyTemplateStorage implements PolicyTemplateStorage {
+public final class MyBatisPolicyTemplateStorage implements PolicyTemplateStorage, com.appnexus.platform.authorization.DataAccessDeclaration.Executor {
+ /** @return 由原权限用例和该适配器的固定数据边界共同约束的资源编码 */
+ @Override public java.util.Set<String> enforcedResources(){return java.util.Set.of("authorization.template.platform", "authorization.template.tenant");}
  private final AuthorizationTemplateMapper mapper;private final TransactionTemplate tx;private final JsonMapper json=JsonMapper.builder().findAndAddModules().build();
  /** @param mapper 原固定模板SQL @param manager 同授权执行器数据源事务管理器 */
  public MyBatisPolicyTemplateStorage(AuthorizationTemplateMapper mapper,PlatformTransactionManager manager){this.mapper=mapper;tx=new TransactionTemplate(manager);}

@@ -66,7 +66,7 @@ public final class OperationRegistry implements com.appnexus.platform.configurat
      if(matches.size()!=1)throw new IllegalStateException("操作引用不存在或不唯一："+binding.id());
      var descriptor=matches.getFirst().getKey();var operation=matches.getFirst().getValue();var pages=new TreeSet<String>();
      if(operation.pageOperation()!=null)pages.add(operation.pageOperation().pageKey());operation.aliases().forEach(alias->pages.add(alias.pageOperation().pageKey()));
-     value=new Definition(operation.operationId(),descriptor.objectType(),operation.operationCode(),List.copyOf(pages),operation.nameZh(),operation.nameEn(),List.of(operation.permissionCode()),"业务对象归属、版本和操作状态由原业务用例复核",List.copyOf(endpoints),binding.eligibility());
+     value=new Definition(operation.operationId(),descriptor.objectType(),operation.operationCode(),List.copyOf(pages),operation.nameZh(),operation.nameEn(),operation.permissionCode().isBlank()?List.of():List.of(operation.permissionCode()),"业务对象归属、版本和操作状态由原业务用例复核",List.copyOf(endpoints),binding.eligibility());
     }
     var prior=result.putIfAbsent(value.id(),value);
     if(prior!=null&&!prior.equals(value))throw new IllegalStateException("重复操作契约："+value.id());

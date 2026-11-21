@@ -6,7 +6,9 @@ import com.appnexus.platform.organization.port.personnel.PersonRepository;
 import org.springframework.stereotype.Component;
 /** 人员固定存储适配；SQL留在Mapper，驱动时间在边界转换，写入参与原用例事务。 */
 @Component
-public final class MyBatisPersonRepository implements PersonRepository {
+public final class MyBatisPersonRepository implements PersonRepository, com.appnexus.platform.authorization.DataAccessDeclaration.Executor {
+ /** @return 由原权限用例和该适配器的固定数据边界共同约束的资源编码 */
+ @Override public java.util.Set<String> enforcedResources(){return java.util.Set.of("masterdata.person");}
  private final PersonRecordMapper mapper;
  /** @param mapper 固定人员SQL映射，不接收自由SQL */
  public MyBatisPersonRepository(PersonRecordMapper mapper){this.mapper=mapper;}

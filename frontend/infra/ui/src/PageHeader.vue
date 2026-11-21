@@ -11,7 +11,12 @@ defineProps<{
   /** 已按当前语言翻译的面包屑文本，最后一项表示当前页。 */
   breadcrumbs?: string[];
 }>();
-defineSlots<{ actions?: () => unknown; meta?: () => unknown }>();
+defineSlots<{
+  actions?: () => unknown;
+  meta?: () => unknown;
+  /** 详情中的变更记录等末端操作；即使标题隐藏也保持右对齐。 */
+  trailing?: () => unknown;
+}>();
 </script>
 
 <template>
@@ -25,6 +30,18 @@ defineSlots<{ actions?: () => unknown; meta?: () => unknown }>();
         <p v-if="description">{{ description }}</p>
       </div>
       <div v-if="$slots.actions" class="page-header__actions"><slot name="actions" /></div>
+      <div v-if="$slots.trailing" class="page-header__trailing"><slot name="trailing" /></div>
     </div>
   </header>
 </template>
+
+<style scoped>
+.page-header__trailing {
+  display: flex;
+  justify-content: flex-end;
+  margin-inline-start: auto;
+}
+@media (max-width: 600px) {
+  .page-header__trailing :deep(.el-button) { min-height: 44px; }
+}
+</style>

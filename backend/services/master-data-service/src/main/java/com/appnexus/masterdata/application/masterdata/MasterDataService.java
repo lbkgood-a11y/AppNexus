@@ -2,6 +2,10 @@ package com.appnexus.masterdata.application.masterdata;
 import com.appnexus.masterdata.domain.geography.GeographyStandards;
 
 import com.appnexus.platform.authorization.AccessAuthorization;
+import com.appnexus.platform.authorization.FieldProtection;
+import com.appnexus.platform.authorization.FieldSecurity;
+import com.appnexus.platform.authorization.DataAccessCatalog;
+import com.appnexus.platform.authorization.PermissionCatalog;
 import com.appnexus.platform.tenant.VerifiedTenantContext;
 import java.util.*;
 import com.appnexus.platform.configuration.BusinessValueCatalog;
@@ -18,6 +22,8 @@ public final class MasterDataService implements com.appnexus.masterdata.api.mast
   private final com.appnexus.masterdata.application.RecordTransaction transaction;
   private final com.appnexus.masterdata.application.PartnerAccess partner;
   private final AccessAuthorization access;
+  private final FieldProtection fieldProtection;
+  private final List<FieldSecurity.Descriptor> warehouseProtectedFields;
   /**
    * @param access 可信功能权限公开端口，每次调用重新检查
    * @param dictionaries 字典选项及引用公开端口，不读取其他模块表
@@ -26,7 +32,25 @@ public final class MasterDataService implements com.appnexus.masterdata.api.mast
    * @param transaction 同一数据源的用例事务端口
    * @param partner 客商行与字段准入端口，缺省拒绝客商能力
    */
-  public MasterDataService(AccessAuthorization access,BusinessValueCatalog dictionaries,com.appnexus.masterdata.application.masterdata.MasterDataRepository records,com.appnexus.masterdata.application.MasterDataRelations relations,com.appnexus.masterdata.application.RecordTransaction transaction,com.appnexus.masterdata.application.PartnerAccess partner){this.access=access;this.dictionaries=dictionaries;this.records=records;this.relations=relations;this.transaction=transaction;this.partner=partner;}
+  public MasterDataService(AccessAuthorization access,BusinessValueCatalog dictionaries,com.appnexus.masterdata.application.masterdata.MasterDataRepository records,com.appnexus.masterdata.application.MasterDataRelations relations,com.appnexus.masterdata.application.RecordTransaction transaction,com.appnexus.masterdata.application.PartnerAccess partner){
+    this(access,dictionaries,records,relations,transaction,partner,null,null);
+  }
+
+  /**
+   * 装配仓库字段保护；字段来自同一 Provider 的租户目录。
+   * @param fieldProtection 平台实时字段执行器；仅独立测试装配可与目录一起缺省
+   * @param catalog 已装配的统一字段目录
+   */
+  public MasterDataService(AccessAuthorization access,BusinessValueCatalog dictionaries,MasterDataRepository records,
+      com.appnexus.masterdata.application.MasterDataRelations relations,
+      com.appnexus.masterdata.application.RecordTransaction transaction,com.appnexus.masterdata.application.PartnerAccess partner,
+      FieldProtection fieldProtection,DataAccessCatalog catalog){
+    this.access=access;this.dictionaries=dictionaries;this.records=records;this.relations=relations;this.transaction=transaction;this.partner=partner;
+    this.fieldProtection=fieldProtection;
+    this.warehouseProtectedFields=catalog==null?List.of():catalog.fields(PermissionCatalog.ScopeType.TENANT).stream()
+        .filter(field->field.resource().equals(Kind.WAREHOUSE.resource()))
+        .toList();
+  }
   private com.appnexus.masterdata.application.PartnerAccess partner(){if(partner==null)throw new Rejection(403,"MASTER_DATA_DENIED");return partner;}
   /** 当前客商读取权下返回归属候选与字段限制，不读取账号资料。 */
   public Object partnerAccess(VerifiedTenantContext c){require(c,Kind.PARTNER,"read");return transaction.execute(()->partner().metadata(c),null);}
@@ -36,6 +60,13 @@ public final class MasterDataService implements com.appnexus.masterdata.api.mast
 
   /** 仓库读取权限仅允许查询本租户分类，不授予字典维护权限。 */
   public Object warehouseOptions(VerifiedTenantContext c){require(c,Kind.WAREHOUSE,"read");return dictionaries.options(c.tenantId(),BusinessValueCatalog.WAREHOUSE);}
+
+  /** 获取表单预加载所需的实时限制；权限不足或执行器未装配时拒绝。 */
+  @Override public Map<String,FieldSecurity.Mode> warehouseFieldRestrictions(VerifiedTenantContext c){
+    require(c,Kind.WAREHOUSE,"read");
+    if(fieldProtection==null)throw new Rejection(403,"MASTER_DATA_DENIED");
+    return fieldProtection.restrictions(warehouseSubject(c),Kind.WAREHOUSE.resource());
+  }
 
   /** 业务读取权下的地理摘要，避免给客商、仓库操作员额外授予地理维护权限。 */
   public Object geographyCatalog(VerifiedTenantContext c,Kind kind){require(c,kind,"read");return relations.geographyCatalog(c);}
@@ -115,6 +146,12 @@ public final class MasterDataService implements com.appnexus.masterdata.api.mast
    */
   public Page list(VerifiedTenantContext c,Kind kind,String keyword,Boolean enabled,int page,int size,String id,String scope) {
     require(c,kind,"read");
+    if(kind==Kind.WAREHOUSE&&fieldProtection!=null)return transaction.execute(()->{
+      var pageResult=relations.list(c,kind,keyword,enabled,page,size,id,scope);
+      var subject=warehouseSubject(c);
+      var modes=fieldProtection.restrictions(subject,kind.resource());
+      return new Page(pageResult.rows().stream().map(row->protectWarehouse(row,modes)).toList(),pageResult.total());
+    },null);
     return kind==Kind.PARTNER?transaction.execute(()->relations.list(c,kind,keyword,enabled,page,size,id,scope),null):relations.list(c,kind,keyword,enabled,page,size,id,scope);
   }
 
@@ -131,7 +168,7 @@ public final class MasterDataService implements com.appnexus.masterdata.api.mast
   public Map<String,String> create(VerifiedTenantContext c,Kind kind,Input input) {
     require(c,kind,"create");if(input==null)throw invalid();String id=UUID.randomUUID().toString();
     return transaction.execute(()->{
-        var effective=kind==Kind.PARTNER?partner().prepare(c,null,input,Map.of()):input;
+        var effective=kind==Kind.PARTNER?partner().prepare(c,null,input,Map.of()):warehouseInput(c,kind,input,Map.of());
         var values=validate(kind,effective);
         if(kind==Kind.PARTNER)partner().target(c,effective.organizationId(),"create",true);
         relations.prepareStorage(c,kind,null,values);
@@ -161,7 +198,7 @@ public final class MasterDataService implements com.appnexus.masterdata.api.mast
     transaction.execute(()->{
       String oldOrganization=kind==Kind.PARTNER?partner().lock(c,id,"update"):null;
       var previous=(kind==Kind.PARTNER||kind==Kind.WAREHOUSE)?previousValues(c,kind,id):Map.<String,String>of();
-      var effective=kind==Kind.PARTNER?partner().prepare(c,id,input,previous):input;
+      var effective=kind==Kind.PARTNER?partner().prepare(c,id,input,previous):warehouseInput(c,kind,input,previous);
       var values=validate(kind,effective);
       String organization=input.organizationId()==null?oldOrganization:input.organizationId();
       if(kind==Kind.PARTNER)partner().target(c,organization,"update",false);
@@ -176,6 +213,39 @@ public final class MasterDataService implements com.appnexus.masterdata.api.mast
       relations.synchronizeGeography(c,kind);
       audit(c,kind,id);return null;
     },null);
+  }
+
+  private AccessAuthorization.Subject warehouseSubject(VerifiedTenantContext c){
+    return AccessAuthorization.Subject.tenant(c.accountId(),c.tenantId(),c.memberId());
+  }
+
+  /** 同页只读一次限制，隐藏字段从响应移除，遮盖使用平台算法。 */
+  private Row protectWarehouse(Row row,Map<String,FieldSecurity.Mode> modes){
+    var values=new LinkedHashMap<>(row.attributes());
+    for(var field:warehouseProtectedFields){
+      var mode=modes.get(field.field());
+      if(mode==null)continue;
+      if(!field.modes().contains(mode))throw new SecurityException("DATA_FIELD_MODE_UNSUPPORTED");
+      if(mode==FieldSecurity.Mode.HIDDEN)values.remove(field.field());
+      else if(values.containsKey(field.field()))
+        values.put(field.field(),FieldSecurity.display(field.kind(),values.get(field.field()),mode));
+    }
+    return new Row(row.id(),row.code(),row.name(),Collections.unmodifiableMap(values),row.enabled(),row.version(),
+        row.audit(),row.contacts(),row.bankAccounts(),row.organizationId(),Map.of(Kind.WAREHOUSE.resource(),modes));
+  }
+
+  /** 限制字段仅可省略，拒绝任何显式提交，避免利用写入结果猜测隐藏原值。 */
+  private Input warehouseInput(VerifiedTenantContext c,Kind kind,Input input,Map<String,String> previous){
+    if(kind!=Kind.WAREHOUSE||fieldProtection==null)return input;
+    var modes=fieldProtection.restrictions(warehouseSubject(c),kind.resource());
+    var supplied=input.attributes()==null?Map.<String,String>of():input.attributes();
+    var values=new LinkedHashMap<>(supplied);
+    for(var field:modes.keySet()){
+      if(supplied.containsKey(field))
+        throw new Rejection(403,"DATA_FIELD_WRITE_DENIED");
+      if(previous.containsKey(field))values.put(field,previous.get(field));else values.remove(field);
+    }
+    return new Input(input.code(),input.name(),values,input.version(),input.contacts(),input.bankAccounts(),input.organizationId());
   }
 
   /**

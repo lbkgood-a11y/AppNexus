@@ -4,6 +4,7 @@ import java.time.Instant;
 /** 已有账号邀请公开用例，不创建新账号、不信任未验证邮箱、不恢复历史授权。 */
 public interface TenantInvitations {
     /** 公开管理摘要不返回凭证摘要、账号联系方式或权限信息。 */
+    /** @param accountId 受邀账号；当前平台账号受字段隐藏策略限制时返回 null */
     public record View(UUID id,UUID tenantId,UUID accountId,String status,Instant expiresAt){}
     /** 随机邀请凭证仅返回一次，必须通过已核实对象的受控渠道传递。 */
     public record Created(View invitation,String token){@Override public String toString(){return "Created[redacted]";}}

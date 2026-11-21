@@ -4,7 +4,9 @@ import com.appnexus.platform.organization.port.personnel.PersonnelRepository;
 import org.springframework.stereotype.Component;
 /** 人员明细固定仓储；驱动时间转换为Instant，权限与完整用例事务由应用协调。 */
 @Component
-public final class MyBatisPersonnelRepository implements PersonnelRepository {
+public final class MyBatisPersonnelRepository implements PersonnelRepository, com.appnexus.platform.authorization.DataAccessDeclaration.Executor {
+ /** @return 由原权限用例和该适配器的固定数据边界共同约束的资源编码 */
+ @Override public java.util.Set<String> enforcedResources(){return java.util.Set.of("masterdata.person.detail");}
  private final PersonnelMapper mapper;
  /** @param mapper 固定人员明细SQL映射 */
  public MyBatisPersonnelRepository(PersonnelMapper mapper){this.mapper=mapper;}

@@ -6,7 +6,9 @@ import java.util.Map;
 /** PrintRuntime固定SQL映射；不接收SQL或标识符，原用例逐次验证可信租户及操作。 */
 @Mapper
 @PlatformScoped(tables={"SKIP","print_device","print_job","print_job_artifact","print_template","print_template_version"})
-public interface PrintRuntimeMapper {
+public interface PrintRuntimeMapper extends com.appnexus.contracts.businessobject.BusinessObjects.DataAccessExecutor {
+ /** @return 受原用例身份复核和固定存储约束保护的专业服务资源 */
+ @Override default java.util.Set<String> enforcedResources(){return java.util.Set.of("print.device", "print.job", "print.job.artifact", "print.template", "print.template.version");}
  /** 固定业务语句1；准入、参数规则、聚合锁及事务由原用例负责，所有值绑定。 */
  @Insert("INSERT INTO print_template(tenant_id,id,code,name,category,data_contract,scope_json,draft_json,created_by,updated_by) VALUES(UUID_TO_BIN(#{p0}),UUID_TO_BIN(#{p1}),#{p2},#{p3},#{p4},#{p5},CAST(#{p6} AS JSON),CAST(#{p7} AS JSON),UUID_TO_BIN(#{p8}),UUID_TO_BIN(#{p9}))")
  int createTemplate(@Param("p0") Object p0,@Param("p1") Object p1,@Param("p2") Object p2,@Param("p3") Object p3,@Param("p4") Object p4,@Param("p5") Object p5,@Param("p6") Object p6,@Param("p7") Object p7,@Param("p8") Object p8,@Param("p9") Object p9);

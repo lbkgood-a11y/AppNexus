@@ -16,6 +16,8 @@ public interface ProductManagement {
  Object list(VerifiedTenantContext c,String name,String code,String categoryId,String form,String status,boolean archived,int page,int size,String configId,String filtersJson);
  /** 商品公开操作；沿用可信主体、功能权限、记录范围、字段保护及版本事务约束。 */
  Object list(VerifiedTenantContext c);
+ /** @param includeDescendants 默认 false 只匹配所选分类，true 包含下级；缺少分类时不限制分类。 */
+ Object list(VerifiedTenantContext c,String name,String code,String categoryId,String form,String status,boolean archived,int page,int size,String configId,String filtersJson,boolean includeDescendants);
  /** 商品公开操作；沿用可信主体、功能权限、记录范围、字段保护及版本事务约束。 */
  Object options(VerifiedTenantContext c,String kind,String keyword,int page,int size);
  /** 商品公开操作；沿用可信主体、功能权限、记录范围、字段保护及版本事务约束。 */

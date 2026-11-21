@@ -155,6 +155,10 @@ public interface ProductStructureRepository {
   * @return 原固定投影或受影响行数；写入失败必须由用例整笔回滚
   */
  Integer unitPrecision(String tenant,String unit);
+ /** 在父商品锁和版本保护下替换计量配置。 */
+ int saveMeasurement(String tenant,String product,String configuration);
+ /** 查询是否存在可用的组内直连换算。 */
+ boolean hasMeasurementConversion(String tenant,String source,String target);
  /** componentChildren固定存取；父CAS、结构正文及审计参与同一用例事务。
   * @param tenant 可信租户UUID文本，必填；不能客户端指定
   * @param product 已授权当前租户父商品UUID

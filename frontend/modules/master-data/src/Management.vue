@@ -5,10 +5,11 @@ import PartnerEditor from "./PartnerEditor.vue";
 import { computed, onMounted, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules, type LoadFunction, type TreeInstance } from "element-plus";
-import { BusinessWorkspace, TreeListTemplate, ManagementTable, ManagedDialog, RecordAuditDetails, AppPagination, InfoHint, FloatingError, setErrorFeedback, type ManagementColumn } from "@appnexus/ui";
+import { BusinessWorkspace, TreeListTemplate, ManagementTable, ManagedDialog, RecordAuditDetails, AppPagination, InfoHint, FloatingError, LoadErrorResult, presentLoadError, setErrorFeedback, type LoadIssue, type ManagementColumn } from "@appnexus/ui";
 import { masterDataFields, masterDataOperations, type MasterDataApi, type MasterDataKind, type MasterDataRow, type MasterDataInput } from "./index";
 
 /** 主数据档案复用现有工作区、表格和弹窗；表单差异来自固定字段契约，不构建平行 UI 体系。 */
+const loadIssue = ref<LoadIssue>();
 const props=defineProps<{kind:MasterDataKind;api:MasterDataApi;errorText:(error:unknown)=>string;
   /** 嵌入库区主从工作区时隐藏重复横幅，默认 false。 */
   embedded?:boolean;
@@ -29,6 +30,7 @@ const areaTypes=["RECEIVING","WORK","GOOD","DEFECTIVE","PACKAGING","VIRTUAL","FI
 const isGeography=computed(()=>props.kind==="country-region"||props.kind==="subdivision");
 /** 左树只加载展开层，每次最多 50 条；更多节点通过显式按钮续载，不一次获取完整目录。 */
 type NavigationNode=import("./index").GeographyNavigationNode & {moreParent?:string;nextPage?:number};
+const geographyTreeReady=ref(false);
 const treeCollapsed=ref(false),treeRef=ref<TreeInstance>(),treeScope=ref(""),treeScopeName=ref("");
 const treeMoreLoading=ref(false),treeFailed=ref(false),treeRevision=ref(0);
 /** 每次展开独立读取当前层；失败调用 reject 保留重试能力。 */
@@ -142,7 +144,7 @@ const fields=computed(()=>masterDataFields[props.kind].filter(field=>props.kind!
 const visibleFields=computed(()=>fields.value.filter(field=>(!isGeography.value&&!isStorage.value)||field!=="parentCode"));
 const title=computed(()=>t("masterData."+props.kind));
 const rows=ref<MasterDataRow[]>([]),total=ref(0),page=ref(1),size=ref(20);
-const keyword=ref(""),status=ref("all"),loading=ref(false),busy=ref(false),failed=ref(false),ready=ref(false);
+const keyword=ref(""),status=ref("all"),loading=ref(false),busy=ref(false),ready=ref(false);
 const operations=ref<string[]>([]),error=ref(""),open=ref(false),editingId=ref("");
 const form=ref<FormInstance>();
 /** 客商复杂档案复用主数据详情模板，其他对象保留原维护入口。 */
@@ -184,7 +186,7 @@ const rules=computed<FormRules>(()=>{
 /** 查询失败保留上次行数据并显示原区域故障状态；重新获取实时准入，避免撤权后继续展示旧资料。 */
 async function load(){
   if(loading.value||busy.value)return;
-  loading.value=true;failed.value=false;
+  loading.value=true;loadIssue.value=undefined;
   try{
     operations.value=await props.api.operations();ready.value=true;
     if(!canRead.value){rows.value=[];total.value=0;return;}
@@ -194,11 +196,11 @@ async function load(){
     if(props.kind==="partner")partnerFieldRestrictions.value=(await props.api.partnerAccess()).fieldRestrictions;
     const result=await props.api.list(props.kind,{keyword:keyword.value,enabled:status.value==="all"?undefined:status.value==="enabled",page:page.value,size:size.value,...(isGeography.value?{scope:treeScope.value}:isStorage.value?{scope:props.storageParent?.code}:{})});
     rows.value=result.rows;total.value=result.total;
+    if(isGeography.value)geographyTreeReady.value=true;
   }catch(e){
-    failed.value=true;
     // 撤权拒绝时清除已有正文，避免仍展示之前获准读取的敏感档案；网络故障保留原列表以便核实结果。
     if((e as {response?:{status?:number}})?.response?.status===403){rows.value=[];total.value=0;operations.value=[];}
-    await setErrorFeedback(error,props.errorText(e));
+    await presentLoadError(error,loadIssue,props.errorText(e),!rows.value.length,(e as {response?:{status?:number}})?.response?.status===403);
   }
   finally{loading.value=false;}
 }
@@ -255,7 +257,7 @@ onMounted(load);
 <template>
   <PartnerEditor v-if="kind==='partner'&&partnerEditor" :id="partnerId" :mode="partnerEditorMode" :api="api" :error-text="errorText" @close="partnerEditor=false;load()" />
   <WarehouseEditor v-else-if="kind==='warehouse'&&warehouseEditor" :id="partnerId" :mode="warehouseEditorMode" :api="api" :error-text="errorText" @close="warehouseEditor=false;load()" />
-  <component :is="isGeography?TreeListTemplate:BusinessWorkspace" v-else :title="title" :description="t('masterData.description')" :embedded="embedded" :collapsed="treeCollapsed" :tree-label="t('geographyHierarchy.title')" @update:collapsed="treeCollapsed=$event">
+  <component :is="isGeography?TreeListTemplate:BusinessWorkspace" v-else :title="title" :description="t('masterData.description')" :embedded="embedded" v-bind="isGeography ? { treeReady: geographyTreeReady && canRead } : {}" :collapsed="treeCollapsed" :tree-label="t('geographyHierarchy.title')" @update:collapsed="treeCollapsed=$event">
     <template v-if="isGeography" #treeHeader><strong>{{t('geographyHierarchy.title')}}</strong></template>
     <template v-if="isGeography" #tree>
       <el-button v-operation="operation.list" text :disabled="loading||busy" @click="clearTreeScope">{{t('geographyHierarchy.all')}}</el-button>
@@ -278,7 +280,7 @@ onMounted(load);
     </template>
     <template #[isGeography?'table':'data']>
       <FloatingError :title="error"><el-button :disabled="busy||loading" @click="retry">{{t('masterData.retry')}}</el-button></FloatingError>
-      <el-result v-if="failed&&!rows.length" icon="error" :title="t('masterData.unavailable')"><template #extra><el-button :loading="loading" @click="retry">{{t('masterData.retry')}}</el-button></template></el-result>
+      <LoadErrorResult v-if="loadIssue" :issue="loadIssue"><template #retry><el-button :disabled="busy||loading" @click="retry">{{t('masterData.retry')}}</el-button></template></LoadErrorResult>
       <el-result v-else-if="ready&&!canRead" icon="warning" :title="t('masterData.noPermission')" />
       <ManagementTable v-else :title="title" :rows="rows" :columns="columns" :total="total" :loading="loading" :busy="busy" :empty-text="t('masterData.empty')" embedded @refresh="load">
         <template #titleHelp>

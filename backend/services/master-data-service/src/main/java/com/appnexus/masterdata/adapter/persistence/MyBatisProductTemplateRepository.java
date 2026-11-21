@@ -1,10 +1,13 @@
 package com.appnexus.masterdata.adapter.persistence;
 import java.util.*;
+import com.appnexus.platform.authorization.DataAccessDeclaration;
 import com.appnexus.masterdata.application.product.ProductTemplateRepository;
 import org.springframework.stereotype.Component;
 /** 固定存储适配，端口类型和语义参数不携带技术位置绑定，驱动时间在边界转换。 */
 @Component
-public final class MyBatisProductTemplateRepository implements ProductTemplateRepository {
+public final class MyBatisProductTemplateRepository implements ProductTemplateRepository, DataAccessDeclaration.Executor {
+ /** @return 由原用例授权和存储层固定租户条件保护的资源，未开放可配置行范围 */
+ @Override public Set<String> enforcedResources(){return Set.of("masterdata.producttemplate", "masterdata.producttemplate.version", "masterdata.producttemplate.item");}
  private final ProductTemplateMapper mapper;
  /** @param mapper 原固定SQL映射，与父聚合共用事务连接 */
  public MyBatisProductTemplateRepository(ProductTemplateMapper mapper){this.mapper=mapper;}

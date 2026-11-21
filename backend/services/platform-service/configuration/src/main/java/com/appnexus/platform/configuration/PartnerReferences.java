@@ -3,6 +3,8 @@ import java.util.*;
 import com.appnexus.platform.configuration.port.*;
 /** 合作方字典引用公开用例；可信客户端、固定租户和 scope 由统一认证边界建立。 */
 public interface PartnerReferences {
+ /** 外部字典引用的数据权限资源标识，记录始终属于固定租户及客户端。 */
+ String RESOURCE = "configuration.dictionary.reference";
  /** 权威机密客户端上下文；authorityVersion 为已验证 Token 的授权版本，不接受请求体指定。 */
  record Context(String client,String tenant,Object authorityVersion) {}
  /** 对外登记输入，不接受内部字典项 UUID、租户或操作者。 */

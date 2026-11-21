@@ -80,27 +80,26 @@ public class PlatformAdministrationController {
         return ok(()->new PasswordRecoveryController.Ticket(recovery.issue(actor(auth),id)));
     }
     /** 平台租户目录分页，不读取租户内业务数据。 */
-    @com.appnexus.contracts.operation.BusinessObjectType(code="Tenant",nameZh="租户",nameEn="Tenant",category=com.appnexus.contracts.operation.BusinessObjectType.Category.SYSTEM,module="tenant")
- @com.appnexus.contracts.operation.OperationBinding(id="Tenant.list",objectType="Tenant",operationCode="list",pages={"platform/tenants"},nameZh="租户：查看列表",nameEn="Read tenants",policy="主体管理域、角色权限及业务用例约束由原执行器逐请求复核")
+ @com.appnexus.contracts.operation.OperationBinding(id="Tenant.list",reference=true)
  @EndpointOperation("tenant:read") @com.appnexus.contracts.operation.RecordAuditSource(table="platform_tenant",tenant=false,path="items")
  @GetMapping("/tenants")
     ResponseEntity<PlatformAdministration.Page<PlatformAdministration.Tenant>> tenants(Authentication auth,@RequestParam(defaultValue="1") int page,@RequestParam(defaultValue="20") int size,@RequestParam(defaultValue="") String query) {
         return ok(() -> service.tenants(actor(auth),page,size,query));
     }
     /** 创建租户、管理员成员、组织权限和审计同事务；不将平台操作者自动加入租户。 */
-    @com.appnexus.contracts.operation.OperationBinding(id="Tenant.create",objectType="Tenant",operationCode="create",pages={"platform/tenants"},nameZh="租户：新增",nameEn="Create tenants",policy="主体管理域、角色权限及业务用例约束由原执行器逐请求复核")
+    @com.appnexus.contracts.operation.OperationBinding(id="Tenant.create",reference=true)
  @EndpointOperation("tenant:create") @PostMapping("/tenants")
     ResponseEntity<PlatformAdministration.Tenant> tenant(Authentication auth,@RequestBody NewTenant input) {
         return ok(() -> { Objects.requireNonNull(input.requestId());Objects.requireNonNull(input.administratorAccountId());return service.createTenant(actor(auth),input.requestId(),input.name(),input.administratorAccountId()); });
     }
     /** 操作契约关联下方真实接口；仅供展示与一致性校验，主体、权限及业务约束仍由原用例执行。 */
-    @com.appnexus.contracts.operation.OperationBinding(id="Tenant.update",objectType="Tenant",operationCode="update",pages={"platform/tenants"},nameZh="租户：修改",nameEn="Update tenants",policy="主体管理域、角色权限及业务用例约束由原执行器逐请求复核")
+    @com.appnexus.contracts.operation.OperationBinding(id="Tenant.update",reference=true)
  @EndpointOperation("tenant:update") @PutMapping("/tenants/{id}")
     ResponseEntity<PlatformAdministration.Tenant> updateTenant(Authentication auth,@PathVariable UUID id,@RequestBody UpdateTenant input) {
         return ok(() -> service.updateTenant(actor(auth),id,input.name()));
     }
     /** 操作契约关联下方真实接口；仅供展示与一致性校验，主体、权限及业务约束仍由原用例执行。 */
-    @com.appnexus.contracts.operation.OperationBinding(id="Tenant.setEnabled",objectType="Tenant",operationCode="setEnabled",pages={"platform/tenants"},nameZh="租户：启停",nameEn="Enable tenants",policy="主体管理域、角色权限及业务用例约束由原执行器逐请求复核")
+    @com.appnexus.contracts.operation.OperationBinding(id="Tenant.setEnabled",reference=true)
  @EndpointOperation("tenant:enable") @PutMapping("/tenants/{id}/state")
     ResponseEntity<Void> tenantState(Authentication auth,@PathVariable UUID id,@RequestBody State state) {
         return ok(() -> { service.setTenantEnabled(actor(auth),id,enabled(state));return null; });

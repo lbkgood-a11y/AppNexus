@@ -10,7 +10,7 @@ import org.apache.ibatis.annotations.Param;
  * 商品列表固定 SQL 映射；COUNT 和列表复用同一 XML 条件，不接受表名、列名或 SQL 输入。
  */
 @Mapper
-@TenantAggregateScoped(requireTenantMatch=true,tables={"md_product_v1","md_product_v1_attribute_value","md_product_v1_attribute_choice","md_product_category_config_item","md_product_template_item","md_product_attribute_revision","md_product_attribute_option"},statements={"list","count","definitions","optionCount"})
+@TenantAggregateScoped(requireTenantMatch=true,tables={"md_product_category","md_product_v1","md_product_v1_attribute_value","md_product_v1_attribute_choice","md_product_category_config_item","md_product_template_item","md_product_attribute_revision","md_product_attribute_option"},statements={"list","count","definitions","optionCount"})
 public interface ProductListMapper {
     /**
  * 已验证属性条件；业务筛选不替代功能准入、行范围或字段保护。
@@ -25,7 +25,8 @@ public interface ProductListMapper {
  * @param range 本次读取操作的统一组织范围，非ALL空集合拒绝
      * @param name 最多200字的字面包含名称，默认空
  * @param code 最多64字的字面包含编码，默认空
- * @param category 可空分类 UUID
+ * @param category 可空分类 UUID，默认仅本级
+ * @param includeDescendants true包含下级，false只查询本级
  * @param form 可空商品形态
  * @param status 可空商品状态
  * @param archived true仅已归档，false仅未归档
@@ -34,7 +35,7 @@ public interface ProductListMapper {
  * @param size 每页1–100条
  * @param offset 从0开始的分页偏移
  */
-    record Query(com.appnexus.platform.authorization.RowAccessControl.OrganizationRange range,String name,String code,String category,String form,String status,boolean archived,String config,List<Filter> filters,int size,int offset){public Query{filters=List.copyOf(filters);}}
+    record Query(com.appnexus.platform.authorization.RowAccessControl.OrganizationRange range,String name,String code,String category,boolean includeDescendants,String form,String status,boolean archived,String config,List<Filter> filters,int size,int offset){public Query{filters=List.copyOf(filters);}}
     /**
  * @param tenant 可信租户二进制UUID，执行拦截器再次覆盖
  * @param query 已验证业务筛选

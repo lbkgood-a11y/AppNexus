@@ -18,30 +18,33 @@ public final class LeavePocController {
   public LeavePocController(LeaveManagement service) { this.service = service; }
 
   /** 本人最近 100 张单据；无数据返回空列表。 */
-  @com.appnexus.contracts.operation.OperationBinding(id="LeaveRequest.list",objectType="LeaveRequest",operationCode="list",pages={"workflow/leave"},nameZh="查看请假列表",nameEn="View leave requests",eligibility=com.appnexus.contracts.operation.OperationBinding.Eligibility.OBJECT,permissions={},policy="有效成员与对象归属/任务处理资格由原业务用例验证；无权限码不表示无条件允许")
+  @com.appnexus.contracts.operation.OperationBinding(id="LeaveRequest.list", reference=true, eligibility=com.appnexus.contracts.operation.OperationBinding.Eligibility.OBJECT)
   @com.appnexus.contracts.operation.RecordAuditSource(table="leave_poc_request",binaryKey=false,binaryTenant=false)
  @GetMapping
   public Object list(HttpServletRequest r) { return reply(() -> service.list(context(r))); }
 
   /** 申请人有效任职组织目录；仅返回名称及 ID，不能声明任意组织归属。 */
+  @com.appnexus.contracts.operation.OperationBinding(id="LeaveRequest.organizationOptions", reference=true, eligibility=com.appnexus.contracts.operation.OperationBinding.Eligibility.OBJECT)
   @GetMapping("/organizations")
   public Object organizations(HttpServletRequest r) { return reply(() -> service.organizations(context(r))); }
 
   /** 页面操作契约与实际业务处理共用声明；展示不是授权，提交仍由服务端复核。 */
+  @com.appnexus.contracts.operation.OperationBinding(id="LeaveRequest.availableActions", reference=true, eligibility=com.appnexus.contracts.operation.OperationBinding.Eligibility.OBJECT)
   @GetMapping("/actions")
   public Object actions(HttpServletRequest r) {return reply(()->service.actions(context(r)));}
   /** 本人单据可执行性，不能用于枚举其他人的对象。 */
   /** 本人生命周期及专业服务关联摘要，不泄漏打印快照。 */
+  @com.appnexus.contracts.operation.OperationBinding(id="LeaveRequest.timeline", reference=true, eligibility=com.appnexus.contracts.operation.OperationBinding.Eligibility.OBJECT)
   @GetMapping("/{id}/timeline") public Object timeline(HttpServletRequest r,@PathVariable String id){return reply(()->service.timeline(context(r),id));}
   /** 创建草稿，仅校验表单业务值和标识格式；组织任职在审批提交时核验，不隐式创建组织或人员。 */
-  @com.appnexus.contracts.operation.OperationBinding(id="LeaveRequest.create",objectType="LeaveRequest",operationCode="create",pages={"workflow/leave"},nameZh="新建请假单",nameEn="Create leave request",permissions={"leave.request:submit"},policy="原服务逐请求复核有效成员、功能权限、对象归属、版本与业务状态")
+  @com.appnexus.contracts.operation.OperationBinding(id="LeaveRequest.create", reference=true)
   @PostMapping
   public Object create(HttpServletRequest r, @RequestBody com.appnexus.leave.api.LeaveData.Input input) {
     return reply(() -> service.create(context(r), input));
   }
 
   /** 单据原文；taskId 仅是授权查询参数，不能替代可信身份。 */
-  @com.appnexus.contracts.operation.OperationBinding(id="LeaveRequest.read",objectType="LeaveRequest",operationCode="read",pages={"workflow/leave"},nameZh="查看请假单",nameEn="View leave request",eligibility=com.appnexus.contracts.operation.OperationBinding.Eligibility.OBJECT,permissions={},policy="有效成员与对象归属/任务处理资格由原业务用例验证；无权限码不表示无条件允许")
+  @com.appnexus.contracts.operation.OperationBinding(id="LeaveRequest.read", reference=true, eligibility=com.appnexus.contracts.operation.OperationBinding.Eligibility.OBJECT)
   @com.appnexus.contracts.operation.RecordAuditSource(table="leave_poc_request",binaryKey=false,binaryTenant=false)
  @GetMapping("/{id}")
   public Object read(HttpServletRequest r, @PathVariable String id,
@@ -65,13 +68,13 @@ public final class LeavePocController {
   /** 修改参数包含期望依据版本；审批中不可修改，成功后需重新提交新轮次。 */
   public record Edit(long basisVersion,com.appnexus.leave.api.LeaveData.Input input) {}
   /** 本人修改草稿、驳回或撤回单据。 */
-  @com.appnexus.contracts.operation.OperationBinding(id="LeaveRequest.update",objectType="LeaveRequest",operationCode="update",pages={"workflow/leave"},nameZh="修改请假单",nameEn="Edit leave request",permissions={"leave.request:submit"},policy="原服务逐请求复核有效成员、功能权限、对象归属、版本与业务状态")
+  @com.appnexus.contracts.operation.OperationBinding(id="LeaveRequest.update", reference=true)
   @PutMapping("/{id}")
   public Object update(HttpServletRequest r,@PathVariable String id,@RequestBody Edit edit) {
     return reply(()->service.update(context(r),id,edit.basisVersion(),edit.input()));
   }
   /** 本人流程关联历史。 */
-  @com.appnexus.contracts.operation.OperationBinding(id="LeaveRequest.approvalHistory",objectType="LeaveRequest",operationCode="approvalHistory",pages={"workflow/leave"},nameZh="查看审批历史",nameEn="View approval history",eligibility=com.appnexus.contracts.operation.OperationBinding.Eligibility.OBJECT,permissions={},policy="有效成员与对象归属/任务处理资格由原业务用例验证；无权限码不表示无条件允许")
+  @com.appnexus.contracts.operation.OperationBinding(id="LeaveRequest.approvalHistory", reference=true, eligibility=com.appnexus.contracts.operation.OperationBinding.Eligibility.OBJECT)
   @GetMapping("/{id}/cycles")
   public Object cycles(HttpServletRequest r,@PathVariable String id) {return reply(()->service.cycles(context(r),id));}
 

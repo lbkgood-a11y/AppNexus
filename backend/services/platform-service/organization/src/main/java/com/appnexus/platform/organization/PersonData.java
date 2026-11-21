@@ -47,7 +47,12 @@ public final class PersonData {
    */
   public record Status(Boolean enabled,long version) {}
   /** 已授权档案；version 为乐观锁版本，不接受客户端覆盖。 */
-  public record Row(String id,String code,String name,Map<String,String> attributes,boolean enabled,long version,Audit audit) {
+  public record Row(String id,String code,String name,Map<String,String> attributes,boolean enabled,long version,Audit audit,
+      Map<String,com.appnexus.platform.authorization.FieldSecurity.Mode> fieldRestrictions) {
+    /** 独立基础装配及无额外限制的原响应构造。 */
+    public Row(String id,String code,String name,Map<String,String> attributes,boolean enabled,long version,Audit audit){
+      this(id,code,name,attributes,enabled,version,audit,Map.of());
+    }
     /** 内部摘要未读取审计时显式为空；不构造历史事实。 */
     public Row(String id,String code,String name,Map<String,String> attributes,boolean enabled,long version){this(id,code,name,attributes,enabled,version,null);}
   }

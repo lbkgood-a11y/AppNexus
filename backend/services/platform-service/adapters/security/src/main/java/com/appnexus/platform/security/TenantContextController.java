@@ -20,6 +20,7 @@ public class TenantContextController {
     private final TenantAccess access;
     public TenantContextController(TenantAccess access) { this.access=access; }
     /** 当前可访问租户；不提供跨账号查询参数。 */
+    @com.appnexus.contracts.operation.OperationBinding(id="TenantMember.availableTenants", reference=true, eligibility=com.appnexus.contracts.operation.OperationBinding.Eligibility.SELF)
     @GetMapping
     ResponseEntity<List<TenantAccess.Membership>> list(Authentication auth) {
         return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(access.available(UUID.fromString(auth.getName())));
@@ -32,6 +33,7 @@ public class TenantContextController {
      * 每次读取重新验证租户及成员，停用立即影响新请求。
      * @param optional 默认 false；true 用于登录展示探测，未选择时返回 204，业务执行仍必须校验上下文
      */
+    @com.appnexus.contracts.operation.OperationBinding(id="TenantMember.currentTenant", reference=true, eligibility=com.appnexus.contracts.operation.OperationBinding.Eligibility.SELF)
     @GetMapping("/current")
     ResponseEntity<Context> current(Authentication auth,HttpServletRequest request,
             @RequestParam(defaultValue="false") boolean optional) {
@@ -52,6 +54,7 @@ public class TenantContextController {
      * 首次选择及切换均复核成员资格并轮换会话 ID；切换需匹配当前版本。
      * 客户端切换后整页重载并通知同源其他标签，旧页面业务请求由版本门禁拒绝。
      */
+    @com.appnexus.contracts.operation.OperationBinding(id="TenantMember.selectTenant", reference=true, eligibility=com.appnexus.contracts.operation.OperationBinding.Eligibility.SELF)
     @PostMapping("/current")
     ResponseEntity<Context> select(@RequestBody Selection input,Authentication auth,HttpServletRequest request) {
         var m=access.available(UUID.fromString(auth.getName())).stream()

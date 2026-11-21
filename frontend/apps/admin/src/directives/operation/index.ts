@@ -56,7 +56,7 @@ function permission(code: string) {
   if (!code.startsWith("@role:")) return code;
   const platform = context() === "platform";
   const action = code.slice(6);
-  if(action === "grant") return platform ? "RoleAuthorization.replacePlatform" : "RoleAuthorization.replaceTenant";
+  if(action === "grant") return platform ? "PlatformRole.authorizationReplacePlatform" : "TenantRole.authorizationReplaceTenant";
   const names: Record<string,string> = {create:"create",update:"update",enable:"setStatus",delete:"delete"};
   return names[action] ? `${platform ? "PlatformRole" : "TenantRole"}.${names[action]}` : "";
 }

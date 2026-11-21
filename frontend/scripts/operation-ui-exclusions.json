@@ -984,6 +984,10 @@
     "reason": "仅清空当前商品明细的本地货号、规格及状态过滤和页码，不发起接口请求、不改变商品/SKU；读取与写入继续使用既有Product操作。"
   },
   {
+    "key": "[\"frontend/modules/master-data/src/product/ProductSkuManagement.vue\",\"el-button\",\"closeDetail\",null,null,\"{{t('productV1.back')}}\"]",
+    "reason": "仅关闭当前只读明细并恢复列表焦点，不发起请求或修改记录。"
+  },
+  {
     "key": "[\"frontend/modules/business-object/src/CodingRuleManagement.vue\",\"el-button\",\"dialog=false\",null,null,\"{{t('coding.cancel')}}\"]",
     "reason": "关闭编码规则草稿弹窗，仅改变本地显示状态，不调用 API 或执行业务写入"
   },

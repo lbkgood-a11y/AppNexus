@@ -42,6 +42,7 @@ public class AmapProxyController {
     AmapProxyController(TenantParameters parameters,String directory,HttpClient client){this.parameters=parameters;this.secretDirectory=directory.isBlank()?null:Path.of(directory).toAbsolutePath().normalize();this.client=client;}
 
     /** 仅返回当前租户公开配置，提前复核服务端密钥可用性；密钥内容不进入响应。 */
+    @com.appnexus.contracts.operation.OperationBinding(id="Warehouse.mapConfiguration", reference=true)
     @GetMapping(PREFIX+"/configuration")
     @EndpointOperation("masterdata.warehouse:read")
     public ResponseEntity<java.util.Map<String,String>> configuration(HttpServletRequest request){
@@ -57,6 +58,7 @@ public class AmapProxyController {
      * @param request 可信租户上下文及 SDK GET 参数；key 必须匹配当前租户，jscode 一律由服务端覆盖
      * @return 限定大小的官方地图资源；禁止缓存，不向浏览器透传重定向及上游凭据
      */
+    @com.appnexus.contracts.operation.OperationBinding(id="Warehouse.mapProxy", reference=true)
     @GetMapping(PREFIX+"/**")
     @EndpointOperation("masterdata.warehouse:read")
     public ResponseEntity<byte[]> proxy(HttpServletRequest request){

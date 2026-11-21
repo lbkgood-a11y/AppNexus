@@ -1,5 +1,6 @@
 package com.appnexus.platform.security;
 import com.appnexus.contracts.businessobject.BusinessObjects.*;
+import com.appnexus.contracts.businessobject.DedicatedOperations;
 
 import com.appnexus.contracts.businessobject.*;
 import com.appnexus.platform.configuration.NavigationPages;
@@ -16,9 +17,42 @@ public final class AccountDeclaration implements BusinessObjects.Provider {
             operation("update","账号：修改","Update accounts","identity.account:update","PUT","/bff/platform/users/{id}",List.of("platform/users")),
             operation("setEnabled","账号：启停","Enable accounts","identity.account:enable","PUT","/bff/platform/users/{id}/state",List.of("platform/users")),
             operation("revokeSessions","账号：强制下线","Revoke account sessions","identity.account:revoke_sessions","POST","/bff/platform/users/{id}/revoke-sessions",List.of("platform/users")),
-            operation("issueRecovery","账号：签发找回凭证","Issue password reset ticket","identity.account:reset_password","POST","/bff/platform/users/{id}/password-recovery",List.of("platform/users")));
+            operation("issueRecovery","账号：签发找回凭证","Issue password reset ticket","identity.account:reset_password","POST","/bff/platform/users/{id}/password-recovery",List.of("platform/users")),
+                DedicatedOperations.operation("Account", "rolesExplain", "账号角色关联：解释有效权限", "Grant platform role permissions", "access.role:grant",
+                        new PageOperation("platform/authorization", "/platform/authorization", "账号角色关联：解释有效权限", "Grant platform role permissions", "GET", "/bff/platform/users/{account}/effective-permissions")),
+                DedicatedOperations.operation("Account", "rolesRead", "账号角色关联：查看", "Grant platform role permissions", "access.role:grant",
+                        new PageOperation("platform/authorization", "/platform/authorization", "账号角色关联：查看", "Grant platform role permissions", "GET", "/bff/platform/users/{account}/roles")),
+                DedicatedOperations.operation("Account", "rolesReplace", "账号角色关联：保存授权", "Grant platform role permissions", "access.role:grant",
+                        new PageOperation("platform/authorization", "/platform/authorization", "账号角色关联：保存授权", "Grant platform role permissions", "PUT", "/bff/platform/users/{account}/roles")),
+                DedicatedOperations.operation("Account", "sessionList", "登录会话：查看列表", "View sessions", "",
+                        new PageOperation("account/profile", "/account/profile", "登录会话：查看列表", "View sessions", "GET", "/bff/account/sessions")),
+                DedicatedOperations.operation("Account", "sessionRevoke", "登录会话：撤销", "Revoke session", "",
+                        new PageOperation("account/profile", "/account/profile", "登录会话：撤销", "Revoke session", "DELETE", "/bff/account/sessions/{handle}")),
+                DedicatedOperations.operation("Account", "sessionRevokeOthers", "登录会话：撤销其他会话", "Revoke other sessions", "",
+                        new PageOperation("account/profile", "/account/profile", "登录会话：撤销其他会话", "Revoke other sessions", "POST", "/bff/account/sessions/revoke-others")),
+                DedicatedOperations.operation("Account", "profileRead", "个人资料：查看", "View profile", "",
+                        new PageOperation("account/profile", "/account/profile", "个人资料：查看", "View profile", "GET", "/bff/account")),
+                DedicatedOperations.operation("Account", "profileUpdate", "个人资料：修改", "Update profile", "",
+                        new PageOperation("account/profile", "/account/profile", "个人资料：修改", "Update profile", "PATCH", "/bff/account")),
+                DedicatedOperations.operation("Account", "profileChangePassword", "个人资料：修改本人密码", "Change password", "",
+                        new PageOperation("account/profile", "/account/profile", "个人资料：修改本人密码", "Change password", "POST", "/bff/account/password")),
+                DedicatedOperations.operation("Account", "mfaRead", "多因素认证：查看", "View MFA", "",
+                        new PageOperation("account/profile", "/account/profile", "多因素认证：查看", "View MFA", "GET", "/bff/account/mfa")),
+                DedicatedOperations.operation("Account", "mfaEnroll", "多因素认证：建立绑定", "Enroll MFA", "",
+                        new PageOperation("account/profile", "/account/profile", "多因素认证：建立绑定", "Enroll MFA", "POST", "/bff/account/mfa/enrollment")),
+                DedicatedOperations.operation("Account", "mfaActivate", "多因素认证：激活绑定", "Activate MFA", "",
+                        new PageOperation("account/profile", "/account/profile", "多因素认证：激活绑定", "Activate MFA", "POST", "/bff/account/mfa/activation")),
+                DedicatedOperations.operation("Account", "mfaStepUp", "多因素认证：二次验证", "Step up", "",
+                        new PageOperation("account/profile", "/account/profile", "多因素认证：二次验证", "Step up", "POST", "/bff/account/mfa/step-up")),
+                DedicatedOperations.operation("Account", "mfaDisable", "多因素认证：停用", "Disable MFA", "",
+                        new PageOperation("account/profile", "/account/profile", "多因素认证：停用", "Disable MFA", "POST", "/bff/account/mfa/disable")),
+                com.appnexus.contracts.businessobject.DedicatedOperations.operation("Account", "securityLogs", "本人安全日志", "My security logs", ""),
+                com.appnexus.contracts.businessobject.DedicatedOperations.operation("Account", "operationDiagnostics", "平台账号操作诊断", "Diagnose account operations", ""),
+                com.appnexus.contracts.businessobject.DedicatedOperations.operation("Account", "sessionStatus", "当前账号会话", "Current account session", ""),
+                DedicatedOperations.operation("Account", "requestRecovery", "申请密码恢复", "Request password recovery", ""),
+                DedicatedOperations.operation("Account", "completeRecovery", "完成密码恢复", "Complete password recovery", ""));
         var access=new DataAccess("PLATFORM",List.of(new DataResource("identity.account","","账号","Account",List.of(new DataField("email","邮箱","Email","EMAIL",Set.of("MASKED","HIDDEN")),new DataField("phoneNumber","手机号","Phone number","PHONE",Set.of("MASKED","HIDDEN"))),"com.appnexus.platform.tenant.PlatformAdministration$User")),Map.of());
-        return new Descriptor("Account","账号","Account","identity",1,Category.SYSTEM,List.of(),operations,access);
+        return new Descriptor("Account","账号","Account","identity",2,Category.SYSTEM,List.of(),operations,access);
     }
     /** 页面别名保留原调用关系；仅声明已执行的直接业务能力，不隐式开放行范围或字段写入。 */
     private static Operation operation(String code,String zh,String en,String permission,String method,String path,List<String> pages){

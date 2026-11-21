@@ -18,6 +18,13 @@ import org.springframework.context.annotation.*;
 
 /** 组合应用打印装配；HTTP 和 JDBC 使用宿主认证、事务及受控 Flyway 迁移。 */
 @Configuration(proxyBeanMethods=false)
+@org.springframework.context.annotation.Import({com.appnexus.printing.adapter.web.PrintDataContractDeclaration.class,
+    com.appnexus.printing.adapter.web.PrintDeviceDeclaration.class,
+    com.appnexus.printing.adapter.web.PrintDocumentDeclaration.class,
+    com.appnexus.printing.adapter.web.PrintJobDeclaration.class,
+    com.appnexus.printing.adapter.web.PrintOutputDeclaration.class,
+    com.appnexus.printing.adapter.web.PrintSceneDeclaration.class,
+    com.appnexus.printing.adapter.web.PrintTemplateDeclaration.class})
 public class PrintConfiguration {
   /** 单据与业务模块只引用打印公开契约；模板和输出状态仍由打印服务拥有。 */
   @Bean public com.appnexus.contracts.printing.BusinessPrinting businessPrinting(com.appnexus.printing.application.BusinessPrintQueries queries,com.appnexus.printing.api.PrintOutputManagement outputs,PrintPlatform platform){return new com.appnexus.printing.application.BusinessPrintingService(queries,outputs,platform);}

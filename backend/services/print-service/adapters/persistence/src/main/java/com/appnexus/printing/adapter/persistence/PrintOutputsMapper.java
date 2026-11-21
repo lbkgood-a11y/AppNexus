@@ -6,7 +6,9 @@ import java.util.Map;
 /** PrintOutputs固定SQL映射；不接收SQL或标识符，原用例逐次验证可信租户及操作。 */
 @Mapper
 @PlatformScoped(tables={"platform_tenant","print_agent_queue","print_device","print_document","print_job","print_job_artifact","print_output_request","print_scene","print_template","print_template_version"})
-public interface PrintOutputsMapper {
+public interface PrintOutputsMapper extends com.appnexus.contracts.businessobject.BusinessObjects.DataAccessExecutor {
+ /** @return 受原用例身份复核和固定存储约束保护的专业服务资源 */
+ @Override default java.util.Set<String> enforcedResources(){return java.util.Set.of("print.output");}
  /** 固定业务语句1；准入、参数规则、聚合锁及事务由原用例负责，所有值绑定。 */
  @Select("SELECT BIN_TO_UUID(id) id FROM print_scene WHERE tenant_id=UUID_TO_BIN(#{p0}) AND code=#{p1} AND data_contract=#{p2} AND enabled=TRUE")
  List<Map<String,Object>> businessScene(@Param("p0") Object p0,@Param("p1") Object p1,@Param("p2") Object p2);

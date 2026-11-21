@@ -78,7 +78,7 @@ watch([()=>props.roleId,()=>props.active],()=>{if(props.active){page.value=1;mem
 onBeforeUnmount(()=>{++requestVersion;});
 /** 父级切换角色或离开路由时必须等待写入完成，防止确认中的角色上下文变化。 */
 defineExpose({canLeave:async()=>!saving.value});
-const saveOperation=computed(()=>location.hash.includes('/platform/')?'AccountRoleAssignment.replace':'MemberRoleAssignment.replace');
+const saveOperation=computed(()=>location.hash.includes('/platform/')?'Account.rolesReplace':'TenantMember.rolesReplace');
 </script>
 <template>
  <section class="role-users">

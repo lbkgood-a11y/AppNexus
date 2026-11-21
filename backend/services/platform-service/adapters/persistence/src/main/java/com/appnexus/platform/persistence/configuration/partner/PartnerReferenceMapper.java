@@ -1,12 +1,17 @@
 package com.appnexus.platform.persistence.configuration.partner;
 import com.appnexus.persistence.mybatis.PlatformScoped;
+import com.appnexus.platform.authorization.DataAccessDeclaration;
+import com.appnexus.platform.configuration.PartnerReferences;
 import org.apache.ibatis.annotations.*;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 /** PartnerReferenceController固定SQL映射；没有接收SQL、表名或列名的通用执行入口。 */
 @Mapper
 @PlatformScoped(tables={"integration_client","integration_reference_request","tenant_dictionary","tenant_dictionary_item","tenant_dictionary_item_reference"})
-public interface PartnerReferenceMapper extends com.appnexus.platform.configuration.port.PartnerReferenceRepository {
+public interface PartnerReferenceMapper extends com.appnexus.platform.configuration.port.PartnerReferenceRepository, DataAccessDeclaration.Executor {
+ /** @return 始终由客户端和租户作为查询约束的合作方引用资源，无租户角色策略配置 */
+ @Override default Set<String> enforcedResources(){return Set.of(PartnerReferences.RESOURCE);}
  /**
   * lockAuthority 为原PartnerReferenceController固定SQL，准入、事务、锁及业务规则仍由原用例执行。
   * @param p0 原调用第1个绑定值，来自原已校验业务参数；不可作为SQL标识符

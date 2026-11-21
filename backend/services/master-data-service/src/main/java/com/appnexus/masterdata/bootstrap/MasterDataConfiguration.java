@@ -9,6 +9,8 @@ import com.appnexus.masterdata.adapter.persistence.MasterReadMapper;
 import com.appnexus.masterdata.adapter.persistence.GeographyMapper;
 
 import com.appnexus.platform.authorization.AccessAuthorization;
+import com.appnexus.platform.authorization.FieldProtection;
+import com.appnexus.platform.authorization.DataAccessCatalog;
 import org.springframework.context.annotation.*;
 import org.springframework.transaction.PlatformTransactionManager;
 
@@ -37,7 +39,9 @@ public class MasterDataConfiguration {
   }
   /**
    * @return 复用宿主事务、可信租户和公开授权端口的主数据执行器 */
-  @Bean public MasterDataService masterDataService(com.appnexus.masterdata.adapter.persistence.MasterRecordMapper records,MasterReadMapper reads,GeographyMapper geography,StorageHierarchyMapper storage,PartnerDetailMapper details,AccessAuthorization access,PlatformTransactionManager manager,com.appnexus.platform.configuration.BusinessValueCatalog dictionaries,PartnerDataAccess partner){return create(records,reads,geography,storage,details,access,manager,dictionaries,partner);}
+  @Bean public MasterDataService masterDataService(com.appnexus.masterdata.adapter.persistence.MasterRecordMapper records,MasterReadMapper reads,GeographyMapper geography,StorageHierarchyMapper storage,PartnerDetailMapper details,AccessAuthorization access,PlatformTransactionManager manager,com.appnexus.platform.configuration.BusinessValueCatalog dictionaries,PartnerDataAccess partner,FieldProtection fields,DataAccessCatalog catalog){
+    return create(records,reads,geography,storage,details,access,manager,dictionaries,partner,fields,catalog);
+  }
   /**
    * 显式组合主数据输入用例与技术输出，独立数据库测试沿用同一装配。
    * @param jdbc UTC 数据源，所有适配器必须共用
@@ -48,7 +52,16 @@ public class MasterDataConfiguration {
    * @return 不依赖技术实现的主数据应用用例
    */
   public static MasterDataService create(com.appnexus.masterdata.adapter.persistence.MasterRecordMapper records,MasterReadMapper reads,GeographyMapper geography,StorageHierarchyMapper storage,PartnerDetailMapper details,AccessAuthorization access,PlatformTransactionManager manager,com.appnexus.platform.configuration.BusinessValueCatalog dictionaries,PartnerDataAccess partner){
-    return new MasterDataService(access,dictionaries,new com.appnexus.masterdata.adapter.persistence.MyBatisMasterDataRepository(records),new MyBatisMasterDataRelations(reads,geography,storage,details,dictionaries,partner),new com.appnexus.masterdata.adapter.transaction.SpringRecordTransaction(manager),partner);
+    return create(records,reads,geography,storage,details,access,manager,dictionaries,partner,null,null);
+  }
+
+  private static MasterDataService create(com.appnexus.masterdata.adapter.persistence.MasterRecordMapper records,
+      MasterReadMapper reads,GeographyMapper geography,StorageHierarchyMapper storage,PartnerDetailMapper details,
+      AccessAuthorization access,PlatformTransactionManager manager,com.appnexus.platform.configuration.BusinessValueCatalog dictionaries,
+      PartnerDataAccess partner,FieldProtection fields,DataAccessCatalog catalog){
+    return new MasterDataService(access,dictionaries,new com.appnexus.masterdata.adapter.persistence.MyBatisMasterDataRepository(records),
+        new MyBatisMasterDataRelations(reads,geography,storage,details,dictionaries,partner),
+        new com.appnexus.masterdata.adapter.transaction.SpringRecordTransaction(manager),partner,fields,catalog);
   }
   /** 商品图片纯用例装配；父授权、CAS、图片、历史与审计共用事务。 */
   @Bean public com.appnexus.masterdata.api.product.ProductImageManagement productImageManagement(AccessAuthorization access,PlatformTransactionManager manager,com.appnexus.masterdata.application.product.ProductAggregateAccess products,com.appnexus.masterdata.application.product.ProductImageRepository images,com.appnexus.masterdata.application.product.ProductImageContent content){return new com.appnexus.masterdata.application.product.ProductImageService(access,new com.appnexus.masterdata.adapter.transaction.SpringRecordTransaction(manager),products,images,content);}
@@ -59,7 +72,7 @@ public class MasterDataConfiguration {
   /** 商品目录纯应用用例装配，保留分类锚点锁、发布快照与原完整性拒绝范围。 */
   @Bean public com.appnexus.masterdata.api.product.ProductCatalogManagement productCatalogManagement(AccessAuthorization access,com.appnexus.masterdata.application.product.ProductCatalogTransaction transaction,com.appnexus.masterdata.application.product.ProductCatalogRepository repository){return new com.appnexus.masterdata.application.product.ProductCatalogService(access,transaction,repository);}
   /** 商品规格、SKU及组合结构纯应用用例装配。 */
-  @Bean public com.appnexus.masterdata.api.product.ProductStructureManagement productStructureManagement(AccessAuthorization access,com.appnexus.masterdata.application.product.ProductStructureTransaction transaction,com.appnexus.masterdata.application.product.ProductAggregateAccess products,com.appnexus.masterdata.application.product.ProductStructureRepository repository,com.appnexus.masterdata.application.product.AttributeRuleContent rules){return new com.appnexus.masterdata.application.product.ProductStructureService(access,transaction,products,repository,rules);}
+  @Bean public com.appnexus.masterdata.api.product.ProductStructureManagement productStructureManagement(AccessAuthorization access,com.appnexus.masterdata.application.product.ProductStructureTransaction transaction,com.appnexus.masterdata.application.product.ProductAggregateAccess products,com.appnexus.masterdata.application.product.ProductStructureRepository repository,com.appnexus.masterdata.application.product.AttributeRuleContent rules,com.appnexus.masterdata.application.product.ProductContent content){return new com.appnexus.masterdata.application.product.ProductStructureService(access,transaction,products,repository,rules,content);}
   /** 商品固定目录查询端口，所有引用验证沿用原SQL及锁。 */
   @Bean public com.appnexus.masterdata.application.product.ProductCatalogQueries productCatalogQueries(com.appnexus.masterdata.adapter.persistence.ProductCatalogReadMapper mapper){return new com.appnexus.masterdata.adapter.persistence.MyBatisProductCatalogQueries(mapper);}
   /** 商品列表保留原JSON过滤、记录范围及同条件COUNT。 */

@@ -12,7 +12,7 @@
       "PositionAssignment.create",
       "PositionAssignment.update",
       "OrganizationUnit.move",
-      "OrganizationLeader.set",
+      "OrganizationUnit.setLeader",
       "OrganizationRelation.create"
     ],
     "sources": [
@@ -77,10 +77,10 @@
   },
   {
     "file": "frontend/modules/configuration/src/DictionaryManagement.vue",
-    "expression": "itemDialog==='create'?'DictionaryItem.create':'DictionaryItem.update'",
+    "expression": "itemDialog==='create'?'BusinessDictionary.createItem':'BusinessDictionary.updateItem'",
     "operations": [
-      "DictionaryItem.create",
-      "DictionaryItem.update"
+      "BusinessDictionary.createItem",
+      "BusinessDictionary.updateItem"
     ],
     "sources": [
       "frontend/modules/configuration/src/DictionaryManagement.vue"
@@ -211,11 +211,11 @@
   },
   {
     "file": "frontend/apps/admin/src/views/account/components/MultiFactorSettings.vue",
-    "expression": "status.enabled ? 'AccountMfa.stepUp' : secret ? 'AccountMfa.activate' : 'AccountMfa.enroll'",
+    "expression": "status.enabled ? 'Account.mfaStepUp' : secret ? 'Account.mfaActivate' : 'Account.mfaEnroll'",
     "operations": [
-      "AccountMfa.stepUp",
-      "AccountMfa.activate",
-      "AccountMfa.enroll"
+      "Account.mfaStepUp",
+      "Account.mfaActivate",
+      "Account.mfaEnroll"
     ],
     "sources": [
       "frontend/apps/admin/src/views/account/components/MultiFactorSettings.vue"
@@ -391,6 +391,34 @@
       "frontend/modules/master-data/src/WarehouseEditor.vue"
     ],
     "reason": "仓库保存按服务端档案标识选择创建或编辑，后端独立校验租户、权限和版本。"
+  },
+  {
+    "file": "frontend/modules/master-data/src/product/CatalogManagement.vue",
+    "expression": "optionOperation",
+    "operations": ["ProductAttribute.create", "ProductAttribute.createRevision", "ProductAttribute.updateRevision"],
+    "sources": ["frontend/modules/master-data/src/product/CatalogManagement.vue"],
+    "reason": "选项增删只修改属性草稿，按新建属性或规格版本维护入口绑定后续保存操作。"
+  },
+  {
+    "file": "frontend/modules/master-data/src/product/CatalogManagement.vue",
+    "expression": "groupListOp",
+    "operations": ["ProductUnit.listGroups", "ProductAttribute.listGroups"],
+    "sources": ["frontend/modules/master-data/src/product/CatalogManagement.vue"],
+    "reason": "计量单位和属性页面分别查询本对象的分组目录。"
+  },
+  {
+    "file": "frontend/modules/master-data/src/product/CatalogManagement.vue",
+    "expression": "groupCreateOp",
+    "operations": ["ProductUnit.createGroup", "ProductAttribute.createGroup"],
+    "sources": ["frontend/modules/master-data/src/product/CatalogManagement.vue"],
+    "reason": "分组新建按当前目录选择固定操作。"
+  },
+  {
+    "file": "frontend/modules/master-data/src/product/CatalogManagement.vue",
+    "expression": "groupEditOp",
+    "operations": ["ProductUnit.renameGroup", "ProductAttribute.updateGroup"],
+    "sources": ["frontend/modules/master-data/src/product/CatalogManagement.vue"],
+    "reason": "分组编辑按当前目录选择固定操作。"
   },
   {
     "file": "frontend/modules/master-data/src/product/CatalogManagement.vue",
@@ -574,8 +602,8 @@
     "file": "frontend/modules/authorization/src/RoleUsers.vue",
     "expression": "saveOperation",
     "operations": [
-      "AccountRoleAssignment.replace",
-      "MemberRoleAssignment.replace"
+      "Account.rolesReplace",
+      "TenantMember.rolesReplace"
     ],
     "sources": [
       "frontend/modules/authorization/src/RoleUsers.vue"

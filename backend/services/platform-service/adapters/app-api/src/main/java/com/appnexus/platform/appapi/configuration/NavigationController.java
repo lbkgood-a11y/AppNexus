@@ -18,6 +18,7 @@ public class NavigationController {
     public NavigationController(NavigationQuery navigation,TenantAccess tenants){this.navigation=navigation;this.tenants=tenants;}
 
     /** 当前导航不缓存；尚未选择或已失效的租户不返回租户入口，平台与登录公共入口仍独立计算。 */
+    @com.appnexus.contracts.operation.OperationBinding(id="NavigationMenu.current", reference=true, eligibility=com.appnexus.contracts.operation.OperationBinding.Eligibility.SELF)
     @GetMapping("/bff/navigation")
     ResponseEntity<NavigationQuery.Snapshot> current(Authentication authentication,HttpServletRequest request) {
         var account=UUID.fromString(authentication.getName());

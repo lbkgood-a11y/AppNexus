@@ -14,10 +14,12 @@ import java.util.*;
 public final class InvitationService implements TenantInvitations {
     private final InvitationRecords statements;
     private final InvitationTransaction transaction;
+    private final InvitationFieldAccess fields;
 
     
     private final PlatformAdministration platform;
-    public InvitationService(PlatformAdministration platform,InvitationRecords statements,InvitationTransaction transaction){this.transaction=transaction;this.statements=statements;this.platform=platform;}
+    /** @param fields 经平台授权装配的实时字段策略，禁止缺省放行 */
+    public InvitationService(PlatformAdministration platform,InvitationRecords statements,InvitationTransaction transaction,InvitationFieldAccess fields){this.transaction=transaction;this.statements=statements;this.platform=platform;this.fields=Objects.requireNonNull(fields);}
     /**
      * 平台管理员邀请已有有效账号，不创建成员；同一对象新邀请撤销旧待接受邀请。
      * @param actor 权威平台账号，事务内加锁复核
@@ -28,7 +30,9 @@ public final class InvitationService implements TenantInvitations {
     
     public Created invite(UUID actor,UUID tenant,UUID account){return transaction.required(()->{
         if(actor==null||tenant==null||account==null)throw invalid();
-        lockActor(actor);lockTenant(tenant);lockAccount(account);
+        lockActor(actor);
+        if(fields.hideInvitee(actor))throw problem(403,"DATA_FIELD_WRITE_DENIED","受邀账号受字段限制");
+        lockTenant(tenant);lockAccount(account);
         var existing=statements.existingMembership(tenant.toString(),account.toString());
         if(!existing.isEmpty())throw problem(409,"MEMBERSHIP_EXISTS","账号已有成员身份");
         statements.revokePending(tenant.toString(),account.toString());
@@ -37,7 +41,13 @@ public final class InvitationService implements TenantInvitations {
         audit(actor,tenant,id,"MEMBER_INVITED");return new Created(new View(id,tenant,account,"PENDING",expires),token);
     });}
     /** 读取当前租户最近 100 条邀请，平台管理权与账号身份分离。 */
-    public List<View> list(UUID actor,UUID tenant){require(actor);return statements.summaries(tenant.toString()).stream().map(row->new View(UUID.fromString((String)row.get("id")),tenant,UUID.fromString((String)row.get("account")),(String)row.get("status"),(Instant)row.get("expires_at"))).toList();}
+    public List<View> list(UUID actor,UUID tenant){
+        require(actor);
+        boolean hideInvitee=fields.hideInvitee(actor);
+        return statements.summaries(tenant.toString()).stream().map(row->new View(
+            UUID.fromString((String)row.get("id")),tenant,hideInvitee?null:UUID.fromString((String)row.get("account")),
+            (String)row.get("status"),(Instant)row.get("expires_at"))).toList();
+    }
     /**
      * 本人接受邀请；账号、租户、邀请固定锁顺序，CAS 状态更新与成员创建/复用同事务。
      * @param account 服务端登录主体，不能从请求体指定

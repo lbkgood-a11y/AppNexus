@@ -1,5 +1,6 @@
 package com.appnexus.platform.security;
 
+import com.appnexus.platform.tenant.TaskManagement;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.*;
@@ -10,18 +11,27 @@ import org.springframework.context.annotation.Configuration;
 @EnableScheduling
 public class AuthorityEventWorker {
     private final ReliableEvents events;
+    private final ScheduledObjectOperations operations;
     private final boolean enabled;
     private final AtomicBoolean running=new AtomicBoolean();
     /**
      * @param events 共享租约及幂等端口
+     * @param operations 统一业务对象的定时系统操作准入
      * @param enabled 默认 true；关闭后事件保留待消费，不影响权威同步撤权
      */
-    public AuthorityEventWorker(ReliableEvents events,@Value("${app.events.worker.enabled:true}") boolean enabled){this.events=events;this.enabled=enabled;}
+    public AuthorityEventWorker(ReliableEvents events,ScheduledObjectOperations operations,
+            @Value("${app.events.worker.enabled:true}") boolean enabled){
+        this.events=events;
+        this.operations=operations;
+        this.enabled=enabled;
+    }
     /** 每 5 秒最多处理 20 条，租户事件必须保持数据库返回的边界；实例崩溃依赖 30 秒租约恢复。 */
     @Scheduled(fixedDelayString="${app.events.worker.delay:5000}")
     public void process(){
         if(!enabled||!running.compareAndSet(false,true))return;
         try{
+            // 在领取或重置任何记录前，复核调度入口和统一声明的绑定。
+            operations.require(TaskManagement.PROCESS_EVENTS,TaskManagement.EVENT_WORKER_AUTHORITY);
             for(int index=0;index<20;index++){
                 var claimed=events.claim();if(claimed.isEmpty())break;var event=claimed.get();
                 try{events.consume(event,"authority-invalidation",event.tenant(),()->{

@@ -8,8 +8,10 @@ import com.appnexus.persistence.mybatis.TenantAggregateScoped;
  * 单位换算固定多表Mapper；只访问本主数据上下文表，不接受SQL或动态列。
  */
 @Mapper
-@TenantAggregateScoped(requireTenantMatch=true,tables={"md_product_unit_conversion","md_product_unit"},statements={"list","lockUnit","reverse","create","relation","status","calculation"})
-public interface UnitConversionMapper {
+@TenantAggregateScoped(requireTenantMatch=true,tables={"md_product_unit_conversion","md_product_unit","md_product_unit_group"},statements={"list","lockUnit","reverse","create","relation","status","calculation"})
+public interface UnitConversionMapper extends com.appnexus.platform.authorization.DataAccessDeclaration.Executor {
+  /** @return 只使用可信租户及同租户两端单位的换算资源 */
+  @Override default java.util.Set<String> enforcedResources(){return java.util.Set.of("masterdata.productunit.conversion");}
   /**
  * list 固定SQL；可信租户由执行拦截器复核，行锁及CAS沿用业务事务。
  * @param tenant 安全链可信租户二进制UUID，执行时再次复核，不接受页面指定其他租户
@@ -24,7 +26,7 @@ public interface UnitConversionMapper {
  * @param id 已由调用用例校验的记录UUID
  * @return 当前租户固定查询结果，不扩展原操作授权
  */
-  @Select("SELECT dimension_code dimensionCode,enabled FROM md_product_unit WHERE tenant_id=#{__verifiedTenant} AND id=UUID_TO_BIN(#{id}) FOR UPDATE")
+  @Select("SELECT g.code dimensionCode,u.enabled FROM md_product_unit u JOIN md_product_unit_group g ON g.tenant_id=u.tenant_id AND g.code=u.dimension_code WHERE u.tenant_id=#{__verifiedTenant} AND u.id=UUID_TO_BIN(#{id}) FOR UPDATE OF u")
   List<Map<String,Object>> lockUnit(@Param("__verifiedTenant") byte[] tenant,@Param("id") String id);
 
   /**
@@ -77,6 +79,6 @@ public interface UnitConversionMapper {
  * @param id 已由调用用例校验的记录UUID
  * @return 当前租户固定查询结果，不扩展原操作授权
  */
-  @Select("SELECT x.factor,t.precision_scale scale FROM md_product_unit_conversion x JOIN md_product_unit s ON s.tenant_id=x.tenant_id AND s.id=x.source_unit_id JOIN md_product_unit t ON t.tenant_id=x.tenant_id AND t.id=x.target_unit_id WHERE x.tenant_id=#{__verifiedTenant} AND x.id=UUID_TO_BIN(#{id}) AND x.enabled=TRUE AND s.enabled=TRUE AND t.enabled=TRUE")
+  @Select("SELECT x.factor,t.precision_scale scale FROM md_product_unit_conversion x JOIN md_product_unit s ON s.tenant_id=x.tenant_id AND s.id=x.source_unit_id JOIN md_product_unit t ON t.tenant_id=x.tenant_id AND t.id=x.target_unit_id WHERE x.tenant_id=#{__verifiedTenant} AND x.id=UUID_TO_BIN(#{id}) AND x.enabled=TRUE AND s.enabled=TRUE AND t.enabled=TRUE AND s.dimension_code=t.dimension_code")
   List<Map<String,Object>> calculation(@Param("__verifiedTenant") byte[] tenant,@Param("id") String id);
 }

@@ -8,7 +8,7 @@ import java.util.*;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
 /** 组织授权管理入口；仅有 GRANT 能力的当前租户成员可操作，管理能力本身不可通过本接口委派。 */
-@com.appnexus.contracts.operation.BusinessObjectType(code="OrganizationAuthorization",nameZh="组织授权",nameEn="Organization authorization",category=com.appnexus.contracts.operation.BusinessObjectType.Category.CONFIGURATION,module="authorization")
+
 @RestController
 @EndpointPolicy(EndpointPolicy.Domain.TENANT_BUSINESS)
 @RequestMapping("/api/organization/grants")
@@ -21,14 +21,14 @@ public class OrganizationGrantController {
     /** 只接受目标成员、操作和可选到期时间；操作者与租户由服务端验证上下文决定。 */
     public record Change(UUID memberId, OrganizationCapability capability, Instant expiresAt) {}
     /** 选择器只向有管理权限的成员返回当前租户的有效成员。 */
-    @com.appnexus.contracts.operation.OperationBinding(id="OrganizationAuthorization.memberOptions",objectType="OrganizationAuthorization",operationCode="memberOptions",pages={"organization/index"},nameZh="组织授权：查看成员选项",nameEn="Grant organization permissions",policy="主体管理域、角色权限及业务用例约束由原执行器逐请求复核")
+    @com.appnexus.contracts.operation.OperationBinding(id="OrganizationAuthorization.memberOptions", reference=true)
  @EndpointOperation("organization.permission:grant") @GetMapping("/members")
     ResponseEntity<List<OrganizationGrantManagement.Member>> members(HttpServletRequest request) {
         var c=requireAuthority(request);
         return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(grants.members(c.tenantId()));
     }
     /** 查询目标成员有效授权，不能查询其他租户。 */
-    @com.appnexus.contracts.operation.OperationBinding(id="OrganizationAuthorization.list",objectType="OrganizationAuthorization",operationCode="list",pages={"organization/index"},nameZh="组织授权：查看列表",nameEn="Grant organization permissions",policy="主体管理域、角色权限及业务用例约束由原执行器逐请求复核")
+    @com.appnexus.contracts.operation.OperationBinding(id="OrganizationAuthorization.list", reference=true)
  @EndpointOperation("organization.permission:grant") @GetMapping("/{memberId}")
     ResponseEntity<List<OrganizationGrantManagement.Grant>> list(@PathVariable UUID memberId,HttpServletRequest request) {
         var context=requireAuthority(request);
@@ -36,7 +36,7 @@ public class OrganizationGrantController {
         catch(IllegalArgumentException invalid){throw AccountSettingsController.problem(HttpStatus.NOT_FOUND,"MEMBER_UNAVAILABLE","成员不存在或不可用");}
     }
     /** 有效期和目标成员由后端复核，CSRF 由安全过滤器统一执行。 */
-    @com.appnexus.contracts.operation.OperationBinding(id="OrganizationAuthorization.grant",objectType="OrganizationAuthorization",operationCode="grant",pages={"organization/index"},nameZh="组织授权：授予操作权限",nameEn="Grant organization permissions",policy="主体管理域、角色权限及业务用例约束由原执行器逐请求复核")
+    @com.appnexus.contracts.operation.OperationBinding(id="OrganizationAuthorization.grant", reference=true)
  @EndpointOperation("organization.permission:grant") @PostMapping
     ResponseEntity<OrganizationGrantManagement.Grant> grant(@RequestBody Change input,HttpServletRequest request) {
         var c=requireAuthority(request);
@@ -47,7 +47,7 @@ public class OrganizationGrantController {
         catch(IllegalArgumentException invalid){throw AccountSettingsController.problem(HttpStatus.BAD_REQUEST,"INVALID_GRANT","成员或授权有效期不符合要求");}
     }
     /** 撤权不接受客户端操作者身份；不存在或已撤销时返回 404。 */
-    @com.appnexus.contracts.operation.OperationBinding(id="OrganizationAuthorization.revoke",objectType="OrganizationAuthorization",operationCode="revoke",pages={"organization/index"},nameZh="组织授权：撤销",nameEn="Grant organization permissions",policy="主体管理域、角色权限及业务用例约束由原执行器逐请求复核")
+    @com.appnexus.contracts.operation.OperationBinding(id="OrganizationAuthorization.revoke", reference=true)
  @EndpointOperation("organization.permission:grant") @DeleteMapping("/{memberId}/{capability}")
     ResponseEntity<Void> revoke(@PathVariable UUID memberId,@PathVariable OrganizationCapability capability,HttpServletRequest request) {
         var c=requireAuthority(request);validate(new Change(memberId,capability,null));

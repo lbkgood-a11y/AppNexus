@@ -21,7 +21,9 @@ const props = withDefaults(defineProps<{
   treeWidth?: number;
   /** 嵌入 BusinessWorkspace 时移除重复外框，默认 false。 */
   embedded?: boolean;
-}>(), { collapsed: false, embedded: false });
+  /** 树与列表共用读取接口时，列表首次成功后再挂载树。独立树缺省可立即加载。 */
+  treeReady?: boolean;
+}>(), { collapsed: false, embedded: false, treeReady: true });
 const emit = defineEmits<{ "update:collapsed": [value: boolean] }>();
 defineSlots<{ navigation?: () => unknown; treeHeader?: () => unknown; tree: () => unknown; header?: () => unknown; search?: () => unknown; toolbar?: () => unknown; table: () => unknown; pagination?: () => unknown; feedback?: () => unknown }>();
 const { t } = useI18n();
@@ -40,7 +42,8 @@ const style = computed(() => ({ "--tree-panel-width": props.treeWidth === undefi
         <aside class="tree-list-template__aside">
           <header class="tree-list-template__tree-header">
             <div v-show="!collapsed" class="tree-list-template__tree-heading"><slot name="treeHeader" /></div>
-            <el-tooltip :content="t(collapsed ? 'management.expandTree' : 'management.collapseTree')" placement="right">
+            <!-- 保留按钮的原生键盘激活，提示组件不拦截 Enter 和空格。 -->
+            <el-tooltip :content="t(collapsed ? 'management.expandTree' : 'management.collapseTree')" :trigger-keys="[]" placement="right">
               <el-button text class="tree-list-template__toggle" :aria-label="t(collapsed ? 'management.expandTree' : 'management.collapseTree')" :aria-expanded="!collapsed" @click="emit('update:collapsed', !collapsed)">
                 <AppIcon :name="collapsed ? 'expandPanel' : 'collapsePanel'" :size="18" />
               </el-button>
@@ -50,7 +53,7 @@ const style = computed(() => ({ "--tree-panel-width": props.treeWidth === undefi
             <AppIcon name="organization" :size="18" />
             <span>{{ treeLabel }}</span>
           </el-button>
-          <div v-show="!collapsed" class="tree-list-template__tree"><slot name="tree" /></div>
+          <div v-show="!collapsed" class="tree-list-template__tree"><slot v-if="treeReady" name="tree" /></div>
         </aside>
         <main class="tree-list-template__content">
           <header v-if="$slots.header" class="tree-list-template__header"><slot name="header" /></header>

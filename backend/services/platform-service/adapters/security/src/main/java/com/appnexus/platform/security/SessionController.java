@@ -17,6 +17,7 @@ public class SessionController {
             List<String> roles, List<String> permissions) {}
     public record CsrfView(String token, String headerName) {}
 
+    @com.appnexus.contracts.operation.OperationBinding(id="Account.sessionStatus", reference=true, eligibility=com.appnexus.contracts.operation.OperationBinding.Eligibility.SELF)
     @GetMapping("/session")
     ResponseEntity<SessionView> session(Authentication authentication) {
         var account = accounts.findById(java.util.UUID.fromString(authentication.getName()))

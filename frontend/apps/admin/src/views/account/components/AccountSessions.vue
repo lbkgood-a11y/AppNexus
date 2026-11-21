@@ -59,7 +59,7 @@ onMounted(()=>{void refreshDisplayFormat();void load();});
   <section>
     <div class="session-heading"><div><h1>{{ t("account.sessions") }}</h1><p>{{ t("account.sessionsIntro") }}</p></div>
       <div class="session-actions">
-        <el-button v-operation="'AccountSession.revokeOthers'" type="danger" plain :loading="revoking === 'all'" :disabled="loading || Boolean(revoking) || Boolean(error) || !rows.some(row => !row.current)" @click="revokeOthers">{{ t("account.revokeOthers") }}</el-button>
+        <el-button v-operation="'Account.sessionRevokeOthers'" type="danger" plain :loading="revoking === 'all'" :disabled="loading || Boolean(revoking) || Boolean(error) || !rows.some(row => !row.current)" @click="revokeOthers">{{ t("account.revokeOthers") }}</el-button>
         <el-button :loading="loading" :disabled="Boolean(revoking)" @click="load">{{ t("account.refresh") }}</el-button>
       </div></div>
     <FloatingError v-if="error" :title="error" scope="error" type="error" show-icon :closable="false" class="mb-4" />
@@ -73,7 +73,7 @@ onMounted(()=>{void refreshDisplayFormat();void load();});
       <vxe-column :title="t('account.sessionAccess')" min-width="200"><template #default="{ row }">
         <time :title="row.lastAccessedAt">{{ time(row.lastAccessedAt) }}</time></template></vxe-column>
       <vxe-column :title="t('account.sessionOperation')" width="120" fixed="right"><template #default="{ row }">
-        <el-button v-operation="'AccountSession.revoke'" v-if="!row.current" link type="danger" :loading="revoking === row.handle"
+        <el-button v-operation="'Account.sessionRevoke'" v-if="!row.current" link type="danger" :loading="revoking === row.handle"
           :disabled="Boolean(revoking) && revoking !== row.handle" @click="revoke(row as AccountSession)">{{ t("account.revokeSession") }}</el-button>
         <span v-else>—</span></template></vxe-column>
     </vxe-table>

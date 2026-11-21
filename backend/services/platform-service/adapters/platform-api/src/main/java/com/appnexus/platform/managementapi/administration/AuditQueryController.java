@@ -16,11 +16,12 @@ public class AuditQueryController {
     private final AuditQueries audit;
     public AuditQueryController(AuditQueries audit){this.audit=audit;}
     /** 平台管理员审计，tenantId 缺省仅平台操作；分页缺省 1/20，最大 100 条。 */
-    @EndpointOperation("audit.entry:read") @GetMapping("/bff/platform/audits")
+    @EndpointOperation("audit.entry:read") @com.appnexus.contracts.operation.OperationBinding(id="AuditEvent.platformList", reference=true)
+    @GetMapping("/bff/platform/audits")
     ResponseEntity<AuditQueries.Page> platform(Authentication auth,@RequestParam(required=false) UUID tenantId,@RequestParam(defaultValue="1") int page,@RequestParam(defaultValue="20") int pageSize){return ok(audit.platform(UUID.fromString(auth.getName()),tenantId,page,pageSize));}
     /** 当前租户审计，租户仅从统一上下文取得；忽略任何客户端 tenantId 选择意图。 */
-    @com.appnexus.contracts.operation.BusinessObjectType(code="AuditEvent",nameZh="审计事件",nameEn="Audit Event",category=com.appnexus.contracts.operation.BusinessObjectType.Category.LEDGER,module="audit")
- @com.appnexus.contracts.operation.OperationBinding(id="AuditEvent.list",objectType="AuditEvent",operationCode="list",pages={"account/profile"},nameZh="审计事件：查看列表",nameEn="Grant organization permissions",policy="主体管理域、角色权限及业务用例约束由原执行器逐请求复核")
+
+ @com.appnexus.contracts.operation.OperationBinding(id="AuditEvent.list", reference=true)
  @EndpointOperation("organization.permission:grant") @GetMapping("/api/audits")
     ResponseEntity<AuditQueries.Page> tenant(HttpServletRequest request,@RequestParam(defaultValue="1") int page,@RequestParam(defaultValue="20") int pageSize){
         if(!(request.getAttribute(VerifiedTenantContext.class.getName()) instanceof VerifiedTenantContext context))throw AccountSettingsController.problem(HttpStatus.CONFLICT,"TENANT_REQUIRED","请选择有效租户");

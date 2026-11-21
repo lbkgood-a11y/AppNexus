@@ -18,6 +18,7 @@ public class SecurityLogController {
      * @param size 每页条数，默认 10，范围 1 至 50
      * @return 按时间顺序倒序的本人记录，禁止缓存
      */
+    @com.appnexus.contracts.operation.OperationBinding(id="Account.securityLogs", reference=true, eligibility=com.appnexus.contracts.operation.OperationBinding.Eligibility.SELF)
     @GetMapping
     ResponseEntity<SecurityLogRepository.Page> find(Authentication auth,
             @RequestParam(defaultValue="1") int page, @RequestParam(defaultValue="10") int size) {

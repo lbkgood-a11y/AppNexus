@@ -20,6 +20,10 @@ import org.springframework.transaction.PlatformTransactionManager;
 @org.springframework.scheduling.annotation.EnableScheduling
 @Configuration(proxyBeanMethods = false)
 @ConditionalOnProperty(name = "app.workflow.engine.enabled", havingValue = "true")
+@org.springframework.context.annotation.Import({com.appnexus.workflow.adapter.web.WorkflowDefinitionDeclaration.class,
+    com.appnexus.workflow.adapter.web.WorkflowInstanceDeclaration.class,
+    com.appnexus.workflow.adapter.web.WorkflowJobDeclaration.class,
+    com.appnexus.workflow.adapter.web.WorkflowTaskDeclaration.class})
 public class WorkflowEngineConfiguration {
   /** 内部监听器仅由本配置装配，不接受流程JSON指定其他Bean。 */
   @Bean

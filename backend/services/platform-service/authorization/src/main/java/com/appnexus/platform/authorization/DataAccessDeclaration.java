@@ -9,7 +9,7 @@ import java.util.*;
 public final class DataAccessDeclaration {
     private DataAccessDeclaration() {}
     /** 业务执行适配器标记；装配校验确认资源存在真实执行器，行为仍由真实数据库反向测试保证。 */
-    public interface Executor { Set<String> enforcedResources(); }
+    public interface Executor extends com.appnexus.contracts.businessobject.BusinessObjects.DataAccessExecutor {}
     /**
      * 操作引用及实际支持的行范围。
      * @param operationId 已登记的对象操作标识

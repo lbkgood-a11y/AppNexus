@@ -64,8 +64,8 @@ it("rejects unknown operation identities and retains OR alternatives", async () 
 it("reads self and tenant contexts separately on the account page", async () => {
   vi.stubGlobal("location", { hash: "#/account/profile", pathname: "/" });
   state.tenant.value = { tenantId: "tenant-a" };
-  state.request.mockImplementation((_method:string,path:string)=>Promise.resolve(path.startsWith('/bff/') ? ['AccountMfa.enroll'] : ['TenantParameter.save']));
-  const element = mount("AccountMfa.enroll");
+  state.request.mockImplementation((_method:string,path:string)=>Promise.resolve(path.startsWith('/bff/') ? ['Account.mfaEnroll'] : ['TenantParameter.save']));
+  const element = mount("Account.mfaEnroll");
   await settle(); expect(element.style.display).toBe("");
   expect(state.request).toHaveBeenCalledWith("get", "/bff/operation-decisions");
   expect(state.request).toHaveBeenCalledWith("get", "/api/operation-decisions");

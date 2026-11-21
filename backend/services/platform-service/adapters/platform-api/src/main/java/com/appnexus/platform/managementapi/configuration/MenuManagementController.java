@@ -40,8 +40,8 @@ public class MenuManagementController {
      * @param authentication 服务端认证会话，不由客户端指定
      * @return 无缓存的构建内页面与操作快照，不代表任何租户已获授权
      */
-    @com.appnexus.contracts.operation.BusinessObjectType(code="NavigationMenu",nameZh="导航菜单",nameEn="Navigation Menu",category=com.appnexus.contracts.operation.BusinessObjectType.Category.CONFIGURATION,module="configuration")
- @com.appnexus.contracts.operation.OperationBinding(id="NavigationMenu.features",objectType="NavigationMenu",operationCode="features",pages={"platform/features"},nameZh="导航菜单：查看功能目录",nameEn="Read menu configuration",policy="主体管理域、角色权限及业务用例约束由原执行器逐请求复核")
+
+ @com.appnexus.contracts.operation.OperationBinding(id="NavigationMenu.features", reference=true)
  @EndpointOperation("configuration.menu:read") @GetMapping("/features")
     ResponseEntity<List<Feature>> features(Authentication authentication){
         return result(()->{service.list(actor(authentication));var pages=new ArrayList<>(NavigationPages.all());
@@ -51,24 +51,24 @@ public class MenuManagementController {
     }
 
     /** 页面选择目录复用菜单管理授权，不允许通过输入路径注册任意组件。 */
-    @com.appnexus.contracts.operation.OperationBinding(id="NavigationMenu.pageOptions",objectType="NavigationMenu",operationCode="pageOptions",pages={"platform/menus"},nameZh="导航菜单：查看页面目录",nameEn="Read menu configuration",policy="主体管理域、角色权限及业务用例约束由原执行器逐请求复核")
+    @com.appnexus.contracts.operation.OperationBinding(id="NavigationMenu.pageOptions", reference=true)
  @EndpointOperation("configuration.menu:read") @GetMapping("/pages")
     ResponseEntity<List<NavigationPages.Page>> pages(Authentication authentication){return result(()->{service.list(actor(authentication));return NavigationPages.all();});}
     /** 操作契约关联下方真实接口；仅供展示与一致性校验，主体、权限及业务约束仍由原用例执行。 */
-    @com.appnexus.contracts.operation.OperationBinding(id="NavigationMenu.list",objectType="NavigationMenu",operationCode="list",pages={"platform/menus"},nameZh="导航菜单：查看列表",nameEn="Read menu configuration",policy="主体管理域、角色权限及业务用例约束由原执行器逐请求复核")
+    @com.appnexus.contracts.operation.OperationBinding(id="NavigationMenu.list", reference=true)
  @EndpointOperation("configuration.menu:read") @com.appnexus.contracts.operation.RecordAuditSource(table="platform_menu",tenant=false)
  @GetMapping
     ResponseEntity<List<MenuManagement.Menu>> list(Authentication authentication){return result(()->service.list(actor(authentication)));}
     /** 操作契约关联下方真实接口；仅供展示与一致性校验，主体、权限及业务约束仍由原用例执行。 */
-    @com.appnexus.contracts.operation.OperationBinding(id="NavigationMenu.create",objectType="NavigationMenu",operationCode="create",pages={"platform/menus"},nameZh="导航菜单：新增",nameEn="Create menu configuration",policy="主体管理域、角色权限及业务用例约束由原执行器逐请求复核")
+    @com.appnexus.contracts.operation.OperationBinding(id="NavigationMenu.create", reference=true)
  @EndpointOperation("configuration.menu:create") @PostMapping
     ResponseEntity<MenuManagement.Menu> create(Authentication authentication,@RequestBody Create input){return result(()->service.create(actor(authentication),Objects.requireNonNull(input).command()));}
     /** 操作契约关联下方真实接口；仅供展示与一致性校验，主体、权限及业务约束仍由原用例执行。 */
-    @com.appnexus.contracts.operation.OperationBinding(id="NavigationMenu.update",objectType="NavigationMenu",operationCode="update",pages={"platform/menus"},nameZh="导航菜单：修改",nameEn="Edit menus (including status)",policy="主体管理域、角色权限及业务用例约束由原执行器逐请求复核")
+    @com.appnexus.contracts.operation.OperationBinding(id="NavigationMenu.update", reference=true)
  @EndpointOperation("configuration.menu:update") @PutMapping("/{id}")
     ResponseEntity<MenuManagement.Menu> update(Authentication authentication,@PathVariable UUID id,@RequestBody Update input){return result(()->service.update(actor(authentication),id,input.version(),input.command()));}
     /** 操作契约关联下方真实接口；仅供展示与一致性校验，主体、权限及业务约束仍由原用例执行。 */
-    @com.appnexus.contracts.operation.OperationBinding(id="NavigationMenu.delete",objectType="NavigationMenu",operationCode="delete",pages={"platform/menus"},nameZh="导航菜单：删除",nameEn="Delete menu configuration",policy="主体管理域、角色权限及业务用例约束由原执行器逐请求复核")
+    @com.appnexus.contracts.operation.OperationBinding(id="NavigationMenu.delete", reference=true)
  @EndpointOperation("configuration.menu:delete") @DeleteMapping("/{id}")
     ResponseEntity<Void> delete(Authentication authentication,@PathVariable UUID id,@RequestParam long version){return result(()->{service.delete(actor(authentication),id,version);return null;});}
     private UUID actor(Authentication authentication){return UUID.fromString(authentication.getName());}

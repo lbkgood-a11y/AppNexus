@@ -17,8 +17,9 @@ public final class ProductController {
  public Object updateOrganizations(HttpServletRequest request){return service.organizations(ctx(request),"update");}
  /** @param service 固定商品聚合服务，权限/租户/CAS/审计与事务由真实执行器复核 */
  public ProductController(ProductManagement service){this.service=service;}
- /** 分页查询仅当前可信租户；page从1起、size默认20最大100，动态条件仅单固定配置最多3项。 */
- @RecordAuditSource(table="md_product_v1",path="rows") @GetMapping @OperationBinding(id="Product.list",reference=true) public Object list(HttpServletRequest r,@RequestParam(defaultValue="") String name,@RequestParam(defaultValue="") String code,@RequestParam(required=false) String categoryId,@RequestParam(required=false) String form,@RequestParam(required=false) String status,@RequestParam(defaultValue="false") boolean archived,@RequestParam(defaultValue="1") int page,@RequestParam(defaultValue="20") int size,@RequestParam(required=false) String configId,@RequestParam(required=false) String attributeFilters){return service.list(ctx(r),name,code,categoryId,form,status,archived,page,size,configId,attributeFilters);}
+ /** 分页查询仅当前可信租户；page从1起、size默认20最大100，动态条件仅单固定配置最多3项。
+  * @param includeDescendants 默认false仅查所选分类，true包含下级；未传categoryId时此参数不生效。 */
+ @RecordAuditSource(table="md_product_v1",path="rows") @GetMapping @OperationBinding(id="Product.list",reference=true) public Object list(HttpServletRequest r,@RequestParam(defaultValue="") String name,@RequestParam(defaultValue="") String code,@RequestParam(required=false) String categoryId,@RequestParam(required=false) String form,@RequestParam(required=false) String status,@RequestParam(defaultValue="false") boolean archived,@RequestParam(defaultValue="1") int page,@RequestParam(defaultValue="20") int size,@RequestParam(required=false) String configId,@RequestParam(required=false) String attributeFilters,@RequestParam(defaultValue="false") boolean includeDescendants){return service.list(ctx(r),name,code,categoryId,form,status,archived,page,size,configId,attributeFilters,includeDescendants);}
  /** 创建只建DRAFT，编码/名称必填；已填属性必须合法，缺必填仅阻断后续独立启用。 */
  @PostMapping @OperationBinding(id="Product.create",reference=true) public Object create(HttpServletRequest r,@RequestBody Input i){return service.create(ctx(r),i);}
  /** 状态命令必须当前version；启用重验完整性，LEGACY_PENDING不得直接启用。 */

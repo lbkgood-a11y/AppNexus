@@ -10,6 +10,8 @@ public interface MasterDataManagement {
  Object dictionaryOptions(VerifiedTenantContext c,Kind kind);
  /** 主数据公开操作；沿用可信主体、功能权限、数据范围及原子事务约束。 */
  Object warehouseOptions(VerifiedTenantContext c);
+ /** @param c 服务端可信租户和成员 @return 当前仓库字段限制，不含记录或原值 */
+ Map<String,com.appnexus.platform.authorization.FieldSecurity.Mode> warehouseFieldRestrictions(VerifiedTenantContext c);
  /** 主数据公开操作；沿用可信主体、功能权限、数据范围及原子事务约束。 */
  Object geographyCatalog(VerifiedTenantContext c,Kind kind);
  /** 主数据公开操作；沿用可信主体、功能权限、数据范围及原子事务约束。 */

@@ -45,6 +45,10 @@ public final class MyBatisProductStructureRepository implements ProductStructure
  /** {@inheritDoc} */
  public Integer unitPrecision(String tenant,String unit){return mapper.unitPrecision(tenant,unit);}
  /** {@inheritDoc} */
+ public int saveMeasurement(String tenant,String product,String configuration){return mapper.saveMeasurement(tenant,product,configuration);}
+ /** {@inheritDoc} */
+ public boolean hasMeasurementConversion(String tenant,String source,String target){return mapper.hasMeasurementConversion(tenant,source,target);}
+ /** {@inheritDoc} */
  public List<String> componentChildren(String tenant,String product){return ProductStorageValues.stable(mapper.componentChildren(tenant,product));}
  /** {@inheritDoc} */
  public List<Map<String,Object>> existingComponent(String tenant,String product,String component){return ProductStorageValues.stable(mapper.existingComponent(tenant,product,component));}

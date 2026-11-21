@@ -5,9 +5,10 @@ import {computed,onBeforeUnmount,onMounted,reactive,ref} from "vue";
 import {useI18n} from "vue-i18n";
 import {onBeforeRouteLeave} from "vue-router";
 import {ElMessage,ElMessageBox,type FormInstance,type FormRules} from "element-plus";
-import {GeographyPicker,geographyPath,type GeographyNode,type GeographySelection,PageHeader,TabbedDetailTemplate,ManagementTable,ManagedDialog,InfoHint,FloatingError,setErrorFeedback,type ManagementColumn} from "@appnexus/ui";
+import {GeographyPicker,geographyPath,type GeographyNode,type GeographySelection,PageHeader,TabbedDetailTemplate,ManagementTable,ManagedDialog,InfoHint,FloatingError,LoadErrorResult,presentLoadError,setErrorFeedback,type LoadIssue,type ManagementColumn} from "@appnexus/ui";
 import {emptyPersonnel,personnelFields,personnelChoices,personnelDictionaryFields,personnelSections,type PersonnelApi,type PersonnelProfile,type PersonnelCatalog,type PersonnelSection,type PersonnelDetail,type PersonnelAssignment} from "./personnel";
 /** 人员专用完整详情；mode 为 view 时只读，edit 时仍逐项校验平台操作准入，不因入口模式扩大权限。 */
+const loadIssue = ref<LoadIssue>();
 const props=defineProps<{id:string;mode:PersonnelMode;api:PersonnelApi;errorText:(error:unknown)=>string}>();
 const emit=defineEmits<{close:[]}>();
 const {t,locale}=useI18n();
@@ -31,6 +32,12 @@ const initials=computed(()=>draft.name.trim().slice(0,1));
 
 const isAssignment=computed(()=>tab.value==="assignments");
 const section=computed(()=>isAssignment.value?undefined:personnelSections[tab.value as PersonnelSection]);
+const profileFieldRestrictions=ref<Record<string,string>>({});
+/** 由统一服务端策略限制表单字段；遮盖或隐藏的值不回传。 */
+function profileMode(field:string){return profileFieldRestrictions.value[field];}
+function detailMode(field:string){return isAssignment.value?undefined:profile.value?.detailFieldRestrictions?.[field];}
+const canAddDetail=computed(()=>isAssignment.value||!(section.value?.required??[]).some(field=>detailMode(field)));
+const canRemoveDetail=computed(()=>isAssignment.value||!(section.value?.fields??[]).some(field=>detailMode(field)));
 const dialogFields=computed(()=>isAssignment.value?["memberId"]:[...(section.value?.fields??[])]);
 const dirty=computed(()=>baseline.value!==JSON.stringify(draft));
 const saveOperation=computed(()=>id.value?"Person.update":"Person.create");
@@ -43,7 +50,7 @@ const editable=computed(()=>canEdit.value&&!loading.value&&!failed.value);
 const detailsLocked=computed(()=>props.mode!=="edit"||!canRead.value||busy.value||loading.value||dirty.value||!id.value||failed.value);
 const currentRows=computed<Array<PersonnelDetail|PersonnelAssignment>>(()=>isAssignment.value?(profile.value?.assignments??[]):(profile.value?.details??[]).filter(d=>d.section===tab.value));
 const detailColumns=computed<ManagementColumn[]>(()=>[
- ...(isAssignment.value?[{key:"userName",prop:"userName",label:t("personnel.userName"),minWidth:160},{key:"active",label:t("personnel.status"),width:130}]:dialogFields.value.map(key=>({key,label:label(key),minWidth:key==="remarks"?220:150}))),
+ ...(isAssignment.value?[{key:"userName",prop:"userName",label:t("personnel.userName"),minWidth:160},{key:"active",label:t("personnel.status"),width:130}]:dialogFields.value.filter(key=>detailMode(key)!=="HIDDEN").map(key=>({key,label:label(key),minWidth:key==="remarks"?220:150}))),
  ...(props.mode==="edit"?[{key:"operations",label:t("masterData.actions"),width:190,fixed:"right" as const}]:[])]);
 const rules=computed<FormRules>(()=>({
  code:[{required:true,message:t("personnel.required"),trigger:"blur"},{pattern:/^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/,message:t("masterData.codeRule"),trigger:"blur"}],
@@ -79,12 +86,12 @@ function display(row:PersonnelDetail,field:string){
  return dictionaryName(field,value);
 }
 /** 重建基础草稿只在主动加载或写入成功后执行；不会在后台刷新时覆盖用户输入。 */
-function accept(value:PersonnelProfile){profile.value=value;Object.assign(draft,{code:value.person.code,name:value.person.name,version:value.person.version,attributes:{...value.person.attributes}});baseline.value=JSON.stringify(draft);}
+function accept(value:PersonnelProfile){profile.value=value;profileFieldRestrictions.value=value.person.fieldRestrictions??{};Object.assign(draft,{code:value.person.code,name:value.person.name,version:value.person.version,attributes:{...value.person.attributes}});baseline.value=JSON.stringify(draft);}
 /** 读取最新档案及实时准入；失败停止继续写入，保留草稿供核实，403 清空敏感正文。 */
 async function load(){
- loading.value=true;failed.value=false;
- try{allowed.value=await props.api.operations();if(!canRead.value){profile.value=undefined;catalog.value={organizations:[],positions:[],users:[]};geographyNodes.value=[];Object.assign(draft,emptyPersonnel());baseline.value=JSON.stringify(draft);return;}catalog.value=await props.api.options();geographyNodes.value=await props.api.geographyDirectory();if(id.value)accept(await props.api.read(id.value));else baseline.value=JSON.stringify(draft);}
- catch(e){failed.value=true;if((e as {response?:{status:number}})?.response?.status===403){profile.value=undefined;Object.assign(draft,emptyPersonnel());allowed.value=[];catalog.value={organizations:[],positions:[],users:[]};geographyNodes.value=[];dialog.value=false;baseline.value=JSON.stringify(draft);}await setErrorFeedback(error,props.errorText(e));}
+ loading.value=true;failed.value=false;loadIssue.value=undefined;
+ try{allowed.value=await props.api.operations();if(!canRead.value){profile.value=undefined;catalog.value={organizations:[],positions:[],users:[]};geographyNodes.value=[];Object.assign(draft,emptyPersonnel());baseline.value=JSON.stringify(draft);return;}profileFieldRestrictions.value=await props.api.fieldRestrictions();catalog.value=await props.api.options();geographyNodes.value=await props.api.geographyDirectory();if(id.value)accept(await props.api.read(id.value));else baseline.value=JSON.stringify(draft);}
+ catch(e){failed.value=true;if((e as {response?:{status:number}})?.response?.status===403){profile.value=undefined;Object.assign(draft,emptyPersonnel());allowed.value=[];catalog.value={organizations:[],positions:[],users:[]};geographyNodes.value=[];dialog.value=false;baseline.value=JSON.stringify(draft);}await presentLoadError(error,loadIssue,props.errorText(e),true,(e as {response?:{status?:number}})?.response?.status===403);}
  finally{loading.value=false;}
 }
 /** 主动重新读取前确认丢弃未保存草稿，409 不自动重放或强行覆盖。 */
@@ -96,9 +103,16 @@ async function save(){
  if(busy.value||!editable.value||!await form.value?.validate().catch(()=>false))return;
  if(draft.attributes.birthDate&&draft.attributes.birthDate>new Date().toISOString().slice(0,10)){await setErrorFeedback(error,t("personnel.birthFuture"));return;}
  busy.value=true;let saved=false;
- try{const input={...draft,attributes:{...draft.attributes}};if(id.value)await props.api.update("person",id.value,input);else id.value=(await props.api.create("person",input)).id;
+ try{const input={...draft,attributes:Object.fromEntries(Object.entries(draft.attributes).filter(([field])=>!profileMode(field)))};if(id.value)await props.api.update("person",id.value,input);else id.value=(await props.api.create("person",input)).id;
  saved=true;baseline.value=JSON.stringify(draft);ElMessage.success(t("personnel.saved"));accept(await props.api.read(id.value));}
- catch(e){if(saved)failed.value=true;await setErrorFeedback(error,saved?t("personnel.latestLoadFailed"):props.errorText(e));}finally{busy.value=false;}
+ catch(e){if (saved) {
+   failed.value = true;
+   const message = props.errorText(e);
+   await presentLoadError(error, loadIssue, message ? t("personnel.latestLoadFailed") : "", true,
+     (e as { response?: { status?: number } })?.response?.status === 403);
+ } else {
+   await setErrorFeedback(error, props.errorText(e));
+ }}finally{busy.value=false;}
 }
 /** 明细弹窗使用行快照；未知键不传后端，创建/修改操作分别绑定。 */
 function openDetail(row?:PersonnelDetail|PersonnelAssignment){
@@ -114,9 +128,16 @@ async function saveDetail(){
  if(values.startsOn&&values.endsOn&&values.endsOn<values.startsOn){await setErrorFeedback(error,t("personnel.dateRange"));return;}
  busy.value=true;let saved=false;
  try{if(isAssignment.value)await props.api.assign(id.value,detailId.value||undefined,{memberId:values.memberId,version:draft.version});
- else await props.api.saveDetail(id.value,tab.value,detailId.value||undefined,{version:draft.version,values:Object.fromEntries(dialogFields.value.map(field=>[field,values[field]??""]))});
+ else await props.api.saveDetail(id.value,tab.value,detailId.value||undefined,{version:draft.version,values:Object.fromEntries(dialogFields.value.filter(field=>!detailMode(field)).map(field=>[field,values[field]??""]))});
  saved=true;dialog.value=false;ElMessage.success(t("personnel.saved"));accept(await props.api.read(id.value));catalog.value=await props.api.options();geographyNodes.value=await props.api.geographyDirectory();}
- catch(e){if(saved)failed.value=true;await setErrorFeedback(error,saved?t("personnel.latestLoadFailed"):props.errorText(e));}finally{busy.value=false;}
+ catch(e){if (saved) {
+   failed.value = true;
+   const message = props.errorText(e);
+   await presentLoadError(error, loadIssue, message ? t("personnel.latestLoadFailed") : "", true,
+     (e as { response?: { status?: number } })?.response?.status === 403);
+ } else {
+   await setErrorFeedback(error, props.errorText(e));
+ }}finally{busy.value=false;}
 }
 /** 删除仅删除所选明细或解除单条关联，确认后以父版本提交，不删除人员或账号。 */
 async function remove(row:PersonnelDetail|PersonnelAssignment){
@@ -125,7 +146,14 @@ async function remove(row:PersonnelDetail|PersonnelAssignment){
  busy.value=true;let saved=false;
  try{if(isAssignment.value)await props.api.unassign(id.value,row.id,draft.version);else await props.api.deleteDetail(id.value,tab.value,row.id,draft.version);
  saved=true;ElMessage.success(t("personnel.saved"));accept(await props.api.read(id.value));}
- catch(e){if(saved)failed.value=true;await setErrorFeedback(error,saved?t("personnel.latestLoadFailed"):props.errorText(e));}finally{busy.value=false;}
+ catch(e){if (saved) {
+   failed.value = true;
+   const message = props.errorText(e);
+   await presentLoadError(error, loadIssue, message ? t("personnel.latestLoadFailed") : "", true,
+     (e as { response?: { status?: number } })?.response?.status === 403);
+ } else {
+   await setErrorFeedback(error, props.errorText(e));
+ }}finally{busy.value=false;}
 }
 /** 页面关闭保护仅在草稿未保存时启用，不阻止正常只读导航。 */
 function beforeUnload(event:BeforeUnloadEvent){if(dirty.value||dialog.value)event.preventDefault();}
@@ -143,9 +171,9 @@ onBeforeUnmount(()=>window.removeEventListener("beforeunload",beforeUnload));
     <template #actions><el-button :disabled="busy" @click="back">{{t('personnel.back')}}</el-button><el-button v-if="props.mode==='edit'" v-operation="saveOperation" type="primary" :loading="busy" :disabled="!editable||!dirty" @click="save">{{t('masterData.save')}}</el-button></template>
    </PageHeader></template>
    <template #content>
-    <el-result v-if="failed" icon="error" :title="t('masterData.unavailable')"><template #extra><el-button :disabled="busy" @click="reload">{{t('personnel.retry')}}</el-button></template></el-result>
+    <LoadErrorResult v-if="loadIssue" :issue="loadIssue"><template #retry><el-button :disabled="busy||loading" @click="reload">{{t('personnel.retry')}}</el-button></template></LoadErrorResult>
     <el-result v-else-if="!loading&&!canRead" icon="warning" :title="t('masterData.noPermission')" />
-    <el-form v-else ref="form" :model="draft" :rules="rules" label-position="top" :disabled="!editable||busy" class="detail-profile-form detail-border-label-form" @submit.prevent="save">
+    <el-form v-else-if="!failed" ref="form" :model="draft" :rules="rules" label-position="top" :disabled="!editable||busy" class="detail-profile-form detail-border-label-form" @submit.prevent="save">
      <el-card v-for="group in profileGroups" :key="group.key" shadow="never" class="detail-section" :body-style="group.key==='details'&&!detailsExpanded?{padding:'0'}:undefined">
       <template #header><div class="detail-section-heading"><h2>{{group.title}}</h2><el-button v-if="group.key==='details'" text :title="t(detailsExpanded?'personnel.collapseDetails':'personnel.expandDetails')" :aria-label="t(detailsExpanded?'personnel.collapseDetails':'personnel.expandDetails')" :aria-expanded="detailsExpanded" aria-controls="personnel-profile-details" @click="detailsExpanded=!detailsExpanded"><AppIcon :name="detailsExpanded?'arrowUp':'arrowDown'" :size="18" /></el-button></div></template>
       <div v-show="group.key==='basic'||detailsExpanded" :id="group.key==='details'?'personnel-profile-details':undefined" :class="{'detail-identity-layout':group.key==='basic'}">
@@ -156,7 +184,8 @@ onBeforeUnmount(()=>window.removeEventListener("beforeunload",beforeUnload));
          <el-form-item :label="t('personnel.code')" prop="code"><el-tooltip v-if="id" :content="draft.code" placement="top" :show-after="200" :popper-style="{maxWidth:'min(480px, calc(100vw - 24px))',overflowWrap:'anywhere'}"><span class="detail-code-value" tabindex="0">{{draft.code}}</span></el-tooltip><el-input v-else v-model="draft.code" maxlength="64" /></el-form-item>
          <el-form-item :label="t('personnel.name')" prop="name"><el-input v-model="draft.name" maxlength="200" /></el-form-item>
         </template>
-        <el-form-item v-for="field in group.fields" :key="field" :label="label(field)" :prop="'attributes.'+field" :class="{'detail-field-wide':field==='remarks'}">
+        <div v-for="field in group.fields.filter(field=>profileMode(field)&&profileMode(field)!=='HIDDEN')" :key="'protected-'+field" class="detail-readonly-field"><span>{{label(field)}}</span><strong>{{draft.attributes[field]||'—'}}</strong></div>
+        <el-form-item v-for="field in group.fields.filter(field=>!profileMode(field))" :key="field" :label="label(field)" :prop="'attributes.'+field" :class="{'detail-field-wide':field==='remarks'}">
          <el-date-picker v-if="isDate(field)" v-model="draft.attributes[field]" type="date" value-format="YYYY-MM-DD" format="YYYY-MM-DD" :disabled-date="date=>field==='birthDate'&&date.getTime()>Date.now()" />
          <el-select v-else-if="personnelChoices[field]||personnelDictionaryFields.includes(field)" v-model="draft.attributes[field]" clearable><el-option v-for="option in options(field,draft.attributes[field])" :key="option.value" :value="option.value" :label="option.label" :disabled="'disabled' in option&&option.disabled===true" /></el-select>
          <GeographyPicker v-else-if="field==='nativePlace'" v-model="draft.attributes[field]" :nodes="geographyNodes" />
@@ -165,7 +194,7 @@ onBeforeUnmount(()=>window.removeEventListener("beforeunload",beforeUnload));
        </div>
        <div v-else class="detail-field-grid detail-readonly-grid">
         <template v-if="group.key==='basic'"><div class="detail-readonly-field"><span>{{t('personnel.code')}}</span><strong>{{draft.code||'—'}}</strong></div><div class="detail-readonly-field"><span>{{t('personnel.name')}}</span><strong>{{draft.name||'—'}}</strong></div></template>
-        <div v-for="field in group.fields" :key="field" class="detail-readonly-field" :class="{'detail-field-wide':field==='remarks'}"><span>{{label(field)}}</span><strong>{{draft.attributes[field]?dictionaryName(field,draft.attributes[field]):'—'}}</strong></div>
+        <div v-for="field in group.fields.filter(field=>profileMode(field)!=='HIDDEN')" :key="field" class="detail-readonly-field" :class="{'detail-field-wide':field==='remarks'}"><span>{{label(field)}}</span><strong>{{draft.attributes[field]?dictionaryName(field,draft.attributes[field]):'—'}}</strong></div>
        </div>
       </div>
      </el-card>
@@ -187,17 +216,17 @@ onBeforeUnmount(()=>window.removeEventListener("beforeunload",beforeUnload));
      <p v-if="dirty" class="personnel-inline-hint">{{t('personnel.dirty')}}</p>
      <ManagementTable :title="t(isAssignment?'personnel.assignments':'personnel.sections.'+tab)" :rows="currentRows" :columns="detailColumns" :busy="busy" :loading="loading" heading-level="h2" embedded @refresh="reload">
       <template #titleHelp><InfoHint :content="t(isAssignment?'personnel.assignmentHint':'personnel.organizationHint')" /></template>
-      <template v-if="props.mode==='edit'" #actions><el-button v-operation="isAssignment?'Person.assign':'Person.createDetail'" type="primary" :disabled="detailsLocked" @click="openDetail()">{{t(isAssignment?'personnel.addAssignment':'personnel.addDetail')}}</el-button></template>
+      <template v-if="props.mode==='edit'" #actions><el-button v-operation="isAssignment?'Person.assign':'Person.createDetail'" type="primary" :disabled="detailsLocked||!canAddDetail" @click="openDetail()">{{t(isAssignment?'personnel.addAssignment':'personnel.addDetail')}}</el-button></template>
       <template v-for="field in (section?.fields??[])" :key="field" #[field]="{row}">{{display(row as PersonnelDetail,field)}}</template>
       <template #active="{row}"><el-tag :type="('active' in row&&row.active)?'success':'warning'">{{t(('active' in row&&row.active)?'personnel.active':'personnel.inactive')}}</el-tag></template>
-      <template v-if="props.mode==='edit'" #operations="{row}"><el-button v-operation="isAssignment?'Person.updateAssignment':'Person.updateDetail'" link type="primary" :disabled="detailsLocked" @click="openDetail(row)">{{t('masterData.edit')}}</el-button><el-button v-operation="isAssignment?'Person.unassign':'Person.deleteDetail'" link type="danger" :disabled="detailsLocked" @click="remove(row)">{{t(isAssignment?'personnel.unassign':'personnel.deleteDetail')}}</el-button></template>
+      <template v-if="props.mode==='edit'" #operations="{row}"><el-button v-operation="isAssignment?'Person.updateAssignment':'Person.updateDetail'" link type="primary" :disabled="detailsLocked" @click="openDetail(row)">{{t('masterData.edit')}}</el-button><el-button v-operation="isAssignment?'Person.unassign':'Person.deleteDetail'" link type="danger" :disabled="detailsLocked||!canRemoveDetail" @click="remove(row)">{{t(isAssignment?'personnel.unassign':'personnel.deleteDetail')}}</el-button></template>
      </ManagementTable>
     </template>
    </template>
   </TabbedDetailTemplate>
   <ManagedDialog v-if="props.mode==='edit'&&canRead" v-model="dialog" :title="t(isAssignment?(detailId?'personnel.editAssignment':'personnel.addAssignment'):(detailId?'personnel.editDetail':'personnel.addDetail'))" :busy="busy">
    <el-form class="business-border-label-form" ref="detailForm" :model="values" :rules="detailRules" label-position="top" :disabled="busy" @submit.prevent="saveDetail">
-    <el-form-item v-for="field in dialogFields" :key="field" :label="label(field)" :prop="field">
+    <el-form-item v-for="field in dialogFields.filter(field=>!detailMode(field))" :key="field" :label="label(field)" :prop="field">
      <GeographyPicker v-if="['countryRegion','province','city'].includes(field)" v-model="values[field]" :nodes="geographyNodes" :kind="field==='countryRegion'?'country':'region'" :country-code="field==='countryRegion'?undefined:values.countryRegion" :parent-code="field==='city'?values.province:undefined" :level="field==='province'?'province':field==='city'?'city':'any'" @select="selectGeography(field,$event)" />
      <el-date-picker v-else-if="isDate(field)" v-model="values[field]" type="date" value-format="YYYY-MM-DD" format="YYYY-MM-DD" />
      <el-select v-else-if="['organizationId','positionId','memberId'].includes(field)||personnelChoices[field]||personnelDictionaryFields.includes(field)" v-model="values[field]" filterable clearable @change="field==='organizationId'&&changeOrganization()"><el-option v-for="option in options(field)" :key="option.value" :value="option.value" :label="option.label" :disabled="'disabled' in option&&option.disabled===true" /></el-select>

@@ -32,6 +32,27 @@ class PlatformAdministrationTest extends DatabaseTestSupport {
  }
  private UUID user(){UUID id=UUID.randomUUID();service.createUser(actor,id,"user-"+id,"Test User",encoder.encode("test-password-2026"));return id;}
 
+ /** 租户 Provider 通过真实目录暴露，直接请求仍执行平台权限和写入约束。 */
+ @Test void tenantDeclarationUsesRealDirectoryAndTenantApi() throws Exception {
+  String path="/bff/platform/tenants";
+  UUID administrator=user(),ordinary=user(),request=UUID.randomUUID();
+  String body="{\"requestId\":\""+request+"\",\"name\":\"Provider Tenant\",\"administratorAccountId\":\""+administrator+"\"}";
+  mvc.perform(get("/bff/platform/business-objects").with(authenticated(actor.toString(),0)))
+   .andExpect(status().isOk()).andExpect(jsonPath("$[?(@.descriptor.objectType == 'Tenant')]").isNotEmpty());
+  mvc.perform(get(path).with(authenticated(ordinary.toString(),0))).andExpect(status().isForbidden());
+  mvc.perform(post(path).with(authenticated(ordinary.toString(),0)).with(csrf()).contentType("application/json").content(body))
+   .andExpect(status().isForbidden());
+  mvc.perform(post(path).with(authenticated(actor.toString(),0)).with(csrf()).contentType("application/json").content(body))
+   .andExpect(status().isOk()).andExpect(jsonPath("$.name").value("Provider Tenant"));
+  UUID id=service.tenants(actor,1,20,"Provider Tenant").items().getFirst().id();
+  mvc.perform(put(path+"/"+id).with(authenticated(actor.toString(),0)).with(csrf()).contentType("application/json")
+          .content("{\"name\":\"Provider Tenant Renamed\"}"))
+   .andExpect(status().isOk()).andExpect(jsonPath("$.name").value("Provider Tenant Renamed"));
+  mvc.perform(put(path+"/"+id+"/state").with(authenticated(actor.toString(),0)).with(csrf()).contentType("application/json")
+          .content("{\"enabled\":false}")).andExpect(status().isOk());
+  assertThat(service.tenants(actor,1,20,"Provider Tenant Renamed").items().getFirst().enabled()).isFalse();
+ }
+
  /** 强制下线使旧 Cookie 版本失效，且操作者授权、CSRF、本人保护不能绕过。 */
  @Test void administratorRevocationInvalidatesOldSessionAndIsAudited() throws Exception {
   UUID target=user(),ordinary=user();

@@ -20,6 +20,8 @@ public class PasswordRecoveryController {
     /** 新密码及凭证只在单次请求内存中存在。 */
     public record Completion(String username,String token,String newPassword){@Override public String toString(){return "Completion[redacted]";}}
     /** 正确恢复码被原子消费后签发 10 分钟有效凭证；失败文案统一。 */
+    @com.appnexus.contracts.operation.OperationBinding(id="Account.requestRecovery", reference=true,
+            eligibility=com.appnexus.contracts.operation.OperationBinding.Eligibility.OBJECT)
     @PostMapping
     ResponseEntity<Ticket> request(@RequestBody Request input){
         try{return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(new Ticket(recovery.recover(input.username(),input.recoveryCode())));}
@@ -27,6 +29,8 @@ public class PasswordRecoveryController {
         catch(IllegalStateException unavailable){throw AccountSettingsController.problem(HttpStatus.SERVICE_UNAVAILABLE,"MFA_UNAVAILABLE","恢复服务暂不可用");}
     }
     /** 单次凭证改密并撤销全部旧认证；MFA 因子保持启用，不能通过找回降级认证要求。 */
+    @com.appnexus.contracts.operation.OperationBinding(id="Account.completeRecovery", reference=true,
+            eligibility=com.appnexus.contracts.operation.OperationBinding.Eligibility.OBJECT)
     @PostMapping("/completion")
     ResponseEntity<Void> complete(@RequestBody Completion input){
         String next=input.newPassword();

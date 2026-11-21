@@ -13,6 +13,7 @@ public final class MyBatisProductSnapshot {
  /** @param c 已授权可信主体 @param id 当前租户商品UUID @return 原字段和四审计聚合投影，不作客户端可信写入事实 */
  public Map<String,Object> load(VerifiedTenantContext c,String id){
   var m=records.load(c,id,false);
+  m.put("measurementConfig",mapper.measurement(tenantBytes(c),id));
   m.put("approvalPending",mapper.approvalPending(tenantBytes(c),id));
   m.put("specifications",mapper.specifications(tenantBytes(c),id));
   m.put("specificationValues",mapper.specificationValues(tenantBytes(c),id));

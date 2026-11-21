@@ -5,7 +5,7 @@
  * 模板不读取业务数据、不提供权限兜底，保存/取消、折叠和字段校验由页面管理。
  */
 withDefaults(defineProps<{
-  /** 启用人员详情样板的布局密度，默认 false；后续主数据/基础数据详情应显式启用。 */
+  /** 启用客商详情样板的布局密度，默认 false；无专项要求的业务详情应显式启用。 */
   masterData?: boolean;
 }>(),{masterData:false});
 defineSlots<{header?:()=>unknown;summary?:()=>unknown;content?:()=>unknown;system?:()=>unknown;tabs?:()=>unknown}>();

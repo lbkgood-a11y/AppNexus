@@ -15,9 +15,11 @@ public final class OperationDecisionController {
  private final OperationRegistry registry;private final AccessAuthorization authorization;
  public OperationDecisionController(OperationRegistry registry,AccessAuthorization authorization){this.registry=registry;this.authorization=authorization;}
  /** 平台主体来自认证会话；返回操作标识而非让前端翻译权限码。 */
+ @com.appnexus.contracts.operation.OperationBinding(id="PermissionCatalog.platformDecisions", reference=true, eligibility=com.appnexus.contracts.operation.OperationBinding.Eligibility.SELF)
  @GetMapping("/bff/operation-decisions")
  public ResponseEntity<List<String>> platform(Authentication authentication){return decisions(AccessAuthorization.Subject.platform(UUID.fromString(authentication.getName())),false);}
  /** 租户来自可信上下文，客户端不得通过入参冒充成员。 */
+ @com.appnexus.contracts.operation.OperationBinding(id="PermissionCatalog.tenantDecisions", reference=true, eligibility=com.appnexus.contracts.operation.OperationBinding.Eligibility.SELF)
  @GetMapping("/api/operation-decisions")
  public ResponseEntity<List<String>> tenant(HttpServletRequest request){
   if(!(request.getAttribute(VerifiedTenantContext.class.getName()) instanceof VerifiedTenantContext c))return ResponseEntity.status(409).build();

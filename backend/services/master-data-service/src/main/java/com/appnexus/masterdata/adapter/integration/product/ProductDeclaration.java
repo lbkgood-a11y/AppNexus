@@ -8,6 +8,9 @@ import org.springframework.context.annotation.Lazy;
 /** 商品唯一声明；主档、规格SKU、图片与历史继承父商品组织范围，不授予未声明的RULES或字段能力。 */
 @Component
 public final class ProductDeclaration implements BusinessObjects.Provider {
+ // 审核读取契约与现有审核 Controller 共用开关；关闭引擎时不宣告不存在的 HTTP 入口。
+ @org.springframework.beans.factory.annotation.Value("${app.workflow.engine.enabled:false}")
+ private boolean approvalEnabled;
  private final BusinessObjectRuntime runtime;
  /**
   * 目录构建只读取声明；延迟连接运行端口，避免目录初始化反向创建依赖目录的授权执行器。
@@ -44,6 +47,9 @@ public final class ProductDeclaration implements BusinessObjects.Provider {
       operation("reviewLegacySpecification","确认旧商品规格原文","Review legacy product specification","masterdata.product:migrate_structure","PUT","/api/master-data/product/{id}/legacy-specification-review",List.of("master-data/product")),
       operation("stageLegacy","暂存旧商品","Stage legacy product","masterdata.product:stage_legacy","POST","/api/master-data/product/legacy/{id}/stage",List.of("master-data/product")),
       operation("reconcileLegacy","核对旧商品","Reconcile legacy products","masterdata.product:stage_legacy","GET","/api/master-data/product/legacy/reconciliation",List.of("master-data/product")),
+      operation("readMeasurement","查询商品单位与包装","Read product measurement","masterdata.product:read","GET","/api/master-data/product/{product}/structure-records/measurement",List.of("master-data/product")),
+      operation("saveMeasurement","维护商品单位与包装","Manage product measurement","masterdata.product:manage_structure","PUT","/api/master-data/product/{product}/structure-records/measurement",List.of("master-data/product")),
+      operation("calculatePackaging","试算商品包装","Calculate product packaging","masterdata.product:read","GET","/api/master-data/product/{product}/structure-records/measurement/calculation",List.of("master-data/product")),
       operation("readStructure","查询商品结构","Read structure","masterdata.product:read","GET","/api/master-data/product/{product}/structure-records",List.of("master-data/product","master-data/product-sku")),
       operation("createSpecification","新增商品规格","Create specification","masterdata.product:manage_structure","POST","/api/master-data/product/{product}/structure-records/specifications",List.of("master-data/product","master-data/product-sku")),
       operation("createSku","新增商品SKU","Create SKU","masterdata.product:manage_structure","POST","/api/master-data/product/{product}/structure-records/skus",List.of("master-data/product","master-data/product-sku")),
@@ -57,7 +63,15 @@ public final class ProductDeclaration implements BusinessObjects.Provider {
       operation("updateOrganizations","查询修改商品归属组织","Read update product organizations","masterdata.product:update","GET","/api/master-data/product/organizations/update",List.of("master-data/product")));
   var scopes=new TreeMap<String,Set<String>>();
   operations.forEach(op->scopes.put(op.operationCode(),Set.of("ALL","ORGANIZATION","ORGANIZATION_SUBTREE")));
-  return new Descriptor("Product","商品档案","Products","master-data",3,Category.MASTER_DATA,List.of(),operations,
+  if(approvalEnabled){
+   var withApproval=new ArrayList<>(operations);
+   withApproval.addAll(List.of(
+     operation("readApprovals","查询商品审核记录","Read product approvals","masterdata.product:read","GET","/api/master-data/product/{id}/approvals",List.of("master-data/product")),
+     operation("readApprovalOrganizations","查询商品审核组织","Read approval organizations","masterdata.product.approval:submit","GET","/api/master-data/product/approval-organizations",List.of("master-data/product")),
+     operation("readApprovalSnapshot","查看商品审核快照","Read product approval snapshot","","GET","/api/master-data/product/approval-requests/{id}",List.of("master-data/product"))));
+   operations=List.copyOf(withApproval);
+  }
+  return new Descriptor("Product","商品档案","Products","master-data",4,Category.MASTER_DATA,List.of(),operations,
    new DataAccess("TENANT",List.of(new DataResource("masterdata.product","","商品档案","Products",List.of())),scopes));
  }
  /** 固定页面和真实API来自代码；预览等额外读取前置仍由原用例复核，不以声明替代执行。 */

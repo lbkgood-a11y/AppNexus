@@ -4,6 +4,7 @@ import com.appnexus.platform.tenant.PlatformAdministration;
 import com.appnexus.platform.authorization.FieldSecurity;
 import com.appnexus.platform.authorization.FieldProtection;
 import com.appnexus.platform.authorization.AccessAuthorization;
+import com.appnexus.platform.authorization.DataAccessDeclaration;
 import com.appnexus.platform.persistence.organization.OrganizationAdministratorBootstrap;
 import java.util.*;
 import org.springframework.stereotype.Service;
@@ -11,7 +12,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 /** 平台开通用例；授权复核、目录写入及追加审计同事务，不读取或修改组织业务数据。 */
 @Service
-public class MyBatisPlatformAdministration implements PlatformAdministration {
+public class MyBatisPlatformAdministration implements PlatformAdministration, DataAccessDeclaration.Executor {
+    /** @return 由平台管理资格、固定租户档案查询与事务约束保护的资源 */
+    @Override public Set<String> enforcedResources(){return Set.of(TENANT_RESOURCE);}
     private final com.appnexus.platform.persistence.configuration.MyBatisDictionaryProvisioning dictionaryProvisioning;
     private final AdministrationMapper mapper;
     private final com.appnexus.platform.organization.PersonnelExecution personnel;

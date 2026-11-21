@@ -8,7 +8,9 @@ import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 /** 租户成员组织授权及追加式审计的 MyBatis 适配器。 */
 @Repository
-public class MyBatisOrganizationGrantManagement implements OrganizationGrantManagement {
+public class MyBatisOrganizationGrantManagement implements OrganizationGrantManagement, com.appnexus.platform.authorization.DataAccessDeclaration.Executor {
+ /** @return 按可信租户、目标成员及原授权用例隔离的组织授权资源 */
+ @Override public java.util.Set<String> enforcedResources(){return java.util.Set.of("organization.authorization");}
     private final OrganizationAuthorizationMapper mapper;
     private final TenantAccess members;
     public MyBatisOrganizationGrantManagement(OrganizationAuthorizationMapper mapper,TenantAccess members) {

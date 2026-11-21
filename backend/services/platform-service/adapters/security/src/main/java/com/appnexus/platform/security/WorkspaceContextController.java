@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @EndpointPolicy(EndpointPolicy.Domain.TENANT_CONTEXT)
 public class WorkspaceContextController {
+    @com.appnexus.contracts.operation.OperationBinding(id="TenantMember.workspaceContext", reference=true, eligibility=com.appnexus.contracts.operation.OperationBinding.Eligibility.SELF)
     @GetMapping("/api/workspace/context")
     ResponseEntity<VerifiedTenantContext> current(HttpServletRequest request) {
         var context = request.getAttribute(TenantExecutionFilter.ATTRIBUTE);

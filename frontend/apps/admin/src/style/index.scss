@@ -197,4 +197,4 @@ html[data-theme][data-menu-color="dark"] {
 /* 所有路由内的普通卡片共用内容密度；公共模板显式零内边距的布局仍优先，画布尺寸不受影响。 */
 .main-content .el-card { --el-card-padding:var(--app-content-padding,12px); border-color:var(--el-border-color-lighter); border-radius:var(--app-card-radius); box-shadow:none; }
 .main-content .el-form-item__label,.app-managed-dialog .el-form-item__label { font-size:13px; font-weight:500; color:var(--el-text-color-regular); }
-.hide-page-banner .page-header:not(:has(.page-header__actions > *)):not(:has(.el-breadcrumb)) { display:none; }
+.hide-page-banner .page-header:not(:has(.page-header__actions > *, .page-header__trailing > *, .el-breadcrumb)) { display:none; }

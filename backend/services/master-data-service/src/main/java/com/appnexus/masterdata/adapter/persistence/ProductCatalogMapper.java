@@ -5,8 +5,24 @@ import java.util.List;
 import java.util.Map;
 /** ProductCatalogService固定SQL映射；不接收SQL或标识符，原用例逐次验证可信租户及操作。 */
 @Mapper
-@PlatformScoped(tables={"md_product_category","md_product_category_config","md_product_category_config_item","md_product_category_guard","md_product_category_template","md_product_template","md_product_template_item","md_product_template_version","md_product_unit"})
+@PlatformScoped(tables={"md_product_category","md_product_category_config","md_product_category_config_item","md_product_category_guard","md_product_category_template","md_product_template","md_product_template_item","md_product_template_version","md_product_unit","md_product_unit_group"})
 public interface ProductCatalogMapper {
+ /** 同租户分组目录，按稳定编码排序。 */
+ @Select("SELECT code,name,version FROM md_product_unit_group WHERE tenant_id=UUID_TO_BIN(#{tenant}) ORDER BY code")
+ List<Map<String,Object>> unitGroups(@Param("tenant") String tenant);
+
+ /** 兼容原单位创建入口；同租户分组已存在时保留显示名称和版本。 */
+ @Insert("INSERT INTO md_product_unit_group(tenant_id,code,name,created_by,updated_by) VALUES(UUID_TO_BIN(#{tenant}),#{code},#{code},UUID_TO_BIN(#{actor}),UUID_TO_BIN(#{actor})) ON DUPLICATE KEY UPDATE code=code")
+ void ensureUnitGroup(@Param("tenant") String tenant,@Param("code") String code,@Param("actor") String actor);
+
+ /** 创建独立分组，租户内编码冲突由唯一键拒绝。 */
+ @Insert("INSERT INTO md_product_unit_group(tenant_id,code,name,created_by,updated_by) VALUES(UUID_TO_BIN(#{tenant}),#{code},#{name},UUID_TO_BIN(#{actor}),UUID_TO_BIN(#{actor}))")
+ void createUnitGroup(@Param("tenant") String tenant,@Param("code") String code,@Param("name") String name,@Param("actor") String actor);
+
+ /** 仅更新同租户且版本匹配的显示名称和更新审计。 */
+ @Update("UPDATE md_product_unit_group SET name=#{name},version=version+1,updated_by=UUID_TO_BIN(#{actor}),updated_at=CURRENT_TIMESTAMP(6) WHERE tenant_id=UUID_TO_BIN(#{tenant}) AND code=#{code} AND version=#{version}")
+ int renameUnitGroup(@Param("tenant") String tenant,@Param("code") String code,@Param("name") String name,@Param("actor") String actor,@Param("version") long version);
+
  /** 固定业务语句1；准入、参数规则、聚合锁及事务由原用例负责，所有值绑定。 */
  @Insert("INSERT INTO md_product_unit(id,tenant_id,code,name,dimension_code,precision_scale,created_by,updated_by) VALUES(UUID_TO_BIN(#{p0}),UUID_TO_BIN(#{p1}),#{p2},#{p3},#{p4},#{p5},UUID_TO_BIN(#{p6}),UUID_TO_BIN(#{p7}))")
  int createUnit(@Param("p0") Object p0,@Param("p1") Object p1,@Param("p2") Object p2,@Param("p3") Object p3,@Param("p4") Object p4,@Param("p5") Object p5,@Param("p6") Object p6,@Param("p7") Object p7);
@@ -68,7 +84,7 @@ public interface ProductCatalogMapper {
  String lockCategoryGuard(@Param("p0") Object p0);
 
  /** 固定目录查询；分类版本和单位引用保持原业务准入及租户边界。 */
- @Select("SELECT BIN_TO_UUID(id) id,code,name,dimension_code,precision_scale,enabled,version,BIN_TO_UUID(created_by) creator,created_at,BIN_TO_UUID(updated_by) updater,updated_at FROM md_product_unit WHERE tenant_id=UUID_TO_BIN(#{tenant}) AND (LOCATE(#{keyword},code)>0 OR LOCATE(#{keyword},name)>0) ORDER BY code,id LIMIT #{size} OFFSET #{offset}") List<Map<String,Object>> units(@Param("tenant") String tenant,@Param("keyword") String keyword,@Param("size") int size,@Param("offset") int offset);
+ @Select("SELECT BIN_TO_UUID(id) id,code,name,dimension_code,precision_scale,enabled,version,BIN_TO_UUID(created_by) creator,created_at,BIN_TO_UUID(updated_by) updater,updated_at FROM md_product_unit WHERE tenant_id=UUID_TO_BIN(#{tenant}) AND (#{group} IS NULL OR dimension_code=#{group}) AND (LOCATE(#{keyword},code)>0 OR LOCATE(#{keyword},name)>0) ORDER BY code,id LIMIT #{size} OFFSET #{offset}") List<Map<String,Object>> units(@Param("tenant") String tenant,@Param("keyword") String keyword,@Param("group") String group,@Param("size") int size,@Param("offset") int offset);
  /** 固定目录查询；分类版本和单位引用保持原业务准入及租户边界。 */
  @Select("SELECT BIN_TO_UUID(id) id,code,name,dimension_code,precision_scale,enabled,version,BIN_TO_UUID(created_by) creator,created_at,BIN_TO_UUID(updated_by) updater,updated_at FROM md_product_unit WHERE tenant_id=UUID_TO_BIN(#{tenant}) AND id=UUID_TO_BIN(#{id})") List<Map<String,Object>> unit(@Param("tenant") String tenant,@Param("id") String id);
  /** 固定目录查询；分类版本和单位引用保持原业务准入及租户边界。 */
@@ -78,5 +94,5 @@ public interface ProductCatalogMapper {
  /** 固定目录查询；分类版本和单位引用保持原业务准入及租户边界。 */
  @Select("SELECT purpose,BIN_TO_UUID(template_version_id) version_id FROM md_product_category_template WHERE tenant_id=UUID_TO_BIN(#{tenant}) AND config_id=UUID_TO_BIN(#{id})") List<Map<String,Object>> slots(@Param("tenant") String tenant,@Param("id") String id);
  /** @param tenant 可信租户 @param keyword 与列表一致的字面过滤 @return 同租户匹配总数 */
- @Select("SELECT COUNT(*) FROM md_product_unit WHERE tenant_id=UUID_TO_BIN(#{tenant}) AND (LOCATE(#{keyword},code)>0 OR LOCATE(#{keyword},name)>0)") long unitCount(@Param("tenant") String tenant,@Param("keyword") String keyword);
+ @Select("SELECT COUNT(*) FROM md_product_unit WHERE tenant_id=UUID_TO_BIN(#{tenant}) AND (#{group} IS NULL OR dimension_code=#{group}) AND (LOCATE(#{keyword},code)>0 OR LOCATE(#{keyword},name)>0)") long unitCount(@Param("tenant") String tenant,@Param("keyword") String keyword,@Param("group") String group);
 }

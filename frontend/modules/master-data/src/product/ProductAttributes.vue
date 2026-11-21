@@ -3,7 +3,7 @@ import {computed,watch} from "vue";
 import {useI18n} from "vue-i18n";
 import type {ProductField} from "./product";
 /** 领域动态表单只组合现有Element Plus，required仅提示启用要求，不阻断合法不完整草稿保存。 */
-const props=defineProps<{fields:ProductField[];values:Record<string,string|string[]>;readonly?:boolean;disabled?:boolean}>();
+const props=defineProps<{/** 商品详情使用公共字段网格；规格弹窗保留现有表单密度。 */detailProfile?:boolean;fields:ProductField[];values:Record<string,string|string[]>;readonly?:boolean;disabled?:boolean}>();
 const emit=defineEmits<{change:[id:string,value:string|string[]];valid:[value:boolean]}>();
 const {t}=useI18n();
 const groups=computed(()=>{const groups=new Map<string,{label:string;fields:ProductField[]}>();for(const field of props.fields){const key=field.purpose+":"+field.groupCode;if(!groups.has(key))groups.set(key,{label:t("productCatalog."+field.purpose)+(field.groupName?" / "+field.groupName:""),fields:[]});groups.get(key)!.fields.push(field);}return [...groups.values()];});
@@ -34,9 +34,14 @@ watch(()=>[props.fields,props.values],()=>emit("valid",props.fields.every(field=
 </script>
 <template>
 <section v-for="group in groups" :key="group.label" class="product-attribute-group">
-<h3>{{group.label}}</h3>
-<el-descriptions v-if="readonly" :column="1" border><el-descriptions-item v-for="field in group.fields" :key="field.templateItemId" :label="field.name">{{display(field)}}</el-descriptions-item></el-descriptions>
-<div v-else class="product-attribute-grid">
+<div v-if="detailProfile" class="detail-section-heading"><h2>{{group.label}}</h2></div><h3 v-else>{{group.label}}</h3>
+<div v-if="readonly&&detailProfile" class="detail-field-grid">
+ <div v-for="field in group.fields" :key="field.templateItemId" class="detail-readonly-field">
+  <span>{{field.name}}</span><strong>{{display(field)}}</strong>
+ </div>
+</div>
+<el-descriptions v-else-if="readonly" :column="1" border><el-descriptions-item v-for="field in group.fields" :key="field.templateItemId" :label="field.name">{{display(field)}}</el-descriptions-item></el-descriptions>
+<div v-else :class="detailProfile ? 'detail-field-grid' : 'product-attribute-grid'">
 <el-form-item v-for="field in group.fields" :key="field.templateItemId" :error="inputError(field)">
 <template #label>{{field.name}}<span v-if="field.requiredFlag" class="required-hint"> · {{t('productV1.requiredToEnable')}}</span><span v-if="field.unitCode"> ({{field.unitCode}})</span></template>
 <el-select v-if="field.dataType==='BOOLEAN'" :model-value="values[field.templateItemId]??''" clearable :disabled="disabled" @update:model-value="v=>change(field,v)"><el-option value="true" :label="t('productV1.yes')"/><el-option value="false" :label="t('productV1.no')"/></el-select>

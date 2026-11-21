@@ -4,7 +4,7 @@ import java.time.Instant;
 import com.appnexus.platform.tenant.VerifiedTenantContext;
 /** 统一受权审计只读公开用例，不返回业务正文、凭据或授权JSON。 */
 public interface AuditQueries {
-    /** 审计摘要，traceId 缺省 null 表示历史事件未采集，不伪造技术关联。 */
+    /** 审计摘要；目标受字段隐藏策略时为 null，traceId 未采集时为 null。 */
     public record Entry(String source,String eventId,String actor,String action,String target,String traceId,Integer status,Instant occurredAt){}
     /** 固定分页契约，items/total 使用完全一致的租户边界。 */
     public record Page(List<Entry> items,long total,int page,int pageSize){}

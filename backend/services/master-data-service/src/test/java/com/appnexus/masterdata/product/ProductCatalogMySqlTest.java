@@ -14,6 +14,8 @@ import com.appnexus.masterdata.bootstrap.MasterDataConfiguration;
 
 import static org.assertj.core.api.Assertions.*;
 import com.appnexus.masterdata.api.masterdata.MasterData.Rejection;
+import com.appnexus.masterdata.api.product.ProductCatalogManagement;
+import com.appnexus.masterdata.api.product.ProductMeasurement;
 import com.appnexus.platform.authorization.AccessAuthorization;
 import com.appnexus.platform.tenant.VerifiedTenantContext;
 import java.nio.charset.StandardCharsets;
@@ -25,6 +27,9 @@ import org.springframework.jdbc.datasource.*;
 import org.springframework.jdbc.datasource.init.ScriptUtils;
 import org.testcontainers.mysql.MySQLContainer;
 import static com.appnexus.masterdata.api.product.ProductCatalogData.*;
+import com.appnexus.masterdata.api.product.ProductAttributeData.AttributeInput;
+import com.appnexus.masterdata.api.product.ProductAttributeData.OptionSeed;
+import com.appnexus.masterdata.api.product.ProductAttributeData.RevisionInput;
 
 /** 隔离MySQL验证商品DDL与真实领域事务；不连接开发库，不以mock代替数据库约束。 */
 @Tag("container")
@@ -34,11 +39,15 @@ class ProductCatalogMySqlTest {
    mysql.start();
    var source=new DriverManagerDataSource(mysql.getJdbcUrl()+"?connectionTimeZone=UTC&forceConnectionTimeZoneToSession=true",mysql.getUsername(),mysql.getPassword());
    var jdbc=new JdbcTemplate(source);
-   for(String name:List.of("V97__product_catalog_foundation.sql","V98__product_attribute_templates.sql","V99__product_attribute_templates.sql","V100__product_category_template_binding.sql","V101__product_v1_master.sql","V103__product_value_integrity.sql","V106__product_structure_requests.sql","V108__product_legacy_preservation.sql","V110__product_custom_choices.sql","V112__product_integrity_hardening.sql","V113__product_unit_conversion.sql","V114__product_images.sql","V116__product_specifications_components.sql","V117__product_approval.sql","V119__product_custom_specification_values.sql","V132__product_organization_ownership.sql")){
+   String legacyTenant=UUID.randomUUID().toString();
+   String legacyUnit=UUID.randomUUID().toString();
+   for(String name:List.of("V97__product_catalog_foundation.sql","V98__product_attribute_templates.sql","V99__product_attribute_templates.sql","V100__product_category_template_binding.sql","V101__product_v1_master.sql","V103__product_value_integrity.sql","V106__product_structure_requests.sql","V108__product_legacy_preservation.sql","V110__product_custom_choices.sql","V112__product_integrity_hardening.sql","V113__product_unit_conversion.sql","V114__product_images.sql","V116__product_specifications_components.sql","V117__product_approval.sql","V119__product_custom_specification_values.sql","V132__product_organization_ownership.sql","V133__product_unit_groups.sql","V134__product_measurement.sql")){
+    if(name.startsWith("V133__"))jdbc.update("INSERT INTO md_product_unit(id,tenant_id,code,name,dimension_code) VALUES(UUID_TO_BIN(?),UUID_TO_BIN(?),'OLD','Legacy','MASS')",legacyUnit,legacyTenant);
     // 权限/菜单真实迁移由组合应用验证；此测试只执行同文件完整DDL，不伪造业务约束。
     String sql=new String(new ClassPathResource("db/migration/"+name).getInputStream().readAllBytes(),StandardCharsets.UTF_8).split("INSERT INTO access_permission")[0];
     try(var conn=source.getConnection()){ScriptUtils.executeSqlScript(conn,new ByteArrayResource(sql.getBytes(StandardCharsets.UTF_8)));}
    }
+   assertThat(jdbc.queryForObject("SELECT BIN_TO_UUID(u.id) FROM md_product_unit u JOIN md_product_unit_group g ON g.tenant_id=u.tenant_id AND g.code=u.dimension_code WHERE u.tenant_id=UUID_TO_BIN(?) AND g.code='MASS'",String.class,legacyTenant)).isEqualTo(legacyUnit);
    try(var migrationConnection=source.getConnection()){new db.migration.V115__product_extended_modes().migrate(new org.flywaydb.core.api.migration.Context(){public org.flywaydb.core.api.configuration.Configuration getConfiguration(){return null;}public java.sql.Connection getConnection(){return migrationConnection;}});}
    // 复用历史DDL中md_product及审计补列的原始语句，不伪造旧字段类型。
    String oldSql=new String(new ClassPathResource("db/migration/V75__master_data.sql").getInputStream().readAllBytes(),StandardCharsets.UTF_8);
@@ -62,7 +71,7 @@ class ProductCatalogMySqlTest {
    mapperConfig.addMapper(com.appnexus.masterdata.adapter.persistence.ProductCompletenessMapper.class);
    mapperConfig.addMapper(com.appnexus.masterdata.adapter.persistence.ProductSnapshotMapper.class);
    mapperConfig.addMapper(com.appnexus.masterdata.adapter.persistence.ProductHistoryMapper.class);
-   mapperConfig.addMapper(com.appnexus.masterdata.adapter.persistence.ProductListMapper.class);
+   // 列表 Mapper 由下方 XML 装配注册，避免同时按接口和资源路径重复解析。
    mapperConfig.addMapper(com.appnexus.masterdata.adapter.persistence.ProductCatalogReadMapper.class);
    for(Class<?> type:List.of(ProductCatalogMapper.class,ProductAttributeMapper.class,ProductTemplateMapper.class,ProductImageMapper.class,ProductStructureMapper.class,ProductMainMapper.class,ProductAttributeValueMapper.class,ProductAccessMapper.class,ProductApprovalMapper.class,com.appnexus.platform.persistence.businessobject.ObjectRecordMapper.class))mapperConfig.addMapper(type);
    mapperFactory.setConfiguration(mapperConfig);
@@ -79,6 +88,12 @@ class ProductCatalogMySqlTest {
    var gram=service.createUnit(c,new UnitInput("G","克","MASS",3,0));
    var kilogram=unit;
    var hour=service.createUnit(c,new UnitInput("HOUR","小时","TIME",2,0));
+   service.renameUnitGroup(c,"MASS",new ProductCatalogManagement.UnitGroupInput(null,"质量",0L));
+   assertThat(service.unitGroups(c)).anySatisfy(group->assertThat(group).containsEntry("name","质量"));
+   assertThat(service.unitGroups(other)).isEmpty();
+   assertThat(service.units(c,"",1,1,"MASS").total()).isEqualTo(2);
+   assertThat(service.units(c,"",1,10,"TIME").rows()).extracting(Unit::id).containsExactly(hour.id());
+   assertThatThrownBy(()->service.renameUnitGroup(c,"MASS",new ProductCatalogManagement.UnitGroupInput(null,"过期版本",0L))).isInstanceOf(Rejection.class);
    var conversionMapper=new org.mybatis.spring.SqlSessionTemplate(mapperFactory.getObject()).getMapper(com.appnexus.masterdata.adapter.persistence.UnitConversionMapper.class);
    var conversion=com.appnexus.masterdata.bootstrap.MasterDataConfiguration.conversions(conversionMapper,allow,new DataSourceTransactionManager(source));
    @SuppressWarnings("unchecked") var converted=(Map<String,String>)conversion.create(c,new com.appnexus.masterdata.api.product.UnitConversions.Input(gram.id(),kilogram.id(),"0.001"));
@@ -112,6 +127,21 @@ class ProductCatalogMySqlTest {
    assertThatThrownBy(()->denied.createCategory(c,new CategoryInput("DENIED","拒绝",null,0))).hasMessage("MASTER_DATA_DENIED");
    assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM md_product_category WHERE code='DENIED'",Integer.class)).isZero();
    var attributes=new ProductAttributeService(allow,new SpringProductAttributeTransaction(manager),new MyBatisProductAttributeRepository(sql.getMapper(ProductAttributeMapper.class)),new JacksonAttributeRuleContent());
+   var color=new OptionSeed("BLACK","黑色");
+   var initialColor=new RevisionInput("颜色","MULTI_SELECT",null,null,"{}",0,List.of(color));
+   var duplicate=new RevisionInput("颜色","MULTI_SELECT",null,null,"{}",0,List.of(color,color));
+   assertThatThrownBy(()->attributes.createAttribute(c,new AttributeInput("COLOR-REJECTED",null,0,duplicate))).isInstanceOf(Rejection.class);
+   assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM md_product_attribute WHERE code='COLOR-REJECTED'",Integer.class)).isZero();
+   var colorId=attributes.createAttribute(c,new AttributeInput("COLOR",null,0,initialColor)).get("id");
+   assertThat(attributes.attributes(c).toString()).contains(colorId,"颜色","MULTI_SELECT");
+   assertThat(attributes.attributes(other)).isEqualTo(List.of());
+   assertThat(jdbc.queryForObject("""
+       SELECT COUNT(*) FROM md_product_attribute_option o
+       JOIN md_product_attribute_revision r ON r.tenant_id=o.tenant_id AND r.id=o.revision_id
+       WHERE r.attribute_id=UUID_TO_BIN(?) AND r.state='DRAFT' AND o.label='黑色'
+         AND o.created_by=UUID_TO_BIN(?) AND o.updated_by=o.created_by
+         AND o.created_at IS NOT NULL AND o.updated_at IS NOT NULL
+       """,Integer.class,colorId,c.accountId().toString())).isEqualTo(1);
    var attributeId=attributes.createAttribute(c,new com.appnexus.masterdata.api.product.ProductAttributeData.AttributeInput("material",null,0)).get("id");
    var revisionId=attributes.createRevision(c,attributeId,new com.appnexus.masterdata.api.product.ProductAttributeData.RevisionInput("材质","SINGLE_SELECT",null,null,"{}",0)).get("id");
    attributes.createOption(c,revisionId,new com.appnexus.masterdata.api.product.ProductAttributeData.OptionInput("STEEL","钢",0,1));
@@ -154,7 +184,27 @@ class ProductCatalogMySqlTest {
    var structural=products.create(c,new com.appnexus.masterdata.api.product.ProductMainData.Input("STRUCTURE","结构测试",null,parent.id(),config.id(),"SERVICE",null,null,null,null,null,"",organization.toString()));String structuralId=(String)structural.get("id");
    var move=new com.appnexus.masterdata.api.product.ProductStructureData.Migration(0L,0L,config.id(),parent.id(),config.id(),"SERVICE",null,List.of(),List.of(),"采用自定义规格",null,"CUSTOM",List.of());
    var movePreview=products.previewStructure(c,structuralId,move);products.migrateStructure(c,structuralId,new com.appnexus.masterdata.api.product.ProductStructureData.MigrationCommand(move,(String)movePreview.get("previewToken")),UUID.randomUUID().toString());
-   var structures=new ProductStructureService(allow,new SpringProductStructureTransaction(manager),products,new MyBatisProductStructureRepository(sql.getMapper(ProductStructureMapper.class)),new JacksonAttributeRuleContent());
+   var structures=new ProductStructureService(allow,new SpringProductStructureTransaction(manager),products,new MyBatisProductStructureRepository(sql.getMapper(ProductStructureMapper.class)),new JacksonAttributeRuleContent(),new JacksonProductContent());
+   var measured=products.create(c,new com.appnexus.masterdata.api.product.ProductMainData.Input("MEASURED","包装试算",null,parent.id(),config.id(),"PHYSICAL",unit.id(),null,null,null,null,"",organization.toString()));
+   String measuredId=(String)measured.get("id");
+   var carton=service.createUnit(c,new UnitInput("BOX","箱","PACKAGING",0,0));
+   var measurement=new ProductMeasurement.Change(0L,
+       List.of(new ProductMeasurement.Unit(carton.id(),"ARRIVAL","PACKAGING",true),
+           new ProductMeasurement.Unit(gram.id(),"ARRIVAL","CONVERSION",false)),
+       List.of(new ProductMeasurement.Packaging("PACK-6","六件箱",carton.id(),"6"),
+           new ProductMeasurement.Packaging("PACK-12","十二件箱",carton.id(),"12")));
+   assertThat(structures.measurement(c,measuredId).toString()).contains(unit.id());
+   assertThatThrownBy(()->structures.saveMeasurement(c,measuredId,measurement)).isInstanceOf(Rejection.class);
+   conversion.status(c,converted.get("id"),new com.appnexus.masterdata.api.product.UnitConversions.Status(true,1L));
+   assertThat(structures.saveMeasurement(c,measuredId,measurement).toString()).contains("version=1");
+   assertThat(structures.calculatePackaging(c,measuredId,"PACK-6","2").toString()).contains("exact=12");
+   assertThat(structures.calculatePackaging(c,measuredId,"PACK-12","2").toString()).contains("exact=24");
+   assertThatThrownBy(()->structures.calculatePackaging(c,measuredId,"PACK-12","0.5")).isInstanceOf(Rejection.class);
+   assertThatThrownBy(()->structures.calculatePackaging(other,measuredId,"PACK-12","2")).isInstanceOf(Rejection.class);
+   assertThatThrownBy(()->structures.saveMeasurement(c,measuredId,measurement)).isInstanceOf(Rejection.class);
+   assertThat(products.read(c,measuredId).get("measurementConfig").toString()).contains("PACK-12");
+   structures.saveMeasurement(c,measuredId,new ProductMeasurement.Change(1L,List.of(),List.of()));
+   assertThat(products.read(c,measuredId).get("measurementConfig")).isNull();
    @SuppressWarnings("unchecked") var spec=(Map<String,String>)structures.createSpecification(c,structuralId,new com.appnexus.masterdata.api.product.ProductStructureCommands.Specification("按图加工","图纸A-01",List.of(),1L));
    assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM md_product_sku WHERE tenant_id=UUID_TO_BIN(?) AND product_id=UUID_TO_BIN(?)",Integer.class,c.tenantId().toString(),structuralId)).isZero();
    structures.createSku(c,structuralId,new com.appnexus.masterdata.api.product.ProductStructureCommands.Sku(spec.get("id"),"STRUCTURE-SKU",2L));
@@ -172,7 +222,7 @@ class ProductCatalogMySqlTest {
    assertThatThrownBy(()->structures.addComponent(c,compositeId,new com.appnexus.masterdata.api.product.ProductStructureCommands.Component(compositeId,"1",1L,1L))).isInstanceOf(Rejection.class);
    products.updateStatus(c,compositeId,new com.appnexus.masterdata.api.product.ProductCommandData.Status("ENABLED",1));
    // 审批适配器契约：用测试端口模拟可靠终态，数据库、快照冻结和幂等仍为真实MySQL事务；不冒充真实引擎全流程。
-   var approvalProduct=products.create(c,new com.appnexus.masterdata.api.product.ProductMainData.Input("APPROVAL","待审核",null,parent.id(),config.id(),"SERVICE",null,null,null,null,null,"",organization.toString()));String approvalProductId=(String)approvalProduct.get("id"),approvalOrg=UUID.randomUUID().toString();
+   var approvalProduct=products.create(c,new com.appnexus.masterdata.api.product.ProductMainData.Input("APPROVAL","待审核",null,parent.id(),config.id(),"PHYSICAL",unit.id(),null,null,null,null,"",organization.toString()));String approvalProductId=(String)approvalProduct.get("id"),approvalOrg=UUID.randomUUID().toString();
    var workflowPlatform=org.mockito.Mockito.mock(com.appnexus.contracts.workflow.WorkflowPlatform.class);org.mockito.Mockito.when(workflowPlatform.active(org.mockito.ArgumentMatchers.anyString(),org.mockito.ArgumentMatchers.anyString())).thenReturn(true);org.mockito.Mockito.when(workflowPlatform.allowed(org.mockito.ArgumentMatchers.any(),org.mockito.ArgumentMatchers.anyString())).thenReturn(true);org.mockito.Mockito.when(workflowPlatform.documentOrganizations(org.mockito.ArgumentMatchers.any())).thenReturn(List.of(new com.appnexus.contracts.workflow.WorkflowPlatform.Option(approvalOrg,"测试组织")));
    org.mockito.Mockito.when(workflowPlatform.projectData(org.mockito.ArgumentMatchers.any(),org.mockito.ArgumentMatchers.anyString(),org.mockito.ArgumentMatchers.anyMap())).thenAnswer(call->call.getArgument(2));
    var starterPort=org.mockito.Mockito.mock(com.appnexus.contracts.workflow.WorkflowStarter.class);org.mockito.Mockito.when(starterPort.startBound(org.mockito.ArgumentMatchers.any(),org.mockito.ArgumentMatchers.anyString(),org.mockito.ArgumentMatchers.anyString(),org.mockito.ArgumentMatchers.anyLong(),org.mockito.ArgumentMatchers.anyString(),org.mockito.ArgumentMatchers.anyString(),org.mockito.ArgumentMatchers.anyString(),org.mockito.ArgumentMatchers.anyString())).thenReturn("test-instance");
@@ -191,17 +241,26 @@ class ProductCatalogMySqlTest {
      public boolean operationAllowed(com.appnexus.contracts.businessobject.BusinessObjects.Context context,String operation,String permission){return workflowPlatform.allowed(new com.appnexus.contracts.workflow.WorkflowContext(context.tenantId(),context.actorId(),context.requestId()),permission);}
      public com.appnexus.contracts.businessobject.BusinessObjectRuntime.Snapshot authorizeRecord(com.appnexus.contracts.businessobject.BusinessObjects.Context context,com.appnexus.contracts.businessobject.BusinessObjects.Descriptor descriptor,String operation,com.appnexus.contracts.businessobject.BusinessObjectRuntime.Snapshot snapshot){return snapshot;}
    },()->starterPort,()->null));
+   structures.saveMeasurement(c,approvalProductId,measurement);
    var approvalBridge=new com.appnexus.workflow.adapter.flowable.ObjectWorkflowAdapter(approvalDeclaration,approvalDeclaration.descriptor().operations().getFirst(),workflowPlatform,()->taskPort,manager);
    var workflowContext=new com.appnexus.contracts.workflow.WorkflowContext(c.tenantId().toString(),c.accountId().toString(),UUID.randomUUID().toString());
-   @SuppressWarnings("unchecked") var submitted=(Map<String,Object>)approvals.submit(c,workflowContext,approvalProductId,0,approvalOrg);String requestId=(String)submitted.get("id");
-   assertThat(approvals.submit(c,workflowContext,approvalProductId,0,approvalOrg)).isEqualTo(submitted);
-   assertThatThrownBy(()->products.update(c,approvalProductId,new com.appnexus.masterdata.api.product.ProductMainData.Update("修改冻结正文",null,null,null,null,List.of(),1))).hasMessage("PRODUCT_APPROVAL_IN_PROGRESS");
-   var badResult=new com.appnexus.contracts.workflow.WorkflowBusiness.Invocation("delivery",workflowContext,"ProductApproval",requestId,approvalOrg,1,"EXECUTE","delivery",new com.appnexus.contracts.workflow.WorkflowBusiness.Reference("wrong-instance","test-definition",1,null,"APPROVAL","APPROVED"),null,Map.of());
+   @SuppressWarnings("unchecked") var submitted=(Map<String,Object>)approvals.submit(c,workflowContext,approvalProductId,1,approvalOrg);String requestId=(String)submitted.get("id");
+   assertThat(approvals.submit(c,workflowContext,approvalProductId,1,approvalOrg)).isEqualTo(submitted);
+   assertThatThrownBy(()->products.update(c,approvalProductId,new com.appnexus.masterdata.api.product.ProductMainData.Update("修改冻结正文",null,null,null,null,List.of(),2))).hasMessage("PRODUCT_APPROVAL_IN_PROGRESS");
+   assertThat(submitted.get("version")).isEqualTo(2L);
+   String basis=jdbc.queryForObject("SELECT CAST(basis_snapshot AS CHAR) FROM md_product_approval WHERE tenant_id=UUID_TO_BIN(?) AND id=UUID_TO_BIN(?)",String.class,c.tenantId().toString(),requestId);
+   var json=new tools.jackson.databind.ObjectMapper();
+   var frozen=json.readTree(basis);
+   assertThat(frozen.path("version").asLong()).isEqualTo(2);
+   assertThat(json.readTree(frozen.path("measurementConfig").asText()).path("packaging").get(1).path("code").asText()).isEqualTo("PACK-12");
+   assertThatThrownBy(()->structures.saveMeasurement(c,approvalProductId,new ProductMeasurement.Change(2L,List.of(),List.of())))
+       .hasMessage("PRODUCT_APPROVAL_IN_PROGRESS");
+   var badResult=new com.appnexus.contracts.workflow.WorkflowBusiness.Invocation("delivery",workflowContext,"ProductApproval",requestId,approvalOrg,2,"EXECUTE","delivery",new com.appnexus.contracts.workflow.WorkflowBusiness.Reference("wrong-instance","test-definition",1,null,"APPROVAL","APPROVED"),null,Map.of());
    assertThatThrownBy(()->approvalBridge.execute(badResult)).isInstanceOf(SecurityException.class);
-   var goodResult=new com.appnexus.contracts.workflow.WorkflowBusiness.Invocation("delivery",workflowContext,"ProductApproval",requestId,approvalOrg,1,"EXECUTE","delivery",new com.appnexus.contracts.workflow.WorkflowBusiness.Reference("test-instance","test-definition",1,null,"APPROVAL","APPROVED"),null,Map.of());
+   var goodResult=new com.appnexus.contracts.workflow.WorkflowBusiness.Invocation("delivery",workflowContext,"ProductApproval",requestId,approvalOrg,2,"EXECUTE","delivery",new com.appnexus.contracts.workflow.WorkflowBusiness.Reference("test-instance","test-definition",1,null,"APPROVAL","APPROVED"),null,Map.of());
    approvalBridge.execute(goodResult);approvalBridge.execute(goodResult);
    assertThat(products.read(c,approvalProductId).get("status")).isEqualTo("DRAFT");
-   products.updateStatus(c,approvalProductId,new com.appnexus.masterdata.api.product.ProductCommandData.Status("ENABLED",1));
+   products.updateStatus(c,approvalProductId,new com.appnexus.masterdata.api.product.ProductCommandData.Status("ENABLED",2));
    // CUSTOM按固定SPEC修订保存七类型及自定义枚举；缺必填、异修订、类型冲突和精度失败整单回滚。
    var customCategory=service.createCategory(c,new CategoryInput("CUSTOM-STRUCT","自定义结构",null,0));
    var customItems=new ArrayList<com.appnexus.masterdata.api.product.ProductTemplateData.ItemInput>();var customAttributes=new LinkedHashMap<String,String>();
@@ -260,6 +319,24 @@ class ProductCatalogMySqlTest {
    String filter=jsonFilters.writeValueAsString(List.of(new com.appnexus.masterdata.api.product.ProductListFilter.AttributeFilter(itemId,"eq",List.of(optionId))));
    var filtered=(Map<?,?>)products.list(c,"","",null,null,null,false,1,20,bound.id(),filter);
    assertThat(((Number)filtered.get("total")).longValue()).isEqualTo(1);
+   // 子分类商品应在父节点的分页及总数中出现；叶节点同样可直接查询。
+   var childSlots=new LinkedHashMap<>(slots);
+   childSlots.replaceAll((purpose,version)->null);
+   childSlots.put("BASIC",templateVersionId);
+   var childConfig=service.publish(c,child.id(),new Publish(childSlots,false,0));
+   products.create(c,new com.appnexus.masterdata.api.product.ProductMainData.Input(
+    "SUBTREE-CHILD","子分类档案",null,child.id(),childConfig.id(),"SERVICE",null,null,null,null,
+    List.of(new com.appnexus.masterdata.api.product.ProductMainData.Value(itemId,null,List.of(optionId))),"",organization.toString()));
+   for(var categoryId:List.of(parent.id(),child.id())){
+    var subtree=(Map<?,?>)products.list(c,"","SUBTREE-CHILD",categoryId,null,null,false,1,1,null,null,true);
+    assertThat(((Number)subtree.get("total")).longValue()).isEqualTo(1);
+    assertThat((List<?>)subtree.get("rows")).hasSize(1);
+   }
+   var exactParent=(Map<?,?>)products.list(c,"","SUBTREE-CHILD",parent.id(),null,null,false,1,1);
+   assertThat(((Number)exactParent.get("total")).longValue()).isZero();
+   var foreignSubtree=(Map<?,?>)products.list(other,"","SUBTREE-CHILD",parent.id(),null,null,false,1,1,null,null,true);
+   assertThat(((Number)foreignSubtree.get("total")).longValue()).isZero();
+   assertThat((List<?>)foreignSubtree.get("rows")).isEmpty();
    assertThatThrownBy(()->products.list(c,"","",null,null,null,false,1,20,config.id(),filter)).isInstanceOf(Rejection.class);
    assertThatThrownBy(()->products.list(c,"","",null,null,null,false,1,20,null,filter)).isInstanceOf(Rejection.class);
    String tooMany=jsonFilters.writeValueAsString(java.util.Collections.nCopies(4,new com.appnexus.masterdata.api.product.ProductListFilter.AttributeFilter(itemId,"eq",List.of(optionId))));

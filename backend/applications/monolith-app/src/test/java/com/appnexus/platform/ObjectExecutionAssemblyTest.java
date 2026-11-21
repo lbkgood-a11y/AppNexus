@@ -19,7 +19,34 @@ class ObjectExecutionAssemblyTest extends DatabaseTestSupport {
   @Autowired BusinessObjectExecution execution;
   @Autowired WorkflowRuntime workflow;
   @Autowired List<Provider> providers;
+  @Autowired com.appnexus.platform.authorization.DataAccessCatalog dataAccess;
   @Autowired JdbcTemplate jdbc;
+  /** 启用工作流的组合应用应同时装配全部对象，旧归属编码不会重复占据目录。 */
+  @Test void completeProviderInventoryRegistersOneOwnerPerObject() {
+    assertThat(providers).extracting(provider->provider.descriptor().objectType())
+        .doesNotHaveDuplicates().hasSize(50)
+        .contains("PlatformTask","DictionaryItemReference","Tenant","PrintOutput","WorkflowJob","Warehouse")
+        .doesNotContain("AccountProfile","AccountMfa","AccountSession","AccountRoleAssignment",
+                "MemberRoleAssignment","MemberAuthorization","OrganizationLeader","DictionaryItem","RoleAuthorization");
+  }
+
+  /** 本轮全部资源从唯一 Provider 派生；跨管理域对象分别进入平台和租户目录。 */
+  @Test void allMigratedObjectsDeclareExecutedDataResources() {
+    var expected=Set.of("TenantInvitation","TenantParameter","NavigationMenu","BusinessObject","AuditEvent",
+        "PlatformRole","TenantRole","AuthorizationTemplate","OrganizationAuthorization","PermissionCatalog",
+        "Person","OrganizationType","OrganizationRelation","Position","PositionAssignment","BusinessDictionary",
+        "Warehouse","ProductCategory","ProductAttribute","ProductTemplate","ProductUnit",
+        "WorkflowDefinition","WorkflowInstance","WorkflowTask","WorkflowJob",
+        "PrintDataContract","PrintDevice","PrintDocument","PrintJob","PrintOutput","PrintScene","PrintTemplate");
+    var migrated=providers.stream().map(Provider::descriptor).filter(d->expected.contains(d.objectType())).toList();
+    assertThat(migrated).hasSize(32).allSatisfy(d->assertThat(d.dataAccess()).isNotNull());
+    var both=Set.of("BusinessObject","AuditEvent","AuthorizationTemplate","PermissionCatalog");
+    for(var scope:com.appnexus.platform.authorization.PermissionCatalog.ScopeType.values()){
+      assertThat(dataAccess.list(scope).stream().map(d->d.objectType()).toList()).containsAll(both);
+    }
+    assertThat(migrated.stream().filter(d->d.dataAccess().otherDomain()!=null).map(Descriptor::objectType).toList())
+        .containsExactlyInAnyOrderElementsOf(both);
+  }
   @Test void registersObjectRuntimeAndUsesPrimaryKeyForLockedReads(){
     assertThat(execution).isNotNull();assertThat(workflow).isNotNull();
     assertThat(providers.stream().filter(p->Set.of("LeaveRequest","ProductApproval").contains(p.descriptor().objectType())).toList())

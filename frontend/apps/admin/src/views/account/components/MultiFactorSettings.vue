@@ -69,9 +69,9 @@ onBeforeUnmount(() => { password.value = ""; code.value = ""; secret.value = "";
         <el-form-item v-if="status.enabled" :label="t('account.mfaMethod')"><el-radio-group v-model="factorMode" @change="code=''"><el-radio value="totp">{{t('account.mfaTotp')}}</el-radio><el-radio value="recovery">{{t('account.mfaRecoveryMethod')}}</el-radio></el-radio-group></el-form-item><el-form-item v-if="secret || status.enabled" prop="code" :label="t('account.mfaCode')" :rules="[{ required: true, message: t('account.mfaCode'), trigger: 'blur' }]">
           <el-input v-model="code" :inputmode="!status.enabled||factorMode==='totp'?'numeric':'text'" autocomplete="one-time-code" :maxlength="32" :disabled="busy" />
         </el-form-item>
-        <el-button v-operation="status.enabled ? 'AccountMfa.stepUp' : secret ? 'AccountMfa.activate' : 'AccountMfa.enroll'" type="primary" native-type="submit" :loading="busy">{{ t(status.enabled ? "account.mfaStepUp" : secret ? "account.mfaActivate" : "account.mfaEnroll") }}</el-button>
+        <el-button v-operation="status.enabled ? 'Account.mfaStepUp' : secret ? 'Account.mfaActivate' : 'Account.mfaEnroll'" type="primary" native-type="submit" :loading="busy">{{ t(status.enabled ? "account.mfaStepUp" : secret ? "account.mfaActivate" : "account.mfaEnroll") }}</el-button>
         <el-button v-if="secret" :disabled="busy" @click="secret='';password='';code=''">{{t('account.cancel')}}</el-button><el-popconfirm v-if="status.enabled" :title="t('account.mfaDisableConfirm')" :confirm-button-text="t('account.mfaDisable')" :cancel-button-text="t('account.cancel')" @confirm="submit('disable')">
-          <template #reference><el-button v-operation="'AccountMfa.disable'" type="danger" :disabled="busy">{{ t("account.mfaDisable") }}</el-button></template>
+          <template #reference><el-button v-operation="'Account.mfaDisable'" type="danger" :disabled="busy">{{ t("account.mfaDisable") }}</el-button></template>
         </el-popconfirm>
       </el-form>
     </template>

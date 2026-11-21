@@ -142,7 +142,15 @@ public interface ProductCatalogRepository {
   * @param offset 从0开始非负行偏移
   * @return 当前租户及父聚合下原固定投影；无匹配返回空，不探测其他租户
   */
- List<Map<String,Object>> units(String tenant, String keyword, int size, int offset);
+ List<Map<String,Object>> units(String tenant, String keyword, String group, int size, int offset);
+ /** 读取可信租户的分组目录。 */
+ List<Map<String,Object>> unitGroups(String tenant);
+ /** 在单位创建事务内补全旧客户端提交的目录键。 */
+ void ensureUnitGroup(String tenant,String code,String actor);
+ /** 在目录写入事务内创建分组。 */
+ void createUnitGroup(String tenant,String code,String name,String actor);
+ /** 使用当前版本修改分组名称。 */
+ int renameUnitGroup(String tenant,String code,String name,String actor,long version);
  /** unit固定存取；父版本、主从及四审计参与完整用例事务，不允许独立提交。
   * @param tenant 服务端可信租户UUID文本，必填，不接受请求体指定
   * @param id 本操作固定资源UUID文本，已验证格式及父归属
@@ -172,5 +180,5 @@ public interface ProductCatalogRepository {
   * @param keyword 编码或名称字面关键词，最多200字符，空文本表示不筛选
   * @return 原固定事实或受影响行数；CAS写入非1由用例拒绝并回滚
   */
- long unitCount(String tenant, String keyword);
+ long unitCount(String tenant, String keyword, String group);
 }

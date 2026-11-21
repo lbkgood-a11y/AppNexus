@@ -9,16 +9,23 @@ async function write<T>(method:"post"|"put",url:string,data:object):Promise<T>{
  return http.request<T>(method,url,{data,headers:{[csrf.headerName]:csrf.token}});
 }
 export const productCatalogApi:ProductCatalogApi={
+ unitGroups:()=>http.request("get",path("unit")+"/groups"),
+ createUnitGroup:data=>write("post",path("unit")+"/groups",data),
+ renameUnitGroup:(code,data)=>write("put",path("unit")+"/groups/"+encodeURIComponent(code),data),
  conversions:()=>http.request("get",path("unit")+"/conversions"),
  createConversion:data=>write("post",path("unit")+"/conversions",data),
  conversionStatus:(id,data)=>write("put",path("unit")+"/conversions/"+encodeURIComponent(id)+"/status",data),
  calculateConversion:(id,quantity)=>http.request("get",path("unit")+"/conversions/"+encodeURIComponent(id)+"/calculate",{params:{quantity}}),
  operations:()=>http.request("get","/api/operation-decisions"),
- list:async(kind,query)=>{
+ attributes:()=>http.request("get",path("attribute")),
+ list:async(kind,{purpose,...query})=>{
  const result=await http.request<{rows:CatalogRow[];total:number}|CatalogRow[]>("get",path(kind),{params:query});
  if(!Array.isArray(result))return result;
  // 旧配置摘要当前接口返回完整列表；只在客户端做同语义分页，不伪造服务器total。
- const filtered=result.filter(r=>(r.code??"").includes(query.keyword)||(r.name??"").includes(query.keyword));
+ const filtered=result.filter(row =>
+   (kind!=="template" || !purpose || row.purpose===purpose) &&
+   (row.code.includes(query.keyword) || (row.name??"").includes(query.keyword))
+ );
  return {rows:filtered.slice((query.page-1)*query.size,query.page*query.size),total:filtered.length};
  },
  create:(kind,data)=>write("post",path(kind),data),

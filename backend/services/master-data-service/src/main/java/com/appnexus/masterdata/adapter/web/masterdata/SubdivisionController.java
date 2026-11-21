@@ -10,7 +10,6 @@ import static com.appnexus.masterdata.api.masterdata.MasterData.*;
 /** 行政区划固定 API；复用宿主 Cookie/CSRF 链，禁止客户端指定身份。 */
 @RestController
 @RequestMapping("/api/master-data/subdivision")
-@BusinessObjectType(code="Subdivision",nameZh="行政区划",nameEn="Subdivisions",category=BusinessObjectType.Category.MASTER_DATA,module="master-data")
 public final class SubdivisionController {
   private final MasterDataManagement service;
   /**
@@ -29,19 +28,19 @@ public final class SubdivisionController {
    * @param scope 业务列表范围，支持当前租户自定义节点；默认空串不限制，包含真实后代，仍强制租户边界
    * @return 当前分支对应分页结果；树与标准选项不代表已建立的租户业务记录
    */
-  @OperationBinding(id="Subdivision.list",objectType="Subdivision",operationCode="list",pages={"master-data/subdivision"},nameZh="查询行政区划",nameEn="list Subdivisions",permissions={"masterdata.subdivision:read"},policy="可信租户有效成员、独立功能权限、编码约束与版本校验")
+  @OperationBinding(id="Subdivision.list",reference=true)
   @GetMapping("")
   public Object list(HttpServletRequest r,@RequestParam(defaultValue="") String keyword,@RequestParam(required=false) Boolean enabled,@RequestParam(defaultValue="1") int page,@RequestParam(defaultValue="20") int size,@RequestParam(defaultValue="false") boolean standards,@RequestParam(defaultValue="false") boolean tree,@RequestParam(defaultValue="") String parent,@RequestParam(defaultValue="") String scope) {if(tree)return service.geographyTree(context(r),Kind.SUBDIVISION,parent,page,size);if(standards)return service.geographyOptions(context(r),Kind.SUBDIVISION,keyword,page,size);return service.list(context(r),Kind.SUBDIVISION,keyword,enabled,page,size,null,scope);}
   /** 新增行政区划；真实鉴权、租户与并发校验由同一业务执行器负责。 */
-  @OperationBinding(id="Subdivision.create",objectType="Subdivision",operationCode="create",pages={"master-data/subdivision"},nameZh="新增行政区划",nameEn="create Subdivisions",permissions={"masterdata.subdivision:create"},policy="可信租户有效成员、独立功能权限、编码约束与版本校验")
+  @OperationBinding(id="Subdivision.create",reference=true)
   @PostMapping("")
   public Object create(HttpServletRequest r,@RequestBody Input input) {return service.create(context(r),Kind.SUBDIVISION,input);}
   /** 编辑行政区划；真实鉴权、租户与并发校验由同一业务执行器负责。 */
-  @OperationBinding(id="Subdivision.update",objectType="Subdivision",operationCode="update",pages={"master-data/subdivision"},nameZh="编辑行政区划",nameEn="update Subdivisions",permissions={"masterdata.subdivision:update"},policy="可信租户有效成员、独立功能权限、编码约束与版本校验")
+  @OperationBinding(id="Subdivision.update",reference=true)
   @PutMapping("/{id}")
   public void update(HttpServletRequest r,@PathVariable String id,@RequestBody Input input) {service.update(context(r),Kind.SUBDIVISION,id,input);}
   /** 启停行政区划；真实鉴权、租户与并发校验由同一业务执行器负责。 */
-  @OperationBinding(id="Subdivision.setStatus",objectType="Subdivision",operationCode="setStatus",pages={"master-data/subdivision"},nameZh="启停行政区划",nameEn="setStatus Subdivisions",permissions={"masterdata.subdivision:set_status"},policy="可信租户有效成员、独立功能权限、编码约束与版本校验")
+  @OperationBinding(id="Subdivision.setStatus",reference=true)
   @PutMapping("/{id}/status")
   public void setStatus(HttpServletRequest r,@PathVariable String id,@RequestBody Status input) {service.setStatus(context(r),Kind.SUBDIVISION,id,input);}
 

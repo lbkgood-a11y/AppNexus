@@ -22,5 +22,14 @@ public final class ProductStructureController {
  /** 启停结构记录；父子状态、可信租户和当前版本由领域端复核。 */
  @PutMapping("/{kind}/{id}/status") @OperationBinding(id="Product.setStructureState",reference=true)
  public Object setStructureState(HttpServletRequest r,@PathVariable String product,@PathVariable String kind,@PathVariable String id,@RequestBody com.appnexus.masterdata.api.product.ProductStructureCommands.State i){return service.state(c(r),product,kind,id,i);}
+   /** 查询已授权商品的单位与包装。 */
+ @GetMapping("/measurement") @OperationBinding(id="Product.readMeasurement",reference=true)
+ public Object measurement(HttpServletRequest r,@PathVariable String product){return service.measurement(c(r),product);}
+ /** 以父商品版本保存计量配置。 */
+ @PutMapping("/measurement") @OperationBinding(id="Product.saveMeasurement",reference=true)
+ public Object saveMeasurement(HttpServletRequest r,@PathVariable String product,@RequestBody ProductMeasurement.Change change){return service.saveMeasurement(c(r),product,change);}
+ /** 根据当前商品已存规格试算。 */
+ @GetMapping("/measurement/calculation") @OperationBinding(id="Product.calculatePackaging",reference=true)
+ public Object calculatePackaging(HttpServletRequest r,@PathVariable String product,@RequestParam String code,@RequestParam String quantity){return service.calculatePackaging(c(r),product,code,quantity);}
  private static VerifiedTenantContext c(HttpServletRequest r){Object v=r.getAttribute(VerifiedTenantContext.class.getName());if(!(v instanceof VerifiedTenantContext c))throw new MasterData.Rejection(403,"MASTER_DATA_DENIED");return c;}
 }

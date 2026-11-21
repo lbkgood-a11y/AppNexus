@@ -8,7 +8,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 /** 平台菜单用例实现；校验、乐观锁写入和审计在同一事务提交。 */
 @Service
-public class MyBatisMenuManagement implements MenuManagement {
+public class MyBatisMenuManagement implements MenuManagement, com.appnexus.platform.authorization.DataAccessDeclaration.Executor {
+    /** @return 平台授权保护的菜单源记录；本人导航仍由原查询裁剪 */
+    @Override public java.util.Set<String> enforcedResources(){return java.util.Set.of("configuration.menu");}
     private final MenuMapper mapper;
     private final com.appnexus.platform.authorization.AccessAuthorization authorization;
     public MyBatisMenuManagement(MenuMapper mapper,com.appnexus.platform.authorization.AccessAuthorization authorization) { this.mapper=mapper;this.authorization=authorization; }

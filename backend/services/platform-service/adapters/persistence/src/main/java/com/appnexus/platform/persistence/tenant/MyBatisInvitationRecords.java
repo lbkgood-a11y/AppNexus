@@ -5,7 +5,9 @@ import com.appnexus.platform.tenant.port.InvitationRecords;
 import org.springframework.stereotype.Component;
 /** 邀请固定SQL及UTC时间转换适配，不决定业务授权。 */
 @Component
-public final class MyBatisInvitationRecords implements InvitationRecords {
+public final class MyBatisInvitationRecords implements InvitationRecords, com.appnexus.platform.authorization.DataAccessDeclaration.Executor {
+ /** @return 受固定租户和目标账号凭证条件约束的邀请资源，密钥摘要不进入字段目录 */
+ @Override public java.util.Set<String> enforcedResources(){return java.util.Set.of("tenant.invitation");}
  private final TenantInvitationMapper mapper;
  /** @param mapper 原邀请固定SQL映射，与原事务共用连接 */
  public MyBatisInvitationRecords(TenantInvitationMapper mapper){this.mapper=mapper;}

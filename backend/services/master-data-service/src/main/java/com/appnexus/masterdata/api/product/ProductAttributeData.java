@@ -6,8 +6,17 @@ public final class ProductAttributeData {
  private ProductAttributeData(){}
 /** 分组创建请求：code租户内唯一且1至64字符，name为1至200字符；version新建为0。 */
  public record GroupInput(String code,String name,long version){}
-/** 稳定属性创建：code不能占用品牌等保留字段，groupId为同租户可选分组，version新建0。 */
- public record AttributeInput(String code,String groupId,long version){}
+ /**
+  * 稳定属性维护请求。初始修订仅由创建操作受理。
+  * @param code 租户内唯一的属性编码，不能占用品牌等保留字段
+  * @param groupId 同租户可选属性分组
+  * @param version 新建为0，编辑使用当前父属性版本
+  * @param initialRevision 同事务创建的首个草稿；缺省时兼容原有仅创建编码的调用方
+  */
+ public record AttributeInput(String code,String groupId,long version,RevisionInput initialRevision){
+  /** 兼容只维护稳定属性编码及分组的调用方。 */
+  public AttributeInput(String code,String groupId,long version){this(code,groupId,version,null);}
+ }
 /**
   * 修订草稿请求；正文发布后不可改，version是稳定属性父聚合CAS。
   *

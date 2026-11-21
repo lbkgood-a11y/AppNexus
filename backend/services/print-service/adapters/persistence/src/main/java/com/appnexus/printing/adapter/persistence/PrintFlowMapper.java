@@ -6,7 +6,9 @@ import java.util.Map;
 /** PrintFlow固定SQL映射；不接收SQL或标识符，原用例逐次验证可信租户及操作。 */
 @Mapper
 @PlatformScoped(tables={"print_agent_queue","print_data_contract","print_document","print_scene","print_template","print_template_version"})
-public interface PrintFlowMapper {
+public interface PrintFlowMapper extends com.appnexus.contracts.businessobject.BusinessObjects.DataAccessExecutor {
+ /** @return 受原用例身份复核和固定存储约束保护的专业服务资源 */
+ @Override default java.util.Set<String> enforcedResources(){return java.util.Set.of("print.datacontract", "print.device.queue", "print.document", "print.scene");}
  /** 固定业务语句1；准入、参数规则、聚合锁及事务由原用例负责，所有值绑定。 */
  @Select("SELECT BIN_TO_UUID(id) id,code,name,data_contract,BIN_TO_UUID(template_id) template_id,copies,enabled,revision FROM print_scene WHERE tenant_id=UUID_TO_BIN(#{p0}) ORDER BY name")
  List<Map<String,Object>> scenes(@Param("p0") Object p0);

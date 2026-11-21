@@ -13,7 +13,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 /** 角色权限全量覆盖实现；权威复核、关系替换、角色版本推进和审计在同一事务完成。 */
 @Service
-public class MyBatisRolePermissionManagement implements RolePermissionManagement {
+public class MyBatisRolePermissionManagement implements RolePermissionManagement, com.appnexus.platform.authorization.DataAccessDeclaration.Executor {
+    /** @return 平台角色与可信租户角色按原所有者和专用授权隔离的资源 */
+    @Override public java.util.Set<String> enforcedResources(){return java.util.Set.of("access.role.authorization", "access.tenant.role.authorization");}
     private static final String PLATFORM_OWNER="00000000-0000-0000-0000-000000000000";
     private final RolePermissionMapper mapper;
     private final FieldCatalog fieldCatalog;

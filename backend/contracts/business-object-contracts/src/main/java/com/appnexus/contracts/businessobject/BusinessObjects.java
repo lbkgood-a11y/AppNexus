@@ -61,15 +61,29 @@ public final class BusinessObjects {
    * @param resources 首项为主资源，子资源继承主资源行权限；资源内字段键必须唯一
    * @param operationScopes 已声明operationCode到受控范围编码集合；无配置则不启用该操作行范围
    * @param dimensions 已接通的组合授权条件维度，缺省为空；SQL映射由业务存储代码固定
+   * @param otherDomain 同一对象的另一管理域；两个域使用独立资源，禁止嵌套
    */
-  public record DataAccess(String scope,List<DataResource> resources,Map<String,Set<String>> operationScopes,List<DataDimension> dimensions) {
+  public record DataAccess(String scope,List<DataResource> resources,Map<String,Set<String>> operationScopes,List<DataDimension> dimensions,DataAccess otherDomain) {
     /** 既有对象缺省不开放条件维度，保持已声明的行范围。 */
     public DataAccess(String scope,List<DataResource> resources,Map<String,Set<String>> operationScopes){this(scope,resources,operationScopes,List.of());}
+    /** 保留单一管理域的现有声明入口。 */
+    public DataAccess(String scope,List<DataResource> resources,Map<String,Set<String>> operationScopes,List<DataDimension> dimensions){this(scope,resources,operationScopes,dimensions,null);}
     public DataAccess {
       dimensions=List.copyOf(dimensions);
       Objects.requireNonNull(scope);resources=List.copyOf(resources);
       var copy=new TreeMap<String,Set<String>>();operationScopes.forEach((key,value)->copy.put(key,Set.copyOf(value)));operationScopes=Map.copyOf(copy);
+      if(otherDomain!=null&&(scope.equals(otherDomain.scope())||otherDomain.otherDomain()!=null
+          ||!operationScopes.isEmpty()||!otherDomain.operationScopes().isEmpty()))
+        throw new IllegalArgumentException("BUSINESS_OBJECT_DATA_DOMAIN_INVALID");
     }
+    /** @return 独立投影的管理域；混合域暂仅用于固定数据边界的资源 */
+    public List<DataAccess> domains(){return otherDomain==null?List.of(this):List.of(this,otherDomain);}
+  }
+
+  /** 固定资源执行器的公开装配契约；专业服务沿用自身安全边界，无需依赖平台权限实现。 */
+  public interface DataAccessExecutor {
+    /** @return 由本适配器实际限制数据读取或写入的已声明资源编码 */
+    Set<String> enforcedResources();
   }
   /**
    * 对象可授权条件维度；不包含 SQL 映射，只有真实执行支持的字段才可声明。
@@ -131,10 +145,9 @@ public final class BusinessObjects {
       fields = List.copyOf(fields); operations=List.copyOf(operations);codingFields=List.copyOf(codingFields);
       var operationCodes=operations.stream().map(Operation::operationCode).collect(java.util.stream.Collectors.toSet());
       if(codingFields.stream().map(CodingField::field).distinct().count()!=codingFields.size()||codingFields.stream().anyMatch(f->!operationCodes.contains(f.operationCode())))throw new IllegalArgumentException("CODING_FIELD_OPERATION_INVALID");
-      if(dataAccess!=null){
-        if(!Set.of("TENANT","PLATFORM").contains(dataAccess.scope())||dataAccess.resources().isEmpty())throw new IllegalArgumentException("BUSINESS_OBJECT_DATA_ACCESS_INVALID");
-        var codes=operations.stream().map(Operation::operationCode).collect(java.util.stream.Collectors.toSet());
-        if(!codes.containsAll(dataAccess.operationScopes().keySet()))throw new IllegalArgumentException("BUSINESS_OBJECT_DATA_OPERATION_UNDECLARED");
+      if(dataAccess!=null)for(var domain:dataAccess.domains()){
+        if(!Set.of("TENANT","PLATFORM").contains(domain.scope())||domain.resources().isEmpty())throw new IllegalArgumentException("BUSINESS_OBJECT_DATA_ACCESS_INVALID");
+        if(!operationCodes.containsAll(domain.operationScopes().keySet()))throw new IllegalArgumentException("BUSINESS_OBJECT_DATA_OPERATION_UNDECLARED");
       }
     }
 

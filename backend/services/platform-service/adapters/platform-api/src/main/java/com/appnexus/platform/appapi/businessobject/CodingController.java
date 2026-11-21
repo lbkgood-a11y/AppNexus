@@ -38,12 +38,14 @@ public final class CodingController {
   @PutMapping("/api/business-objects/{type}/encoders/{key}")
   public Object save(HttpServletRequest r,@PathVariable String type,@PathVariable String key,@RequestBody com.appnexus.platform.businessobject.CodingManagement.Input input){return reply(()->{service.save(context(r),type,key,input);return Map.of();});}
   /** 动态协助读取由字段声明派生目标对象操作权限；不能要求普通用户具备编码器管理权。 */
+  @com.appnexus.contracts.operation.OperationBinding(id="CodingEncoder.fieldOptions", reference=true, eligibility=com.appnexus.contracts.operation.OperationBinding.Eligibility.OBJECT)
   @GetMapping("/api/business-objects/{type}/coding-options")
   public Object options(HttpServletRequest r,@PathVariable String type,@RequestParam String field){return reply(()->service.options(context(r),type,field));}
   /**
    * 发号为显式写操作，不能通过 GET 或打开页面触发。
    * @param r Idempotency-Key 为本次操作 UUID；重试必须显式复用，服务端始终重新鉴权
    */
+  @com.appnexus.contracts.operation.OperationBinding(id="CodingEncoder.issue", reference=true, eligibility=com.appnexus.contracts.operation.OperationBinding.Eligibility.OBJECT)
   @PostMapping("/api/business-objects/{type}/encoders/{key}/issue")
   public Object issue(HttpServletRequest r,@PathVariable String type,@PathVariable String key){return reply(()->{
     var c=context(r);String request=r.getHeader("Idempotency-Key");UUID.fromString(request);

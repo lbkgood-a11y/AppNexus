@@ -30,7 +30,13 @@ public final class PersonnelData {
 /** 人员详情的真实审计信息；历史未记录字段为空，不伪造创建人或创建时间。 */
   public record Audit(String createdBy,String createdByName,String createdAt,String updatedBy,String updatedByName,String updatedAt){}
 /** 详情聚合只在具有人员读取权限时返回，不在普通列表加载身份证件、家庭及履历等正文。 */
-  public record Profile(Row person,Audit audit,List<Detail> details,List<Assignment> assignments){}
+  public record Profile(Row person,Audit audit,List<Detail> details,List<Assignment> assignments,
+      Map<String,com.appnexus.platform.authorization.FieldSecurity.Mode> detailFieldRestrictions){
+    /** 保留原单域人员详情构造。 */
+    public Profile(Row person,Audit audit,List<Detail> details,List<Assignment> assignments){
+      this(person,audit,details,assignments,Map.of());
+    }
+  }
 /** 只读人员目录和字典，不需要字典维护权限。 */
   public record Options(List<PersonnelDirectory.Organization> organizations,List<PersonnelDirectory.Position> positions,List<PersonnelDirectory.User> users,Map<String,List<BusinessValueCatalog.Option>> dictionaries){}
 /** 选择本次人员与组织；均为规范 UUID，无缺省自动选择。 */

@@ -22,7 +22,8 @@ import "./templates.css";
 
 export { default as InfoHint } from "./InfoHint.vue";
 export { default as FloatingError } from "./FloatingError.vue";
-export { reportError, clearErrorFeedback, setErrorFeedback } from "./errorFeedback";
+export { reportError, clearErrorFeedback, setErrorFeedback, presentLoadError, type LoadIssue } from "./errorFeedback";
+export { default as LoadErrorResult } from "./LoadErrorResult.vue";
 
 export { default as AppPagination } from "./AppPagination.vue";
 export { default as GeographyPicker } from "./GeographyPicker.vue";

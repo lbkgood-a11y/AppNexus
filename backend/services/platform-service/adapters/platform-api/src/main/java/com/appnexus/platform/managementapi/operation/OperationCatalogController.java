@@ -14,7 +14,8 @@ public final class OperationCatalogController {
  private final OperationRegistry registry;private final MenuManagement menus;
  public OperationCatalogController(OperationRegistry registry,MenuManagement menus){this.registry=registry;this.menus=menus;}
  /** 读取全模块对象目录；同样复核平台菜单读取权限，列表不授予对象配置资格。 */
- @EndpointOperation("configuration.menu:read") @GetMapping("/bff/platform/object-catalog")
+ @EndpointOperation("configuration.menu:read") @com.appnexus.contracts.operation.OperationBinding(id="PermissionCatalog.objects", reference=true)
+ @GetMapping("/bff/platform/object-catalog")
  public ResponseEntity<List<OperationRegistry.ObjectDefinition>> objects(Authentication authentication){
   list(authentication);return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(registry.objects());
  }
@@ -23,7 +24,8 @@ public final class OperationCatalogController {
   * @param authentication 服务端认证主体
   * @return 已登记操作及真实接口
   */
- @EndpointOperation("configuration.menu:read") @GetMapping("/bff/platform/operation-catalog")
+ @EndpointOperation("configuration.menu:read") @com.appnexus.contracts.operation.OperationBinding(id="PermissionCatalog.operations", reference=true)
+ @GetMapping("/bff/platform/operation-catalog")
  public ResponseEntity<List<OperationRegistry.Definition>> list(Authentication authentication){
   try{menus.list(UUID.fromString(authentication.getName()));}
   catch(SecurityException denied){var detail=ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN,"无平台功能目录读取权限");detail.setProperty("code","PLATFORM_DENIED");throw new org.springframework.web.ErrorResponseException(HttpStatus.FORBIDDEN,detail,null);}

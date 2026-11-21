@@ -15,6 +15,7 @@ public class NativeTenantContextController {
     private final RotatingAuthorizationService authorizations;
     public NativeTenantContextController(TenantAccess tenants,RotatingAuthorizationService authorizations){this.tenants=tenants;this.authorizations=authorizations;}
     /** 账号由 Bearer 权威授权解析，不接受浏览器 Cookie 或客户端指定账号。 */
+    @com.appnexus.contracts.operation.OperationBinding(id="TenantMember.nativeTenants", reference=true, eligibility=com.appnexus.contracts.operation.OperationBinding.Eligibility.SELF)
     @GetMapping("/api/tenants")
     ResponseEntity<List<TenantAccess.Membership>> list(Authentication auth){
         requireBearer(auth);return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(tenants.available(UUID.fromString(auth.getName())));
@@ -24,6 +25,7 @@ public class NativeTenantContextController {
     /** refreshRequired 为 true 时必须调用 /oauth2/token 的 refresh_token 授权，不能继续使用旧 Access Token。 */
     public record Context(UUID tenantId,UUID memberId,long version,boolean refreshRequired){}
     /** 服务端成员校验与授权版本变更在数据库锁内完成；不返回 Token，也不自定义刷新协议。 */
+    @com.appnexus.contracts.operation.OperationBinding(id="TenantMember.selectNativeTenant", reference=true, eligibility=com.appnexus.contracts.operation.OperationBinding.Eligibility.SELF)
     @PostMapping("/api/tenant-context")
     ResponseEntity<Context> select(Authentication auth,@RequestBody Selection input){
         var bearer=requireBearer(auth);

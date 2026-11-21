@@ -15,9 +15,12 @@ export interface PersonnelProfile {
   person:PersonnelRow;
   audit:{createdBy:string|null;createdByName:string;createdAt:string|null;updatedBy:string|null;updatedByName:string;updatedAt:string|null};
   details:PersonnelDetail[];assignments:PersonnelAssignment[];
+  detailFieldRestrictions?:Record<string,string>;
 }
 /** 人员业务请求由应用壳注入，所有变更显式传入当前人员版本，写入不自动重放。 */
 export interface PersonnelApi extends PersonnelBaseApi {
+  /** 预加载当前人员基础字段限制，响应不含档案数据。 */
+  fieldRestrictions():Promise<Record<string,string>>;
   /** 人员读取权限下的本租户地理摘要，不要求地理维护权限。 */
   geographyDirectory():Promise<import("@appnexus/ui").GeographyNode[]>;
   read(id:string):Promise<PersonnelProfile>;

@@ -1,6 +1,9 @@
 package com.appnexus.platform;
 
 import com.appnexus.platform.security.ReliableEvents;
+import com.appnexus.platform.security.AuthorityEventWorker;
+import com.appnexus.platform.security.ScheduledObjectOperations;
+import com.appnexus.platform.tenant.TaskManagement;
 import java.util.*;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,13 +12,23 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.test.web.servlet.MockMvc;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 import static org.assertj.core.api.Assertions.*;
 
 /** 真实 MySQL 验证事务回滚、租约恢复、跨租户拒绝、消费幂等及失败重试分类。 */
 @SpringBootTest
+@AutoConfigureMockMvc
 @ActiveProfiles("local")
 class ReliableEventsTest extends DatabaseTestSupport {
     @Autowired ReliableEvents events;
+    @Autowired ScheduledObjectOperations scheduledOperations;
+    @Autowired com.appnexus.platform.security.operation.OperationRegistry operationRegistry;
+    @Autowired MockMvc mvc;
+    @Autowired com.appnexus.platform.persistence.platformscope.MyBatisPlatformAdministration administration;
     @Autowired JdbcTemplate jdbc;
     @Autowired PlatformTransactionManager manager;
     @Autowired com.appnexus.platform.authorization.AuthorityEvents authorityEvents;
@@ -25,6 +38,57 @@ class ReliableEventsTest extends DatabaseTestSupport {
         jdbc.update("UPDATE platform_outbox SET available_at=CURRENT_TIMESTAMP(6)+INTERVAL 1 HOUR WHERE status='PENDING' AND id<>UUID_TO_BIN(?)",id.toString());
         return events.claim().orElseThrow();
     }
+    /** 真实调度方法先复核 Provider，再按数据库租户与租约消费；拒绝时不领取。 */
+    @Test void scheduledWorkerRequiresDeclarationBeforeClaiming() {
+        UUID id = publish();
+        jdbc.update("UPDATE platform_outbox SET available_at=CURRENT_TIMESTAMP(6)+INTERVAL 1 HOUR WHERE status='PENDING' AND id<>UUID_TO_BIN(?)", id.toString());
+        var unregistered = new AuthorityEventWorker(events, new ScheduledObjectOperations(List.of()), true);
+        assertThatThrownBy(unregistered::process).isInstanceOf(SecurityException.class)
+                .hasMessage("SCHEDULED_OBJECT_OPERATION_DENIED:" + TaskManagement.PROCESS_EVENTS);
+        assertThat(jdbc.queryForObject("SELECT attempts FROM platform_outbox WHERE id=UUID_TO_BIN(?)",
+                Integer.class, id.toString())).isZero();
+
+        var worker = new AuthorityEventWorker(events, scheduledOperations, true);
+        worker.process();
+        worker.process();
+        assertThat(jdbc.queryForObject("SELECT status FROM platform_outbox WHERE id=UUID_TO_BIN(?)",
+                String.class, id.toString())).isEqualTo("DONE");
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM platform_event_consumption WHERE event_id=UUID_TO_BIN(?)",
+                Integer.class, id.toString())).isEqualTo(1);
+        assertThat(operationRegistry.all()).noneMatch(operation -> operation.id().equals(TaskManagement.PROCESS_EVENTS));
+    }
+    /** 平台任务目录和重试经真实会话与权限过滤器执行，越权与状态冲突均不改变任务。 */
+    @Test void platformOperationsRespectPermissionAndManualState() throws Exception {
+        administration.initializeAdministrator("admin-test");
+        String administrator = jdbc.queryForObject(
+                "SELECT BIN_TO_UUID(id) FROM identity_account WHERE username='admin-test'", String.class);
+        UUID outsider = UUID.randomUUID();
+        jdbc.update("INSERT INTO identity_account(id,username,display_name,password_hash) VALUES(UUID_TO_BIN(?),?,'Task test','unused')",
+                outsider.toString(), "task-" + outsider);
+        UUID eventId = publish();
+        assertThat(events.fail(claim(eventId), true)).isTrue();
+        String tasks = "/bff/platform/tasks";
+        String retry = tasks + "/" + eventId + "/retry";
+
+        mvc.perform(get("/bff/platform/business-objects").with(authenticated(administrator, 0)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[?(@.descriptor.objectType == 'PlatformTask')]").isNotEmpty())
+                .andExpect(jsonPath("$[?(@.descriptor.objectType == 'DictionaryItemReference')]").isNotEmpty());
+        mvc.perform(get(tasks).with(authenticated(administrator, 0)))
+                .andExpect(status().isOk()).andExpect(jsonPath("$[?(@.id == '" + eventId + "')]").isNotEmpty());
+        mvc.perform(get(tasks).with(authenticated(outsider.toString(), 0))).andExpect(status().isForbidden());
+        mvc.perform(post(retry).with(authenticated(outsider.toString(), 0)).with(csrf()))
+                .andExpect(status().isForbidden());
+        assertThat(jdbc.queryForObject("SELECT status FROM platform_outbox WHERE id=UUID_TO_BIN(?)",
+                String.class, eventId.toString())).isEqualTo("MANUAL");
+        mvc.perform(post(retry).with(authenticated(administrator, 0)).with(csrf()))
+                .andExpect(status().isNoContent());
+        mvc.perform(post(retry).with(authenticated(administrator, 0)).with(csrf()))
+                .andExpect(status().isConflict());
+        assertThat(jdbc.queryForObject("SELECT status FROM platform_outbox WHERE id=UUID_TO_BIN(?)",
+                String.class, eventId.toString())).isEqualTo("PENDING");
+    }
+
     @Test void rollbackCannotPublishAndOutsideTransactionIsRejected(){
         UUID id=UUID.randomUUID();
         new TransactionTemplate(manager).executeWithoutResult(status->{events.publish(id,"AUTHORITY_INVALIDATED",id.toString());status.setRollbackOnly();});

@@ -14,7 +14,7 @@ public final class DataAccessCatalog {
         var result=new ArrayList<DataAccessDeclaration.Descriptor>();
         for(var projection:projections) {
             var d=Objects.requireNonNull(projection);
-            if(d.version()<1||d.objectType()==null||!d.objectType().matches("[A-Z][A-Za-z0-9]*")||!objects.add(d.objectType())||d.scope()==null||d.resources().isEmpty())throw invalid();
+            if(d.version()<1||d.objectType()==null||!d.objectType().matches("[A-Z][A-Za-z0-9]*")||d.scope()==null||!objects.add(d.scope()+":"+d.objectType())||d.resources().isEmpty())throw invalid();
             String root=d.resources().getFirst().resource();
             var dimensionKeys=new HashSet<String>();
             for(var dimension:d.dimensions()) {
@@ -41,12 +41,16 @@ public final class DataAccessCatalog {
      */
     public static DataAccessCatalog fromObjects(List<com.appnexus.contracts.businessobject.BusinessObjects.Provider> objects){
         var projections=new ArrayList<DataAccessDeclaration.Descriptor>();
+        var seenObjects=new HashSet<String>();
         for(var provider:objects){
-            var object=provider.descriptor();var access=object.dataAccess();if(access==null)continue;
-            var resources=access.resources().stream().map(r->new DataAccessDeclaration.Resource(r.resource(),r.parentResource(),r.nameZh(),r.nameEn(),r.fields().stream().map(f->new DataAccessDeclaration.Field(f.field(),f.nameZh(),f.nameEn(),FieldSecurity.Kind.valueOf(f.kind()),f.modes().stream().map(FieldSecurity.Mode::valueOf).collect(java.util.stream.Collectors.toSet()))).toList(),r.responseType())).toList();
-            var operations=object.operations().stream().filter(op->access.operationScopes().containsKey(op.operationCode())).map(op->new DataAccessDeclaration.Operation(op.operationId(),op.permissionCode(),access.operationScopes().get(op.operationCode()).stream().map(DataScopeAuthorization.ScopeType::valueOf).collect(java.util.stream.Collectors.toSet()))).toList();
-            var projection=new DataAccessDeclaration.Descriptor(object.objectType(),object.version(),PermissionCatalog.ScopeType.valueOf(access.scope()),resources,operations,access.dimensions());
-            projections.add(projection);
+            var object=provider.descriptor();if(object.dataAccess()==null)continue;
+            if(!seenObjects.add(object.objectType()))throw invalid();
+            for(var access:object.dataAccess().domains()){
+                var resources=access.resources().stream().map(r->new DataAccessDeclaration.Resource(r.resource(),r.parentResource(),r.nameZh(),r.nameEn(),r.fields().stream().map(f->new DataAccessDeclaration.Field(f.field(),f.nameZh(),f.nameEn(),FieldSecurity.Kind.valueOf(f.kind()),f.modes().stream().map(FieldSecurity.Mode::valueOf).collect(java.util.stream.Collectors.toSet()))).toList(),r.responseType())).toList();
+                var operations=object.operations().stream().filter(op->access.operationScopes().containsKey(op.operationCode())).map(op->new DataAccessDeclaration.Operation(op.operationId(),op.permissionCode(),access.operationScopes().get(op.operationCode()).stream().map(DataScopeAuthorization.ScopeType::valueOf).collect(java.util.stream.Collectors.toSet()))).toList();
+                var projection=new DataAccessDeclaration.Descriptor(object.objectType(),object.version(),PermissionCatalog.ScopeType.valueOf(access.scope()),resources,operations,access.dimensions());
+                projections.add(projection);
+            }
         }
         return new DataAccessCatalog(projections);
     }

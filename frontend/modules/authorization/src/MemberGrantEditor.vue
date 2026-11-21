@@ -113,7 +113,7 @@ defineExpose({ canLeave:async()=>!busy.value&&await discard() });
       </div>
       <template v-if="draft">
         <section class="member-submit">
-        <div class="member-submit-heading"><h2>{{t('authorizationCenter.summary')}}</h2><span>{{roleName}} · {{relatedSubjects.find(item=>item.id===member)?.name}}</span><el-button v-operation="'MemberAuthorization.replace'" type="primary" :loading="busy" :disabled="invalid" @click="save">{{t('organization.save')}}</el-button></div>
+        <div class="member-submit-heading"><h2>{{t('authorizationCenter.summary')}}</h2><span>{{roleName}} · {{relatedSubjects.find(item=>item.id===member)?.name}}</span><el-button v-operation="'TenantMember.authorizationReplace'" type="primary" :loading="busy" :disabled="invalid" @click="save">{{t('organization.save')}}</el-button></div>
         <el-form-item class="member-submit-expiry" :label="t('authorizationCenter.expiresAt')"><el-date-picker class="member-expiry" v-model="draft.expiresAt" type="datetime" value-format="YYYY-MM-DDTHH:mm:ssZ" clearable :disabled="!ready||busy" /></el-form-item>
         <el-form-item class="member-reason" :label="t('authorizationCenter.reason')" required><el-input v-model="reason" type="textarea" :rows="1" :maxlength="500" show-word-limit :disabled="!ready||busy" /></el-form-item>
 

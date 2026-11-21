@@ -30,11 +30,23 @@ class TenantParameterTest extends DatabaseTestSupport {
         var a=context();var b=context();assertThat(parameters.list(a)).allMatch(value->value.version()==-1);
         var saved=parameters.save(a,"display.time-zone","UTC",-1);assertThat(saved.version()).isZero();
         assertThat(parameters.list(b).stream().filter(value->value.key().equals("display.time-zone")).findFirst().orElseThrow().value()).isEqualTo("Asia/Shanghai");
-        assertThatThrownBy(()->parameters.save(a,"display.time-zone","Asia/Tokyo",-1)).isInstanceOf(org.springframework.web.ErrorResponseException.class);
+        assertThatThrownBy(()->parameters.save(a,"display.time-zone","Asia/Tokyo",-1)).isInstanceOfSatisfying(com.appnexus.platform.configuration.TenantParameters.Rejection.class, error -> {
+            assertThat(error.status()).isEqualTo(409);
+            assertThat(error).hasMessage("PARAMETER_CHANGED");
+        });
         assertThat(parameters.save(a,"display.time-zone","Asia/Tokyo",0).version()).isEqualTo(1);
-        assertThatThrownBy(()->parameters.save(a,"display.time-zone","invalid-zone",1)).isInstanceOf(org.springframework.web.ErrorResponseException.class);
-        assertThatThrownBy(()->parameters.save(a,"security.secret","forbidden",-1)).isInstanceOf(org.springframework.web.ErrorResponseException.class);
-        assertThatThrownBy(()->parameters.save(a,"display.page-size","101",-1)).isInstanceOf(org.springframework.web.ErrorResponseException.class);
+        assertThatThrownBy(()->parameters.save(a,"display.time-zone","invalid-zone",1)).isInstanceOfSatisfying(com.appnexus.platform.configuration.TenantParameters.Rejection.class, error -> {
+            assertThat(error.status()).isEqualTo(400);
+            assertThat(error).hasMessage("INVALID_PARAMETER");
+        });
+        assertThatThrownBy(()->parameters.save(a,"security.secret","forbidden",-1)).isInstanceOfSatisfying(com.appnexus.platform.configuration.TenantParameters.Rejection.class, error -> {
+            assertThat(error.status()).isEqualTo(400);
+            assertThat(error).hasMessage("INVALID_PARAMETER");
+        });
+        assertThatThrownBy(()->parameters.save(a,"display.page-size","101",-1)).isInstanceOfSatisfying(com.appnexus.platform.configuration.TenantParameters.Rejection.class, error -> {
+            assertThat(error.status()).isEqualTo(400);
+            assertThat(error).hasMessage("INVALID_PARAMETER");
+        });
         assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM tenant_parameter_audit WHERE tenant_id=UUID_TO_BIN(?)",Integer.class,a.tenantId().toString())).isEqualTo(2);
     }
     /** 地图公开配置只在本租户可见；外部代理地址和安全密钥参数不在白名单。 */
@@ -42,9 +54,18 @@ class TenantParameterTest extends DatabaseTestSupport {
         var a=context();var b=context();
         parameters.save(a,"map.amap-service-host","/api/maps/_AMapService",-1);
         assertThat(parameters.list(b).stream().filter(value->value.key().equals("map.amap-service-host")).findFirst().orElseThrow().value()).isEqualTo("/api/maps/_AMapService");
-        assertThatThrownBy(()->parameters.save(a,"map.amap-service-host","https://example.com",0)).isInstanceOf(org.springframework.web.ErrorResponseException.class);
-        assertThatThrownBy(()->parameters.save(a,"map.amap-key","invalid",-1)).isInstanceOf(org.springframework.web.ErrorResponseException.class);
-        assertThatThrownBy(()->parameters.save(a,"map.security-secret","forbidden",-1)).isInstanceOf(org.springframework.web.ErrorResponseException.class);
+        assertThatThrownBy(()->parameters.save(a,"map.amap-service-host","https://example.com",0)).isInstanceOfSatisfying(com.appnexus.platform.configuration.TenantParameters.Rejection.class, error -> {
+            assertThat(error.status()).isEqualTo(400);
+            assertThat(error).hasMessage("INVALID_PARAMETER");
+        });
+        assertThatThrownBy(()->parameters.save(a,"map.amap-key","invalid",-1)).isInstanceOfSatisfying(com.appnexus.platform.configuration.TenantParameters.Rejection.class, error -> {
+            assertThat(error.status()).isEqualTo(400);
+            assertThat(error).hasMessage("INVALID_PARAMETER");
+        });
+        assertThatThrownBy(()->parameters.save(a,"map.security-secret","forbidden",-1)).isInstanceOfSatisfying(com.appnexus.platform.configuration.TenantParameters.Rejection.class, error -> {
+            assertThat(error.status()).isEqualTo(400);
+            assertThat(error).hasMessage("INVALID_PARAMETER");
+        });
     }
     /** 真实过滤器链验证匿名及普通成员不能消耗地图代理；有仓库权限的成员得到受控缺配置提示。 */
     @Test void proxyRequiresSessionTenantAndWarehousePermission() throws Exception {
@@ -66,9 +87,18 @@ class TenantParameterTest extends DatabaseTestSupport {
         UUID member=UUID.fromString(jdbc.queryForObject("SELECT BIN_TO_UUID(id) FROM tenant_member WHERE tenant_id=UUID_TO_BIN(?) AND account_id=UUID_TO_BIN(?)",String.class,owner.tenantId().toString(),account.toString()));
         var ordinary=new VerifiedTenantContext(account,owner.tenantId(),member,1);
         assertThat(parameters.list(ordinary)).hasSize(5);
-        assertThatThrownBy(()->parameters.save(ordinary,"display.currency","USD",-1)).isInstanceOf(org.springframework.web.ErrorResponseException.class);
-        assertThatThrownBy(()->parameters.list(new VerifiedTenantContext(account,UUID.randomUUID(),member,1))).isInstanceOf(org.springframework.web.ErrorResponseException.class);
+        assertThatThrownBy(()->parameters.save(ordinary,"display.currency","USD",-1)).isInstanceOfSatisfying(com.appnexus.platform.configuration.TenantParameters.Rejection.class, error -> {
+            assertThat(error.status()).isEqualTo(403);
+            assertThat(error).hasMessage("PARAMETER_MANAGEMENT_DENIED");
+        });
+        assertThatThrownBy(()->parameters.list(new VerifiedTenantContext(account,UUID.randomUUID(),member,1))).isInstanceOfSatisfying(com.appnexus.platform.configuration.TenantParameters.Rejection.class, error -> {
+            assertThat(error.status()).isEqualTo(403);
+            assertThat(error).hasMessage("TENANT_UNAVAILABLE");
+        });
         administration.setTenantEnabled(actor,owner.tenantId(),false);
-        assertThatThrownBy(()->parameters.list(owner)).isInstanceOf(org.springframework.web.ErrorResponseException.class);
+        assertThatThrownBy(()->parameters.list(owner)).isInstanceOfSatisfying(com.appnexus.platform.configuration.TenantParameters.Rejection.class, error -> {
+            assertThat(error.status()).isEqualTo(403);
+            assertThat(error).hasMessage("TENANT_UNAVAILABLE");
+        });
     }
 }

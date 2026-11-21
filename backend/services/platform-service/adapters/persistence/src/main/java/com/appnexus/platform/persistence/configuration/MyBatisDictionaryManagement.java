@@ -13,7 +13,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 /** 字典用例实现；授权锁、层级校验、变更和审计在同一事务完成。 */
 @Service
-public class MyBatisDictionaryManagement implements DictionaryManagement {
+public class MyBatisDictionaryManagement implements DictionaryManagement, com.appnexus.platform.authorization.DataAccessDeclaration.Executor {
+ /** @return 固定租户条件及所属字典条件同时保护的主从资源 */
+ @Override public Set<String> enforcedResources(){return Set.of("configuration.dictionary","configuration.dictionary.item");}
  private final DictionaryMapper mapper;
  private final com.appnexus.platform.authorization.AccessAuthorization authorization;
  public MyBatisDictionaryManagement(DictionaryMapper mapper,com.appnexus.platform.authorization.AccessAuthorization authorization){this.mapper=mapper;this.authorization=authorization;}

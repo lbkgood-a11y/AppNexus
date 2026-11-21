@@ -82,7 +82,8 @@ public class PrintRuntimeService implements com.appnexus.printing.api.PrintRunti
       private Map<String,Object> current;
       @Override public Draft lock(PrintContext context,String template){
         statements.lockTemplate(context.tenantId(),template);
-        current=templateWithPermission(context,template,"print.template:publish");
+        // 发布校验从同一授权查询取原始 JSON，避免把已经投影的 Map 文本重新当作 JSON 解析。
+        current=templateRecordWithPermission(context,template,"print.template:publish");
         return new Draft(((Number)current.get("draft_revision")).longValue(),current.get("published_version")==null?null:((Number)current.get("published_version")).intValue(),current.get("data_contract").toString());
       }
       @Override public String validatedSchema(PrintContext context,String template,String contract){
@@ -259,7 +260,12 @@ public class PrintRuntimeService implements com.appnexus.printing.api.PrintRunti
 
   private Map<String,Object> byRequest(PrintContext c){String id=(String)required(statements.requestJob(c.tenantId(),actorKey(c),c.requestId()),"PRINT_IDEMPOTENCY_CONFLICT",409).get("id");return job(c,id,"print.job:submit");}
   private Map<String,Object> job(PrintContext c,String id,String permission){require(c,permission);return projectRow(required(statements.job(c.tenantId(),id),"PRINT_JOB_NOT_FOUND",404));}
-  private Map<String,Object> templateWithPermission(PrintContext c,String id,String permission){require(c,permission);uuid(id);return projectRow(required(statements.permissionTemplate(c.tenantId(),id),"PRINT_TEMPLATE_NOT_FOUND",404));}
+  private Map<String,Object> templateWithPermission(PrintContext c,String id,String permission){return projectRow(templateRecordWithPermission(c,id,permission));}
+  private Map<String,Object> templateRecordWithPermission(PrintContext c,String id,String permission){
+    require(c,permission);
+    uuid(id);
+    return required(statements.permissionTemplate(c.tenantId(),id),"PRINT_TEMPLATE_NOT_FOUND",404);
+  }
   private void require(PrintContext c,String permission){if(!platform.allowed(c,permission))throw new PrintRejection("PRINT_ACCESS_DENIED",403);}
   private void requireAny(PrintContext c,String... permissions){if(Arrays.stream(permissions).noneMatch(p->platform.allowed(c,p)))throw new PrintRejection("PRINT_ACCESS_DENIED",403);}
   private static String actorKey(PrintContext c){return c.actorId().startsWith("partner-")?UUID.nameUUIDFromBytes(c.actorId().getBytes(java.nio.charset.StandardCharsets.UTF_8)).toString():c.actorId();}

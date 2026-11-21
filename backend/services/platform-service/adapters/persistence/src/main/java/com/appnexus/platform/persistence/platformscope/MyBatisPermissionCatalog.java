@@ -8,7 +8,9 @@ import org.springframework.stereotype.Service;
 
 /** 受控权限目录实现；排序由数据库固定，返回值不携带角色或主体授权关系。 */
 @Service
-public final class MyBatisPermissionCatalog implements PermissionCatalog {
+public final class MyBatisPermissionCatalog implements PermissionCatalog, com.appnexus.platform.authorization.DataAccessDeclaration.Executor {
+ /** @return 由原权限用例和该适配器的固定数据边界共同约束的资源编码 */
+ @Override public java.util.Set<String> enforcedResources(){return java.util.Set.of("access.catalog.platform", "access.catalog.tenant");}
     private final PermissionMapper mapper;
     public MyBatisPermissionCatalog(PermissionMapper mapper) { this.mapper = mapper; }
 

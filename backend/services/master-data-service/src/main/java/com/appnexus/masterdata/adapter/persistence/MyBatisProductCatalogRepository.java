@@ -1,10 +1,13 @@
 package com.appnexus.masterdata.adapter.persistence;
 import java.util.*;
+import com.appnexus.platform.authorization.DataAccessDeclaration;
 import com.appnexus.masterdata.application.product.ProductCatalogRepository;
 import org.springframework.stereotype.Component;
 /** 固定存储适配，端口类型和语义参数不携带技术位置绑定，驱动时间在边界转换。 */
 @Component
-public final class MyBatisProductCatalogRepository implements ProductCatalogRepository {
+public final class MyBatisProductCatalogRepository implements ProductCatalogRepository, DataAccessDeclaration.Executor {
+ /** @return 由原用例授权和存储层固定租户条件保护的资源，未开放可配置行范围 */
+ @Override public Set<String> enforcedResources(){return Set.of("masterdata.productcategory", "masterdata.productunit", "masterdata.productunit.group", "masterdata.productcategory.configuration");}
  private final ProductCatalogMapper mapper;
  /** @param mapper 原固定SQL映射，与父聚合共用事务连接 */
  public MyBatisProductCatalogRepository(ProductCatalogMapper mapper){this.mapper=mapper;}
@@ -39,7 +42,15 @@ public final class MyBatisProductCatalogRepository implements ProductCatalogRepo
  /** {@inheritDoc} */
  public String lockCategoryGuard(String tenant){return mapper.lockCategoryGuard(tenant);}
  /** {@inheritDoc} */
- public List<Map<String,Object>> units(String tenant, String keyword, int size, int offset){return ProductStorageValues.stable(mapper.units(tenant,keyword,size,offset));}
+ public List<Map<String,Object>> units(String tenant, String keyword, String group, int size, int offset){return ProductStorageValues.stable(mapper.units(tenant,keyword,group,size,offset));}
+ /** {@inheritDoc} */
+ public List<Map<String,Object>> unitGroups(String tenant){return mapper.unitGroups(tenant);}
+ /** {@inheritDoc} */
+ public void ensureUnitGroup(String tenant,String code,String actor){mapper.ensureUnitGroup(tenant,code,actor);}
+ /** {@inheritDoc} */
+ public void createUnitGroup(String tenant,String code,String name,String actor){mapper.createUnitGroup(tenant,code,name,actor);}
+ /** {@inheritDoc} */
+ public int renameUnitGroup(String tenant,String code,String name,String actor,long version){return mapper.renameUnitGroup(tenant,code,name,actor,version);}
  /** {@inheritDoc} */
  public List<Map<String,Object>> unit(String tenant, String id){return ProductStorageValues.stable(mapper.unit(tenant,id));}
  /** {@inheritDoc} */
@@ -49,5 +60,5 @@ public final class MyBatisProductCatalogRepository implements ProductCatalogRepo
  /** {@inheritDoc} */
  public List<Map<String,Object>> slots(String tenant, String id){return ProductStorageValues.stable(mapper.slots(tenant,id));}
  /** {@inheritDoc} */
- public long unitCount(String tenant, String keyword){return mapper.unitCount(tenant,keyword);}
+ public long unitCount(String tenant, String keyword, String group){return mapper.unitCount(tenant,keyword,group);}
 }

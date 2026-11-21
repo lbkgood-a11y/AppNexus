@@ -20,9 +20,27 @@ export interface ProductMigration {specificationMode?:"NONE"|"STANDARD"|"CUSTOM"
 export interface ProductPreview {sourceVersion:number;sourceStructureRevision:number;target:ProductMigration;completionIssues:string[];droppedItemIds:string[];previewToken:string;expiresAt:string;executable:boolean}
 export interface ProductMigrationResult {productId:string;resultVersion:number;resultStructureRevision:number;changeId:string;replayUntil:string;replayed:boolean}
 export interface ProductChange {id:string;version:number;eventType:string;beforeSnapshot:string|null;afterSnapshot:string;schemaVersion:number;createdAt:string;createdBy:string|null}
-export interface ProductQuery {name:string;code:string;form?:string;status?:string;categoryId?:string;archived:boolean;page:number;size:number;configId?:string;attributeFilters?:string}
+export interface ProductQuery {
+ /** 是否包含所选分类的下级，默认仅本级；未选择分类时忽略。 */
+ includeDescendants?: boolean;
+ name:string;code:string;form?:string;status?:string;categoryId?:string;archived:boolean;page:number;size:number;configId?:string;attributeFilters?:string}
+/** 商品多单位与包装维护契约；数量采用精确十进制文本。 */
+export interface ProductMeasurement {
+ baseUnitId:string|null;
+ version:number;
+ configuration:{
+  units:Array<{unitId:string;scene:string;method:string;defaultUnit:boolean}>;
+  packaging:Array<{code:string;name:string;unitId:string;quantity:string}>;
+ };
+}
 /** 所有API由应用壳注入真实Cookie/CSRF；组件不持久化token，不自动重放写入。 */
 export interface ProductApi {
+ /** 读取商品当前已保存计量配置，空列表表示继承商品基础单位。 */
+ measurement(id:string):Promise<ProductMeasurement>;
+ /** 用商品版本提交完整计量配置。 */
+ saveMeasurement(id:string,data:ProductMeasurement["configuration"] & {version:number}):Promise<{version:number}>;
+ /** 用已保存的商品包装规格执行服务端精确试算。 */
+ calculatePackaging(id:string,code:string,quantity:string):Promise<{exact:string;display:string;baseUnitId:string;version:number}>;
  /** 当前操作可写归属组织；来源为服务端统一权限范围，不依赖组织管理权限。 */
  organizations(action:"create"|"update"):Promise<Array<{id:string;name:string}>>;
  operations():Promise<string[]>;

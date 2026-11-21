@@ -5,10 +5,11 @@ import {computed,onMounted,onBeforeUnmount,reactive,ref} from "vue";
 import {onBeforeRouteLeave} from "vue-router";
 import {useI18n} from "vue-i18n";
 import {ElMessage,ElMessageBox,type FormInstance,type FormRules} from "element-plus";
-import {GeographyPicker,geographyPath,type GeographyNode,type GeographySelection,PageHeader,TabbedDetailTemplate,ManagementTable,ManagedDialog,InfoHint,FloatingError,setErrorFeedback,type ManagementColumn} from "@appnexus/ui";
+import {GeographyPicker,geographyPath,type GeographyNode,type GeographySelection,PageHeader,TabbedDetailTemplate,ManagementTable,ManagedDialog,InfoHint,FloatingError,LoadErrorResult,presentLoadError,setErrorFeedback,type LoadIssue,type ManagementColumn} from "@appnexus/ui";
 import type {MasterDataApi,MasterDataRow,MasterDataInput,PartnerDetail,DictionaryOption} from "./index";
 import {partnerBasic,partnerAdditional,partnerDictionaryFields,partnerSections} from "./partner";
 /** 客商主数据详情；复用人员样板和公共明细表格，主档及明细以父版本原子保存。 */
+const loadIssue = ref<LoadIssue>();
 const props=defineProps<{id:string;mode?:"view"|"edit";api:MasterDataApi;errorText:(error:unknown)=>string}>();
 const emit=defineEmits<{close:[]}>();
 const {t,locale}=useI18n();
@@ -59,7 +60,7 @@ function display(value:string|undefined,key:string){if(!value)return "—";if(bo
 function time(value:string|null|undefined){return value?new Intl.DateTimeFormat(locale.value,{dateStyle:"medium",timeStyle:"short"}).format(new Date(value)):t("recordAudit.unknown");}
 /** 成功读取后才替换草稿；刷新需用户确认，读取失败保留输入并停止写入。 */
 function accept(row:MasterDataRow){record.value=row;draft.organizationId=row.organizationId??"";fieldRestrictions.value=row.fieldRestrictions??fieldRestrictions.value;draft.code=row.code;draft.name=row.name;draft.version=row.version;draft.attributes=Object.fromEntries([...partnerBasic,...partnerAdditional].map(key=>[key,row.attributes[key]??""]));details.contacts=structuredClone(row.contacts??[]);details.bankAccounts=structuredClone(row.bankAccounts??[]);baseline.value=snapshot();}
-async function load(){loading.value=true;failed.value=false;try{allowed.value=await props.api.operations();dictionaryOptions.value=await props.api.partnerOptions();const dataAccess=await props.api.partnerAccess();organizations.value=dataAccess.organizations;fieldRestrictions.value=dataAccess.fieldRestrictions;geographyNodes.value=await props.api.geographyDirectory("partner");if(id.value)accept(await props.api.readPartner(id.value));else baseline.value=snapshot();}catch(e){failed.value=true;if((e as {response?:{status:number}})?.response?.status===403){record.value=undefined;allowed.value=[];draft.name="";draft.code="";draft.attributes={};details.contacts=[];details.bankAccounts=[];}await setErrorFeedback(error,props.errorText(e));}finally{loading.value=false;}}
+async function load(){loading.value=true;failed.value=false;loadIssue.value=undefined;try{allowed.value=await props.api.operations();dictionaryOptions.value=await props.api.partnerOptions();const dataAccess=await props.api.partnerAccess();organizations.value=dataAccess.organizations;fieldRestrictions.value=dataAccess.fieldRestrictions;geographyNodes.value=await props.api.geographyDirectory("partner");if(id.value)accept(await props.api.readPartner(id.value));else baseline.value=snapshot();}catch(e){failed.value=true;if((e as {response?:{status:number}})?.response?.status===403){record.value=undefined;allowed.value=[];draft.name="";draft.code="";draft.attributes={};details.contacts=[];details.bankAccounts=[];}await presentLoadError(error,loadIssue,props.errorText(e),true,(e as {response?:{status?:number}})?.response?.status===403);}finally{loading.value=false;}}
 /** 冲突后不自动覆盖；用户主动重新读取时确认丢弃本地草稿。 */
 async function reload(){if(busy.value||loading.value)return;if((dirty.value||dialog.value)&&!await confirmDiscard())return;dialog.value=false;await load();}
 async function confirmDiscard(){try{await ElMessageBox.confirm(t("partner.discard"),t("masterData.partner"),{confirmButtonText:t("partner.discardAction"),cancelButtonText:t("masterData.cancel")});return true;}catch{return false;}}
@@ -71,7 +72,14 @@ async function save(){
  if(!restricted("masterdata.partner","establishedOn")&&draft.attributes.establishedOn&&draft.attributes.establishedOn>new Date().toISOString().slice(0,10)){await setErrorFeedback(error,t("partner.futureDate"));return;}
  busy.value=true;let saved=false;
  try{const input={...draft,attributes:writableValues("masterdata.partner",draft.attributes),organizationId:draft.organizationId||null,contacts:details.contacts.map(({id,values})=>({id,values:writableValues(resourceFor("contacts"),values)})),bankAccounts:details.bankAccounts.map(({id,values})=>({id,values:writableValues(resourceFor("bankAccounts"),values)}))};if(id.value)await props.api.update("partner",id.value,input);else id.value=(await props.api.create("partner",input)).id;saved=true;baseline.value=snapshot();ElMessage.success(t("masterData.saved"));accept(await props.api.readPartner(id.value));}
- catch(e){if(saved)failed.value=true;await setErrorFeedback(error,saved?t("partner.refreshFailed"):props.errorText(e));}finally{busy.value=false;}
+ catch(e){if (saved) {
+   failed.value = true;
+   const message = props.errorText(e);
+   await presentLoadError(error, loadIssue, message ? t("partner.refreshFailed") : "", true,
+     (e as { response?: { status?: number } })?.response?.status === 403);
+ } else {
+   await setErrorFeedback(error, props.errorText(e));
+ }}finally{busy.value=false;}
 }
 /** 明细弹窗只编辑本地快照；使用页面统一保存才能提交聚合，不显示伪持久化成功。 */
 function editDetail(index=-1){if(!canEdit.value||busy.value)return;detailIndex.value=index;for(const key of Object.keys(values))delete values[key];for(const key of partnerSections[tab.value])values[key]=details[tab.value][index]?.values[key]??(booleanFields.includes(key)?"false":"");dialog.value=true;}
@@ -93,8 +101,8 @@ onBeforeUnmount(()=>window.removeEventListener("beforeunload",beforeUnload));
   <TabbedDetailTemplate master-data>
    <template #header><PageHeader :title="id?(draft.name||t('masterData.partner')):t('partner.new')"><template #meta><el-tag v-if="props.mode==='view'" type="info">{{t('partner.view')}}</el-tag><el-tag v-if="draft.code" effect="plain">{{draft.code}}</el-tag><el-tag v-if="record" :type="record.enabled?'success':'info'">{{t('masterData.'+(record.enabled?'enabled':'disabled'))}}</el-tag></template><template #actions><el-button :disabled="busy" @click="back">{{t('partner.back')}}</el-button><el-button v-if="props.mode!=='view'" v-operation="operation" type="primary" :loading="busy" :disabled="!canEdit||!dirty||loading||dialog" @click="save">{{t('masterData.save')}}</el-button></template></PageHeader></template>
    <template #content>
-    <el-result v-if="failed" icon="error" :title="t('masterData.unavailable')"><template #extra><el-button @click="reload">{{t('masterData.retry')}}</el-button></template></el-result>
-    <el-form v-else ref="form" :model="draft" :rules="rules" label-position="top" :disabled="busy||loading" class="detail-profile-form detail-border-label-form" @submit.prevent="save">
+    <LoadErrorResult v-if="loadIssue" :issue="loadIssue"><template #retry><el-button :disabled="busy||loading" @click="reload">{{t('masterData.retry')}}</el-button></template></LoadErrorResult>
+    <el-form v-else-if="!failed" ref="form" :model="draft" :rules="rules" label-position="top" :disabled="busy||loading" class="detail-profile-form detail-border-label-form" @submit.prevent="save">
      <el-card v-for="group in groups" :key="group.key" shadow="never" class="detail-section" :body-style="group.key==='additional'&&!expanded?{padding:'0'}:undefined">
       <template #header><div class="detail-section-heading"><h2>{{t('partner.'+group.key)}}</h2><el-button v-if="group.key==='additional'" text :aria-label="t(expanded?'partner.collapse':'partner.expand')" :title="t(expanded?'partner.collapse':'partner.expand')" :aria-expanded="expanded" aria-controls="partner-additional" @click="expanded=!expanded"><AppIcon :name="expanded?'arrowUp':'arrowDown'" :size="18" /></el-button></div></template>
       <div v-show="group.key==='basic'||expanded" :id="group.key==='additional'?'partner-additional':undefined" class="detail-field-grid">

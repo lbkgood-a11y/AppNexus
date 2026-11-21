@@ -24,6 +24,8 @@ export interface MasterDataApi {
   /** 读取当前可信租户的非敏感高德配置，不包含服务端安全密钥。 */
   warehouseMapConfig():Promise<{key:string;serviceHost:string}>;
   warehouseOptions():Promise<Record<string,DictionaryOption[]>>;
+  /** 新增或编辑前读取当前成员的字段限制，失败时表单不可编辑。 */
+  warehouseFieldRestrictions():Promise<Record<string,string>>;
   /** 分页读取标准目录；query.keyword 为空不筛选，page 从 1 开始，size 为每页条数（1–100），默认 20。 */
   geographyOptions(kind:"country-region"|"subdivision",query:{keyword:string;page:number;size:number}):Promise<{rows:GeographyOption[];total:number}>;
   /** 懒加载导航直接子节点；parent 为空获取洲，page 从 1 开始，size 为每页 1–100 条。 */

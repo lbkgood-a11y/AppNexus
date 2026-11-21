@@ -2,6 +2,7 @@ package com.appnexus.platform.security;
 import com.appnexus.platform.persistence.identity.integration.IntegrationClientMapper;
 
 import com.appnexus.platform.tenant.PlatformAdministration;
+import com.appnexus.platform.authorization.DataAccessDeclaration;
 import java.security.SecureRandom;
 import java.util.*;
 import org.springframework.http.HttpStatus;
@@ -18,7 +19,13 @@ import org.springframework.transaction.annotation.Transactional;
  * 客户端密钥只在创建响应显示一次，数据库保留 Argon2id 哈希；租户绑定创建后不可更改。
  */
 @Service
-public class IntegrationClients {
+public class IntegrationClients implements DataAccessDeclaration.Executor {
+    /** 固定平台管理资源；客户端密钥不进入可配置字段目录。 */
+    public static final String RESOURCE = "integration.client";
+
+    /** @return 由平台身份复核、固定租户绑定和专用响应投影约束的资源 */
+    @Override public Set<String> enforcedResources(){return Set.of(RESOURCE);}
+
     private final IntegrationClientMapper statements;
 
     /** 当前正式可执行的外部 API scope；打印代理 scope 只允许受控代理路径，不授予其他租户 API。 */
