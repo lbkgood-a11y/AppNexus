@@ -170,12 +170,12 @@ public interface ProductCommandRepository {
   * @param offset 从0开始的行偏移，非负，与同条件COUNT配套
   * @return 授权范围内原固定投影；未命中不查询其他租户
   */
- List<Map<String,Object>> legacyReconciliation(String tenant,int size,long offset);
+ List<Map<String,Object>> legacyReconciliation(String tenant,int size,long offset,com.appnexus.platform.authorization.RowAccessControl.Predicate access);
  /** legacyCount固定存取；写入、父CAS、审计及回执参与同一用例事务，失败由调用方整笔回滚。
   * @param tenant 服务端可信租户UUID文本，必填；不得由请求体自报
   * @return 原固定事实或受影响行数；CAS写入非1必须拒绝，不视作成功
   */
- Long legacyCount(String tenant);
+ Long legacyCount(String tenant,com.appnexus.platform.authorization.RowAccessControl.Predicate access);
  /** pendingApprovalCount固定存取；写入、父CAS、审计及回执参与同一用例事务，失败由调用方整笔回滚。
   * @param tenant 服务端可信租户UUID文本，必填；不得由请求体自报
   * @param product 当前租户商品UUID文本，必填；读取和写入先经对应操作授权
@@ -211,5 +211,5 @@ public interface ProductCommandRepository {
   * @param lock 原写事务是否持有行锁，默认调用方明确传入；不向客户端开放
   * @return 授权范围内原固定投影；未命中不查询其他租户
   */
- List<Map<String,Object>> replay(String tenant, String actor, String id, String key, boolean lock);
+ List<Map<String,Object>> replay(String tenant, String actor, String id, String key, boolean lock,com.appnexus.platform.authorization.RowAccessControl.Predicate access);
 }

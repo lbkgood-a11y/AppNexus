@@ -8,8 +8,16 @@ public final class MyBatisPersonnelRepository implements PersonnelRepository, co
  /** @return 由原权限用例和该适配器的固定数据边界共同约束的资源编码 */
  @Override public java.util.Set<String> enforcedResources(){return java.util.Set.of("masterdata.person.detail");}
  private final PersonnelMapper mapper;
- /** @param mapper 固定人员明细SQL映射 */
- public MyBatisPersonnelRepository(PersonnelMapper mapper){this.mapper=mapper;}
+ private final MyBatisPersonRepository personRecords;
+ /**
+  * @param mapper 固定人员明细 SQL 映射
+  * @param personRecords 详情和列表复用的人员范围编译
+  */
+ public MyBatisPersonnelRepository(PersonnelMapper mapper,MyBatisPersonRepository personRecords){this.mapper=mapper;this.personRecords=personRecords;}
+ /** {@inheritDoc} */
+ @Override public void lockForWrite(com.appnexus.platform.tenant.VerifiedTenantContext context,String personId,String action){
+   personRecords.lockForWrite(context,personId,action,true);
+ }
  /** {@inheritDoc} */
  public List<String> readDetailContent(String tenant,String person,String id,String section){return mapper.readDetailContent(tenant,person,id,section);}
  /** {@inheritDoc} */
@@ -29,7 +37,12 @@ public final class MyBatisPersonnelRepository implements PersonnelRepository, co
  /** {@inheritDoc} */
  public int advanceVersion(String actor,String tenant,String person,long version){return mapper.advanceVersion(actor,tenant,person,version);}
  /** {@inheritDoc} */
- public List<Map<String,Object>> profile(String tenant,String id){return PersonnelStorageValues.stable(mapper.profile(tenant,id));}
+ public List<Map<String,Object>> profile(com.appnexus.platform.tenant.VerifiedTenantContext context,String id){
+   var predicate=personRecords.readPredicate(context);
+   var rows=mapper.profile(context.tenantId().toString(),id,predicate);
+   if(!rows.isEmpty())personRecords.authorizeProfileDetails(predicate,id);
+   return PersonnelStorageValues.stable(rows);
+ }
  /** {@inheritDoc} */
  public List<Map<String,Object>> audit(String tenant,String id){return PersonnelStorageValues.stable(mapper.audit(tenant,id));}
  /** {@inheritDoc} */

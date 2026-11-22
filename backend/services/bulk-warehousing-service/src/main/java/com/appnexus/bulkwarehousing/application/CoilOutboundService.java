@@ -257,16 +257,17 @@ public final class CoilOutboundService implements CoilOutbound,DataAccessExecuto
 
   /** {@inheritDoc} */
   @Override public RecoveryPage recoveryEntries(VerifiedTenantContext c,String authorizationId,String afterId) {
-    require(c,CoilOperations.READ_AUTHORIZATION_BALANCES);
+    var plan=require(c,CoilOperations.READ_AUTHORIZATION_BALANCES);
     require(c,CoilOperations.READ_RETURN_TRANSIT);
     if (afterId!=null) uuid(afterId);
-    var warehouse=stock.transaction(() -> lockChain(c,"authorization",authorizationId).notice().warehouseId());
+    var warehouse=write(plan,() -> lockChain(c,"authorization",authorizationId).notice().warehouseId());
     var rows=new ArrayList<RecoveryEntry>();
     var cursor=afterId;
     int pageSize=30;
     // 每个候选先复核原卷，再复用发运范围检查。分开事务以沿用各自仓锁顺序，游标仅返回有权库存身份。
     while (rows.size()<=pageSize) {
-      var origins=quotas.recoveryOrigins(c,authorizationId,warehouse,cursor,pageSize+1);
+      String batchCursor=cursor;
+      var origins=write(plan,() -> quotas.recoveryOrigins(c,authorizationId,warehouse,batchCursor,pageSize+1));
       for (var origin:origins) {
         cursor=origin.receiptId();
         var entry=authorizedRecoveryEntry(c,authorizationId,origin);
@@ -300,8 +301,8 @@ public final class CoilOutboundService implements CoilOutbound,DataAccessExecuto
 
   /** {@inheritDoc} */
   @Override public AuthorizationRecovery authorizationRecovery(VerifiedTenantContext c,String authorizationId,String receiptId) {
-    require(c,CoilOperations.READ_AUTHORIZATION_BALANCES);
-    return stock.transaction(() -> {
+    var plan=require(c,CoilOperations.READ_AUTHORIZATION_BALANCES);
+    return write(plan,() -> {
       var chain=lockChain(c,"authorization",authorizationId);
       var authorization=chain.authorization();
       masterData.owner(c,authorization.pickupPartnerId());
@@ -565,8 +566,8 @@ public final class CoilOutboundService implements CoilOutbound,DataAccessExecuto
 
   /** {@inheritDoc} */
   @Override public ReturnPreparation prepareReturn(VerifiedTenantContext c,String handoverId) {
-    require(c,CoilOperations.DISPATCH_RETURN);
-    return stock.transaction(() -> {
+    var plan=require(c,CoilOperations.DISPATCH_RETURN);
+    return write(plan,() -> {
       var chain=lockOriginal(c,handoverId);
       var original=quotas.dispatch(c,handoverId);
       var warehouse=chain.notice().warehouseId();
@@ -627,9 +628,9 @@ public final class CoilOutboundService implements CoilOutbound,DataAccessExecuto
 
   /** {@inheritDoc} */
   @Override public ReturnTransit returnTransit(VerifiedTenantContext c,String id) {
-    require(c,CoilOperations.READ_RETURN_TRANSIT);
+    var plan=require(c,CoilOperations.READ_RETURN_TRANSIT);
     uuid(id);
-    return stock.transaction(() -> {
+    return write(plan,() -> {
       var transit=quotas.transit(c,id);
       if (transit==null) throw denied();
       var chain=lockOriginal(c,transit.handoverId(),Set.of(transit.warehouseId()));

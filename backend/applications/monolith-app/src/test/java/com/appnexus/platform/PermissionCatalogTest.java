@@ -14,6 +14,7 @@ import org.springframework.test.context.ActiveProfiles;
 @SpringBootTest
 @ActiveProfiles("local")
 class PermissionCatalogTest extends DatabaseTestSupport {
+    @Autowired com.appnexus.platform.authorization.DataAccessCatalog dataAccess;
     @Autowired PermissionCatalog catalog;
     @Autowired AccessAuthorization authorization;
     @Autowired com.appnexus.platform.authorization.DataPolicyMetadataCatalog dataPolicyMetadata;
@@ -52,14 +53,20 @@ class PermissionCatalogTest extends DatabaseTestSupport {
         assertThat(metadata).extracting(com.appnexus.platform.authorization.DataPolicyMetadataCatalog.ScopeSupport::permissionCode)
             .contains("organization.unit:read","organization.unit:create")
             .doesNotContain("organization.permission:grant");
-        // 客商已接入真实范围执行器；目录只能返回已登记的组织或客商资源，不能沿用仅组织的旧假设。
+        // 任一公开范围必须有同一对象权威声明，新增组织保留明确全部并开放子组织需要的范围。
         assertThat(metadata).allSatisfy(item->{
-            assertThat(item.resourceType()).isIn("organization.unit","masterdata.partner");
+            assertThat(dataAccess.supports(item.permissionCode(),item.resourceType(),item.scopeType())).isTrue();
             assertThat(item.permissionCode()).startsWith(item.resourceType()+":");
             assertThat(item.scopeType()).isNotEqualTo(com.appnexus.platform.authorization.DataScopeAuthorization.ScopeType.DENY);
         });
         assertThat(metadata).extracting(com.appnexus.platform.authorization.DataPolicyMetadataCatalog.ScopeSupport::permissionCode)
             .contains("masterdata.partner:read","masterdata.partner:create","masterdata.partner:update","masterdata.partner:set_status");
+        assertThat(metadata.stream().filter(item->item.permissionCode().equals("organization.unit:create"))
+            .map(com.appnexus.platform.authorization.DataPolicyMetadataCatalog.ScopeSupport::scopeType))
+            .containsExactlyInAnyOrder(com.appnexus.platform.authorization.DataScopeAuthorization.ScopeType.ALL,
+                com.appnexus.platform.authorization.DataScopeAuthorization.ScopeType.ORGANIZATION,
+                com.appnexus.platform.authorization.DataScopeAuthorization.ScopeType.ORGANIZATION_SUBTREE,
+                com.appnexus.platform.authorization.DataScopeAuthorization.ScopeType.RULES);
         assertThat(dataPolicyMetadata.list(PermissionCatalog.ScopeType.PLATFORM)).isEmpty();
     }
 }

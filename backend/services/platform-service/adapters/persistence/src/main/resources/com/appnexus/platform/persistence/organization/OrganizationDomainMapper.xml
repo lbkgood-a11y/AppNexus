@@ -5,7 +5,7 @@
  <insert id="createType">INSERT INTO tenant_organization_type(tenant_id,id,code,name) VALUES(#{__verifiedTenant},UUID_TO_BIN(#{id}),#{code},#{name})</insert>
  <update id="updateType">UPDATE tenant_organization_type SET name=#{name},enabled=#{enabled},version=version+1 WHERE tenant_id=#{__verifiedTenant} AND id=UUID_TO_BIN(#{id}) AND version=#{version}</update>
  <select id="typeUsage" resultType="int">SELECT COUNT(*) FROM tenant_organization_unit WHERE tenant_id=#{__verifiedTenant} AND type_id=UUID_TO_BIN(#{id})</select>
- <select id="units" resultType="map">SELECT BIN_TO_UUID(id) id,code,BIN_TO_UUID(type_id) typeId,BIN_TO_UUID(parent_id) parentId,name,enabled,version FROM tenant_organization_unit WHERE tenant_id=#{__verifiedTenant} ORDER BY type_id,parent_id,name</select>
+ <select id="units" resultType="map">SELECT BIN_TO_UUID(id) id,code,BIN_TO_UUID(type_id) typeId,BIN_TO_UUID(parent_id) parentId,name,enabled,version FROM tenant_organization_unit WHERE tenant_id=#{__verifiedTenant} AND id=UUID_TO_BIN(#{id})</select>
  <!-- 所有展示入口使用相同可信租户和已解析范围；空集合拒绝，不在Java中过滤后分页。 -->
  <select id="scopedUnits" resultType="map">
  SELECT BIN_TO_UUID(id) id,code,BIN_TO_UUID(type_id) typeId,BIN_TO_UUID(parent_id) parentId,name,enabled,version FROM tenant_organization_unit WHERE tenant_id=#{__verifiedTenant}
@@ -17,19 +17,49 @@
  <update id="updateUnit">UPDATE tenant_organization_unit SET name=#{name},enabled=#{enabled},version=version+1 WHERE tenant_id=#{__verifiedTenant} AND id=UUID_TO_BIN(#{id}) AND version=#{version}</update>
  <update id="moveUnit">UPDATE tenant_organization_unit SET parent_id=UUID_TO_BIN(#{parentId}),version=version+1 WHERE tenant_id=#{__verifiedTenant} AND id=UUID_TO_BIN(#{id}) AND version=#{version}</update>
  <select id="impact" resultType="map">SELECT (SELECT COUNT(*) FROM tenant_organization_unit WHERE tenant_id=#{__verifiedTenant} AND parent_id=UUID_TO_BIN(#{id}) AND enabled=TRUE) children,(SELECT COUNT(*) FROM tenant_organization_relation WHERE tenant_id=#{__verifiedTenant} AND (source_id=UUID_TO_BIN(#{id}) OR target_id=UUID_TO_BIN(#{id}))) relations,(SELECT COUNT(*) FROM tenant_organization_position WHERE tenant_id=#{__verifiedTenant} AND organization_id=UUID_TO_BIN(#{id}) AND enabled=TRUE) positions,(SELECT COUNT(*) FROM tenant_person_position a JOIN tenant_organization_position p ON p.tenant_id=a.tenant_id AND p.id=a.position_id WHERE a.tenant_id=#{__verifiedTenant} AND p.organization_id=UUID_TO_BIN(#{id}) AND a.enabled=TRUE AND a.starts_at&lt;=CURRENT_TIMESTAMP(6) AND (a.ends_at IS NULL OR a.ends_at&gt;CURRENT_TIMESTAMP(6))) activeAssignments,(SELECT COUNT(*) FROM tenant_person_leader l JOIN tenant_person_position a ON a.tenant_id=l.tenant_id AND a.id=l.assignment_id WHERE l.tenant_id=#{__verifiedTenant} AND l.organization_id=UUID_TO_BIN(#{id}) AND a.enabled=TRUE AND a.starts_at&lt;=CURRENT_TIMESTAMP(6) AND (a.ends_at IS NULL OR a.ends_at&gt;CURRENT_TIMESTAMP(6))) leaders</select>
- <select id="relations" resultType="map">SELECT BIN_TO_UUID(id) id,relation_type relationType,BIN_TO_UUID(source_id) sourceId,BIN_TO_UUID(target_id) targetId,version FROM tenant_organization_relation WHERE tenant_id=#{__verifiedTenant} ORDER BY relation_type,created_at</select>
+ <select id="relations" resultType="map">
+ SELECT BIN_TO_UUID(r.id) id,r.relation_type relationType,BIN_TO_UUID(r.source_id) sourceId,BIN_TO_UUID(r.target_id) targetId,r.version
+ FROM tenant_organization_relation r
+ WHERE r.tenant_id=#{__verifiedTenant}
+ <if test="!range.all"><choose><when test="!range.ids.isEmpty()">
+ AND r.source_id IN <foreach collection="range.ids" item="organization" open="(" separator="," close=")">UUID_TO_BIN(#{organization})</foreach> AND r.target_id IN <foreach collection="range.ids" item="organization" open="(" separator="," close=")">UUID_TO_BIN(#{organization})</foreach>
+ </when><otherwise>AND 1=0</otherwise></choose></if>
+ <choose><when test="recordId != null">AND r.id=UUID_TO_BIN(#{recordId}) FOR UPDATE</when>
+ <otherwise>ORDER BY r.relation_type,r.created_at</otherwise></choose>
+ </select>
  <insert id="createRelation">INSERT INTO tenant_organization_relation(tenant_id,id,relation_type,source_id,target_id) VALUES(#{__verifiedTenant},UUID_TO_BIN(#{id}),#{relationType},UUID_TO_BIN(#{sourceId}),UUID_TO_BIN(#{targetId}))</insert>
  <delete id="deleteRelation">DELETE FROM tenant_organization_relation WHERE tenant_id=#{__verifiedTenant} AND id=UUID_TO_BIN(#{id}) AND version=#{version}</delete>
- <select id="positions" resultType="map">SELECT BIN_TO_UUID(id) id,BIN_TO_UUID(organization_id) organizationId,code,name,enabled,version FROM tenant_organization_position WHERE tenant_id=#{__verifiedTenant} ORDER BY code</select>
+ <select id="positions" resultType="map">
+ SELECT BIN_TO_UUID(r.id) id,BIN_TO_UUID(r.organization_id) organizationId,r.code,r.name,r.enabled,r.version
+ FROM tenant_organization_position r
+ WHERE r.tenant_id=#{__verifiedTenant}
+ <if test="!range.all"><choose><when test="!range.ids.isEmpty()">
+ AND r.organization_id IN <foreach collection="range.ids" item="organization" open="(" separator="," close=")">UUID_TO_BIN(#{organization})</foreach>
+ </when><otherwise>AND 1=0</otherwise></choose></if>
+ <choose><when test="recordId != null">AND r.id=UUID_TO_BIN(#{recordId}) FOR UPDATE</when>
+ <otherwise>ORDER BY r.code</otherwise></choose>
+ </select>
  <insert id="createPosition">INSERT INTO tenant_organization_position(tenant_id,id,organization_id,code,name) VALUES(#{__verifiedTenant},UUID_TO_BIN(#{id}),UUID_TO_BIN(#{organizationId}),#{code},#{name})</insert>
  <update id="updatePosition">UPDATE tenant_organization_position SET name=#{name},enabled=#{enabled},version=version+1 WHERE tenant_id=#{__verifiedTenant} AND id=UUID_TO_BIN(#{id}) AND version=#{version}</update>
  <select id="positionUsage" resultType="int">SELECT COUNT(*) FROM tenant_person_position WHERE tenant_id=#{__verifiedTenant} AND position_id=UUID_TO_BIN(#{id}) AND enabled=TRUE AND (ends_at IS NULL OR ends_at&gt;CURRENT_TIMESTAMP(6))</select>
- <select id="assignments" resultType="map">SELECT BIN_TO_UUID(id) id,BIN_TO_UUID(person_id) personId,BIN_TO_UUID(position_id) positionId,starts_at startsAt,ends_at endsAt,enabled,version FROM tenant_person_position WHERE tenant_id=#{__verifiedTenant} ORDER BY starts_at DESC</select>
+ <select id="assignments" resultType="map">
+ SELECT BIN_TO_UUID(r.id) id,BIN_TO_UUID(r.person_id) personId,BIN_TO_UUID(r.position_id) positionId,r.starts_at startsAt,r.ends_at endsAt,r.enabled,r.version
+ FROM tenant_person_position r JOIN tenant_organization_position p ON p.tenant_id=r.tenant_id AND p.id=r.position_id
+ WHERE r.tenant_id=#{__verifiedTenant}
+ <if test="!range.all"><choose><when test="!range.ids.isEmpty()">
+ AND p.organization_id IN <foreach collection="range.ids" item="organization" open="(" separator="," close=")">UUID_TO_BIN(#{organization})</foreach>
+ </when><otherwise>AND 1=0</otherwise></choose></if>
+ <choose><when test="recordId != null">AND r.id=UUID_TO_BIN(#{recordId}) FOR UPDATE</when>
+ <otherwise>ORDER BY r.starts_at DESC</otherwise></choose>
+ </select>
  <!-- 人员由公开 PersonnelCatalog 校验；此 SQL 仅访问组织拥有的岗位及任职表。 -->
  <insert id="createAssignment">INSERT INTO tenant_person_position(tenant_id,id,person_id,position_id,starts_at,ends_at) SELECT #{__verifiedTenant},UUID_TO_BIN(#{id}),UUID_TO_BIN(#{personId}),p.id,#{startsAt},#{endsAt} FROM tenant_organization_position p WHERE p.tenant_id=#{__verifiedTenant} AND p.id=UUID_TO_BIN(#{positionId}) AND p.enabled=TRUE</insert>
  <update id="updateAssignment">UPDATE tenant_person_position SET ends_at=#{endsAt},enabled=#{enabled},version=version+1 WHERE tenant_id=#{__verifiedTenant} AND id=UUID_TO_BIN(#{id}) AND version=#{version}</update>
  <delete id="removeAssignmentLeaders">DELETE FROM tenant_person_leader WHERE tenant_id=#{__verifiedTenant} AND assignment_id=UUID_TO_BIN(#{id})</delete>
- <select id="leaders" resultType="map">SELECT BIN_TO_UUID(l.organization_id) organizationId,BIN_TO_UUID(l.assignment_id) assignmentId FROM tenant_person_leader l JOIN tenant_person_position a ON a.tenant_id=l.tenant_id AND a.id=l.assignment_id WHERE l.tenant_id=#{__verifiedTenant} AND a.enabled=TRUE AND a.starts_at&lt;=CURRENT_TIMESTAMP(6) AND (a.ends_at IS NULL OR a.ends_at&gt;CURRENT_TIMESTAMP(6))</select>
+ <select id="leaders" resultType="map">SELECT BIN_TO_UUID(l.organization_id) organizationId,BIN_TO_UUID(l.assignment_id) assignmentId FROM tenant_person_leader l JOIN tenant_person_position a ON a.tenant_id=l.tenant_id AND a.id=l.assignment_id WHERE l.tenant_id=#{__verifiedTenant} AND a.enabled=TRUE AND a.starts_at&lt;=CURRENT_TIMESTAMP(6) AND (a.ends_at IS NULL OR a.ends_at&gt;CURRENT_TIMESTAMP(6))
+ <if test="!range.all"><choose><when test="!range.ids.isEmpty()"> AND l.organization_id IN
+ <foreach collection="range.ids" item="id" open="(" separator="," close=")">UUID_TO_BIN(#{id})</foreach>
+ </when><otherwise> AND 1=0</otherwise></choose></if></select>
  <insert id="addLeader">INSERT INTO tenant_person_leader(tenant_id,organization_id,assignment_id) SELECT #{__verifiedTenant},UUID_TO_BIN(#{organizationId}),a.id FROM tenant_person_position a JOIN tenant_organization_position p ON p.tenant_id=a.tenant_id AND p.id=a.position_id WHERE a.tenant_id=#{__verifiedTenant} AND a.id=UUID_TO_BIN(#{assignmentId}) AND p.organization_id=UUID_TO_BIN(#{organizationId}) AND a.enabled=TRUE AND a.starts_at&lt;=CURRENT_TIMESTAMP(6) AND (a.ends_at IS NULL OR a.ends_at&gt;CURRENT_TIMESTAMP(6))</insert>
  <delete id="removeLeader">DELETE FROM tenant_person_leader WHERE tenant_id=#{__verifiedTenant} AND organization_id=UUID_TO_BIN(#{organizationId}) AND assignment_id=UUID_TO_BIN(#{assignmentId})</delete>
 </mapper>

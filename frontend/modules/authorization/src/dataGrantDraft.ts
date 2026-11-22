@@ -1,4 +1,4 @@
-import type {DataPolicy,DataGrantRule,DataDimension} from "./index";
+import type {DataPolicy,DataGrantRule,DataDimension,DataScopeType,ScopeSupport} from "./index";
 
 const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 /**
@@ -16,6 +16,11 @@ export function ruleDraftErrors(rule:DataGrantRule,dimensions?:DataDimension[]):
   const dimension=dimensions?.find(item=>item.field===condition.field);
   if(!condition.field||dimensions&&!dimension)errors.add('field');
   if(!['EQ','IN'].includes(condition.operator)||dimension&&!dimension.operators.includes(condition.operator))errors.add('operator');
+  if(condition.parameter){
+   if(condition.operator!=='EQ'||condition.values.length||dimensions&&!dimension?.parameters?.includes(condition.parameter))errors.add('value');
+   continue;
+  }
+  if(dimension?.source==='ACCOUNT'||dimension?.source==='PERSON')errors.add('value');
   if(!condition.values.length||condition.values.length>100||condition.operator==='EQ'&&condition.values.length!==1||condition.values.some(value=>!value.trim()||value.length>200))errors.add('value');
   if(dimension?.valueType==='UUID'&&condition.values.some(value=>!uuid.test(value)))errors.add('uuid');
  }
@@ -28,4 +33,33 @@ export function incompleteDataPolicy(policy:DataPolicy|undefined,dimensions?:Dat
  if(policy.scopeType==="ORGANIZATION"||policy.scopeType==="ORGANIZATION_SUBTREE")return !policy.organizationIds.length;
  if(policy.scopeType!=="RULES")return false;
  return !policy.rules?.length||policy.rules.length>20||policy.rules.some(rule=>ruleDraftErrors(rule,dimensions).length>0);
+}
+
+
+/** 仅用于选择器；指定记录继续保存为单条 ROLE_MEMBERS 规则。 */
+export type ScopeChoice=DataScopeType|"RECORDS";
+type RuleEditorChoice="RULES"|"RECORDS";
+
+/** 公开目录已支持 RULES 时才可按记录授权；新增没有既存记录。 */
+export function scopeChoices(support:ScopeSupport[],permissionCode:string,hasDimensions:boolean):ScopeChoice[]{
+ const result:ScopeChoice[]=support.map(item=>item.scopeType);
+ if(!permissionCode.endsWith(":create")&&result.includes("RULES")){
+  const ruleIndex=result.indexOf("RULES");
+  result.splice(ruleIndex,hasDimensions?0:1,"RECORDS");
+ }
+ return result;
+}
+
+/** 只将精确的原记录策略回显为快捷项，保留原有条件、主体和多分支规则。 */
+export function shownScope(policy:DataPolicy|undefined,preferred?:RuleEditorChoice):ScopeChoice|undefined{
+ if(policy?.scopeType!=="RULES")return policy?.scopeType;
+ if(preferred)return preferred;
+ const [rule]=policy.rules??[];
+ return policy.rules?.length===1&&rule.subjectType==="ROLE_MEMBERS"&&!rule.subjectIds.length&&
+   !rule.allRecords&&!!rule.recordIds.length&&!rule.conditions.length?"RECORDS":"RULES";
+}
+
+/** 选择器快捷项从不作为服务端 scopeType 提交。 */
+export function persistedScope(choice:ScopeChoice):DataScopeType{
+ return choice==="RECORDS"?"RULES":choice;
 }

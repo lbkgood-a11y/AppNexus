@@ -31,9 +31,9 @@ public final class MyBatisPrintSceneRepository implements PrintSceneRepository {
  /** {@inheritDoc} */
  public int createContract(String tenant,String code,String content,String actor){return mapper.createContract(tenant,code,content,actor);}
  /** {@inheritDoc} */
- public int deleteAgentQueues(String tenant,String site,String agent){return mapper.deleteAgentQueues(tenant,site,agent);}
+ public int deleteAgentQueues(String tenant,String site,String agent,String principal){return mapper.deleteAgentQueues(tenant,site,agent,principal);}
  /** {@inheritDoc} */
- public int reportAgentQueue(String tenant,String site,String agent,String queue){return mapper.reportAgentQueue(tenant,site,agent,queue);}
+ public int reportAgentQueue(String tenant,String site,String agent,String queue,String principal){return mapper.reportAgentQueue(tenant,site,agent,queue,principal);}
  /** {@inheritDoc} */
  public List<Map<String,Object>> queues(String tenant){return PrintStorageValues.stable(mapper.queues(tenant));}
  /** {@inheritDoc} */

@@ -55,6 +55,12 @@ class BusinessObjectIntegrationTest {
     try(var connection=source.getConnection()){ScriptUtils.executeSqlScript(connection,new ClassPathResource("db/migration/V129__object_approval_receipts.sql"));}
     var tx=new DataSourceTransactionManager(source);
     WorkflowPlatform platform=new WorkflowPlatform(){
+      @Override public void authorizeTaskWrite(WorkflowContext context,String taskId){
+        if(!active(context.tenantId(),context.actorId()))throw new SecurityException("WORKFLOW_DENIED");
+      }
+      @Override public void authorizeRecordWrite(WorkflowContext c,String permission,String... keys){
+        if(!allowed(c,permission))throw new SecurityException("LEAVE_ACCESS_DENIED");
+      }
       public Map<String,Object> projectData(WorkflowContext context,String resource,Map<String,Object> values){return Map.copyOf(values);}
       public boolean candidate(WorkflowContext c,String org,String kind,String reference){return resolve(c.tenantId(),org,kind,reference).contains(c.actorId());}
       public boolean active(String t,String a){return TENANT.equals(t)&&Set.of("applicant","leader","hr","manager").contains(a);}
@@ -71,7 +77,7 @@ class BusinessObjectIntegrationTest {
       public boolean tenantExists(String t){return Set.of(TENANT,OTHER).contains(t);}
     };
     leave=new LeavePocService(new com.appnexus.leave.adapter.persistence.MyBatisLeaveRepository(mapper(com.appnexus.leave.adapter.persistence.LeaveRecordMapper.class)),new com.appnexus.leave.adapter.transaction.SpringLeaveTransaction(tx),platform,()->runtime);
-    var declaration=new com.appnexus.leave.adapter.integration.LeaveDeclaration(leave);declaration.runtimeFactory(new com.appnexus.platform.persistence.businessobject.MappedObjectRuntimeFactory(mapper(com.appnexus.platform.persistence.businessobject.ObjectRecordMapper.class)));
+    var declaration=new com.appnexus.leave.adapter.integration.LeaveDeclaration(leave);declaration.runtimeFactory(new com.appnexus.platform.persistence.businessobject.MappedObjectRuntimeFactory(mapper(com.appnexus.platform.persistence.businessobject.ObjectRecordMapper.class),org.mockito.Mockito.mock(com.appnexus.platform.authorization.ScopedWriteGate.class)));
     Provider order=()->new Descriptor("Order","订单","Order","sales",1,Category.TRANSACTION,List.of(new Field("amount","金额","Amount","NUMBER","元",true)),List.of(
       new Operation("confirm","确认","Confirm","order:confirm","Order.confirm",null,List.of(new OperationAlias("Order.detail.confirm",new PageOperation("order/detail","/orders/detail","订单详情","Order details","POST","/api/orders/{id}/confirm"))),new com.appnexus.contracts.businessobject.InteractionContract("Order.confirm",1,"Order","confirm","确认","Confirm",com.appnexus.contracts.businessobject.InteractionContract.Trigger.USER_ACTION,java.util.List.of(new com.appnexus.contracts.businessobject.InteractionContract.Capability(com.appnexus.contracts.businessobject.InteractionContract.Service.BUSINESS,com.appnexus.contracts.businessobject.InteractionContract.Completion.SYNCHRONOUS,"Order.confirm","",java.util.List.of(),java.util.Set.of(), "Order.confirm.data", 1)))),
       new Operation("print","打印","Print","order:print","Order.print",null,List.of(),new com.appnexus.contracts.businessobject.InteractionContract("Order.print",1,"Order","print","打印","Print",com.appnexus.contracts.businessobject.InteractionContract.Trigger.USER_ACTION,java.util.List.of(new com.appnexus.contracts.businessobject.InteractionContract.Capability(com.appnexus.contracts.businessobject.InteractionContract.Service.PRINT,com.appnexus.contracts.businessobject.InteractionContract.Completion.CONFIRMATION,"order.v1","",java.util.List.of(),java.util.Set.of(), "order.v1", 1)))),

@@ -13,7 +13,7 @@ public interface ProductRepository {
    * @param lock true 时必须在写事务中锁定父行，直到扩展与审计完成
    * @return 当前父记录投影；不包含其他租户数据
    */
-  Map<String,Object> load(VerifiedTenantContext context, String id, boolean lock);
+  Map<String,Object> load(VerifiedTenantContext context, String id, boolean lock,com.appnexus.platform.authorization.RowAccessControl.Predicate access);
   /** CAS 推进父版本及最后修改审计；expectedVersion 为读取的非负版本，失败整笔聚合回滚。 */
   void advance(VerifiedTenantContext context, String id, long expectedVersion);
 }

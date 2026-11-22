@@ -17,10 +17,12 @@ public interface ProductAttributeMapper {
 
  /** 固定业务语句3；准入、参数规则、聚合锁及事务由原用例负责，所有值绑定。 */
  @Insert("INSERT INTO md_product_attribute_group(id,tenant_id,code,name,created_by,updated_by) VALUES(UUID_TO_BIN(#{p0}),UUID_TO_BIN(#{p1}),#{p2},#{p3},UUID_TO_BIN(#{p4}),UUID_TO_BIN(#{p5}))")
+ @com.appnexus.persistence.mybatis.GuardedScope(tenant="p1",serviceOperation="masterdata.productattribute:create",serviceKeys={"p0"})
  int createGroup(@Param("p0") Object p0,@Param("p1") Object p1,@Param("p2") Object p2,@Param("p3") Object p3,@Param("p4") Object p4,@Param("p5") Object p5);
 
  /** 固定业务语句4；准入、参数规则、聚合锁及事务由原用例负责，所有值绑定。 */
  @Insert("INSERT INTO md_product_attribute(id,tenant_id,code,group_id,created_by,updated_by) VALUES(UUID_TO_BIN(#{p0}),UUID_TO_BIN(#{p1}),#{p2},UUID_TO_BIN(#{p3}),UUID_TO_BIN(#{p4}),UUID_TO_BIN(#{p5}))")
+ @com.appnexus.persistence.mybatis.GuardedScope(tenant="p1",serviceOperation="masterdata.productattribute:create",serviceKeys={"p0"})
  int createAttribute(@Param("p0") Object p0,@Param("p1") Object p1,@Param("p2") Object p2,@Param("p3") Object p3,@Param("p4") Object p4,@Param("p5") Object p5);
 
  /** 固定业务语句5；准入、参数规则、聚合锁及事务由原用例负责，所有值绑定。 */
@@ -33,10 +35,12 @@ public interface ProductAttributeMapper {
 
  /** 固定业务语句7；准入、参数规则、聚合锁及事务由原用例负责，所有值绑定。 */
  @Insert("INSERT INTO md_product_attribute_revision(id,tenant_id,attribute_id,revision_no,name,data_type,unit_id,numeric_scale,validation_json,created_by,updated_by) VALUES(UUID_TO_BIN(#{p0}),UUID_TO_BIN(#{p1}),UUID_TO_BIN(#{p2}),#{p3},#{p4},#{p5},UUID_TO_BIN(#{p6}),#{p7},#{p8},UUID_TO_BIN(#{p9}),UUID_TO_BIN(#{p10}))")
+ @com.appnexus.persistence.mybatis.GuardedScope(tenant="p1",serviceOperation="masterdata.productattribute:insert-revision",serviceKeys={"p2"})
  int createRevision(@Param("p0") Object p0,@Param("p1") Object p1,@Param("p2") Object p2,@Param("p3") Object p3,@Param("p4") Object p4,@Param("p5") Object p5,@Param("p6") Object p6,@Param("p7") Object p7,@Param("p8") Object p8,@Param("p9") Object p9,@Param("p10") Object p10);
 
  /** 固定业务语句8；准入、参数规则、聚合锁及事务由原用例负责，所有值绑定。 */
  @Insert("INSERT INTO md_product_attribute_option(id,tenant_id,revision_id,option_code,label,sort_order,created_by,updated_by) VALUES(UUID_TO_BIN(#{p0}),UUID_TO_BIN(#{p1}),UUID_TO_BIN(#{p2}),#{p3},#{p4},#{p5},UUID_TO_BIN(#{p6}),UUID_TO_BIN(#{p7}))")
+ @com.appnexus.persistence.mybatis.GuardedScope(tenant="p1",serviceOperation="masterdata.productattribute:initial-options",serviceKeys={"p2"})
  int createInitialOption(@Param("p0") Object p0,@Param("p1") Object p1,@Param("p2") Object p2,@Param("p3") Object p3,@Param("p4") Object p4,@Param("p5") Object p5,@Param("p6") Object p6,@Param("p7") Object p7);
 
  /** 固定业务语句9；准入、参数规则、聚合锁及事务由原用例负责，所有值绑定。 */
@@ -44,19 +48,23 @@ public interface ProductAttributeMapper {
  Integer optionCount(@Param("p0") Object p0,@Param("p1") Object p1);
 
  /** 固定业务语句10；准入、参数规则、聚合锁及事务由原用例负责，所有值绑定。 */
+ @com.appnexus.persistence.mybatis.GuardedScope(tenant="p1",catalogPublication="masterdata.productattribute:publish")
  @Update("UPDATE md_product_attribute_revision SET state='PUBLISHED',published_at=CURRENT_TIMESTAMP(6),updated_by=UUID_TO_BIN(#{p0}),updated_at=CURRENT_TIMESTAMP(6) WHERE tenant_id=UUID_TO_BIN(#{p1}) AND id=UUID_TO_BIN(#{p2}) AND state='DRAFT'")
  int publishRevision(@Param("p0") Object p0,@Param("p1") Object p1,@Param("p2") Object p2);
 
  /** 固定业务语句11；准入、参数规则、聚合锁及事务由原用例负责，所有值绑定。 */
  @Insert("INSERT INTO md_product_attribute_option(id,tenant_id,revision_id,option_code,label,sort_order,created_by,updated_by) VALUES(UUID_TO_BIN(#{p0}),UUID_TO_BIN(#{p1}),UUID_TO_BIN(#{p2}),#{p3},#{p4},#{p5},UUID_TO_BIN(#{p6}),UUID_TO_BIN(#{p7}))")
+ @com.appnexus.persistence.mybatis.GuardedScope(tenant="p1",serviceOperation="masterdata.productattribute:update",serviceKeys={"p2"})
  int createOption(@Param("p0") Object p0,@Param("p1") Object p1,@Param("p2") Object p2,@Param("p3") Object p3,@Param("p4") Object p4,@Param("p5") Object p5,@Param("p6") Object p6,@Param("p7") Object p7);
 
  /** 固定业务语句12；准入、参数规则、聚合锁及事务由原用例负责，所有值绑定。 */
  @Update("UPDATE md_product_attribute_group SET name=#{p0},version=version+1,updated_by=UUID_TO_BIN(#{p1}),updated_at=CURRENT_TIMESTAMP(6) WHERE tenant_id=UUID_TO_BIN(#{p2}) AND id=UUID_TO_BIN(#{p3}) AND code=#{p4} AND version=#{p5}")
+ @com.appnexus.persistence.mybatis.GuardedScope(tenant="p2",serviceOperation="masterdata.productattribute:update",serviceKeys={"p3"})
  int updateGroup(@Param("p0") Object p0,@Param("p1") Object p1,@Param("p2") Object p2,@Param("p3") Object p3,@Param("p4") Object p4,@Param("p5") Object p5);
 
  /** 固定业务语句13；准入、参数规则、聚合锁及事务由原用例负责，所有值绑定。 */
  @Update("UPDATE md_product_attribute SET group_id=UUID_TO_BIN(#{p0}),version=version+1,updated_by=UUID_TO_BIN(#{p1}),updated_at=CURRENT_TIMESTAMP(6) WHERE tenant_id=UUID_TO_BIN(#{p2}) AND id=UUID_TO_BIN(#{p3}) AND code=#{p4} AND version=#{p5}")
+ @com.appnexus.persistence.mybatis.GuardedScope(tenant="p2",serviceOperation="masterdata.productattribute:update",serviceKeys={"p3"})
  int updateAttribute(@Param("p0") Object p0,@Param("p1") Object p1,@Param("p2") Object p2,@Param("p3") Object p3,@Param("p4") Object p4,@Param("p5") Object p5);
 
  /** 固定业务语句14；准入、参数规则、聚合锁及事务由原用例负责，所有值绑定。 */
@@ -65,6 +73,7 @@ public interface ProductAttributeMapper {
 
  /** 固定业务语句15；准入、参数规则、聚合锁及事务由原用例负责，所有值绑定。 */
  @Update("UPDATE md_product_attribute_revision SET state='RETIRED',updated_by=UUID_TO_BIN(#{p0}),updated_at=CURRENT_TIMESTAMP(6) WHERE tenant_id=UUID_TO_BIN(#{p1}) AND id=UUID_TO_BIN(#{p2}) AND state='PUBLISHED'")
+ @com.appnexus.persistence.mybatis.GuardedScope(tenant="p1",serviceOperation="masterdata.productattribute:publish",serviceKeys={"p2"})
  int retireRevision(@Param("p0") Object p0,@Param("p1") Object p1,@Param("p2") Object p2);
 
  /** 固定业务语句16；准入、参数规则、聚合锁及事务由原用例负责，所有值绑定。 */
@@ -73,14 +82,17 @@ public interface ProductAttributeMapper {
 
  /** 固定业务语句17；准入、参数规则、聚合锁及事务由原用例负责，所有值绑定。 */
  @Update("UPDATE md_product_attribute_revision SET name=#{p0},data_type=#{p1},unit_id=UUID_TO_BIN(#{p2}),numeric_scale=#{p3},validation_json=#{p4},updated_by=UUID_TO_BIN(#{p5}),updated_at=CURRENT_TIMESTAMP(6) WHERE tenant_id=UUID_TO_BIN(#{p6}) AND id=UUID_TO_BIN(#{p7})")
+ @com.appnexus.persistence.mybatis.GuardedScope(tenant="p6",serviceOperation="masterdata.productattribute:update",serviceKeys={"p7"})
  int updateRevision(@Param("p0") Object p0,@Param("p1") Object p1,@Param("p2") Object p2,@Param("p3") Object p3,@Param("p4") Object p4,@Param("p5") Object p5,@Param("p6") Object p6,@Param("p7") Object p7);
 
  /** 固定业务语句18；准入、参数规则、聚合锁及事务由原用例负责，所有值绑定。 */
  @Delete("DELETE FROM md_product_attribute_option WHERE tenant_id=UUID_TO_BIN(#{p0}) AND revision_id=UUID_TO_BIN(#{p1})")
+ @com.appnexus.persistence.mybatis.GuardedScope(tenant="p0",serviceOperation="masterdata.productattribute:update",serviceKeys={"p1"})
  int deleteOptions(@Param("p0") Object p0,@Param("p1") Object p1);
 
  /** 固定业务语句19；准入、参数规则、聚合锁及事务由原用例负责，所有值绑定。 */
  @Insert("INSERT INTO md_product_attribute_option(id,tenant_id,revision_id,option_code,label,sort_order,created_by,updated_by) VALUES(UUID_TO_BIN(#{p0}),UUID_TO_BIN(#{p1}),UUID_TO_BIN(#{p2}),#{p3},#{p4},#{p5},UUID_TO_BIN(#{p6}),UUID_TO_BIN(#{p7}))")
+ @com.appnexus.persistence.mybatis.GuardedScope(tenant="p1",serviceOperation="masterdata.productattribute:update",serviceKeys={"p2"})
  int replaceOption(@Param("p0") Object p0,@Param("p1") Object p1,@Param("p2") Object p2,@Param("p3") Object p3,@Param("p4") Object p4,@Param("p5") Object p5,@Param("p6") Object p6,@Param("p7") Object p7);
 
  /** 固定业务语句20；准入、参数规则、聚合锁及事务由原用例负责，所有值绑定。 */
@@ -89,6 +101,7 @@ public interface ProductAttributeMapper {
 
  /** 固定业务语句21；准入、参数规则、聚合锁及事务由原用例负责，所有值绑定。 */
  @Update("UPDATE md_product_attribute SET version=version+1,updated_by=UUID_TO_BIN(#{p0}),updated_at=CURRENT_TIMESTAMP(6) WHERE tenant_id=UUID_TO_BIN(#{p1}) AND id=UUID_TO_BIN(#{p2})")
+ @com.appnexus.persistence.mybatis.GuardedScope(tenant="p1",serviceOperation="masterdata.productattribute:advance-attribute-version",serviceKeys={"p2"})
  int advanceAttributeVersion(@Param("p0") Object p0,@Param("p1") Object p1,@Param("p2") Object p2);
 
  /** 固定业务语句22；准入、参数规则、聚合锁及事务由原用例负责，所有值绑定。 */
@@ -119,5 +132,6 @@ public interface ProductAttributeMapper {
  List<Map<String,Object>> attributes(@Param("tenant") String tenant);
  /** @param group 构建内对象选择，不接收表名 @param tenant 可信租户 @param id 已校验UUID @param enabled 目标状态 @param actor 实际账号 @param version 原CAS版本 @return 更新行数 */
  @Update({"<script>","UPDATE <choose><when test='group'>md_product_attribute_group</when><otherwise>md_product_attribute</otherwise></choose> SET enabled=#{enabled},version=version+1,updated_by=UUID_TO_BIN(#{actor}),updated_at=CURRENT_TIMESTAMP(6) WHERE tenant_id=UUID_TO_BIN(#{tenant}) AND id=UUID_TO_BIN(#{id}) AND version=#{version}","</script>"})
+ @com.appnexus.persistence.mybatis.GuardedScope(tenant="tenant",serviceOperation="masterdata.productattribute:set_status",serviceKeys={"id"})
  int status(@Param("group") boolean group,@Param("tenant") String tenant,@Param("id") String id,@Param("enabled") boolean enabled,@Param("actor") String actor,@Param("version") long version);
 }

@@ -64,13 +64,15 @@ public final class PersonDataService implements com.appnexus.platform.organizati
   public Page list(VerifiedTenantContext c,Kind kind,String keyword,Boolean enabled,int page,int size) {
     require(c,kind,"read");
     if(page<1||page>1000000||size<1||size>100||keyword==null||keyword.length()>200)throw invalid();
-    long total=mapper.count(c.tenantId().toString(),keyword.trim(),enabled);
+    return transaction.required(()->{
+    var result=mapper.page(c,keyword.trim(),enabled,size,(page-1)*size);
     var modes=fieldPolicy.modes(c,PersonFieldPolicy.PERSON);
-    var rows=mapper.list(c.tenantId().toString(),keyword.trim(),enabled,size,(page-1)*size).stream().map(row->{
+    var rows=result.rows().stream().map(row->{
       var attributes=new LinkedHashMap<String,String>();for(String field:List.of("englishName","phone","email","employmentStatus"))attributes.put(field,(String)row.get(field));
       return fieldPolicy.project(new Row((String)row.get("id"),(String)row.get("code"),(String)row.get("name"),attributes,Boolean.TRUE.equals(row.get("enabled")),((Number)row.get("version")).longValue(),new Audit((String)row.get("audit_created_by"),utc(row.get("created_at")),(String)row.get("audit_updated_by"),utc(row.get("updated_at")))),modes);
     }).toList();
-    return new Page(rows,total);
+    return new Page(rows,result.total());
+    });
   }
 
   /**
@@ -88,7 +90,7 @@ public final class PersonDataService implements com.appnexus.platform.organizati
     try {
       return transaction.required(()->{
         var values=validate(kind,protectedInput(c,input,Map.of()));
-        mapper.create(c.tenantId().toString(),id,input,values,c.accountId().toString());
+        mapper.create(c,id,input,values);
         dictionaryReferences(c,id,values,Map.of());
         return Map.of("id",id);
       });
@@ -107,6 +109,7 @@ public final class PersonDataService implements com.appnexus.platform.organizati
   public void update(VerifiedTenantContext c,Kind kind,String id,Input input) {
     require(c,kind,"update");uuid(id);if(input==null)throw invalid();
     transaction.run(()->{
+      mapper.lockForWrite(c,id,"update");
       var previous=previousValues(c,id);
       var values=validate(kind,protectedInput(c,input,previous));
       int count=mapper.update(c.tenantId().toString(),id,input,values);
@@ -129,6 +132,7 @@ public final class PersonDataService implements com.appnexus.platform.organizati
     require(c,kind,"set_status");uuid(id);
     if(input==null||input.enabled()==null||input.version()<0)throw invalid();
     transaction.run(()->{
+      mapper.lockForWrite(c,id,"set_status");
       if(mapper.status(c.tenantId().toString(),id,input.enabled(),input.version())!=1)
         throw new Rejection(409,"MASTER_DATA_CHANGED");
       audit(c,kind,id);

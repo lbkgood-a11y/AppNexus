@@ -11,7 +11,7 @@ import org.springframework.context.annotation.Configuration;
 @EnableScheduling
 public class AuthorityEventWorker {
     private final ReliableEvents events;
-    private final ScheduledObjectOperations operations;
+    private final com.appnexus.contracts.businessobject.BusinessObjects.ScheduledOperations operations;
     private final boolean enabled;
     private final AtomicBoolean running=new AtomicBoolean();
     /**
@@ -19,7 +19,7 @@ public class AuthorityEventWorker {
      * @param operations 统一业务对象的定时系统操作准入
      * @param enabled 默认 true；关闭后事件保留待消费，不影响权威同步撤权
      */
-    public AuthorityEventWorker(ReliableEvents events,ScheduledObjectOperations operations,
+    public AuthorityEventWorker(ReliableEvents events,com.appnexus.contracts.businessobject.BusinessObjects.ScheduledOperations operations,
             @Value("${app.events.worker.enabled:true}") boolean enabled){
         this.events=events;
         this.operations=operations;

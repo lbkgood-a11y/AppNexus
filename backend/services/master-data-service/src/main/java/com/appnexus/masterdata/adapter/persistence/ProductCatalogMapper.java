@@ -13,38 +13,47 @@ public interface ProductCatalogMapper {
 
  /** 兼容原单位创建入口；同租户分组已存在时保留显示名称和版本。 */
  @Insert("INSERT INTO md_product_unit_group(tenant_id,code,name,created_by,updated_by) VALUES(UUID_TO_BIN(#{tenant}),#{code},#{code},UUID_TO_BIN(#{actor}),UUID_TO_BIN(#{actor})) ON DUPLICATE KEY UPDATE code=code")
+ @com.appnexus.persistence.mybatis.GuardedScope(tenant="tenant",serviceOperation="masterdata.productunit:create",serviceKeys={"code"})
  void ensureUnitGroup(@Param("tenant") String tenant,@Param("code") String code,@Param("actor") String actor);
 
  /** 创建独立分组，租户内编码冲突由唯一键拒绝。 */
  @Insert("INSERT INTO md_product_unit_group(tenant_id,code,name,created_by,updated_by) VALUES(UUID_TO_BIN(#{tenant}),#{code},#{name},UUID_TO_BIN(#{actor}),UUID_TO_BIN(#{actor}))")
+ @com.appnexus.persistence.mybatis.GuardedScope(tenant="tenant",serviceOperation="masterdata.productunit:create",serviceKeys={"code"})
  void createUnitGroup(@Param("tenant") String tenant,@Param("code") String code,@Param("name") String name,@Param("actor") String actor);
 
  /** 仅更新同租户且版本匹配的显示名称和更新审计。 */
  @Update("UPDATE md_product_unit_group SET name=#{name},version=version+1,updated_by=UUID_TO_BIN(#{actor}),updated_at=CURRENT_TIMESTAMP(6) WHERE tenant_id=UUID_TO_BIN(#{tenant}) AND code=#{code} AND version=#{version}")
+ @com.appnexus.persistence.mybatis.GuardedScope(tenant="tenant",serviceOperation="masterdata.productunit:update",serviceKeys={"code"})
  int renameUnitGroup(@Param("tenant") String tenant,@Param("code") String code,@Param("name") String name,@Param("actor") String actor,@Param("version") long version);
 
  /** 固定业务语句1；准入、参数规则、聚合锁及事务由原用例负责，所有值绑定。 */
  @Insert("INSERT INTO md_product_unit(id,tenant_id,code,name,dimension_code,precision_scale,created_by,updated_by) VALUES(UUID_TO_BIN(#{p0}),UUID_TO_BIN(#{p1}),#{p2},#{p3},#{p4},#{p5},UUID_TO_BIN(#{p6}),UUID_TO_BIN(#{p7}))")
+ @com.appnexus.persistence.mybatis.GuardedScope(tenant="p1",serviceOperation="masterdata.productunit:create",serviceKeys={"p0"})
  int createUnit(@Param("p0") Object p0,@Param("p1") Object p1,@Param("p2") Object p2,@Param("p3") Object p3,@Param("p4") Object p4,@Param("p5") Object p5,@Param("p6") Object p6,@Param("p7") Object p7);
 
  /** 固定业务语句2；准入、参数规则、聚合锁及事务由原用例负责，所有值绑定。 */
  @Update("UPDATE md_product_unit SET name=#{p0},version=version+1,updated_by=UUID_TO_BIN(#{p1}),updated_at=CURRENT_TIMESTAMP(6) WHERE tenant_id=UUID_TO_BIN(#{p2}) AND id=UUID_TO_BIN(#{p3}) AND code=#{p4} AND dimension_code=#{p5} AND precision_scale=#{p6} AND version=#{p7}")
+ @com.appnexus.persistence.mybatis.GuardedScope(tenant="p2",serviceOperation="masterdata.productunit:update",serviceKeys={"p3"})
  int renameUnit(@Param("p0") Object p0,@Param("p1") Object p1,@Param("p2") Object p2,@Param("p3") Object p3,@Param("p4") Object p4,@Param("p5") Object p5,@Param("p6") Object p6,@Param("p7") Object p7);
 
  /** 固定业务语句3；准入、参数规则、聚合锁及事务由原用例负责，所有值绑定。 */
  @Update("UPDATE md_product_unit SET enabled=#{p0},version=version+1,updated_by=UUID_TO_BIN(#{p1}),updated_at=CURRENT_TIMESTAMP(6) WHERE tenant_id=UUID_TO_BIN(#{p2}) AND id=UUID_TO_BIN(#{p3}) AND version=#{p4}")
+ @com.appnexus.persistence.mybatis.GuardedScope(tenant="p2",serviceOperation="masterdata.productunit:set_status",serviceKeys={"p3"})
  int setUnitStatus(@Param("p0") Object p0,@Param("p1") Object p1,@Param("p2") Object p2,@Param("p3") Object p3,@Param("p4") Object p4);
 
  /** 固定业务语句4；准入、参数规则、聚合锁及事务由原用例负责，所有值绑定。 */
  @Insert("INSERT INTO md_product_category(id,tenant_id,code,name,parent_id,created_by,updated_by) VALUES(UUID_TO_BIN(#{p0}),UUID_TO_BIN(#{p1}),#{p2},#{p3},UUID_TO_BIN(#{p4}),UUID_TO_BIN(#{p5}),UUID_TO_BIN(#{p6}))")
+ @com.appnexus.persistence.mybatis.GuardedScope(tenant="p1",serviceOperation="masterdata.productcategory:create",serviceKeys={"p0"})
  int createCategory(@Param("p0") Object p0,@Param("p1") Object p1,@Param("p2") Object p2,@Param("p3") Object p3,@Param("p4") Object p4,@Param("p5") Object p5,@Param("p6") Object p6);
 
  /** 固定业务语句5；准入、参数规则、聚合锁及事务由原用例负责，所有值绑定。 */
  @Update("UPDATE md_product_category SET name=#{p0},parent_id=UUID_TO_BIN(#{p1}),version=version+1,updated_by=UUID_TO_BIN(#{p2}),updated_at=CURRENT_TIMESTAMP(6) WHERE tenant_id=UUID_TO_BIN(#{p3}) AND id=UUID_TO_BIN(#{p4}) AND version=#{p5}")
+ @com.appnexus.persistence.mybatis.GuardedScope(tenant="p3",serviceOperation="masterdata.productcategory:update",serviceKeys={"p4"})
  int moveCategory(@Param("p0") Object p0,@Param("p1") Object p1,@Param("p2") Object p2,@Param("p3") Object p3,@Param("p4") Object p4,@Param("p5") Object p5);
 
  /** 固定业务语句6；准入、参数规则、聚合锁及事务由原用例负责，所有值绑定。 */
  @Update("UPDATE md_product_category SET enabled=#{p0},version=version+1,updated_by=UUID_TO_BIN(#{p1}),updated_at=CURRENT_TIMESTAMP(6) WHERE tenant_id=UUID_TO_BIN(#{p2}) AND id=UUID_TO_BIN(#{p3}) AND version=#{p4}")
+ @com.appnexus.persistence.mybatis.GuardedScope(tenant="p2",serviceOperation="masterdata.productcategory:set_status",serviceKeys={"p3"})
  int setCategoryStatus(@Param("p0") Object p0,@Param("p1") Object p1,@Param("p2") Object p2,@Param("p3") Object p3,@Param("p4") Object p4);
 
  /** 固定业务语句7；准入、参数规则、聚合锁及事务由原用例负责，所有值绑定。 */
@@ -60,18 +69,22 @@ public interface ProductCatalogMapper {
  Long nextConfigurationRevision(@Param("p0") Object p0,@Param("p1") Object p1);
 
  /** 固定业务语句10；准入、参数规则、聚合锁及事务由原用例负责，所有值绑定。 */
+ @com.appnexus.persistence.mybatis.GuardedScope(tenant="p1",catalogPublication="masterdata.productcategory:publish")
  @Insert("INSERT INTO md_product_category_config(id,tenant_id,category_id,revision_no,display_path_snapshot,service_unit_required,created_by,updated_by) VALUES(UUID_TO_BIN(#{p0}),UUID_TO_BIN(#{p1}),UUID_TO_BIN(#{p2}),#{p3},#{p4},#{p5},UUID_TO_BIN(#{p6}),UUID_TO_BIN(#{p7}))")
  int createConfiguration(@Param("p0") Object p0,@Param("p1") Object p1,@Param("p2") Object p2,@Param("p3") Object p3,@Param("p4") Object p4,@Param("p5") Object p5,@Param("p6") Object p6,@Param("p7") Object p7);
 
  /** 固定业务语句11；准入、参数规则、聚合锁及事务由原用例负责，所有值绑定。 */
+ @com.appnexus.persistence.mybatis.GuardedScope(tenant="p1",catalogPublication="masterdata.productcategory:publish")
  @Insert("INSERT INTO md_product_category_template(id,tenant_id,config_id,purpose,template_version_id,created_by,updated_by) VALUES(UUID_TO_BIN(#{p0}),UUID_TO_BIN(#{p1}),UUID_TO_BIN(#{p2}),#{p3},UUID_TO_BIN(#{p4}),UUID_TO_BIN(#{p5}),UUID_TO_BIN(#{p6}))")
  int bindTemplate(@Param("p0") Object p0,@Param("p1") Object p1,@Param("p2") Object p2,@Param("p3") Object p3,@Param("p4") Object p4,@Param("p5") Object p5,@Param("p6") Object p6);
 
  /** 固定业务语句12；准入、参数规则、聚合锁及事务由原用例负责，所有值绑定。 */
+ @com.appnexus.persistence.mybatis.GuardedScope(tenant="p2",catalogPublication="masterdata.productcategory:publish")
  @Insert("INSERT INTO md_product_category_config_item(id,tenant_id,config_id,purpose,template_version_id,template_item_id,attribute_id,attribute_revision_id,data_type,created_by,updated_by) SELECT UUID_TO_BIN(UUID()),b.tenant_id,b.config_id,b.purpose,b.template_version_id,i.id,i.attribute_id,i.attribute_revision_id,i.data_type,UUID_TO_BIN(#{p0}),UUID_TO_BIN(#{p1}) FROM md_product_category_template b JOIN md_product_template_item i ON i.tenant_id=b.tenant_id AND i.template_version_id=b.template_version_id WHERE b.tenant_id=UUID_TO_BIN(#{p2}) AND b.config_id=UUID_TO_BIN(#{p3})")
  int freezeConfigurationItem(@Param("p0") Object p0,@Param("p1") Object p1,@Param("p2") Object p2,@Param("p3") Object p3);
 
  /** 固定业务语句13；准入、参数规则、聚合锁及事务由原用例负责，所有值绑定。 */
+ @com.appnexus.persistence.mybatis.GuardedScope(tenant="p2",catalogPublication="masterdata.productcategory:publish")
  @Update("UPDATE md_product_category SET current_config_id=UUID_TO_BIN(#{p0}),version=version+1,updated_by=UUID_TO_BIN(#{p1}),updated_at=CURRENT_TIMESTAMP(6) WHERE tenant_id=UUID_TO_BIN(#{p2}) AND id=UUID_TO_BIN(#{p3}) AND version=#{p4}")
  int activateConfiguration(@Param("p0") Object p0,@Param("p1") Object p1,@Param("p2") Object p2,@Param("p3") Object p3,@Param("p4") Object p4);
 

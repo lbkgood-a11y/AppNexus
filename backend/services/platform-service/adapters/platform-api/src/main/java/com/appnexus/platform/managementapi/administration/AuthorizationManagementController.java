@@ -16,11 +16,22 @@ import org.springframework.web.bind.annotation.*;
 @EndpointPolicy(EndpointPolicy.Domain.AUTHORIZATION_MANAGEMENT)
 public class AuthorizationManagementController {
  private final NavigationQuery navigation;
+ /** 只读取可信租户中已由业务对象声明的字典；请求无法指定任意字典编码。 */
+ private Map<String,List<com.appnexus.platform.configuration.BusinessValueCatalog.Option>> conditionOptions(UUID tenant){
+   var bindings=new TreeMap<String,String>();
+   for(var descriptor:dataAccess.list(PermissionCatalog.ScopeType.TENANT)){
+     for(var dimension:descriptor.dimensions()){
+       if("DICTIONARY".equals(dimension.source()))bindings.put(dimension.dictionary(),dimension.dictionary());
+     }
+   }
+   return businessValues.options(tenant,bindings);
+ }
  private final DataAccessCatalog dataAccess;
  private final DataAccessReferences dataReferences;
+ private final com.appnexus.platform.configuration.BusinessValueCatalog businessValues;
  private final OrganizationGrantManagement memberDirectory;
  private final FieldCatalog fieldCatalog; private final MemberAuthorizationManagement memberAuthorizations; private final RolePermissionManagement rolePermissions; private final SubjectRoleManagement subjectRoles; private final PermissionCatalog permissions; private final DataPolicyMetadataCatalog dataPolicyMetadata; private final EffectiveAuthorizationQuery effectiveAuthorizations; private final LegacyAuthorizationReconciliation reconciliation;
- public AuthorizationManagementController(NavigationQuery navigation,FieldCatalog fieldCatalog,MemberAuthorizationManagement memberAuthorizations,RolePermissionManagement rolePermissions,SubjectRoleManagement subjectRoles,PermissionCatalog permissions,DataPolicyMetadataCatalog dataPolicyMetadata,EffectiveAuthorizationQuery effectiveAuthorizations,LegacyAuthorizationReconciliation reconciliation,OrganizationGrantManagement memberDirectory,DataAccessCatalog dataAccess,DataAccessReferences dataReferences){this.dataAccess=dataAccess;this.dataReferences=dataReferences;this.memberDirectory=memberDirectory;this.navigation=navigation;this.fieldCatalog=fieldCatalog;this.memberAuthorizations=memberAuthorizations;this.rolePermissions=rolePermissions;this.subjectRoles=subjectRoles;this.permissions=permissions;this.dataPolicyMetadata=dataPolicyMetadata;this.effectiveAuthorizations=effectiveAuthorizations;this.reconciliation=reconciliation;}
+ public AuthorizationManagementController(NavigationQuery navigation,FieldCatalog fieldCatalog,MemberAuthorizationManagement memberAuthorizations,RolePermissionManagement rolePermissions,SubjectRoleManagement subjectRoles,PermissionCatalog permissions,DataPolicyMetadataCatalog dataPolicyMetadata,EffectiveAuthorizationQuery effectiveAuthorizations,LegacyAuthorizationReconciliation reconciliation,OrganizationGrantManagement memberDirectory,DataAccessCatalog dataAccess,DataAccessReferences dataReferences,com.appnexus.platform.configuration.BusinessValueCatalog businessValues){this.businessValues=businessValues;this.dataAccess=dataAccess;this.dataReferences=dataReferences;this.memberDirectory=memberDirectory;this.navigation=navigation;this.fieldCatalog=fieldCatalog;this.memberAuthorizations=memberAuthorizations;this.rolePermissions=rolePermissions;this.subjectRoles=subjectRoles;this.permissions=permissions;this.dataPolicyMetadata=dataPolicyMetadata;this.effectiveAuthorizations=effectiveAuthorizations;this.reconciliation=reconciliation;}
  /** 授权中心账号候选项使用自身授权管理权限，不再借用组织任职人员目录或组织 GRANT 权限。 */
  @com.appnexus.contracts.operation.OperationBinding(id="TenantMember.authorizationOptions",reference=true)
  @EndpointOperation("access.tenant.role:grant") @GetMapping("/api/access/member-options")
@@ -114,7 +125,7 @@ public class AuthorizationManagementController {
  @EndpointOperation("access.tenant.role:grant") @GetMapping("/api/access/permissions") ResponseEntity<List<PermissionCatalog.Permission>> tenantPermissionCatalog(Authentication a,HttpServletRequest r){return ok(()->{var context=tenant(a,r);subjectRoles.memberRoles(context,context.actorMemberId());return permissions.list(PermissionCatalog.ScopeType.TENANT,true);});}
  /** 操作契约关联下方真实接口；仅供展示与一致性校验，主体、权限及业务约束仍由原用例执行。 */
  @com.appnexus.contracts.operation.OperationBinding(id="PermissionCatalog.scopesTenant", reference=true)
- @EndpointOperation("access.tenant.role:grant") @GetMapping("/api/access/data-policy-metadata") ResponseEntity<?> tenantDataPolicyMetadata(Authentication a,HttpServletRequest r,@RequestParam(defaultValue="false") boolean declarations,@RequestParam(defaultValue="false") boolean organizations){return ok(()->{var context=tenant(a,r);subjectRoles.memberRoles(context,context.actorMemberId());if(declarations)return dataAccess.list(PermissionCatalog.ScopeType.TENANT);if(organizations)return dataReferences.organizations(AccessAuthorization.Subject.tenant(context.actorAccountId(),context.tenantId(),context.actorMemberId()),"access.tenant.role:grant");return dataPolicyMetadata.list(PermissionCatalog.ScopeType.TENANT);});}
+ @EndpointOperation("access.tenant.role:grant") @GetMapping("/api/access/data-policy-metadata") ResponseEntity<?> tenantDataPolicyMetadata(Authentication a,HttpServletRequest r,@RequestParam(defaultValue="false") boolean declarations,@RequestParam(defaultValue="false") boolean organizations,@RequestParam(defaultValue="false") boolean conditionOptions){return ok(()->{var context=tenant(a,r);subjectRoles.memberRoles(context,context.actorMemberId());if(conditionOptions)return conditionOptions(context.tenantId());if(declarations)return dataAccess.list(PermissionCatalog.ScopeType.TENANT);if(organizations)return dataReferences.organizations(AccessAuthorization.Subject.tenant(context.actorAccountId(),context.tenantId(),context.actorMemberId()),"access.tenant.role:grant");return dataPolicyMetadata.list(PermissionCatalog.ScopeType.TENANT);});}
  /** 操作契约关联下方真实接口；仅供展示与一致性校验，主体、权限及业务约束仍由原用例执行。 */
  @com.appnexus.contracts.operation.OperationBinding(id="TenantMember.rolesExplainSelf", reference=true)
  @EndpointOperation("access.tenant.role:grant") @GetMapping("/api/access/effective-permissions") ResponseEntity<List<EffectiveAuthorizationQuery.Explanation>> tenantEffectivePermissions(Authentication a,HttpServletRequest r){return ok(()->{var context=tenant(a,r);subjectRoles.memberRoles(context,context.actorMemberId());return effectiveAuthorizations.tenantMember(context.tenantId(),context.actorMemberId());});}

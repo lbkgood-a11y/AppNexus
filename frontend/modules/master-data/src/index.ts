@@ -10,7 +10,7 @@ export interface MasterDataApi {
   codingOptions?(type:string,field:string):Promise<{encoderKey:string;name:string}[]>;
   issueCode?(type:string,key:string,requestId:string):Promise<{code:string}>;
   /** 客商数据权限只读提示；归属组织来自服务端可信租户，不是客户端放行凭据。 */
-  partnerAccess():Promise<{organizations:{id:string;name:string}[];fieldRestrictions:Record<string,Record<string,string>>}>;
+  partnerAccess(action?:"read"|"create"|"update"):Promise<{organizations:{id:string;name:string}[];fieldRestrictions:Record<string,Record<string,string>>}>;
   /** 宿主客商/仓库读取权限下的完整租户地理摘要；无浏览器长期缓存。 */
   geographyDirectory(kind:"partner"|"warehouse"):Promise<import("@appnexus/ui").GeographyNode[]>;
   /** 按客商 UUID 读取已授权详情；列表不带关联明细。 */
@@ -23,6 +23,8 @@ export interface MasterDataApi {
   /** 本租户仓库分类，含历史停用项。 */
   /** 读取当前可信租户的非敏感高德配置，不包含服务端安全密钥。 */
   warehouseMapConfig():Promise<{key:string;serviceHost:string}>;
+  /** 对应写入权限下可选的启用归属组织；写入仍由服务端复核。 */
+  warehouseOrganizations(action:"create"|"update"):Promise<{id:string;name:string}[]>;
   warehouseOptions():Promise<Record<string,DictionaryOption[]>>;
   /** 新增或编辑前读取当前成员的字段限制，失败时表单不可编辑。 */
   warehouseFieldRestrictions():Promise<Record<string,string>>;

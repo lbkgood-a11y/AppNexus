@@ -147,9 +147,10 @@ public interface PrintRuntimeRepository {
   * @param agent 当前认证领取代理标识，1至128字符
   * @param tenant 可信固定租户UUID文本，必填，不接受请求体指定
   * @param id 本操作当前租户资源UUID，必须已验证归属和操作资格
+  * @param principal 当前认证主体，账号或机密客户端标识，不接受代理正文自报
   * @return 原固定投影、事实或影响行数；空结果不跨主体或租户回退
   */
- int claimJob(String agent,String tenant,String id);
+ int claimJob(String agent,String tenant,String id,String principal);
  /** expireRendererLeases固定存取；版本、任务、租约及审计参与原完整事务。
   * @param tenant 可信固定租户UUID文本，必填，不接受请求体指定
   * @param site 当前认证代理站点编码，不跨站点领取任务
@@ -160,15 +161,17 @@ public interface PrintRuntimeRepository {
   * @param tenant 可信固定租户UUID文本，必填，不接受请求体指定
   * @param id 本操作当前租户资源UUID，必须已验证归属和操作资格
   * @param pdf PDF字节，5字节至10MiB，以%PDF-开头，必须来自当前租约代理
+  * @param principal 当前认证主体，账号或机密客户端标识，不接受代理正文自报
   * @return 原固定投影、事实或影响行数；空结果不跨主体或租户回退
   */
- int savePdf(String tenant,String id,byte[] pdf);
+ int savePdf(String tenant,String id,byte[] pdf,String principal);
  /** completePdf固定存取；版本、任务、租约及审计参与原完整事务。
   * @param tenant 可信固定租户UUID文本，必填，不接受请求体指定
   * @param id 本操作当前租户资源UUID，必须已验证归属和操作资格
+  * @param principal 当前认证主体，账号或机密客户端标识，不接受代理正文自报
   * @return 原固定投影、事实或影响行数；空结果不跨主体或租户回退
   */
- int completePdf(String tenant,String id);
+ int completePdf(String tenant,String id,String principal);
  /** enabledDeviceCount固定存取；版本、任务、租约及审计参与原完整事务。
   * @param tenant 可信固定租户UUID文本，必填，不接受请求体指定
   * @param id 本操作当前租户资源UUID，必须已验证归属和操作资格

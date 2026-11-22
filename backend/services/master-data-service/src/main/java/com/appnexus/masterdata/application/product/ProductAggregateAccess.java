@@ -5,6 +5,8 @@ import com.appnexus.platform.tenant.VerifiedTenantContext;
 public interface ProductAggregateAccess {
  /** @param c 可信主体 @param id 当前商品 @param action 原独立操作 @param lock 是否在当前事务锁定授权记录 */
  void authorizeRecord(VerifiedTenantContext c,String id,String action,boolean lock);
+ /** @param c 可信主体 @param action 当前实际操作 @return 用于父商品范围的公共计划及绑定谓词 */
+ com.appnexus.platform.authorization.RowAccessControl.Predicate recordPredicate(VerifiedTenantContext c,String action);
  /** @param c 可信主体 @param id 当前商品；审批处理中必须拒绝写入 */
  void ensureNotInApproval(VerifiedTenantContext c,String id);
  /** @param c 已授权主体 @param id 同租户商品 @return 当前扩展前事实快照 */

@@ -20,7 +20,7 @@ public final class ProductApprovalController {
  public Object organizations(HttpServletRequest r){return service.organizations(workflow(r,false));}
  /** 任务受限原文读取；领域按当前有效任务复核，不凭请求ID扩大商品读取权。 */
  @GetMapping("/approval-requests/{id}") @OperationBinding(id="Product.readApprovalSnapshot", reference=true, eligibility=OperationBinding.Eligibility.OBJECT)
- public Object detail(HttpServletRequest r,@PathVariable String id,@RequestParam(required=false) String taskId){return service.detail(workflow(r,false),id,taskId);}
+ public Object detail(HttpServletRequest r,@PathVariable String id,@RequestParam(required=false) String taskId){return service.detail(tenant(r),workflow(r,false),id,taskId);}
  private static VerifiedTenantContext tenant(HttpServletRequest r){if(!(r.getAttribute(VerifiedTenantContext.class.getName()) instanceof VerifiedTenantContext c))throw new MasterData.Rejection(403,"MASTER_DATA_DENIED");return c;}
  private static WorkflowContext workflow(HttpServletRequest r,boolean write){if(!(r.getAttribute(WorkflowContext.class.getName()) instanceof WorkflowContext c))throw new MasterData.Rejection(403,"MASTER_DATA_DENIED");String key=write?r.getHeader("Idempotency-Key"):c.requestId();try{UUID.fromString(key);}catch(Exception e){throw new MasterData.Rejection(400,"PRODUCT_INPUT_INVALID");}return new WorkflowContext(c.tenantId(),c.actorId(),key,c.personId(),c.organizationId());}
 }

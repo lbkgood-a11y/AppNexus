@@ -10,9 +10,11 @@ public interface PrintReceiptMapper extends com.appnexus.contracts.businessobjec
  /** @return 受原用例身份复核和固定存储约束保护的专业服务资源 */
  @Override default java.util.Set<String> enforcedResources(){return java.util.Set.of("print.job.receipt");}
  /** @param tenant 平台验证的租户UUID @param id 租户内任务UUID @return 原事务锁定状态，缺失由存储端口返回404 */
- @Select("SELECT state,claimed_by,CAST(result_json AS CHAR) resultJson,(claim_expires_at<CURRENT_TIMESTAMP(6)) expired FROM print_job WHERE tenant_id=UUID_TO_BIN(#{tenant}) AND id=UUID_TO_BIN(#{id}) FOR UPDATE")
+ @Select("SELECT state,claimed_by,claim_principal,CAST(result_json AS CHAR) resultJson,(claim_expires_at<CURRENT_TIMESTAMP(6)) expired FROM print_job WHERE tenant_id=UUID_TO_BIN(#{tenant}) AND id=UUID_TO_BIN(#{id}) FOR UPDATE")
+ @com.appnexus.persistence.mybatis.GuardedScope(tenant="tenant",serviceOperation="print.agent:operate",serviceKeys={"id"})
  List<Map<String,Object>> lock(@Param("tenant") String tenant,@Param("id") String id);
  /** @param tenant 可信租户UUID @param id 已锁任务UUID @param state 领域计算的回执状态 @param result 已校验JSON结果 @return 更新行数，与回执和状态同事务 */
- @Update("UPDATE print_job SET state=#{state},result_json=CAST(#{result} AS JSON),claim_expires_at=NULL WHERE tenant_id=UUID_TO_BIN(#{tenant}) AND id=UUID_TO_BIN(#{id})")
- int update(@Param("tenant") String tenant,@Param("id") String id,@Param("state") String state,@Param("result") String result);
+ @Update("UPDATE print_job SET state=#{state},result_json=CAST(#{result} AS JSON),claim_expires_at=NULL WHERE tenant_id=UUID_TO_BIN(#{tenant}) AND id=UUID_TO_BIN(#{id}) AND claim_principal=#{principal}")
+ @com.appnexus.persistence.mybatis.GuardedScope(tenant="tenant",serviceOperation="print.agent:operate",serviceKeys={"id","principal"})
+ int update(@Param("tenant") String tenant,@Param("id") String id,@Param("principal") String principal,@Param("state") String state,@Param("result") String result);
 }

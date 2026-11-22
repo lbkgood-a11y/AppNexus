@@ -34,7 +34,10 @@ public final class MyBatisDataScopeAuthorization implements DataScopeAuthorizati
      if(rule.subjectType()==DataGrantRules.SubjectType.ORGANIZATION) {
       if(ownOrganizations==null)ownOrganizations=membership.activeOrganizations(subject.tenantId(),subject.memberId());
      }
-     if(DataGrantRules.matchesSubject(rule,subject.memberId(),ownOrganizations))rules.add(rule);
+     if(DataGrantRules.matchesSubject(rule,subject.memberId(),ownOrganizations)){
+      var resolved=resolve(rule,subject);
+      if(resolved!=null)rules.add(resolved);
+     }
     }
     continue;
    }
@@ -48,5 +51,25 @@ public final class MyBatisDataScopeAuthorization implements DataScopeAuthorizati
   }
   if(!rules.isEmpty())return new DataScope(ScopeType.RULES,Set.copyOf(exact),rules);
   return exact.isEmpty()?DataScope.deny():new DataScope(ScopeType.ORGANIZATION,Set.copyOf(exact));
+ }
+ /** 缺少动态身份时丢弃整个 AND 分支；固定条件沿用旧策略。 */
+ private DataGrantRules.Rule resolve(DataGrantRules.Rule rule,AccessAuthorization.Subject subject){
+  var conditions=new ArrayList<DataGrantRules.Condition>();
+  for(var condition:rule.conditions()){
+   if(condition.parameter()==null){conditions.add(condition);continue;}
+   UUID value=switch(condition.parameter()){
+    case CURRENT_ACCOUNT -> subject.accountId();
+    case CURRENT_PERSON -> subject.personId();
+    case CURRENT_ORGANIZATION,CURRENT_ORGANIZATION_SUBTREE -> subject.organizationId();
+    case CURRENT_WAREHOUSE -> null;
+   };
+   if(value==null)return null;
+   if(condition.parameter()==DataGrantRules.Parameter.CURRENT_ORGANIZATION_SUBTREE){
+    var descendants=mapper.descendants(subject.tenantId().toString(),List.of(value.toString()));
+    if(descendants.isEmpty())return null;
+    conditions.add(new DataGrantRules.Condition(condition.field(),DataGrantRules.Operator.RESOLVED_IN,descendants));
+   }else conditions.add(new DataGrantRules.Condition(condition.field(),DataGrantRules.Operator.EQ,List.of(value.toString())));
+  }
+  return new DataGrantRules.Rule(rule.subjectType(),rule.subjectIds(),rule.recordIds(),conditions,rule.allRecords());
  }
 }

@@ -15,5 +15,5 @@ public interface ProductApprovalManagement {
  /** 商品公开操作；沿用可信主体、功能权限、记录范围、字段保护及版本事务约束。 */
  Object list(VerifiedTenantContext c,String product);
  /** 商品公开操作；沿用可信主体、功能权限、记录范围、字段保护及版本事务约束。 */
- Object detail(WorkflowContext c,String id,String task);
+ Object detail(VerifiedTenantContext subject,WorkflowContext c,String id,String task);
 }

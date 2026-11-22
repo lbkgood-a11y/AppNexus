@@ -19,7 +19,7 @@ public final class ProductMainService {
     require(c,"create");
     com.appnexus.masterdata.domain.product.ProductMainRules.create(input);
     String id=UUID.randomUUID().toString();
-    return port.atomic(()->{port.references(c,input);port.insert(c,id,input);port.values(c,id,input.configId(),input.values());port.completeness(c,id);return port.finish(c,id,null);});
+    return port.atomic(()->{port.references(c,id,input);port.insert(c,id,input);port.values(c,id,input.configId(),input.values());port.completeness(c,id);return port.finish(c,id,null);});
   }
   /** @param c 可信主体 @param id 商品 UUID @param input 普通字段及原版本；values=null 保留，空列表清空 @return 原子更新后的快照，启用商品完整性不足时全部回滚 */
   public Map<String,Object> update(VerifiedTenantContext c,String id,Update input){

@@ -7,13 +7,13 @@ public interface ProductImageRepository {
   * @param product 当前租户商品UUID文本，必填；读取和写入先经对应操作授权
   * @return 授权范围内原固定投影；未命中不查询其他租户
   */
- List<Map<String,Object>> list(String tenant,String product);
+ List<Map<String,Object>> list(String tenant,String product,com.appnexus.platform.authorization.RowAccessControl.Predicate access);
  /** count固定存取；写入、父CAS、审计及回执参与同一用例事务，失败由调用方整笔回滚。
   * @param tenant 服务端可信租户UUID文本，必填；不得由请求体自报
   * @param product 当前租户商品UUID文本，必填；读取和写入先经对应操作授权
   * @return 原固定事实或受影响行数；CAS写入非1必须拒绝，不视作成功
   */
- Integer count(String tenant,String product);
+ Integer count(String tenant,String product,com.appnexus.platform.authorization.RowAccessControl.Predicate access);
  /** insert固定存取；写入、父CAS、审计及回执参与同一用例事务，失败由调用方整笔回滚。
   * @param id 本操作固定资源UUID文本，必填；不能作为越权凭据
   * @param tenant 服务端可信租户UUID文本，必填；不得由请求体自报
@@ -49,12 +49,12 @@ public interface ProductImageRepository {
   * @param id 本操作固定资源UUID文本，必填；不能作为越权凭据
   * @return 授权范围内原固定投影；未命中不查询其他租户
   */
- List<Map<String,Object>> content(String tenant, String product, String id);
+ List<Map<String,Object>> content(String tenant, String product, String id,com.appnexus.platform.authorization.RowAccessControl.Predicate access);
  /** parent固定存取；写入、父CAS、审计及回执参与同一用例事务，失败由调用方整笔回滚。
   * @param tenant 服务端可信租户UUID文本，必填；不得由请求体自报
   * @param id 本操作固定资源UUID文本，必填；不能作为越权凭据
   * @param lock 原写事务是否持有行锁，默认调用方明确传入；不向客户端开放
   * @return 授权范围内原固定投影；未命中不查询其他租户
   */
- List<Map<String,Object>> parent(String tenant, String id, boolean lock);
+ List<Map<String,Object>> parent(String tenant, String id, boolean lock,com.appnexus.platform.authorization.RowAccessControl.Predicate access);
 }

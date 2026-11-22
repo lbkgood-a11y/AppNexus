@@ -13,7 +13,9 @@ import java.util.function.Supplier;
 
 
 /** 请假 POC 业务存储与工作流适配；只依赖公开契约，提交后冻结依据，不计算余额或考勤。 */
-public final class LeavePocService implements com.appnexus.leave.api.LeaveManagement {
+public final class LeavePocService implements com.appnexus.leave.api.LeaveManagement, com.appnexus.contracts.businessobject.BusinessObjects.DataAccessExecutor {
+  /** @return 通过公共对象执行器复核后实际提交或打印的请假资源。 */
+  @Override public Set<String> enforcedResources(){return Set.of("leave.request");}
   private Supplier<com.appnexus.contracts.printing.BusinessPrinting> printing;
   /** 延迟公开打印端口，避免装配环；打印不可用时不伪造成功。 */
   public void printing(Supplier<com.appnexus.contracts.printing.BusinessPrinting> printing){this.printing=printing;}
@@ -142,6 +144,7 @@ public final class LeavePocService implements com.appnexus.leave.api.LeaveManage
     return tx.required(()-> {
       String id = UUID.randomUUID().toString();
       // 唯一键序列化并发重放；ON DUPLICATE 不更新依据或状态。
+      platform.authorizeRecordWrite(c,SUBMIT_OPERATION.permissionCode(),id,c.actorId());
       statements.createDraft(c.tenantId(),id,c.actorId(),input.organizationId(),input.leaveType(),input.startDate(),input.endDate(),count,input.reason().trim(),c.requestId(),c.personId());
       var row = statements.createdRequest(c.tenantId(),c.actorId(),c.requestId());
       if (!Objects.equals(c.personId(),row.get("person_id"))||!input.organizationId().equals(row.get("organization_id"))
@@ -181,6 +184,7 @@ public final class LeavePocService implements com.appnexus.leave.api.LeaveManage
       if (!c.actorId().equals(row.get("applicant"))) throw new SecurityException("LEAVE_ACCESS_DENIED");
       if(!Objects.equals(c.personId(),row.get("person_id"))||!Objects.equals(c.organizationId(),row.get("organization_id")))throw new com.appnexus.contracts.businessobject.BusinessObjects.Rejection(409,"PERSON_CONTEXT_REQUIRED");
       if (!"DRAFT".equals(row.get("state"))) return row;
+      platform.authorizeRecordWrite(c,SUBMIT_OPERATION.permissionCode(),id);
       statements.markSubmitted(c.tenantId(),id);
       long basis=((Number)row.get("basis_version")).longValue();
       var executed=execution.get().execute(objectContext(c),new com.appnexus.contracts.businessobject.BusinessObjectExecution.Request("LeaveRequest",id,"submit",SUBMIT_OPERATION.operationId(),basis));
@@ -205,6 +209,7 @@ public final class LeavePocService implements com.appnexus.leave.api.LeaveManage
     return tx.required(()->{var row=row(c,id,true);
       if(!c.actorId().equals(row.get("applicant")))throw new SecurityException("LEAVE_ACCESS_DENIED");
       if(!Set.of("DRAFT","REJECTED","WITHDRAWN").contains(row.get("state"))||expectedBasisVersion!=((Number)row.get("basis_version")).longValue())throw new IllegalArgumentException("LEAVE_BASIS_CHANGED");
+      platform.authorizeRecordWrite(c,SUBMIT_OPERATION.permissionCode(),id);
       statements.updateDraft(input.organizationId(),input.leaveType(),input.startDate(),input.endDate(),count,input.reason().trim(),c.tenantId(),id);
       return row(c,id,false);});
   }

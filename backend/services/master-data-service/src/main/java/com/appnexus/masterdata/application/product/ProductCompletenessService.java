@@ -22,7 +22,7 @@ public final class ProductCompletenessService {
  }
  /** @param c 已授权主体 @param id 已锁商品UUID @return 原完整性问题；启用商品不完整拒绝，事务回滚 */
  public List<String> refresh(VerifiedTenantContext c,String id){
-  var row=records.load(c,id,false);var issues=issues(c,row);String state=com.appnexus.masterdata.domain.product.ProductCompletenessRules.state((String)row.get("status"),(String)row.get("structureState"),issues);
+  var row=records.load(c,id,false,null);var issues=issues(c,row);String state=com.appnexus.masterdata.domain.product.ProductCompletenessRules.state((String)row.get("status"),(String)row.get("structureState"),issues);
   facts.refresh(c,id,state);return issues;
  }
  private static String actor(VerifiedTenantContext c){return c.accountId().toString();}

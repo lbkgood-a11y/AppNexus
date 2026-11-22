@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component;
 @Component
 public final class DictionaryItemReferenceDeclaration implements Provider {
     /** 机器身份必须持有的 OAuth 授权；登记与读取沿用同一个已发布权限范围。 */
-    static final String REQUIRED_AUTHORITY = "SCOPE_dictionary-references:write";
+    static final String REQUIRED_AUTHORITY = "SCOPE_"+PartnerReferences.REQUIRED_SCOPE;
 
     /** @return 由固定 Controller 执行的操作契约，空能力集合表示无公共命令入口 */
     @Override

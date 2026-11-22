@@ -24,7 +24,11 @@ class PersonnelIntegrationTest extends DatabaseTestSupport {
   @Autowired JdbcTemplate jdbc;
   @Autowired org.springframework.test.web.servlet.MockMvc mvc;
   @Autowired PersonnelManagement personnel;
+  @Autowired com.appnexus.platform.authorization.RoleManagement roles;
+  @Autowired com.appnexus.platform.authorization.RolePermissionManagement permissions;
+  @Autowired com.appnexus.platform.authorization.SubjectRoleManagement subjects;
   @Autowired PersonManagement master;
+  @Autowired com.appnexus.platform.persistence.organization.personnel.PersonRecordMapper personRecords;
   @Autowired OrganizationAdministratorBootstrap bootstrap;
   @Autowired com.appnexus.platform.organization.PersonnelExecution execution;
   /** 测试主体包含可信成员及同租户组织、岗位；所有账号为独立测试账号，不使用管理员真实凭据。 */
@@ -45,6 +49,77 @@ class PersonnelIntegrationTest extends DatabaseTestSupport {
   }
   private String person(Fixture f,String code){return master.create(f.admin(),Kind.PERSON,new Input(code,"测试业务人员",Map.of("birthDate","2000-01-01","employmentStatus","ACTIVE","identityNumber","TEST-DOCUMENT"),0)).get("id");}
   private long version(Fixture f,String id){return personnel.read(f.admin(),id).person().version();}
+  /** 主档 Mapper 即使绕过用例直接调用，也不能执行未携带计划的读或未获许可的写。 */
+  @Test void personnelMapperRequiresCrudPlanAndWritePermit(){
+    var f=fixture();var c=f.admin();String id=person(f,"GUARDED");
+    var unplanned=new com.appnexus.platform.authorization.RowAccessControl.Predicate("",List.of());
+    assertThatThrownBy(()->personRecords.count(c.tenantId().toString(),"",null,unplanned))
+        .hasRootCauseMessage("SCOPED_SQL_PLAN_REQUIRED");
+    assertThatThrownBy(()->personRecords.status(c.tenantId().toString(),id,false,0))
+        .hasRootCauseMessage("SCOPED_WRITE_PLAN_REQUIRED");
+    assertThat(personnel.read(c,id).person().enabled()).isTrue();
+    assertThat(version(f,id)).isZero();
+  }
+
+  /** 查询范围使用本次绑定的人员，而不是合并账号下的全部人员档案。 */
+  @Test void personnelQueryFollowsOnlyCurrentIdentity(){
+    var f=fixture();var c=f.admin();var u=f.user();
+    String first=person(f,"CURRENT-A"),second=person(f,"CURRENT-B");
+    var context=new com.appnexus.platform.authorization.RoleManagement.Context(c.accountId(),c.tenantId(),c.memberId());
+    var role=roles.create(context,new com.appnexus.platform.authorization.RoleManagement.Create("current_person","当前人员验收",null,80));
+    var permissionIds=new HashSet<UUID>();
+    var policies=new HashSet<com.appnexus.platform.authorization.RolePermissionManagement.DataPolicy>();
+    var rule=new com.appnexus.platform.authorization.DataGrantRules.Rule(
+        com.appnexus.platform.authorization.DataGrantRules.SubjectType.ROLE_MEMBERS,Set.of(),Set.of(),List.of(
+        new com.appnexus.platform.authorization.DataGrantRules.Condition("personId",
+            com.appnexus.platform.authorization.DataGrantRules.Operator.EQ,List.of(),
+            com.appnexus.platform.authorization.DataGrantRules.Parameter.CURRENT_PERSON)),false);
+    for(String action:List.of("read","update","set_status","detail_create","detail_update","detail_delete","assign")){
+      UUID permission=UUID.fromString(jdbc.queryForObject("SELECT BIN_TO_UUID(id) FROM access_permission WHERE code=?",String.class,"masterdata.person:"+action));
+      permissionIds.add(permission);
+      policies.add(new com.appnexus.platform.authorization.RolePermissionManagement.DataPolicy(permission,
+          com.appnexus.platform.authorization.DataScopeAuthorization.ScopeType.RULES,"masterdata.person",Set.of(),List.of(rule)));
+    }
+    permissions.replaceAuthorization(context,role.id(),role.version(),permissionIds,policies,"验证当前人员读写");
+    var assigned=subjects.memberRoles(context,u.memberId());
+    subjects.replaceMemberRoles(context,u.memberId(),assigned.authorityVersion(),Set.of(role.id()),"绑定测试角色");
+    assertThat(master.list(u,Kind.PERSON,"",null,1,20).total()).isZero();
+    assertThatThrownBy(()->personnel.read(u,first)).hasMessage("PERSON_NOT_FOUND");
+    assertThatThrownBy(()->master.setStatus(u,Kind.PERSON,first,new Status(false,0))).hasMessage("MASTER_DATA_DENIED");
+    for(var pair:List.of(Map.entry(first,second),Map.entry(second,first))){
+      var selected=new VerifiedTenantContext(u.accountId(),u.tenantId(),u.memberId(),u.version(),
+          UUID.fromString(pair.getKey()),UUID.fromString(f.org()));
+      var page=master.list(selected,Kind.PERSON,"",null,1,20);
+      assertThat(page.total()).isEqualTo(1);
+      assertThat(page.rows()).extracting(Row::id).containsExactly(pair.getKey());
+      assertThat(personnel.read(selected,pair.getKey()).person().id()).isEqualTo(pair.getKey());
+      assertThatThrownBy(()->personnel.read(selected,pair.getValue())).hasMessage("PERSON_NOT_FOUND");
+      var original=personnel.read(c,pair.getKey()).person();
+      var other=personnel.read(c,pair.getValue()).person();
+      assertThatThrownBy(()->master.update(selected,Kind.PERSON,pair.getValue(),
+          new Input(other.code(),other.name(),other.attributes(),other.version()))).hasMessage("MASTER_DATA_DENIED");
+      assertThatThrownBy(()->master.setStatus(selected,Kind.PERSON,pair.getValue(),new Status(false,other.version())))
+          .hasMessage("MASTER_DATA_DENIED");
+      master.update(selected,Kind.PERSON,pair.getKey(),new Input(original.code(),original.name(),original.attributes(),original.version()));
+      var contact=Map.of("contactType","PHONE","contactValue","13800138000");
+      var detail=new com.appnexus.platform.organization.PersonnelData.DetailInput(original.version()+1,contact);
+      assertThatThrownBy(()->personnel.saveDetail(selected,pair.getValue(),"contacts",null,
+          new com.appnexus.platform.organization.PersonnelData.DetailInput(other.version(),contact))).hasMessage("MASTER_DATA_DENIED");
+      assertThatThrownBy(()->personnel.assign(selected,pair.getValue(),null,
+          new com.appnexus.platform.organization.PersonnelData.AssignmentInput(c.memberId().toString(),other.version())))
+          .hasMessage("MASTER_DATA_DENIED");
+      String detailId=personnel.saveDetail(selected,pair.getKey(),"contacts",null,detail).get("id");
+      personnel.saveDetail(selected,pair.getKey(),"contacts",detailId,
+          new com.appnexus.platform.organization.PersonnelData.DetailInput(original.version()+2,contact));
+      personnel.deleteDetail(selected,pair.getKey(),"contacts",detailId,original.version()+3);
+      String assignment=personnel.assign(selected,pair.getKey(),null,
+          new com.appnexus.platform.organization.PersonnelData.AssignmentInput(c.memberId().toString(),original.version()+4)).get("id");
+      personnel.unassign(selected,pair.getKey(),assignment,original.version()+5);
+      master.setStatus(selected,Kind.PERSON,pair.getKey(),new Status(false,original.version()+6));
+      assertThat(personnel.read(c,pair.getKey()).person().enabled()).isFalse();
+      master.setStatus(c,Kind.PERSON,pair.getKey(),new Status(true,original.version()+7));
+    }
+  }
   /** 校验同一角色策略同时作用于列表、详情、表单预加载和不可绕过的写入路径。 */
   @Test void fieldPoliciesProtectPersonnelProfileAndDetail() {
     var f=fixture();var c=f.admin();

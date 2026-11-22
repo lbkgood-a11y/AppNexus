@@ -25,7 +25,7 @@ public final class WarehouseController {
   /** 查询仓库管理；id缺省分页，传UUID查询已授权详情；options默认false，true只返回本租户字典，仍复核仓库读取权限。 */
   @OperationBinding(id="Warehouse.list", reference=true)
   @GetMapping("")
-  public Object list(HttpServletRequest r,@RequestParam(defaultValue="") String keyword,@RequestParam(required=false) Boolean enabled,@RequestParam(defaultValue="1") int page,@RequestParam(defaultValue="20") int size,@RequestParam(required=false) String id,@RequestParam(defaultValue="false") boolean options,@RequestParam(defaultValue="false") boolean geography) {if(geography)return service.geographyCatalog(context(r),Kind.WAREHOUSE);if(options)return service.warehouseOptions(context(r));return service.list(context(r),Kind.WAREHOUSE,keyword,enabled,page,size,id);}
+  public Object list(HttpServletRequest r,@RequestParam(defaultValue="") String keyword,@RequestParam(required=false) Boolean enabled,@RequestParam(defaultValue="1") int page,@RequestParam(defaultValue="20") int size,@RequestParam(required=false) String id,@RequestParam(defaultValue="false") boolean options,@RequestParam(defaultValue="false") boolean geography,@RequestParam(required=false) String organizationAction) {if(organizationAction!=null)return service.warehouseOrganizations(context(r),organizationAction);if(geography)return service.geographyCatalog(context(r),Kind.WAREHOUSE);if(options)return service.warehouseOptions(context(r));return service.list(context(r),Kind.WAREHOUSE,keyword,enabled,page,size,id);}
   /** 新增仓库管理；geography 默认 false，为 true 返回本租户地理摘要，仍复核当前业务读取权。真实鉴权、租户与并发校验由同一业务执行器负责。 */
   @OperationBinding(id="Warehouse.create", reference=true)
   @PostMapping("")

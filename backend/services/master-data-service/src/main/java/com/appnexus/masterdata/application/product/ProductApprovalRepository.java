@@ -56,4 +56,6 @@ public interface ProductApprovalRepository {
   * @return 授权范围内原固定投影；未命中不查询其他租户
   */
  List<Map<String,Object>> approvalDetail(String tenant,String id);
+ /** @param tenant 可信租户 @param id 已通过原申请人或任务准入的审批键 @return 固定审批快照 JSON */
+ String approvalSnapshot(String tenant,String id);
 }

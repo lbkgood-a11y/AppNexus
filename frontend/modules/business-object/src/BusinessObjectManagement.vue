@@ -20,6 +20,31 @@ const { t, locale } = useI18n(); const router = useRouter();
 const rows = ref<Awaited<ReturnType<BusinessObjectApi['catalog']>>>([]);
 const loading=ref(false), busy=ref(false), error=ref(""), query=ref(""), applied=ref(""), page=ref(1), size=ref(20);
 const selected=ref<Descriptor>(), dialog=ref(false), revision=ref(-1), published=ref(0), bindings=ref<Binding[]>([]);
+/** 两个管理域均来自当前对象契约；目录只读展示条件字段和字段限制。 */
+const accessDomains=computed(()=>[selected.value?.dataAccess,selected.value?.dataAccess?.otherDomain].flatMap(domain=>domain?[domain]:[]));
+const accessOperations=computed(()=>accessDomains.value.flatMap(domain=>
+  (selected.value?.operations??[]).filter(operation=>domain.operationScopes[operation.operationCode]?.length).map(operation=>({
+    ...operation,scopes:domain.operationScopes[operation.operationCode].flatMap(scope=>{
+      if(scope!=='RULES'||operation.permissionCode.endsWith(':create'))return [scope];
+      const hasConditions=domain.dimensions?.some(field=>!field.operationCodes?.length||field.operationCodes.includes(operation.operationCode));
+      return hasConditions?['RECORDS','RULES']:['RECORDS'];
+    }),
+    guarded:domain.standardCrud?.operations.includes(operation.operationCode)??false,
+    scope:domain.scope
+  }))));
+const scopeResources=computed(()=>accessDomains.value.flatMap(domain=>
+  domain.resources.map(resource=>({...resource,scope:domain.scope,
+    parent:domain.resources.find(item=>item.resource===resource.parentResource),
+    ownership:resource.parentResource?undefined:domain.dimensions?.find(field=>field.field===domain.standardCrud?.ownershipField)
+  }))));
+const conditionFields=computed(()=>accessDomains.value.flatMap(domain=>(domain.dimensions??[]).map(field=>({
+  ...field,
+  applicableOperations:selected.value?.operations.filter(operation=>
+    (domain.operationScopes[operation.operationCode]??[]).includes('RULES')&&
+    (!field.operationCodes?.length||field.operationCodes.includes(operation.operationCode)))??[]
+}))));
+const protectedFields=computed(()=>accessDomains.value.flatMap(domain=>domain.resources.flatMap(resource=>
+  resource.fields.map(field=>({...field,resourceNameZh:resource.nameZh,resourceNameEn:resource.nameEn})))));
 const workflows=ref<Record<string,Awaited<ReturnType<BusinessObjectApi['workflows']>>>>({}), tenants=ref<Awaited<ReturnType<BusinessObjectApi['tenants']>>>([]), grants=ref<Awaited<ReturnType<BusinessObjectApi['grants']>>>([]);
 const tenant=ref("");
 const checks=ref<Awaited<ReturnType<BusinessObjectApi['readiness']>>>([]);
@@ -137,7 +162,7 @@ onMounted(async()=>{await load();const type=router.currentRoute.value.query.type
       <template #pagination><AppPagination v-model:current-page="page" v-model:page-size="size" :total="filtered.length" layout="total, sizes, prev, pager, next" @size-change="page=1" /></template>
     </ManagementTable></template>
   </BusinessWorkspace>
-  <ManagedDialog v-model="dialog" :title="selected?name(selected):''" width="min(1200px, calc(100vw - 32px))" :close-on-click-modal="false" :busy="busy"><template #title><span class="info-hint-title">{{selected?name(selected):''}}<el-tag v-if="selected" size="small" type="info">{{t('businessObject.contractVersion')}} {{selected.version}}</el-tag><InfoHint v-if="!platform" :content="t('businessObject.bindingHint')" /></span></template>
+  <ManagedDialog v-model="dialog" :title="selected?name(selected):''" width="min(1200px, calc(100vw - 32px))" top="16px" :close-on-click-modal="false" :busy="busy"><template #title><span class="info-hint-title">{{selected?name(selected):''}}<el-tag v-if="selected" size="small" type="info">{{t('businessObject.contractVersion')}} {{selected.version}}</el-tag><InfoHint v-if="!platform" :content="t('businessObject.bindingHint')" /></span></template>
     <FloatingError v-if="error" :title="error" scope="error" type="error" :closable="false" />
     <template v-if="selected">
       <el-alert v-if="savedFeedback" :title="savedFeedback" type="success" :closable="false" />
@@ -156,8 +181,8 @@ onMounted(async()=>{await load();const type=router.currentRoute.value.query.type
        <p v-else class="object-empty-note">{{t('businessObject.noCodingDeclaration')}}</p>
       </section>
       <section class="object-contract-section">
-        <header><h3>{{t('businessObject.field')}}<el-tag size="small" type="info">{{selected.fields.length}}</el-tag></h3></header>
-      <vxe-table v-if="selected.fields.length" size="small" :min-height="0" :column-config="{ resizable: true }"  :data="selected.fields" border="inner"><vxe-column field="key" :title="t('businessObject.field')"/><vxe-column :field="locale.startsWith('zh')?'nameZh':'nameEn'" :title="t('businessObject.name')"/><vxe-column field="type" :title="t('businessObject.fieldType')"/><vxe-column field="unit" :title="t('businessObject.unit')"><template #default="{row}">{{row.unit || '—'}}</template></vxe-column></vxe-table><p v-else class="object-empty-note">{{t('businessObject.noConditionFields')}}</p>
+        <header><h3>{{t('businessObject.objectFactFields')}}<el-tag size="small" type="info">{{selected.fields.length}}</el-tag></h3></header>
+      <vxe-table v-if="selected.fields.length" size="small" :min-height="0" :column-config="{ resizable: true }"  :data="selected.fields" border="inner"><vxe-column field="key" :title="t('businessObject.field')"/><vxe-column :field="locale.startsWith('zh')?'nameZh':'nameEn'" :title="t('businessObject.name')"/><vxe-column field="type" :title="t('businessObject.fieldType')"/><vxe-column field="unit" :title="t('businessObject.unit')"><template #default="{row}">{{row.unit || '—'}}</template></vxe-column></vxe-table><p v-else class="object-empty-note">{{t('businessObject.noObjectFields')}}</p>
       </section>
       <section class="object-contract-section">
         <header><h3>{{t('businessObject.interactions')}}<el-tag size="small" type="info">{{selected.operations.length}}</el-tag></h3></header>
@@ -180,6 +205,52 @@ onMounted(async()=>{await load();const type=router.currentRoute.value.query.type
       </vxe-table>
       </section>
       </div>
+      </el-tab-pane>
+      <el-tab-pane :label="t('businessObject.accessTab')" name="dataAccess">
+        <div class="object-contract-sections">
+          <section class="object-contract-section">
+            <header><h3>{{t('businessObject.accessBasis')}}</h3></header>
+            <VxeTable v-if="scopeResources.length" size="small" :min-height="0" :data="scopeResources" :column-config="{resizable:true}" border="inner">
+              <VxeColumn :field="locale.startsWith('zh')?'nameZh':'nameEn'" :title="t('authorizationCenter.fieldResource')" min-width="165"/>
+              <VxeColumn field="resource" :title="t('businessObject.code')" min-width="200"/>
+              <VxeColumn :title="t('businessObject.accessOwnership')" min-width="180"><template #default="{row}">{{row.ownership?(locale.startsWith('zh')?row.ownership.nameZh:row.ownership.nameEn):'—'}}</template></VxeColumn>
+              <VxeColumn :title="t('businessObject.accessParent')" min-width="170"><template #default="{row}">{{row.parent?(locale.startsWith('zh')?row.parent.nameZh:row.parent.nameEn):'—'}}</template></VxeColumn>
+            </VxeTable>
+            <p v-else class="object-empty-note">{{t('businessObject.noAccessDeclaration')}}</p>
+          </section>
+          <section class="object-contract-section">
+            <header><h3>{{t('businessObject.accessOperationScopes')}}<InfoHint :content="t('businessObject.accessConnectionHint')"/></h3></header>
+            <VxeTable v-if="accessOperations.length" size="small" :min-height="0" :data="accessOperations" :column-config="{resizable:true}" border="inner">
+              <VxeColumn :field="locale.startsWith('zh')?'nameZh':'nameEn'" :title="t('businessObject.action')" min-width="160"/>
+              <VxeColumn field="permissionCode" :title="t('businessObject.permission')" min-width="180"/>
+              <VxeColumn :title="t('businessObject.accessOperationScopes')" min-width="200"><template #default="{row}">{{row.scopes.map((scope: string)=>t('authorizationCenter.scopes.'+scope)).join('、')}}</template></VxeColumn>
+              <VxeColumn :title="t('businessObject.accessConnection')" min-width="175"><template #default="{row}"><el-tag :type="row.guarded?'success':'info'">{{t(row.guarded?'businessObject.accessGuarded':'businessObject.accessDeclared')}}</el-tag></template></VxeColumn>
+            </VxeTable>
+            <p v-else class="object-empty-note">{{t('businessObject.noAccessOperations')}}</p>
+          </section>
+      <section class="object-contract-section">
+        <header><h3>{{t('businessObject.accessConditionFields')}}</h3></header>
+        <VxeTable v-if="conditionFields.length" size="small" :min-height="0" :data="conditionFields" :column-config="{resizable:true}" border="inner">
+          <VxeColumn :field="locale.startsWith('zh')?'nameZh':'nameEn'" :title="t('businessObject.name')" min-width="140" />
+          <VxeColumn field="field" :title="t('businessObject.accessFieldKey')" min-width="150" />
+          <VxeColumn :title="t('businessObject.action')" min-width="160"><template #default="{row}">{{row.applicableOperations.map((operation: Descriptor['operations'][number])=>locale.startsWith('zh')?operation.nameZh:operation.nameEn).join('、')||'—'}}</template></VxeColumn>
+          <VxeColumn :title="t('businessObject.conditionOperators')" min-width="150"><template #default="{row}">{{row.operators.map((operator: string)=>t('authorizationCenter.rules.operators.'+operator)).join('、')}}</template></VxeColumn>
+          <VxeColumn :title="t('authorizationCenter.rules.parameter')" min-width="160"><template #default="{row}">{{row.parameters?.map((parameter: string)=>t('authorizationCenter.rules.parameters.'+parameter)).join('、')||'—'}}</template></VxeColumn>
+          <VxeColumn :title="t('businessObject.conditionSource')" min-width="200"><template #default="{row}">{{t('businessObject.conditionSources.'+(row.source||'TEXT'))}}{{row.dictionary?' · '+row.dictionary:''}}</template></VxeColumn>
+        </VxeTable>
+        <p v-else class="object-empty-note">{{t('businessObject.noConditionFields')}}</p>
+      </section>
+      <section class="object-contract-section">
+        <header><h3>{{t('businessObject.accessProtectedFields')}}</h3></header>
+        <VxeTable v-if="protectedFields.length" size="small" :min-height="0" :data="protectedFields" :column-config="{resizable:true}" border="inner">
+          <VxeColumn :field="locale.startsWith('zh')?'resourceNameZh':'resourceNameEn'" :title="t('authorizationCenter.fieldResource')" min-width="160" />
+          <VxeColumn :field="locale.startsWith('zh')?'nameZh':'nameEn'" :title="t('businessObject.name')" min-width="150" />
+          <VxeColumn field="field" :title="t('businessObject.accessFieldKey')" min-width="180" />
+          <VxeColumn :title="t('businessObject.protectionModes')" min-width="180"><template #default="{row}">{{row.modes.map((mode: string)=>t('authorizationCenter.fieldModes.'+mode)).join('、')}}</template></VxeColumn>
+        </VxeTable>
+        <p v-else class="object-empty-note">{{t('businessObject.noProtectedFields')}}</p>
+      </section>
+        </div>
       </el-tab-pane>
       <el-tab-pane :label="t('businessObject.capabilityOverview')" name="capabilities">
        <header><h3>{{t('businessObject.capabilityOverview')}}<InfoHint :content="t('businessObject.capabilityOverviewHint')" /></h3></header>
@@ -281,7 +352,7 @@ onMounted(async()=>{await load();const type=router.currentRoute.value.query.type
 <style scoped>
 /* 展示分区继承公共Token，不覆盖公共卡片、描述列表及表格内部密度。 */
 .object-contract-sections{container-type:inline-size;display:flex;flex-direction:column;gap:var(--app-section-gap);min-width:0}
-.object-contract-section{flex:none;min-width:0;display:grid;gap:var(--app-section-gap);padding:var(--app-content-padding);border:1px solid var(--el-border-color-lighter);border-radius:var(--el-border-radius-base)}
+.object-contract-section{flex:none;min-width:0;display:grid;grid-template-columns:minmax(0,1fr);gap:var(--app-section-gap);padding:var(--app-content-padding);border:1px solid var(--el-border-color-lighter);border-radius:var(--el-border-radius-base)}
 .object-empty-note{margin:0;color:var(--el-text-color-secondary);font-size:var(--el-font-size-small)}
 .object-contract-section h3{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin:0;font-size:var(--el-font-size-medium);font-weight:600}
 .object-config-toolbar,.object-grant-form{display:flex;align-items:center;flex-wrap:wrap;gap:8px}

@@ -151,7 +151,7 @@ public interface WorkflowRecords {
   * @param task 当前租户原任务标识，不允许按裸ID扩大权限
   * @return 原固定投影或受影响行数；空结果不跨租户或主体回退
   */
- int saveTaskComment(String comment,String tenant,String task);
+ int saveTaskComment(String comment,String tenant,String task,String actor);
  /** completeTask固定存取；引擎推进、请求、任务及审计参与原完整事务，不独立提交。
   * @param decision 原固定节点动作，不能直接指定任意终态
   * @param comment 原任务意见，长度和控制字符由原业务规则约束
@@ -159,7 +159,7 @@ public interface WorkflowRecords {
   * @param task 当前租户原任务标识，不允许按裸ID扩大权限
   * @return 原固定投影或受影响行数；空结果不跨租户或主体回退
   */
- int completeTask(String decision,String comment,String tenant,String task);
+ int completeTask(String decision,String comment,String tenant,String task,String actor);
  /** cancelOpenJobs固定存取；引擎推进、请求、任务及审计参与原完整事务，不独立提交。
   * @param tenant 可信租户标识，业务请求由安全链建立；后台交付来自已锁定持久化任务
   * @param instance 当前租户流程实例标识，必须经参与者或管理权限复核

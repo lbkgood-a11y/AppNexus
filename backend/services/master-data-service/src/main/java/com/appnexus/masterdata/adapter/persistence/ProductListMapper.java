@@ -22,9 +22,10 @@ public interface ProductListMapper {
     record Filter(String item,String type,String operator,List<Object> values){public Filter{values=List.copyOf(values);}}
     /**
  * 商品列表的已验证业务筛选参数，不承载授权事实。
- * @param range 本次读取操作的统一组织范围，非ALL空集合拒绝
+ * @param access 本次读取由公共执行器生成的授权谓词
      * @param name 最多200字的字面包含名称，默认空
  * @param code 最多64字的字面包含编码，默认空
+ * @param keyword 最多200字的编码或名称字面查询，空字符串不限制
  * @param category 可空分类 UUID，默认仅本级
  * @param includeDescendants true包含下级，false只查询本级
  * @param form 可空商品形态
@@ -35,18 +36,20 @@ public interface ProductListMapper {
  * @param size 每页1–100条
  * @param offset 从0开始的分页偏移
  */
-    record Query(com.appnexus.platform.authorization.RowAccessControl.OrganizationRange range,String name,String code,String category,boolean includeDescendants,String form,String status,boolean archived,String config,List<Filter> filters,int size,int offset){public Query{filters=List.copyOf(filters);}}
+    record Query(com.appnexus.platform.authorization.RowAccessControl.Predicate access,String name,String code,String keyword,String category,boolean includeDescendants,String form,String status,boolean archived,String config,List<Filter> filters,int size,int offset){public Query{filters=List.copyOf(filters);}}
     /**
  * @param tenant 可信租户二进制UUID，执行拦截器再次覆盖
  * @param query 已验证业务筛选
  * @return 按编码及ID稳定排序的当前页
  */
+    @com.appnexus.persistence.mybatis.GuardedScope(predicate="query.access",resource="masterdata.product",tenant="__verifiedTenant",actions="read")
     List<Map<String,Object>> list(@Param("__verifiedTenant") byte[] tenant,@Param("query") Query query);
     /**
  * @param tenant 与列表相同的可信租户
  * @param query 与列表相同的过滤参数
  * @return 相同SQL条件下的总数
  */
+    @com.appnexus.persistence.mybatis.GuardedScope(predicate="query.access",resource="masterdata.product",tenant="__verifiedTenant",actions="read")
     long count(@Param("__verifiedTenant") byte[] tenant,@Param("query") Query query);
     /**
  * @param tenant 可信租户

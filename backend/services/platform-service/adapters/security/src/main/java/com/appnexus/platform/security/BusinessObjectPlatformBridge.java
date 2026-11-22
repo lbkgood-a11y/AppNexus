@@ -12,6 +12,7 @@ public final class BusinessObjectPlatformBridge implements BusinessObjectPlatfor
   private final AccessPlanning planning;
   private final RowAccessControl rows;
   private final FieldProtection fields;
+  private final com.appnexus.platform.organization.PersonnelExecution personnel;
   private final org.springframework.beans.factory.ObjectProvider<BusinessObjects.Provider> objects;
   private final PlatformAdministration platform;
   private final TenantAccess tenants;
@@ -29,9 +30,10 @@ public final class BusinessObjectPlatformBridge implements BusinessObjectPlatfor
    * @param planning 同一权威事务读取的数据范围与字段权限计划
    * @param rows 统一范围执行规则；本入口只接受已声明ALL或解析后的组织范围
    * @param fields 公共字段白名单和脱敏执行端口
+   * @param personnel 选定人员与组织的实时任职关系验证
    * @param objects 延迟读取唯一对象声明，避免安全桥接与业务装配循环
    */
-  public BusinessObjectPlatformBridge(PlatformAdministration platform,TenantAccess tenants,AccessAuthorization access,TenantDirectory directory,IntegrationClients integrations,org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository clients,AccessPlanning planning,RowAccessControl rows,FieldProtection fields,org.springframework.beans.factory.ObjectProvider<BusinessObjects.Provider> objects){this.platform=platform;this.tenants=tenants;this.access=access;this.directory=directory;this.integrations=integrations;this.clients=clients;this.planning=planning;this.rows=rows;this.fields=fields;this.objects=objects;}
+  public BusinessObjectPlatformBridge(PlatformAdministration platform,TenantAccess tenants,AccessAuthorization access,TenantDirectory directory,IntegrationClients integrations,org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository clients,AccessPlanning planning,RowAccessControl rows,FieldProtection fields,org.springframework.beans.factory.ObjectProvider<BusinessObjects.Provider> objects,com.appnexus.platform.organization.PersonnelExecution personnel){this.platform=platform;this.tenants=tenants;this.access=access;this.directory=directory;this.integrations=integrations;this.clients=clients;this.planning=planning;this.rows=rows;this.fields=fields;this.objects=objects;this.personnel=personnel;}
   /** 所有通用能力共用目标对象操作准入；对象存取仍执行行范围和字段限制。 */
   @Override public boolean operationAllowed(BusinessObjects.Context c,String operationId,String permissionCode){
     // 合作方的解析资格不等于业务执行权；本入口只接受统一模型中的真实账号主体。
@@ -50,7 +52,15 @@ public final class BusinessObjectPlatformBridge implements BusinessObjectPlatfor
       var operation=descriptor.operations().stream().filter(op->op.operationCode().equals(operationCode)).findFirst().orElseThrow();
       UUID actor=UUID.fromString(c.actorId()),tenant=UUID.fromString(c.tenantId());
       var member=tenants.available(actor).stream().filter(m->m.tenantId().equals(tenant)).findFirst().orElseThrow(()->new SecurityException("MEMBER_UNAVAILABLE"));
-      var subject=AccessAuthorization.Subject.tenant(actor,tenant,member.memberId());
+      UUID personId=null,organizationId=null;
+      if(c.personId()!=null||c.organizationId()!=null){
+        if(c.personId()==null||c.organizationId()==null)throw new SecurityException("PERSON_CONTEXT_REQUIRED");
+        personId=UUID.fromString(c.personId());
+        organizationId=UUID.fromString(c.organizationId());
+        if(!personnel.allowed(tenant,member.memberId(),personId,organizationId))
+          throw new SecurityException("PERSON_CONTEXT_REQUIRED");
+      }
+      var subject=new AccessAuthorization.Subject(actor,tenant,member.memberId(),personId,organizationId);
       String resource=declaration.resources().getFirst().resource();
       var plan=planning.plan(subject,operation.permissionCode(),resource);
       if(!rows.allowsOrganization(plan,UUID.fromString(snapshot.organizationId())))throw new SecurityException("DATA_SCOPE_DENIED");

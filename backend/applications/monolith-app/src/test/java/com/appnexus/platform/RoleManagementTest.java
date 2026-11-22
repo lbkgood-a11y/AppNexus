@@ -34,6 +34,7 @@ class RoleManagementTest extends DatabaseTestSupport {
  @Autowired AccessAuthorization authorization;
  @Autowired SubjectRoleManagement subjectRoles;
  @Autowired DataScopeAuthorization dataScopes;
+ @Autowired com.appnexus.platform.organization.port.OrganizationUnitRepository organizationUnits;
  @Autowired EffectiveAuthorizationQuery effectiveAuthorizations;
  @Autowired com.appnexus.platform.authorization.MemberAuthorizationManagement memberAuthorizations;
  @Autowired com.appnexus.platform.authorization.LegacyAuthorizationReconciliation reconciliation;
@@ -253,6 +254,19 @@ class RoleManagementTest extends DatabaseTestSupport {
   var assigned=subjectRoles.memberRoles(context,member);subjectRoles.replaceMemberRoles(context,member,assigned.authorityVersion(),java.util.Set.of(exact.id(),subtree.id()),"混合授权");
   var subject=AccessAuthorization.Subject.tenant(account,tenant.id(),member);var scope=dataScopes.resolveDataScope(subject,"organization.unit:read","organization.unit");
   assertThat(scope.organizationIds()).containsExactlyInAnyOrder(root,tree,descendant).doesNotContain(child);
+  // 复用真实角色保存及公共计划，平面组织入口必须保持精确与子树各自的范围。
+  var original=org.springframework.web.context.request.RequestContextHolder.getRequestAttributes();
+  var request=new org.springframework.mock.web.MockHttpServletRequest();
+  request.setAttribute(com.appnexus.platform.tenant.VerifiedTenantContext.class.getName(),
+      new com.appnexus.platform.tenant.VerifiedTenantContext(account,tenant.id(),member,1));
+  org.springframework.web.context.request.RequestContextHolder.setRequestAttributes(
+      new org.springframework.web.context.request.ServletRequestAttributes(request));
+  try {
+   assertThat(organizationUnits.findAll()).extracting(com.appnexus.platform.organization.OrganizationUnit::id)
+       .containsExactlyInAnyOrder(root,tree,descendant);
+  }finally{
+   org.springframework.web.context.request.RequestContextHolder.setRequestAttributes(original);
+  }
   assertThat(dataScopes.resolveDataScope(AccessAuthorization.Subject.tenant(owner,tenant.id(),member(tenant.id(),owner)),"customer:read","customer").type()).isEqualTo(DataScopeAuthorization.ScopeType.DENY);
  }
 

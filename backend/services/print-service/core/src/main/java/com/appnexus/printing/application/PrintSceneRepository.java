@@ -98,17 +98,19 @@ public interface PrintSceneRepository {
   * @param tenant 可信固定租户UUID文本，必填，不接受请求体指定
   * @param site 已验证代理站点编码，1至64字符
   * @param agent 当前认证代理实例标识，1至128字符，不能替换其他实例
+  * @param principal 认证上下文中的账号或客户端标识，不接受代理自行声明
   * @return 原固定投影、状态或影响行数；空结果不扩大到其他租户或主体
   */
- int deleteAgentQueues(String tenant,String site,String agent);
+ int deleteAgentQueues(String tenant,String site,String agent,String principal);
  /** reportAgentQueue固定存取；请求、任务、确认及审计参与完整用例事务，不独立提交。
   * @param tenant 可信固定租户UUID文本，必填，不接受请求体指定
   * @param site 已验证代理站点编码，1至64字符
   * @param agent 当前认证代理实例标识，1至128字符，不能替换其他实例
   * @param queue 队列名称，1至255字符，无控制字符；只更新自身代理范围
+  * @param principal 认证上下文中的账号或客户端标识，不接受代理自行声明
   * @return 原固定投影、状态或影响行数；空结果不扩大到其他租户或主体
   */
- int reportAgentQueue(String tenant,String site,String agent,String queue);
+ int reportAgentQueue(String tenant,String site,String agent,String queue,String principal);
  /** queues固定存取；请求、任务、确认及审计参与完整用例事务，不独立提交。
   * @param tenant 可信固定租户UUID文本，必填，不接受请求体指定
   * @return 原固定投影、状态或影响行数；空结果不扩大到其他租户或主体

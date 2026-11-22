@@ -17,6 +17,7 @@ public interface ProductTemplateMapper {
 
  /** 固定业务语句3；准入、参数规则、聚合锁及事务由原用例负责，所有值绑定。 */
  @Insert("INSERT INTO md_product_template(id,tenant_id,code,name,purpose,created_by,updated_by) VALUES(UUID_TO_BIN(#{p0}),UUID_TO_BIN(#{p1}),#{p2},#{p3},#{p4},UUID_TO_BIN(#{p5}),UUID_TO_BIN(#{p6}))")
+ @com.appnexus.persistence.mybatis.GuardedScope(tenant="p1",serviceOperation="masterdata.producttemplate:create",serviceKeys={"p0"})
  int createTemplate(@Param("p0") Object p0,@Param("p1") Object p1,@Param("p2") Object p2,@Param("p3") Object p3,@Param("p4") Object p4,@Param("p5") Object p5,@Param("p6") Object p6);
 
  /** 固定业务语句4；准入、参数规则、聚合锁及事务由原用例负责，所有值绑定。 */
@@ -29,6 +30,7 @@ public interface ProductTemplateMapper {
 
  /** 固定业务语句6；准入、参数规则、聚合锁及事务由原用例负责，所有值绑定。 */
  @Insert("INSERT INTO md_product_template_version(id,tenant_id,template_id,version_no,purpose,description,created_by,updated_by) VALUES(UUID_TO_BIN(#{p0}),UUID_TO_BIN(#{p1}),UUID_TO_BIN(#{p2}),#{p3},#{p4},#{p5},UUID_TO_BIN(#{p6}),UUID_TO_BIN(#{p7}))")
+ @com.appnexus.persistence.mybatis.GuardedScope(tenant="p1",serviceOperation="masterdata.producttemplate:update",serviceKeys={"p2"})
  int createVersion(@Param("p0") Object p0,@Param("p1") Object p1,@Param("p2") Object p2,@Param("p3") Object p3,@Param("p4") Object p4,@Param("p5") Object p5,@Param("p6") Object p6,@Param("p7") Object p7);
 
  /** 固定业务语句7；准入、参数规则、聚合锁及事务由原用例负责，所有值绑定。 */
@@ -41,10 +43,12 @@ public interface ProductTemplateMapper {
 
  /** 固定业务语句9；准入、参数规则、聚合锁及事务由原用例负责，所有值绑定。 */
  @Delete("DELETE FROM md_product_template_item WHERE tenant_id=UUID_TO_BIN(#{p0}) AND template_version_id=UUID_TO_BIN(#{p1})")
+ @com.appnexus.persistence.mybatis.GuardedScope(tenant="p0",serviceOperation="masterdata.producttemplate:update",serviceKeys={"p1"})
  int deleteVersionItems(@Param("p0") Object p0,@Param("p1") Object p1);
 
  /** 固定业务语句10；准入、参数规则、聚合锁及事务由原用例负责，所有值绑定。 */
  @Update("UPDATE md_product_template_version SET description=#{p0},updated_by=UUID_TO_BIN(#{p1}),updated_at=CURRENT_TIMESTAMP(6) WHERE tenant_id=UUID_TO_BIN(#{p2}) AND id=UUID_TO_BIN(#{p3})")
+ @com.appnexus.persistence.mybatis.GuardedScope(tenant="p2",serviceOperation="masterdata.producttemplate:update",serviceKeys={"p3"})
  int updateDescription(@Param("p0") Object p0,@Param("p1") Object p1,@Param("p2") Object p2,@Param("p3") Object p3);
 
  /** 固定业务语句11；准入、参数规则、聚合锁及事务由原用例负责，所有值绑定。 */
@@ -57,6 +61,7 @@ public interface ProductTemplateMapper {
 
  /** 固定业务语句13；准入、参数规则、聚合锁及事务由原用例负责，所有值绑定。 */
  @Insert("INSERT INTO md_product_template_item(id,tenant_id,template_version_id,attribute_id,attribute_revision_id,data_type,group_code,group_name,required_flag,searchable,allow_custom,sort_order,created_by,updated_by) VALUES(UUID_TO_BIN(#{p0}),UUID_TO_BIN(#{p1}),UUID_TO_BIN(#{p2}),UUID_TO_BIN(#{p3}),UUID_TO_BIN(#{p4}),#{p5},#{p6},#{p7},#{p8},#{p9},#{p10},#{p11},UUID_TO_BIN(#{p12}),UUID_TO_BIN(#{p13}))")
+ @com.appnexus.persistence.mybatis.GuardedScope(tenant="p1",serviceOperation="masterdata.producttemplate:update",serviceKeys={"p2"})
  int createItem(@Param("p0") Object p0,@Param("p1") Object p1,@Param("p2") Object p2,@Param("p3") Object p3,@Param("p4") Object p4,@Param("p5") Object p5,@Param("p6") Object p6,@Param("p7") Object p7,@Param("p8") Object p8,@Param("p9") Object p9,@Param("p10") Object p10,@Param("p11") Object p11,@Param("p12") Object p12,@Param("p13") Object p13);
 
  /** 固定业务语句14；准入、参数规则、聚合锁及事务由原用例负责，所有值绑定。 */
@@ -72,15 +77,18 @@ public interface ProductTemplateMapper {
  Integer unavailableItemCount(@Param("p0") Object p0,@Param("p1") Object p1);
 
  /** 固定业务语句17；准入、参数规则、聚合锁及事务由原用例负责，所有值绑定。 */
+ @com.appnexus.persistence.mybatis.GuardedScope(tenant="p1",catalogPublication="masterdata.producttemplate:publish")
  @Update("UPDATE md_product_template_version SET state='PUBLISHED',published_at=CURRENT_TIMESTAMP(6),updated_by=UUID_TO_BIN(#{p0}),updated_at=CURRENT_TIMESTAMP(6) WHERE tenant_id=UUID_TO_BIN(#{p1}) AND id=UUID_TO_BIN(#{p2})")
  int publishVersion(@Param("p0") Object p0,@Param("p1") Object p1,@Param("p2") Object p2);
 
  /** 固定业务语句18；准入、参数规则、聚合锁及事务由原用例负责，所有值绑定。 */
  @Update("UPDATE md_product_template SET name=#{p0},version=version+1,updated_by=UUID_TO_BIN(#{p1}),updated_at=CURRENT_TIMESTAMP(6) WHERE tenant_id=UUID_TO_BIN(#{p2}) AND id=UUID_TO_BIN(#{p3}) AND code=#{p4} AND purpose=#{p5} AND version=#{p6}")
+ @com.appnexus.persistence.mybatis.GuardedScope(tenant="p2",serviceOperation="masterdata.producttemplate:update",serviceKeys={"p3"})
  int updateTemplate(@Param("p0") Object p0,@Param("p1") Object p1,@Param("p2") Object p2,@Param("p3") Object p3,@Param("p4") Object p4,@Param("p5") Object p5,@Param("p6") Object p6);
 
  /** 固定业务语句19；准入、参数规则、聚合锁及事务由原用例负责，所有值绑定。 */
  @Update("UPDATE md_product_template SET enabled=#{p0},version=version+1,updated_by=UUID_TO_BIN(#{p1}),updated_at=CURRENT_TIMESTAMP(6) WHERE tenant_id=UUID_TO_BIN(#{p2}) AND id=UUID_TO_BIN(#{p3}) AND version=#{p4}")
+ @com.appnexus.persistence.mybatis.GuardedScope(tenant="p2",serviceOperation="masterdata.producttemplate:set_status",serviceKeys={"p3"})
  int setTemplateStatus(@Param("p0") Object p0,@Param("p1") Object p1,@Param("p2") Object p2,@Param("p3") Object p3,@Param("p4") Object p4);
 
  /** 固定业务语句20；准入、参数规则、聚合锁及事务由原用例负责，所有值绑定。 */
@@ -89,6 +97,7 @@ public interface ProductTemplateMapper {
 
  /** 固定业务语句21；准入、参数规则、聚合锁及事务由原用例负责，所有值绑定。 */
  @Update("UPDATE md_product_template_version SET state='RETIRED',updated_by=UUID_TO_BIN(#{p0}),updated_at=CURRENT_TIMESTAMP(6) WHERE tenant_id=UUID_TO_BIN(#{p1}) AND id=UUID_TO_BIN(#{p2}) AND state='PUBLISHED'")
+ @com.appnexus.persistence.mybatis.GuardedScope(tenant="p1",serviceOperation="masterdata.producttemplate:publish",serviceKeys={"p2"})
  int retireVersion(@Param("p0") Object p0,@Param("p1") Object p1,@Param("p2") Object p2);
 
  /** 固定业务语句22；准入、参数规则、聚合锁及事务由原用例负责，所有值绑定。 */
@@ -97,6 +106,7 @@ public interface ProductTemplateMapper {
 
  /** 固定业务语句23；准入、参数规则、聚合锁及事务由原用例负责，所有值绑定。 */
  @Update("UPDATE md_product_template SET version=version+1,updated_by=UUID_TO_BIN(#{p0}),updated_at=CURRENT_TIMESTAMP(6) WHERE tenant_id=UUID_TO_BIN(#{p1}) AND id=UUID_TO_BIN(#{p2})")
+ @com.appnexus.persistence.mybatis.GuardedScope(tenant="p1",serviceOperation="masterdata.producttemplate:advance-template-version",serviceKeys={"p2"})
  int advanceTemplateVersion(@Param("p0") Object p0,@Param("p1") Object p1,@Param("p2") Object p2);
 
  /** @param tenant 可信租户 @return 当前租户模板摘要，原功能准入不变 */

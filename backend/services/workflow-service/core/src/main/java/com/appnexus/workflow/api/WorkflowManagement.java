@@ -4,6 +4,10 @@ import com.appnexus.contracts.workflow.*;
 import com.appnexus.workflow.core.WorkflowModel;
 /** 工作流HTTP公开用例契约；禁止向入口泄漏Flowable引擎、Mapper和内部实现。 */
 public interface WorkflowManagement {
+ /** 工作流内置调度入口的固定系统操作。 */
+ String PROCESS_JOBS="WorkflowJob.process";
+ /** 仅进程内调度入口持有的固定系统准入。 */
+ String JOB_WORKER_AUTHORITY="system.workflow.job:process";
  /** 工作流公开操作；可信主体、功能权限、实例归属、版本及幂等在原用例逐次复核。 */
  List<WorkflowBusiness.Capability> businesses(WorkflowContext c);
  /** 工作流公开操作；可信主体、功能权限、实例归属、版本及幂等在原用例逐次复核。 */

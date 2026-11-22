@@ -55,5 +55,7 @@ public interface ProductCompletenessMapper {
  * @return 原存储契约定义的结果；并发或引用冲突由调用用例复核
  */
  @Update("UPDATE md_product_v1 SET structure_state=#{state},updated_by=UUID_TO_BIN(#{actor}),updated_at=CURRENT_TIMESTAMP(6) WHERE tenant_id=#{__verifiedTenant} AND id=UUID_TO_BIN(#{id})")
+ @com.appnexus.persistence.mybatis.GuardedScope(resource="masterdata.product",tenant="__verifiedTenant",recordId="id",
+     actions={"create","update","set_status","manage_structure","migrate_structure","masterdata.product.approval:submit"})
  int refresh(@Param("state") String state,@Param("actor") String actor,@Param("__verifiedTenant") byte[] tenant,@Param("id") String id);
 }

@@ -10,8 +10,8 @@ import java.util.function.Supplier;
 public interface ProductMainPort {
   /** @param <T> 业务返回类型 @param work 同线程聚合回调 @return 原子结果；存储冲突映射原 PRODUCT_V1_CONFLICT，全部回滚 */
   <T>T atomic(Supplier<T> work);
-  /** @param c 可信主体 @param input 草稿输入；检查真实租户引用和固定发布版本 */
-  void references(VerifiedTenantContext c,Input input);
+  /** @param c 可信主体 @param id 服务端分配新商品 UUID @param input 草稿输入；检查真实租户引用和固定发布版本 */
+  void references(VerifiedTenantContext c,String id,Input input);
   /** @param c 可信主体 @param id 服务端新 UUID @param input 已验证草稿；初始状态由数据库固定 DRAFT，创建审计来自可信账号及数据库 UTC */
   void insert(VerifiedTenantContext c,String id,Input input);
   /** @param c 可信主体 @param id 商品 UUID @param version 原非负版本 @return 锁父行后的原快照，仅当前租户 */

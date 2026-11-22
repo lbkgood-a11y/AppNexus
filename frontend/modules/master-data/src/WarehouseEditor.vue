@@ -16,10 +16,11 @@ const {t}=useI18n();
 const id=ref(props.id),record=ref<MasterDataRow>(),allowed=ref<string[]>([]),loading=ref(false),busy=ref(false),failed=ref(false),error=ref("");
 const geographyNodes=ref<GeographyNode[]>([]);
 const dictionary=ref<Record<string,DictionaryOption[]>>({}),form=ref<FormInstance>();
+const organizations=ref<{id:string;name:string}[]>([]);
 const fieldRestrictions=ref<Record<string,string>>({});
 const expanded=reactive<Record<string,boolean>>({basic:true,property:true});
 const allFields=Object.values(warehouseGroups).flat();
-const draft=reactive<MasterDataInput>({code:"",name:"",attributes:Object.fromEntries(allFields.map(key=>[key,""])),version:0});
+const draft=reactive<MasterDataInput>({code:"",name:"",organizationId:null,attributes:Object.fromEntries(allFields.map(key=>[key,""])),version:0});
 const baseline=ref("");
 const mapOpen=ref(false);
 /** 地图确认仅成对回填可编辑草稿；实际持久化仍由原保存操作及服务端权限校验完成。 */
@@ -35,7 +36,7 @@ const booleanFields=["personalGuarantee","wholeLease"];
 /** 区域路径和地址说明跨两列；手机沿用公共网格恢复单列，不改变字段提交契约。 */
 const wideFields=["region","address","billAddress","introduction","structureDescription","remarks","leaseChainDescription","subleaseDescription","otherStorageDescription"];
 /** 比对仅含可写字段，审计和启停不混入保存契约。 */
-function snapshot(){return JSON.stringify({code:draft.code,name:draft.name,attributes:draft.attributes});}
+function snapshot(){return JSON.stringify({code:draft.code,name:draft.name,organizationId:draft.organizationId,attributes:draft.attributes});}
 const dirty=computed(()=>snapshot()!==baseline.value);
 /** 新增时仍展示四个系统字段；真实审计仅取已授权响应，不填造账号或当前时间。 */
 const audit=computed(()=>record.value?.audit??{createdBy:null,createdAt:null,updatedBy:null,updatedAt:null});
@@ -57,8 +58,9 @@ const rules=computed<FormRules>(()=>{
 async function load(){loading.value=true;failed.value=false;loadIssue.value=undefined;try{
  allowed.value=await props.api.operations();if(!canRead.value){record.value=undefined;draft.code="";draft.name="";draft.attributes={};return;}
  fieldRestrictions.value=await props.api.warehouseFieldRestrictions();
+ organizations.value=canEdit.value?await props.api.warehouseOrganizations(id.value?"update":"create"):[];
  dictionary.value=await props.api.warehouseOptions();geographyNodes.value=await props.api.geographyDirectory("warehouse");
- if(id.value){const row=await props.api.readWarehouse(id.value);record.value=row;fieldRestrictions.value=row.fieldRestrictions?.["masterdata.warehouse"]??fieldRestrictions.value;draft.code=row.code;draft.name=row.name;draft.version=row.version;draft.attributes=Object.fromEntries(allFields.map(key=>[key,row.attributes[key]??""]));}
+ if(id.value){const row=await props.api.readWarehouse(id.value);record.value=row;fieldRestrictions.value=row.fieldRestrictions?.["masterdata.warehouse"]??fieldRestrictions.value;draft.code=row.code;draft.name=row.name;draft.version=row.version;draft.organizationId=row.organizationId??null;draft.attributes=Object.fromEntries(allFields.map(key=>[key,row.attributes[key]??""]));}
  baseline.value=snapshot();
  }catch(e){failed.value=true;if((e as {response?:{status:number}})?.response?.status===403){allowed.value=[];record.value=undefined;draft.code="";draft.name="";draft.attributes={};}await presentLoadError(error,loadIssue,props.errorText(e),true,(e as {response?:{status?:number}})?.response?.status===403);}finally{loading.value=false;}}
 /** 取消、刷新及离开路由均保护未保存内容，冲突不会自动覆盖草稿。 */
@@ -66,7 +68,7 @@ async function discard(){if(!dirty.value)return true;try{await ElMessageBox.conf
 async function back(){if(!busy.value&&await discard())emit("close");}
 async function reload(){if(!busy.value&&!loading.value&&await discard())await load();}
 /** 保存采用服务端读取版本，不自动重放写请求；失败保留用户输入。 */
-async function save(){if(!canEdit.value||busy.value||loading.value||!await form.value?.validate().catch(()=>false))return;busy.value=true;try{const input={...draft,attributes:Object.fromEntries(Object.entries(draft.attributes).filter(([field,value])=>!fieldMode(field)&&(Boolean(id.value)||value!=="")))};if(id.value)await props.api.update("warehouse",id.value,input);else id.value=(await props.api.create("warehouse",input)).id;baseline.value=snapshot();ElMessage.success(t("masterData.saved"));await load();}catch(e){await setErrorFeedback(error,props.errorText(e));}finally{busy.value=false;}}
+async function save(){if(!canEdit.value||busy.value||loading.value||!await form.value?.validate().catch(()=>false))return;busy.value=true;try{const input={...draft,organizationId:draft.organizationId===record.value?.organizationId?null:draft.organizationId,attributes:Object.fromEntries(Object.entries(draft.attributes).filter(([field,value])=>!fieldMode(field)&&(Boolean(id.value)||value!=="")))};if(id.value)await props.api.update("warehouse",id.value,input);else id.value=(await props.api.create("warehouse",input)).id;baseline.value=snapshot();ElMessage.success(t("masterData.saved"));await load();}catch(e){await setErrorFeedback(error,props.errorText(e));}finally{busy.value=false;}}
 function beforeUnload(event:BeforeUnloadEvent){if(dirty.value||busy.value)event.preventDefault();}
 onBeforeRouteLeave(async()=>busy.value?false:await discard());
 onMounted(()=>{baseline.value=snapshot();window.addEventListener("beforeunload",beforeUnload);void load();});
@@ -88,6 +90,13 @@ onBeforeUnmount(()=>window.removeEventListener("beforeunload",beforeUnload));
        <template v-if="group==='basic'">
         <el-form-item v-if="canEdit&&!id" :label="t('masterData.code')" prop="code"><el-input v-model="draft.code" maxlength="64" /></el-form-item><div v-else class="detail-readonly-field"><span>{{t('masterData.code')}}</span><el-tooltip :content="draft.code"><strong class="warehouse-code" tabindex="0">{{draft.code||'—'}}</strong></el-tooltip></div>
         <el-form-item v-if="canEdit" :label="t('masterData.name')" prop="name"><el-input v-model="draft.name" maxlength="200" /></el-form-item><div v-else class="detail-readonly-field"><span>{{t('masterData.name')}}</span><strong>{{draft.name||'—'}}</strong></div>
+        <el-form-item v-if="canEdit" :label="t('partner.organization')" prop="organizationId">
+         <el-select v-model="draft.organizationId" filterable>
+          <el-option v-for="organization in organizations" :key="organization.id" :label="organization.name" :value="organization.id"/>
+          <el-option v-if="draft.organizationId&&!organizations.some(item=>item.id===draft.organizationId)" :label="draft.organizationId" :value="draft.organizationId" disabled/>
+         </el-select>
+        </el-form-item>
+        <div v-else class="detail-readonly-field"><span>{{t('partner.organization')}}</span><strong>{{draft.organizationId||'—'}}</strong></div>
         <div class="detail-readonly-field"><span>{{t('masterData.status')}}</span><strong>{{record?t('masterData.'+(record.enabled?'enabled':'disabled')):t('masterData.enabled')}}</strong></div>
        </template>
        <template v-for="field in fields" :key="field">

@@ -49,9 +49,9 @@ public final class MyBatisProductCommandRepository implements ProductCommandRepo
  /** {@inheritDoc} */
  public int stageLegacyProduct(String tenant,String product){return mapper.stageLegacyProduct(tenant,product);}
  /** {@inheritDoc} */
- public List<Map<String,Object>> legacyReconciliation(String tenant,int size,long offset){return ProductStorageValues.stable(mapper.legacyReconciliation(tenant,size,offset));}
+ public List<Map<String,Object>> legacyReconciliation(String tenant,int size,long offset,com.appnexus.platform.authorization.RowAccessControl.Predicate access){return ProductStorageValues.stable(mapper.legacyReconciliation(tenant,size,offset,access));}
  /** {@inheritDoc} */
- public Long legacyCount(String tenant){return mapper.legacyCount(tenant);}
+ public Long legacyCount(String tenant,com.appnexus.platform.authorization.RowAccessControl.Predicate access){return mapper.legacyCount(tenant,access);}
  /** {@inheritDoc} */
  public Integer pendingApprovalCount(String tenant,String product){return mapper.pendingApprovalCount(tenant,product);}
  /** {@inheritDoc} */
@@ -61,5 +61,5 @@ public final class MyBatisProductCommandRepository implements ProductCommandRepo
  /** {@inheritDoc} */
  public int archive(String tenant, String id, boolean archived){return mapper.archive(tenant,id,archived);}
  /** {@inheritDoc} */
- public List<Map<String,Object>> replay(String tenant, String actor, String id, String key, boolean lock){return ProductStorageValues.stable(mapper.replay(tenant,actor,id,key,lock));}
+ public List<Map<String,Object>> replay(String tenant, String actor, String id, String key, boolean lock,com.appnexus.platform.authorization.RowAccessControl.Predicate access){return ProductStorageValues.stable(mapper.replay(tenant,actor,id,key,lock,access));}
 }

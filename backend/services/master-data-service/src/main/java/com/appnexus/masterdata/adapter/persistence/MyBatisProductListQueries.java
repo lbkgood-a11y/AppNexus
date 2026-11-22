@@ -11,12 +11,12 @@ public final class MyBatisProductListQueries implements com.appnexus.masterdata.
  /** @param mapper 可信租户固定列表映射 @param json 原过滤JSON协议解析器 */
  public MyBatisProductListQueries(ProductListMapper mapper,ObjectMapper json,ProductAccess access){this.access=access;this.mapper=mapper;this.json=json;}
  /** {@inheritDoc} */
- public Object list(VerifiedTenantContext c,String name,String code,String categoryId,String form,String status,boolean archived,int page,int size,String configId,String filtersJson,boolean includeDescendants){
-if(name==null||name.length()>200||code==null||code.length()>64||page<1||page>1000000||size<1||size>100)throw invalid();
+ public Object list(VerifiedTenantContext c,String name,String code,String categoryId,String form,String status,boolean archived,int page,int size,String configId,String filtersJson,boolean includeDescendants,String keyword){
+if(keyword==null||keyword.length()>200||name==null||name.length()>200||code==null||code.length()>64||page<1||page>1000000||size<1||size>100)throw invalid();
   if(categoryId!=null)uuid(categoryId);
   if(form!=null&&!Set.of("PHYSICAL","SERVICE","COMPOSITE").contains(form)||status!=null&&!Set.of("DRAFT","ENABLED","DISABLED").contains(status))throw invalid();
   if(configId!=null)uuid(configId);
-  var query=new ProductListMapper.Query(access.range(c,"read"),name.trim(),code.trim(),categoryId,includeDescendants,form,status,archived,configId,attributeFilters(c,configId,filtersJson),size,(page-1)*size);
+  var query=new ProductListMapper.Query(access.predicate(c,"read"),name.trim(),code.trim(),keyword.trim(),categoryId,includeDescendants,form,status,archived,configId,attributeFilters(c,configId,filtersJson),size,(page-1)*size);
   return Map.of("rows",mapper.list(tenantBytes(c),query),"total",mapper.count(tenantBytes(c),query));
  }
 

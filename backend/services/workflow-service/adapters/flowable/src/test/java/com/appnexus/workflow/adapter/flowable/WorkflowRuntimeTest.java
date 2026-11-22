@@ -50,6 +50,13 @@ class WorkflowRuntimeTest {
     engine = new WorkflowEngineConfiguration().workflowProcessEngine(source, manager, bridge);
     WorkflowPlatform platform =
         new WorkflowPlatform() {
+          @Override public void authorizeTaskWrite(WorkflowContext context,String taskId){
+        if(!active(context.tenantId(),context.actorId()))throw new SecurityException("WORKFLOW_DENIED");
+      }
+      @Override public void authorizeRecordWrite(WorkflowContext context,String permission,String... keys){
+            if(!allowed(context,permission))throw new SecurityException("WORKFLOW_DENIED");
+          }
+
           public boolean candidate(WorkflowContext c,String org,String kind,String reference){return resolve(c.tenantId(),org,kind,reference).contains(c.actorId());}
           public boolean allowed(WorkflowContext c, String p) {
             return active(c.tenantId(), c.actorId());
@@ -178,6 +185,13 @@ class WorkflowRuntimeTest {
     }
     var source = new DriverManagerDataSource(MYSQL.getJdbcUrl(),MYSQL.getUsername(),MYSQL.getPassword());
     var platform = new WorkflowPlatform(){
+      @Override public void authorizeTaskWrite(WorkflowContext context,String taskId){
+        if(!active(context.tenantId(),context.actorId()))throw new SecurityException("WORKFLOW_DENIED");
+      }
+      @Override public void authorizeRecordWrite(WorkflowContext context,String permission,String... keys){
+        if(!allowed(context,permission))throw new SecurityException("WORKFLOW_DENIED");
+      }
+
       public boolean active(String tenant,String actor){return "tenant-a".equals(tenant);}
       public boolean allowed(WorkflowContext context,String permission){return active(context.tenantId(),context.actorId());}
       public List<String> resolve(String tenant,String organization,String kind,String reference){return List.of(reference);}

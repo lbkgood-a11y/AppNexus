@@ -21,8 +21,16 @@ public final class PersonDeclaration implements Provider {
                         field("emergencyPhone","紧急联系电话","Emergency phone","PHONE"))),
                 new DataResource("masterdata.person.detail", "masterdata.person", "人员明细", "Personnel details", List.of(
                         field("contactValue","联系方式","Contact value","TEXT"),field("address","详细地址","Address","TEXT"),
-                        field("certificateNumber","证书编号","Certificate number","IDENTIFIER")))), Map.of());
-        return new Descriptor("Person", "人员管理", "Personnel", "organization", 3, Category.MASTER_DATA, List.of(), List.of(
+                        field("certificateNumber","证书编号","Certificate number","IDENTIFIER")))),
+                Map.of("list",Set.of("ALL","RULES"),"read",Set.of("ALL","RULES"),
+                    "update",Set.of("ALL","RULES"),"setStatus",Set.of("ALL","RULES"),
+                    "createDetail",Set.of("ALL","RULES"),"updateDetail",Set.of("ALL","RULES"),"deleteDetail",Set.of("ALL","RULES"),
+                    "assign",Set.of("ALL","RULES"),"updateAssignment",Set.of("ALL","RULES"),"unassign",Set.of("ALL","RULES")),
+                List.of(new DataDimension("personId","人员档案","Personnel profile","UUID",Set.of("EQ"),"PERSON","",
+                        Set.of("list","read","update","setStatus","createDetail","updateDetail","deleteDetail","assign","updateAssignment","unassign"),
+                        Set.of("CURRENT_PERSON"))))
+                .withStandardCrud("personId",Set.of("list","read","update","setStatus"));
+        return new Descriptor("Person", "人员管理", "Personnel", "organization", 6, Category.MASTER_DATA, List.of(), List.of(
                 operation("Person", "fieldRestrictions", "读取人员字段限制", "Read personnel field restrictions", "masterdata.person:read",
                         new PageOperation("organization/personnel", "/organization/personnel", "读取人员字段限制", "Read personnel field restrictions", "GET", "/api/master-data/person/field-restrictions")),
                 operation("Person", "list", "查询人员管理", "list Personnel", "masterdata.person:read",

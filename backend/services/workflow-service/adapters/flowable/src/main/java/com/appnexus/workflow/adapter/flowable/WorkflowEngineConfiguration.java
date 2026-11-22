@@ -76,8 +76,8 @@ public class WorkflowEngineConfiguration {
   /** 交付扫描器默认关闭，启用前须准备幂等业务适配器。 */
   @Bean
   @ConditionalOnProperty(name = "app.workflow.worker.enabled", havingValue = "true")
-  public WorkflowWorker workflowWorker(WorkflowRuntime runtime) {
-    return new WorkflowWorker(runtime);
+  public WorkflowWorker workflowWorker(WorkflowRuntime runtime,com.appnexus.contracts.businessobject.BusinessObjects.ScheduledOperations operations) {
+    return new WorkflowWorker(runtime,operations);
   }
 
   /**

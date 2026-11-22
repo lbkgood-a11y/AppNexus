@@ -87,11 +87,21 @@ function display(row:PersonnelDetail,field:string){
 }
 /** 重建基础草稿只在主动加载或写入成功后执行；不会在后台刷新时覆盖用户输入。 */
 function accept(value:PersonnelProfile){profile.value=value;profileFieldRestrictions.value=value.person.fieldRestrictions??{};Object.assign(draft,{code:value.person.code,name:value.person.name,version:value.person.version,attributes:{...value.person.attributes}});baseline.value=JSON.stringify(draft);}
+/**
+ * 人员详情的可重试加载错误使用顶部浮层；无权时由正文承载状态且不提供重试。
+ * @param cause 读取失败原因，用于识别 HTTP 403。
+ * @param message 已转换的提示文案；空文案交给请求或会话流程处理。
+ */
+async function showLoadFailure(cause:unknown,message:string){
+ const denied=(cause as {response?:{status?:number}})?.response?.status===403;
+ if(denied)await presentLoadError(error,loadIssue,message,true,true);
+ else await setErrorFeedback(error,message);
+}
 /** 读取最新档案及实时准入；失败停止继续写入，保留草稿供核实，403 清空敏感正文。 */
 async function load(){
- loading.value=true;failed.value=false;loadIssue.value=undefined;
+ loading.value=true;failed.value=false;loadIssue.value=undefined;error.value="";
  try{allowed.value=await props.api.operations();if(!canRead.value){profile.value=undefined;catalog.value={organizations:[],positions:[],users:[]};geographyNodes.value=[];Object.assign(draft,emptyPersonnel());baseline.value=JSON.stringify(draft);return;}profileFieldRestrictions.value=await props.api.fieldRestrictions();catalog.value=await props.api.options();geographyNodes.value=await props.api.geographyDirectory();if(id.value)accept(await props.api.read(id.value));else baseline.value=JSON.stringify(draft);}
- catch(e){failed.value=true;if((e as {response?:{status:number}})?.response?.status===403){profile.value=undefined;Object.assign(draft,emptyPersonnel());allowed.value=[];catalog.value={organizations:[],positions:[],users:[]};geographyNodes.value=[];dialog.value=false;baseline.value=JSON.stringify(draft);}await presentLoadError(error,loadIssue,props.errorText(e),true,(e as {response?:{status?:number}})?.response?.status===403);}
+ catch(e){failed.value=true;if((e as {response?:{status:number}})?.response?.status===403){profile.value=undefined;Object.assign(draft,emptyPersonnel());allowed.value=[];catalog.value={organizations:[],positions:[],users:[]};geographyNodes.value=[];dialog.value=false;baseline.value=JSON.stringify(draft);}await showLoadFailure(e,props.errorText(e));}
  finally{loading.value=false;}
 }
 /** 主动重新读取前确认丢弃未保存草稿，409 不自动重放或强行覆盖。 */
@@ -108,8 +118,7 @@ async function save(){
  catch(e){if (saved) {
    failed.value = true;
    const message = props.errorText(e);
-   await presentLoadError(error, loadIssue, message ? t("personnel.latestLoadFailed") : "", true,
-     (e as { response?: { status?: number } })?.response?.status === 403);
+   await showLoadFailure(e,message ? t("personnel.latestLoadFailed") : "");
  } else {
    await setErrorFeedback(error, props.errorText(e));
  }}finally{busy.value=false;}
@@ -133,8 +142,7 @@ async function saveDetail(){
  catch(e){if (saved) {
    failed.value = true;
    const message = props.errorText(e);
-   await presentLoadError(error, loadIssue, message ? t("personnel.latestLoadFailed") : "", true,
-     (e as { response?: { status?: number } })?.response?.status === 403);
+   await showLoadFailure(e,message ? t("personnel.latestLoadFailed") : "");
  } else {
    await setErrorFeedback(error, props.errorText(e));
  }}finally{busy.value=false;}
@@ -149,8 +157,7 @@ async function remove(row:PersonnelDetail|PersonnelAssignment){
  catch(e){if (saved) {
    failed.value = true;
    const message = props.errorText(e);
-   await presentLoadError(error, loadIssue, message ? t("personnel.latestLoadFailed") : "", true,
-     (e as { response?: { status?: number } })?.response?.status === 403);
+   await showLoadFailure(e,message ? t("personnel.latestLoadFailed") : "");
  } else {
    await setErrorFeedback(error, props.errorText(e));
  }}finally{busy.value=false;}
@@ -171,8 +178,8 @@ onBeforeUnmount(()=>window.removeEventListener("beforeunload",beforeUnload));
     <template #actions><el-button :disabled="busy" @click="back">{{t('personnel.back')}}</el-button><el-button v-if="props.mode==='edit'" v-operation="saveOperation" type="primary" :loading="busy" :disabled="!editable||!dirty" @click="save">{{t('masterData.save')}}</el-button></template>
    </PageHeader></template>
    <template #content>
-    <LoadErrorResult v-if="loadIssue" :issue="loadIssue"><template #retry><el-button :disabled="busy||loading" @click="reload">{{t('personnel.retry')}}</el-button></template></LoadErrorResult>
-    <el-result v-else-if="!loading&&!canRead" icon="warning" :title="t('masterData.noPermission')" />
+    <LoadErrorResult v-if="loadIssue" :issue="loadIssue" />
+    <el-result v-else-if="!loading&&!failed&&!canRead" icon="warning" :title="t('masterData.noPermission')" />
     <el-form v-else-if="!failed" ref="form" :model="draft" :rules="rules" label-position="top" :disabled="!editable||busy" class="detail-profile-form detail-border-label-form" @submit.prevent="save">
      <el-card v-for="group in profileGroups" :key="group.key" shadow="never" class="detail-section" :body-style="group.key==='details'&&!detailsExpanded?{padding:'0'}:undefined">
       <template #header><div class="detail-section-heading"><h2>{{group.title}}</h2><el-button v-if="group.key==='details'" text :title="t(detailsExpanded?'personnel.collapseDetails':'personnel.expandDetails')" :aria-label="t(detailsExpanded?'personnel.collapseDetails':'personnel.expandDetails')" :aria-expanded="detailsExpanded" aria-controls="personnel-profile-details" @click="detailsExpanded=!detailsExpanded"><AppIcon :name="detailsExpanded?'arrowUp':'arrowDown'" :size="18" /></el-button></div></template>

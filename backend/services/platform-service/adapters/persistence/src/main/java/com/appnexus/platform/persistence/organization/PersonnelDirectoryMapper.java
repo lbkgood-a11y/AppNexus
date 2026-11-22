@@ -29,46 +29,57 @@ public interface PersonnelDirectoryMapper {
 
  /** 固定人员关系SQL；操作、租户、人员及组织有效性由公开端口复核，不复制授权规则。 */
  @Select("SELECT BIN_TO_UUID(id) id,BIN_TO_UUID(organization_id) org,is_primary,starts_on,ends_on,enabled,remarks FROM tenant_person_organization WHERE tenant_id=UUID_TO_BIN(#{p0}) AND person_id=UUID_TO_BIN(#{p1})")
+ @com.appnexus.persistence.mybatis.GuardedScope(resource="masterdata.person",tenant="p0",recordId="p1",actions="read")
  List<Map<String,Object>> statement5(@Param("p0") Object p0,@Param("p1") Object p1);
 
  /** 固定人员关系SQL；操作、租户、人员及组织有效性由公开端口复核，不复制授权规则。 */
  @Select("SELECT BIN_TO_UUID(a.id) id,BIN_TO_UUID(a.position_id) pos,BIN_TO_UUID(p.organization_id) org,a.starts_at,a.ends_at,a.enabled,a.remarks FROM tenant_person_position a JOIN tenant_organization_position p ON p.tenant_id=a.tenant_id AND p.id=a.position_id WHERE a.tenant_id=UUID_TO_BIN(#{p0}) AND a.person_id=UUID_TO_BIN(#{p1})")
+ @com.appnexus.persistence.mybatis.GuardedScope(resource="masterdata.person",tenant="p0",recordId="p1",actions="read")
  List<Map<String,Object>> statement6(@Param("p0") Object p0,@Param("p1") Object p1);
 
  /** 固定人员关系SQL；操作、租户、人员及组织有效性由公开端口复核，不复制授权规则。 */
  @Update("UPDATE tenant_person_organization SET is_primary=FALSE,version=version+1 WHERE tenant_id=UUID_TO_BIN(#{p0}) AND person_id=UUID_TO_BIN(#{p1}) AND is_primary=TRUE")
+ @com.appnexus.persistence.mybatis.GuardedScope(resource="masterdata.person",tenant="p0",recordId="p1",actions={"detail_create","detail_update"})
  int statement7(@Param("p0") Object p0,@Param("p1") Object p1);
 
  /** 固定人员关系SQL；操作、租户、人员及组织有效性由公开端口复核，不复制授权规则。 */
  @Insert("INSERT INTO tenant_person_organization(tenant_id,id,person_id,organization_id,is_primary,starts_on,ends_on,enabled,remarks) VALUES(UUID_TO_BIN(#{p0}),UUID_TO_BIN(#{p1}),UUID_TO_BIN(#{p2}),UUID_TO_BIN(#{p3}),#{p4},NULLIF(#{p5},''),NULLIF(#{p6},''),#{p7},#{p8})")
+ @com.appnexus.persistence.mybatis.GuardedScope(resource="masterdata.person",tenant="p0",recordId="p2",actions="detail_create")
  int statement8(@Param("p0") Object p0,@Param("p1") Object p1,@Param("p2") Object p2,@Param("p3") Object p3,@Param("p4") Object p4,@Param("p5") Object p5,@Param("p6") Object p6,@Param("p7") Object p7,@Param("p8") Object p8);
 
  /** 固定人员关系SQL；操作、租户、人员及组织有效性由公开端口复核，不复制授权规则。 */
  @Update("UPDATE tenant_person_organization SET organization_id=UUID_TO_BIN(#{p0}),is_primary=#{p1},starts_on=NULLIF(#{p2},''),ends_on=NULLIF(#{p3},''),enabled=#{p4},remarks=#{p5},version=version+1 WHERE tenant_id=UUID_TO_BIN(#{p6}) AND person_id=UUID_TO_BIN(#{p7}) AND id=UUID_TO_BIN(#{p8})")
+ @com.appnexus.persistence.mybatis.GuardedScope(resource="masterdata.person",tenant="p6",recordId="p7",actions="detail_update")
  int statement9(@Param("p0") Object p0,@Param("p1") Object p1,@Param("p2") Object p2,@Param("p3") Object p3,@Param("p4") Object p4,@Param("p5") Object p5,@Param("p6") Object p6,@Param("p7") Object p7,@Param("p8") Object p8);
 
  /** 固定人员关系SQL；操作、租户、人员及组织有效性由公开端口复核，不复制授权规则。 */
  @Insert("INSERT INTO tenant_person_position(tenant_id,id,person_id,position_id,starts_at,ends_at,enabled,remarks) VALUES(UUID_TO_BIN(#{p0}),UUID_TO_BIN(#{p1}),UUID_TO_BIN(#{p2}),UUID_TO_BIN(#{p3}),#{p4},NULLIF(#{p5},''),#{p6},#{p7})")
+ @com.appnexus.persistence.mybatis.GuardedScope(resource="masterdata.person",tenant="p0",recordId="p2",actions="detail_create")
  int statement10(@Param("p0") Object p0,@Param("p1") Object p1,@Param("p2") Object p2,@Param("p3") Object p3,@Param("p4") Object p4,@Param("p5") Object p5,@Param("p6") Object p6,@Param("p7") Object p7);
 
  /** 固定人员关系SQL；操作、租户、人员及组织有效性由公开端口复核，不复制授权规则。 */
- @Delete("DELETE FROM tenant_person_leader WHERE tenant_id=UUID_TO_BIN(#{p0}) AND assignment_id=UUID_TO_BIN(#{p1})")
- int statement11(@Param("p0") Object p0,@Param("p1") Object p1);
+ @Delete("DELETE l FROM tenant_person_leader l JOIN tenant_person_position a ON a.tenant_id=l.tenant_id AND a.id=l.assignment_id WHERE a.tenant_id=UUID_TO_BIN(#{p0}) AND a.person_id=UUID_TO_BIN(#{p1}) AND a.id=UUID_TO_BIN(#{p2})")
+ @com.appnexus.persistence.mybatis.GuardedScope(resource="masterdata.person",tenant="p0",recordId="p1",actions="detail_update")
+ int statement11(@Param("p0") Object p0,@Param("p1") Object p1,@Param("p2") Object p2);
 
  /** 固定人员关系SQL；操作、租户、人员及组织有效性由公开端口复核，不复制授权规则。 */
  @Update("UPDATE tenant_person_position SET position_id=UUID_TO_BIN(#{p0}),starts_at=#{p1},ends_at=NULLIF(#{p2},''),enabled=#{p3},remarks=#{p4},version=version+1 WHERE tenant_id=UUID_TO_BIN(#{p5}) AND person_id=UUID_TO_BIN(#{p6}) AND id=UUID_TO_BIN(#{p7})")
+ @com.appnexus.persistence.mybatis.GuardedScope(resource="masterdata.person",tenant="p5",recordId="p6",actions="detail_update")
  int statement12(@Param("p0") Object p0,@Param("p1") Object p1,@Param("p2") Object p2,@Param("p3") Object p3,@Param("p4") Object p4,@Param("p5") Object p5,@Param("p6") Object p6,@Param("p7") Object p7);
 
  /** 固定人员关系SQL；操作、租户、人员及组织有效性由公开端口复核，不复制授权规则。 */
  @Delete("DELETE l FROM tenant_person_leader l JOIN tenant_person_position a ON a.tenant_id=l.tenant_id AND a.id=l.assignment_id WHERE a.tenant_id=UUID_TO_BIN(#{p0}) AND a.person_id=UUID_TO_BIN(#{p1}) AND a.id=UUID_TO_BIN(#{p2})")
+ @com.appnexus.persistence.mybatis.GuardedScope(resource="masterdata.person",tenant="p0",recordId="p1",actions="detail_delete")
  int statement13(@Param("p0") Object p0,@Param("p1") Object p1,@Param("p2") Object p2);
 
  /** 固定人员关系SQL；操作、租户、人员及组织有效性由公开端口复核，不复制授权规则。 */
  @Delete("DELETE FROM tenant_person_organization WHERE tenant_id=UUID_TO_BIN(#{p0}) AND person_id=UUID_TO_BIN(#{p1}) AND id=UUID_TO_BIN(#{p2})")
+ @com.appnexus.persistence.mybatis.GuardedScope(resource="masterdata.person",tenant="p0",recordId="p1",actions="detail_delete")
  int statement14(@Param("p0") Object p0,@Param("p1") Object p1,@Param("p2") Object p2);
 
  /** 固定删除岗位任职，不允许传入表名；调用方已清理负责人关系且处于同一事务。 */
  @Delete("DELETE FROM tenant_person_position WHERE tenant_id=UUID_TO_BIN(#{tenant}) AND person_id=UUID_TO_BIN(#{person}) AND id=UUID_TO_BIN(#{id})")
+ @com.appnexus.persistence.mybatis.GuardedScope(resource="masterdata.person",tenant="tenant",recordId="person",actions="detail_delete")
  int deletePosition(@Param("tenant") String tenant,@Param("person") String person,@Param("id") String id);
 
  /** 固定人员关系SQL；操作、租户、人员及组织有效性由公开端口复核，不复制授权规则。 */

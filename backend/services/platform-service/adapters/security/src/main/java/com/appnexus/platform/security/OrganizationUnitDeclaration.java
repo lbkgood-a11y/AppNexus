@@ -26,9 +26,19 @@ public final class OrganizationUnitDeclaration implements BusinessObjects.Provid
                 DedicatedOperations.operation("OrganizationUnit", "setLeader", "组织负责人：设置", "Update organization units", "organization.unit:update",
                         new PageOperation("organization/index", "/organization/manage", "组织负责人：设置", "Update organization units", "PUT", "/api/organization/domain/leaders")));
         var scopes=new TreeMap<String,Set<String>>();
-        operations.forEach(op->scopes.put(op.operationCode(),op.permissionCode().equals("organization.unit:create")?Set.of("ALL"):Set.of("ALL","ORGANIZATION","ORGANIZATION_SUBTREE")));
-        var access=new DataAccess("TENANT",List.of(new DataResource("organization.unit","","组织单元","Organization unit",List.of())),scopes);
-        return new Descriptor("OrganizationUnit","组织单元","Organization unit","organization",2,Category.MASTER_DATA,List.of(),operations,access);
+        var scopedOperations=new TreeSet<String>();
+        for(var op:operations){
+            if(!op.operationCode().equals("createFlat")){
+                if(!op.operationCode().equals("create"))scopedOperations.add(op.operationCode());
+                scopes.put(op.operationCode(),Set.of("ALL","ORGANIZATION","ORGANIZATION_SUBTREE","RULES"));
+            }else scopes.put(op.operationCode(),Set.of("ALL"));
+        }
+        var access=new DataAccess("TENANT",List.of(new DataResource("organization.unit","","组织单元","Organization unit",List.of())),scopes,
+            List.of(new DataDimension("organizationId","组织单元","Organization unit","UUID",Set.of("EQ","IN"),
+                "ORGANIZATION","",scopedOperations,Set.of("CURRENT_ORGANIZATION","CURRENT_ORGANIZATION_SUBTREE")),
+                new DataDimension("parentOrganizationId","目标上级组织","Target parent organization","UUID",Set.of("EQ","IN"),
+                "ORGANIZATION","",Set.of("create"),Set.of("CURRENT_ORGANIZATION","CURRENT_ORGANIZATION_SUBTREE"))));
+        return new Descriptor("OrganizationUnit","组织单元","Organization unit","organization",6,Category.MASTER_DATA,List.of(),operations,access);
     }
     /** 只保留已接通的直接执行；页面控制不能创建免鉴权入口，也不提供未接通审批或打印。 */
     private static Operation operation(String code,String zh,String permission,String method,String path){

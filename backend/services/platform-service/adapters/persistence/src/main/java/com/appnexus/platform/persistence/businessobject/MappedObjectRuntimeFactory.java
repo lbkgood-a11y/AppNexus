@@ -11,8 +11,12 @@ import org.springframework.stereotype.Component;
 @Component
 public final class MappedObjectRuntimeFactory implements ObjectRecordRuntimeFactory,ObjectRecordStore {
   private final ObjectRecordMapper mapper;
-  /** @param mapper 与对象用例和公共执行器共用事务的数据源 */
-  public MappedObjectRuntimeFactory(ObjectRecordMapper mapper){this.mapper=mapper;}
+  private final com.appnexus.platform.authorization.ScopedWriteGate writes;
+  /** @param mapper 对象执行器固定存储 @param writes 绑定原申请人和对象键的事务许可 */
+  public MappedObjectRuntimeFactory(ObjectRecordMapper mapper,com.appnexus.platform.authorization.ScopedWriteGate writes){
+    this.mapper=mapper;
+    this.writes=writes;
+  }
   @Override public BusinessObjectRuntime create(BusinessObjects.Provider provider,ObjectRecordMapping mapping,Hook hook){return BusinessObjectUseCases.mappedRuntime(provider,mapping,this,hook);}
   private static String select(ObjectRecordMapping.Column column){return column.encoding()==ObjectRecordMapping.Encoding.BINARY_UUID?"BIN_TO_UUID("+column.name()+")":column.name();}
   private static String parameter(ObjectRecordMapping.Column column){return column.encoding()==ObjectRecordMapping.Encoding.BINARY_UUID?"UUID_TO_BIN(?)":"?";}
@@ -29,6 +33,10 @@ public final class MappedObjectRuntimeFactory implements ObjectRecordRuntimeFact
     return row;
   }
   @Override public void transition(ObjectRecordMapping m,BusinessObjects.Context c,String id,long version,String from,String to,String invocation,String instance){
+    // 原功能和审批实例准入由执行器完成；在同事务以权威记录复核申请人，不采用请求提供的所有者。
+    var rows=mapper.read(m,c,id,true);
+    writes.authorizeServiceOperation(UUID.fromString(c.tenantId()),"business-object.record:transition",
+        List.of(id,c.actorId()),()->rows.size()==1&&Objects.equals(c.actorId(),rows.getFirst().get("applicant")));
     int changed=mapper.transition(m,c,id,version,from,to,invocation,instance);
     if(changed!=1)throw new BusinessObjects.Rejection(409,"BUSINESS_OBJECT_STATE_CONFLICT");
     if(invocation!=null&&m.receipt()!=null){var r=m.receipt();

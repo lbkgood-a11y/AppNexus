@@ -47,6 +47,7 @@ public interface PrintOutputsMapper extends com.appnexus.contracts.businessobjec
 
  /** 固定业务语句10；准入、参数规则、聚合锁及事务由原用例负责，所有值绑定。 */
  @Insert("INSERT INTO print_output_request(tenant_id,id,owner,request_id,payload_hash,mode,job_id,device_id,copies) VALUES(UUID_TO_BIN(#{p0}),UUID_TO_BIN(#{p1}),#{p2},UUID_TO_BIN(#{p3}),#{p4},#{p5},UUID_TO_BIN(#{p6}),UUID_TO_BIN(#{p7}),#{p8})")
+ @com.appnexus.persistence.mybatis.GuardedScope(tenant="p0",serviceOperation="print.job:submit",serviceKeys={"p1","p2","p6"})
  int createOutput(@Param("p0") Object p0,@Param("p1") Object p1,@Param("p2") Object p2,@Param("p3") Object p3,@Param("p4") Object p4,@Param("p5") Object p5,@Param("p6") Object p6,@Param("p7") Object p7,@Param("p8") Object p8);
 
  /** 固定业务语句11；准入、参数规则、聚合锁及事务由原用例负责，所有值绑定。 */
@@ -67,5 +68,6 @@ public interface PrintOutputsMapper extends com.appnexus.contracts.businessobjec
 
  /** 固定业务语句15；准入、参数规则、聚合锁及事务由原用例负责，所有值绑定。 */
  @Update("UPDATE print_output_request SET confirmed_job_id=UUID_TO_BIN(#{p0}) WHERE tenant_id=UUID_TO_BIN(#{p1}) AND id=UUID_TO_BIN(#{p2})")
+ @com.appnexus.persistence.mybatis.GuardedScope(tenant="p1",serviceOperation="print.job:submit",serviceKeys={"p2","p0"})
  int confirmOutput(@Param("p0") Object p0,@Param("p1") Object p1,@Param("p2") Object p2);
 }

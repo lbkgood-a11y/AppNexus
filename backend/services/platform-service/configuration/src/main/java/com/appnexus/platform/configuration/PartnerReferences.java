@@ -4,6 +4,8 @@ import com.appnexus.platform.configuration.port.*;
 /** 合作方字典引用公开用例；可信客户端、固定租户和 scope 由统一认证边界建立。 */
 public interface PartnerReferences {
  /** 外部字典引用的数据权限资源标识，记录始终属于固定租户及客户端。 */
+ /** 合作方读写引用使用同一原 OAuth 范围。 */
+ String REQUIRED_SCOPE = "dictionary-references:write";
  String RESOURCE = "configuration.dictionary.reference";
  /** 权威机密客户端上下文；authorityVersion 为已验证 Token 的授权版本，不接受请求体指定。 */
  record Context(String client,String tenant,Object authorityVersion) {}

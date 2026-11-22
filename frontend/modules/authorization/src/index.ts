@@ -26,6 +26,8 @@ export interface DataRecordSearch {
  resources:readonly string[];
  /** 关键词为名称或编码，最长200字符；page从1开始，每页20条，total为同一受控查询总数。 */
  search:(resource:string,query:string,page:number)=>Promise<{items:AuthorizationOption[];total:number}>;
+ /** 仅用于回显已保存的记录名，沿用对应业务详情授权；未找到时保留规则中的记录 ID。 */
+ resolve?:(resource:string,id:string)=>Promise<AuthorizationOption|undefined>;
 }
 /** 当前管理域的角色策略模板摘要，不携带业务原值。 */
 export interface PolicyTemplate { id: string; name: string }
@@ -35,11 +37,15 @@ export interface AuthorizationMenu{id:string;parentId:string|null;titleZh:string
 /** 模板能力仅在真实后端已接入的管理域提供；应用使用当前角色版本与原因。 */
 /** 代码声明只读投影；资源能力版本不由管理员填写，操作引用已有功能目录。 */
 /** 受控条件维度，来源于业务对象代码声明，不允许输入 SQL 字段。 */
-export interface DataDimension{field:string;nameZh:string;nameEn:string;valueType:"UUID"|"TEXT";operators:("EQ"|"IN")[]}
+export interface DataDimension{field:string;nameZh:string;nameEn:string;valueType:"UUID"|"TEXT";operators:("EQ"|"IN")[];source?:"TEXT"|"ORGANIZATION"|"DICTIONARY"|"ACCOUNT"|"PERSON";dictionary?:string;operationCodes?:string[];parameters?:DataConditionParameter[]}
+/** 动态参数是已登记的上下文来源，保存时不携带身份 UUID。 */
+export type DataConditionParameter="CURRENT_ACCOUNT"|"CURRENT_PERSON"|"CURRENT_ORGANIZATION"|"CURRENT_ORGANIZATION_SUBTREE";
 /** 同条规则内记录与所有条件取 AND；多条规则取 OR，空范围必须显式 allRecords。 */
-export interface DataGrantRule{subjectType:"ROLE_MEMBERS"|"MEMBER"|"ORGANIZATION";subjectIds:string[];recordIds:string[];conditions:{field:string;operator:"EQ"|"IN";values:string[]}[];allRecords:boolean}
-export interface DataAccessDeclaration{objectType:string;version:number;dimensions?:DataDimension[];resources:{resource:string;parentResource:string;nameZh:string;nameEn:string;fields:FieldDescriptor[]}[]}
-export interface AuthorizationCenterApi{recordSearch?:DataRecordSearch;declarations?:()=>Promise<DataAccessDeclaration[]>;templates?:{list:(role:string)=>Promise<PolicyTemplate[]>;save:(role:string,name:string)=>Promise<PolicyTemplate>;apply:(role:string,template:string,version:number,reason:string)=>Promise<AuthorizationAssignment>};menus:()=>Promise<AuthorizationMenu[]>;permissions:()=>Promise<PermissionItem[]>;metadata:()=>Promise<ScopeSupport[]>;fields:()=>Promise<FieldDescriptor[]>;assignment:(roleId:string)=>Promise<AuthorizationAssignment>;replace:(roleId:string,input:{ids:string[];dataPolicies:DataPolicy[];fieldPolicies:FieldPolicy[];version:number;reason:string;dataAccessVersion?:string})=>Promise<AuthorizationAssignment>;organizationOptions?:()=>Promise<AuthorizationOption[]>}
+export interface DataGrantRule{subjectType:"ROLE_MEMBERS"|"MEMBER"|"ORGANIZATION";subjectIds:string[];recordIds:string[];conditions:{field:string;operator:"EQ"|"IN";values:string[];parameter?:DataConditionParameter|null}[];allRecords:boolean}
+/** 已声明字典的候选；禁用项只用于回显原策略。 */
+export type DataConditionOptions=Record<string,{value:string;name:string;enabled:boolean}[]>;
+export interface DataAccessDeclaration{objectType:string;version:number;operations?:{operationId:string;permissionCode:string}[];dimensions?:DataDimension[];resources:{resource:string;parentResource:string;nameZh:string;nameEn:string;fields:FieldDescriptor[]}[]}
+export interface AuthorizationCenterApi{recordSearch?:DataRecordSearch;conditionOptions?:()=>Promise<DataConditionOptions>;declarations?:()=>Promise<DataAccessDeclaration[]>;templates?:{list:(role:string)=>Promise<PolicyTemplate[]>;save:(role:string,name:string)=>Promise<PolicyTemplate>;apply:(role:string,template:string,version:number,reason:string)=>Promise<AuthorizationAssignment>};menus:()=>Promise<AuthorizationMenu[]>;permissions:()=>Promise<PermissionItem[]>;metadata:()=>Promise<ScopeSupport[]>;fields:()=>Promise<FieldDescriptor[]>;assignment:(roleId:string)=>Promise<AuthorizationAssignment>;replace:(roleId:string,input:{ids:string[];dataPolicies:DataPolicy[];fieldPolicies:FieldPolicy[];version:number;reason:string;dataAccessVersion?:string})=>Promise<AuthorizationAssignment>;organizationOptions?:()=>Promise<AuthorizationOption[]>}
 
 /** 成员角色分支；功能持续跟随角色，expiresAt 为 UTC ISO 时间或 null（长期）。 */
 /** 成员范围模式：true 持续继承角色；false 使用独立配置；修改须显式保存。 */
@@ -77,4 +83,13 @@ export interface OperationDiagnosis {
  data:{permission:string;resource:string;scope:string;organizations:string[];fields:Record<string,string>}[];
  /** 由真实导航准入规则检查的页面结果；可访问与菜单可见分别表达。 */
  pages:{page:string;path:string;accessible:boolean;visible:boolean;reasons:string[]}[];
+}
+
+
+/** 从授权目录选出本资源、本操作实际接通的条件字段。 */
+export function conditionDimensions(declarations:DataAccessDeclaration[],resource:string|undefined,permissionCode:string|undefined):DataDimension[]{
+ const declaration=declarations.find(item=>item.resources[0]?.resource===resource);
+ return declaration?.dimensions?.filter(dimension=>!dimension.operationCodes?.length||
+   declaration.operations?.some(operation=>operation.permissionCode===permissionCode&&
+     dimension.operationCodes?.some(code=>operation.operationId===declaration.objectType+"."+code)))??[];
 }

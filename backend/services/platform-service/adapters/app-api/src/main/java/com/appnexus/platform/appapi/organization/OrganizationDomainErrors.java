@@ -12,6 +12,8 @@ import org.springframework.web.bind.annotation.*;
 /** 将组织领域约束转换为稳定错误码，避免向客户端暴露数据库细节或内部异常文本。 */
 @RestControllerAdvice(assignableTypes=OrganizationDomainController.class)
 public class OrganizationDomainErrors {
+ /** 组织行范围拒绝统一返回 403，不暴露不可见组织或内部计划细节。 */
+ @ExceptionHandler(SecurityException.class) ResponseEntity<ProblemDetail> denied(){return response(HttpStatus.FORBIDDEN,"ORGANIZATION_DATA_ACCESS_DENIED","当前操作不在已授权的组织范围内");}
  @ExceptionHandler(NoSuchElementException.class) ResponseEntity<ProblemDetail> missing(){return response(HttpStatus.NOT_FOUND,"ORGANIZATION_OBJECT_NOT_FOUND","组织对象不存在或不属于当前租户");}
  @ExceptionHandler(DuplicateKeyException.class) ResponseEntity<ProblemDetail> duplicate(){return response(HttpStatus.CONFLICT,"ORGANIZATION_CODE_CONFLICT","编码或关系已经存在");}
  @ExceptionHandler(DataIntegrityViolationException.class) ResponseEntity<ProblemDetail> integrity(){return response(HttpStatus.CONFLICT,"ORGANIZATION_REFERENCE_CONFLICT","组织对象仍被引用或关联状态已变化");}

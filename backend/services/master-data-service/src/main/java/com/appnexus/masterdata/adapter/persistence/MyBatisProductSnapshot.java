@@ -10,19 +10,19 @@ public final class MyBatisProductSnapshot {
  private final BiFunction<VerifiedTenantContext,Map<String,Object>,List<String>> issues;
  /** @param mapper 同一事务固定快照映射 @param records 父记录端口 @param issues 既有只读完整性计算协作 */
  public MyBatisProductSnapshot(ProductSnapshotMapper mapper,ProductRepository records,BiFunction<VerifiedTenantContext,Map<String,Object>,List<String>> issues){this.mapper=mapper;this.records=records;this.issues=issues;}
- /** @param c 已授权可信主体 @param id 当前租户商品UUID @return 原字段和四审计聚合投影，不作客户端可信写入事实 */
- public Map<String,Object> load(VerifiedTenantContext c,String id){
-  var m=records.load(c,id,false);
-  m.put("measurementConfig",mapper.measurement(tenantBytes(c),id));
-  m.put("approvalPending",mapper.approvalPending(tenantBytes(c),id));
-  m.put("specifications",mapper.specifications(tenantBytes(c),id));
-  m.put("specificationValues",mapper.specificationValues(tenantBytes(c),id));
-  m.put("specificationChoices",mapper.specificationChoices(tenantBytes(c),id));
-  m.put("skus",mapper.skus(tenantBytes(c),id));
-  m.put("components",mapper.components(tenantBytes(c),id));
-  m.put("images",mapper.images(tenantBytes(c),id));
-  m.put("values",mapper.values(tenantBytes(c),id));
-  m.put("choices",mapper.choices(tenantBytes(c),id));
+ /** @param c 已授权可信主体 @param id 当前租户商品UUID @param access 原读取范围，写事务中可空 @return 原字段和四审计聚合投影，不作客户端可信写入事实 */
+ public Map<String,Object> load(VerifiedTenantContext c,String id,com.appnexus.platform.authorization.RowAccessControl.Predicate access){
+  var m=records.load(c,id,false,access);
+  m.put("measurementConfig",mapper.measurement(tenantBytes(c),id,access));
+  m.put("approvalPending",mapper.approvalPending(tenantBytes(c),id,access));
+  m.put("specifications",mapper.specifications(tenantBytes(c),id,access));
+  m.put("specificationValues",mapper.specificationValues(tenantBytes(c),id,access));
+  m.put("specificationChoices",mapper.specificationChoices(tenantBytes(c),id,access));
+  m.put("skus",mapper.skus(tenantBytes(c),id,access));
+  m.put("components",mapper.components(tenantBytes(c),id,access));
+  m.put("images",mapper.images(tenantBytes(c),id,access));
+  m.put("values",mapper.values(tenantBytes(c),id,access));
+  m.put("choices",mapper.choices(tenantBytes(c),id,access));
   var slots=new LinkedHashMap<String,Object>();for(String purpose:List.of("BASIC","SPEC","QUALITY","EXTENSION"))slots.put(purpose,null);
   if(m.get("configId")!=null){
    m.put("categoryConfiguration",mapper.categoryConfiguration(tenantBytes(c),m.get("configId")));

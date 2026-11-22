@@ -52,6 +52,12 @@ class LeavePocTest {
     try(var connection=source.getConnection()){ScriptUtils.executeSqlScript(connection,new ClassPathResource("db/migration/V129__object_approval_receipts.sql"));}
     var manager = new DataSourceTransactionManager(source);
     WorkflowPlatform platform = new WorkflowPlatform() {
+      @Override public void authorizeTaskWrite(WorkflowContext context,String taskId){
+        if(!active(context.tenantId(),context.actorId()))throw new SecurityException("WORKFLOW_DENIED");
+      }
+      @Override public void authorizeRecordWrite(WorkflowContext c,String permission,String... keys){
+        if(!allowed(c,permission))throw new SecurityException("LEAVE_ACCESS_DENIED");
+      }
       public Map<String,Object> projectData(WorkflowContext context,String resource,Map<String,Object> values){return Map.copyOf(values);}
       /** 测试平台显式核验节点选人；正式平台的人员任职判定由集成测试覆盖。 */
       public boolean candidate(WorkflowContext c,String org,String kind,String reference){return resolve(c.tenantId(),org,kind,reference).contains(c.actorId());}
@@ -66,7 +72,7 @@ class LeavePocTest {
       }
     };
     service = new LeavePocService(new com.appnexus.leave.adapter.persistence.MyBatisLeaveRepository(mapper(com.appnexus.leave.adapter.persistence.LeaveRecordMapper.class)),new com.appnexus.leave.adapter.transaction.SpringLeaveTransaction(manager),platform,()->runtime);
-    var declaration=new com.appnexus.leave.adapter.integration.LeaveDeclaration(service);declaration.runtimeFactory(new com.appnexus.platform.persistence.businessobject.MappedObjectRuntimeFactory(mapper(com.appnexus.platform.persistence.businessobject.ObjectRecordMapper.class)));
+    var declaration=new com.appnexus.leave.adapter.integration.LeaveDeclaration(service);declaration.runtimeFactory(new com.appnexus.platform.persistence.businessobject.MappedObjectRuntimeFactory(mapper(com.appnexus.platform.persistence.businessobject.ObjectRecordMapper.class),org.mockito.Mockito.mock(com.appnexus.platform.authorization.ScopedWriteGate.class)));
     var bridge = new WorkflowBridge();
     engine = new WorkflowEngineConfiguration().workflowProcessEngine(source, manager, bridge);
     approval=new ObjectWorkflowAdapter(declaration,com.appnexus.leave.api.LeaveOperations.SUBMIT_OPERATION,platform,()->runtime,manager);

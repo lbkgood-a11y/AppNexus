@@ -1,4 +1,5 @@
 package com.appnexus.masterdata.application.product;
+import com.appnexus.platform.authorization.RowAccessControl.Predicate;
 import java.util.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -10,20 +11,26 @@ public interface ProductStructureRepository {
   * @param tenant 可信租户UUID文本，必填；不能客户端指定
   * @param product 已授权当前租户父商品UUID
   * @return 原固定投影或受影响行数；写入失败必须由用例整笔回滚
+  * @param product 已由调用用例校验的父商品 UUID
+  * @param access 由统一执行器按原操作生成的父商品范围
   */
- List<Map<String,Object>> specifications(String tenant,String product);
+ List<Map<String,Object>> specifications(String tenant,String product,Predicate access);
  /** skus固定存取；父CAS、结构正文及审计参与同一用例事务。
   * @param tenant 可信租户UUID文本，必填；不能客户端指定
   * @param product 已授权当前租户父商品UUID
   * @return 原固定投影或受影响行数；写入失败必须由用例整笔回滚
+  * @param product 已由调用用例校验的父商品 UUID
+  * @param access 由统一执行器按原操作生成的父商品范围
   */
- List<Map<String,Object>> skus(String tenant,String product);
+ List<Map<String,Object>> skus(String tenant,String product,Predicate access);
  /** components固定存取；父CAS、结构正文及审计参与同一用例事务。
   * @param tenant 可信租户UUID文本，必填；不能客户端指定
   * @param product 已授权当前租户父商品UUID
   * @return 原固定投影或受影响行数；写入失败必须由用例整笔回滚
+  * @param product 已由调用用例校验的父商品 UUID
+  * @param access 由统一执行器按原操作生成的父商品范围
   */
- List<Map<String,Object>> components(String tenant,String product);
+ List<Map<String,Object>> components(String tenant,String product,Predicate access);
  /** standardDefinitions固定存取；父CAS、结构正文及审计参与同一用例事务。
   * @param tenant 可信租户UUID文本，必填；不能客户端指定
   * @param configuration 当前固定发布配置UUID，不自动升级
@@ -66,9 +73,10 @@ public interface ProductStructureRepository {
   * @param option 固定修订下启用选项UUID；非标准枚举时null
   * @param creator 可信原创建账号UUID，不覆盖已有创建信息
   * @param updater 本次可信实际账号UUID，与业务同事务
+  * @param product 已取得同事务写许可的父商品 UUID，SQL 同时验证子记录从属关系
   * @return 原固定投影或受影响行数；写入失败必须由用例整笔回滚
   */
- int createStandardValue(String id,String tenant,String specification,String configuration,String item,String revision,String type,Long integerValue,BigDecimal decimalValue,Boolean booleanValue,String option,String creator,String updater);
+ int createStandardValue(String id,String tenant,String specification,String configuration,String item,String revision,String type,Long integerValue,BigDecimal decimalValue,Boolean booleanValue,String option,String creator,String updater,String product);
  /** customDefinitions固定存取；父CAS、结构正文及审计参与同一用例事务。
   * @param tenant 可信租户UUID文本，必填；不能客户端指定
   * @param configuration 当前固定发布配置UUID，不自动升级
@@ -97,9 +105,10 @@ public interface ProductStructureRepository {
   * @param booleanValue 真实布尔值；仅BOOLEAN填写，其他类型null
   * @param creator 可信原创建账号UUID，不覆盖已有创建信息
   * @param updater 本次可信实际账号UUID，与业务同事务
+  * @param product 已取得同事务写许可的父商品 UUID，SQL 同时验证子记录从属关系
   * @return 原固定投影或受影响行数；写入失败必须由用例整笔回滚
   */
- int createCustomValue(String id,String tenant,String specification,String configuration,String item,String revision,String type,String text,LocalDate dateValue,Long integerValue,BigDecimal decimalValue,Boolean booleanValue,String creator,String updater);
+ int createCustomValue(String id,String tenant,String specification,String configuration,String item,String revision,String type,String text,LocalDate dateValue,Long integerValue,BigDecimal decimalValue,Boolean booleanValue,String creator,String updater,String product);
  /** createChoice固定存取；父CAS、结构正文及审计参与同一用例事务。
   * @param id 当前操作资源UUID，必须在已授权父聚合内
   * @param tenant 可信租户UUID文本，必填；不能客户端指定
@@ -110,21 +119,26 @@ public interface ProductStructureRepository {
   * @param customText 原模板允许的枚举自定义文本，非自定义选择时null，不新建选项
   * @param creator 可信原创建账号UUID，不覆盖已有创建信息
   * @param updater 本次可信实际账号UUID，与业务同事务
+  * @param product 已取得同事务写许可的父商品 UUID，SQL 同时验证子记录从属关系
   * @return 原固定投影或受影响行数；写入失败必须由用例整笔回滚
   */
- int createChoice(String id,String tenant,String value,String revision,String type,String option,String customText,String creator,String updater);
+ int createChoice(String id,String tenant,String value,String revision,String type,String option,String customText,String creator,String updater,String product);
  /** specificationValues固定存取；父CAS、结构正文及审计参与同一用例事务。
   * @param tenant 可信租户UUID文本，必填；不能客户端指定
   * @param specification 同父商品规格UUID，不能跨商品引用
   * @return 原固定投影或受影响行数；写入失败必须由用例整笔回滚
+  * @param product 已由调用用例校验的父商品 UUID
+  * @param access 由统一执行器按原操作生成的父商品范围
   */
- List<Map<String,Object>> specificationValues(String tenant,String specification);
+ List<Map<String,Object>> specificationValues(String tenant,String specification,String product,Predicate access);
  /** customChoices固定存取；父CAS、结构正文及审计参与同一用例事务。
   * @param tenant 可信租户UUID文本，必填；不能客户端指定
   * @param value 同一规格属性值UUID，不能跨规格引用
   * @return 原固定投影或受影响行数；写入失败必须由用例整笔回滚
+  * @param product 已由调用用例校验的父商品 UUID
+  * @param access 由统一执行器按原操作生成的父商品范围
   */
- List<Map<String,Object>> customChoices(String tenant,String value);
+ List<Map<String,Object>> customChoices(String tenant,String value,String product,Predicate access);
  /** standardChoices固定存取；父CAS、结构正文及审计参与同一用例事务。
   * @param tenant 可信租户UUID文本，必填；不能客户端指定
   * @param option 固定修订下启用选项UUID；非标准枚举时null
@@ -178,9 +192,10 @@ public interface ProductStructureRepository {
   * @param actor 可信实际账号UUID，不能由客户端指定
   * @param tenant 可信租户UUID文本，必填；不能客户端指定
   * @param id 当前操作资源UUID，必须在已授权父聚合内
+  * @param product 已取得同事务写许可的父商品 UUID，SQL 同时验证子记录从属关系
   * @return 原固定投影或受影响行数；写入失败必须由用例整笔回滚
   */
- int updateComponent(BigDecimal quantity,long componentVersion,String actor,String tenant,String id);
+ int updateComponent(BigDecimal quantity,long componentVersion,String actor,String tenant,String id,String product);
  /** createComponent固定存取；父CAS、结构正文及审计参与同一用例事务。
   * @param id 当前操作资源UUID，必须在已授权父聚合内
   * @param tenant 可信租户UUID文本，必填；不能客户端指定
@@ -229,8 +244,9 @@ public interface ProductStructureRepository {
   * @param id 当前操作资源UUID，必须在已授权父聚合内
   * @param lock 是否持有原写事务行锁，不对客户端开放
   * @return 原固定投影或受影响行数；写入失败必须由用例整笔回滚
+  * @param access 由统一执行器按原操作生成的父商品范围
   */
- List<Map<String,Object>> parent(String tenant, String id, boolean lock);
+ List<Map<String,Object>> parent(String tenant, String id, boolean lock,Predicate access);
  /** audit固定存取；父CAS、结构正文及审计参与同一用例事务。
   * @param resource 固定结构资源枚举，不暴露数据库表名
   * @param tenant 可信租户UUID文本，必填；不能客户端指定

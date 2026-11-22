@@ -14,8 +14,7 @@ public final class MyBatisDataPolicyMetadataCatalog implements DataPolicyMetadat
         Objects.requireNonNull(scopeType,"scopeType");
         return mapper.dataPolicyMetadata(scopeType.name()).stream().filter(row ->
             !"organization.unit".equals(row.get("resource_type")) ||
-            (!"SELF".equals(row.get("scope_type")) &&
-             (!"organization.unit:create".equals(row.get("code")) || "ALL".equals(row.get("scope_type")))))
+            !"SELF".equals(row.get("scope_type")))
             .filter(row->catalog.supports((String)row.get("code"),(String)row.get("resource_type"),DataScopeAuthorization.ScopeType.valueOf((String)row.get("scope_type"))))
             .map(row->new ScopeSupport(
             UUID.fromString((String)row.get("permission_id")),(String)row.get("code"),

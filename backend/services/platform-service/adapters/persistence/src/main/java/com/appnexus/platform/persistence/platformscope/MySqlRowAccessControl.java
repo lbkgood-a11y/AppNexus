@@ -28,6 +28,7 @@ public final class MySqlRowAccessControl implements RowAccessControl {
             if(rule.allRecords())return new Predicate("",List.of());
             if(!rule.recordIds().isEmpty())terms.add(in(mapping.recordId(),rule.recordIds().stream().sorted().map(UUID::toString).toList(),parameters));
             for(var condition:rule.conditions()) {
+                if(condition.parameter()!=null)throw new SecurityException("ROW_ACCESS_PARAMETER_UNRESOLVED");
                 var column=mapping.dimensions().get(condition.field());
                 if(column==null)throw new SecurityException("ROW_ACCESS_FIELD_UNMAPPED");
                 terms.add(in(column,condition.values(),parameters));

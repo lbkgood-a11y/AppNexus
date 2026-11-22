@@ -8,19 +8,26 @@ public final class DataGrantRules {
     /** 授权主体；ROLE_MEMBERS 仍须具备本分支功能权限，组织和成员选择不额外授予角色。 */
     public enum SubjectType { ROLE_MEMBERS, MEMBER, ORGANIZATION }
     /** 首批条件运算，集合值内取 OR；不提供脚本、取反及模糊匹配。 */
-    public enum Operator { EQ, IN }
+    public enum Operator { EQ, IN, RESOLVED_IN }
+    /** 请求上下文参数；仓库保留协议标识，目录拒绝配置。 */
+    public enum Parameter { CURRENT_ACCOUNT, CURRENT_PERSON, CURRENT_ORGANIZATION, CURRENT_ORGANIZATION_SUBTREE, CURRENT_WAREHOUSE }
     /** 条件字段类型；UUID 使用二进制比较，TEXT 采用业务列原有比较语义。 */
     public enum ValueType { UUID, TEXT }
     /**
      * 受控条件。
      * @param field 目录声明的稳定业务键，禁止 SQL 列名和属性路径
      * @param operator EQ 仅一个值，IN 为 1–100 个值
-     * @param values 非空标量文本，单值 1–200 字符；UUID 另按声明类型校验
+     * @param values 固定值或执行期已展开集合；动态条件使用空集合
+     * @param parameter 动态值来源；null 表示旧有固定参数
      */
-    public record Condition(String field, Operator operator, List<String> values) {
+    public record Condition(String field, Operator operator, List<String> values,Parameter parameter) {
+        /** 固定条件沿用原协议。 */
+        public Condition(String field,Operator operator,List<String> values){this(field,operator,values,null);}
         public Condition {
             if (field == null || !field.matches("[a-z][A-Za-z0-9]*") || operator == null || values == null
-                    || values.isEmpty() || values.size() > 100 || operator == Operator.EQ && values.size() != 1
+                    || parameter!=null&&(operator!=Operator.EQ||!values.isEmpty())
+                    || parameter==null&&(values.isEmpty()||values.size()>(operator==Operator.RESOLVED_IN?10000:100)
+                        || operator==Operator.EQ&&values.size()!=1)
                     || values.stream().anyMatch(v -> v == null || v.isBlank() || v.length() > 200)) throw invalid();
             values = List.copyOf(values);
         }

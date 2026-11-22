@@ -31,7 +31,7 @@ class TenantSqlIsolationTest extends DatabaseTestSupport {
   UUID tenant=UUID.randomUUID(),foreign=UUID.randomUUID();context(tenant);
   byte[] bytes=java.nio.ByteBuffer.allocate(16).putLong(foreign.getMostSignificantBits()).putLong(foreign.getLeastSignificantBits()).array();
   try(var session=factory.openSession()){
-   assertThatThrownBy(()->session.getMapper(com.appnexus.masterdata.adapter.persistence.ProductRecordMapper.class).load(bytes,UUID.randomUUID().toString(),false))
+   assertThatThrownBy(()->session.getMapper(com.appnexus.masterdata.adapter.persistence.ProductSnapshotMapper.class).baseUnit(bytes,UUID.randomUUID().toString()))
     .hasStackTraceContaining("Mapper tenant does not match verified context");
   }finally{RequestContextHolder.resetRequestAttributes();}
  }
@@ -99,6 +99,7 @@ class TenantSqlIsolationTest extends DatabaseTestSupport {
  }
  @org.springframework.beans.factory.annotation.Autowired com.appnexus.platform.organization.port.OrganizationUnitRepository units;
  @org.springframework.beans.factory.annotation.Autowired com.appnexus.platform.organization.OrganizationStructure structure;
+ @org.springframework.beans.factory.annotation.Autowired com.appnexus.platform.persistence.organization.OrganizationUnitMapper organizationMapper;
  @org.springframework.beans.factory.annotation.Autowired com.appnexus.platform.persistence.organization.OrganizationAdministratorBootstrap organizationBootstrap;
  /** 类型树拒绝循环移动和使用中类型停用，证明核心生命周期约束在正式 MySQL 上生效。 */
  @Test void organizationTreePreservesTypeAndCycleInvariants() {
@@ -119,6 +120,14 @@ class TenantSqlIsolationTest extends DatabaseTestSupport {
   context(adminA[0],a,adminA[1]); units.create(new com.appnexus.platform.organization.OrganizationUnit(id,"部门甲"));
   context(adminB[0],b,adminB[1]); units.create(new com.appnexus.platform.organization.OrganizationUnit(id,"部门乙"));
   context(adminA[0],a,adminA[1]); assertThat(units.findAll()).containsExactly(new com.appnexus.platform.organization.OrganizationUnit(id,"部门甲"));
+  // 同租户且记录存在，直接 Mapper 调用仍必须持有调用事务的许可。
+  byte[] tenantA=java.nio.ByteBuffer.allocate(16).putLong(a.getMostSignificantBits()).putLong(a.getLeastSignificantBits()).array();
+  var missingPlan=new com.appnexus.platform.authorization.RowAccessControl.Predicate("",List.of());
+  assertThatThrownBy(()->organizationMapper.findScoped(tenantA,missingPlan))
+      .hasRootCauseMessage("SCOPED_SQL_PLAN_REQUIRED");
+  assertThatThrownBy(()->organizationMapper.rename("越过写入门禁",tenantA,id.toString()))
+      .hasRootCauseMessage("SCOPED_WRITE_PLAN_REQUIRED");
+  assertThat(units.findAll()).containsExactly(new com.appnexus.platform.organization.OrganizationUnit(id,"部门甲"));
   assertThat(units.rename(id,"部门甲-改名")).isTrue();
   context(adminB[0],b,adminB[1]); assertThat(units.findAll()).containsExactly(new com.appnexus.platform.organization.OrganizationUnit(id,"部门乙"));
   assertThat(units.delete(id)).isTrue();

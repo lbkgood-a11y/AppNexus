@@ -25,33 +25,43 @@ public final class TenantSqlInterceptor implements Interceptor {
     private final com.appnexus.platform.authorization.ScopedWriteGate scopedWrites;
     /** @param scopedWrites 与当前事务绑定的标准记录许可 */
     public TenantSqlInterceptor(com.appnexus.platform.authorization.ScopedWriteGate scopedWrites){this.scopedWrites=scopedWrites;}
-    private void verifyScope(Class<?> mapper,String id,BoundSql sql){
+    private void verifyScope(Class<?> mapper,String id,BoundSql sql,boolean select){
         String name=id.substring(id.lastIndexOf('.')+1);
         for (var method : mapper.getMethods()) {
             if (!method.getName().equals(name)) continue;
             for (var guard : method.getAnnotationsByType(GuardedScope.class)) {
-                verifyGuard(guard,sql);
+                verifyGuard(guard,sql,select);
             }
         }
     }
 
-    private void verifyGuard(GuardedScope guard,BoundSql sql){
+    private void verifyGuard(GuardedScope guard,BoundSql sql,boolean select){
         var parameters=SystemMetaObject.forObject(sql.getParameterObject());
         if(!guard.when().isEmpty()&&!guard.whenValue().equals(String.valueOf(parameters.getValue(guard.when()))))return;
-        if(!guard.predicate().isEmpty()){
-            if(!(parameters.getValue(guard.predicate()) instanceof com.appnexus.platform.authorization.RowAccessControl.Predicate predicate)
+        String binding=guard.predicate();
+        boolean readFallback=!guard.readFallback().isEmpty();
+        if(readFallback){
+            if(!select||!binding.isEmpty()||guard.recordId().isEmpty()||!guard.target().isEmpty()||guard.parentKey().length>0
+                ||!guard.serviceOperation().isEmpty()||!guard.catalogPublication().isEmpty()||guard.operationPermissions().length>0)
+                throw new SecurityException("SCOPED_SQL_PLAN_REQUIRED");
+            if(parameters.getValue(guard.readFallback())!=null)binding=guard.readFallback();
+        }
+        if(!binding.isEmpty()){
+            if(!(parameters.getValue(binding) instanceof com.appnexus.platform.authorization.RowAccessControl.Predicate predicate)
                 ||predicate.plan()==null||!guard.resource().equals(predicate.plan().resource())
                 ||!sameScopeTenant(parameters.getValue(guard.tenant()),predicate.plan().subject().tenantId())
                 ||!sql.getSql().contains(ScopedSql.fragment(predicate.sql())))throw new SecurityException("SCOPED_SQL_PLAN_REQUIRED");
             var subject=predicate.plan().subject();
-            if(guard.actions().length>0&&Arrays.stream(guard.actions()).noneMatch(action->
+            if(readFallback&&!predicate.plan().permissionCode().equals(guard.resource()+":read"))
+                throw new SecurityException("SCOPED_SQL_PLAN_REQUIRED");
+            if(!readFallback&&guard.actions().length>0&&Arrays.stream(guard.actions()).noneMatch(action->
                 predicate.plan().permissionCode().equals(guard.resource()+":"+action)))throw new SecurityException("SCOPED_SQL_PLAN_REQUIRED");
             if(RequestContextHolder.getRequestAttributes() instanceof ServletRequestAttributes request
                 &&request.getRequest().getAttribute(VerifiedTenantContext.class.getName()) instanceof VerifiedTenantContext context
                 &&(!context.accountId().equals(subject.accountId())||!context.memberId().equals(subject.memberId())
                 ||!context.tenantId().equals(subject.tenantId())))throw new SecurityException("SCOPED_SQL_SUBJECT_MISMATCH");
             for(int i=0;i<predicate.parameters().size();i++){
-                String expected=guard.predicate()+".parameters["+i+"]";
+                String expected=binding+".parameters["+i+"]";
                 if(sql.getParameterMappings().stream().noneMatch(parameter->parameter.getProperty().equals(expected)))
                     throw new SecurityException("SCOPED_SQL_BINDING_REQUIRED");
             }
@@ -86,6 +96,8 @@ public final class TenantSqlInterceptor implements Interceptor {
                 scopedWrites.requireOperation(tenant,guard.operationPermissions());
                 return;
             }
+            if(readFallback&&sql.getParameterMappings().stream().noneMatch(p->p.getProperty().equals(guard.recordId())))
+                throw new SecurityException("SCOPED_WRITE_PLAN_REQUIRED");
             var record=UUID.fromString(String.valueOf(parameters.getValue(guard.recordId())));
             if(guard.parentKey().length>0){
                 if(!guard.target().isEmpty())throw new SecurityException("SCOPED_WRITE_PLAN_REQUIRED");
@@ -141,7 +153,8 @@ public final class TenantSqlInterceptor implements Interceptor {
         Class<?> mapper=Class.forName(namespace);
         var declaration=mapper.getAnnotation(TenantScoped.class);
         var aggregate=mapper.getAnnotation(TenantAggregateScoped.class);
-        verifyScope(mapper,statement.getId(),handler.getBoundSql());
+        verifyScope(mapper,statement.getId(),handler.getBoundSql(),
+            statement.getSqlCommandType()==org.apache.ibatis.mapping.SqlCommandType.SELECT);
         var sql=handler.getBoundSql().getSql();
         String normalized=sql.trim().replaceAll("\s+"," ").toLowerCase(Locale.ROOT);
         if(declaration==null && aggregate!=null) {

@@ -106,14 +106,70 @@
 :is(.business-workspace__data,.tree-list-template__data,.template-data) .management-table:not(.is-fullscreen) > .management-table-surface { border:0; padding:0; }
 :is(.business-workspace__data,.tree-list-template__data,.template-data) .management-table:not(.is-fullscreen) > .management-table-surface > .el-card__body { padding:0; }
 
-/* 异常浮层限定在视口内；长文案及补救操作在图层内部滚动，不撑开业务页面。 */
-.app-error-feedback {
-  max-width: calc(100vw - 32px);
+/* 异常消息沿用 Element Plus 的定位和消息栈。表面与文字使用主题变量，错误色集中在图标。 */
+.el-message.app-error-feedback {
+  --el-message-bg-color: var(--el-bg-color-overlay);
+  --el-message-border-color: var(--el-border-color);
+  --el-message-close-icon-color: var(--el-text-color-secondary);
+  --el-message-close-hover-color: var(--el-text-color-primary);
+  --el-message-padding: 10px 12px;
+  max-width: min(480px, calc(100vw - 32px));
   max-height: calc(100dvh - 32px);
+  align-items: flex-start;
+  gap: 10px;
+  border-radius: var(--el-border-radius-base);
+  box-shadow: var(--el-box-shadow-light);
+}
+
+.app-error-feedback .el-message__icon,
+.app-error-feedback .el-message__closeBtn {
+  flex: none;
+  width: 24px;
+  height: 24px;
+  border-radius: var(--el-border-radius-base);
+}
+
+.app-error-feedback .el-message__icon {
+  background-color: var(--el-color-error-light-9);
+}
+
+.el-message.app-error-feedback .el-message__content {
+  min-width: 0;
+  max-height: calc(100dvh - 56px);
   overflow: auto;
+  color: var(--el-text-color-primary);
+  line-height: 24px;
+  white-space: normal;
   overflow-wrap: anywhere;
 }
-.app-error-feedback .el-message__content { min-width: 0; white-space: normal; }
+
+.el-message.app-error-feedback .el-message__closeBtn:hover {
+  background-color: var(--el-fill-color-light);
+}
+
+.el-message.app-error-feedback .el-message__closeBtn:focus-visible {
+  outline: var(--el-border-width) solid var(--el-color-primary);
+  outline-offset: -1px;
+}
+
+.app-error-feedback__recovery {
+  display: grid;
+  gap: 6px;
+}
+
+.app-error-feedback__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.app-error-feedback__actions .el-button + .el-button {
+  margin-inline-start: 0;
+}
+
+.app-error-feedback__actions:empty {
+  display: none;
+}
 
 /* 全站查询与数据列表共享标题标记；使用主题变量以跟随深浅色和用户主色，无业务语义或交互副作用。 */
 .management-filter-title,

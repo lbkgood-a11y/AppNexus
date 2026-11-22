@@ -139,8 +139,9 @@ public class PrintSceneService implements com.appnexus.printing.api.PrintSceneMa
     allow(c,"print.agent:operate");
     if(d==null||!PrintRules.validCode(d.site())||d.agent()==null||d.agent().isBlank()||d.agent().length()>128||d.queues()==null||d.queues().size()>100)bad();
     for(String name:d.queues())if(name==null||name.isBlank()||name.length()>255||name.chars().anyMatch(Character::isISOControl))bad();
-    statements.deleteAgentQueues(c.tenantId(),d.site(),d.agent());
-    for(String name:new LinkedHashSet<>(d.queues()))statements.reportAgentQueue(c.tenantId(),d.site(),d.agent(),name);
+    platform.authorizeAgentQueues(c,d.site(),d.agent());
+    statements.deleteAgentQueues(c.tenantId(),d.site(),d.agent(),c.actorId());
+    for(String name:new LinkedHashSet<>(d.queues()))statements.reportAgentQueue(c.tenantId(),d.site(),d.agent(),name,c.actorId());
   });}
 
   /** 只列出最近 120 秒认证上报的客户端队列，登记设备仍需独立设备管理权限。 */

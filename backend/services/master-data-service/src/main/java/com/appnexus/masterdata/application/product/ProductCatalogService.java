@@ -2,6 +2,7 @@ package com.appnexus.masterdata.application.product;
 
 import com.appnexus.masterdata.api.masterdata.MasterData;
 import com.appnexus.platform.authorization.AccessAuthorization;
+import com.appnexus.platform.authorization.ScopedWriteGate;
 import com.appnexus.platform.tenant.VerifiedTenantContext;
 import java.util.*;
 import com.appnexus.masterdata.api.product.ProductCatalogPages.UnitPage;
@@ -18,6 +19,7 @@ public final class ProductCatalogService implements com.appnexus.masterdata.api.
  private final ProductCatalogRepository statements;
 
   
+  private final ScopedWriteGate writes;
   private final AccessAuthorization access;
   private final ProductCatalogTransaction tx;
   private static final Set<String> PURPOSES=Set.of("BASIC","SPEC","QUALITY","EXTENSION");
@@ -27,7 +29,7 @@ public final class ProductCatalogService implements com.appnexus.masterdata.api.
    * @param transaction 同数据源完整事务及原冲突保护范围
    * @param statements 固定目录仓储，强制可信租户和固定对象映射
    */
-  public ProductCatalogService(AccessAuthorization access,ProductCatalogTransaction transaction,ProductCatalogRepository statements){this.statements=statements;
+  public ProductCatalogService(AccessAuthorization access,ProductCatalogTransaction transaction,ProductCatalogRepository statements,ScopedWriteGate writes){this.writes=writes;this.statements=statements;
     this.access=access;this.tx=transaction;
   }
 
@@ -55,6 +57,7 @@ public final class ProductCatalogService implements com.appnexus.masterdata.api.
     if(input==null||input.code()==null||!input.code().matches("[A-Za-z0-9][A-Za-z0-9._-]{0,63}"))throw invalid("PRODUCT_CATALOG_INVALID");
     String name=groupName(input);
     integrity(()->tx.required(()->{
+      authorizeWrite(c,"masterdata.productunit:create",input.code());
       statements.createUnitGroup(tenant(c),input.code(),name,actor(c));
       return true;
     }));
@@ -66,6 +69,8 @@ public final class ProductCatalogService implements com.appnexus.masterdata.api.
     String name=groupName(input);
     if(code==null||code.length()>64||input.version()==null||input.version()<0)throw invalid("PRODUCT_CATALOG_INVALID");
     tx.required(()->{
+      if(code.isBlank())throw changed();
+      authorizeWrite(c,"masterdata.productunit:update",code);
       changed(statements.renameUnitGroup(tenant(c),code,name,actor(c),input.version()));
       return true;
     });
@@ -80,7 +85,9 @@ public final class ProductCatalogService implements com.appnexus.masterdata.api.
   public Unit createUnit(VerifiedTenantContext c,UnitInput input){
     require(c,"productunit","create");unitInput(input);String id=UUID.randomUUID().toString();
     return integrity(()->tx.required(()->{
+      authorizeWrite(c,"masterdata.productunit:create",input.dimensionCode().trim());
       statements.ensureUnitGroup(tenant(c),input.dimensionCode().trim(),actor(c));
+      authorizeWrite(c,"masterdata.productunit:create",id);
       statements.createUnit(id,tenant(c),input.code().trim(),input.name().trim(),input.dimensionCode().trim(),input.precisionScale(),actor(c),actor(c));
       return readUnit(c,id);
     }));
@@ -94,6 +101,7 @@ public final class ProductCatalogService implements com.appnexus.masterdata.api.
   public Unit updateUnit(VerifiedTenantContext c,String id,UnitInput input){
     require(c,"productunit","update");uuid(id);unitInput(input);
     return tx.required(()->{
+      authorizeWrite(c,"masterdata.productunit:update",id);
       int count=statements.renameUnit(input.name().trim(),actor(c),tenant(c),id,input.code().trim(),input.dimensionCode().trim(),input.precisionScale(),input.version());
       changed(count);return readUnit(c,id);
     });
@@ -103,6 +111,7 @@ public final class ProductCatalogService implements com.appnexus.masterdata.api.
   public Unit statusUnit(VerifiedTenantContext c,String id,Status input){
     require(c,"productunit","set_status");uuid(id);statusInput(input);
     return tx.required(()->{
+      authorizeWrite(c,"masterdata.productunit:set_status",id);
       changed(statements.setUnitStatus(input.enabled(),actor(c),tenant(c),id,input.version()));
       return readUnit(c,id);
     });
@@ -127,6 +136,7 @@ public final class ProductCatalogService implements com.appnexus.masterdata.api.
     require(c,"productcategory","create");categoryInput(input);String id=UUID.randomUUID().toString();
     return integrity(()->tx.required(()->{
       lockTree(c);var all=readTree(c);validateParent(all,input.parentId());depthFor(all,input.parentId());
+      authorizeWrite(c,"masterdata.productcategory:create",id);
       statements.createCategory(id,tenant(c),input.code().trim(),input.name().trim(),input.parentId(),actor(c),actor(c));
       return readTree(c).get(id);
     }));
@@ -142,6 +152,7 @@ public final class ProductCatalogService implements com.appnexus.masterdata.api.
       var proposed=new LinkedHashMap<>(all);
       proposed.put(id,new Category(id,old.code(),input.name().trim(),input.parentId(),0,old.enabled(),old.currentConfigId(),old.version(),old.audit()));
       for(var row:proposed.values())depth(proposed,row.id(),new HashSet<>());
+      authorizeWrite(c,"masterdata.productcategory:update",id);
       changed(statements.moveCategory(input.name().trim(),input.parentId(),actor(c),tenant(c),id,input.version()));
       return readTree(c).get(id);
     }));
@@ -155,6 +166,7 @@ public final class ProductCatalogService implements com.appnexus.masterdata.api.
       if(current==null||current.version()!=input.version())throw changed();
       if(input.enabled())validateParent(all,current.parentId());
       else for(var row:all.values())if(row.enabled()&&!row.id().equals(id)&&isDescendant(all,row,id))throw invalid("PRODUCT_CATEGORY_HAS_ENABLED_CHILD");
+      authorizeWrite(c,"masterdata.productcategory:set_status",id);
       changed(statements.setCategoryStatus(input.enabled(),actor(c),tenant(c),id,input.version()));
       return readTree(c).get(id);
     });
@@ -184,6 +196,7 @@ public final class ProductCatalogService implements com.appnexus.masterdata.api.
       }
       long revision=statements.nextConfigurationRevision(tenant(c),id);
       String configId=UUID.randomUUID().toString();
+      writes.authorizeCatalogPublication(access,AccessAuthorization.Subject.tenant(c.accountId(),c.tenantId(),c.memberId()),"masterdata.productcategory:publish");
       statements.createConfiguration(configId,tenant(c),id,revision,path(all,id),input.serviceUnitRequired(),actor(c),actor(c));
       for(var entry:selected.entrySet())statements.bindTemplate(UUID.randomUUID().toString(),tenant(c),configId,entry.getKey(),entry.getValue(),actor(c),actor(c));
       statements.freezeConfigurationItem(actor(c),actor(c),tenant(c),configId);
@@ -246,6 +259,15 @@ public final class ProductCatalogService implements com.appnexus.masterdata.api.
     return slots;
   }
   private static Map<String,String> emptySlots(){var result=new LinkedHashMap<String,String>();for(String purpose:List.of("BASIC","SPEC","QUALITY","EXTENSION"))result.put(purpose,null);return result;}
+  /** 目录没有组织行策略，事务许可按原操作权限和确切记录键签发。 */
+  private void authorizeWrite(VerifiedTenantContext c,String permission,String id){
+    var subject=AccessAuthorization.Subject.tenant(c.accountId(),c.tenantId(),c.memberId());
+    try{
+      writes.authorizeServiceOperation(c.tenantId(),permission,List.of(id),()->access.hasPermission(subject,permission));
+    }catch(SecurityException denied){
+      throw new MasterData.Rejection(403,"MASTER_DATA_DENIED");
+    }
+  }
   private void require(VerifiedTenantContext c,String resource,String action){
     if(c==null||c.accountId()==null||!access.hasPermission(AccessAuthorization.Subject.tenant(c.accountId(),c.tenantId(),c.memberId()),"masterdata."+resource+":"+action))throw new MasterData.Rejection(403,"MASTER_DATA_DENIED");
   }

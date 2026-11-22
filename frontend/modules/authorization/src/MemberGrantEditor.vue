@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import {conditionDimensions,type DataConditionOptions} from "./index";
 import { AppPagination, ManagementTable, type ManagementColumn } from "@appnexus/ui";
 import { setErrorFeedback } from "@appnexus/ui";
 import { FloatingError } from "@appnexus/ui";
@@ -6,11 +7,13 @@ import { InfoHint } from "@appnexus/ui";
 import {computed,onMounted,ref,watch} from "vue";
 import {ElMessage,ElMessageBox} from "element-plus";
 import DataGrantRuleEditor from "./DataGrantRuleEditor.vue";
-import {incompleteDataPolicy} from "./dataGrantDraft";
+import {incompleteDataPolicy,persistedScope,scopeChoices,shownScope,type ScopeChoice} from "./dataGrantDraft";
+const scopeDraft=ref<Record<string,"RULES"|"RECORDS">>({});
 import {useI18n} from "vue-i18n";
-import type {AuthorizationCenterApi,SubjectAuthorizationApi,RoleManagementApi,AuthorizationSubject,RoleItem,MemberGrant,DataScopeType,PermissionItem,ScopeSupport,AuthorizationOption} from "./index";
+import type {AuthorizationCenterApi,SubjectAuthorizationApi,RoleManagementApi,AuthorizationSubject,RoleItem,MemberGrant,PermissionItem,ScopeSupport,AuthorizationOption} from "./index";
 
 /** 成员独立范围编辑复用工作台现有 Select/Form；当前主体由后端目录选择，不接收租户参数。 */
+const conditionOptions=ref<DataConditionOptions>({});
 const props=defineProps<{roleId:string;roleName:string;active:boolean;api:SubjectAuthorizationApi;roleApi:RoleManagementApi;authorizationApi:AuthorizationCenterApi;errorText:(error:unknown)=>string}>();
 const {t,locale}=useI18n();
 const declarations=ref<import("./index").DataAccessDeclaration[]>([]);
@@ -37,21 +40,31 @@ const availablePermissions=computed(()=>permissions.value.filter(item=>rolePermi
 const permissionExplanation=computed(()=>availablePermissions.value.map(p=>({code:p.code,name:locale.value.startsWith('zh')?p.nameZh:p.nameEn,
   status:draft.value?.permissionIds.includes(p.id)?t('authorizationCenter.memberGranted'):t('authorizationCenter.memberNotGranted')})));
 const scoped=computed(()=>permissions.value.filter(item=>draft.value?.permissionIds.includes(item.id)&&metadata.value.some(value=>value.permissionId===item.id)));
-const invalid=computed(()=>!ready.value||!draft.value||!changed.value||!reason.value.trim()||(!draft.value.inheritDataScope&&scoped.value.some(item=>{const value=policy(item.id);return incompleteDataPolicy(value,declarations.value.find(d=>d.resources[0]?.resource===value?.resourceType)?.dimensions??[]);})));
+const invalid=computed(()=>!ready.value||!draft.value||!changed.value||!reason.value.trim()||(!draft.value.inheritDataScope&&scoped.value.some(item=>{const value=policy(item.id);return incompleteDataPolicy(value,conditionDimensions(declarations.value,value?.resourceType,item.code));})));
 /** 当前角色范围用于继承预览和首次切换为自定义；切换仅修改草稿，保存后生效。 */
 const inheritedPolicies=ref<MemberGrant["dataPolicies"]>([]);
-function changeScopeMode(inherit:boolean){if(!draft.value)return;draft.value.inheritDataScope=inherit;if(inherit||!draft.value.dataPolicies.length)draft.value.dataPolicies=JSON.parse(JSON.stringify(inheritedPolicies.value));}
+function changeScopeMode(inherit:boolean){if(!draft.value)return;draft.value.inheritDataScope=inherit;if(inherit)scopeDraft.value={};if(inherit||!draft.value.dataPolicies.length)draft.value.dataPolicies=JSON.parse(JSON.stringify(inheritedPolicies.value));}
 
 function policy(id:string){return draft.value?.dataPolicies.find(value=>value.permissionId===id);}
-function scope(id:string,type:DataScopeType){if(!draft.value)return;const support=metadata.value.find(value=>value.permissionId===id&&value.scopeType===type);if(!support)return;draft.value.dataPolicies=draft.value.dataPolicies.filter(value=>value.permissionId!==id);draft.value.dataPolicies.push({permissionId:id,scopeType:type,resourceType:support.resourceType,organizationIds:[],rules:[]});}
+function scope(id:string,choice:ScopeChoice){
+ if(!draft.value)return;
+ const type=persistedScope(choice),support=metadata.value.find(value=>value.permissionId===id&&value.scopeType===type);
+ if(!support)return;
+ if(choice==="RECORDS"||choice==="RULES")scopeDraft.value[id]=choice;
+ else delete scopeDraft.value[id];
+ const previous=policy(id);
+ if(previous?.scopeType==="RULES"&&type==="RULES"&&(choice==="RULES"||shownScope(previous)==="RECORDS"))return;
+ draft.value.dataPolicies=draft.value.dataPolicies.filter(value=>value.permissionId!==id);
+ draft.value.dataPolicies.push({permissionId:id,scopeType:type,resourceType:support.resourceType,organizationIds:[],rules:[]});
+}
 async function discard(){if(!changed.value&&!reason.value.trim())return true;try{await ElMessageBox.confirm(t("authorizationCenter.discard"),t("authorizationCenter.memberData"),{confirmButtonText:t("authorizationCenter.discardAction"),cancelButtonText:t("organization.cancel")});return true;}catch{return false;}}
 async function selectMember(id:string){if(busy.value||!(await discard()))return;member.value=id;await loadGrants();}
 async function loadGrants(){if(!props.api.grants||!member.value)return;busy.value=true;ready.value=false;error.value="";try{const value=await props.api.grants.get(member.value);grants.value=value.grants;version.value=value.authorityVersion;role.value=props.roleId;await loadDraft();}catch(cause){await setErrorFeedback(error, props.errorText(cause));}finally{busy.value=false;}}
 /** 获取当前角色功能和范围；继承范围实时预览，自定义范围保留独立配置。 */
-async function loadDraft(){ready.value=false;draft.value=undefined;reason.value="";baseline.value=undefined;const grant=grants.value.find(value=>value.roleId===role.value);if(!grant)return;try{const current=await props.authorizationApi.assignment(role.value);rolePermissionIds.value=current.permissionIds;inheritedPolicies.value=current.dataPolicies;draft.value=JSON.parse(JSON.stringify({...grant,permissionIds:current.permissionIds,dataPolicies:(grant.inheritDataScope?current.dataPolicies:grant.dataPolicies).filter(value=>current.permissionIds.includes(value.permissionId)),roleVersion:current.roleVersion}));baseline.value=JSON.stringify(draft.value);ready.value=true;}catch(cause){await setErrorFeedback(error, props.errorText(cause));}}
+async function loadDraft(){scopeDraft.value={};ready.value=false;draft.value=undefined;reason.value="";baseline.value=undefined;const grant=grants.value.find(value=>value.roleId===role.value);if(!grant)return;try{const current=await props.authorizationApi.assignment(role.value);rolePermissionIds.value=current.permissionIds;inheritedPolicies.value=current.dataPolicies;draft.value=JSON.parse(JSON.stringify({...grant,permissionIds:current.permissionIds,dataPolicies:(grant.inheritDataScope?current.dataPolicies:grant.dataPolicies).filter(value=>current.permissionIds.includes(value.permissionId)),roleVersion:current.roleVersion}));baseline.value=JSON.stringify(draft.value);ready.value=true;}catch(cause){await setErrorFeedback(error, props.errorText(cause));}}
 /** 完整单分支更新，失败关闭写入口并保留草稿；重读必须确认丢弃修改。 */
 async function save(){if(invalid.value||!draft.value||!props.api.grants||busy.value)return;busy.value=true;try{const value=await props.api.grants.replace(member.value,{grant:JSON.parse(JSON.stringify(draft.value)),version:version.value,reason:reason.value.trim()});grants.value=value.grants;version.value=value.authorityVersion;await loadDraft();ElMessage.success(t("authorizationCenter.saved"));}catch(cause){await setErrorFeedback(error, props.errorText(cause));ready.value=false;}finally{busy.value=false;}}
-async function initialize(){busy.value=true;try{const catalog:RoleItem[]=[];for(let page=1;;page++){const value=await props.roleApi.list({query:"",page,pageSize:100});catalog.push(...value.items);if(catalog.length>=value.total)break;if(!value.items.length)throw new Error(t("authorizationCenter.roleListChanged"));}roles.value=catalog;const members:AuthorizationSubject[]=[];for(let page=1;;page++){const value=await props.api.subjects(page,"");members.push(...value.items);if(members.length>=value.total)break;if(!value.items.length)throw new Error(t("authorizationCenter.roleListChanged"));}subjects.value=members;declarations.value=await props.authorizationApi.declarations?.()??[];[permissions.value,metadata.value,organizations.value]=await Promise.all([props.authorizationApi.permissions(),props.authorizationApi.metadata(),props.authorizationApi.organizationOptions?.()??Promise.resolve([])]);}catch(cause){await setErrorFeedback(error, props.errorText(cause));}finally{busy.value=false;}}
+async function initialize(){busy.value=true;try{const catalog:RoleItem[]=[];for(let page=1;;page++){const value=await props.roleApi.list({query:"",page,pageSize:100});catalog.push(...value.items);if(catalog.length>=value.total)break;if(!value.items.length)throw new Error(t("authorizationCenter.roleListChanged"));}roles.value=catalog;const members:AuthorizationSubject[]=[];for(let page=1;;page++){const value=await props.api.subjects(page,"");members.push(...value.items);if(members.length>=value.total)break;if(!value.items.length)throw new Error(t("authorizationCenter.roleListChanged"));}subjects.value=members;declarations.value=await props.authorizationApi.declarations?.()??[];[permissions.value,metadata.value,organizations.value,conditionOptions.value]=await Promise.all([props.authorizationApi.permissions(),props.authorizationApi.metadata(),props.authorizationApi.organizationOptions?.()??Promise.resolve([]),props.authorizationApi.conditionOptions?.()??Promise.resolve({})]);}catch(cause){await setErrorFeedback(error, props.errorText(cause));}finally{busy.value=false;}}
 let directoryRequest=0;
 /** 仅展示可信目录中已关联左侧角色的成员；筛选不是服务端授权替代品。 */
 async function loadRelatedMembers(){
@@ -101,9 +114,9 @@ defineExpose({ canLeave:async()=>!busy.value&&await discard() });
         <el-form-item class="member-reason" :label="t('authorizationCenter.scopeMode')"><el-radio-group :model-value="draft.inheritDataScope" :disabled="!ready||busy" @change="value=>changeScopeMode(Boolean(value))"><el-radio-button :value="true">{{t('authorizationCenter.inheritRole')}}</el-radio-button><el-radio-button :value="false">{{t('authorizationCenter.customScope')}}</el-radio-button></el-radio-group><InfoHint :content="t('authorizationCenter.scopeModeHint')" /></el-form-item>
         <el-form-item class="member-scope-row" v-for="item in scoped" :key="item.id" :label="locale.startsWith('zh')?item.nameZh:item.nameEn">
           <div class="scope-inputs">
-            <el-select :model-value="policy(item.id)?.scopeType" :disabled="!ready||busy||draft.inheritDataScope" :placeholder="t('authorizationCenter.selectScope')" @change="value=>scope(item.id,value)"><el-option v-for="support in metadata.filter(value=>value.permissionId===item.id)" :key="support.scopeType" :value="support.scopeType" :label="t('authorizationCenter.scopes.'+support.scopeType)" /></el-select>
+            <el-select :model-value="shownScope(policy(item.id),scopeDraft[item.id])" :disabled="!ready||busy||draft.inheritDataScope" :placeholder="t('authorizationCenter.selectScope')" @change="value=>scope(item.id,value)"><el-option v-for="choice in scopeChoices(metadata.filter(value=>value.permissionId===item.id),item.code,!!conditionDimensions(declarations,item.resource,item.code).length)" :key="choice" :value="choice" :label="t('authorizationCenter.scopes.'+choice)" /></el-select>
             <el-select v-if="policy(item.id)?.scopeType==='ORGANIZATION'||policy(item.id)?.scopeType==='ORGANIZATION_SUBTREE'" v-model="policy(item.id)!.organizationIds" multiple filterable :disabled="!ready||busy||draft.inheritDataScope" :placeholder="t('authorizationCenter.selectOrganizations')"><el-option v-for="organization in organizations" :key="organization.id" :value="organization.id" :label="organization.name" /></el-select>
-            <DataGrantRuleEditor :resource="item.resource" :record-search="authorizationApi.recordSearch" :error-text="errorText" v-if="policy(item.id)?.scopeType==='RULES'" :model-value="policy(item.id)?.rules??[]" :dimensions="declarations.find(d=>d.resources[0]?.resource===item.resource)?.dimensions??[]" :organizations="organizations" :members="subjects" :disabled="!ready||busy||draft.inheritDataScope" @update:model-value="value=>{const p=policy(item.id);if(p)p.rules=value}" />
+            <DataGrantRuleEditor :record-only="shownScope(policy(item.id),scopeDraft[item.id])==='RECORDS'" :allow-records="!item.code.endsWith(':create')" :resource="item.resource" :record-search="authorizationApi.recordSearch" :error-text="errorText" v-if="policy(item.id)?.scopeType==='RULES'" :model-value="policy(item.id)?.rules??[]" :dimensions="conditionDimensions(declarations,item.resource,item.code)" :condition-options="conditionOptions" :organizations="organizations" :members="subjects" :disabled="!ready||busy||draft.inheritDataScope" @update:model-value="value=>{const p=policy(item.id);if(p)p.rules=value}" />
           </div>
         </el-form-item>
         <el-empty v-if="!scoped.length" :image-size="48" :description="t('authorizationCenter.noMemberScopes')" />

@@ -20,11 +20,14 @@ final class StorageHierarchy {
    */
   static void prepare(StorageHierarchyMapper mapper,VerifiedTenantContext c,Kind kind,String id,Map<String,String> values){
     Kind parent=parent(kind);if(parent==null)return;
-    var active=mapper.parent(c.tenantId().toString(),kind.name(),values.get("parentCode"));
-    if(active.isEmpty())throw invalid();
-    if(id==null){if(!active.getFirst())throw invalid();return;}
-    var previous=mapper.parentCode(c.tenantId().toString(),kind.name(),id,true);
-    if(previous.isEmpty()||!previous.getFirst().equals(values.get("parentCode")))throw new Rejection(409,"MASTER_DATA_CHANGED");
+    String parentCode=values.get("parentCode");
+    // 编辑先比对已经授权并锁定的原记录，不能用伪造父码探测其他仓库。
+    if(id!=null){
+      var previous=mapper.parentCode(c.tenantId().toString(),kind.name(),id,true);
+      if(previous.isEmpty()||!previous.getFirst().equals(parentCode))throw new Rejection(409,"MASTER_DATA_CHANGED");
+    }
+    var active=mapper.parent(c.tenantId().toString(),kind.name(),parentCode);
+    if(active.isEmpty()||(id==null&&!active.getFirst()))throw invalid();
   }
 
   /** 启用要求上级启用；停用先锁当前记录再检查启用下级，禁止留下启用的孤立子节点。 */

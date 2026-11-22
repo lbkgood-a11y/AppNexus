@@ -873,6 +873,13 @@ roleManagement:
     INVALID_ROLE_INPUT: 角色参数不符合要求
 authorizationCenter:
   rules:
+    parameter: 参数来源
+    parameters:
+      FIXED: 固定值
+      CURRENT_ACCOUNT: 当前账号
+      CURRENT_PERSON: 当前人员
+      CURRENT_ORGANIZATION: 当前组织
+      CURRENT_ORGANIZATION_SUBTREE: 当前组织及下级
     recordSearch: 输入名称或编码搜索可访问记录
     more: 加载下一页
     searchFailed: 记录候选读取失败，请检查业务读取权限后重试
@@ -1040,6 +1047,7 @@ authorizationCenter:
   incomplete: 请为所有范围权限完成数据范围配置。
   saved: 授权配置已保存
   scopes:
+    RECORDS: 指定记录
     RULES: 组合授权
     SELF: 本人
     ORGANIZATION: 指定组织
@@ -1687,6 +1695,32 @@ businessObject:
   checkNo: "否"
   unchecked: "未检查"
   dependencyChecks: "流程与打印依赖检查"
+  objectFactFields: 业务事实字段
+  noObjectFields: 未声明业务事实字段
+  accessTab: 数据权限
+  accessBasis: 权限依据
+  accessOwnership: 业务归属
+  accessParent: 继承父资源
+  accessOperationScopes: 操作范围
+  accessConnection: 接入状态
+  accessGuarded: 标准主档门禁已接通
+  accessDeclared: 已声明范围
+  accessConnectionHint: 标准状态仅覆盖已登记的主档路径。其他专用入口仍按各自契约执行。
+  noAccessDeclaration: 未声明数据权限资源
+  noAccessOperations: 未声明可配置范围的操作
+  accessConditionFields: 数据范围条件字段
+  accessFieldKey: 字段标识
+  accessProtectedFields: 字段保护
+  conditionOperators: 运算符
+  conditionSource: 选值来源
+  protectionModes: 保护方式
+  noProtectedFields: 未声明可保护字段
+  conditionSources:
+    ACCOUNT: 账号
+    PERSON: 人员
+    TEXT: 文本
+    ORGANIZATION: 组织
+    DICTIONARY: 业务字典
   noConditionFields: "未声明条件字段"
   noBusinessBindings: "暂无业务绑定，可添加绑定后保存或发布。"
   viewDetails: "查看详情"
@@ -1697,7 +1731,7 @@ businessObject:
   codingDeclarationHint: "由业务对象代码声明可编码字段、关联操作和最大长度。这里只读展示能力；编号格式在编码规则管理维护，具体规则版本在当前租户的编码绑定中配置。"
   codingMaxLength: "最大长度（字符）"
   noCodingDeclaration: "此对象未声明可编码字段"
-  catalogBoundary: 此处仅管理已声明审批、打印等可配置能力的对象；完整对象及操作登记请在“功能清单 → 按业务对象查看”查询。
+  catalogBoundary: 这里展示平台登记的业务对象及其操作、数据权限声明和已接入的能力。
   category: 对象分类
   categories:
     MASTER_DATA: 主数据

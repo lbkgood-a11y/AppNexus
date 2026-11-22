@@ -18,7 +18,6 @@ public final class BusinessPartnerDeclaration implements BusinessObjects.Provide
     public static final String BANK=ROOT+".bank";
     /** 同一声明快照供对象目录、操作目录和数据权限目录读取，元数据不可按请求身份变化。 */
     @Override public Descriptor descriptor(){
-        var scopes=Set.of("ALL","ORGANIZATION","ORGANIZATION_SUBTREE");
         var operations=List.of(operation("list","查询客商管理","Read business partners","read","GET",""),
             operation("create","新增客商管理","Create business partner","create","POST",""),
             operation("update","编辑客商管理","Update business partner","update","PUT","/{id}"),
@@ -27,11 +26,17 @@ public final class BusinessPartnerDeclaration implements BusinessObjects.Provide
             new DataResource(ROOT,"","客商主档","Business partner",fields(MasterData.Kind.PARTNER.fields)),
             new DataResource(CONTACT,ROOT,"客商联系人","Partner contacts",fields(PartnerRules.CONTACT)),
             new DataResource(BANK,ROOT,"客商银行账户","Partner bank accounts",fields(PartnerRules.BANK))),
-            operations.stream().collect(java.util.stream.Collectors.toMap(Operation::operationCode,op->op.operationCode().equals("list")?Set.of("ALL","ORGANIZATION","ORGANIZATION_SUBTREE","RULES"):scopes)),
-            List.of(new DataDimension("code","客商编码","Partner code","TEXT",Set.of("EQ","IN")),
-                new DataDimension("name","客商名称","Partner name","TEXT",Set.of("EQ","IN")),
-                new DataDimension("organizationId","归属组织","Owning organization","UUID",Set.of("EQ","IN"))));
-        return new Descriptor("BusinessPartner","客商管理","Business partners","master-data",2,Category.MASTER_DATA,List.of(),operations,dataAccess,List.of(new CodingField("code","create",64)));
+            operations.stream().collect(java.util.stream.Collectors.toMap(Operation::operationCode,op->Set.of("ALL","ORGANIZATION","ORGANIZATION_SUBTREE","RULES"))),
+            List.of(new DataDimension("code","客商编码","Partner code","TEXT",Set.of("EQ","IN"),"TEXT","",Set.of("list")),
+                new DataDimension("name","客商名称","Partner name","TEXT",Set.of("EQ","IN"),"TEXT","",Set.of("list")),
+                new DataDimension("organizationId","归属组织","Owning organization","UUID",Set.of("EQ","IN"),"ORGANIZATION","",Set.of("list","create","update","setStatus"),
+                    Set.of("CURRENT_ORGANIZATION","CURRENT_ORGANIZATION_SUBTREE")),
+                new DataDimension("createdBy","创建人账号","Created by account","UUID",Set.of("EQ"),"ACCOUNT","",
+                    Set.of("list"),Set.of("CURRENT_ACCOUNT")),
+                new DataDimension("partnerType","客商类型","Partner type","TEXT",Set.of("EQ","IN"),"DICTIONARY",
+                    com.appnexus.platform.configuration.BusinessValueCatalog.PARTNER.get("partnerType"),Set.of("list"))))
+            .withStandardCrud("organizationId",Set.of("list","create","update","setStatus"));
+        return new Descriptor("BusinessPartner","客商管理","Business partners","master-data",6,Category.MASTER_DATA,List.of(),operations,dataAccess,List.of(new CodingField("code","create",64)));
     }
     /** 仅声明已实现的直接业务能力，不提供未接通审批或打印入口；契约字段为空，不复制敏感业务正文。 */
     private static Operation operation(String code,String zh,String en,String action,String method,String path){

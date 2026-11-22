@@ -17,13 +17,18 @@ public @interface GuardedScope {
 
     /** 权限谓词的固定参数路径；读与锁必填。 */
     String predicate() default "";
+    /** 只读投影可消费原读取谓词；没有读取谓词时必须有同父记录的原写入许可。 */
+    String readFallback() default "";
     /** 共用语句中用于区分业务对象的参数，缺省对所有调用执行。 */
     String when() default "";
     /** 区分参数的固定值。 */
     String whenValue() default "";
     /** 写许可资源编码；写路径必填。 */
     String resource() default "";
-    /** 写许可的实际操作动作，可列出允许共用的原动作。 */
+    /**
+     * 允许的原操作动作。共享派生写入可列出其他资源的完整权限码，仍须持有同租户、同记录的许可。
+     * 权限谓词只接受 resource:action 中的动作部分。
+     */
     String[] actions() default {};
     /** 租户 UUID 参数路径。 */
     String tenant() default "";

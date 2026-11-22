@@ -57,7 +57,8 @@ class MasterDataMySqlTest {
       try(var connection=source.getConnection()){ScriptUtils.executeSqlScript(connection,new ClassPathResource("db/migration/V92__international_subdivisions.sql"));}
       try(var connection=source.getConnection()){ScriptUtils.executeSqlScript(connection,new ClassPathResource("db/migration/V107__editable_geography_parent.sql"));}
       try(var connection=source.getConnection()){ScriptUtils.executeSqlScript(connection,new ClassPathResource("db/migration/V118__storage_hierarchy.sql"));}
-      try(var connection=source.getConnection()){ScriptUtils.executeSqlScript(connection,new ClassPathResource("db/migration/V122__partner_data_ownership.sql"));}
+      try(var connection=source.getConnection()){ScriptUtils.executeSqlScript(connection,new ClassPathResource("db/migration/V122__partner_data_ownership.sql"));
+        ScriptUtils.executeSqlScript(connection,new ClassPathResource("db/migration/V150__warehouse_organization_ownership.sql"));}
       assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM access_permission",Integer.class)).isEqualTo(36);
       assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM access_role_permission",Integer.class)).isEqualTo(36);
       var c=new VerifiedTenantContext(UUID.randomUUID(),UUID.randomUUID(),UUID.randomUUID(),1);
@@ -78,7 +79,8 @@ class MasterDataMySqlTest {
       for(Class<?> type:List.of(com.appnexus.masterdata.adapter.persistence.MasterRecordMapper.class,com.appnexus.masterdata.adapter.persistence.MasterReadMapper.class,com.appnexus.masterdata.adapter.persistence.GeographyMapper.class,com.appnexus.masterdata.adapter.persistence.StorageHierarchyMapper.class,com.appnexus.masterdata.adapter.persistence.PartnerDetailMapper.class))config.addMapper(type);
       factory.setConfiguration(config);var session=new org.mybatis.spring.SqlSessionTemplate(factory.getObject());
       var records=session.getMapper(com.appnexus.masterdata.adapter.persistence.MasterRecordMapper.class);var reads=session.getMapper(com.appnexus.masterdata.adapter.persistence.MasterReadMapper.class);var geography=session.getMapper(com.appnexus.masterdata.adapter.persistence.GeographyMapper.class);var storage=session.getMapper(com.appnexus.masterdata.adapter.persistence.StorageHierarchyMapper.class);var details=session.getMapper(com.appnexus.masterdata.adapter.persistence.PartnerDetailMapper.class);
-      var service=MasterDataConfiguration.create(records,reads,geography,storage,details,access,new DataSourceTransactionManager(source),catalog,new PartnerDataAccess(planning,fields,references,reads,dataCatalog,new com.appnexus.platform.persistence.platformscope.MySqlRowAccessControl(),details),planning,new com.appnexus.platform.persistence.platformscope.MySqlRowAccessControl());
+      var rowAccess=new com.appnexus.platform.persistence.platformscope.MySqlRowAccessControl();
+      var service=MasterDataConfiguration.create(records,reads,geography,storage,details,access,new DataSourceTransactionManager(source),catalog,new PartnerDataAccess(planning,fields,references,reads,dataCatalog,rowAccess,details,org.mockito.Mockito.mock(com.appnexus.platform.authorization.ScopedWriteGate.class)),fields,dataCatalog,planning,rowAccess,references,org.mockito.Mockito.mock(com.appnexus.platform.authorization.ScopedWriteGate.class));
       verifyStorageHierarchy(service,jdbc);
       for(var kind:Kind.values()){
         // 通用档案测试先前已停用上级；恢复父级后才能验证下一级的独立写入。
@@ -177,6 +179,13 @@ class MasterDataMySqlTest {
     String area=service.create(tenant,Kind.STORAGE_AREA,areaInput).get("id");
     String location=service.create(tenant,Kind.STORAGE_LOCATION,new Input("L","测试库位",Map.of("parentCode","A"),0)).get("id");
     assertThatThrownBy(()->service.create(tenant,Kind.STORAGE_LOCATION,new Input("BAD","错误层级",Map.of("parentCode","W"),0))).isInstanceOf(Rejection.class);
+    var reference=new com.appnexus.masterdata.api.masterdata.MasterDataManagement.StoragePosition(
+        warehouse,area,location,0,0,0);
+    assertThat(service.resolveStoragePosition(tenant,reference)).isEqualTo(reference);
+    assertThatThrownBy(()->service.resolveStoragePosition(foreign,reference)).isInstanceOf(Rejection.class);
+    assertThatThrownBy(()->service.resolveStoragePosition(tenant,
+        new com.appnexus.masterdata.api.masterdata.MasterDataManagement.StoragePosition(warehouse,area,location,0,0,1)))
+        .hasMessage("MASTER_DATA_CHANGED");
     var before=service.list(tenant,Kind.STORAGE_AREA,"",true,1,20,null,"W").rows().getFirst();
     assertThat(before.audit().createdBy()).isEqualTo(tenant.accountId().toString());
     assertThat(before.audit().createdAt()).isNotBlank();
@@ -185,9 +194,13 @@ class MasterDataMySqlTest {
     assertThatThrownBy(()->service.setStatus(tenant,Kind.WAREHOUSE,warehouse,new Status(false,0))).hasMessage("STORAGE_ACTIVE_CHILDREN");
     assertThatThrownBy(()->service.setStatus(tenant,Kind.STORAGE_AREA,area,new Status(false,0))).hasMessage("STORAGE_ACTIVE_CHILDREN");
     assertThat(service.list(tenant,Kind.STORAGE_AREA,"",null,1,20).rows().getFirst().audit()).isEqualTo(before.audit());
-    service.create(tenant,Kind.WAREHOUSE,new Input("W2","另一仓库",Map.of(),0));
+    String otherWarehouse=service.create(tenant,Kind.WAREHOUSE,new Input("W2","另一仓库",Map.of(),0)).get("id");
+    assertThatThrownBy(()->service.resolveStoragePosition(tenant,
+        new com.appnexus.masterdata.api.masterdata.MasterDataManagement.StoragePosition(otherWarehouse,area,location,0,0,0)))
+        .isInstanceOf(Rejection.class);
     assertThatThrownBy(()->service.update(tenant,Kind.STORAGE_AREA,area,new Input("A","禁止移动",Map.of("parentCode","W2"),0))).hasMessage("MASTER_DATA_CHANGED");
     service.setStatus(tenant,Kind.STORAGE_LOCATION,location,new Status(false,0));
+    assertThatThrownBy(()->service.resolveStoragePosition(tenant,reference)).isInstanceOf(Rejection.class);
     service.setStatus(tenant,Kind.STORAGE_AREA,area,new Status(false,0));
     service.setStatus(tenant,Kind.WAREHOUSE,warehouse,new Status(false,0));
     assertThatThrownBy(()->service.setStatus(tenant,Kind.STORAGE_LOCATION,location,new Status(true,1))).isInstanceOf(Rejection.class);

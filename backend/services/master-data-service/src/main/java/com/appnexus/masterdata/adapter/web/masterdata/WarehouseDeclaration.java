@@ -7,7 +7,7 @@ import java.util.Map;
 import java.util.Set;
 import org.springframework.stereotype.Component;
 
-/** 仓库管理专用入口的唯一对象声明；业务校验与权限执行沿用原用例。 */
+/** 仓库管理专用入口的唯一对象声明；标准 CRUD 使用平台门禁，字典范围和字段保护沿用现有策略。 */
 @Component
 public final class WarehouseDeclaration implements Provider {
     /** @return 已挂接到原页面及 API 的对象与操作契约 */
@@ -19,13 +19,16 @@ public final class WarehouseDeclaration implements Provider {
                         field("phone", "联系电话", "Telephone", "PHONE"),
                         field("email", "联系邮箱", "Contact email", "EMAIL"),
                         field("ownershipCertificate", "权属证明", "Ownership certificate", "IDENTIFIER"),
-                        field("personalGuarantee", "个人担保", "Personal guarantee", "TEXT")))),
-                Map.of("list",Set.of("ALL","RULES"),"create",Set.of("ALL"),
-                    "update",Set.of("ALL"),"setStatus",Set.of("ALL")), List.of(
-                    new DataDimension("organizationId","归属组织","Owning organization","UUID",Set.of("EQ","IN")),
-                    new DataDimension("warehouseType","仓库类型","Warehouse type","TEXT",Set.of("EQ","IN")),
-                    new DataDimension("operatingMode","经营模式","Operating mode","TEXT",Set.of("EQ","IN"))));
-        return new Descriptor("Warehouse", "仓库管理", "Warehouses", "master-data", 5, Category.MASTER_DATA, List.of(), List.of(
+                        field("personalGuarantee", "个人担保", "Personal guarantee", "TEXT")))), Map.of("list",Set.of("ALL","ORGANIZATION","ORGANIZATION_SUBTREE","RULES"),"create",Set.of("ALL","ORGANIZATION","ORGANIZATION_SUBTREE","RULES"),
+                "update",Set.of("ALL","ORGANIZATION","ORGANIZATION_SUBTREE","RULES"),"setStatus",Set.of("ALL","ORGANIZATION","ORGANIZATION_SUBTREE","RULES")),
+                List.of(new DataDimension("organizationId","归属组织","Owning organization","UUID",Set.of("EQ","IN"),"ORGANIZATION","",
+                        Set.of("list","create","update","setStatus"),Set.of("CURRENT_ORGANIZATION","CURRENT_ORGANIZATION_SUBTREE")),
+                        new DataDimension("warehouseType","仓库类型","Warehouse type","TEXT",Set.of("EQ","IN"),"DICTIONARY",
+                        com.appnexus.platform.configuration.BusinessValueCatalog.WAREHOUSE.get("warehouseType"),Set.of("list")),
+                        new DataDimension("operatingMode","经营模式","Operating mode","TEXT",Set.of("EQ","IN"),"DICTIONARY",
+                        com.appnexus.platform.configuration.BusinessValueCatalog.WAREHOUSE.get("operatingMode"),Set.of("list"))))
+                .withStandardCrud("organizationId",Set.of("list","create","update","setStatus"));
+        return new Descriptor("Warehouse", "仓库管理", "Warehouses", "master-data", 9, Category.MASTER_DATA, List.of(), List.of(
                 operation("Warehouse", "fieldRestrictions", "读取仓库字段限制", "Read warehouse field restrictions", "masterdata.warehouse:read",
                         new PageOperation("master-data/warehouse", "/master-data/warehouse", "读取仓库字段限制", "Read warehouse field restrictions", "GET", "/api/master-data/warehouse/field-restrictions")),
                 operation("Warehouse", "list", "查询仓库管理", "list Warehouses", "masterdata.warehouse:read",

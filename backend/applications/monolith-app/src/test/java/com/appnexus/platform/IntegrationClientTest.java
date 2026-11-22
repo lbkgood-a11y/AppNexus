@@ -1,6 +1,7 @@
 package com.appnexus.platform;
 
 import com.appnexus.platform.security.IntegrationClients;
+import com.appnexus.platform.persistence.configuration.partner.PartnerReferenceMapper;
 import com.appnexus.platform.persistence.platformscope.MyBatisPlatformAdministration;
 import java.util.*;
 import org.junit.jupiter.api.*;
@@ -22,6 +23,7 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 @AutoConfigureMockMvc
 class IntegrationClientTest extends DatabaseTestSupport {
     @Autowired IntegrationClients clients;
+    @Autowired PartnerReferenceMapper referenceMapper;
     @Autowired MyBatisPlatformAdministration administration;
     @Autowired JdbcTemplate jdbc;
     @Autowired PasswordEncoder encoder;
@@ -164,6 +166,9 @@ class IntegrationClientTest extends DatabaseTestSupport {
         String location=first.getHeader("Location");
         mvc.perform(get(location).header("Authorization","Bearer "+bearer))
             .andExpect(status().isOk()).andExpect(content().json(response));
+        String referenceId=location.substring(location.lastIndexOf('/')+1);
+        assertThatThrownBy(() -> referenceMapper.findReference(referenceId,client.client().id(),tenant.toString()))
+            .hasRootCauseMessage("SCOPED_WRITE_PLAN_REQUIRED");
         String sameTenant=token(clients.create(actor,tenant,"Same tenant",Set.of("dictionary-references:write")));
         mvc.perform(get(location).header("Authorization","Bearer "+sameTenant)).andExpect(status().isNotFound());
         String reader=token(clients.create(actor,tenant,"Dictionary reader",Set.of("dictionaries:read")));

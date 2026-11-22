@@ -19,6 +19,7 @@ import org.springframework.test.context.ActiveProfiles;
 @SpringBootTest
 @ActiveProfiles("local")
 class PrintingRuntimeTest extends DatabaseTestSupport {
+  @Autowired com.appnexus.platform.authorization.ScopedWriteGate writes;
   @Autowired JdbcTemplate jdbc;
   private final JsonMapper mapper=JsonMapper.builder().build();
   private PrintRuntimeService runtime;
@@ -48,7 +49,7 @@ class PrintingRuntimeTest extends DatabaseTestSupport {
     transaction=new com.appnexus.printing.application.PrintTransaction(){
       public <T>T required(java.util.function.Supplier<T> work){return delegate.required(()->{realTransactionObserved.set(org.springframework.transaction.support.TransactionSynchronizationManager.isActualTransactionActive());return work.get();});}
     };
-    runtime=new PrintRuntimeService((context,permission)->true,new com.appnexus.printing.adapter.codec.JacksonPrintRuntimeContent(),new com.appnexus.printing.application.PrintReceiptService(new com.appnexus.printing.adapter.persistence.MyBatisPrintReceiptStore(receiptMapper,mapper),(context,permission)->true),new com.appnexus.printing.adapter.persistence.MyBatisPrintRuntimeRepository(runtimeMapper),transaction);
+    runtime=new PrintRuntimeService(fixturePrintPlatform(),new com.appnexus.printing.adapter.codec.JacksonPrintRuntimeContent(),new com.appnexus.printing.application.PrintReceiptService(new com.appnexus.printing.adapter.persistence.MyBatisPrintReceiptStore(receiptMapper,mapper),fixturePrintPlatform()),new com.appnexus.printing.adapter.persistence.MyBatisPrintRuntimeRepository(runtimeMapper),transaction);
 
   }
 
@@ -60,6 +61,8 @@ class PrintingRuntimeTest extends DatabaseTestSupport {
     var design=new PrintContext(tenant,actor,UUID.randomUUID().toString());
     var template=runtime.saveTemplate(design,null,new com.appnexus.printing.api.PrintData.TemplateDraft("delivery_note","Delivery note","A4","warehouse.outbound.v1",mapper.createObjectNode(),mapper.readTree("{\"panels\":[{\"index\":0,\"width\":210,\"height\":297,\"paperType\":\"A4\",\"printElements\":[]}]}"),-1));
     String templateId=template.get("id").toString();
+    assertThatThrownBy(()->runtimeMapper.freezeTemplateVersion(1,actor,tenant,templateId))
+        .hasRootCauseMessage("SCOPED_WRITE_PLAN_REQUIRED");
     runtime.publish(design,templateId,0);
     assertThat(runtime.restoreVersion(design,templateId,1,0).get("draft_revision")).isEqualTo(1L);
     assertThatThrownBy(()->runtime.restoreVersion(design,templateId,1,0)).hasMessage("PRINT_TEMPLATE_CONFLICT");
@@ -74,14 +77,18 @@ class PrintingRuntimeTest extends DatabaseTestSupport {
     assertThat(repeated.get("id")).isEqualTo(first.get("id"));
 
     var agent=new PrintContext(tenant,"partner-test-agent",UUID.randomUUID().toString());
+    var otherPrincipal=new PrintContext(tenant,"partner-another-agent",UUID.randomUUID().toString());
     var claimed=runtime.claim(agent,"default","agent-1").orElseThrow();
     assertThat(claimed).containsKeys("template_json","data_snapshot","system_name");
     String jobId=first.get("id").toString();
+    assertThatThrownBy(()->receiptMapper.update(tenant,jobId,agent.actorId(),"SUBMITTED","{}"))
+        .hasRootCauseMessage("SCOPED_WRITE_PLAN_REQUIRED");
     var accepted=new com.appnexus.printing.api.PrintData.Receipt("SUBMITTED","agent-1",mapper.readTree("{\"code\":\"SYSTEM_QUEUE_ACCEPTED\"}"));
     assertThatThrownBy(()->runtime.receipt(agent,jobId,new com.appnexus.printing.api.PrintData.Receipt("SUCCEEDED","agent-1",mapper.createObjectNode())))
         .hasMessage("PRINT_JOB_RECEIPT_CONFLICT");
     assertThatThrownBy(()->runtime.receipt(agent,jobId,new com.appnexus.printing.api.PrintData.Receipt("SUBMITTED","another-agent",accepted.result())))
         .hasMessage("PRINT_JOB_RECEIPT_CONFLICT");
+    assertThatThrownBy(()->runtime.receipt(otherPrincipal,jobId,accepted)).hasMessage("PRINT_JOB_RECEIPT_CONFLICT");
     runtime.receipt(agent,jobId,accepted);
     assertThat(runtime.receipt(agent,jobId,accepted).get("state")).isEqualTo("SUBMITTED");
     assertThatThrownBy(()->runtime.receipt(agent,jobId,new com.appnexus.printing.api.PrintData.Receipt("FAILED","agent-1",mapper.createObjectNode())))
@@ -106,6 +113,7 @@ class PrintingRuntimeTest extends DatabaseTestSupport {
     runtime.claim(agent,"default","agent-1").orElseThrow();
     byte[] pdf="%PDF-1.7\nTEST-ONLY".getBytes(java.nio.charset.StandardCharsets.US_ASCII);
     assertThatThrownBy(()->runtime.uploadPdf(agent,pdfId,"another-agent",pdf)).hasMessage("PRINT_JOB_RECEIPT_CONFLICT");
+    assertThatThrownBy(()->runtime.uploadPdf(otherPrincipal,pdfId,"agent-1",pdf)).hasMessage("PRINT_JOB_RECEIPT_CONFLICT");
     assertThat(runtime.uploadPdf(agent,pdfId,"agent-1",pdf).get("state")).isEqualTo("SUCCEEDED");
     assertThat(runtime.uploadPdf(agent,pdfId,"agent-1",pdf).get("state")).isEqualTo("SUCCEEDED");
     assertThat(runtime.downloadPdf(design,pdfId)).isEqualTo(pdf);
@@ -114,11 +122,18 @@ class PrintingRuntimeTest extends DatabaseTestSupport {
     assertThatThrownBy(()->runtime.uploadPdf(agent,pdfId,"agent-1","%PDF-other".getBytes(java.nio.charset.StandardCharsets.US_ASCII)))
         .hasMessage("PRINT_JOB_RECEIPT_CONFLICT");
 
-    var flow=new PrintSceneService((context,permission)->true,runtime,new com.appnexus.printing.adapter.codec.JacksonPrintSceneContent(),new com.appnexus.printing.adapter.persistence.MyBatisPrintSceneRepository(sceneMapper),transaction);
+    var flow=new PrintSceneService(fixturePrintPlatform(),runtime,new com.appnexus.printing.adapter.codec.JacksonPrintSceneContent(),new com.appnexus.printing.adapter.persistence.MyBatisPrintSceneRepository(sceneMapper),transaction);
     var custom=mapper.readTree("{\"code\":\"custom.note.v1\",\"nameZh\":\"自定义单据\",\"nameEn\":\"Custom note\",\"fields\":[{\"key\":\"recipient\",\"labelZh\":\"收货人\",\"labelEn\":\"Recipient\",\"sample\":\"测试\"}]}");
     assertThat(flow.createContract(design,custom)).hasSize(2);
     assertThat(flow.contracts(new PrintContext(UUID.randomUUID().toString(),actor,UUID.randomUUID().toString()))).hasSize(1);
     flow.report(agent,new com.appnexus.printing.api.PrintData.QueueReport("default","agent-1",List.of("test-queue","中文队列")));
+    var secondQueueActor=new PrintContext(tenant,"partner-queue-other",UUID.randomUUID().toString());
+    flow.report(secondQueueActor,new com.appnexus.printing.api.PrintData.QueueReport("default","agent-1",List.of("other-queue")));
+    flow.report(secondQueueActor,new com.appnexus.printing.api.PrintData.QueueReport("default","agent-1",List.of()));
+    assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM print_agent_queue WHERE tenant_id=UUID_TO_BIN(?) AND agent_principal=?",
+        Integer.class,tenant,agent.actorId())).isEqualTo(2);
+    assertThatThrownBy(()->sceneMapper.deleteAgentQueues(tenant,"default","agent-1",agent.actorId()))
+        .hasRootCauseMessage("SCOPED_WRITE_PLAN_REQUIRED");
     assertThat(flow.queues(design)).hasSize(2);
     var scenes=flow.saveScene(design,null,new com.appnexus.printing.api.PrintData.SceneRequest("outbound","出仓单","warehouse.outbound.v1",templateId,1,true,-1));
     String sceneId=scenes.getFirst().get("id").toString();
@@ -138,7 +153,7 @@ class PrintingRuntimeTest extends DatabaseTestSupport {
     assertThat(configured.get("source_type")).isEqualTo("CONFIGURED_DOCUMENT");
     assertThatThrownBy(()->flow.print(new PrintContext(tenant,UUID.randomUUID().toString(),UUID.randomUUID().toString()),documentId,options)).hasMessage("PRINT_BUSINESS_OBJECT_NOT_FOUND");
     assertThatThrownBy(()->flow.saveDocument(design,new com.appnexus.printing.api.PrintData.DocumentRequest(sceneId,"BAD",mapper.readTree("{\"unexpected\":\"value\"}")))).hasMessage("PRINT_CONTRACT_INVALID");
-    var outputs=new PrintOutputService((context,permission)->true,runtime,flow,new com.appnexus.printing.adapter.codec.JacksonPrintPayloadContent(),new com.appnexus.printing.adapter.persistence.MyBatisPrintOutputRepository(outputMapper),transaction);
+    var outputs=new PrintOutputService(fixturePrintPlatform(),runtime,flow,new com.appnexus.printing.adapter.codec.JacksonPrintPayloadContent(),new com.appnexus.printing.adapter.persistence.MyBatisPrintOutputRepository(outputMapper),transaction);
     // 预检按模式检查设备；不创建任务，跨账号和跨租户都不泄露该单据。
     int jobsBefore=jdbc.queryForObject("SELECT COUNT(*) FROM print_job",Integer.class);
     assertThat(outputs.preflight(design,documentId,"PREVIEW",null)).anySatisfy(check->{assertThat(check.layer()).isEqualTo("DEVICE");assertThat(check.status()).isEqualTo("NOT_APPLICABLE");});
@@ -197,7 +212,7 @@ class PrintingRuntimeTest extends DatabaseTestSupport {
   }
   @Test void typedContractRejectsInvalidDataAndFreezesSchema(){
     String tenant=UUID.randomUUID().toString(),actor=UUID.randomUUID().toString();var c=new PrintContext(tenant,actor,UUID.randomUUID().toString());
-    var flow=new PrintSceneService((context,permission)->true,runtime,new com.appnexus.printing.adapter.codec.JacksonPrintSceneContent(),new com.appnexus.printing.adapter.persistence.MyBatisPrintSceneRepository(sceneMapper),transaction);
+    var flow=new PrintSceneService(fixturePrintPlatform(),runtime,new com.appnexus.printing.adapter.codec.JacksonPrintSceneContent(),new com.appnexus.printing.adapter.persistence.MyBatisPrintSceneRepository(sceneMapper),transaction);
     var objectRuntime=new com.appnexus.contracts.businessobject.BusinessObjectRuntime(){
       public Snapshot read(com.appnexus.contracts.businessobject.BusinessObjects.Context context,String type,String id,String operation,long version,Set<String> fields){
         var record=jdbc.queryForMap("SELECT data_json,revision FROM print_document WHERE tenant_id=UUID_TO_BIN(?) AND id=UUID_TO_BIN(?)",context.tenantId(),id);
@@ -222,7 +237,7 @@ class PrintingRuntimeTest extends DatabaseTestSupport {
     var job=flow.print(new PrintContext(tenant,actor,UUID.randomUUID().toString()),document,new com.appnexus.printing.api.PrintData.DocumentPrintRequest(null,"PDF",1));
     assertThat(jdbc.queryForObject("SELECT JSON_UNQUOTE(JSON_EXTRACT(data_contract_schema,'$.code')) FROM print_job WHERE id=UUID_TO_BIN(?)",String.class,job.get("id"))).isEqualTo("test.typed.v1");
     // 使用真实打印公开适配器与SQL任务，不以mock的输出Map代替公共驱动闭环。
-    var outputs=new PrintOutputService((context,permission)->true,runtime,flow,new com.appnexus.printing.adapter.codec.JacksonPrintPayloadContent(),new com.appnexus.printing.adapter.persistence.MyBatisPrintOutputRepository(outputMapper),transaction);
+    var outputs=new PrintOutputService(fixturePrintPlatform(),runtime,flow,new com.appnexus.printing.adapter.codec.JacksonPrintPayloadContent(),new com.appnexus.printing.adapter.persistence.MyBatisPrintOutputRepository(outputMapper),transaction);
     var bridge=new com.appnexus.printing.application.BusinessPrintingService(new com.appnexus.printing.adapter.persistence.MyBatisBusinessPrintQueries(businessMapper),outputs,(context,permission)->true);
     var bindings=org.mockito.Mockito.mock(com.appnexus.contracts.businessobject.BusinessObjectBindings.class);
     org.mockito.Mockito.when(bindings.resolveOperation(org.mockito.ArgumentMatchers.any(),org.mockito.ArgumentMatchers.anyString(),org.mockito.ArgumentMatchers.anyString(),org.mockito.ArgumentMatchers.anyString(),org.mockito.ArgumentMatchers.anyLong(),org.mockito.ArgumentMatchers.anyMap())).thenReturn(
@@ -242,4 +257,18 @@ class PrintingRuntimeTest extends DatabaseTestSupport {
 
   }
 
+  /** 测试用例复用生产事务许可，授权判断沿用已隔离的授权桩。 */
+  private com.appnexus.contracts.printing.PrintPlatform fixturePrintPlatform(){
+    return new com.appnexus.contracts.printing.PrintPlatform(){
+      @Override public boolean allowed(PrintContext context,String permission){return true;}
+      @Override public void authorizeRecordWrite(PrintContext context,String permission,String... targets){
+        writes.authorizeServiceOperation(UUID.fromString(context.tenantId()),permission,
+            List.of(targets),()->allowed(context,permission));
+      }
+      @Override public void authorizeAgentQueues(PrintContext context,String site,String agent){
+        writes.authorizeServiceOperation(UUID.fromString(context.tenantId()),"print.agent:operate",
+            List.of(context.actorId(),site,agent),()->allowed(context,"print.agent:operate"));
+      }
+    };
+  }
 }

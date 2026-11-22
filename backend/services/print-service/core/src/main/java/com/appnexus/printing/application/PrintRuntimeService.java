@@ -52,9 +52,11 @@ public class PrintRuntimeService implements com.appnexus.printing.api.PrintRunti
       @Override public void prepare(){template=content.template(d.template());scope=content.object(d.scope());}
       @Override public String identifier(String value){return uuid(value).toString();}
       @Override public void create(PrintContext context,String target,Draft input){
+        platform.authorizeRecordWrite(context,"print.template:design",target);
         statements.createTemplate(context.tenantId(),target,input.code(),input.name().trim(),input.category(),input.contract(),scope,template,context.actorId(),context.actorId());
       }
       @Override public int update(PrintContext context,String target,Draft input){
+        platform.authorizeRecordWrite(context,"print.template:design",target);
         return statements.updateTemplate(input.code(),input.name().trim(),input.category(),input.contract(),scope,template,context.actorId(),context.tenantId(),target,input.revision());
       }
       @Override public Map<String,Object> result(PrintContext context,String target){return template(context,target);}
@@ -81,6 +83,7 @@ public class PrintRuntimeService implements com.appnexus.printing.api.PrintRunti
     var service=new com.appnexus.printing.application.TemplatePublicationService(new com.appnexus.printing.application.TemplatePublicationPort(){
       private Map<String,Object> current;
       @Override public Draft lock(PrintContext context,String template){
+        platform.authorizeRecordWrite(context,"print.template:publish",template);
         statements.lockTemplate(context.tenantId(),template);
         // 发布校验从同一授权查询取原始 JSON，避免把已经投影的 Map 文本重新当作 JSON 解析。
         current=templateRecordWithPermission(context,template,"print.template:publish");
@@ -118,6 +121,7 @@ public class PrintRuntimeService implements com.appnexus.printing.api.PrintRunti
   public Map<String,Object> restoreVersion(PrintContext c,String id,int version,long revision){return transaction.required(()->{
     require(c,"print.template:design");uuid(id);
     if(version<1)throw new PrintRejection("PRINT_INPUT_INVALID",400);
+    platform.authorizeRecordWrite(c,"print.template:design",id);
     int changed=statements.restoreTemplate(version,c.actorId(),c.tenantId(),id,revision);
     if(changed==0)throw new PrintRejection("PRINT_TEMPLATE_CONFLICT",409);
     return templateWithPermission(c,id,"print.template:design");
@@ -133,6 +137,7 @@ public class PrintRuntimeService implements com.appnexus.printing.api.PrintRunti
     require(c,"print.device:manage");
     if(!PrintRules.validCode(d.code())||!PrintRules.validCode(d.siteCode())||blank(d.name())||blank(d.systemName())) throw new PrintRejection("PRINT_INPUT_INVALID",400);
     String caps=content.object(d.capabilities()); UUID value=id==null?UUID.randomUUID():uuid(id);
+    platform.authorizeRecordWrite(c,"print.device:manage",id==null?value.toString():id);
     if(id==null) statements.createDevice(c.tenantId(),value.toString(),d.code(),d.name().trim(),d.siteCode(),d.systemName().trim(),caps,c.actorId());
     else if(statements.updateDevice(d.code(),d.name().trim(),d.siteCode(),d.systemName().trim(),caps,d.enabled(),c.tenantId(),id)==0) throw new PrintRejection("PRINT_DEVICE_NOT_FOUND",404);
     return projectRow(required(statements.device(c.tenantId(),value.toString()),"PRINT_TEMPLATE_NOT_FOUND",404));
@@ -164,6 +169,7 @@ public class PrintRuntimeService implements com.appnexus.printing.api.PrintRunti
     if(schema!=null&&schema.containsKey("version")&&contractCatalog!=null&&!schema.equals(contractCatalog.apply(c,published.get("data_contract").toString())))throw new PrintRejection("DATA_CONTRACT_CHANGED",409);
     if(schema!=null&&contractValidator!=null)contractValidator.accept(content.plain(d.data()),schema);
     String snapshot=content.snapshot(d.data()); UUID id=UUID.randomUUID();
+    platform.authorizeRecordWrite(c,"print.job:submit",id.toString(),d.templateId());
     try { statements.createJob(c.tenantId(),id.toString(),c.requestId(),actorKey(c),d.sourceType(),d.sourceId(),d.templateId(),version,d.outputType(),d.outputType().equals("PDF")?null:d.deviceId(),d.outputType().equals("PDF")?1:d.copies(),snapshot,schema==null?null:content.encode(schema)); }
     catch(PrintRuntimeRepository.DuplicateRequest duplicate){ return byRequest(c); }
     return job(c,id.toString(),"print.job:submit");
@@ -175,6 +181,7 @@ public class PrintRuntimeService implements com.appnexus.printing.api.PrintRunti
     var existing=statements.existingReprint(c.tenantId(),c.actorId(),c.requestId());
     if(!existing.isEmpty())return job(c,existing.getFirst().get("id").toString(),"print.job:reprint");
     job(c,id,"print.job:reprint"); UUID next=UUID.randomUUID();
+    platform.authorizeRecordWrite(c,"print.job:reprint",next.toString(),id);
     statements.copyReprint(next.toString(),c.requestId(),c.actorId(),reason.trim(),c.tenantId(),id);
     return job(c,next.toString(),"print.job:reprint");
   });}
@@ -183,11 +190,16 @@ public class PrintRuntimeService implements com.appnexus.printing.api.PrintRunti
   public Optional<Map<String,Object>> claim(PrintContext c,String site,String agent) {return transaction.required(()->{
     require(c,"print.agent:operate"); if(!PrintRules.validCode(site)||blank(agent)||agent.length()>128) throw new PrintRejection("PRINT_INPUT_INVALID",400);
     // 代理失联时不能假定任务尚未进入系统队列；过期租约转为结果未知，必须人工判定后补打。
+    platform.authorizeRecordWrite(c,"print.agent:operate",c.tenantId());
+    platform.authorizeRecordWrite(c,"print.agent:operate",site);
     statements.expireLeases(c.tenantId());
     List<String> ids=statements.claimableJobs(c.tenantId(),site);
     if(ids.isEmpty()) return Optional.empty(); String id=ids.getFirst();
-    statements.claimJob(agent,c.tenantId(),id);
+    platform.authorizeRecordWrite(c,"print.agent:operate",id,c.actorId());
+    if(statements.claimJob(agent,c.tenantId(),id,c.actorId())!=1)
+      throw new PrintRejection("PRINT_JOB_RECEIPT_CONFLICT",409);
     statements.expireRendererLeases(c.tenantId(),site);
+    platform.authorizeRecordWrite(c,"print.agent:operate",id);
     return Optional.of(projectRow(required(statements.claimedJob(c.tenantId(),id),"PRINT_TEMPLATE_NOT_FOUND",404)));
   });}
 
@@ -220,8 +232,10 @@ public class PrintRuntimeService implements com.appnexus.printing.api.PrintRunti
     if(bytes==null||bytes.length<5||bytes.length>10*1024*1024
         ||!new String(bytes,0,5,java.nio.charset.StandardCharsets.US_ASCII).equals("%PDF-"))
       throw new PrintRejection("PRINT_PDF_INVALID",400);
+    platform.authorizeRecordWrite(c,"print.agent:operate",id);
     var current=projectRow(required(statements.artifactJob(c.tenantId(),id),"PRINT_JOB_NOT_FOUND",404));
-    if(!"PDF".equals(current.get("output_type"))||agent==null||!agent.equals(current.get("claimed_by")))
+    if(!"PDF".equals(current.get("output_type"))||agent==null||!agent.equals(current.get("claimed_by"))
+        ||!c.actorId().equals(current.get("claim_principal")))
       throw new PrintRejection("PRINT_JOB_RECEIPT_CONFLICT",409);
     if("SUCCEEDED".equals(current.get("state"))) {
       if(!Arrays.equals(bytes,downloadPdfBytes(c,id))) throw new PrintRejection("PRINT_JOB_RECEIPT_CONFLICT",409);
@@ -230,8 +244,9 @@ public class PrintRuntimeService implements com.appnexus.printing.api.PrintRunti
     Object active=current.get("active");
     if(!"CLAIMED".equals(current.get("state"))||!(Boolean.TRUE.equals(active)||active instanceof Number n&&n.intValue()==1))
       throw new PrintRejection("PRINT_JOB_RECEIPT_CONFLICT",409);
-    statements.savePdf(c.tenantId(),id,bytes);
-    statements.completePdf(c.tenantId(),id);
+    platform.authorizeRecordWrite(c,"print.agent:operate",id,c.actorId());
+    if(statements.savePdf(c.tenantId(),id,bytes,c.actorId())!=1||statements.completePdf(c.tenantId(),id,c.actorId())!=1)
+      throw new PrintRejection("PRINT_JOB_RECEIPT_CONFLICT",409);
     return job(c,id,"print.agent:operate");
   });}
 
@@ -247,13 +262,14 @@ public class PrintRuntimeService implements com.appnexus.printing.api.PrintRunti
   public byte[] outputPdf(PrintContext c,String id){return downloadPdfBytes(c,id);}
 
   /** 从预览任务复制固定版本和数据；确认输出不重新渲染可变化业务数据，禁止修改快照。 */
-  public Map<String,Object> printPreview(PrintContext c,String id,String device,int copies){
+  public Map<String,Object> printPreview(PrintContext c,String id,String device,int copies){return transaction.required(()->{
     require(c,"print.job:submit");uuid(device);
     if(statements.enabledDeviceCount(c.tenantId(),device)!=1)throw new PrintRejection("PRINT_DEVICE_DISABLED",409);
     String next=UUID.randomUUID().toString();
+    platform.authorizeRecordWrite(c,"print.job:submit",next,id,device);
     statements.copyPreview(next,UUID.randomUUID().toString(),actorKey(c),device,copies,c.tenantId(),id);
     return job(c,next,"print.job:submit");
-  }
+  });}
 
   /** 内部读取已经过身份校验的任务产物；不存在与跨租户均返回相同 404。 */
   private byte[] downloadPdfBytes(PrintContext c,String id){return (byte[])required(statements.pdfArtifact(c.tenantId(),id),"PRINT_PDF_NOT_FOUND",404).get("pdf_bytes");}

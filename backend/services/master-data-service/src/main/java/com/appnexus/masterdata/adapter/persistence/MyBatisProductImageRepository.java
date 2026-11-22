@@ -9,9 +9,9 @@ public final class MyBatisProductImageRepository implements ProductImageReposito
  /** @param mapper 固定SQL映射，与父聚合使用同一事务连接 */
  public MyBatisProductImageRepository(ProductImageMapper mapper){this.mapper=mapper;}
  /** {@inheritDoc} */
- public List<Map<String,Object>> list(String tenant,String product){return ProductStorageValues.stable(mapper.list(tenant,product));}
+ public List<Map<String,Object>> list(String tenant,String product,com.appnexus.platform.authorization.RowAccessControl.Predicate access){return ProductStorageValues.stable(mapper.list(tenant,product,access));}
  /** {@inheritDoc} */
- public Integer count(String tenant,String product){return mapper.count(tenant,product);}
+ public Integer count(String tenant,String product,com.appnexus.platform.authorization.RowAccessControl.Predicate access){return mapper.count(tenant,product,access);}
  /** {@inheritDoc} */
  public int insert(String id,String tenant,String product,byte[] bytes,byte[] digest,int width,int height,String creator,String updater){return mapper.insert(id,tenant,product,bytes,digest,width,height,creator,updater);}
  /** {@inheritDoc} */
@@ -19,7 +19,7 @@ public final class MyBatisProductImageRepository implements ProductImageReposito
  /** {@inheritDoc} */
  public int advanceParent(String actor,String tenant,String product,long version){return mapper.advanceParent(actor,tenant,product,version);}
  /** {@inheritDoc} */
- public List<Map<String,Object>> content(String tenant, String product, String id){return ProductStorageValues.stable(mapper.content(tenant,product,id));}
+ public List<Map<String,Object>> content(String tenant, String product, String id,com.appnexus.platform.authorization.RowAccessControl.Predicate access){return ProductStorageValues.stable(mapper.content(tenant,product,id,access));}
  /** {@inheritDoc} */
- public List<Map<String,Object>> parent(String tenant, String id, boolean lock){return ProductStorageValues.stable(mapper.parent(tenant,id,lock));}
+ public List<Map<String,Object>> parent(String tenant, String id, boolean lock,com.appnexus.platform.authorization.RowAccessControl.Predicate access){return ProductStorageValues.stable(mapper.parent(tenant,id,lock,access));}
 }

@@ -395,29 +395,50 @@
   {
     "file": "frontend/modules/master-data/src/product/CatalogManagement.vue",
     "expression": "optionOperation",
-    "operations": ["ProductAttribute.create", "ProductAttribute.createRevision", "ProductAttribute.updateRevision"],
-    "sources": ["frontend/modules/master-data/src/product/CatalogManagement.vue"],
+    "operations": [
+      "ProductAttribute.create",
+      "ProductAttribute.createRevision",
+      "ProductAttribute.updateRevision"
+    ],
+    "sources": [
+      "frontend/modules/master-data/src/product/CatalogManagement.vue"
+    ],
     "reason": "选项增删只修改属性草稿，按新建属性或规格版本维护入口绑定后续保存操作。"
   },
   {
     "file": "frontend/modules/master-data/src/product/CatalogManagement.vue",
     "expression": "groupListOp",
-    "operations": ["ProductUnit.listGroups", "ProductAttribute.listGroups"],
-    "sources": ["frontend/modules/master-data/src/product/CatalogManagement.vue"],
+    "operations": [
+      "ProductUnit.listGroups",
+      "ProductAttribute.listGroups"
+    ],
+    "sources": [
+      "frontend/modules/master-data/src/product/CatalogManagement.vue"
+    ],
     "reason": "计量单位和属性页面分别查询本对象的分组目录。"
   },
   {
     "file": "frontend/modules/master-data/src/product/CatalogManagement.vue",
     "expression": "groupCreateOp",
-    "operations": ["ProductUnit.createGroup", "ProductAttribute.createGroup"],
-    "sources": ["frontend/modules/master-data/src/product/CatalogManagement.vue"],
+    "operations": [
+      "ProductUnit.createGroup",
+      "ProductAttribute.createGroup"
+    ],
+    "sources": [
+      "frontend/modules/master-data/src/product/CatalogManagement.vue"
+    ],
     "reason": "分组新建按当前目录选择固定操作。"
   },
   {
     "file": "frontend/modules/master-data/src/product/CatalogManagement.vue",
     "expression": "groupEditOp",
-    "operations": ["ProductUnit.renameGroup", "ProductAttribute.updateGroup"],
-    "sources": ["frontend/modules/master-data/src/product/CatalogManagement.vue"],
+    "operations": [
+      "ProductUnit.renameGroup",
+      "ProductAttribute.updateGroup"
+    ],
+    "sources": [
+      "frontend/modules/master-data/src/product/CatalogManagement.vue"
+    ],
     "reason": "分组编辑按当前目录选择固定操作。"
   },
   {

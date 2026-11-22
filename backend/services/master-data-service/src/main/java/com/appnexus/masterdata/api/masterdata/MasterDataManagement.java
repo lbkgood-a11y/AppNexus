@@ -18,11 +18,14 @@ public interface MasterDataManagement {
  StoragePosition resolveStoragePosition(VerifiedTenantContext c, StoragePosition expected);
 
  /** 主数据公开操作；沿用可信主体、功能权限、数据范围及原子事务约束。 */
- Object partnerAccess(VerifiedTenantContext c);
+ /** @param c 当前可信请求 @param action 固定读取、新增或修改动作 @return 对应组织候选和字段限制 */
+ Object partnerAccess(VerifiedTenantContext c,String action);
  /** 主数据公开操作；沿用可信主体、功能权限、数据范围及原子事务约束。 */
  Object dictionaryOptions(VerifiedTenantContext c,Kind kind);
  /** 主数据公开操作；沿用可信主体、功能权限、数据范围及原子事务约束。 */
  Object warehouseOptions(VerifiedTenantContext c);
+ /** @param c 可信租户主体 @param action create/update @return 对应操作允许选择的组织 */
+ Object warehouseOrganizations(VerifiedTenantContext c,String action);
  /** @param c 服务端可信租户和成员 @return 当前仓库字段限制，不含记录或原值 */
  Map<String,com.appnexus.platform.authorization.FieldSecurity.Mode> warehouseFieldRestrictions(VerifiedTenantContext c);
  /** 主数据公开操作；沿用可信主体、功能权限、数据范围及原子事务约束。 */

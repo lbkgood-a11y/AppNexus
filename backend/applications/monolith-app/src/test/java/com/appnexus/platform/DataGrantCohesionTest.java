@@ -28,6 +28,46 @@ class DataGrantCohesionTest {
         assertThat(DataGrantRules.matchesSubject(organizationRule,member,Set.of())).isFalse();
     }
 
+    /** 人员参数只有可信当前人员时才能形成匹配条件，不能用账号或成员代替。 */
+    @Test void currentPersonIsResolvedOnlyFromVerifiedSubject(){
+        var root=DataAccessCatalog.fromObjects(List.of(new BusinessPartnerDeclaration())).list(PermissionCatalog.ScopeType.TENANT).getFirst();
+        var personDimension=new com.appnexus.contracts.businessobject.BusinessObjects.DataDimension(
+            "assignedPerson","经办人","Assigned person","UUID",Set.of("EQ"),"PERSON","",Set.of("list"),Set.of("CURRENT_PERSON"));
+        var catalog=new DataAccessCatalog(List.of(new DataAccessDeclaration.Descriptor(root.objectType(),root.version(),root.scope(),
+            root.resources(),root.operations(),List.of(personDimension))));
+        var mapper=mock(DataScopeMapper.class);
+        var policy=new DataGrantRules.Rule(DataGrantRules.SubjectType.ROLE_MEMBERS,Set.of(),Set.of(),List.of(
+            new DataGrantRules.Condition("assignedPerson",DataGrantRules.Operator.EQ,List.of(),DataGrantRules.Parameter.CURRENT_PERSON)),false);
+        when(mapper.policies(anyString(),anyString(),anyString(),eq("masterdata.partner:read"),eq("masterdata.partner")))
+            .thenReturn(List.of(Map.of("scope_type","RULES","rules_json",DataGrantPolicySupport.encode(List.of(policy)))));
+        var resolver=new MyBatisDataScopeAuthorization(mapper,mock(com.appnexus.platform.organization.OrganizationMembership.class),catalog);
+        UUID account=UUID.randomUUID(),tenant=UUID.randomUUID(),member=UUID.randomUUID(),person=UUID.randomUUID();
+        assertThat(resolver.resolveDataScope(AccessAuthorization.Subject.tenant(account,tenant,member),"masterdata.partner:read",
+            "masterdata.partner").type()).isEqualTo(DataScopeAuthorization.ScopeType.DENY);
+        var scope=resolver.resolveDataScope(new AccessAuthorization.Subject(account,tenant,member,person,UUID.randomUUID()),
+            "masterdata.partner:read","masterdata.partner");
+        assertThat(scope.rules().getFirst().conditions()).containsExactly(new DataGrantRules.Condition("assignedPerson",
+            DataGrantRules.Operator.EQ,List.of(person.toString())));
+    }
+
+    /** 组织集合投影保持记录与字段交集，并保留旧固定组织分支。 */
+    @Test void organizationProjectionKeepsAndWithinBranchesAndOrAcrossScopes(){
+        UUID root=UUID.randomUUID(),child=UUID.randomUUID(),fixed=UUID.randomUUID(),excluded=UUID.randomUUID();
+        var rule=new DataGrantRules.Rule(DataGrantRules.SubjectType.ROLE_MEMBERS,Set.of(),Set.of(root,excluded),List.of(
+            new DataGrantRules.Condition("organizationId",DataGrantRules.Operator.RESOLVED_IN,List.of(root.toString(),child.toString()))),false);
+        var subject=AccessAuthorization.Subject.tenant(UUID.randomUUID(),UUID.randomUUID(),UUID.randomUUID());
+        var plan=new AccessPlan(subject,"organization.unit:read","organization.unit",
+            new DataScopeAuthorization.DataScope(DataScopeAuthorization.ScopeType.RULES,Set.of(fixed),List.of(rule)),Map.of(),java.time.Instant.now());
+        var range=new MySqlRowAccessControl().organizationRange(plan,"organizationId");
+        assertThat(range.all()).isFalse();
+        assertThat(range.ids()).containsExactlyInAnyOrder(root.toString(),fixed.toString());
+        var executor=new MySqlRowAccessControl();
+        assertThat(executor.organizationRangeForRecord(plan,"organizationId",root).ids())
+            .containsExactlyInAnyOrder(root.toString(),child.toString(),fixed.toString());
+        assertThat(executor.organizationRangeForRecord(plan,"organizationId",UUID.randomUUID()).ids())
+            .containsExactly(fixed.toString());
+    }
+
     @Test void duplicateSubjectsAreValidatedOncePerPolicy() {
         var mapper=mock(RolePermissionMapper.class);UUID tenant=UUID.randomUUID(),member=UUID.randomUUID(),organization=UUID.randomUUID();
         when(mapper.validMembers(eq(tenant.toString()),anyList())).thenReturn(1);
@@ -35,7 +75,7 @@ class DataGrantCohesionTest {
         var policy=new RolePermissionManagement.DataPolicy(UUID.randomUUID(),DataScopeAuthorization.ScopeType.RULES,"masterdata.partner",Set.of(),
             List.of(rule(DataGrantRules.SubjectType.MEMBER,Set.of(member)),rule(DataGrantRules.SubjectType.MEMBER,Set.of(member)),
                 rule(DataGrantRules.SubjectType.ORGANIZATION,Set.of(organization)),rule(DataGrantRules.SubjectType.ORGANIZATION,Set.of(organization))));
-        DataGrantPolicySupport.validate(tenant,"masterdata.partner:read",policy,DataAccessCatalog.fromObjects(List.of(new BusinessPartnerDeclaration())),mapper);
+        DataGrantPolicySupport.validate(tenant,"masterdata.partner:read",policy,DataAccessCatalog.fromObjects(List.of(new BusinessPartnerDeclaration())),mapper,mock(com.appnexus.platform.configuration.BusinessValueCatalog.class));
         verify(mapper).validMembers(tenant.toString(),List.of(member.toString()));
         verify(mapper).validOrganizations(tenant.toString(),List.of(organization.toString()));verifyNoMoreInteractions(mapper);
     }
@@ -48,10 +88,10 @@ class DataGrantCohesionTest {
             List.of(rule(DataGrantRules.SubjectType.MEMBER,first),rule(DataGrantRules.SubjectType.MEMBER,second)));
         when(mapper.validMembers(eq(tenant.toString()),anyList())).thenAnswer(call->{List<?> ids=call.getArgument(1);assertThat(ids.size()).isLessThanOrEqualTo(500);return ids.size();});
         var catalog=DataAccessCatalog.fromObjects(List.of(new BusinessPartnerDeclaration()));
-        DataGrantPolicySupport.validate(tenant,"masterdata.partner:read",policy,catalog,mapper);
+        DataGrantPolicySupport.validate(tenant,"masterdata.partner:read",policy,catalog,mapper,mock(com.appnexus.platform.configuration.BusinessValueCatalog.class));
         verify(mapper,times(2)).validMembers(eq(tenant.toString()),anyList());verifyNoMoreInteractions(mapper);
         reset(mapper);when(mapper.validMembers(eq(tenant.toString()),anyList())).thenReturn(500,0);
-        assertThatThrownBy(()->DataGrantPolicySupport.validate(tenant,"masterdata.partner:read",policy,catalog,mapper))
+        assertThatThrownBy(()->DataGrantPolicySupport.validate(tenant,"masterdata.partner:read",policy,catalog,mapper,mock(com.appnexus.platform.configuration.BusinessValueCatalog.class)))
             .isInstanceOf(IllegalArgumentException.class).hasMessage("DATA_GRANT_SUBJECT_INVALID");
     }
 }

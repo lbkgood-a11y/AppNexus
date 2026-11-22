@@ -10,7 +10,10 @@ const props = defineProps<{ title?: string; scope?: string }>();
 const slots = defineSlots<{ default?: () => any }>();
 // 插槽必须在组件渲染函数内执行，才能持续追踪 loading、disabled 和国际化状态。
 const RecoveryContent = defineComponent({
-  setup: () => () => h("div", [h("div", props.title), slots.default?.()])
+  setup: () => () => h("div", { class: "app-error-feedback__recovery" }, [
+    h("div", props.title),
+    h("div", { class: "app-error-feedback__actions" }, slots.default?.())
+  ])
 });
 // 同一父页面同一状态的重复展示共享身份；不同页面、弹窗状态不共享重试回调。
 const parent = getCurrentInstance()?.parent;

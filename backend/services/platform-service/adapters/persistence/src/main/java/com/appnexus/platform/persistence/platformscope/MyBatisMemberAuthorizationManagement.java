@@ -14,11 +14,12 @@ public class MyBatisMemberAuthorizationManagement implements MemberAuthorization
     private final SubjectRoleMapper subjectMapper;
     private final RolePermissionMapper roleMapper;
     private final MemberAuthorizationMapper mapper;
+    private final com.appnexus.platform.configuration.BusinessValueCatalog businessValues;
     private final DataAccessCatalog catalog;
 
     public MyBatisMemberAuthorizationManagement(SubjectRoleManagement subjects,RolePermissionManagement roles,
-            SubjectRoleMapper subjectMapper,RolePermissionMapper roleMapper,MemberAuthorizationMapper mapper,DataAccessCatalog catalog) {
-        this.catalog=catalog;this.subjects=subjects;this.roles=roles;this.subjectMapper=subjectMapper;this.roleMapper=roleMapper;this.mapper=mapper;
+            SubjectRoleMapper subjectMapper,RolePermissionMapper roleMapper,MemberAuthorizationMapper mapper,DataAccessCatalog catalog,com.appnexus.platform.configuration.BusinessValueCatalog businessValues) {
+        this.businessValues=businessValues;this.catalog=catalog;this.subjects=subjects;this.roles=roles;this.subjectMapper=subjectMapper;this.roleMapper=roleMapper;this.mapper=mapper;
     }
 
     @Override @Transactional public Assignment get(RoleManagement.Context context,UUID memberId) {
@@ -42,7 +43,7 @@ public class MyBatisMemberAuthorizationManagement implements MemberAuthorization
             Objects.requireNonNull(policy);Objects.requireNonNull(policy.permissionId());Objects.requireNonNull(policy.scopeType());Objects.requireNonNull(policy.organizationIds());
             if(!required.contains(policy.permissionId())||policies.putIfAbsent(policy.permissionId(),policy)!=null)throw new IllegalArgumentException("数据策略必须唯一对应本分支已选权限");
             if(!roleMapper.supportsPolicy(policy.permissionId().toString(),policy.scopeType().name(),policy.resourceType())||!supported(policy)||!catalog.supports((String)roleMapper.permissionDetail("TENANT",policy.permissionId().toString()).get("code"),policy.resourceType(),policy.scopeType()))throw error("DATA_SCOPE_UNSUPPORTED","范围尚未支持执行");
-            DataGrantPolicySupport.validate(context.tenantId(),(String)roleMapper.permissionDetail("TENANT",policy.permissionId().toString()).get("code"),policy,catalog,roleMapper);
+            DataGrantPolicySupport.validate(context.tenantId(),(String)roleMapper.permissionDetail("TENANT",policy.permissionId().toString()).get("code"),policy,catalog,roleMapper,businessValues);
             boolean organization=policy.scopeType()==DataScopeAuthorization.ScopeType.ORGANIZATION||policy.scopeType()==DataScopeAuthorization.ScopeType.ORGANIZATION_SUBTREE;
             if(organization) {
                 if(policy.organizationIds().isEmpty()||policy.organizationIds().size()>500||roleMapper.validOrganizations(tenant,strings(policy.organizationIds()))!=policy.organizationIds().size())throw error("DATA_SCOPE_VALUE_INVALID","组织不存在或不属于当前租户");

@@ -38,17 +38,20 @@ public class TenantContextController {
     ResponseEntity<Context> current(Authentication auth,HttpServletRequest request,
             @RequestParam(defaultValue="false") boolean optional) {
         var session=request.getSession();
-        String id=(String)session.getAttribute(TENANT);
+        Object id=session.getAttribute(TENANT);
+        Object memberId=session.getAttribute(MEMBER);
+        long version=session.getAttribute(VERSION) instanceof Number n?n.longValue():0;
+        // 探测与导航、业务过滤器验证同一租户及成员对，避免残留成员让页面误以为已完成选租户。
         var member=access.available(UUID.fromString(auth.getName())).stream()
-            .filter(m -> m.tenantId().toString().equals(id)).findFirst();
-        if(member.isEmpty()) {
+            .filter(m -> m.tenantId().toString().equals(id)&&m.memberId().toString().equals(memberId)).findFirst();
+        if(member.isEmpty()||version<1) {
             session.removeAttribute(TENANT);session.removeAttribute(MEMBER);
             if(optional) return ResponseEntity.noContent().cacheControl(CacheControl.noStore()).build();
             throw AccountSettingsController.problem(HttpStatus.CONFLICT,"TENANT_REQUIRED","请选择有效租户");
         }
         var m=member.get();
         return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(new Context(m.tenantId(),m.memberId(),m.name(),
-            session.getAttribute(VERSION) instanceof Number n?n.longValue():0));
+            version));
     }
     /**
      * 首次选择及切换均复核成员资格并轮换会话 ID；切换需匹配当前版本。
@@ -66,7 +69,8 @@ public class TenantContextController {
         if(previous!=null && !previous.equals(m.tenantId().toString()) &&
                 (input.expectedVersion()==null || input.expectedVersion()!=version))
             throw AccountSettingsController.problem(HttpStatus.CONFLICT,"TENANT_CONTEXT_CHANGED","租户上下文已变化，请刷新后重试");
-        if(previous==null || !previous.equals(m.tenantId().toString())) {
+        if(!m.tenantId().toString().equals(previous)||!m.memberId().toString().equals(session.getAttribute(MEMBER))||version<1) {
+            // 同一租户中的成员身份变化也必须轮换会话并推进版本，旧页面请求不能沿用原上下文。
             request.changeSessionId();
             session.removeAttribute("appnexus.person");session.removeAttribute("appnexus.personOrganization");session.removeAttribute("appnexus.personTenant");
             session.setAttribute(TENANT,m.tenantId().toString());session.setAttribute(MEMBER,m.memberId().toString());

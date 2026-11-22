@@ -46,7 +46,7 @@ public final class MyBatisPersonnelDirectory implements PersonnelDirectory {
     String pos=values.get("positionId");if(catalog.positions().stream().noneMatch(p->p.id().equalsIgnoreCase(pos)&&p.organizationId().equalsIgnoreCase(org)&&p.enabled()))throw new IllegalArgumentException("PERSON_ORGANIZATION_UNAVAILABLE");
     String starts=values.getOrDefault("startsOn","").isBlank()?"1970-01-02":values.get("startsOn");String ends=values.getOrDefault("endsOn","");boolean enabled=!values.getOrDefault("enabled","true").equals("false");
     if(create)return mapper.statement10(tenant.toString(),id.toString(),person.toString(),pos,starts,ends,enabled,values.getOrDefault("remarks",""))==1;
-    if(!enabled)mapper.statement11(tenant.toString(),id.toString());
+    if(!enabled)mapper.statement11(tenant.toString(),person.toString(),id.toString());
     return mapper.statement12(pos,starts,ends,enabled,values.getOrDefault("remarks",""),tenant.toString(),person.toString(),id.toString())==1;
   }
   @Override public boolean deleteAffiliation(UUID tenant,UUID person,String section,UUID id){

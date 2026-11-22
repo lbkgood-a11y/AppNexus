@@ -15,10 +15,12 @@ public final class BusinessPartnerController {
   /**
    * @param service 负责真实授权和事务的主数据服务 */
   public BusinessPartnerController(MasterDataManagement service){this.service=service;}
-  /** 查询客商管理；options 缺省 false，为 true 只读业务字典；否则 id 缺省查询列表，传 UUID 查询当前租户档案及明细；geography 默认 false，为 true 返回本租户地理摘要；dataAccess 默认 false，为 true 返回客商范围内归属候选及字段限制提示，均复核业务读取权。真实鉴权、租户与并发校验由同一业务执行器负责。 */
+  /** 查询客商管理；options 缺省 false，为 true 只读业务字典；否则 id 缺省查询列表，传 UUID 查询当前租户档案及明细；geography 默认 false，为 true 返回本租户地理摘要；dataAccess 默认 false，为 true 返回客商范围内归属候选及字段限制提示，均复核业务读取权。真实鉴权、租户与并发校验由同一业务执行器负责。
+   * @param organizationAction 归属候选用途，默认 read；create 或 update 还须具备对应功能权限，仅 dataAccess=true 时生效
+    */
   @OperationBinding(id="BusinessPartner.list",reference=true)
   @GetMapping("")
-  public Object list(HttpServletRequest r,@RequestParam(defaultValue="") String keyword,@RequestParam(required=false) Boolean enabled,@RequestParam(defaultValue="1") int page,@RequestParam(defaultValue="20") int size,@RequestParam(required=false) String id,@RequestParam(defaultValue="false") boolean options,@RequestParam(defaultValue="false") boolean geography,@RequestParam(defaultValue="false") boolean dataAccess) {if(dataAccess)return service.partnerAccess(context(r));if(geography)return service.geographyCatalog(context(r),Kind.PARTNER);if(options)return service.dictionaryOptions(context(r),Kind.PARTNER);return service.list(context(r),Kind.PARTNER,keyword,enabled,page,size,id);}
+  public Object list(HttpServletRequest r,@RequestParam(defaultValue="") String keyword,@RequestParam(required=false) Boolean enabled,@RequestParam(defaultValue="1") int page,@RequestParam(defaultValue="20") int size,@RequestParam(required=false) String id,@RequestParam(defaultValue="false") boolean options,@RequestParam(defaultValue="false") boolean geography,@RequestParam(defaultValue="false") boolean dataAccess,@RequestParam(defaultValue="read") String organizationAction) {if(dataAccess)return service.partnerAccess(context(r),organizationAction);if(geography)return service.geographyCatalog(context(r),Kind.PARTNER);if(options)return service.dictionaryOptions(context(r),Kind.PARTNER);return service.list(context(r),Kind.PARTNER,keyword,enabled,page,size,id);}
   /** 新增客商管理；真实鉴权、租户与并发校验由同一业务执行器负责。 */
   @OperationBinding(id="BusinessPartner.create",reference=true)
   @PostMapping("")

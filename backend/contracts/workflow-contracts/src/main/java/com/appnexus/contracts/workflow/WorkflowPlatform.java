@@ -16,6 +16,25 @@ public interface WorkflowPlatform {
   default List<Option> documentOrganizations(WorkflowContext context) { return List.of(); }
   /** 判断当前可信上下文的功能权限；未知权限或无效成员失败关闭。 */
   boolean allowed(WorkflowContext context, String permission);
+
+  /**
+   * 签发经过业务行校验后的同事务写许可。
+   * @param context 可信租户与业务主体
+   * @param permission 用例实际使用的现有功能权限
+   * @param keys SQL 依次绑定的目标记录键
+   */
+  default void authorizeRecordWrite(WorkflowContext context,String permission,String... keys){
+    throw new SecurityException("WORKFLOW_WRITE_AUTHORIZATION_UNAVAILABLE");
+  }
+  /**
+   * 为已经过办理人、候选任职及冻结依据校验的任务签发事务许可。
+   * @param context 可信租户及办理账号
+   * @param taskId 已验证的引擎任务标识
+   */
+  default void authorizeTaskWrite(WorkflowContext context,String taskId){
+    throw new SecurityException("WORKFLOW_WRITE_AUTHORIZATION_UNAVAILABLE");
+  }
+
   /**
    * 对已通过对象或当前任务准入的审批依据执行统一字段保护，不因任务分配放宽强制隐藏。
    * @param context 当前可信成员；每次办理重新读取限制

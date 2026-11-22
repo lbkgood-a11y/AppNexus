@@ -66,7 +66,12 @@ public final class ProductService implements com.appnexus.masterdata.api.product
  }
  /** {@inheritDoc} */
  public Object list(VerifiedTenantContext c,String name,String code,String categoryId,String form,String status,boolean archived,int page,int size,String configId,String filtersJson,boolean includeDescendants){
-  require(c,"read");return listQueries.list(c,name,code,categoryId,form,status,archived,page,size,configId,filtersJson,includeDescendants);
+  return list(c,name,code,categoryId,form,status,archived,page,size,configId,filtersJson,includeDescendants,"");
+ }
+ /** {@inheritDoc} */
+ public Object list(VerifiedTenantContext c,String name,String code,String categoryId,String form,String status,boolean archived,int page,int size,String configId,String filtersJson,boolean includeDescendants,String keyword){
+  require(c,"read");
+  return transaction.readOnly(()->listQueries.list(c,name,code,categoryId,form,status,archived,page,size,configId,filtersJson,includeDescendants,keyword));
  }
  /** 保留内部调用入口的默认分页；HTTP参数由固定Controller声明。 */
  public Object list(VerifiedTenantContext c){return list(c,"","",null,null,null,false,1,20);}
@@ -85,7 +90,11 @@ public final class ProductService implements com.appnexus.masterdata.api.product
  /** 组合公开读取用例与固定目录SQL，不在应用反向获取技术实现。 */
  private com.appnexus.masterdata.application.product.ProductCatalogQueryService catalogReads(){return new com.appnexus.masterdata.application.product.ProductCatalogQueryService(catalogQueries,access);}
  /** 授权详情，包括固定配置、动态值、completionIssues与可信审计，不能以列表快照替代。 */
- public Map<String,Object> read(VerifiedTenantContext c,String id){require(c,"read");uuid(id);authorizeRecord(c,id,"read",false);return snapshot(c,id);}
+ public Map<String,Object> read(VerifiedTenantContext c,String id){
+  require(c,"read");uuid(id);
+  // 授权与正文在同一次读取事务中，归属变化不能使详情绕过刚计算的范围。
+  return transaction.readOnly(()->{authorizeRecord(c,id,"read",false);return readSnapshot(c,id);});
+ }
  /** 创建仅DRAFT；已填始终合法，缺必填不阻止草稿；返回数据库真实版本和完整性。 */
  public Map<String,Object> create(VerifiedTenantContext c,Input i){
   return mainData().create(c,i);
@@ -97,13 +106,13 @@ public final class ProductService implements com.appnexus.masterdata.api.product
   return new com.appnexus.masterdata.application.product.ProductMainService(new com.appnexus.masterdata.application.product.ProductMainPort(){
    private Map<String,Object> before;
    @Override public <T>T atomic(java.util.function.Supplier<T> work){return write(work);}
-   @Override public void references(VerifiedTenantContext c,Input input){productAccess.target(c,input.organizationId(),"create",true);validateReferences(c,input.categoryId(),input.configId(),input.productForm(),input.unitId(),true);}
+   @Override public void references(VerifiedTenantContext c,String id,Input input){productAccess.target(c,id,input.organizationId(),"create",true);validateReferences(c,input.categoryId(),input.configId(),input.productForm(),input.unitId(),true);}
    @Override public void insert(VerifiedTenantContext c,String id,Input input){
     statements.createProduct(id,tenant(c),input.code().trim(),input.name().trim(),input.shortName(),input.categoryId(),input.configId(),input.productForm(),input.unitId(),input.description(),input.brand(),input.origin(),Objects.toString(input.barcode(),""),input.organizationId(),actor(c),actor(c));
    }
    @Override public Map<String,Object> lock(VerifiedTenantContext c,String id,long version){authorizeRecord(c,id,"update",true);before=locked(c,id,version);return before;}
    @Override public void unfrozen(VerifiedTenantContext c,String id){ensureNotInApproval(c,id);}
-   @Override public void updateFields(VerifiedTenantContext c,String id,Update input){productAccess.target(c,input.organizationId(),"update",false);
+   @Override public void updateFields(VerifiedTenantContext c,String id,Update input){productAccess.target(c,id,input.organizationId(),"update",false);
     statements.updateMainFields(input.name().trim(),input.shortName(),input.description(),input.brand(),input.origin(),input.barcode(),input.organizationId(),tenant(c),id);
    }
    @Override public void values(VerifiedTenantContext c,String id,String config,List<Value> values){saveValues(c,id,config,values);}
@@ -158,9 +167,8 @@ public final class ProductService implements com.appnexus.masterdata.api.product
 
  /** 原读取权限内的追加历史；只读、分页，不提供任意表审计入口。 */
  public Object changes(VerifiedTenantContext c,String id,int page,int size){
-  require(c,"read");uuid(id);authorizeRecord(c,id,"read",false);if(page<1||page>1000000||size<1||size>100)throw invalid();row(c,id,false);
-  var tenantId=c.tenantId();var tenantBytes=java.nio.ByteBuffer.allocate(16).putLong(tenantId.getMostSignificantBits()).putLong(tenantId.getLeastSignificantBits()).array();
-  return aggregates.changes(c,id,page,size);
+  require(c,"read");uuid(id);authorizeRecord(c,id,"read",false);if(page<1||page>1000000||size<1||size>100)throw invalid();records.load(c,id,false,productAccess.predicate(c,"read"));
+  return aggregates.changes(c,id,page,size,productAccess.predicate(c,"read"));
  }
 
 
@@ -174,7 +182,7 @@ public final class ProductService implements com.appnexus.masterdata.api.product
   return transaction.readOnly(()->{
    return new com.appnexus.masterdata.application.product.ProductPreviewService(new com.appnexus.masterdata.application.product.ProductPreviewPort(){
     private Map<String,Object> before;
-    @Override public Map<String,Object> source(){before=snapshot(c,id);return before;}
+    @Override public Map<String,Object> source(){before=readSnapshot(c,id);return before;}
     @Override public void validate(Migration target){migrationSource(before,target);validateReferences(c,target.categoryId(),target.configId(),target.productForm(),target.unitId(),true,false);prepareValues(c,target.configId(),target.values());}
     @Override public List<String> issues(Migration target){return targetIssues(c,before,target);}
     @Override public List<String> dropped(Migration target){return droppedValues(before,target);}
@@ -193,7 +201,7 @@ public final class ProductService implements com.appnexus.masterdata.api.product
  public Map<String,Object> migrateStructure(VerifiedTenantContext c,String id,MigrationCommand command,String key){
   require(c,"migrate_structure");require(c,"read");uuid(id);authorizeRecord(c,id,"read",false);authorizeRecord(c,id,"migrate_structure",false);uuid(key);
   if(command==null||command.change()==null)throw invalid();Migration change=command.change();validateMigration(change);
-  row(c,id,false);String digest=payloadDigest(change);
+  records.load(c,id,false,productAccess.predicate(c,"read"));String digest=payloadDigest(change);
   var existing=requestResult(c,id,key,digest,false);if(existing!=null)return existing;
   return transaction.migrate(()->{
     var service=new com.appnexus.masterdata.application.product.ProductStructureMigrationService(new com.appnexus.masterdata.application.product.ProductStructurePort(){
@@ -229,7 +237,7 @@ public final class ProductService implements com.appnexus.masterdata.api.product
  }
 
  private Map<String,Object> requestResult(VerifiedTenantContext c,String id,String key,String digest,boolean lock){
-  var rows=statements.replay(tenant(c),actor(c),id,key,lock);
+  var rows=statements.replay(tenant(c),actor(c),id,key,lock,productAccess.predicate(c,"migrate_structure"));
   if(rows.isEmpty())return null;var record=rows.getFirst();
   if(!digest.equalsIgnoreCase((String)record.get("digest")))throw problem("PRODUCT_IDEMPOTENCY_KEY_REUSED");
   if(((Number)record.get("valid")).intValue()!=1)throw problem("PRODUCT_IDEMPOTENCY_WINDOW_EXPIRED");
@@ -307,6 +315,7 @@ public final class ProductService implements com.appnexus.masterdata.api.product
   if(input==null||input.version()==null||input.version()<0||input.disposition()==null||!Set.of("CONFIRMED_NONE","DEFERRED_SPEC").contains(input.disposition()))throw invalid();
   text(input.reason(),1000,true);
   return write(()->{
+   authorizeRecord(c,id,"migrate_structure",true);
    var before=locked(c,id,input.version());ensureNotInApproval(c,id);
    if(before.get("legacyEnabled")==null||!"LEGACY_PENDING".equals(before.get("structureState")))throw problem("PRODUCT_LEGACY_REVIEW_NOT_APPLICABLE");
    statements.reviewLegacyDisposition(input.disposition(),tenant(c),id);
@@ -321,8 +330,9 @@ public final class ProductService implements com.appnexus.masterdata.api.product
   * @return 完整原文/审计保留的LEGACY_PENDING档案；不是新模型启用验收
   */
  public Map<String,Object> stageLegacy(VerifiedTenantContext c,String id){
-  require(c,"stage_legacy");require(c,"read");productAccess.requireAll(c,"stage_legacy");uuid(id);
+  require(c,"stage_legacy");require(c,"read");uuid(id);
   return write(()->{
+   productAccess.authorizeLegacyStage(c,id);
    var source=statements.lockLegacySource(tenant(c),id);
    if(source.isEmpty())throw changed();
    if(statements.stagedCount(tenant(c),id)!=0)throw problem("PRODUCT_LEGACY_ALREADY_STAGED");
@@ -336,14 +346,18 @@ public final class ProductService implements com.appnexus.masterdata.api.product
   * @return 每个旧商品missing/matched/sourceChanged及当前租户新增旧商品缺口；不自动覆盖已人工审查的数据
   */
  public Object reconcileLegacy(VerifiedTenantContext c,int page,int size){
-  require(c,"stage_legacy");require(c,"read");productAccess.requireAll(c,"stage_legacy");if(page<1||page>1000000||size<1||size>100)throw invalid();
-  var rows=statements.legacyReconciliation(tenant(c),size,(page-1)*size);
-  return Map.of("rows",rows,"total",statements.legacyCount(tenant(c)));
+  require(c,"stage_legacy");require(c,"read");var scope=productAccess.legacyRead(c);if(page<1||page>1000000||size<1||size>100)throw invalid();
+  var rows=statements.legacyReconciliation(tenant(c),size,(page-1)*size,scope);
+  return Map.of("rows",rows,"total",statements.legacyCount(tenant(c),scope));
  }
 
- private Map<String,Object> row(VerifiedTenantContext c,String id,boolean lock){return records.load(c,id,lock);}
+ private Map<String,Object> row(VerifiedTenantContext c,String id,boolean lock){return records.load(c,id,lock,null);}
  private Map<String,Object> snapshot(VerifiedTenantContext c,String id){
-  return aggregates.snapshot(c,id,this::issues);
+  return aggregates.snapshot(c,id,null,this::issues);
+ }
+ /** 只读快照继续使用原商品读取权限，由所有子查询绑定同一范围。 */
+ private Map<String,Object> readSnapshot(VerifiedTenantContext c,String id){
+  return aggregates.snapshot(c,id,productAccess.predicate(c,"read"),this::issues);
  }
  private Map<String,Object> locked(VerifiedTenantContext c,String id,long version){if(version<0)throw invalid();var before=row(c,id,true);if(((Number)before.get("version")).longValue()!=version)throw changed();return snapshot(c,id);}
  private static void mutable(Map<String,Object> row){com.appnexus.masterdata.domain.product.ProductLifecycle.requireMutable(row.get("archivedAt")!=null,(String)row.get("structureState"));}
@@ -393,6 +407,7 @@ public final class ProductService implements com.appnexus.masterdata.api.product
 
  /** 所有商品扩展读取正文前使用当前真实操作，写用例在原事务锁定授权父行。 */
  public void authorizeRecord(VerifiedTenantContext c,String id,String action,boolean lock){productAccess.authorize(c,id,action,lock);}
+ @Override public com.appnexus.platform.authorization.RowAccessControl.Predicate recordPredicate(VerifiedTenantContext c,String action){return productAccess.predicate(c,action);}
  /** @param c 可信主体 @param action create/update独立准入 @return 处于对应范围内的启用组织候选 */
  public Object organizations(VerifiedTenantContext c,String action){return productAccess.organizations(c,action);}
 }

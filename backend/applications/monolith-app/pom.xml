@@ -11,7 +11,7 @@
   <dependencies>
     <!-- 主数据服务仅在组合层装配，领域模块只使用公开契约。 -->
     <dependency><groupId>com.appnexus</groupId><artifactId>master-data-service</artifactId><version>${project.version}</version></dependency>
-    <!-- 钢卷仓储用例由单体组合，通过主数据公开契约读取引用。 -->
+    <!-- 大宗仓储进仓引用通过已有主数据公开契约装配。 -->
     <dependency><groupId>com.appnexus</groupId><artifactId>bulk-warehousing-service</artifactId><version>${project.version}</version></dependency>
     <!-- 页面操作元数据经公开契约登记，不改变真实授权执行。 -->
     <dependency><groupId>com.appnexus</groupId><artifactId>operation-contracts</artifactId><version>${project.version}</version></dependency>
@@ -139,6 +139,28 @@
   </dependencies>
   <build>
     <plugins>
+      <!-- JDK 源码门禁在 validate 执行；打包时跳过测试也不能跳过新增权限入口检查。 -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-antrun-plugin</artifactId>
+        <version>3.1.0</version>
+        <executions>
+          <execution>
+            <id>verify-access-entrypoints</id>
+            <phase>validate</phase>
+            <goals><goal>run</goal></goals>
+            <configuration>
+              <target>
+                <exec executable="${java.home}/bin/java" failonerror="true">
+                  <arg value="${project.basedir}/../../../scripts/AccessBuildGate.java" />
+                  <arg value="${project.basedir}/../../.." />
+                </exec>
+              </target>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
       <plugin>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-maven-plugin</artifactId>

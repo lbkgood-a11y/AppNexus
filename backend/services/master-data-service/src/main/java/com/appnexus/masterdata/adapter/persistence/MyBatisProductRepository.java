@@ -11,8 +11,8 @@ public final class MyBatisProductRepository implements ProductRepository {
  private final ProductRecordMapper mapper;
  /** @param mapper 与商品扩展共用SqlSession及UTC数据源的固定Mapper，不创建独立事务 */
  public MyBatisProductRepository(ProductRecordMapper mapper){this.mapper=Objects.requireNonNull(mapper);}
- @Override public Map<String,Object> load(VerifiedTenantContext c,String id,boolean lock){
-  var rows=mapper.load(tenantBytes(c),id,lock).stream().map(r->{
+ @Override public Map<String,Object> load(VerifiedTenantContext c,String id,boolean lock,com.appnexus.platform.authorization.RowAccessControl.Predicate access){
+  var rows=mapper.load(tenantBytes(c),id,lock,access).stream().map(r->{
    var m=new LinkedHashMap<String,Object>();
    for(String col:List.of("organizationId","id","code","name","shortName","description","brand","origin","categoryId","configId","productForm","specificationMode","unitId","status","structureState","legacySpecificationOriginal","legacyDisposition","barcode","legacyUnitOriginal","createdBy","updatedBy"))m.put(col,r.get(col)==null?null:r.get(col).toString());
    for(String col:List.of("archivedAt","createdAt","updatedAt"))m.put(col,utc(r.get(col)));

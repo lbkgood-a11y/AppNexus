@@ -11,6 +11,7 @@ import org.springframework.stereotype.Component;
 @Component
 public final class WorkflowPlatformBridge implements WorkflowPlatform {
   private final AccessAuthorization access;
+  private final com.appnexus.platform.authorization.ScopedWriteGate writes;
   private final TenantAccess tenants;
   private final CapabilityDirectoryMapper mapper;
   private final org.springframework.beans.factory.ObjectProvider<com.appnexus.platform.authorization.FieldProtection> fields;
@@ -18,17 +19,29 @@ public final class WorkflowPlatformBridge implements WorkflowPlatform {
 
   /**
    * @param access 统一功能授权端口，逐次核验
+   * @param writes 平台同事务执行许可
    * @param tenants 可信有效成员目录，禁止使用客户端成员标识
    * @param mapper 组织最小目录的固定租户查询
    * @param personnel 已选择人员及任职验证公开端口
    * @param fields 延迟统一字段保护，避免对象目录与平台桥接形成初始化循环；不可缺省放行
    */
   public WorkflowPlatformBridge(
-      AccessAuthorization access, TenantAccess tenants, CapabilityDirectoryMapper mapper,com.appnexus.platform.organization.PersonnelExecution personnel,org.springframework.beans.factory.ObjectProvider<com.appnexus.platform.authorization.FieldProtection> fields) {
+      AccessAuthorization access, TenantAccess tenants, CapabilityDirectoryMapper mapper,com.appnexus.platform.organization.PersonnelExecution personnel,org.springframework.beans.factory.ObjectProvider<com.appnexus.platform.authorization.FieldProtection> fields,com.appnexus.platform.authorization.ScopedWriteGate writes) {
     this.access = access;
+    this.writes = writes;
     this.tenants = tenants;
     this.mapper = mapper;this.personnel=personnel;this.fields=fields;
   }
+  /** 绑定可信租户及已通过业务约束的目标键，并复核原操作权限。 */
+  @Override public void authorizeRecordWrite(WorkflowContext c,String permission,String... keys){
+    writes.authorizeServiceOperation(UUID.fromString(c.tenantId()),permission,List.of(keys),()->allowed(c,permission));
+  }
+  /** 任务办理没有新增角色权限。应用已验证任务归属，桥接重查成员有效性并绑定实际账号。 */
+  @Override public void authorizeTaskWrite(WorkflowContext c,String taskId){
+    writes.authorizeServiceOperation(UUID.fromString(c.tenantId()),"workflow.task:complete",
+        List.of(taskId,c.actorId()),()->active(c.tenantId(),c.actorId()));
+  }
+
   /** 任务准入由工作流先验证，字段限制仍逐次消费统一权限策略，不能用审批身份绕过。 */
   @Override public Map<String,Object> projectData(WorkflowContext c,String resource,Map<String,Object> values){
     if(!active(c.tenantId(),c.actorId()))throw new SecurityException("WORKFLOW_FIELD_ACCESS_DENIED");

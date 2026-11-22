@@ -74,6 +74,17 @@ public interface CoilOutboundMapper {
         cap,issued,reserved,committed FROM bw_outbound_notice
       WHERE tenant_id=#{__verifiedTenant} AND id=UUID_TO_BIN(#{id}) FOR UPDATE
       """)
+  @com.appnexus.persistence.mybatis.GuardedScope(tenant="__verifiedTenant",operationPermissions={
+      "warehousing.outbound.coil:allocate","warehousing.outbound.coil:cancel",
+      "warehousing.outbound.coil:vehicle_limits","warehousing.outbound.coil:review_weighing",
+      "warehousing.outbound.coil:handover","warehousing.outbound.coil:plan",
+      "warehousing.outbound.coil:read_authorization_balances","warehousing.outbound.coil:accept_return",
+      "warehousing.outbound.coil:reverse_handover","warehousing.outbound.coil:dispatch_return",
+      "warehousing.outbound.coil:read_return_transit","warehousing.outbound.coil:reroute_transit_coil",
+      "warehousing.outbound.coil:settle_transit_loss","warehousing.outbound.coil:reopen_transit_loss",
+      "warehousing.outbound.coil:return_coils","warehousing.outbound.coil:release_returned_quality",
+      "warehousing.outbound.coil:pre_reserve","warehousing.outbound.coil:close",
+      "warehousing.outbound.coil:authorize"})
   Map<String,Object> notice(@Param("__verifiedTenant") byte[] tenant,@Param("id") String id);
 
   /** 当前读，授权期限使用数据库时钟。 */
@@ -82,6 +93,16 @@ public interface CoilOutboundMapper {
         closed_at IS NULL AND expires_at>CURRENT_TIMESTAMP(6) valid,closed_at IS NOT NULL closed,cap,issued,reserved,unassigned,title_watermark titleWatermark
       FROM bw_pickup_authorization WHERE tenant_id=#{__verifiedTenant} AND id=UUID_TO_BIN(#{id}) FOR UPDATE
       """)
+  @com.appnexus.persistence.mybatis.GuardedScope(tenant="__verifiedTenant",operationPermissions={
+      "warehousing.outbound.coil:allocate","warehousing.outbound.coil:cancel",
+      "warehousing.outbound.coil:vehicle_limits","warehousing.outbound.coil:review_weighing",
+      "warehousing.outbound.coil:handover","warehousing.outbound.coil:plan",
+      "warehousing.outbound.coil:read_authorization_balances","warehousing.outbound.coil:accept_return",
+      "warehousing.outbound.coil:reverse_handover","warehousing.outbound.coil:dispatch_return",
+      "warehousing.outbound.coil:read_return_transit","warehousing.outbound.coil:reroute_transit_coil",
+      "warehousing.outbound.coil:settle_transit_loss","warehousing.outbound.coil:reopen_transit_loss",
+      "warehousing.outbound.coil:return_coils","warehousing.outbound.coil:release_returned_quality",
+      "warehousing.outbound.coil:pre_reserve","warehousing.outbound.coil:close"})
   Map<String,Object> authorization(@Param("__verifiedTenant") byte[] tenant,@Param("id") String id);
 
   /** 当前读，锁定配额行。 */
@@ -93,12 +114,22 @@ public interface CoilOutboundMapper {
       FROM bw_outbound_trip
       WHERE tenant_id=#{__verifiedTenant} AND id=UUID_TO_BIN(#{id}) FOR UPDATE
       """)
+  @com.appnexus.persistence.mybatis.GuardedScope(tenant="__verifiedTenant",operationPermissions={
+      "warehousing.outbound.coil:allocate","warehousing.outbound.coil:cancel",
+      "warehousing.outbound.coil:vehicle_limits","warehousing.outbound.coil:review_weighing",
+      "warehousing.outbound.coil:handover","warehousing.outbound.coil:plan",
+      "warehousing.outbound.coil:read_authorization_balances","warehousing.outbound.coil:accept_return",
+      "warehousing.outbound.coil:reverse_handover","warehousing.outbound.coil:dispatch_return",
+      "warehousing.outbound.coil:read_return_transit","warehousing.outbound.coil:reroute_transit_coil",
+      "warehousing.outbound.coil:settle_transit_loss","warehousing.outbound.coil:reopen_transit_loss",
+      "warehousing.outbound.coil:return_coils","warehousing.outbound.coil:release_returned_quality"})
   Map<String,Object> trip(@Param("__verifiedTenant") byte[] tenant,@Param("id") String id);
 
   /** 读取加锁库存的卷号。 */
   @Select("""
       SELECT serial FROM bw_stock_coil WHERE tenant_id=#{__verifiedTenant} AND receipt_id=UUID_TO_BIN(#{id})
       """)
+  @com.appnexus.persistence.mybatis.GuardedScope(tenant="__verifiedTenant",operationPermissions={"warehousing.outbound.coil:identify","warehousing.outbound.coil:allocate","warehousing.outbound.coil:handover","warehousing.outbound.coil:dispatch_return"})
   String serial(@Param("__verifiedTenant") byte[] tenant,@Param("id") String receiptId);
 
   /** 建立库存和仓内唯一卷号的受控关联。 */
@@ -228,6 +259,7 @@ public interface CoilOutboundMapper {
           AND v.vehicle_number=#{vehicle} AND v.id<>UUID_TO_BIN(#{tripId}) AND v.reserved>0
       )
       """)
+  @com.appnexus.persistence.mybatis.GuardedScope(tenant="__verifiedTenant",operationPermissions={"warehousing.outbound.coil:allocate","warehousing.outbound.coil:review_weighing","warehousing.outbound.coil:handover","warehousing.outbound.coil:reverse_handover"})
   boolean otherVehicleLoad(@Param("__verifiedTenant") byte[] tenant,@Param("warehouse") String warehouseId,
       @Param("vehicle") String vehicleNumber,@Param("tripId") String tripId);
 
@@ -254,6 +286,7 @@ public interface CoilOutboundMapper {
       SELECT BIN_TO_UUID(receipt_id) receiptId,BIN_TO_UUID(transit_id) transitId FROM received
       WHERE position_rank=1 ORDER BY receipt_id LIMIT #{limit}
       """)
+  @com.appnexus.persistence.mybatis.GuardedScope(tenant="__verifiedTenant",operationPermissions={"warehousing.outbound.coil:read_authorization_balances"})
   List<Map<String,Object>> recoveryOrigins(@Param("__verifiedTenant") byte[] tenant,@Param("authorizationId") String authorizationId,
       @Param("warehouseId") String warehouseId,@Param("afterId") String afterId,@Param("limit") int limit);
 
@@ -264,6 +297,7 @@ public interface CoilOutboundMapper {
         AND recovery_receipt_id=UUID_TO_BIN(#{receiptId}) AND recovery_closed_at IS NULL
         AND retired_at IS NULL AND issued=0
       """)
+  @com.appnexus.persistence.mybatis.GuardedScope(tenant="__verifiedTenant",operationPermissions={"warehousing.outbound.coil:plan","warehousing.outbound.coil:read_authorization_balances"})
   String activeRecoveryTrip(@Param("__verifiedTenant") byte[] tenant,@Param("authorizationId") String authorizationId,
       @Param("receiptId") String receiptId);
 
@@ -317,6 +351,7 @@ public interface CoilOutboundMapper {
         BIN_TO_UUID(evidence_id) evidenceId,DATE_FORMAT(at_time,'%Y-%m-%dT%H:%i:%s.%fZ') occurredAt
       FROM events ORDER BY at_time,kind,id
       """)
+  @com.appnexus.persistence.mybatis.GuardedScope(tenant="__verifiedTenant",operationPermissions={"warehousing.outbound.coil:plan","warehousing.outbound.coil:read_authorization_balances"})
   List<Map<String,Object>> recoveryEvents(@Param("__verifiedTenant") byte[] tenant,
       @Param("authorizationId") String authorizationId,@Param("receiptId") String receiptId);
 
@@ -328,6 +363,7 @@ public interface CoilOutboundMapper {
       WHERE a.tenant_id=#{__verifiedTenant} AND a.trip_id=UUID_TO_BIN(#{tripId}) AND o.released_at IS NULL
       ORDER BY a.receipt_id
       """)
+  @com.appnexus.persistence.mybatis.GuardedScope(tenant="__verifiedTenant",operationPermissions={"warehousing.outbound.coil:read_authorization_balances","warehousing.outbound.coil:review_weighing","warehousing.outbound.coil:handover"})
   List<Map<String,Object>> activeAllocations(@Param("__verifiedTenant") byte[] tenant,@Param("tripId") String tripId);
 
   /** 作业范围变化只清除当前指针，历史磅单与失败原因继续保留。 */
@@ -354,6 +390,7 @@ public interface CoilOutboundMapper {
       SELECT BIN_TO_UUID(trip_id) tripId,state,net,gross,reasons,load_version loadVersion,request_digest digest
       FROM bw_coil_weigh_review WHERE tenant_id=#{__verifiedTenant} AND id=UUID_TO_BIN(#{id})
       """)
+  @com.appnexus.persistence.mybatis.GuardedScope(tenant="__verifiedTenant",operationPermissions={"warehousing.outbound.coil:read_authorization_balances","warehousing.outbound.coil:review_weighing","warehousing.outbound.coil:handover"})
   Map<String,Object> findReview(@Param("__verifiedTenant") byte[] tenant,@Param("id") String reviewId);
 
   /** 插入复核，采用已经锁住的车次限值凭证。 */
@@ -404,6 +441,12 @@ public interface CoilOutboundMapper {
         BIN_TO_UUID(unit_id) unitId,request_digest digest,reversed_at IS NOT NULL reversed FROM bw_coil_handover
       WHERE tenant_id=#{__verifiedTenant} AND id=UUID_TO_BIN(#{id})
       """)
+  @com.appnexus.persistence.mybatis.GuardedScope(tenant="__verifiedTenant",operationPermissions={
+      "warehousing.outbound.coil:handover","warehousing.outbound.coil:accept_return",
+      "warehousing.outbound.coil:reverse_handover","warehousing.outbound.coil:dispatch_return",
+      "warehousing.outbound.coil:read_return_transit","warehousing.outbound.coil:reroute_transit_coil",
+      "warehousing.outbound.coil:settle_transit_loss","warehousing.outbound.coil:reopen_transit_loss",
+      "warehousing.outbound.coil:return_coils","warehousing.outbound.coil:release_returned_quality"})
   Map<String,Object> findDispatch(@Param("__verifiedTenant") byte[] tenant,@Param("id") String handoverId);
 
   /** 保存实际交接事实和采用的复核、单位及受控门岗凭证。 */
@@ -490,6 +533,7 @@ public interface CoilOutboundMapper {
         stock_deduction deduction FROM bw_coil_handover_line
       WHERE tenant_id=#{__verifiedTenant} AND handover_id=UUID_TO_BIN(#{id}) ORDER BY receipt_id
       """)
+  @com.appnexus.persistence.mybatis.GuardedScope(tenant="__verifiedTenant",operationPermissions={"warehousing.outbound.coil:accept_return","warehousing.outbound.coil:reverse_handover"})
   List<Map<String,Object>> issuedCoils(@Param("__verifiedTenant") byte[] tenant,@Param("id") String handoverId);
 
   /** 查询已受理的退回请求。 */
@@ -505,6 +549,8 @@ public interface CoilOutboundMapper {
       SELECT BIN_TO_UUID(id) FROM bw_coil_return_acceptance
       WHERE tenant_id=#{__verifiedTenant} AND handover_id=UUID_TO_BIN(#{id})
       """)
+  @com.appnexus.persistence.mybatis.GuardedScope(tenant="__verifiedTenant",operationPermissions={
+      "warehousing.outbound.coil:reverse_handover","warehousing.outbound.coil:dispatch_return","warehousing.outbound.coil:return_coils"})
   String returnFor(@Param("__verifiedTenant") byte[] tenant,@Param("id") String handoverId);
 
   /** 记录真实退回验收凭证，不提前恢复出仓账。 */
@@ -635,6 +681,7 @@ public interface CoilOutboundMapper {
       WHERE tenant_id=#{__verifiedTenant} AND handover_id=UUID_TO_BIN(#{id}) AND reversed_at IS NULL
       ORDER BY receipt_id
       """)
+  @com.appnexus.persistence.mybatis.GuardedScope(tenant="__verifiedTenant",operationPermissions={"warehousing.outbound.coil:dispatch_return","warehousing.outbound.coil:settle_transit_loss","warehousing.outbound.coil:return_coils"})
   List<Map<String,Object>> activeIssuedCoils(@Param("__verifiedTenant") byte[] tenant,@Param("id") String handoverId);
 
   /** 固定的本批退回及两种原量。 */
@@ -765,6 +812,7 @@ public interface CoilOutboundMapper {
         BIN_TO_UUID(evidence_id) evidenceId,request_digest digest
       FROM bw_coil_return_transit WHERE tenant_id=#{__verifiedTenant} AND id=UUID_TO_BIN(#{id})
       """)
+  @com.appnexus.persistence.mybatis.GuardedScope(tenant="__verifiedTenant",operationPermissions={"warehousing.outbound.coil:dispatch_return","warehousing.outbound.coil:read_return_transit","warehousing.outbound.coil:reroute_transit_coil","warehousing.outbound.coil:settle_transit_loss","warehousing.outbound.coil:reopen_transit_loss","warehousing.outbound.coil:return_coils"})
   Map<String,Object> findTransit(@Param("__verifiedTenant") byte[] tenant,@Param("id") String transitId);
 
   /** 按原交接读取两种重量和卷号快照。未接管的发运卷仍返回空接管批次。 */
@@ -782,6 +830,7 @@ public interface CoilOutboundMapper {
       WHERE t.tenant_id=#{__verifiedTenant} AND t.transit_id=UUID_TO_BIN(#{id})
       ORDER BY t.receipt_id
       """)
+  @com.appnexus.persistence.mybatis.GuardedScope(tenant="__verifiedTenant",operationPermissions={"warehousing.outbound.coil:dispatch_return","warehousing.outbound.coil:read_return_transit"})
   List<Map<String,Object>> transitCoils(@Param("__verifiedTenant") byte[] tenant,@Param("id") String transitId);
 
   /** 从原交接的唯一卷键找在途批次及接管结果。 */
@@ -795,6 +844,7 @@ public interface CoilOutboundMapper {
       WHERE t.tenant_id=#{__verifiedTenant}
         AND t.handover_id=UUID_TO_BIN(#{handoverId}) AND t.receipt_id=UUID_TO_BIN(#{receiptId})
       """)
+  @com.appnexus.persistence.mybatis.GuardedScope(tenant="__verifiedTenant",operationPermissions={"warehousing.outbound.coil:dispatch_return","warehousing.outbound.coil:reroute_transit_coil","warehousing.outbound.coil:settle_transit_loss","warehousing.outbound.coil:reopen_transit_loss","warehousing.outbound.coil:return_coils"})
   Map<String,Object> findTransitLink(@Param("__verifiedTenant") byte[] tenant,@Param("handoverId") String handoverId,
       @Param("receiptId") String receiptId);
 
@@ -803,6 +853,7 @@ public interface CoilOutboundMapper {
       SELECT EXISTS(SELECT 1 FROM bw_coil_return_transit WHERE tenant_id=#{__verifiedTenant}
         AND handover_id=UUID_TO_BIN(#{id}))
       """)
+  @com.appnexus.persistence.mybatis.GuardedScope(tenant="__verifiedTenant",operationPermissions={"warehousing.outbound.coil:accept_return","warehousing.outbound.coil:reverse_handover"})
   boolean hasTransit(@Param("__verifiedTenant") byte[] tenant,@Param("id") String handoverId);
 
   /** 保存真实发运，不增加库存或恢复额度。 */
@@ -956,5 +1007,6 @@ public interface CoilOutboundMapper {
         WHERE t.tenant_id=#{__verifiedTenant} AND t.transit_id=UUID_TO_BIN(#{id})
       ) e ORDER BY e.created_at,e.kind,e.id,e.receipt_id
       """)
+  @com.appnexus.persistence.mybatis.GuardedScope(tenant="__verifiedTenant",operationPermissions={"warehousing.outbound.coil:dispatch_return","warehousing.outbound.coil:read_return_transit"})
   List<Map<String,Object>> transitEvidence(@Param("__verifiedTenant") byte[] tenant,@Param("id") String transitId);
 }

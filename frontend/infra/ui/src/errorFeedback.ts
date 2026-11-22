@@ -60,7 +60,7 @@ export function reportError(text: string, content?: VNode, identity: unknown = S
     const onClose = () => { if (active.get(identity) === entry) active.delete(identity); };
     // 所有异常共用顶部居中消息栈；长文案和补救操作持续显示，避免操作入口提前消失。
     const handle = ElMessage({
-      message: content ?? text, type: "error", customClass: "pure-message app-error-feedback",
+      message: content ?? text, type: "error", customClass: "app-error-feedback",
       duration: content || text.length > 100 ? 0 : ERROR_DURATION, showClose: true, onClose
     });
     entry = { close: () => { handle.close(); onClose(); }, owners: 0 };

@@ -20,25 +20,25 @@ class MappedObjectContractTest extends DatabaseTestSupport {
   @Autowired ObjectRecordRuntimeFactory factory;
   @Autowired JdbcTemplate jdbc;
   @Autowired PlatformTransactionManager manager;
+  @org.springframework.transaction.annotation.Transactional
   @Test void thirdObjectNeedsOnlyContractAndMapping(){
-    // 隔离验证表显式包含完整审计，不向生产迁移增加演示业务。
-    jdbc.execute("CREATE TABLE test_contract_record(tenant_id VARCHAR(36),id VARCHAR(36),organization_id VARCHAR(36),applicant VARCHAR(36),version BIGINT,state VARCHAR(20),instance_id VARCHAR(64),delivery_id VARCHAR(128),label VARCHAR(100),created_by BINARY(16),created_at TIMESTAMP(6) DEFAULT CURRENT_TIMESTAMP(6),updated_by BINARY(16),updated_at TIMESTAMP(6) DEFAULT CURRENT_TIMESTAMP(6),PRIMARY KEY(tenant_id,id))");
-    try{
+    // 使用已审核白名单的固定表，第三个对象仅替换受控字段投影和状态映射。
+    {
       var operation=new Operation("submit","提交","Submit","test.contract:submit","ThirdContract.submit",null,List.of(),new InteractionContract("ThirdContract.submit",1,"ThirdContract","submit","提交","Submit",InteractionContract.Trigger.USER_ACTION,List.of(new InteractionContract.Capability(InteractionContract.Service.BUSINESS,InteractionContract.Completion.SYNCHRONOUS,"ThirdContract.submit","",List.of(new Field("label","名称","Label","TEXT","",true)),Set.of(),"third.data",1))));
       Provider provider=()->new Descriptor("ThirdContract","第三对象","Third object","test",1,Category.TRANSACTION,List.of(),List.of(operation));
       var text=Encoding.TEXT;
-      var mapping=new ObjectRecordMapping("test_contract_record",new Column("tenant_id",text),new Column("id",text),new Column("organization_id",text),new Column("applicant",text),"version","state","instance_id","delivery_id",null,Map.of("label",new Value(new Column("label",text),Transform.VALUE,0)),Map.of("submit",new Transition(Set.of("DRAFT"),"ACCEPTED",false)),null,true);
+      var mapping=new ObjectRecordMapping("leave_poc_request",new Column("tenant_id",text),new Column("id",text),new Column("organization_id",text),new Column("applicant",text),"basis_version","state","instance_id","last_delivery_id",null,Map.of("label",new Value(new Column("reason",text),Transform.VALUE,0)),Map.of("submit",new Transition(Set.of("DRAFT"),"ACCEPTED",false)),null,true);
       var runtime=factory.create(provider,mapping,(c,id,op,service)->{});
       String tenant=UUID.randomUUID().toString(),id=UUID.randomUUID().toString(),actor=UUID.randomUUID().toString(),organization=UUID.randomUUID().toString();
-      jdbc.update("INSERT INTO test_contract_record(tenant_id,id,organization_id,applicant,version,state,label) VALUES(?,?,?,?,0,'DRAFT','真实第三对象')",tenant,id,organization,actor);
+      jdbc.update("INSERT INTO leave_poc_request(tenant_id,id,organization_id,applicant,leave_type,start_date,end_date,days,basis_version,state,reason,create_key) VALUES(?,?,?,?,'ANNUAL',CURRENT_DATE,CURRENT_DATE,1,0,'DRAFT','真实第三对象',?)",tenant,id,organization,actor,UUID.randomUUID().toString());
       var context=new Context(tenant,actor,UUID.randomUUID().toString());var tx=new TransactionTemplate(manager);
       assertThat(tx.execute(status->runtime.read(context,"ThirdContract",id,"submit",0,Set.of("label"))).values().get("label")).isEqualTo("真实第三对象");
       assertThatThrownBy(()->tx.execute(status->runtime.read(new Context(UUID.randomUUID().toString(),actor,UUID.randomUUID().toString()),"ThirdContract",id,"submit",0,Set.of()))).isInstanceOf(Rejection.class);
       assertThatThrownBy(()->tx.execute(status->runtime.read(context,"ThirdContract",id,"submit",1,Set.of()))).hasMessage("BUSINESS_OBJECT_VERSION_CONFLICT");
       tx.execute(status->runtime.execute(context,"ThirdContract",id,"submit",0,Map.of()));
-      assertThat(jdbc.queryForObject("SELECT state FROM test_contract_record WHERE tenant_id=? AND id=?",String.class,tenant,id)).isEqualTo("ACCEPTED");
-      assertThat(jdbc.queryForObject("SELECT BIN_TO_UUID(updated_by) FROM test_contract_record WHERE tenant_id=? AND id=?",String.class,tenant,id)).isEqualTo(actor);
+      assertThat(jdbc.queryForObject("SELECT state FROM leave_poc_request WHERE tenant_id=? AND id=?",String.class,tenant,id)).isEqualTo("ACCEPTED");
+      assertThat(jdbc.queryForObject("SELECT BIN_TO_UUID(updated_by) FROM leave_poc_request WHERE tenant_id=? AND id=?",String.class,tenant,id)).isEqualTo(actor);
       assertThatThrownBy(()->tx.execute(status->runtime.execute(context,"ThirdContract",id,"submit",0,Map.of()))).hasMessage("BUSINESS_OBJECT_STATE_CONFLICT");
-    }finally{jdbc.execute("DROP TABLE test_contract_record");}
+    }
   }
 }

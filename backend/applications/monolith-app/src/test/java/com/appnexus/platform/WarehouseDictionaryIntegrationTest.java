@@ -63,6 +63,36 @@ class WarehouseDictionaryIntegrationTest extends DatabaseTestSupport {
        String.class,c.tenantId().toString(),id)).isEqualTo("fixture@example.test");
   }finally{org.springframework.web.context.request.RequestContextHolder.resetRequestAttributes();}
  }
+ /** 仓库新增和编辑的门禁许可都必须绑定可信的确切目标组织。 */
+ @Test void warehouseWritesBindApprovedOrganization(){
+  var c=tenant();
+  var outside=tenant();
+  UUID original=organization(c),target=organization(c),foreign=organization(outside);
+  var kind=MasterData.Kind.WAREHOUSE;
+  var attrs=Map.of("warehouseType","PHYSICAL");
+  String id=master.create(c,kind,new MasterData.Input("OWNED","仓库",attrs,0,null,null,original.toString())).get("id");
+  var before=master.list(c,kind,"",null,1,1,id).rows().getFirst();
+  assertThat(before.organizationId()).isEqualTo(original.toString());
+  assertThatThrownBy(()->master.update(c,kind,id,new MasterData.Input("OWNED","跨租户移动",attrs,0,null,null,foreign.toString())))
+      .hasMessage("MASTER_DATA_DENIED");
+  assertThat(master.list(c,kind,"",null,1,1,id).rows()).containsExactly(before);
+  master.update(c,kind,id,new MasterData.Input("OWNED","归属已变更",attrs,0,null,null,target.toString()));
+  var after=master.list(c,kind,"",null,1,1,id).rows().getFirst();
+  assertThat(after.organizationId()).isEqualTo(target.toString());
+  assertThat(after.version()).isEqualTo(1);
+ }
+
+ /** 写入隔离测试组织夹具；生产归属校验仍通过公开组织目录。 */
+ private UUID organization(VerifiedTenantContext c){
+  UUID type=UUID.randomUUID(),id=UUID.randomUUID();
+  String tenant=c.tenantId().toString();
+  jdbc.update("INSERT INTO tenant_organization_type(tenant_id,id,code,name) VALUES(UUID_TO_BIN(?),UUID_TO_BIN(?),?,?)",
+      tenant,type.toString(),"WH-"+type,"仓库组织类型-"+type);
+  jdbc.update("INSERT INTO tenant_organization_unit(tenant_id,id,code,type_id,name) VALUES(UUID_TO_BIN(?),UUID_TO_BIN(?),?,UUID_TO_BIN(?),?)",
+      tenant,id.toString(),"WH-"+id,type.toString(),"仓库归属组织-"+id);
+  return id;
+ }
+
  @Test void dictionaryLifecycleAndIsolation(){
   var c=tenant();request(c);
   try{

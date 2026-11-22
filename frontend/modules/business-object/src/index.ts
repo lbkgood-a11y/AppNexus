@@ -1,8 +1,20 @@
+/** 代码发布的数据权限声明，只用于目录回显。 */
+export interface ObjectDataAccess {
+  scope?: "TENANT"|"PLATFORM";
+  resources: {resource:string;parentResource?:string;nameZh:string;nameEn:string;fields:{field:string;nameZh:string;nameEn:string;modes:string[]}[]}[];
+  dimensions: {field:string;nameZh:string;nameEn:string;operators:string[];source?:string;dictionary?:string;operationCodes?:string[];parameters?:string[]}[];
+  operationScopes: Record<string,string[]>;
+  otherDomain?: ObjectDataAccess | null;
+  /** 构建声明的标准主档接入，不代表其他入口或测试环境均通过。 */
+  standardCrud?: {ownershipField:string;operations:string[]} | null;
+}
 /** 业务对象管理公开类型；不暴露身份输入，租户上下文由应用 HTTP 层附加。 */
 export interface Descriptor {
   objectType: string; nameZh: string; nameEn: string; module: string; version: number;
   /** 业务对象性质，与审批和打印能力独立。 */
   category: "MASTER_DATA"|"TRANSACTION"|"CONFIGURATION"|"LEDGER"|"SYSTEM";
+  /** 同一对象的现有权限声明，旧契约缺省或空。 */
+  dataAccess?: ObjectDataAccess | null;
   /** 同一业务声明中实际接通的编码字段；空数组时不展示配置入口。 */
   codingFields?: {field:string;operationCode:string;maxLength:number}[];
   fields: { key: string; nameZh: string; nameEn: string; type: string; unit: string }[];

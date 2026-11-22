@@ -64,7 +64,8 @@ public final class PersonnelService implements com.appnexus.platform.organizatio
    */
   public Profile read(VerifiedTenantContext c,String id){
     require(c,"read");uuid(id);
-    var people=statements.profile(c.tenantId().toString(),id).stream().map(row->{var values=new LinkedHashMap<String,String>();for(String field:Kind.PERSON.fields)values.put(field,(String)row.get(field));return new Row((String)row.get("id"),(String)row.get("code"),(String)row.get("name"),values,Boolean.TRUE.equals(row.get("enabled")),((Number)row.get("version")).longValue());}).toList();
+    return tx.required(()->{
+    var people=statements.profile(c,id).stream().map(row->{var values=new LinkedHashMap<String,String>();for(String field:Kind.PERSON.fields)values.put(field,(String)row.get(field));return new Row((String)row.get("id"),(String)row.get("code"),(String)row.get("name"),values,Boolean.TRUE.equals(row.get("enabled")),((Number)row.get("version")).longValue());}).toList();
     if(people.isEmpty())throw new Rejection(404,"PERSON_NOT_FOUND");
     var rawAudit=statements.audit(c.tenantId().toString(),id).getFirst();String creator=(String)rawAudit.get("created_by"),updater=(String)rawAudit.get("updated_by");
     var audit=new Audit(creator,directory.accountName(c.tenantId(),creator),utc(rawAudit.get("created_at")),updater,directory.accountName(c.tenantId(),updater),utc(rawAudit.get("updated_at")));
@@ -77,6 +78,7 @@ public final class PersonnelService implements com.appnexus.platform.organizatio
     var projected=details.stream().map(detail->new Detail(detail.id(),detail.section(),
         fieldPolicy.project(PersonFieldPolicy.DETAIL,detail.values(),detailModes))).toList();
     return new Profile(fieldPolicy.project(people.getFirst(),personModes),audit,projected,assignments,detailModes);
+    });
   }
   /**
    * 创建或编辑固定分类明细；组织和岗位仅通过组织公开目录校验，不创建账号任职。
@@ -91,10 +93,12 @@ public final class PersonnelService implements com.appnexus.platform.organizatio
    * @return 明细 UUID
    */
   public Map<String,String> saveDetail(VerifiedTenantContext c,String person,String sectionCode,String id,DetailInput input){
-    require(c,id==null?"detail_create":"detail_update");uuid(person);if(id!=null)uuid(id);
+    String action=id==null?"detail_create":"detail_update";
+    require(c,action);uuid(person);if(id!=null)uuid(id);
     var section=Section.parse(sectionCode);if(input==null)throw invalid();
     String key=id==null?UUID.randomUUID().toString():id;
     return tx.required(()->{
+      statements.lockForWrite(c,person,action);
       bump(c,person,input.version());
       var previous=Map.<String,String>of();
       if(id!=null){var old=statements.readDetailContent(c.tenantId().toString(),person,id,section.code);if(!old.isEmpty())previous=decode(old.getFirst());}
@@ -118,7 +122,7 @@ public final class PersonnelService implements com.appnexus.platform.organizatio
    * @param version 当前人员非负版本 */
   public void deleteDetail(VerifiedTenantContext c,String person,String sectionCode,String id,long version){
     require(c,"detail_delete");uuid(person);uuid(id);var section=Section.parse(sectionCode);
-    tx.run(()->{if(section.fields.stream().anyMatch(fieldPolicy.modes(c,PersonFieldPolicy.DETAIL)::containsKey))throw PersonFieldPolicy.denied();bump(c,person,version);if(section==Section.ORGANIZATIONS||section==Section.POSITIONS){if(!directory.deleteAffiliation(c.tenantId(),uuid(person),section.code,uuid(id)))throw changed();return;}if(statements.deleteDetail(c.tenantId().toString(),person,id,section.code)!=1)throw changed();});
+    tx.run(()->{statements.lockForWrite(c,person,"detail_delete");if(section.fields.stream().anyMatch(fieldPolicy.modes(c,PersonFieldPolicy.DETAIL)::containsKey))throw PersonFieldPolicy.denied();bump(c,person,version);if(section==Section.ORGANIZATIONS||section==Section.POSITIONS){if(!directory.deleteAffiliation(c.tenantId(),uuid(person),section.code,uuid(id)))throw changed();return;}if(statements.deleteDetail(c.tenantId().toString(),person,id,section.code)!=1)throw changed();});
   }
   /**
    * @param c 可信主体
@@ -131,6 +135,7 @@ public final class PersonnelService implements com.appnexus.platform.organizatio
     var member=uuid(input.memberId());
     String key=id==null?UUID.randomUUID().toString():id;
     try{return tx.required(()->{
+      statements.lockForWrite(c,person,"assign");
       // 保存时重新核验，不信任浏览器此前读取的候选列表；关联不构成组织任职或权限授予。
       if(!directory.eligible(c.tenantId(),member))throw new Rejection(409,"PERSON_USER_UNAVAILABLE");
       bump(c,person,input.version());
@@ -145,7 +150,7 @@ public final class PersonnelService implements com.appnexus.platform.organizatio
    * @param id 关联 UUID
    * @param version 当前人员版本；解除关联不删除人员、账号或任职 */
   public void unassign(VerifiedTenantContext c,String person,String id,long version){
-    require(c,"assign");uuid(person);uuid(id);tx.run(()->{bump(c,person,version);if(statements.deleteAssignment(c.tenantId().toString(),person,id)!=1)throw changed();});
+    require(c,"assign");uuid(person);uuid(id);tx.run(()->{statements.lockForWrite(c,person,"assign");bump(c,person,version);if(statements.deleteAssignment(c.tenantId().toString(),person,id)!=1)throw changed();});
   }
   /**
    * 公开业务端口：仅验证真实执行用户可代表指定组织下的人员，不产生业务授权或替换登录身份。

@@ -46,9 +46,15 @@ abstract class DatabaseTestSupport {
         properties.add("app.mfa.require-platform", () -> false);
         // 任务租约测试显式领取，防止后台 Worker 消费测试事件；生产默认仍开启。
         properties.add("app.events.worker.enabled", () -> false);
-        // 所有共享容器测试使用同一 OAuth 注册地址，避免不同测试上下文误触生产式配置漂移保护。
-        properties.add("app.public-url", () -> "http://localhost:18080");
-        properties.add("app.frontend-url", () -> "http://localhost:8848");
+        // 共享容器测试使用固定 OAuth 地址。独立仓储浏览器验收用自身端口走完整登录回调。
+        if (Boolean.getBoolean("warehouse.relogin.browser.qa")) {
+            String browserOrigin="http://localhost:"+System.getProperty("product.qa.frontend.port","18848");
+            properties.add("app.public-url", () -> browserOrigin);
+            properties.add("app.frontend-url", () -> browserOrigin);
+        } else {
+            properties.add("app.public-url", () -> "http://localhost:18080");
+            properties.add("app.frontend-url", () -> "http://localhost:8848");
+        }
     }
 
     @org.springframework.beans.factory.annotation.Autowired

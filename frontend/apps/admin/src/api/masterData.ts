@@ -12,11 +12,12 @@ async function mutate<T>(method:"post"|"put"|"delete",url:string,data:object):Pr
 export const masterDataApi:MasterDataApi={
   codingOptions:(type,field)=>http.request("get",`/api/business-objects/${encodeURIComponent(type)}/coding-options`,{params:{field}}),
   issueCode:(type,key,requestId)=>executeObjectCommand(`/api/business-objects/${encodeURIComponent(type)}/encoders/${encodeURIComponent(key)}/issue`,{},requestId),
-  partnerAccess:()=>http.request("get",path("partner"),{params:{dataAccess:true}}),
+  partnerAccess:(organizationAction)=>http.request("get",path("partner"),{params:{dataAccess:true,organizationAction}}),
   geographyDirectory:kind=>http.request("get",path(kind),{params:{geography:true}}),
   readPartner:async id=>{const result=await http.request<{rows:import("@appnexus/master-data").MasterDataRow[]}>("get",path("partner"),{params:{id,page:1,size:1}});if(!result.rows[0])throw new Error("MASTER_DATA_CHANGED");return result.rows[0];},
   readWarehouse:async id=>{const result=await http.request<{rows:import("@appnexus/master-data").MasterDataRow[]}>("get",path("warehouse"),{params:{id,page:1,size:1}});if(!result.rows[0])throw new Error("MASTER_DATA_CHANGED");return result.rows[0];},
   warehouseMapConfig:()=>http.request("get","/api/maps/_AMapService/configuration"),
+  warehouseOrganizations:organizationAction=>http.request("get",path("warehouse"),{params:{organizationAction}}),
   warehouseOptions:()=>http.request("get",path("warehouse"),{params:{options:true}}),
   warehouseFieldRestrictions:()=>http.request("get",`${path("warehouse")}/field-restrictions`),
   partnerOptions:()=>http.request("get",path("partner"),{params:{options:true}}),

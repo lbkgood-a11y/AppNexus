@@ -22,6 +22,9 @@ public final class DataAccessCatalog {
                     ||dimension.nameZh()==null||dimension.nameZh().isBlank()||dimension.nameEn()==null||dimension.nameEn().isBlank()
                     ||!Set.of("UUID","TEXT").contains(dimension.valueType())||dimension.operators().isEmpty()
                     ||!Set.of("EQ","IN").containsAll(dimension.operators()))throw invalid();
+                if(!validSource(dimension)||!validParameters(dimension)||!dimension.operationCodes().stream().allMatch(code->d.operations().stream()
+                    .anyMatch(op->op.operationId().equals(d.objectType()+"."+code)
+                        &&op.scopes().contains(DataScopeAuthorization.ScopeType.RULES))))throw invalid();
             }
             for(int i=0;i<d.resources().size();i++) {
                 var r=d.resources().get(i);
@@ -64,15 +67,58 @@ public final class DataAccessCatalog {
     public boolean declared(String permission,String resource){return descriptors.stream().filter(d->d.resources().getFirst().resource().equals(resource)).flatMap(d->d.operations().stream()).anyMatch(op->op.permissionCode().equals(permission)&&!op.scopes().isEmpty());}
     /** 从同一权威声明投影字段目录，供保存校验和响应执行复用。 */
     public List<FieldSecurity.Descriptor> fields(PermissionCatalog.ScopeType scope){return list(scope).stream().flatMap(d->d.resources().stream()).flatMap(r->r.fields().stream().map(f->new FieldSecurity.Descriptor(r.resource(),f.field(),f.nameZh(),f.nameEn(),f.kind(),f.modes().stream().sorted().toList()))).toList();}
+    private static boolean validSource(com.appnexus.contracts.businessobject.BusinessObjects.DataDimension dimension){
+        if(dimension.source()==null||dimension.dictionary()==null)return false;
+        return switch(dimension.source()){
+            case "TEXT" -> dimension.dictionary().isEmpty();
+            case "ACCOUNT","PERSON" -> "UUID".equals(dimension.valueType())&&dimension.dictionary().isEmpty();
+            case "ORGANIZATION" -> "UUID".equals(dimension.valueType())&&dimension.dictionary().isEmpty();
+            case "DICTIONARY" -> "TEXT".equals(dimension.valueType())&&dimension.dictionary().matches("[a-z][a-z0-9_]{0,63}");
+            default -> false;
+        };
+    }
+    private static boolean validParameters(com.appnexus.contracts.businessobject.BusinessObjects.DataDimension dimension){
+        var allowed=switch(dimension.source()){
+            case "ACCOUNT" -> "createdBy".equals(dimension.field())?Set.of("CURRENT_ACCOUNT"):Set.<String>of();
+            case "PERSON" -> Set.of("CURRENT_PERSON");
+            case "ORGANIZATION" -> Set.of("CURRENT_ORGANIZATION","CURRENT_ORGANIZATION_SUBTREE");
+            default -> Set.<String>of();
+        };
+        return allowed.containsAll(dimension.parameters())&&(dimension.parameters().isEmpty()||dimension.operators().contains("EQ"))
+            &&(!Set.of("ACCOUNT","PERSON").contains(dimension.source())||!dimension.parameters().isEmpty());
+    }
     private static IllegalStateException invalid(){return new IllegalStateException("DATA_ACCESS_DECLARATION_INVALID");}
+    /**
+     * @param permission 统一目录操作权限码
+     * @param resource 统一主资源键
+     * @return 当前操作开放的条件维度；无匹配权限时返回空
+     */
+    public List<com.appnexus.contracts.businessobject.BusinessObjects.DataDimension> dimensions(String permission,String resource){
+        return descriptors.stream().filter(d->d.resources().getFirst().resource().equals(resource))
+            .flatMap(d->d.dimensions().stream().filter(dimension->d.operations().stream().anyMatch(op->
+                op.permissionCode().equals(permission)&&op.scopes().contains(DataScopeAuthorization.ScopeType.RULES)
+                    &&(dimension.operationCodes().isEmpty()||dimension.operationCodes().stream().anyMatch(code->
+                        op.operationId().equals(d.objectType()+"."+code)))))).toList();
+    }
     /** 校验条件仅使用统一声明中真实支持的维度和运算，禁止管理配置提供任意字段。 */
     public void validateRules(String permission,String resource,List<DataGrantRules.Rule> rules) {
         if(!supports(permission,resource,DataScopeAuthorization.ScopeType.RULES))throw new IllegalArgumentException("DATA_SCOPE_UNSUPPORTED");
-        var descriptor=descriptors.stream().filter(d->d.resources().getFirst().resource().equals(resource)).findFirst().orElseThrow();
-        for(var rule:DataGrantRules.checked(rules))for(var condition:rule.conditions()) {
-            var dimension=descriptor.dimensions().stream().filter(d->d.field().equals(condition.field())).findFirst()
+        var dimensions=dimensions(permission,resource);
+        var checked=DataGrantRules.checked(rules);
+        // 创建前不存在记录 UUID，不能从已有记录选择推导新增权限。
+        if(permission.endsWith(":create")&&checked.stream().anyMatch(rule->!rule.recordIds().isEmpty()))
+            throw new IllegalArgumentException("DATA_GRANT_CREATE_RECORDS_UNSUPPORTED");
+        // 未声明条件维度的组合授权只表达明确的记录集合，全部记录使用独立 ALL。
+        if(dimensions.isEmpty()&&(checked.size()!=1||checked.stream().anyMatch(rule->
+            rule.allRecords()||rule.recordIds().isEmpty()||rule.subjectType()!=DataGrantRules.SubjectType.ROLE_MEMBERS)))
+            throw new IllegalArgumentException("DATA_GRANT_RECORDS_REQUIRED");
+        for(var rule:checked)for(var condition:rule.conditions()) {
+            var dimension=dimensions.stream().filter(d->d.field().equals(condition.field())).findFirst()
                 .orElseThrow(()->new IllegalArgumentException("DATA_GRANT_FIELD_UNSUPPORTED"));
             if(!dimension.operators().contains(condition.operator().name()))throw new IllegalArgumentException("DATA_GRANT_OPERATOR_UNSUPPORTED");
+            if(condition.parameter()!=null&&!dimension.parameters().contains(condition.parameter().name())
+                ||condition.parameter()==null&&Set.of("ACCOUNT","PERSON").contains(dimension.source()))
+                throw new IllegalArgumentException("DATA_GRANT_PARAMETER_UNSUPPORTED");
             if("UUID".equals(dimension.valueType()))for(String value:condition.values())
                 if(!UUID.fromString(value).toString().equals(value))throw new IllegalArgumentException("DATA_GRANT_UUID_INVALID");
         }

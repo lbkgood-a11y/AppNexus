@@ -40,6 +40,24 @@ class TenantSelectionTest extends DatabaseTestSupport {
   mvc.perform(get("/api/operation-decisions").cookie(next).header("X-Tenant-Context-Version","2")).andExpect(status().isOk()).andExpect(jsonPath("$",org.hamcrest.Matchers.not(org.hamcrest.Matchers.hasItem("OrganizationUnit.listFlat"))));
   mvc.perform(post("/api/organization/units").cookie(next).with(csrf()).contentType("application/json").content("{\"name\":\"stale\"}")).andExpect(status().isConflict());
  }
+ /** 真实会话中残留其他成员标识时，探测和导航一致撤下租户，重选后恢复已验证的身份。 */
+ @Test void staleMemberDoesNotMakeCurrentTenantDisagreeWithNavigation() throws Exception {
+  String account=UUID.randomUUID().toString(),tenant=UUID.randomUUID().toString(),member=UUID.randomUUID().toString();
+  jdbc.update("INSERT INTO identity_account(id,username,display_name,password_hash) VALUES(UUID_TO_BIN(?),?,'stale member','unused')",account,"stale-"+account);
+  jdbc.update("INSERT INTO platform_tenant(id,name) VALUES(UUID_TO_BIN(?),'Stale member tenant')",tenant);
+  jdbc.update("INSERT INTO tenant_member(id,tenant_id,account_id) VALUES(UUID_TO_BIN(?),UUID_TO_BIN(?),UUID_TO_BIN(?))",member,tenant,account);
+  var stale=session(account,tenant,UUID.randomUUID().toString());
+  mvc.perform(get("/bff/navigation").cookie(stale)).andExpect(status().isOk()).andExpect(jsonPath("$.contextVersion").value(0));
+  mvc.perform(get("/bff/tenants/current").param("optional","true").cookie(stale)).andExpect(status().isNoContent());
+  var recovered=mvc.perform(post("/bff/tenants/current").cookie(stale).with(csrf()).contentType("application/json")
+    .content("{\"tenantId\":\""+tenant+"\"}")).andExpect(status().isOk())
+    .andExpect(jsonPath("$.memberId").value(member)).andExpect(jsonPath("$.version").value(2)).andReturn()
+    .getResponse().getCookie("JSESSIONID");
+  mvc.perform(get("/bff/navigation").cookie(recovered)).andExpect(status().isOk())
+    .andExpect(jsonPath("$.tenantId").value(tenant)).andExpect(jsonPath("$.contextVersion").value(2));
+  mvc.perform(get("/api/workspace/context").cookie(recovered).header("X-Tenant-Context-Version","1")).andExpect(status().isConflict());
+  mvc.perform(get("/api/workspace/context").cookie(recovered).header("X-Tenant-Context-Version","2")).andExpect(status().isOk());
+ }
  /** 实际 Cookie 会话覆盖初始化后的 CRUD、CSRF、跨租户目标隔离和撤权立即生效。 */
  @Test void initializedAdministratorCanManageOnlyCurrentTenant() throws Exception {
   String account=UUID.randomUUID().toString(),tenant=UUID.randomUUID().toString(),member=UUID.randomUUID().toString();

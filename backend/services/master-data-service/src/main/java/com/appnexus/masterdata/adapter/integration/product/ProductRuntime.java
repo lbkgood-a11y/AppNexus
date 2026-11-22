@@ -40,7 +40,7 @@ public final class ProductRuntime implements BusinessObjectRuntime {
     check(objectType,operation,basisVersion);
     if(fields==null||!fields.isEmpty())throw new BusinessObjects.Rejection(403,"BUSINESS_OBJECT_FIELD_UNDECLARED");
     var trusted=context(context);authorization.authorize(trusted,objectId,actions.get(operation),true);
-    var row=records.load(trusted,objectId,true);long current=((Number)row.get("version")).longValue();
+    var row=records.load(trusted,objectId,true,readScope(trusted,operation));long current=((Number)row.get("version")).longValue();
     if(current!=basisVersion)throw new BusinessObjects.Rejection(409,"BUSINESS_OBJECT_VERSION_CONFLICT");
     // Product当前没有声明通用事实字段；只返回服务器归属和版本，原文不绕过公共字段投影。
     return new Snapshot(current,(String)row.get("organizationId"),Map.of());
@@ -61,8 +61,13 @@ public final class ProductRuntime implements BusinessObjectRuntime {
       case "listImages" -> images.list(trusted,objectId);
       default -> throw new BusinessObjects.Rejection(403,"BUSINESS_OBJECT_OPERATION_UNAVAILABLE");
     }
-    var row=records.load(trusted,objectId,false);
+    var row=records.load(trusted,objectId,false,readScope(trusted,operation));
     return new Result(((Number)row.get("version")).longValue(),Map.of());
+  }
+
+  /** 只读操作携带父商品读取范围，写入继续消耗同事务记录许可。 */
+  private com.appnexus.platform.authorization.RowAccessControl.Predicate readScope(VerifiedTenantContext c,String operation){
+    return "read".equals(actions.get(operation))?authorization.predicate(c,"read"):null;
   }
 
   private void check(String type,String operation,long version){

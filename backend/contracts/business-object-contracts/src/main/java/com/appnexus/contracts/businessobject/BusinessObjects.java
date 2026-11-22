@@ -62,8 +62,13 @@ public final class BusinessObjects {
    * @param operationScopes 已声明operationCode到受控范围编码集合；无配置则不启用该操作行范围
    * @param dimensions 已接通的组合授权条件维度，缺省为空；SQL映射由业务存储代码固定
    * @param otherDomain 同一对象的另一管理域；两个域使用独立资源，禁止嵌套
+   * @param standardCrud 标准主档的实际受控路径，缺省未登记该接入方式
    */
-  public record DataAccess(String scope,List<DataResource> resources,Map<String,Set<String>> operationScopes,List<DataDimension> dimensions,DataAccess otherDomain) {
+  public record DataAccess(String scope,List<DataResource> resources,Map<String,Set<String>> operationScopes,List<DataDimension> dimensions,DataAccess otherDomain,StandardCrudAccess standardCrud) {
+    /** 保留既有域声明构造入口，缺省未登记标准路径。 */
+    public DataAccess(String scope,List<DataResource> resources,Map<String,Set<String>> operationScopes,List<DataDimension> dimensions,DataAccess otherDomain){
+      this(scope,resources,operationScopes,dimensions,otherDomain,null);
+    }
     /** 既有对象缺省不开放条件维度，保持已声明的行范围。 */
     public DataAccess(String scope,List<DataResource> resources,Map<String,Set<String>> operationScopes){this(scope,resources,operationScopes,List.of());}
     /** 保留单一管理域的现有声明入口。 */
@@ -72,12 +77,42 @@ public final class BusinessObjects {
       dimensions=List.copyOf(dimensions);
       Objects.requireNonNull(scope);resources=List.copyOf(resources);
       var copy=new TreeMap<String,Set<String>>();operationScopes.forEach((key,value)->copy.put(key,Set.copyOf(value)));operationScopes=Map.copyOf(copy);
+      if(standardCrud!=null&&(!"TENANT".equals(scope)||!operationScopes.keySet().containsAll(standardCrud.operations())
+          ||dimensions.stream().noneMatch(dimension->dimension.field().equals(standardCrud.ownershipField()))))
+        throw new IllegalArgumentException("BUSINESS_OBJECT_STANDARD_SCOPE_INVALID");
       if(otherDomain!=null&&(scope.equals(otherDomain.scope())||otherDomain.otherDomain()!=null
           ||!operationScopes.isEmpty()||!otherDomain.operationScopes().isEmpty()))
         throw new IllegalArgumentException("BUSINESS_OBJECT_DATA_DOMAIN_INVALID");
     }
+    /**
+     * @param field 标准范围实际使用的业务归属字段
+     * @param operations 当前对象已接入门禁的原操作码
+     * @return 同一权限声明及可视化接入说明
+     */
+    public DataAccess withStandardCrud(String field,Set<String> operations){
+      return new DataAccess(scope,resources,operationScopes,dimensions,otherDomain,new StandardCrudAccess(field,operations));
+    }
     /** @return 独立投影的管理域；混合域暂仅用于固定数据边界的资源 */
     public List<DataAccess> domains(){return otherDomain==null?List.of(this):List.of(this,otherDomain);}
+  }
+
+  /**
+   * 标准主档范围的只读契约投影，标记已经接入固定读锁和写许可的操作。
+   * @param ownershipField 标准权限使用的归属字段
+   * @param operations 已登记的标准路径操作码；不表示其他操作或环境验收已经通过
+   */
+  public record StandardCrudAccess(String ownershipField,Set<String> operations){
+    public StandardCrudAccess {
+      Objects.requireNonNull(ownershipField);
+      operations=Set.copyOf(operations);
+      if(operations.isEmpty())throw new IllegalArgumentException("BUSINESS_OBJECT_STANDARD_SCOPE_INVALID");
+    }
+  }
+
+  /** 固定进程调度的统一对象准入端口，不接受外部任务或账号自报系统身份。 */
+  public interface ScheduledOperations {
+    /** @param operationId 固定系统操作标识 @param authority 固定系统准入键 */
+    void require(String operationId,String authority);
   }
 
   /** 固定资源执行器的公开装配契约；专业服务沿用自身安全边界，无需依赖平台权限实现。 */
@@ -92,9 +127,23 @@ public final class BusinessObjects {
    * @param nameEn 英文名称
    * @param valueType UUID 或 TEXT；UUID 值必须是规范标识
    * @param operators 已实现的 EQ/IN 集合
+   * @param source 选值来源 TEXT、ORGANIZATION 或 DICTIONARY；缺省文本
+   * @param dictionary 字典来源的固定字典编码，其他来源为空
+   * @param operationCodes 开放条件的对象操作编码；空集合表示该对象所有支持 RULES 的操作
+   * @param parameters 允许的动态参数标识；空集合只允许固定值
    */
-  public record DataDimension(String field,String nameZh,String nameEn,String valueType,Set<String> operators) {
-    public DataDimension {operators=Set.copyOf(operators);}
+  public record DataDimension(String field,String nameZh,String nameEn,String valueType,Set<String> operators,
+                              String source,String dictionary,Set<String> operationCodes,Set<String> parameters) {
+    /** 不包含动态参数的既有业务条件保持原契约。 */
+    public DataDimension(String field,String nameZh,String nameEn,String valueType,Set<String> operators,
+                         String source,String dictionary,Set<String> operationCodes){
+      this(field,nameZh,nameEn,valueType,operators,source,dictionary,operationCodes,Set.of());
+    }
+    /** 既有自由文本条件及测试声明沿用原构造约定。 */
+    public DataDimension(String field,String nameZh,String nameEn,String valueType,Set<String> operators){
+      this(field,nameZh,nameEn,valueType,operators,"TEXT","",Set.of());
+    }
+    public DataDimension {operators=Set.copyOf(operators);operationCodes=Set.copyOf(operationCodes);parameters=Set.copyOf(parameters);}
   }
   /**
    * 主从数据资源声明；不得携带数据库表名、列名或SQL。

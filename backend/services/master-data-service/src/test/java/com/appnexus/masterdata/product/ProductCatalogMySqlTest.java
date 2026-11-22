@@ -79,7 +79,8 @@ class ProductCatalogMySqlTest {
    var sql=new org.mybatis.spring.SqlSessionTemplate(mapperFactory.getObject());
    var catalogRepository=new MyBatisProductCatalogRepository(sql.getMapper(ProductCatalogMapper.class));
 
-   var service=new ProductCatalogService(allow,new SpringProductCatalogTransaction(manager),catalogRepository);
+   var catalogWrites=org.mockito.Mockito.mock(com.appnexus.platform.authorization.ScopedWriteGate.class);
+   var service=new ProductCatalogService(allow,new SpringProductCatalogTransaction(manager),catalogRepository,catalogWrites);
    var unit=service.createUnit(c,new UnitInput("KG","千克","MASS",3,0));
    assertThat(unit.audit().createdBy()).isEqualTo(c.accountId().toString());
    assertThatThrownBy(()->service.updateUnit(other,unit.id(),new UnitInput("KG","伪造","MASS",3,0))).isInstanceOf(Rejection.class);
@@ -95,8 +96,7 @@ class ProductCatalogMySqlTest {
    assertThat(service.units(c,"",1,10,"TIME").rows()).extracting(Unit::id).containsExactly(hour.id());
    assertThatThrownBy(()->service.renameUnitGroup(c,"MASS",new ProductCatalogManagement.UnitGroupInput(null,"过期版本",0L))).isInstanceOf(Rejection.class);
    var conversionMapper=new org.mybatis.spring.SqlSessionTemplate(mapperFactory.getObject()).getMapper(com.appnexus.masterdata.adapter.persistence.UnitConversionMapper.class);
-   var conversion=com.appnexus.masterdata.bootstrap.MasterDataConfiguration.conversions(conversionMapper,allow,new DataSourceTransactionManager(source),
-       new com.appnexus.platform.persistence.MyBatisScopedWriteGate());
+   var conversion=com.appnexus.masterdata.bootstrap.MasterDataConfiguration.conversions(conversionMapper,allow,new DataSourceTransactionManager(source),catalogWrites);
    @SuppressWarnings("unchecked") var converted=(Map<String,String>)conversion.create(c,new com.appnexus.masterdata.api.product.UnitConversions.Input(gram.id(),kilogram.id(),"0.001"));
    assertThat(conversion.calculate(c,converted.get("id"),"1234.5").toString()).contains("1.2345","1.235");
    assertThatThrownBy(()->conversion.create(c,new com.appnexus.masterdata.api.product.UnitConversions.Input(gram.id(),hour.id(),"1"))).isInstanceOf(Rejection.class);
@@ -124,10 +124,10 @@ class ProductCatalogMySqlTest {
    var renamed=service.updateCategory(c,parent.id(),new CategoryInput("ROOT","新根",null,1));
    assertThat(service.configuration(c,parent.id(),config.id()).path()).isEqualTo("根");
    assertThat(renamed.audit().createdAt()).isEqualTo(parent.audit().createdAt());
-   var denied=new ProductCatalogService((subject,permission)->false,new SpringProductCatalogTransaction(manager),catalogRepository);
+   var denied=new ProductCatalogService((subject,permission)->false,new SpringProductCatalogTransaction(manager),catalogRepository,catalogWrites);
    assertThatThrownBy(()->denied.createCategory(c,new CategoryInput("DENIED","拒绝",null,0))).hasMessage("MASTER_DATA_DENIED");
    assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM md_product_category WHERE code='DENIED'",Integer.class)).isZero();
-   var attributes=new ProductAttributeService(allow,new SpringProductAttributeTransaction(manager),new MyBatisProductAttributeRepository(sql.getMapper(ProductAttributeMapper.class)),new JacksonAttributeRuleContent());
+   var attributes=new ProductAttributeService(allow,new SpringProductAttributeTransaction(manager),new MyBatisProductAttributeRepository(sql.getMapper(ProductAttributeMapper.class)),new JacksonAttributeRuleContent(),catalogWrites);
    var color=new OptionSeed("BLACK","黑色");
    var initialColor=new RevisionInput("颜色","MULTI_SELECT",null,null,"{}",0,List.of(color));
    var duplicate=new RevisionInput("颜色","MULTI_SELECT",null,null,"{}",0,List.of(color,color));
@@ -149,7 +149,7 @@ class ProductCatalogMySqlTest {
    attributes.publishRevision(c,revisionId,2);
    assertThatThrownBy(()->attributes.createOption(c,revisionId,new com.appnexus.masterdata.api.product.ProductAttributeData.OptionInput("WOOD","木",1,3))).isInstanceOf(Rejection.class);
    assertThatThrownBy(()->attributes.createAttribute(c,new com.appnexus.masterdata.api.product.ProductAttributeData.AttributeInput("brand",null,0))).isInstanceOf(Rejection.class);
-   var templates=new ProductTemplateService(allow,new com.appnexus.masterdata.adapter.transaction.SpringProductTemplateTransaction(manager),new com.appnexus.masterdata.adapter.persistence.MyBatisProductTemplateRepository(new org.mybatis.spring.SqlSessionTemplate(mapperFactory.getObject()).getMapper(com.appnexus.masterdata.adapter.persistence.ProductTemplateMapper.class)));
+   var templates=new ProductTemplateService(allow,new com.appnexus.masterdata.adapter.transaction.SpringProductTemplateTransaction(manager),new com.appnexus.masterdata.adapter.persistence.MyBatisProductTemplateRepository(new org.mybatis.spring.SqlSessionTemplate(mapperFactory.getObject()).getMapper(com.appnexus.masterdata.adapter.persistence.ProductTemplateMapper.class)),catalogWrites);
    var templateId=templates.create(c,new com.appnexus.masterdata.api.product.ProductTemplateData.TemplateInput("BASIC","基础","BASIC",0)).get("id");
    var templateVersionId=templates.createVersion(c,templateId,new com.appnexus.masterdata.api.product.ProductTemplateData.VersionInput("",List.of(new com.appnexus.masterdata.api.product.ProductTemplateData.ItemInput(attributeId,revisionId,null,null,true,true,true,0)),0)).get("id");
    templates.publish(c,templateVersionId,1);
@@ -231,8 +231,12 @@ class ProductCatalogMySqlTest {
    var bindingPort=org.mockito.Mockito.mock(com.appnexus.contracts.businessobject.BusinessObjectBindings.class);org.mockito.Mockito.when(bindingPort.resolveOperation(org.mockito.ArgumentMatchers.any(),org.mockito.ArgumentMatchers.anyString(),org.mockito.ArgumentMatchers.anyString(),org.mockito.ArgumentMatchers.anyString(),org.mockito.ArgumentMatchers.anyLong(),org.mockito.ArgumentMatchers.anyMap())).thenAnswer(invocation->new com.appnexus.contracts.businessobject.BusinessObjects.Resolution("test-resolution",c.tenantId().toString(),"ProductApproval",invocation.getArgument(3),invocation.getArgument(4),1,"test-definition",1,invocation.getArgument(5),"submit","WORKFLOW","","product.approval"));
    var executionFactory=new org.springframework.beans.factory.support.StaticListableBeanFactory();var taskFactory=new org.springframework.beans.factory.support.StaticListableBeanFactory();taskFactory.addBean("tasks",taskPort);
    var approvalDeclaration=new ProductApprovalDeclaration();
-   approvalDeclaration.runtimeFactory(new com.appnexus.platform.persistence.businessobject.MappedObjectRuntimeFactory(sql.getMapper(com.appnexus.platform.persistence.businessobject.ObjectRecordMapper.class)));
-   var approvals=new ProductApprovalService(new SpringRecordTransaction(manager),products,products,workflowPlatform,()->executionFactory.getBean(com.appnexus.contracts.businessobject.BusinessObjectExecution.class),()->taskPort,new MyBatisProductApprovalRepository(sql.getMapper(ProductApprovalMapper.class)),new JacksonProductContent());
+   approvalDeclaration.runtimeFactory(new com.appnexus.platform.persistence.businessobject.MappedObjectRuntimeFactory(sql.getMapper(com.appnexus.platform.persistence.businessobject.ObjectRecordMapper.class),org.mockito.Mockito.mock(com.appnexus.platform.authorization.ScopedWriteGate.class)));
+   var approvals=new ProductApprovalService(new SpringRecordTransaction(manager),products,products,workflowPlatform,()->executionFactory.getBean(com.appnexus.contracts.businessobject.BusinessObjectExecution.class),()->taskPort,new MyBatisProductApprovalRepository(sql.getMapper(ProductApprovalMapper.class)),new JacksonProductContent(),
+       (subject,permission,resource)->new com.appnexus.platform.authorization.AccessPlan(subject,permission,resource,
+           new com.appnexus.platform.authorization.DataScopeAuthorization.DataScope(com.appnexus.platform.authorization.DataScopeAuthorization.ScopeType.ALL,Set.of()),Map.of(),java.time.Instant.now()),
+       new com.appnexus.platform.persistence.platformscope.MySqlRowAccessControl(),
+       org.mockito.Mockito.mock(com.appnexus.platform.authorization.ScopedWriteGate.class));
 
    executionFactory.addBean("execution",com.appnexus.platform.businessobject.BusinessObjectUseCases.execution(List.of(approvalDeclaration),bindingPort,new com.appnexus.platform.persistence.businessobject.configuration.SpringConfigurationTransaction(manager),new com.appnexus.contracts.businessobject.BusinessObjectPlatform(){
      public boolean platformAdministrator(String actor){return false;}
@@ -477,7 +481,7 @@ class ProductCatalogMySqlTest {
  private static ProductService productService(org.mybatis.spring.SqlSessionTemplate sql,org.springframework.transaction.PlatformTransactionManager manager,AccessAuthorization access,com.appnexus.contracts.operation.OperationPreviewProof proof,UUID organization){
   com.appnexus.platform.authorization.AccessPlanning planning=(subject,permission,resource)->{if(!access.hasPermission(subject,permission))throw new SecurityException("FIXTURE_PERMISSION_DENIED");return new com.appnexus.platform.authorization.AccessPlan(subject,permission,resource,new com.appnexus.platform.authorization.DataScopeAuthorization.DataScope(com.appnexus.platform.authorization.DataScopeAuthorization.ScopeType.ALL,Set.of()),Map.of(),java.time.Instant.now());};
   com.appnexus.platform.authorization.DataAccessReferences references=(subject,permission)->List.of(new com.appnexus.platform.authorization.DataAccessReferences.Organization(organization,"测试归属组织"));
-  var authorization=new ProductAccess(planning,new com.appnexus.platform.persistence.platformscope.MySqlRowAccessControl(),references,sql.getMapper(ProductAccessMapper.class));
+  var authorization=new ProductAccess(planning,new com.appnexus.platform.persistence.platformscope.MySqlRowAccessControl(),references,sql.getMapper(ProductAccessMapper.class),org.mockito.Mockito.mock(com.appnexus.platform.authorization.ScopedWriteGate.class));
   var records=new MyBatisProductRepository(sql.getMapper(ProductRecordMapper.class));
   var facts=new MyBatisProductCompletenessFacts(sql.getMapper(ProductCompletenessMapper.class));
   var aggregates=new MyBatisProductAggregateRepository(sql.getMapper(ProductSnapshotMapper.class),sql.getMapper(ProductHistoryMapper.class),sql.getMapper(ProductAttributeValueMapper.class),records);

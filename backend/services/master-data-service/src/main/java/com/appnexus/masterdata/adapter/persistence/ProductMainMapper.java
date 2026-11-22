@@ -9,38 +9,47 @@ import java.util.Map;
 public interface ProductMainMapper {
  /** 固定业务语句1；准入、参数规则、聚合锁及事务由原用例负责，所有值绑定。 */
  @Insert("INSERT INTO md_product_v1(id,tenant_id,code,name,short_name,category_id,category_config_id,product_form,base_unit_id,description,brand,origin_text,barcode,organization_id,created_by,updated_by) VALUES(UUID_TO_BIN(#{p0}),UUID_TO_BIN(#{p1}),#{p2},#{p3},#{p4},UUID_TO_BIN(#{p5}),UUID_TO_BIN(#{p6}),#{p7},UUID_TO_BIN(#{p8}),#{p9},#{p10},#{p11},#{p12},UUID_TO_BIN(#{p13}),UUID_TO_BIN(#{p14}),UUID_TO_BIN(#{p15}))")
+ @com.appnexus.persistence.mybatis.GuardedScope(resource="masterdata.product",tenant="p1",recordId="p0",actions="create",target="p13")
  int createProduct(@Param("p0") Object p0,@Param("p1") Object p1,@Param("p2") Object p2,@Param("p3") Object p3,@Param("p4") Object p4,@Param("p5") Object p5,@Param("p6") Object p6,@Param("p7") Object p7,@Param("p8") Object p8,@Param("p9") Object p9,@Param("p10") Object p10,@Param("p11") Object p11,@Param("p12") Object p12,@Param("p13") Object p13,@Param("p14") Object p14,@Param("p15") Object p15);
 
  /** 固定业务语句2；准入、参数规则、聚合锁及事务由原用例负责，所有值绑定。 */
  @Update("UPDATE md_product_v1 SET name=#{p0},short_name=#{p1},description=#{p2},brand=#{p3},origin_text=#{p4},barcode=COALESCE(#{p5},barcode),organization_id=COALESCE(UUID_TO_BIN(#{p6}),organization_id) WHERE tenant_id=UUID_TO_BIN(#{p7}) AND id=UUID_TO_BIN(#{p8})")
+ @com.appnexus.persistence.mybatis.GuardedScope(resource="masterdata.product",tenant="p7",recordId="p8",actions="update",target="p6")
  int updateMainFields(@Param("p0") Object p0,@Param("p1") Object p1,@Param("p2") Object p2,@Param("p3") Object p3,@Param("p4") Object p4,@Param("p5") Object p5,@Param("p6") Object p6,@Param("p7") Object p7,@Param("p8") Object p8);
 
  /** 固定业务语句3；准入、参数规则、聚合锁及事务由原用例负责，所有值绑定。 */
  @Select("SELECT state,product_version FROM md_product_approval WHERE tenant_id=UUID_TO_BIN(#{p0}) AND product_id=UUID_TO_BIN(#{p1}) ORDER BY created_at DESC LIMIT 1")
+ @com.appnexus.persistence.mybatis.GuardedScope(resource="masterdata.product",tenant="p0",recordId="p1",actions="set_status")
  List<Map<String,Object>> approvalStates(@Param("p0") Object p0,@Param("p1") Object p1);
 
  /** 固定业务语句4；准入、参数规则、聚合锁及事务由原用例负责，所有值绑定。 */
  @Update("UPDATE md_product_v1 SET status=#{p0} WHERE tenant_id=UUID_TO_BIN(#{p1}) AND id=UUID_TO_BIN(#{p2})")
+ @com.appnexus.persistence.mybatis.GuardedScope(resource="masterdata.product",tenant="p1",recordId="p2",actions="set_status")
  int setProductStatus(@Param("p0") Object p0,@Param("p1") Object p1,@Param("p2") Object p2);
 
  /** 固定业务语句5；准入、参数规则、聚合锁及事务由原用例负责，所有值绑定。 */
  @Update("UPDATE md_product_v1 SET category_id=UUID_TO_BIN(#{p0}),category_config_id=UUID_TO_BIN(#{p1}),product_form=#{p2},base_unit_id=UUID_TO_BIN(#{p3}),structure_state='INCOMPLETE',structure_revision=structure_revision+1,legacy_specification_disposition=CASE WHEN legacy_enabled_snapshot IS NOT NULL THEN COALESCE(#{p4},legacy_specification_disposition) ELSE legacy_specification_disposition END WHERE tenant_id=UUID_TO_BIN(#{p5}) AND id=UUID_TO_BIN(#{p6})")
+ @com.appnexus.persistence.mybatis.GuardedScope(resource="masterdata.product",tenant="p5",recordId="p6",actions="migrate_structure")
  int changeStructureTarget(@Param("p0") Object p0,@Param("p1") Object p1,@Param("p2") Object p2,@Param("p3") Object p3,@Param("p4") Object p4,@Param("p5") Object p5,@Param("p6") Object p6);
 
  /** 固定业务语句6；准入、参数规则、聚合锁及事务由原用例负责，所有值绑定。 */
  @Update("UPDATE md_product_specification SET retired_at=CURRENT_TIMESTAMP(6),enabled=FALSE,version=version+1,updated_by=UUID_TO_BIN(#{p0}),updated_at=CURRENT_TIMESTAMP(6) WHERE tenant_id=UUID_TO_BIN(#{p1}) AND product_id=UUID_TO_BIN(#{p2}) AND id=UUID_TO_BIN(#{p3}) AND retired_at IS NULL")
+ @com.appnexus.persistence.mybatis.GuardedScope(resource="masterdata.product",tenant="p1",recordId="p2",actions="migrate_structure")
  int retireSpecification(@Param("p0") Object p0,@Param("p1") Object p1,@Param("p2") Object p2,@Param("p3") Object p3);
 
  /** 固定业务语句7；准入、参数规则、聚合锁及事务由原用例负责，所有值绑定。 */
  @Update("UPDATE md_product_v1 SET specification_mode=#{p0} WHERE tenant_id=UUID_TO_BIN(#{p1}) AND id=UUID_TO_BIN(#{p2})")
+ @com.appnexus.persistence.mybatis.GuardedScope(resource="masterdata.product",tenant="p1",recordId="p2",actions="migrate_structure")
  int changeSpecificationMode(@Param("p0") Object p0,@Param("p1") Object p1,@Param("p2") Object p2);
 
  /** 固定业务语句8；准入、参数规则、聚合锁及事务由原用例负责，所有值绑定。 */
  @Update("UPDATE md_product_component SET enabled=FALSE,version=version+1,updated_by=UUID_TO_BIN(#{p0}),updated_at=CURRENT_TIMESTAMP(6) WHERE tenant_id=UUID_TO_BIN(#{p1}) AND product_id=UUID_TO_BIN(#{p2}) AND enabled=TRUE")
+ @com.appnexus.persistence.mybatis.GuardedScope(resource="masterdata.product",tenant="p1",recordId="p2",actions="migrate_structure")
  int disableComponents(@Param("p0") Object p0,@Param("p1") Object p1,@Param("p2") Object p2);
 
  /** 固定业务语句9；准入、参数规则、聚合锁及事务由原用例负责，所有值绑定。 */
  @Insert("INSERT INTO md_product_structure_request(id,tenant_id,account_id,product_id,request_key,payload_digest,result_product_version,result_structure_revision,change_id,result_json,expires_at,created_by,updated_by) VALUES(UUID_TO_BIN(#{p0}),UUID_TO_BIN(#{p1}),UUID_TO_BIN(#{p2}),UUID_TO_BIN(#{p3}),UUID_TO_BIN(#{p4}),UNHEX(#{p5}),#{p6},#{p7},UUID_TO_BIN(#{p8}),#{p9},TIMESTAMPADD(DAY,7,CURRENT_TIMESTAMP(6)),UUID_TO_BIN(#{p10}),UUID_TO_BIN(#{p11}))")
+ @com.appnexus.persistence.mybatis.GuardedScope(resource="masterdata.product",tenant="p1",recordId="p3",actions="migrate_structure")
  int saveMigrationResult(@Param("p0") Object p0,@Param("p1") Object p1,@Param("p2") Object p2,@Param("p3") Object p3,@Param("p4") Object p4,@Param("p5") Object p5,@Param("p6") Object p6,@Param("p7") Object p7,@Param("p8") Object p8,@Param("p9") Object p9,@Param("p10") Object p10,@Param("p11") Object p11);
 
  /** 固定业务语句10；准入、参数规则、聚合锁及事务由原用例负责，所有值绑定。 */
@@ -65,35 +74,43 @@ public interface ProductMainMapper {
 
  /** 固定业务语句15；准入、参数规则、聚合锁及事务由原用例负责，所有值绑定。 */
  @Delete("DELETE ch FROM md_product_v1_attribute_choice ch JOIN md_product_v1_attribute_value v ON v.tenant_id=ch.tenant_id AND v.id=ch.value_id WHERE ch.tenant_id=UUID_TO_BIN(#{p0}) AND v.product_id=UUID_TO_BIN(#{p1})")
+ @com.appnexus.persistence.mybatis.GuardedScope(resource="masterdata.product",tenant="p0",recordId="p1",actions="migrate_structure")
  int deleteChoices(@Param("p0") Object p0,@Param("p1") Object p1);
 
  /** 固定业务语句16；准入、参数规则、聚合锁及事务由原用例负责，所有值绑定。 */
  @Delete("DELETE FROM md_product_v1_attribute_value WHERE tenant_id=UUID_TO_BIN(#{p0}) AND product_id=UUID_TO_BIN(#{p1})")
+ @com.appnexus.persistence.mybatis.GuardedScope(resource="masterdata.product",tenant="p0",recordId="p1",actions="migrate_structure")
  int deleteValues(@Param("p0") Object p0,@Param("p1") Object p1);
 
  /** 固定业务语句17；准入、参数规则、聚合锁及事务由原用例负责，所有值绑定。 */
  @Update("UPDATE md_product_v1 SET legacy_specification_disposition=#{p0} WHERE tenant_id=UUID_TO_BIN(#{p1}) AND id=UUID_TO_BIN(#{p2})")
+ @com.appnexus.persistence.mybatis.GuardedScope(resource="masterdata.product",tenant="p1",recordId="p2",actions="migrate_structure")
  int reviewLegacyDisposition(@Param("p0") Object p0,@Param("p1") Object p1,@Param("p2") Object p2);
 
  /** 固定业务语句18；准入、参数规则、聚合锁及事务由原用例负责，所有值绑定。 */
  @Select("SELECT BIN_TO_UUID(id) id FROM md_product WHERE tenant_id=UUID_TO_BIN(#{p0}) AND id=UUID_TO_BIN(#{p1}) FOR UPDATE")
+ @com.appnexus.persistence.mybatis.GuardedScope(resource="masterdata.product",tenant="p0",recordId="p1",actions="stage_legacy")
  List<Map<String,Object>> lockLegacySource(@Param("p0") Object p0,@Param("p1") Object p1);
 
  /** 固定业务语句19；准入、参数规则、聚合锁及事务由原用例负责，所有值绑定。 */
  @Select("SELECT COUNT(*) FROM md_product_v1 WHERE tenant_id=UUID_TO_BIN(#{p0}) AND id=UUID_TO_BIN(#{p1})")
+ @com.appnexus.persistence.mybatis.GuardedScope(resource="masterdata.product",tenant="p0",recordId="p1",actions="stage_legacy")
  Integer stagedCount(@Param("p0") Object p0,@Param("p1") Object p1);
 
  /** 固定业务语句20；准入、参数规则、聚合锁及事务由原用例负责，所有值绑定。 */
  @Insert("INSERT INTO md_product_v1(id,tenant_id,code,name,barcode,status,structure_state,version,legacy_enabled_snapshot,legacy_specification_original,legacy_specification_disposition,legacy_unit_original,legacy_source_version,legacy_name_original,legacy_updated_by_original,legacy_updated_at_original,created_by,created_at,updated_by,updated_at) SELECT id,tenant_id,code,name,barcode,CASE WHEN enabled THEN 'ENABLED' ELSE 'DISABLED' END,'LEGACY_PENDING',version,enabled,specification,'UNREVIEWED',unit,version,name,updated_by,updated_at,created_by,created_at,updated_by,updated_at FROM md_product WHERE tenant_id=UUID_TO_BIN(#{p0}) AND id=UUID_TO_BIN(#{p1})")
+ @com.appnexus.persistence.mybatis.GuardedScope(resource="masterdata.product",tenant="p0",recordId="p1",actions="stage_legacy")
  int stageLegacyProduct(@Param("p0") Object p0,@Param("p1") Object p1);
 
  /** 固定业务语句21；准入、参数规则、聚合锁及事务由原用例负责，所有值绑定。 */
- @Select("SELECT BIN_TO_UUID(o.id) id,o.code,CASE WHEN p.id IS NULL THEN 'MISSING' WHEN p.legacy_source_version<>o.version OR NOT(BINARY p.code<=>BINARY o.code) OR NOT(BINARY p.legacy_name_original<=>BINARY o.name) OR NOT(BINARY p.barcode<=>BINARY o.barcode) OR NOT(BINARY p.legacy_specification_original<=>BINARY o.specification) OR NOT(BINARY p.legacy_unit_original<=>BINARY o.unit) OR NOT(p.legacy_enabled_snapshot<=>o.enabled) OR NOT(p.created_by<=>o.created_by) OR NOT(p.created_at<=>o.created_at) OR NOT(p.legacy_updated_by_original<=>o.updated_by) OR NOT(p.legacy_updated_at_original<=>o.updated_at) THEN 'SOURCE_CHANGED' ELSE 'MATCHED' END result FROM md_product o LEFT JOIN md_product_v1 p ON p.tenant_id=o.tenant_id AND p.id=o.id WHERE o.tenant_id=UUID_TO_BIN(#{p0}) ORDER BY o.code,o.id LIMIT #{p1} OFFSET #{p2}")
- List<Map<String,Object>> legacyReconciliation(@Param("p0") Object p0,@Param("p1") Object p1,@Param("p2") Object p2);
+ @com.appnexus.persistence.mybatis.GuardedScope(predicate="access",resource="masterdata.product",tenant="p0",actions="stage_legacy")
+ @SelectProvider(type=LegacyReadSql.class,method="legacyReconciliation")
+ List<Map<String,Object>> legacyReconciliation(@Param("p0") Object p0,@Param("p1") Object p1,@Param("p2") Object p2,@Param("access") com.appnexus.platform.authorization.RowAccessControl.Predicate access);
 
  /** 固定业务语句22；准入、参数规则、聚合锁及事务由原用例负责，所有值绑定。 */
- @Select("SELECT COUNT(*) FROM md_product WHERE tenant_id=UUID_TO_BIN(#{p0})")
- Long legacyCount(@Param("p0") Object p0);
+ @com.appnexus.persistence.mybatis.GuardedScope(predicate="access",resource="masterdata.product",tenant="p0",actions="stage_legacy")
+ @SelectProvider(type=LegacyReadSql.class,method="legacyCount")
+ Long legacyCount(@Param("p0") Object p0,@Param("access") com.appnexus.platform.authorization.RowAccessControl.Predicate access);
 
  /** 固定业务语句23；准入、参数规则、聚合锁及事务由原用例负责，所有值绑定。 */
  @Select("SELECT COUNT(*) FROM md_product_approval WHERE tenant_id=UUID_TO_BIN(#{p0}) AND product_id=UUID_TO_BIN(#{p1}) AND state='SUBMITTED'")
@@ -109,8 +126,34 @@ public interface ProductMainMapper {
 
  /** @param tenant 可信租户UUID @param id 已锁定授权商品 @param archived 归档或恢复，由领域规则验证 @return 修改行数 */
  @Update({"<script>","UPDATE md_product_v1 SET draft_archived_at=<choose><when test='archived'>CURRENT_TIMESTAMP(6)</when><otherwise>NULL</otherwise></choose> WHERE tenant_id=UUID_TO_BIN(#{tenant}) AND id=UUID_TO_BIN(#{id})","</script>"})
+ @com.appnexus.persistence.mybatis.GuardedScope(resource="masterdata.product",tenant="tenant",recordId="id",actions="manage_draft")
  int archive(@Param("tenant") String tenant,@Param("id") String id,@Param("archived") boolean archived);
  /** @param tenant 可信租户 @param actor 可信实际账号 @param id 已授权商品 @param key 幂等请求UUID @param lock 是否在原事务锁定回执 @return 仅同主体商品操作的历史摘要 */
- @Select({"<script>","SELECT HEX(payload_digest) digest,result_product_version version,result_structure_revision revision,BIN_TO_UUID(change_id) changeId,expires_at,expires_at>CURRENT_TIMESTAMP(6) valid FROM md_product_structure_request WHERE tenant_id=UUID_TO_BIN(#{tenant}) AND account_id=UUID_TO_BIN(#{actor}) AND product_id=UUID_TO_BIN(#{id}) AND operation_code='migrateStructure' AND request_key=UUID_TO_BIN(#{key})","<if test='lock'> FOR UPDATE</if>","</script>"})
- List<Map<String,Object>> replay(@Param("tenant") String tenant,@Param("actor") String actor,@Param("id") String id,@Param("key") String key,@Param("lock") boolean lock);
+ @com.appnexus.persistence.mybatis.GuardedScope(predicate="access",resource="masterdata.product",tenant="tenant",actions="migrate_structure")
+ @SelectProvider(type=LegacyReadSql.class,method="migrationReplay")
+ List<Map<String,Object>> replay(@Param("tenant") String tenant,@Param("actor") String actor,@Param("id") String id,@Param("key") String key,@Param("lock") boolean lock,@Param("access") com.appnexus.platform.authorization.RowAccessControl.Predicate access);
+ /** 旧商品对账的固定正文及计数，始终带权威范围标记。 */
+ final class LegacyReadSql {
+  private LegacyReadSql(){}
+  /** @param params 已验证租户、账号、请求键与真实迁移谓词 @return 仅在原商品仍可操作时返回回执 */
+  public static String migrationReplay(Map<String,Object> params){
+   var access=(com.appnexus.platform.authorization.RowAccessControl.Predicate)params.get("access");
+   return "SELECT HEX(payload_digest) digest,result_product_version version,result_structure_revision revision,BIN_TO_UUID(change_id) changeId,expires_at,expires_at>CURRENT_TIMESTAMP(6) valid FROM md_product_structure_request WHERE tenant_id=UUID_TO_BIN(#{tenant}) AND account_id=UUID_TO_BIN(#{actor}) AND product_id=UUID_TO_BIN(#{id}) AND operation_code='migrateStructure' AND request_key=UUID_TO_BIN(#{key})"
+       +" AND EXISTS (SELECT 1 FROM md_product_v1 WHERE tenant_id=UUID_TO_BIN(#{tenant}) AND id=UUID_TO_BIN(#{id})"
+       +com.appnexus.persistence.mybatis.ScopedSql.bind(access.sql(),access.parameters(),"access")+")"
+       +(Boolean.TRUE.equals(params.get("lock"))?" FOR UPDATE":"");
+  }
+  /** @param params 可信租户及已授权范围 @return 固定对账 SQL */
+  public static String legacyReconciliation(Map<String,Object> params){
+   var access=(com.appnexus.platform.authorization.RowAccessControl.Predicate)params.get("access");
+   return "SELECT BIN_TO_UUID(o.id) id,o.code,CASE WHEN p.id IS NULL THEN 'MISSING' WHEN p.legacy_source_version<>o.version OR NOT(HEX(p.code)<=>HEX(o.code)) OR NOT(HEX(p.legacy_name_original)<=>HEX(o.name)) OR NOT(HEX(p.barcode)<=>HEX(o.barcode)) OR NOT(HEX(p.legacy_specification_original)<=>HEX(o.specification)) OR NOT(HEX(p.legacy_unit_original)<=>HEX(o.unit)) OR NOT(p.legacy_enabled_snapshot<=>o.enabled) OR NOT(p.created_by<=>o.created_by) OR NOT(p.created_at<=>o.created_at) OR NOT(p.legacy_updated_by_original<=>o.updated_by) OR NOT(p.legacy_updated_at_original<=>o.updated_at) THEN 'SOURCE_CHANGED' ELSE 'MATCHED' END result FROM md_product o LEFT JOIN md_product_v1 p ON p.tenant_id=o.tenant_id AND p.id=o.id WHERE o.tenant_id=UUID_TO_BIN(#{p0})"
+       +com.appnexus.persistence.mybatis.ScopedSql.bind(access.sql(),access.parameters(),"access")+" ORDER BY o.code,o.id LIMIT #{p1} OFFSET #{p2}";
+  }
+  /** @param params 可信租户及已授权范围 @return 固定对账 SQL */
+  public static String legacyCount(Map<String,Object> params){
+   var access=(com.appnexus.platform.authorization.RowAccessControl.Predicate)params.get("access");
+   return "SELECT COUNT(*) FROM md_product WHERE tenant_id=UUID_TO_BIN(#{p0})"
+       +com.appnexus.persistence.mybatis.ScopedSql.bind(access.sql(),access.parameters(),"access");
+  }
+ }
 }

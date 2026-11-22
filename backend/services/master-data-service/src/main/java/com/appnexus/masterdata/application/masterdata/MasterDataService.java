@@ -53,12 +53,23 @@ public final class MasterDataService implements com.appnexus.masterdata.api.mast
   }
   private com.appnexus.masterdata.application.PartnerAccess partner(){if(partner==null)throw new Rejection(403,"MASTER_DATA_DENIED");return partner;}
   /** 当前客商读取权下返回归属候选与字段限制，不读取账号资料。 */
-  public Object partnerAccess(VerifiedTenantContext c){require(c,Kind.PARTNER,"read");return transaction.execute(()->partner().metadata(c),null);}
+  public Object partnerAccess(VerifiedTenantContext c,String action){
+    if(!Set.of("read","create","update").contains(action))throw invalid();
+    require(c,Kind.PARTNER,"read");
+    if(!"read".equals(action))require(c,Kind.PARTNER,action);
+    return transaction.execute(()->partner().metadata(c,action),null);
+  }
 
   /** 只读当前客商或商品字典；由原对象读取权限复核，不授予字典维护能力。 */
   public Object dictionaryOptions(VerifiedTenantContext c,Kind kind){require(c,kind,"read");return dictionaries.options(c.tenantId(),BusinessValueCatalog.PARTNER);}
 
   /** 仓库读取权限仅允许查询本租户分类，不授予字典维护权限。 */
+  @Override public Object warehouseOrganizations(VerifiedTenantContext c,String action){
+    if(!Set.of("create","update").contains(action))throw invalid();
+    require(c,Kind.WAREHOUSE,action);
+    return relations.warehouseOrganizations(c,action);
+  }
+
   public Object warehouseOptions(VerifiedTenantContext c){require(c,Kind.WAREHOUSE,"read");return dictionaries.options(c.tenantId(),BusinessValueCatalog.WAREHOUSE);}
 
   /** 获取表单预加载所需的实时限制；权限不足或执行器未装配时拒绝。 */
@@ -152,7 +163,9 @@ public final class MasterDataService implements com.appnexus.masterdata.api.mast
       var modes=fieldProtection.restrictions(subject,kind.resource());
       return new Page(pageResult.rows().stream().map(row->protectWarehouse(row,modes)).toList(),pageResult.total());
     },null);
-    return kind==Kind.PARTNER?transaction.execute(()->relations.list(c,kind,keyword,enabled,page,size,id,scope),null):relations.list(c,kind,keyword,enabled,page,size,id,scope);
+    if(kind==Kind.PARTNER||kind==Kind.WAREHOUSE||kind==Kind.STORAGE_AREA||kind==Kind.STORAGE_LOCATION)
+      return transaction.execute(()->relations.list(c,kind,keyword,enabled,page,size,id,scope),null);
+    return relations.list(c,kind,keyword,enabled,page,size,id,scope);
   }
 
   /** {@inheritDoc} */
@@ -200,8 +213,9 @@ public final class MasterDataService implements com.appnexus.masterdata.api.mast
     return transaction.execute(()->{
         var effective=kind==Kind.PARTNER?partner().prepare(c,null,input,Map.of()):warehouseInput(c,kind,input,Map.of());
         var values=validate(kind,effective);
-        if(kind==Kind.PARTNER)partner().target(c,effective.organizationId(),"create",true);
-        relations.prepareStorage(c,kind,null,values);
+        if(kind==Kind.PARTNER)partner().target(c,id,effective.organizationId(),"create",true);
+        if(kind==Kind.WAREHOUSE)relations.warehouseTarget(c,id,input.organizationId(),true);
+        relations.prepareStorage(c,kind,id,values,true);
         relations.prepareGeography(c,kind,input,values);
         records.create(c,kind,id,input,values);
         if(kind==Kind.PARTNER){
@@ -226,13 +240,15 @@ public final class MasterDataService implements com.appnexus.masterdata.api.mast
   public void update(VerifiedTenantContext c,Kind kind,String id,Input input) {
     require(c,kind,"update");uuid(id);if(input==null)throw invalid();
     transaction.execute(()->{
+      relations.requireStorageWrite(c,kind,id,"update");
       String oldOrganization=kind==Kind.PARTNER?partner().lock(c,id,"update"):null;
       var previous=(kind==Kind.PARTNER||kind==Kind.WAREHOUSE)?previousValues(c,kind,id):Map.<String,String>of();
       var effective=kind==Kind.PARTNER?partner().prepare(c,id,input,previous):warehouseInput(c,kind,input,previous);
       var values=validate(kind,effective);
       String organization=input.organizationId()==null?oldOrganization:input.organizationId();
-      if(kind==Kind.PARTNER)partner().target(c,organization,"update",false);
-      relations.prepareStorage(c,kind,id,values);
+      if(kind==Kind.PARTNER)partner().target(c,id,organization,"update",false);
+      if(kind==Kind.WAREHOUSE)relations.warehouseTarget(c,id,input.organizationId(),false);
+      relations.prepareStorage(c,kind,id,values,false);
       relations.prepareGeography(c,kind,input,values);
       records.update(c,kind,id,input,values);
       if(kind==Kind.PARTNER){
@@ -292,6 +308,7 @@ public final class MasterDataService implements com.appnexus.masterdata.api.mast
     if(input==null||input.enabled()==null||input.version()<0)throw invalid();
     transaction.execute(()->{
       if(kind==Kind.PARTNER)partner().lock(c,id,"set_status");
+      relations.requireStorageWrite(c,kind,id,"set_status");
       relations.storageStatus(c,kind,id,input.enabled());
       records.status(c,kind,id,input);
       audit(c,kind,id);return null;

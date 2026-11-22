@@ -47,6 +47,7 @@ public interface WorkflowRecordMapper extends com.appnexus.contracts.businessobj
 
  /** 固定工作流语句10；可信租户、参与者和任务准入仍由原用例验证，业务及引擎共享原事务。 */
  @Insert("INSERT INTO wf_instance(tenant_id,id,definition_id,definition_version,object_type,object_id,object_version,purpose,organization_id,starter,active_key,snapshot,data_contract_schema) VALUES(#{p0},#{p1},#{p2},#{p3},#{p4},#{p5},#{p6},#{p7},#{p8},#{p9},#{p10},#{p11},#{p12})")
+ @com.appnexus.persistence.mybatis.GuardedScope(tenant="p0",serviceOperation="workflow:start",serviceKeys={"p1","p9","p5"})
  int createInstance(@Param("p0") Object p0,@Param("p1") Object p1,@Param("p2") Object p2,@Param("p3") Object p3,@Param("p4") Object p4,@Param("p5") Object p5,@Param("p6") Object p6,@Param("p7") Object p7,@Param("p8") Object p8,@Param("p9") Object p9,@Param("p10") Object p10,@Param("p11") Object p11,@Param("p12") Object p12);
 
  /** 固定工作流语句11；可信租户、参与者和任务准入仍由原用例验证，业务及引擎共享原事务。 */
@@ -86,12 +87,14 @@ public interface WorkflowRecordMapper extends com.appnexus.contracts.businessobj
  List<Map<String,Object>> objectInstances(@Param("p0") Object p0,@Param("p1") Object p1,@Param("p2") Object p2,@Param("p3") Object p3,@Param("p4") Object p4,@Param("p5") Object p5,@Param("p6") Object p6,@Param("p7") Object p7);
 
  /** 固定工作流语句20；可信租户、参与者和任务准入仍由原用例验证，业务及引擎共享原事务。 */
- @Update("UPDATE wf_task SET comment=#{p0} WHERE tenant_id=#{p1} AND id=#{p2}")
- int saveTaskComment(@Param("p0") Object p0,@Param("p1") Object p1,@Param("p2") Object p2);
+ @Update("UPDATE wf_task SET comment=#{p0} WHERE tenant_id=#{p1} AND id=#{p2} AND actor=#{actor}")
+ @com.appnexus.persistence.mybatis.GuardedScope(tenant="p1",serviceOperation="workflow.task:complete",serviceKeys={"p2","actor"})
+ int saveTaskComment(@Param("p0") Object p0,@Param("p1") Object p1,@Param("p2") Object p2,@Param("actor") String actor);
 
  /** 固定工作流语句21；可信租户、参与者和任务准入仍由原用例验证，业务及引擎共享原事务。 */
- @Update("UPDATE wf_task SET state='DONE',decision=#{p0},comment=#{p1},completed_at=CURRENT_TIMESTAMP(6) WHERE tenant_id=#{p2} AND id=#{p3} AND state='OPEN'")
- int completeTask(@Param("p0") Object p0,@Param("p1") Object p1,@Param("p2") Object p2,@Param("p3") Object p3);
+ @Update("UPDATE wf_task SET state='DONE',decision=#{p0},comment=#{p1},completed_at=CURRENT_TIMESTAMP(6) WHERE tenant_id=#{p2} AND id=#{p3} AND state='OPEN' AND actor=#{actor}")
+ @com.appnexus.persistence.mybatis.GuardedScope(tenant="p2",serviceOperation="workflow.task:complete",serviceKeys={"p3","actor"})
+ int completeTask(@Param("p0") Object p0,@Param("p1") Object p1,@Param("p2") Object p2,@Param("p3") Object p3,@Param("actor") String actor);
 
  /** 固定工作流语句22；可信租户、参与者和任务准入仍由原用例验证，业务及引擎共享原事务。 */
  @Update("UPDATE wf_job SET state='CANCELLED',lease_token=NULL WHERE tenant_id=#{p0} AND instance_id=#{p1} AND kind<>'TERMINAL' AND state<>'DONE'")
@@ -103,6 +106,7 @@ public interface WorkflowRecordMapper extends com.appnexus.contracts.businessobj
 
  /** 固定工作流语句24；可信租户、参与者和任务准入仍由原用例验证，业务及引擎共享原事务。 */
  @Update("UPDATE wf_task SET actor=#{p0} WHERE tenant_id=#{p1} AND id=#{p2}")
+ @com.appnexus.persistence.mybatis.GuardedScope(tenant="p1",serviceOperation="workflow:operate",serviceKeys={"p2"})
  int assignTask(@Param("p0") Object p0,@Param("p1") Object p1,@Param("p2") Object p2);
 
  /** 固定工作流语句25；可信租户、参与者和任务准入仍由原用例验证，业务及引擎共享原事务。 */
@@ -223,10 +227,12 @@ public interface WorkflowRecordMapper extends com.appnexus.contracts.businessobj
 
  /** 固定唯一记录查询；无匹配不泄漏其他主体或租户，原用例保持参与者校验。 */
  @Select("SELECT * FROM wf_task WHERE tenant_id=#{p0} AND id=#{p1}")
+ @com.appnexus.persistence.mybatis.GuardedScope(tenant="p0",serviceOperation="workflow:operate",serviceKeys={"p1"})
  List<Map<String,Object>> taskForReassignment(@Param("p0") Object p0,@Param("p1") Object p1);
 
  /** 固定唯一记录查询；无匹配不泄漏其他主体或租户，原用例保持参与者校验。 */
  @Select("SELECT * FROM wf_task WHERE tenant_id=#{p0} AND id=#{p1} FOR UPDATE")
+ @com.appnexus.persistence.mybatis.GuardedScope(tenant="p0",serviceOperation="workflow:operate",serviceKeys={"p1"})
  List<Map<String,Object>> lockTaskForReassignment(@Param("p0") Object p0,@Param("p1") Object p1);
 
  /** 固定唯一记录查询；无匹配不泄漏其他主体或租户，原用例保持参与者校验。 */

@@ -22,4 +22,5 @@ public final class MyBatisProductApprovalRepository implements ProductApprovalRe
  public List<Map<String,Object>> approvalHistory(String tenant,String product){return ProductStorageValues.stable(mapper.approvalHistory(tenant,product));}
  /** {@inheritDoc} */
  public List<Map<String,Object>> approvalDetail(String tenant,String id){return ProductStorageValues.stable(mapper.approvalDetail(tenant,id));}
+ public String approvalSnapshot(String tenant,String id){return mapper.approvalSnapshot(tenant,id);}
 }

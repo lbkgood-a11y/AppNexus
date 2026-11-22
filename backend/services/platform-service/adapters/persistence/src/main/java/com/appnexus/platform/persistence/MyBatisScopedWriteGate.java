@@ -104,7 +104,12 @@ public final class MyBatisScopedWriteGate implements ScopedWriteGate {
         var grants=grants();
         if(grants==null||grants.stream().noneMatch(grant->tenant.equals(grant.tenant())&&id.equals(grant.id())
             &&(!bindTarget||Objects.equals(grant.target(),target))
-            &&Arrays.stream(actions).anyMatch(action->grant.permission().equals(resource+":"+action))))throw denied();
+            &&Arrays.stream(actions).anyMatch(action->grant.permission().equals(recordPermission(resource,action)))))throw denied();
+    }
+
+    /** 派生写入的原操作必须由 Mapper 固定列出，完整权限码不改变租户和绑定记录校验。 */
+    private static String recordPermission(String resource,String action){
+        return action.indexOf(':')>=0?action:resource+":"+action;
     }
 
     @SuppressWarnings("unchecked")

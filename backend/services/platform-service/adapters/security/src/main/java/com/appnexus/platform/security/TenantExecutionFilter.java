@@ -78,8 +78,6 @@ public final class TenantExecutionFilter extends OncePerRequestFilter {
             if((expected!=null && !expected.equals(Long.toString(version))) || (version>1 && writing && expected==null)) {
                 reject(response,409,"TENANT_CONTEXT_CHANGED"); return;
             }
-            var context=new VerifiedTenantContext(accountId,m.tenantId(),m.memberId(),version);
-            request.setAttribute(ATTRIBUTE,context);
             String selectedPerson=session==null?null:(String)session.getAttribute("appnexus.person");
             String selectedOrganization=session==null?null:(String)session.getAttribute("appnexus.personOrganization");
             String selectedTenant=session==null?null:(String)session.getAttribute("appnexus.personTenant");
@@ -94,6 +92,9 @@ public final class TenantExecutionFilter extends OncePerRequestFilter {
             if(path.startsWith("/api/leave-poc")&&validSelection&&((expectedPerson!=null&&!expectedPerson.equalsIgnoreCase(selectedPerson))||(expectedOrganization!=null&&!expectedOrganization.equalsIgnoreCase(selectedOrganization)))){reject(response,409,"PERSON_CONTEXT_CHANGED");return;}
             if((path.startsWith("/api/leave-poc")||(writing&&path.startsWith("/api/workflow/tasks/")))&&!validSelection){reject(response,409,"PERSON_CONTEXT_REQUIRED");return;}
             if(!validSelection){selectedPerson=null;selectedOrganization=null;}
+            var context=new VerifiedTenantContext(accountId,m.tenantId(),m.memberId(),version,
+                selectedPerson==null?null:UUID.fromString(selectedPerson),selectedOrganization==null?null:UUID.fromString(selectedOrganization));
+            request.setAttribute(ATTRIBUTE,context);
             // 工作流只接收公开契约，租户与操作者均来自上述可信会话，浏览器无权覆盖。
             request.setAttribute(com.appnexus.contracts.workflow.WorkflowContext.class.getName(),new com.appnexus.contracts.workflow.WorkflowContext(m.tenantId().toString(),accountId.toString(),java.util.UUID.randomUUID().toString(),selectedPerson,selectedOrganization));
             // 打印服务使用独立公开契约；请求结束清理，避免容器线程复用泄漏租户。

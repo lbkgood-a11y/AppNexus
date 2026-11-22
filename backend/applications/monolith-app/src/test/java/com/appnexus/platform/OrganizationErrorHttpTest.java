@@ -22,6 +22,9 @@ class OrganizationErrorHttpTest {
         verifyError(new java.util.NoSuchElementException("internal id"), 404, "ORGANIZATION_OBJECT_NOT_FOUND");
         verifyError(new IllegalArgumentException("sensitive payload"), 400, "INVALID_ORGANIZATION_INPUT");
     }
+    @Test void rangeDenialReturnsForbiddenInsteadOfServerError() throws Exception {
+        verifyError(new SecurityException("internal range detail"), 403, "ORGANIZATION_DATA_ACCESS_DENIED");
+    }
     /** 在真实控制器读取路径触发领域异常，检查 HTTP 状态、稳定码和禁止缓存契约。 */
     private void verifyError(RuntimeException failure, int status, String code) throws Exception {
         var domain = mock(OrganizationStructure.class);

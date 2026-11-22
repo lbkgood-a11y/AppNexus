@@ -12,8 +12,12 @@ public interface AccessAuthorization {
      * @param accountId 已认证全局账号 UUID，必填
      * @param tenantId 当前可信租户 UUID；平台请求为 {@code null}
      * @param memberId 当前租户成员 UUID；平台请求为 {@code null}，租户请求必填
+     * @param personId 当前请求已验证的业务人员 UUID；无身份时为空
+     * @param organizationId 当前请求已验证的业务组织 UUID；无身份时为空
      */
-    record Subject(UUID accountId, UUID tenantId, UUID memberId) {
+    record Subject(UUID accountId, UUID tenantId, UUID memberId,UUID personId,UUID organizationId) {
+        /** 既有调用未选择人员组织时保持原语义。 */
+        public Subject(UUID accountId,UUID tenantId,UUID memberId){this(accountId,tenantId,memberId,null,null);}
         /** 创建平台执行主体。 */
         public static Subject platform(UUID accountId) { return new Subject(accountId, null, null); }
         /** 创建租户执行主体；租户与成员必须来自服务端验证上下文。 */

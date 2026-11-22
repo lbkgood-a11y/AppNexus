@@ -364,6 +364,7 @@ public final class WorkflowRuntime implements WorkflowResults, WorkflowTaskAcces
           Object frozenSchema=selected.get("data_contract_schema");
           if(frozenSchema!=null&&!content.schema(frozenSchema.toString()).equals(currentSchema))throw fail("DATA_CONTRACT_CHANGED",409);
           String id = UUID.randomUUID().toString();
+          platform.authorizeRecordWrite(c,"workflow:start",id,c.actorId(),objectId);
           statements.createInstance(c.tenantId(),id,(String)selected.get("definition_id"),((Number)selected.get("version")).intValue(),objectType,objectId,objectVersion,purpose,organization,c.actorId(),hash(objectType + ":" + objectId + ":" + purpose),content.encode(snapshot),currentSchema==null?null:content.encode(currentSchema));
           if (m.copies() != null)
             for (var rule : m.copies())
@@ -495,7 +496,8 @@ public final class WorkflowRuntime implements WorkflowResults, WorkflowTaskAcces
               return outputs(business,result.outputs());
             }
             @Override public void save(WorkflowContext context,Task task,String id,String opinion){
-            statements.saveTaskComment(opinion,context.tenantId(),id);
+            platform.authorizeTaskWrite(context,id);
+            statements.saveTaskComment(opinion,context.tenantId(),id,context.actorId());
             audit(context, str(instance, "id"), "TASK_SAVED", id, "");
 
             }
@@ -506,7 +508,8 @@ public final class WorkflowRuntime implements WorkflowResults, WorkflowTaskAcces
           engine.fields(str(instance, "engine_id"),fields);
           if (operation.equals("REJECT"))
             engine.result(str(instance, "engine_id"),"REJECTED");
-          statements.completeTask(operation,opinion,context.tenantId(),id);
+          platform.authorizeTaskWrite(context,id);
+          statements.completeTask(operation,opinion,context.tenantId(),id,context.actorId());
           audit(context, str(instance, "id"), "TASK_COMPLETED", id, operation);
           if (operation.equals("REJECT")) {
             finish(instance, "REJECTED");
@@ -534,6 +537,7 @@ public final class WorkflowRuntime implements WorkflowResults, WorkflowTaskAcces
             private Map<String,Object> t,i;
             private WorkflowModel.Node n;
             @Override public Task lock(WorkflowContext context,String id){
+          platform.authorizeRecordWrite(context,"workflow:operate",taskId);
           t = required(statements.taskForReassignment(c.tenantId(),taskId));
           i = instance(c.tenantId(), str(t, "instance_id"), true);
           // 锁实例后重读任务；等待锁的另一请求不能沿用锁前OPEN快照重复调用业务。
@@ -717,6 +721,26 @@ public final class WorkflowRuntime implements WorkflowResults, WorkflowTaskAcces
     statements.createDeliveryJob((String)i.get("tenant_id"),UUID.randomUUID().toString(),(String)i.get("id"),node,execution,capability,kind,content.encode(payload),attempts,Instant.now().plusSeconds(timeout));
   }
 
+  /** 交付引用按固定发布版本和权威实例复核，队列表中的能力键与结果不能独立授权。 */
+  private WorkflowBusiness deliveryBusiness(Map<String,Object> job,Map<String,Object> instance,Map<String,String> payload){
+    var model=definition(instance);
+    String capability=str(job,"capability");
+    String kind=str(job,"kind");
+    if("TERMINAL".equals(kind)){
+      String result=str(instance,"result");
+      if(model.mode()!=Mode.APPROVAL||!"ENDED".equals(str(instance,"state"))||result==null
+          ||model.terminalActions()==null||!Objects.equals(capability,model.terminalActions().get(result))
+          ||!payload.equals(Map.of("result",result)))throw new SecurityException("WORKFLOW_DELIVERY_DENIED");
+    }else{
+      var node=model.node(str(job,"node_id"));
+      if(node==null||!Objects.equals(capability,node.capability())||!node.kind().name().equals(kind))
+        throw new SecurityException("WORKFLOW_DELIVERY_DENIED");
+    }
+    var business=businesses.get(capability);
+    if(business==null)throw new IllegalArgumentException("CAPABILITY_UNAVAILABLE");
+    return business;
+  }
+
   /** 领取后在事务外调用业务；成功回写与引擎推进同事务。租约令牌防止过期执行者覆盖新结果。 宕机后可再次执行，因此业务适配器必须按job.id持久化幂等，不能承诺外部副作用恰好一次。 */
   public boolean dispatch() {
     Map<String, Object> job =
@@ -740,13 +764,13 @@ public final class WorkflowRuntime implements WorkflowResults, WorkflowTaskAcces
     boolean businessError = false;
     try {
       var i = instance(str(job, "tenant_id"), str(job, "instance_id"), false);
-      var business = businesses.get(str(job, "capability"));
-      if (business == null) throw new IllegalArgumentException("CAPABILITY_UNAVAILABLE");
+      var payload=content.fields(str(job,"payload"));
+      var business=deliveryBusiness(job,i,payload);
       var c = new WorkflowContext(str(i, "tenant_id"), str(i, "starter"), str(job, "id"));
       result =
           business.execute(
               invocation(
-                  c, i, null, str(job, "id"), "EXECUTE", content.fields(str(job, "payload"))));
+                  c, i, null, str(job, "id"), "EXECUTE", payload));
       outputs(business, result.outputs());
     } catch (IllegalArgumentException | SecurityException e) {
       error = "BUSINESS_REJECTED";

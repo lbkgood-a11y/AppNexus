@@ -20,10 +20,10 @@ public final class MyBatisPrintReceiptStore implements PrintReceiptStore {
     boolean ended=Boolean.TRUE.equals(expired)||expired instanceof Number value&&value.intValue()!=0;
     Object previous=null;String text=(String)row.get("resultJson");
     if(text!=null)try{previous=mapper.readTree(text);}catch(Exception ignored){/* 损坏结果不能当作相同回执。 */}
-    return new Current((String)row.get("state"),(String)row.get("claimed_by"),ended,Objects.equals(previous,mapper.readTree(result)));
+    return new Current((String)row.get("state"),(String)row.get("claimed_by"),(String)row.get("claim_principal"),ended,Objects.equals(previous,mapper.readTree(result)));
   }
   /** {@inheritDoc} */
-  @Override public void update(String tenant,String id,String state,String result){
-    statements.update(tenant,id,state,result);
+  @Override public void update(String tenant,String id,String principal,String state,String result){
+    if(statements.update(tenant,id,principal,state,result)!=1)throw new PrintRejection("PRINT_JOB_RECEIPT_CONFLICT",409);
   }
 }

@@ -46,9 +46,9 @@ public final class MyBatisWorkflowRecords implements WorkflowRecords {
  /** {@inheritDoc} */
  public List<Map<String,Object>> objectInstances(String tenant,String objectType,String objectId,String purpose,String actor,boolean operator,String participant,String copiedActor){return mapper.objectInstances(tenant,objectType,objectId,purpose,actor,operator,participant,copiedActor);}
  /** {@inheritDoc} */
- public int saveTaskComment(String comment,String tenant,String task){return mapper.saveTaskComment(comment,tenant,task);}
+ public int saveTaskComment(String comment,String tenant,String task,String actor){return mapper.saveTaskComment(comment,tenant,task,actor);}
  /** {@inheritDoc} */
- public int completeTask(String decision,String comment,String tenant,String task){return mapper.completeTask(decision,comment,tenant,task);}
+ public int completeTask(String decision,String comment,String tenant,String task,String actor){return mapper.completeTask(decision,comment,tenant,task,actor);}
  /** {@inheritDoc} */
  public int cancelOpenJobs(String tenant,String instance){return mapper.cancelOpenJobs(tenant,instance);}
  /** {@inheritDoc} */

@@ -13,11 +13,13 @@
       )
     </if>
   </sql>
-  <!-- 列表和COUNT共用完整条件；所有字段及运算均由固定choose选择，禁止任意列/SQL插值。 -->
+  <!-- 列表和COUNT共用完整条件；业务筛选使用固定列和运算；授权仅绑定公共执行器产出的谓词。 -->
   <sql id="conditions">
     WHERE tenant_id=#{__verifiedTenant}
-    <if test="!query.range.all"><choose><when test="!query.range.ids.isEmpty()"> AND organization_id IN <foreach collection="query.range.ids" item="organization" open="(" separator="," close=")">UUID_TO_BIN(#{organization})</foreach></when><otherwise> AND 1=0</otherwise></choose></if>
+    <bind name="productAccessSql" value="@com.appnexus.persistence.mybatis.ScopedSql@bind(query.access.sql(), query.access.parameters(), &quot;query.access&quot;)"/>
+    ${productAccessSql}
     AND LOCATE(#{query.name},name)&gt;0 AND LOCATE(#{query.code},code)&gt;0
+    <if test="query.keyword != ''"> AND (LOCATE(#{query.keyword},code)&gt;0 OR LOCATE(#{query.keyword},name)&gt;0)</if>
     AND draft_archived_at IS <choose><when test="query.archived">NOT NULL</when><otherwise>NULL</otherwise></choose>
     <if test="query.category != null">
       <choose>

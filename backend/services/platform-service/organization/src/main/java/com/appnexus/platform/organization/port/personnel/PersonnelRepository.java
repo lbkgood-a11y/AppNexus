@@ -2,6 +2,12 @@ package com.appnexus.platform.organization.port.personnel;
 import java.util.*;
 /** 人员明细及关联仓储输出端口；仅允许平台持久化适配器实现。 */
 public interface PersonnelRepository {
+ /** 同一写事务内先锁定获准的父档案，拒绝后不得读取或写入明细及关联。
+  * @param context 可信租户及已验证的当前人员
+  * @param personId 路由指定且已校验的父人员 UUID
+  * @param action 对应的明细或账号关联动作
+  */
+ void lockForWrite(com.appnexus.platform.tenant.VerifiedTenantContext context,String personId,String action);
  /** 固定人员存取；写入与父版本、字典引用及审计同事务。
   * @param tenant 服务端可信租户UUID，禁止请求体指定
   * @param person 当前租户人员UUID，先经操作权限及归属校验
@@ -76,7 +82,7 @@ public interface PersonnelRepository {
   */
  int advanceVersion(String actor,String tenant,String person,long version);
  /** 已授权人员固定投影。 @param tenant 可信租户UUID @param id 已授权父人员UUID @return 当前租户和父人员下的稳定投影 */
- List<Map<String,Object>> profile(String tenant,String id);
+ List<Map<String,Object>> profile(com.appnexus.platform.tenant.VerifiedTenantContext context,String id);
  /** 已授权人员固定投影。 @param tenant 可信租户UUID @param id 已授权父人员UUID @return 当前租户和父人员下的稳定投影 */
  List<Map<String,Object>> audit(String tenant,String id);
  /** 已授权人员固定投影。 @param tenant 可信租户UUID @param id 已授权父人员UUID @return 当前租户和父人员下的稳定投影 */

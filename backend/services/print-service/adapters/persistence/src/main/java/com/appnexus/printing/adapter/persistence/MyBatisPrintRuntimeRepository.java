@@ -35,13 +35,13 @@ public final class MyBatisPrintRuntimeRepository implements PrintRuntimeReposito
  /** {@inheritDoc} */
  public List<String> claimableJobs(String tenant,String site){return PrintStorageValues.stable(mapper.claimableJobs(tenant,site));}
  /** {@inheritDoc} */
- public int claimJob(String agent,String tenant,String id){return mapper.claimJob(agent,tenant,id);}
+ public int claimJob(String agent,String tenant,String id,String principal){return mapper.claimJob(agent,tenant,id,principal);}
  /** {@inheritDoc} */
  public int expireRendererLeases(String tenant,String site){return mapper.expireRendererLeases(tenant,site);}
  /** {@inheritDoc} */
- public int savePdf(String tenant,String id,byte[] pdf){return mapper.savePdf(tenant,id,pdf);}
+ public int savePdf(String tenant,String id,byte[] pdf,String principal){return mapper.savePdf(tenant,id,pdf,principal);}
  /** {@inheritDoc} */
- public int completePdf(String tenant,String id){return mapper.completePdf(tenant,id);}
+ public int completePdf(String tenant,String id,String principal){return mapper.completePdf(tenant,id,principal);}
  /** {@inheritDoc} */
  public Integer enabledDeviceCount(String tenant,String id){return mapper.enabledDeviceCount(tenant,id);}
  /** {@inheritDoc} */

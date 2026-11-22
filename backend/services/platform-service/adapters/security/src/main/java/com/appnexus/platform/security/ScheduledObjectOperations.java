@@ -7,7 +7,7 @@ import org.springframework.stereotype.Component;
 
 /** 从统一对象声明校验进程内定时操作；仅供固定调度入口调用。 */
 @Component
-public final class ScheduledObjectOperations {
+public final class ScheduledObjectOperations implements com.appnexus.contracts.businessobject.BusinessObjects.ScheduledOperations {
     private final List<Provider> providers;
 
     /** @param providers 当前应用装配的唯一对象声明集合 */
@@ -21,7 +21,7 @@ public final class ScheduledObjectOperations {
      * @param authority 由调度入口固定的系统准入标识，无账号角色授权
      * @throws SecurityException 声明缺失、重复、准入不匹配或打开了页面及公共命令入口
      */
-    void require(String operationId, String authority) {
+    @Override public void require(String operationId, String authority) {
         var matches = providers.stream().flatMap(provider -> provider.descriptor().operations().stream())
                 .filter(operation -> operation.operationId().equals(operationId)).toList();
         if (matches.size() == 1) {

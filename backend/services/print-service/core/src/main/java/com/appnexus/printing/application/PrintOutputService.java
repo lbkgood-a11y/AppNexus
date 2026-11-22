@@ -86,6 +86,7 @@ public class PrintOutputService implements com.appnexus.printing.api.PrintOutput
     var previous=statements.existingRequest(c.tenantId(),c.actorId(),uuid(c.requestId()));
     if(!previous.isEmpty()){if(!hash.equals(previous.getFirst().get("payload_hash")))throw new PrintRejection("PRINT_IDEMPOTENCY_CONFLICT",409);return status(c,previous.getFirst().get("id").toString());}
     var job=submit.get();String id=UUID.randomUUID().toString();
+    platform.authorizeRecordWrite(c,"print.job:submit",id,c.actorId(),(String)job.get("id"));
     statements.createOutput(c.tenantId(),id,c.actorId(),c.requestId(),hash,mode,(String)job.get("id"),device==null?null:uuid(device),copies);
     return status(c,id);
   }
@@ -116,6 +117,7 @@ public class PrintOutputService implements com.appnexus.printing.api.PrintOutput
     if(!"PREVIEW".equals(request.get("mode"))||!"SUCCEEDED".equals(request.get("state")))throw new PrintRejection("PRINT_PREVIEW_NOT_READY",409);
     String selected=device==null?(String)request.get("deviceId"):uuid(device);if(selected==null)throw new PrintRejection("PRINT_DEVICE_REQUIRED",400);
     var job=runtime.printPreview(internal(c),request.get("jobId").toString(),selected,((Number)request.get("copies")).intValue());
+    platform.authorizeRecordWrite(c,"print.job:submit",id,(String)job.get("id"));
     statements.confirmOutput((String)job.get("id"),c.tenantId(),id);return status(c,id);
   });}
   private void access(PrintContext c){require(c,c.actorId().startsWith("partner-")?"print.external:submit":"print.job:read");}

@@ -23,13 +23,13 @@ public class TenantMasterDataDeclarations {
         return () -> descriptor(Kind.SUBDIVISION, "行政区划", "Subdivisions", "master-data/subdivision");
     }
 
-    /** @return 库区四个专用操作及租户资源声明 */
+    /** @return 库区功能权限及租户资源；读与维护分别继承归属仓库的查询与修改范围 */
     @Bean
     public Provider storageAreaDeclaration() {
         return () -> descriptor(Kind.STORAGE_AREA, "库区管理", "Storage areas", "master-data/storage");
     }
 
-    /** @return 库位四个专用操作及租户资源声明 */
+    /** @return 库位功能权限及租户资源；读与维护分别继承祖先仓库的查询与修改范围 */
     @Bean
     public Provider storageLocationDeclaration() {
         return () -> descriptor(Kind.STORAGE_LOCATION, "库位管理", "Storage locations", "master-data/storage");
@@ -38,7 +38,7 @@ public class TenantMasterDataDeclarations {
     private Descriptor descriptor(Kind kind, String nameZh, String nameEn, String page) {
         var access = new DataAccess("TENANT", List.of(
                 new DataResource(kind.resource(), "", nameZh, nameEn, List.of())), Map.of());
-        return new Descriptor(kind.objectType, nameZh, nameEn, "master-data", 1, Category.MASTER_DATA,
+        return new Descriptor(kind.objectType, nameZh, nameEn, "master-data", kind==Kind.STORAGE_AREA||kind==Kind.STORAGE_LOCATION?2:1, Category.MASTER_DATA,
                 List.of(), List.of(
                         operation(kind, page, "list", "查询" + nameZh, "Read " + nameEn, "read", "GET", ""),
                         operation(kind, page, "create", "新增" + nameZh, "Create " + nameEn, "create", "POST", ""),

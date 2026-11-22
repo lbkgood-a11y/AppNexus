@@ -34,13 +34,14 @@ public final class MyBatisProductAttributes {
    mapper.statement5(valueId,tenant(c),id,config,value.templateItemId(),revision,type,text,integer,decimal,bool,date,original==null?actor(c):original.get("creator"),original==null?null:original.get("created_at"),actor(c));
    for(String option:options){uuid(option);if(mapper.statement6(tenant(c),revision,option)!=1)throw invalid();
     var oldChoice=oldChoices.get(value.templateItemId()+":"+option);
-    mapper.statement7(oldChoice==null?UUID.randomUUID().toString():oldChoice.get("id"),tenant(c),valueId,revision,option,oldChoice==null?actor(c):oldChoice.get("creator"),oldChoice==null?null:oldChoice.get("created_at"),actor(c));
+    if(mapper.statement7(oldChoice==null?UUID.randomUUID().toString():oldChoice.get("id"),tenant(c),valueId,revision,option,oldChoice==null?actor(c):oldChoice.get("creator"),oldChoice==null?null:oldChoice.get("created_at"),actor(c),id)!=1)throw changed();
    }
-   for(String custom:customs){var oldCustom=oldChoices.get(value.templateItemId()+":custom:"+custom);mapper.statement8(oldCustom==null?UUID.randomUUID().toString():oldCustom.get("id"),tenant(c),valueId,revision,custom,oldCustom==null?actor(c):oldCustom.get("creator"),oldCustom==null?null:oldCustom.get("created_at"),actor(c));}
+   for(String custom:customs){var oldCustom=oldChoices.get(value.templateItemId()+":custom:"+custom);if(mapper.statement8(oldCustom==null?UUID.randomUUID().toString():oldCustom.get("id"),tenant(c),valueId,revision,custom,oldCustom==null?actor(c):oldCustom.get("creator"),oldCustom==null?null:oldCustom.get("created_at"),actor(c),id)!=1)throw changed();}
   }
  }
  private static String tenant(VerifiedTenantContext c){return c.tenantId().toString();}
  private static String actor(VerifiedTenantContext c){return c.accountId().toString();}
  private static void uuid(String id){try{if(!UUID.fromString(id).toString().equals(id))throw invalid();}catch(IllegalArgumentException|NullPointerException error){throw invalid();}}
+ private static MasterData.Rejection changed(){return new MasterData.Rejection(409,"PRODUCT_V1_CHANGED");}
  private static MasterData.Rejection invalid(){return new MasterData.Rejection(400,"PRODUCT_V1_INPUT_INVALID");}
 }

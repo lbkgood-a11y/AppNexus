@@ -1,6 +1,7 @@
 package com.appnexus.platform.persistence.platformscope;
 
 import com.appnexus.platform.authorization.*;
+import com.appnexus.platform.configuration.BusinessValueCatalog;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.*;
@@ -26,8 +27,9 @@ public final class DataGrantPolicySupport {
      * @param policy 本分支策略
      * @param catalog 构建声明目录
      * @param mapper 已通过管理权门禁的原策略仓储
+     * @param businessValues 本租户业务字典公开目录
      */
-    public static void validate(UUID tenant,String permission,RolePermissionManagement.DataPolicy policy,DataAccessCatalog catalog,RolePermissionMapper mapper) {
+    public static void validate(UUID tenant,String permission,RolePermissionManagement.DataPolicy policy,DataAccessCatalog catalog,RolePermissionMapper mapper,BusinessValueCatalog businessValues) {
         if(policy.scopeType()!=DataScopeAuthorization.ScopeType.RULES)return;
         if(tenant==null)throw new IllegalArgumentException("DATA_GRANT_TENANT_REQUIRED");
         catalog.validateRules(permission,policy.resourceType(),policy.rules());
@@ -36,6 +38,27 @@ public final class DataGrantPolicySupport {
         for(var rule:policy.rules()) {
             if(rule.subjectType()==DataGrantRules.SubjectType.ORGANIZATION)organizations.addAll(rule.subjectIds());
             if(rule.subjectType()==DataGrantRules.SubjectType.MEMBER)members.addAll(rule.subjectIds());
+        }
+        var dimensions=catalog.dimensions(permission,policy.resourceType());
+        var bindings=new TreeMap<String,String>();
+        var values=new TreeMap<String,Set<String>>();
+        for(var rule:policy.rules())for(var condition:rule.conditions()){
+            if(condition.parameter()!=null)continue;
+            var dimension=dimensions.stream().filter(d->d.field().equals(condition.field())).findFirst().orElseThrow();
+            if("ORGANIZATION".equals(dimension.source())){
+                condition.values().stream().map(UUID::fromString).forEach(organizations::add);
+            }else if("DICTIONARY".equals(dimension.source())){
+                bindings.put(dimension.dictionary(),dimension.dictionary());
+                values.computeIfAbsent(dimension.dictionary(),key->new HashSet<>()).addAll(condition.values());
+            }
+        }
+        if(!bindings.isEmpty()){
+            var candidates=businessValues.options(tenant,bindings);
+            values.forEach((key,selected)->{
+                // 停用值仍是已有记录的业务编码，保留历史授权；未知或其他租户字典值拒绝。
+                var known=candidates.getOrDefault(key,List.of()).stream().map(BusinessValueCatalog.Option::value).toList();
+                if(!known.containsAll(selected))throw new IllegalArgumentException("DATA_GRANT_DICTIONARY_VALUE_INVALID");
+            });
         }
         // 每规则500个主体，策略最多20条；分批上限500，避免不同规则合计形成超长IN查询。
         validateSubjects(tenant,organizations,true,mapper);

@@ -40,41 +40,47 @@ public class MasterDataConfiguration {
   }
   /**
    * @return 复用宿主事务、可信租户和公开授权端口的主数据执行器 */
-  @Bean public MasterDataService masterDataService(com.appnexus.masterdata.adapter.persistence.MasterRecordMapper records,MasterReadMapper reads,GeographyMapper geography,StorageHierarchyMapper storage,PartnerDetailMapper details,AccessAuthorization access,PlatformTransactionManager manager,com.appnexus.platform.configuration.BusinessValueCatalog dictionaries,PartnerDataAccess partner,FieldProtection fields,DataAccessCatalog catalog,
-      com.appnexus.platform.authorization.AccessPlanning planning,com.appnexus.platform.authorization.RowAccessControl rowAccess){
-    return create(records,reads,geography,storage,details,access,manager,dictionaries,partner,fields,catalog,planning,rowAccess);
+  @Bean public MasterDataService masterDataService(com.appnexus.masterdata.adapter.persistence.MasterRecordMapper records,MasterReadMapper reads,GeographyMapper geography,StorageHierarchyMapper storage,PartnerDetailMapper details,AccessAuthorization access,PlatformTransactionManager manager,com.appnexus.platform.configuration.BusinessValueCatalog dictionaries,PartnerDataAccess partner,FieldProtection fields,DataAccessCatalog catalog,com.appnexus.platform.authorization.AccessPlanning planning,com.appnexus.platform.authorization.RowAccessControl rowAccess,com.appnexus.platform.authorization.DataAccessReferences references,
+      com.appnexus.platform.authorization.ScopedWriteGate writes){
+    return create(records,reads,geography,storage,details,access,manager,dictionaries,partner,fields,catalog,planning,rowAccess,references,writes);
   }
   /**
-   * 显式组合主数据输入用例与技术输出，独立数据库测试沿用同一装配。
-   * @param jdbc UTC 数据源，所有适配器必须共用
-   * @param access 公开可信权限端口
-   * @param manager 同数据源事务管理器，父记录和明细不得独立提交
-   * @param dictionaries 公开字典与引用契约
-   * @param partner 客商数据权限执行器；null 时不开放客商访问
-   * @return 不依赖技术实现的主数据应用用例
+   * 组合主数据输入用例与技术输出，独立数据库测试沿用相同装配。
+   * @param records 固定档案写映射
+   * @param reads 固定档案查询及授权锁
+   * @param geography 地理固定映射
+   * @param storage 仓储层级固定映射
+   * @param details 客商明细固定映射
+   * @param access 实时功能授权
+   * @param manager 同数据源事务管理器
+   * @param dictionaries 字典与引用端口
+   * @param partner 客商范围及字段执行器
+   * @param fields 统一字段策略执行器
+   * @param catalog 统一对象派生目录
+   * @param planning 仓库实时权限计划
+   * @param rowAccess 平台公共行范围编译
+   * @param references 同租户启用组织的权威公开目录
+   * @param writes 当前事务的仓库记录写入许可
+   * @return 主数据应用用例
    */
-  public static MasterDataService create(com.appnexus.masterdata.adapter.persistence.MasterRecordMapper records,MasterReadMapper reads,GeographyMapper geography,StorageHierarchyMapper storage,PartnerDetailMapper details,AccessAuthorization access,PlatformTransactionManager manager,com.appnexus.platform.configuration.BusinessValueCatalog dictionaries,PartnerDataAccess partner,
-      com.appnexus.platform.authorization.AccessPlanning planning,com.appnexus.platform.authorization.RowAccessControl rowAccess){
-    return create(records,reads,geography,storage,details,access,manager,dictionaries,partner,null,null,planning,rowAccess);
-  }
-
-  private static MasterDataService create(com.appnexus.masterdata.adapter.persistence.MasterRecordMapper records,
+  public static MasterDataService create(com.appnexus.masterdata.adapter.persistence.MasterRecordMapper records,
       MasterReadMapper reads,GeographyMapper geography,StorageHierarchyMapper storage,PartnerDetailMapper details,
       AccessAuthorization access,PlatformTransactionManager manager,com.appnexus.platform.configuration.BusinessValueCatalog dictionaries,
-      PartnerDataAccess partner,FieldProtection fields,DataAccessCatalog catalog,
-      com.appnexus.platform.authorization.AccessPlanning planning,com.appnexus.platform.authorization.RowAccessControl rowAccess){
-    return new MasterDataService(access,dictionaries,new com.appnexus.masterdata.adapter.persistence.MyBatisMasterDataRepository(records),
-        new MyBatisMasterDataRelations(reads,geography,storage,details,dictionaries,partner,planning,rowAccess),
+      PartnerDataAccess partner,FieldProtection fields,DataAccessCatalog catalog,com.appnexus.platform.authorization.AccessPlanning planning,
+      com.appnexus.platform.authorization.RowAccessControl rowAccess,com.appnexus.platform.authorization.DataAccessReferences references,
+      com.appnexus.platform.authorization.ScopedWriteGate writes){
+    return new MasterDataService(access,dictionaries,new com.appnexus.masterdata.adapter.persistence.MyBatisMasterDataRepository(records,access,writes),
+        new MyBatisMasterDataRelations(reads,geography,storage,details,dictionaries,partner,planning,rowAccess,references,writes),
         new com.appnexus.masterdata.adapter.transaction.SpringRecordTransaction(manager),partner,fields,catalog);
   }
   /** 商品图片纯用例装配；父授权、CAS、图片、历史与审计共用事务。 */
   @Bean public com.appnexus.masterdata.api.product.ProductImageManagement productImageManagement(AccessAuthorization access,PlatformTransactionManager manager,com.appnexus.masterdata.application.product.ProductAggregateAccess products,com.appnexus.masterdata.application.product.ProductImageRepository images,com.appnexus.masterdata.application.product.ProductImageContent content){return new com.appnexus.masterdata.application.product.ProductImageService(access,new com.appnexus.masterdata.adapter.transaction.SpringRecordTransaction(manager),products,images,content);}
   /** 商品模板纯应用用例装配；发布、退役和模板项仍在同一完整事务中执行。 */
-  @Bean public com.appnexus.masterdata.api.product.ProductTemplateManagement productTemplateManagement(AccessAuthorization access,com.appnexus.masterdata.application.product.ProductTemplateTransaction transaction,com.appnexus.masterdata.application.product.ProductTemplateRepository repository){return new com.appnexus.masterdata.application.product.ProductTemplateService(access,transaction,repository);}
+  @Bean public com.appnexus.masterdata.api.product.ProductTemplateManagement productTemplateManagement(AccessAuthorization access,com.appnexus.masterdata.application.product.ProductTemplateTransaction transaction,com.appnexus.masterdata.application.product.ProductTemplateRepository repository,com.appnexus.platform.authorization.ScopedWriteGate writes){return new com.appnexus.masterdata.application.product.ProductTemplateService(access,transaction,repository,writes);}
   /** 属性纯应用用例装配，固定JSON解析和存储通过输出端口连接。 */
-  @Bean public com.appnexus.masterdata.api.product.ProductAttributeManagement productAttributeManagement(AccessAuthorization access,com.appnexus.masterdata.application.product.ProductAttributeTransaction transaction,com.appnexus.masterdata.application.product.ProductAttributeRepository repository,com.appnexus.masterdata.application.product.AttributeRuleContent rules){return new com.appnexus.masterdata.application.product.ProductAttributeService(access,transaction,repository,rules);}
+  @Bean public com.appnexus.masterdata.api.product.ProductAttributeManagement productAttributeManagement(AccessAuthorization access,com.appnexus.masterdata.application.product.ProductAttributeTransaction transaction,com.appnexus.masterdata.application.product.ProductAttributeRepository repository,com.appnexus.masterdata.application.product.AttributeRuleContent rules,com.appnexus.platform.authorization.ScopedWriteGate writes){return new com.appnexus.masterdata.application.product.ProductAttributeService(access,transaction,repository,rules,writes);}
   /** 商品目录纯应用用例装配，保留分类锚点锁、发布快照与原完整性拒绝范围。 */
-  @Bean public com.appnexus.masterdata.api.product.ProductCatalogManagement productCatalogManagement(AccessAuthorization access,com.appnexus.masterdata.application.product.ProductCatalogTransaction transaction,com.appnexus.masterdata.application.product.ProductCatalogRepository repository){return new com.appnexus.masterdata.application.product.ProductCatalogService(access,transaction,repository);}
+  @Bean public com.appnexus.masterdata.api.product.ProductCatalogManagement productCatalogManagement(AccessAuthorization access,com.appnexus.masterdata.application.product.ProductCatalogTransaction transaction,com.appnexus.masterdata.application.product.ProductCatalogRepository repository,com.appnexus.platform.authorization.ScopedWriteGate writes){return new com.appnexus.masterdata.application.product.ProductCatalogService(access,transaction,repository,writes);}
   /** 商品规格、SKU及组合结构纯应用用例装配。 */
   @Bean public com.appnexus.masterdata.api.product.ProductStructureManagement productStructureManagement(AccessAuthorization access,com.appnexus.masterdata.application.product.ProductStructureTransaction transaction,com.appnexus.masterdata.application.product.ProductAggregateAccess products,com.appnexus.masterdata.application.product.ProductStructureRepository repository,com.appnexus.masterdata.application.product.AttributeRuleContent rules,com.appnexus.masterdata.application.product.ProductContent content){return new com.appnexus.masterdata.application.product.ProductStructureService(access,transaction,products,repository,rules,content);}
   /** 商品固定目录查询端口，所有引用验证沿用原SQL及锁。 */

@@ -1,13 +1,41 @@
-import {http} from "@/utils/http";import type {AuthorizationAssignment,AuthorizationCenterApi,PermissionItem,ScopeSupport,FieldDescriptor} from "@appnexus/authorization";
-/** 授权全量覆盖写入逐次获取 CSRF；角色版本用于并发控制，不是权限凭据。 */
-function api(base:string,catalog:string,metadata:string,organizations=false):AuthorizationCenterApi{return{recordSearch:organizations?{
- resources:["masterdata.partner"],
- search:async(resource,query,page)=>{
-  if(resource!=="masterdata.partner"||query.length>200||!Number.isInteger(page)||page<1)throw new Error("DATA_RECORD_QUERY_INVALID");
-  const result=await http.request<{rows:{id:string;code:string;name:string}[];total:number}>("get","/api/master-data/partner",{params:{keyword:query,page,size:20}});
-  return {items:result.rows.map(row=>({id:row.id,name:row.code+" · "+row.name})),total:result.total};
+import {http} from "@/utils/http";import type {AuthorizationAssignment,AuthorizationCenterApi,PermissionItem,ScopeSupport,FieldDescriptor,DataRecordSearch} from "@appnexus/authorization";
+/** 只使用受原业务操作与行范围保护的固定目录，授权编辑器不额外授予查阅权。 */
+const recordPaths:Readonly<Record<string,string>>=Object.freeze({
+ "masterdata.partner":"/api/master-data/partner",
+ "masterdata.warehouse":"/api/master-data/warehouse",
+ "masterdata.product":"/api/master-data/product",
+ "masterdata.person":"/api/master-data/person",
+ "organization.unit":"/api/organization/domain/units"
+});
+type RecordName={id:string;code:string;name:string};
+const recordName=(row:RecordName)=>({id:row.id,name:row.code+" · "+row.name});
+const recordSearch:DataRecordSearch={
+ resources:Object.keys(recordPaths),
+ async resolve(resource,id){
+  if(!Object.hasOwn(recordPaths,resource)||!/^[0-9a-f-]{36}$/.test(id))return;
+  const path=recordPaths[resource];
+  let row:RecordName|undefined;
+  if(resource==="organization.unit")row=(await http.request<RecordName[]>("get",path)).find(item=>item.id===id);
+  else if(resource==="masterdata.product")row=await http.request<RecordName>("get",path+"/"+encodeURIComponent(id));
+  else if(resource==="masterdata.person")row=(await http.request<{person:RecordName}>("get",path+"/"+encodeURIComponent(id))).person;
+  else row=(await http.request<{rows:RecordName[]}>("get",path,{params:{id,page:1,size:1}})).rows[0];
+  return row?recordName(row):undefined;
+ },
+ async search(resource,query,page){
+  if(!Object.hasOwn(recordPaths,resource)||query.length>200||!Number.isInteger(page)||page<1)throw new Error("DATA_RECORD_QUERY_INVALID");
+  const path=recordPaths[resource];
+  if(resource==="organization.unit"){
+   const keyword=query.trim().toLocaleLowerCase();
+   const rows=(await http.request<RecordName[]>("get",path)).filter(row=>
+     row.code.toLocaleLowerCase().includes(keyword)||row.name.toLocaleLowerCase().includes(keyword));
+   return {items:rows.slice((page-1)*20,page*20).map(recordName),total:rows.length};
+  }
+  const result=await http.request<{rows:RecordName[];total:number}>("get",path,{params:{keyword:query,page,size:20}});
+  return {items:result.rows.map(recordName),total:result.total};
  }
-}:undefined,declarations:organizations?()=>http.request("get",metadata+"?declarations=true"):undefined,templates:{list:role=>http.request("get",base+"/"+encodeURIComponent(role)+"/policy-templates"),save:async(role,name)=>{const csrf=await http.request<{token:string;headerName:string}>("get","/bff/csrf");return http.request("post",base+"/"+encodeURIComponent(role)+"/policy-templates",{data:{name},headers:{[csrf.headerName]:csrf.token}});},apply:async(role,templateId,version,reason)=>{const csrf=await http.request<{token:string;headerName:string}>("get","/bff/csrf");return http.request("post",base+"/"+encodeURIComponent(role)+"/policy-template-application",{data:{templateId,version,reason},headers:{[csrf.headerName]:csrf.token}});}},menus:()=>http.request("get",organizations?"/api/access/authorization-navigation":"/bff/platform/authorization-navigation"),permissions:()=>http.request<PermissionItem[]>("get",catalog),metadata:()=>http.request<ScopeSupport[]>("get",metadata),fields:()=>http.request<FieldDescriptor[]>("get",metadata.replace("data-policy-metadata","field-policy-metadata")),assignment:role=>http.request<AuthorizationAssignment>("get",base+"/"+encodeURIComponent(role)+"/permissions"),replace:async(role,input)=>{const csrf=await http.request<{token:string;headerName:string}>("get","/bff/csrf");return http.request<AuthorizationAssignment>("put",base+"/"+encodeURIComponent(role)+"/permissions",{data:input,headers:{[csrf.headerName]:csrf.token}});},organizationOptions:organizations?()=>http.request("get",metadata+"?organizations=true"):undefined};}
+};
+/** 授权全量覆盖写入逐次获取 CSRF；角色版本用于并发控制，不是权限凭据。 */
+function api(base:string,catalog:string,metadata:string,organizations=false):AuthorizationCenterApi{return{recordSearch:organizations?recordSearch:undefined,conditionOptions:organizations?()=>http.request("get",metadata+"?conditionOptions=true"):undefined,declarations:organizations?()=>http.request("get",metadata+"?declarations=true"):undefined,templates:{list:role=>http.request("get",base+"/"+encodeURIComponent(role)+"/policy-templates"),save:async(role,name)=>{const csrf=await http.request<{token:string;headerName:string}>("get","/bff/csrf");return http.request("post",base+"/"+encodeURIComponent(role)+"/policy-templates",{data:{name},headers:{[csrf.headerName]:csrf.token}});},apply:async(role,templateId,version,reason)=>{const csrf=await http.request<{token:string;headerName:string}>("get","/bff/csrf");return http.request("post",base+"/"+encodeURIComponent(role)+"/policy-template-application",{data:{templateId,version,reason},headers:{[csrf.headerName]:csrf.token}});}},menus:()=>http.request("get",organizations?"/api/access/authorization-navigation":"/bff/platform/authorization-navigation"),permissions:()=>http.request<PermissionItem[]>("get",catalog),metadata:()=>http.request<ScopeSupport[]>("get",metadata),fields:()=>http.request<FieldDescriptor[]>("get",metadata.replace("data-policy-metadata","field-policy-metadata")),assignment:role=>http.request<AuthorizationAssignment>("get",base+"/"+encodeURIComponent(role)+"/permissions"),replace:async(role,input)=>{const csrf=await http.request<{token:string;headerName:string}>("get","/bff/csrf");return http.request<AuthorizationAssignment>("put",base+"/"+encodeURIComponent(role)+"/permissions",{data:input,headers:{[csrf.headerName]:csrf.token}});},organizationOptions:organizations?()=>http.request("get",metadata+"?organizations=true"):undefined};}
 export const tenantAuthorizationApi=api("/api/access/roles","/api/access/permissions","/api/access/data-policy-metadata",true);
 export const platformAuthorizationApi=api("/bff/platform/roles","/bff/platform/permissions?scopeType=PLATFORM","/bff/platform/data-policy-metadata?scopeType=PLATFORM");
 

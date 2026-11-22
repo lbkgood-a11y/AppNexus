@@ -44,7 +44,7 @@ public interface RolePermissionMapper {
     /** 授权主体必须是当前租户有效成员，不能使用全局账号标识。 */
     @Select({"<script>","SELECT COUNT(*) FROM tenant_member WHERE tenant_id=UUID_TO_BIN(#{tenant}) AND enabled=TRUE AND removed_at IS NULL AND id IN", "<foreach collection='ids' item='id' open='(' separator=',' close=')'>UUID_TO_BIN(#{id})</foreach>","</script>"})
     int validMembers(@Param("tenant") String tenant,@Param("ids") List<String> ids);
-    @Select("SELECT EXISTS(SELECT 1 FROM access_permission_scope_type WHERE permission_id=UUID_TO_BIN(#{permission}) AND scope_type=#{scopeType} AND resource_type=#{resource} AND NOT(resource_type='organization.unit' AND scope_type='SELF') AND NOT(resource_type='organization.unit' AND scope_type<>'ALL' AND permission_id IN(SELECT id FROM access_permission WHERE code='organization.unit:create')))")
+    @Select("SELECT EXISTS(SELECT 1 FROM access_permission_scope_type WHERE permission_id=UUID_TO_BIN(#{permission}) AND scope_type=#{scopeType} AND resource_type=#{resource} AND NOT(resource_type='organization.unit' AND scope_type='SELF'))")
     boolean supportsPolicy(@Param("permission") String permission,@Param("scopeType") String scopeType,@Param("resource") String resource);
     @Select({"<script>","SELECT COUNT(*) FROM tenant_organization_unit WHERE tenant_id=UUID_TO_BIN(#{tenant}) AND enabled=TRUE AND id IN","<foreach collection='ids' item='id' open='(' separator=',' close=')'>UUID_TO_BIN(#{id})</foreach>","FOR UPDATE","</script>"})
     int validOrganizations(@Param("tenant") String tenant,@Param("ids") List<String> ids);

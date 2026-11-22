@@ -22,6 +22,44 @@ public interface RowAccessControl {
         return new OrganizationRange(false,List.of());
     }
     /**
+     * 组织自身是授权对象时，以同一组织 UUID 表达记录及条件键，供既有固定组织 Mapper 消费。
+     * @param plan 当前操作已解析的可信权限计划
+     * @param organizationField 唯一可映射到当前组织 UUID 的声明字段，不能由请求指定
+     * @return 规则内交集、规则与既有授权分支之间并集；未知条件拒绝
+     */
+    default OrganizationRange organizationRange(AccessPlan plan,String organizationField){
+        return organizationRange(plan,organizationField,null,true);
+    }
+    /**
+     * 投影业务记录可归属的组织；记录条件始终以原业务记录 UUID 匹配。
+     * @param plan 真实写操作已解析的统一计划
+     * @param organizationField 固定业务归属维度
+     * @param recordId 目标业务记录 UUID；仅候选展示允许为空，此时返回可能适用的组织并集
+     * @return 在目标组织字段上的公共范围；候选结果不能作为实际写入凭据
+     */
+    default OrganizationRange organizationRangeForRecord(AccessPlan plan,String organizationField,UUID recordId){
+        return organizationRange(plan,organizationField,recordId,false);
+    }
+    private OrganizationRange organizationRange(AccessPlan plan,String organizationField,UUID recordId,boolean organizationRecord){
+        if(plan==null||plan.rows().type()!=DataScopeAuthorization.ScopeType.RULES)return organizationRange(plan);
+        var allowed=new java.util.TreeSet<>(plan.rows().organizationIds().stream().map(UUID::toString).toList());
+        for(var rule:plan.rows().rules()){
+            if(rule.allRecords())return new OrganizationRange(true,List.of());
+            if(!organizationRecord&&recordId!=null&&!rule.recordIds().isEmpty()&&!rule.recordIds().contains(recordId))continue;
+            java.util.Set<String> branch=organizationRecord&&!rule.recordIds().isEmpty()
+                ?new java.util.HashSet<>(rule.recordIds().stream().map(UUID::toString).toList()):null;
+            for(var condition:rule.conditions()){
+                if(!organizationField.equals(condition.field())||condition.parameter()!=null)
+                    throw new SecurityException("ORGANIZATION_SCOPE_CONDITION_UNSUPPORTED");
+                if(branch==null)branch=new java.util.HashSet<>(condition.values());
+                else branch.retainAll(condition.values());
+            }
+            if(branch==null&&!organizationRecord)return new OrganizationRange(true,List.of());
+            if(branch!=null)allowed.addAll(branch);
+        }
+        return new OrganizationRange(false,List.copyOf(allowed));
+    }
+    /**
      * 固定Mapper可消费的范围值，不承载SQL或客户端策略。
      * @param all 只有可信计划为ALL时才为true；租户条件始终独立强制
      * @param ids 已解析的组织UUID字符串；非ALL空集合表示拒绝，不作全部范围回退

@@ -951,6 +951,13 @@ roleManagement:
     INVALID_ROLE_INPUT: The role fields are invalid.
 authorizationCenter:
   rules:
+    parameter: Parameter source
+    parameters:
+      FIXED: Fixed value
+      CURRENT_ACCOUNT: Current account
+      CURRENT_PERSON: Current person
+      CURRENT_ORGANIZATION: Current organization
+      CURRENT_ORGANIZATION_SUBTREE: Current organization and descendants
     recordSearch: Search accessible records by name or code
     more: Load next page
     searchFailed: Could not read record options. Check business read access and retry.
@@ -1130,6 +1137,7 @@ authorizationCenter:
   incomplete: Complete the data scope for every scoped permission.
   saved: Authorization saved
   scopes:
+    RECORDS: Selected records
     RULES: Combined grants
     SELF: Self
     ORGANIZATION: Organizations
@@ -1796,6 +1804,32 @@ businessObject:
   checkNo: "No"
   unchecked: "Not checked"
   dependencyChecks: "Workflow and print dependencies"
+  objectFactFields: Business fact fields
+  noObjectFields: No business fact fields declared
+  accessTab: Data access
+  accessBasis: Access basis
+  accessOwnership: Business ownership
+  accessParent: Inherited parent resource
+  accessOperationScopes: Operation scopes
+  accessConnection: Connection status
+  accessGuarded: Standard record guard connected
+  accessDeclared: Scope declared
+  accessConnectionHint: Standard status covers the registered main record paths. Specialized endpoints follow their own contracts.
+  noAccessDeclaration: No data access resources declared
+  noAccessOperations: No configurable scope operations declared
+  accessConditionFields: Data scope condition fields
+  accessFieldKey: Field key
+  accessProtectedFields: Field protection
+  conditionOperators: Operators
+  conditionSource: Value source
+  protectionModes: Protection modes
+  noProtectedFields: No protected fields declared
+  conditionSources:
+    ACCOUNT: Account
+    PERSON: Person
+    TEXT: Text
+    ORGANIZATION: Organization
+    DICTIONARY: Business dictionary
   noConditionFields: "No condition fields declared"
   noBusinessBindings: "No business bindings. Add a binding before saving or publishing."
   viewDetails: "View details"
@@ -1806,7 +1840,7 @@ businessObject:
   codingDeclarationHint: "Code declares eligible fields, related operations and length limits. This view is read-only. Maintain formats in coding rules and bind a fixed version within the current tenant."
   codingMaxLength: "Maximum length (characters)"
   noCodingDeclaration: "This object declares no coding fields"
-  catalogBoundary: This page manages objects with configurable workflow or printing capabilities. Find all registered objects and operations in Feature catalog → By business object.
+  catalogBoundary: Browse registered business objects, their operations, data access declarations, and connected capabilities.
   category: Object category
   categories:
     MASTER_DATA: Master data

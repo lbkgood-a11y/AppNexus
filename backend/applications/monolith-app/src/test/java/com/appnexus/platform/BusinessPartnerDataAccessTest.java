@@ -27,7 +27,32 @@ class BusinessPartnerDataAccessTest extends DatabaseTestSupport {
     @Autowired MemberAuthorizationManagement members;@Autowired DataAccessCatalog catalog;@Autowired FieldCatalog fields;
     @Autowired JdbcTemplate jdbc;
     @Autowired org.springframework.test.web.servlet.MockMvc mvc;
+    @Autowired org.mybatis.spring.SqlSessionTemplate sql;
+    @Autowired com.appnexus.masterdata.adapter.persistence.MasterRecordMapper partnerRecords;
     @Autowired org.springframework.security.crypto.password.PasswordEncoder encoder;
+    /** 仿真开发遗漏，只带权限参数但 SQL 未拼入时必须在 MyBatis 层拒绝。 */
+    @com.appnexus.persistence.mybatis.PlatformScoped(tables={"md_partner"})
+    public interface UnguardedSqlProbe {
+        @com.appnexus.persistence.mybatis.GuardedScope(predicate="access",resource="masterdata.partner",tenant="tenant")
+        @org.apache.ibatis.annotations.Select("SELECT COUNT(*) FROM md_partner WHERE tenant_id=UUID_TO_BIN(#{tenant})")
+        long count(@org.apache.ibatis.annotations.Param("tenant") String tenant,
+           @org.apache.ibatis.annotations.Param("access") com.appnexus.platform.authorization.RowAccessControl.Predicate access);
+    }
+
+    /** 漏接 SQL 与绕过应用事务直接修改均由执行门禁拒绝。 */
+    @Test void standardMapperRejectsOmittedPredicateAndMissingWritePermit(){
+        sql.getConfiguration().addMapper(UnguardedSqlProbe.class);
+        String tenant=UUID.randomUUID().toString(),id=UUID.randomUUID().toString();
+        var subject=AccessAuthorization.Subject.tenant(UUID.randomUUID(),UUID.fromString(tenant),UUID.randomUUID());
+        var plan=new AccessPlan(subject,"masterdata.partner:read","masterdata.partner",
+            new DataScopeAuthorization.DataScope(DataScopeAuthorization.ScopeType.ALL,Set.of()),Map.of(),java.time.Instant.now());
+        var explicitAll=new com.appnexus.platform.authorization.RowAccessControl.Predicate("",List.of(),plan);
+        assertThatThrownBy(()->sql.getMapper(UnguardedSqlProbe.class).count(tenant,explicitAll))
+            .hasRootCauseMessage("SCOPED_SQL_PLAN_REQUIRED");
+        assertThatThrownBy(()->partnerRecords.status(tenant,Kind.PARTNER,id,false,0))
+            .hasRootCauseMessage("SCOPED_WRITE_PLAN_REQUIRED");
+    }
+
     /** 完整工作流验证一次共享夹具，避免用伪数据目录或绕过生产权限端口。 */
     @Test void declarationDrivenPartnerRowsFieldsAndDetailsAreEnforced() throws Exception {
         UUID actor=UUID.fromString(jdbc.queryForObject("SELECT BIN_TO_UUID(id) FROM identity_account WHERE username='admin-test'",String.class));
@@ -43,6 +68,13 @@ class BusinessPartnerDataAccessTest extends DatabaseTestSupport {
             .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().isOk())
             .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath("$[?(@.descriptor.objectType == 'BusinessPartner')].descriptor.nameZh").value(org.hamcrest.Matchers.contains("客商管理")));
 
+        mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get("/bff/platform/business-objects").with(authenticated(actor.toString(),0)))
+            .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().isOk())
+            .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath("$[?(@.descriptor.objectType == 'Warehouse')].descriptor.dataAccess.standardCrud.ownershipField")
+                .value(org.hamcrest.Matchers.contains("organizationId")))
+            .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath("$[?(@.descriptor.objectType == 'Warehouse')].descriptor.dataAccess.standardCrud.operations[0:]")
+                .value(org.hamcrest.Matchers.containsInAnyOrder("list","create","update","setStatus")));
+
         UUID owner=account(actor),user=account(actor),otherOwner=account(actor);
         UUID tenant=administration.createTenant(actor,UUID.randomUUID(),"客商数据权限验收",owner).id();
         UUID otherTenant=administration.createTenant(actor,UUID.randomUUID(),"外租户",otherOwner).id();
@@ -50,7 +82,7 @@ class BusinessPartnerDataAccessTest extends DatabaseTestSupport {
         var c=new VerifiedTenantContext(owner,tenant,member(tenant,owner),1);
         var u=new VerifiedTenantContext(user,tenant,member(tenant,user),1);
         var foreign=new VerifiedTenantContext(otherOwner,otherTenant,member(otherTenant,otherOwner),1);
-        UUID a=organization(tenant,"A",null),child=organization(tenant,"A下级",a),b=organization(tenant,"B",null),outside=organization(otherTenant,"外组织",null);
+        UUID a=organization(tenant,"厦门事业部",null),child=organization(tenant,"A下级",a),b=organization(tenant,"B",null),outside=organization(otherTenant,"外组织",null);
         String first=service.create(c,Kind.PARTNER,input("FIRST",a,Map.of("phone","13800138000","legalId","ID-123456789"),List.of(new DetailInput(null,Map.of("contactType","BUSINESS","contactName","联系人","phone","13900139000","address","地址","isDefault","true"))),List.of(new DetailInput(null,Map.of("taxAccount","false","basicAccount","true","isDefault","true","bankName","银行","accountNumber","000012345678","currency","CNY"))))).get("id");
         String second=service.create(c,Kind.PARTNER,input("CHILD",child,Map.of(),null,null)).get("id");
         String blocked=service.create(c,Kind.PARTNER,input("BLOCKED",b,Map.of(),null,null)).get("id");
@@ -62,7 +94,7 @@ class BusinessPartnerDataAccessTest extends DatabaseTestSupport {
         }
         var saved=permissions.replaceAuthorization(rc,role.id(),role.version(),ids,policies,"客商按组织授权");
         var initial=subjects.memberRoles(rc,u.memberId());subjects.replaceMemberRoles(rc,u.memberId(),initial.authorityVersion(),Set.of(role.id()),"角色默认继承");
-        assertThat(catalog.list(PermissionCatalog.ScopeType.TENANT)).anyMatch(d->d.objectType().equals("BusinessPartner")&&d.version()==2);
+        assertThat(catalog.list(PermissionCatalog.ScopeType.TENANT)).anyMatch(d->d.objectType().equals("BusinessPartner")&&d.version()==6);
         assertThat(fields.list(PermissionCatalog.ScopeType.TENANT)).anyMatch(f->f.resource().equals("masterdata.partner.bank")&&f.field().equals("accountNumber")&&f.modes().contains(FieldSecurity.Mode.READ_ONLY));
         assertThat(service.list(u,Kind.PARTNER,"",null,1,20).total()).isEqualTo(2);
         // 指定记录与条件取AND，规则取OR；当前角色及功能权限仍是前置门槛。
@@ -104,6 +136,65 @@ class BusinessPartnerDataAccessTest extends DatabaseTestSupport {
         long beforeInvalid=saved.roleVersion();
         assertThatThrownBy(()->permissions.replaceAuthorization(rc,role.id(),beforeInvalid,ids,invalidPolicies,"拒绝跨租户主体")).isInstanceOf(IllegalArgumentException.class);
         assertThat(permissions.getAuthorization(rc,role.id()).roleVersion()).isEqualTo(beforeInvalid);
+        String supplier=service.create(c,Kind.PARTNER,input("SUPPLIER-XM",a,Map.of("partnerType","SUPPLIER"),null,null)).get("id");
+        var exactConditions=List.of(
+            new DataGrantRules.Condition("organizationId",DataGrantRules.Operator.EQ,List.of(a.toString())),
+            new DataGrantRules.Condition("partnerType",DataGrantRules.Operator.EQ,List.of("CUSTOMER")));
+        var exactPolicies=new HashSet<>(combinedPolicies);
+        exactPolicies.removeIf(policy->policy.permissionId().equals(readPermission));
+        exactPolicies.add(new RolePermissionManagement.DataPolicy(readPermission,DataScopeAuthorization.ScopeType.RULES,"masterdata.partner",Set.of(),List.of(
+            new DataGrantRules.Rule(DataGrantRules.SubjectType.ROLE_MEMBERS,Set.of(),Set.of(),exactConditions,false))));
+        saved=permissions.replaceAuthorization(rc,role.id(),saved.roleVersion(),ids,exactPolicies,"厦门事业部且客商类型为客户");
+        assertThat(service.list(u,Kind.PARTNER,"",null,1,1).rows()).extracting(Row::id).containsExactly(first);
+        assertThat(service.list(u,Kind.PARTNER,"",null,1,1).total()).isEqualTo(1);
+        assertThat(service.list(u,Kind.PARTNER,"",null,1,20,supplier).rows()).isEmpty();
+        assertThat(service.list(u,Kind.PARTNER,"",null,1,20,blocked).rows()).isEmpty();
+        var invalidDictionaryPolicies=new HashSet<>(exactPolicies);
+        invalidDictionaryPolicies.removeIf(policy->policy.permissionId().equals(readPermission));
+        invalidDictionaryPolicies.add(new RolePermissionManagement.DataPolicy(readPermission,DataScopeAuthorization.ScopeType.RULES,"masterdata.partner",Set.of(),List.of(
+            new DataGrantRules.Rule(DataGrantRules.SubjectType.ROLE_MEMBERS,Set.of(),Set.of(),List.of(
+                new DataGrantRules.Condition("partnerType",DataGrantRules.Operator.EQ,List.of("UNKNOWN_CUSTOMER"))),false))));
+        long exactVersion=saved.roleVersion();
+        assertThatThrownBy(()->permissions.replaceAuthorization(rc,role.id(),exactVersion,ids,invalidDictionaryPolicies,"拒绝未知字典项"))
+            .hasMessage("DATA_GRANT_DICTIONARY_VALUE_INVALID");
+        var ownerSession=mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/bff/tenants/current")
+            .with(authenticated(owner.toString(),0)).with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf())
+            .contentType("application/json").content("{\"tenantId\":\""+tenant+"\"}"))
+            .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().isOk()).andReturn();
+        mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get("/api/access/data-policy-metadata")
+            .param("conditionOptions","true").cookie(ownerSession.getResponse().getCookie("JSESSIONID")))
+            .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().isOk())
+            .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath("$.partner_type[*].value").value(org.hamcrest.Matchers.hasItem("CUSTOMER")))
+            .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath("$.warehouse_type[*].value").value(org.hamcrest.Matchers.hasItem("PHYSICAL")));
+        String own=service.create(u,Kind.PARTNER,input("OWN-CREATED",a,Map.of(),null,null)).get("id");
+        UUID selectedPerson=UUID.randomUUID();
+        var selectedAtXiamen=new VerifiedTenantContext(u.accountId(),u.tenantId(),u.memberId(),u.version(),selectedPerson,a);
+        for(var parameter:List.of(DataGrantRules.Parameter.CURRENT_ACCOUNT,DataGrantRules.Parameter.CURRENT_ORGANIZATION,
+                DataGrantRules.Parameter.CURRENT_ORGANIZATION_SUBTREE)){
+            String field=parameter==DataGrantRules.Parameter.CURRENT_ACCOUNT?"createdBy":"organizationId";
+            var conditions=List.of(new DataGrantRules.Condition(field,DataGrantRules.Operator.EQ,List.of(),parameter),
+                new DataGrantRules.Condition("partnerType",DataGrantRules.Operator.EQ,List.of("CUSTOMER")));
+            var rule=new DataGrantRules.Rule(DataGrantRules.SubjectType.ROLE_MEMBERS,Set.of(),Set.of(),conditions,false);
+            var dynamicPolicies=new HashSet<>(exactPolicies);
+            dynamicPolicies.removeIf(policy->policy.permissionId().equals(readPermission));
+            dynamicPolicies.add(new RolePermissionManagement.DataPolicy(readPermission,DataScopeAuthorization.ScopeType.RULES,
+                "masterdata.partner",Set.of(),List.of(rule)));
+            saved=permissions.replaceAuthorization(rc,role.id(),saved.roleVersion(),ids,dynamicPolicies,"验证动态参数 "+parameter);
+            assertThat(permissions.getAuthorization(rc,role.id()).dataPolicies()).containsAll(dynamicPolicies);
+            var result=service.list(selectedAtXiamen,Kind.PARTNER,"",null,1,20);
+            var expected=switch(parameter){
+                case CURRENT_ACCOUNT -> Set.of(own);
+                case CURRENT_ORGANIZATION -> Set.of(first,own);
+                case CURRENT_ORGANIZATION_SUBTREE -> Set.of(first,own,second);
+                default -> throw new IllegalStateException();
+            };
+            assertThat(result.total()).isEqualTo(expected.size());
+            assertThat(result.rows()).extracting(Row::id).containsExactlyInAnyOrderElementsOf(expected);
+            assertThat(service.list(u,Kind.PARTNER,"",null,1,20).total())
+                .isEqualTo(parameter==DataGrantRules.Parameter.CURRENT_ACCOUNT?1:0);
+        }
+        jdbc.update("DELETE FROM md_partner WHERE tenant_id=UUID_TO_BIN(?) AND id=UUID_TO_BIN(?)",tenant.toString(),own);
+        jdbc.update("DELETE FROM md_partner WHERE tenant_id=UUID_TO_BIN(?) AND id=UUID_TO_BIN(?)",tenant.toString(),supplier);
         saved=permissions.replaceAuthorization(rc,role.id(),saved.roleVersion(),ids,policies,"恢复原组织范围验证写入");
         var selected=mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/bff/tenants/current").with(authenticated(user.toString(),0)).with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf()).contentType("application/json").content("{\"tenantId\":\""+tenant+"\"}")).andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().isOk()).andReturn();
         var cookie=selected.getResponse().getCookie("JSESSIONID");
@@ -158,7 +249,7 @@ class BusinessPartnerDataAccessTest extends DatabaseTestSupport {
         permissions.replaceAuthorization(rc,role.id(),current.roleVersion(),Set.of(),Set.of(),"撤销功能同时停止组合访问");
         assertThatThrownBy(()->service.list(u,Kind.PARTNER,"",null,1,20)).isInstanceOf(Rejection.class);
     }
-    private Input input(String code,UUID org,Map<String,String> values,List<DetailInput> contacts,List<DetailInput> bank){var attrs=new HashMap<>(values);attrs.put("partnerType","CUSTOMER");return new Input(code,code,attrs,0,contacts,bank,org==null?null:org.toString());}
+    private Input input(String code,UUID org,Map<String,String> values,List<DetailInput> contacts,List<DetailInput> bank){var attrs=new HashMap<>(values);attrs.putIfAbsent("partnerType","CUSTOMER");return new Input(code,code,attrs,0,contacts,bank,org==null?null:org.toString());}
     private UUID account(UUID actor){UUID id=UUID.randomUUID();administration.createUser(actor,id,"data-"+id,"数据权限验收", encoder.encode("isolated-data-access-test"));return id;}
     private UUID member(UUID tenant,UUID account){return UUID.fromString(jdbc.queryForObject("SELECT BIN_TO_UUID(id) FROM tenant_member WHERE tenant_id=UUID_TO_BIN(?) AND account_id=UUID_TO_BIN(?)",String.class,tenant.toString(),account.toString()));}
     private UUID permission(String code){return UUID.fromString(jdbc.queryForObject("SELECT BIN_TO_UUID(id) FROM access_permission WHERE code=?",String.class,code));}

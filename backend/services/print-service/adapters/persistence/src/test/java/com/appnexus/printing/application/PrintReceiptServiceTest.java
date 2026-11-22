@@ -3,6 +3,7 @@ package com.appnexus.printing.application;
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
 import com.appnexus.contracts.printing.PrintContext;
+import com.appnexus.contracts.printing.PrintPlatform;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
@@ -21,11 +22,15 @@ class PrintReceiptServiceTest {
   /** 相同结果重放不更新，换代理及已提交后声称安全失败都拒绝。 */
   @Test void replayRequiresSameAgentAndIllegalTransitionsNeverWrite() {
     var store=mock(PrintReceiptStore.class);
-    var service=new PrintReceiptService(store,(c,p)->true);
-    when(store.lock(context.tenantId(),id,"{}")).thenReturn(new PrintReceiptStore.Current("SUBMITTED","agent",false,true));
+    var platform=mock(PrintPlatform.class);
+    when(platform.allowed(any(PrintContext.class),eq("print.agent:operate"))).thenReturn(true);
+    var service=new PrintReceiptService(store,platform);
+    when(store.lock(context.tenantId(),id,"{}")).thenReturn(new PrintReceiptStore.Current("SUBMITTED","agent",context.actorId(),false,true));
     service.accept(context,id,"SUBMITTED","agent",()->"{}");
     assertThatThrownBy(()->service.accept(context,id,"SUBMITTED","other",()->"{}")).hasMessage("PRINT_JOB_RECEIPT_CONFLICT");
     assertThatThrownBy(()->service.accept(context,id,"FAILED","agent",()->"{}")).hasMessage("PRINT_JOB_RECEIPT_CONFLICT");
-    verify(store,never()).update(anyString(),anyString(),anyString(),anyString());
+    var otherPrincipal=new PrintContext(context.tenantId(),UUID.randomUUID().toString(),UUID.randomUUID().toString());
+    assertThatThrownBy(()->service.accept(otherPrincipal,id,"SUBMITTED","agent",()->"{}")).hasMessage("PRINT_JOB_RECEIPT_CONFLICT");
+    verify(store,never()).update(anyString(),anyString(),anyString(),anyString(),anyString());
   }
 }

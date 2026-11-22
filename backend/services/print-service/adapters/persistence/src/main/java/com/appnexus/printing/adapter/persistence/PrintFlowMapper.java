@@ -58,12 +58,14 @@ public interface PrintFlowMapper extends com.appnexus.contracts.businessobject.B
  int createContract(@Param("p0") Object p0,@Param("p1") Object p1,@Param("p2") Object p2,@Param("p3") Object p3);
 
  /** 固定业务语句13；准入、参数规则、聚合锁及事务由原用例负责，所有值绑定。 */
- @Delete("DELETE FROM print_agent_queue WHERE tenant_id=UUID_TO_BIN(#{p0}) AND site_code=#{p1} AND agent_id=#{p2}")
- int deleteAgentQueues(@Param("p0") Object p0,@Param("p1") Object p1,@Param("p2") Object p2);
+ @com.appnexus.persistence.mybatis.GuardedScope(tenant="p0",serviceOperation="print.agent:operate",serviceKeys={"principal","p1","p2"})
+ @Delete("DELETE FROM print_agent_queue WHERE tenant_id=UUID_TO_BIN(#{p0}) AND site_code=#{p1} AND agent_id=#{p2} AND agent_principal=#{principal}")
+ int deleteAgentQueues(@Param("p0") Object p0,@Param("p1") Object p1,@Param("p2") Object p2,@Param("principal") String principal);
 
  /** 固定业务语句14；准入、参数规则、聚合锁及事务由原用例负责，所有值绑定。 */
- @Insert("INSERT INTO print_agent_queue(tenant_id,site_code,agent_id,queue_name) VALUES(UUID_TO_BIN(#{p0}),#{p1},#{p2},#{p3})")
- int reportAgentQueue(@Param("p0") Object p0,@Param("p1") Object p1,@Param("p2") Object p2,@Param("p3") Object p3);
+ @com.appnexus.persistence.mybatis.GuardedScope(tenant="p0",serviceOperation="print.agent:operate",serviceKeys={"principal","p1","p2"})
+ @Insert("INSERT INTO print_agent_queue(tenant_id,site_code,agent_id,queue_name,agent_principal) VALUES(UUID_TO_BIN(#{p0}),#{p1},#{p2},#{p3},#{principal})")
+ int reportAgentQueue(@Param("p0") Object p0,@Param("p1") Object p1,@Param("p2") Object p2,@Param("p3") Object p3,@Param("principal") String principal);
 
  /** 固定业务语句15；准入、参数规则、聚合锁及事务由原用例负责，所有值绑定。 */
  @Select("SELECT site_code,agent_id,queue_name,seen_at FROM print_agent_queue WHERE tenant_id=UUID_TO_BIN(#{p0}) AND seen_at>DATE_SUB(CURRENT_TIMESTAMP(6),INTERVAL 120 SECOND) ORDER BY site_code,queue_name")

@@ -5,7 +5,7 @@ import com.appnexus.platform.configuration.NavigationPages;
 import java.util.*;
 import org.springframework.stereotype.Component;
 import org.springframework.context.annotation.Lazy;
-/** 商品唯一声明；主档、规格SKU、图片与历史继承父商品组织范围，不授予未声明的RULES或字段能力。 */
+/** 商品唯一声明；主档、规格SKU、图片与历史继承父商品组织范围，查询、修改和启停分别按自己声明的归属组织范围执行。 */
 @Component
 public final class ProductDeclaration implements BusinessObjects.Provider {
  // 审核读取契约与现有审核 Controller 共用开关；关闭引擎时不宣告不存在的 HTTP 入口。
@@ -71,8 +71,17 @@ public final class ProductDeclaration implements BusinessObjects.Provider {
      operation("readApprovalSnapshot","查看商品审核快照","Read product approval snapshot","","GET","/api/master-data/product/approval-requests/{id}",List.of("master-data/product"))));
    operations=List.copyOf(withApproval);
   }
-  return new Descriptor("Product","商品档案","Products","master-data",4,Category.MASTER_DATA,List.of(),operations,
-   new DataAccess("TENANT",List.of(new DataResource("masterdata.product","","商品档案","Products",List.of())),scopes));
+  var scopedOperations=new TreeSet<String>();
+  var scopedPermissions=Set.of("masterdata.product:read","masterdata.product:create","masterdata.product:update","masterdata.product:set_status");
+  for(var operation:operations)if(scopedPermissions.contains(operation.permissionCode())){
+   scopedOperations.add(operation.operationCode());
+   scopes.put(operation.operationCode(),Set.of("ALL","ORGANIZATION","ORGANIZATION_SUBTREE","RULES"));
+  }
+  return new Descriptor("Product","商品档案","Products","master-data",7,Category.MASTER_DATA,List.of(),operations,
+   new DataAccess("TENANT",List.of(new DataResource("masterdata.product","","商品档案","Products",List.of())),scopes,
+    List.of(new DataDimension("organizationId","归属组织","Owning organization","UUID",Set.of("EQ","IN"),
+     "ORGANIZATION","",scopedOperations,Set.of("CURRENT_ORGANIZATION","CURRENT_ORGANIZATION_SUBTREE"))))
+   .withStandardCrud("organizationId",Set.of("list","read","create","update","setStatus")));
  }
  /** 固定页面和真实API来自代码；预览等额外读取前置仍由原用例复核，不以声明替代执行。 */
  private static Operation operation(String code,String zh,String en,String permission,String method,String path,List<String> pages){

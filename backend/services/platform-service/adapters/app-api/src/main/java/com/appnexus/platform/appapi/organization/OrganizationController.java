@@ -32,10 +32,16 @@ public class OrganizationController {
     @com.appnexus.contracts.operation.OperationBinding(id="OrganizationUnit.createFlat",reference=true)
  @EndpointOperation("organization.unit:create") @PostMapping("/units")
     ResponseEntity<OrganizationUnit> create(@RequestBody Name input) {
-        var type=structure.types().stream().filter(value->value.code().equals("BUSINESS")).findFirst()
-            .orElseGet(()->structure.createType("BUSINESS","业务组织"));
-        var created=structure.createUnit("ORG-"+UUID.randomUUID().toString().replace("-","").substring(0,12).toUpperCase(Locale.ROOT),type.id(),null,validName(input));
-        var unit=new OrganizationUnit(created.id(),created.name());
+        var name=validName(input);
+        OrganizationUnit unit;
+        try{
+            var type=structure.types().stream().filter(value->value.code().equals("BUSINESS")).findFirst()
+                .orElseGet(()->structure.createType("BUSINESS","业务组织"));
+            var created=structure.createUnit("ORG-"+UUID.randomUUID().toString().replace("-","").substring(0,12).toUpperCase(Locale.ROOT),type.id(),null,name);
+            unit=new OrganizationUnit(created.id(),created.name());
+        }catch(SecurityException denied){
+            throw AccountSettingsController.problem(HttpStatus.FORBIDDEN,"ORGANIZATION_CREATE_SCOPE_REQUIRED","新增根组织需要全部组织范围");
+        }
         return ResponseEntity.status(HttpStatus.CREATED).cacheControl(CacheControl.noStore()).body(unit);
     }
     /** 仅重命名当前租户目标；找不到时不暴露其他租户是否存在相同 ID。 */

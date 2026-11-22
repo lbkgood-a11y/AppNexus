@@ -29,11 +29,13 @@ public final class PrintReceiptService {
     if(!PrintJobLifecycle.validReceipt(state)) fail("PRINT_RECEIPT_STATE_INVALID",400);
     if(agent==null||agent.isBlank()||agent.length()>128) fail("PRINT_INPUT_INVALID",400);
     String encoded=result.get();
+    platform.authorizeRecordWrite(context,"print.agent:operate",id);
     var current=store.lock(context.tenantId(),id,encoded);
-    if(!Objects.equals(agent,current.agent())) fail("PRINT_JOB_RECEIPT_CONFLICT",409);
+    if(!Objects.equals(agent,current.agent())||!Objects.equals(context.actorId(),current.principal())) fail("PRINT_JOB_RECEIPT_CONFLICT",409);
     if(current.state().equals(state)&&current.sameResult())return;
     if(!PrintJobLifecycle.permitsReceipt(current.state(),state,current.expired()))fail("PRINT_JOB_RECEIPT_CONFLICT",409);
-    store.update(context.tenantId(),id,state,encoded);
+    platform.authorizeRecordWrite(context,"print.agent:operate",id,context.actorId());
+    store.update(context.tenantId(),id,context.actorId(),state,encoded);
   }
   private static void fail(String code,int status){throw new PrintRejection(code,status);}
 }
