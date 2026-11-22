@@ -95,7 +95,8 @@ class ProductCatalogMySqlTest {
    assertThat(service.units(c,"",1,10,"TIME").rows()).extracting(Unit::id).containsExactly(hour.id());
    assertThatThrownBy(()->service.renameUnitGroup(c,"MASS",new ProductCatalogManagement.UnitGroupInput(null,"过期版本",0L))).isInstanceOf(Rejection.class);
    var conversionMapper=new org.mybatis.spring.SqlSessionTemplate(mapperFactory.getObject()).getMapper(com.appnexus.masterdata.adapter.persistence.UnitConversionMapper.class);
-   var conversion=com.appnexus.masterdata.bootstrap.MasterDataConfiguration.conversions(conversionMapper,allow,new DataSourceTransactionManager(source));
+   var conversion=com.appnexus.masterdata.bootstrap.MasterDataConfiguration.conversions(conversionMapper,allow,new DataSourceTransactionManager(source),
+       new com.appnexus.platform.persistence.MyBatisScopedWriteGate());
    @SuppressWarnings("unchecked") var converted=(Map<String,String>)conversion.create(c,new com.appnexus.masterdata.api.product.UnitConversions.Input(gram.id(),kilogram.id(),"0.001"));
    assertThat(conversion.calculate(c,converted.get("id"),"1234.5").toString()).contains("1.2345","1.235");
    assertThatThrownBy(()->conversion.create(c,new com.appnexus.masterdata.api.product.UnitConversions.Input(gram.id(),hour.id(),"1"))).isInstanceOf(Rejection.class);

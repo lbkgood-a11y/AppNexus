@@ -4,6 +4,7 @@ import java.util.Map;
 import java.math.BigDecimal;
 import org.apache.ibatis.annotations.*;
 import com.appnexus.persistence.mybatis.TenantAggregateScoped;
+import com.appnexus.persistence.mybatis.GuardedScope;
 /**
  * 单位换算固定多表Mapper；只访问本主数据上下文表，不接受SQL或动态列。
  */
@@ -50,6 +51,7 @@ public interface UnitConversionMapper extends com.appnexus.platform.authorizatio
  * @return 原存储契约定义的结果；并发或引用冲突由调用用例复核
  */
   @Insert("INSERT INTO md_product_unit_conversion(id,tenant_id,source_unit_id,target_unit_id,factor,created_by,updated_by) VALUES(UUID_TO_BIN(#{id}),#{__verifiedTenant},UUID_TO_BIN(#{source}),UUID_TO_BIN(#{target}),#{factor},UUID_TO_BIN(#{actor}),UUID_TO_BIN(#{actor}))")
+  @GuardedScope(tenant="__verifiedTenant",serviceOperation="masterdata.productunit:convert",serviceKeys={"id","source","target"})
   int create(@Param("id") String id,@Param("__verifiedTenant") byte[] tenant,@Param("source") String source,@Param("target") String target,@Param("factor") BigDecimal factor,@Param("actor") String actor);
 
   /**
@@ -59,6 +61,7 @@ public interface UnitConversionMapper extends com.appnexus.platform.authorizatio
  * @return 当前租户固定查询结果，不扩展原操作授权
  */
   @Select("SELECT BIN_TO_UUID(source_unit_id) sourceId,BIN_TO_UUID(target_unit_id) targetId,factor FROM md_product_unit_conversion WHERE tenant_id=#{__verifiedTenant} AND id=UUID_TO_BIN(#{id})")
+  @GuardedScope(tenant="__verifiedTenant",serviceOperation="masterdata.productunit:convert",serviceKeys={"id"})
   List<Map<String,Object>> relation(@Param("__verifiedTenant") byte[] tenant,@Param("id") String id);
 
   /**
@@ -71,6 +74,7 @@ public interface UnitConversionMapper extends com.appnexus.platform.authorizatio
  * @return 原存储契约定义的结果；并发或引用冲突由调用用例复核
  */
   @Update("UPDATE md_product_unit_conversion x SET enabled=#{enabled},version=version+1,updated_by=UUID_TO_BIN(#{actor}),updated_at=CURRENT_TIMESTAMP(6) WHERE tenant_id=#{__verifiedTenant} AND id=UUID_TO_BIN(#{id}) AND version=#{version} AND enabled<>#{enabled} AND (#{enabled}=FALSE OR (EXISTS(SELECT 1 FROM md_product_unit u WHERE u.tenant_id=x.tenant_id AND u.id=x.source_unit_id AND u.enabled=TRUE) AND EXISTS(SELECT 1 FROM md_product_unit u WHERE u.tenant_id=x.tenant_id AND u.id=x.target_unit_id AND u.enabled=TRUE)))")
+  @GuardedScope(tenant="__verifiedTenant",serviceOperation="masterdata.productunit:convert",serviceKeys={"id"})
   int status(@Param("enabled") boolean enabled,@Param("actor") String actor,@Param("__verifiedTenant") byte[] tenant,@Param("id") String id,@Param("version") long version);
 
   /**
@@ -79,6 +83,6 @@ public interface UnitConversionMapper extends com.appnexus.platform.authorizatio
  * @param id 已由调用用例校验的记录UUID
  * @return 当前租户固定查询结果，不扩展原操作授权
  */
-  @Select("SELECT x.factor,t.precision_scale scale FROM md_product_unit_conversion x JOIN md_product_unit s ON s.tenant_id=x.tenant_id AND s.id=x.source_unit_id JOIN md_product_unit t ON t.tenant_id=x.tenant_id AND t.id=x.target_unit_id WHERE x.tenant_id=#{__verifiedTenant} AND x.id=UUID_TO_BIN(#{id}) AND x.enabled=TRUE AND s.enabled=TRUE AND t.enabled=TRUE AND s.dimension_code=t.dimension_code")
+  @Select("SELECT BIN_TO_UUID(x.source_unit_id) sourceId,BIN_TO_UUID(x.target_unit_id) targetId,x.version,x.factor,t.precision_scale scale FROM md_product_unit_conversion x JOIN md_product_unit s ON s.tenant_id=x.tenant_id AND s.id=x.source_unit_id JOIN md_product_unit t ON t.tenant_id=x.tenant_id AND t.id=x.target_unit_id WHERE x.tenant_id=#{__verifiedTenant} AND x.id=UUID_TO_BIN(#{id}) AND x.enabled=TRUE AND s.enabled=TRUE AND t.enabled=TRUE AND s.dimension_code=t.dimension_code")
   List<Map<String,Object>> calculation(@Param("__verifiedTenant") byte[] tenant,@Param("id") String id);
 }

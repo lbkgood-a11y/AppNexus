@@ -12,6 +12,10 @@ import com.appnexus.masterdata.adapter.persistence.GeographyMapper;
 import com.appnexus.masterdata.application.MasterDataRelations;
 import com.appnexus.platform.configuration.BusinessValueCatalog;
 import com.appnexus.platform.tenant.VerifiedTenantContext;
+import com.appnexus.platform.authorization.AccessAuthorization;
+import com.appnexus.platform.authorization.AccessPlanning;
+import com.appnexus.platform.authorization.DataGrantRules;
+import com.appnexus.platform.authorization.RowAccessControl;
 import java.util.*;
 
 import static com.appnexus.masterdata.api.masterdata.MasterData.*;
@@ -24,8 +28,42 @@ public final class MyBatisMasterDataRelations implements MasterDataRelations {
   private final MasterReadMapper mapper;private final GeographyMapper geographyMapper;private final StorageHierarchyMapper storageMapper;private final PartnerDetailMapper detailsMapper;
   private final BusinessValueCatalog dictionaries;
   private final PartnerDataAccess partner;
-  /** @param jdbc 同事务 UTC 数据源 @param dictionaries 公开字典引用端口 @param partner 客商真实数据权限适配器，缺省拒绝客商读取 */
-  public MyBatisMasterDataRelations(MasterReadMapper mapper,GeographyMapper geographyMapper,StorageHierarchyMapper storageMapper,PartnerDetailMapper detailsMapper,BusinessValueCatalog dictionaries,PartnerDataAccess partner){this.mapper=mapper;this.geographyMapper=geographyMapper;this.storageMapper=storageMapper;this.detailsMapper=detailsMapper;this.dictionaries=dictionaries;this.partner=partner;}
+  private final AccessPlanning planning;
+  private final RowAccessControl rowAccess;
+
+  /**
+   * @param mapper 可信租户固定主数据读映射
+   * @param geographyMapper 地理层级映射
+   * @param storageMapper 仓储层级映射
+   * @param detailsMapper 客商明细映射
+   * @param dictionaries 字典引用
+   * @param partner 客商原权限适配器
+   * @param planning 统一功能和数据授权计划
+   * @param rowAccess 公共记录范围编译器
+   */
+  public MyBatisMasterDataRelations(MasterReadMapper mapper,GeographyMapper geographyMapper,
+      StorageHierarchyMapper storageMapper,PartnerDetailMapper detailsMapper,BusinessValueCatalog dictionaries,
+      PartnerDataAccess partner,AccessPlanning planning,RowAccessControl rowAccess){
+    this.mapper=mapper;this.geographyMapper=geographyMapper;this.storageMapper=storageMapper;
+    this.detailsMapper=detailsMapper;this.dictionaries=dictionaries;this.partner=partner;
+    this.planning=planning;this.rowAccess=rowAccess;
+  }
+
+  /** 仓储下级沿用根仓记录范围，调用方仍分别校验下级对象的读取权限。 */
+  private RowAccessControl.Predicate warehouseRead(VerifiedTenantContext c,Kind kind){
+    String resource=Kind.WAREHOUSE.resource();
+    var subject=AccessAuthorization.Subject.tenant(c.accountId(),c.tenantId(),c.memberId());
+    var plan=planning.plan(subject,resource+":read",resource);
+    String alias=kind==Kind.WAREHOUSE?"":"w.";
+    var id=new RowAccessControl.Column(alias+"id",DataGrantRules.ValueType.UUID);
+    var organization=new RowAccessControl.Column(alias+"organization_id",DataGrantRules.ValueType.UUID);
+    var mapping=new RowAccessControl.Mapping(resource,id,organization,Map.of(
+        "organizationId",organization,
+        "warehouseType",new RowAccessControl.Column(alias+"warehouse_type",DataGrantRules.ValueType.TEXT),
+        "operatingMode",new RowAccessControl.Column(alias+"operating_mode",DataGrantRules.ValueType.TEXT)));
+    var result=rowAccess.predicate(plan,mapping);
+    return new RowAccessControl.Predicate(result.sql(),result.parameters(),plan);
+  }
   private PartnerDataAccess partner(){if(partner==null)throw new Rejection(403,"MASTER_DATA_DENIED");return partner;}
   @Override public Object geographyCatalog(VerifiedTenantContext c){return new MyBatisGeographyCatalog(geographyMapper).nodes(c.tenantId());}
   @Override public Object geographyTree(VerifiedTenantContext c,Kind kind,String parent,int page,int size){return new TenantGeography(geographyMapper,c.tenantId(),false).children(parent,page,size,kind==Kind.COUNTRY_REGION);}
@@ -39,7 +77,8 @@ public final class MyBatisMasterDataRelations implements MasterDataRelations {
     String parent=null;if((kind==Kind.STORAGE_AREA||kind==Kind.STORAGE_LOCATION)&&scope!=null&&!scope.isBlank()){if(!scope.matches("[A-Za-z0-9][A-Za-z0-9._-]{0,63}"))throw invalid();parent=scope;}
     var aliases=geography!=null&&!keyword.isBlank()?geography.aliases(keyword.trim().toLowerCase(Locale.ROOT),kind==Kind.SUBDIVISION):List.<String>of();
     var codes=geography!=null&&scope!=null&&!scope.isEmpty()?geography.codes(scope,kind==Kind.SUBDIVISION):null;
-    var query=new MasterReadMapper.Query(c.tenantId().toString(),kind,keyword.trim(),enabled,id,parent,aliases,codes,kind==Kind.PARTNER?partner().compiled(partner().plan(c,"read")):null,size,(page-1)*size);
+    var query=new MasterReadMapper.Query(c.tenantId().toString(),kind,keyword.trim(),enabled,id,parent,aliases,codes,kind==Kind.PARTNER?partner().compiled(partner().plan(c,"read")):
+        (kind==Kind.WAREHOUSE||kind==Kind.STORAGE_AREA||kind==Kind.STORAGE_LOCATION)?warehouseRead(c,kind):null,size,(page-1)*size);
     var fieldModes=kind==Kind.PARTNER?partner().fieldModes(c):Map.<String,Map<String,com.appnexus.platform.authorization.FieldSecurity.Mode>>of();
     long total=mapper.count(query);
     var listFields=kind==Kind.PARTNER&&id==null?List.of("partnerType","creditCode","contactName","phone","address"):kind.fields();

@@ -21,6 +21,7 @@
     "@appnexus/security": "workspace:*",
     "@appnexus/tenant": "workspace:*",
     "@appnexus/ui": "workspace:*",
+    "@appnexus/warehousing": "workspace:*",
     "@appnexus/workflow": "workspace:*",
     "@pureadmin/utils": "^2.6.4",
     "@vueuse/core": "^14.2.1",

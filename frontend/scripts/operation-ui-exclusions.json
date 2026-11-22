@@ -1062,5 +1062,17 @@
   {
     "key": "[\"frontend/modules/workflow/src/WorkflowCenter.vue\",\"el-button\",null,\"\\r\\n              submitted = query;\\r\\n              page = 1;\\r\\n            \",null,\"{{ t(\\\"administration.search\\\") }}\"]",
     "reason": "提交本地已加载工作流列表的关键词过滤并重置页码，不发起工作流命令或保存配置。"
+  },
+  {
+    "key": "[\"frontend/modules/warehousing/src/CoilTitleWorkspace.vue\",\"el-button\",\"reset\",null,null,\"{{t('masterData.reset')}}\"]",
+    "reason": "仅重置客户端筛选、游标和当前结果；不发起业务请求。"
+  },
+  {
+    "key": "[\"frontend/modules/warehousing/src/CoilTitleWorkspace.vue\",\"el-button\",\"open=false\",null,null,\"{{t('masterData.cancel')}}\"]",
+    "reason": "仅关闭过户弹窗，不提交过户或其他业务操作。"
+  },
+  {
+    "key": "[\"frontend/modules/warehousing/src/ReturnTransitWorkspace.vue\",\"el-button\",\"actionOpen=false\",null,null,\"{{t('masterData.cancel')}}\"]",
+    "reason": "只关闭当前在途处置弹窗，不执行业务写入。"
   }
 ]

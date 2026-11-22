@@ -155,6 +155,36 @@ public final class MasterDataService implements com.appnexus.masterdata.api.mast
     return kind==Kind.PARTNER?transaction.execute(()->relations.list(c,kind,keyword,enabled,page,size,id,scope),null):relations.list(c,kind,keyword,enabled,page,size,id,scope);
   }
 
+  /** {@inheritDoc} */
+  @Override
+  public StoragePosition resolveStoragePosition(VerifiedTenantContext c, StoragePosition expected) {
+    require(c, Kind.WAREHOUSE, "read");
+    require(c, Kind.STORAGE_AREA, "read");
+    require(c, Kind.STORAGE_LOCATION, "read");
+    if (expected == null || expected.warehouseId() == null || expected.areaId() == null
+        || expected.locationId() == null || expected.warehouseVersion() < 0
+        || expected.areaVersion() < 0 || expected.locationVersion() < 0) throw invalid();
+
+    return transaction.execute(() -> {
+      var warehouse = enabledPositionRow(c, Kind.WAREHOUSE, expected.warehouseId());
+      var area = enabledPositionRow(c, Kind.STORAGE_AREA, expected.areaId());
+      var location = enabledPositionRow(c, Kind.STORAGE_LOCATION, expected.locationId());
+      if (!warehouse.code().equals(area.attributes().get("parentCode"))
+          || !area.code().equals(location.attributes().get("parentCode"))) throw invalid();
+
+      var current = new StoragePosition(warehouse.id(), area.id(), location.id(),
+          warehouse.version(), area.version(), location.version());
+      if (!current.equals(expected)) throw new Rejection(409, "MASTER_DATA_CHANGED");
+      return current;
+    }, null);
+  }
+
+  private Row enabledPositionRow(VerifiedTenantContext c, Kind kind, String id) {
+    var rows = list(c, kind, "", true, 1, 1, id).rows();
+    if (rows.size() != 1) throw invalid();
+    return rows.getFirst();
+  }
+
   /**
    * 创建启用档案；数据库唯一约束防止并发创建同一编码。重复提交不会创建重复档案，也不自动重放。
    *

@@ -13,8 +13,14 @@ public interface MasterReadMapper {
     /** 可信查询输入，不接收SQL、列名或权限计划自报；分页及范围已由原用例校验。 */
     record Query(String tenant,MasterData.Kind kind,String keyword,Boolean enabled,String id,String parent,List<String> aliases,List<String> codes,RowAccessControl.Predicate access,int size,int offset){public Query{aliases=List.copyOf(aliases);codes=codes==null?null:List.copyOf(codes);}}
     /** 固定目录列表；详情字段和子表只在父记录授权后读取。 */
+    @com.appnexus.persistence.mybatis.GuardedScope(predicate="query.access",resource="masterdata.warehouse",tenant="query.tenant",when="query.kind",actions="read",whenValue="WAREHOUSE")
+    @com.appnexus.persistence.mybatis.GuardedScope(predicate="query.access",resource="masterdata.warehouse",tenant="query.tenant",when="query.kind",actions="read",whenValue="STORAGE_AREA")
+    @com.appnexus.persistence.mybatis.GuardedScope(predicate="query.access",resource="masterdata.warehouse",tenant="query.tenant",when="query.kind",actions="read",whenValue="STORAGE_LOCATION")
     @SelectProvider(type=Sql.class,method="list") List<Map<String,Object>> list(@Param("query") Query query);
     /** 列表与COUNT使用同一构建函数，避免范围和分页计数分离。 */
+    @com.appnexus.persistence.mybatis.GuardedScope(predicate="query.access",resource="masterdata.warehouse",tenant="query.tenant",when="query.kind",actions="read",whenValue="WAREHOUSE")
+    @com.appnexus.persistence.mybatis.GuardedScope(predicate="query.access",resource="masterdata.warehouse",tenant="query.tenant",when="query.kind",actions="read",whenValue="STORAGE_AREA")
+    @com.appnexus.persistence.mybatis.GuardedScope(predicate="query.access",resource="masterdata.warehouse",tenant="query.tenant",when="query.kind",actions="read",whenValue="STORAGE_LOCATION")
     @SelectProvider(type=Sql.class,method="count") long count(@Param("query") Query query);
     /** 授权原记录锁，仅返回归属事实，不先泄漏业务正文。 */
     @SelectProvider(type=Sql.class,method="lock") List<Map<String,Object>> lock(@Param("query") Query query);
@@ -32,13 +38,20 @@ public interface MasterReadMapper {
             if(q.parent()!=null)sql+=" AND parent_code=#{query.parent}";
             if(q.id()!=null)sql+=" AND id=UUID_TO_BIN(#{query.id})";
             if(q.codes()!=null)sql+=q.codes().isEmpty()?" AND 1=0":" AND code IN "+placeholders("codes",q.codes().size());
-            if(q.kind()==MasterData.Kind.PARTNER){
-                var access=Objects.requireNonNull(q.access(),"Partner access predicate required");String condition=access.sql();
-                // 公共执行器只输出固定业务映射的附加谓词，替换占位符为MyBatis值绑定，禁止请求SQL进入Mapper。
-                for(int i=0;i<access.parameters().size();i++)condition=condition.replaceFirst("\\?","#{query.access.parameters["+i+"]}");
-                if(condition.contains("?"))throw new SecurityException("ROW_ACCESS_BINDING_MISMATCH");sql+=condition;
+            if(q.kind()==MasterData.Kind.PARTNER||isStorage(q.kind())){
+                var access=Objects.requireNonNull(q.access(),"Row access predicate required");
+                String condition=com.appnexus.persistence.mybatis.ScopedSql.bind(access.sql(),access.parameters(),"query.access");
+                // 子记录关联以同租户不可变编码定位根仓库；列表、统计、直查和写入使用同一谓词。
+                if(q.kind()==MasterData.Kind.STORAGE_AREA)
+                    sql+=" AND EXISTS (SELECT 1 FROM md_warehouse w WHERE w.tenant_id=md_storage_area.tenant_id AND w.code=md_storage_area.parent_code"+condition+")";
+                else if(q.kind()==MasterData.Kind.STORAGE_LOCATION)
+                    sql+=" AND EXISTS (SELECT 1 FROM md_storage_area a JOIN md_warehouse w ON w.tenant_id=a.tenant_id AND w.code=a.parent_code WHERE a.tenant_id=md_storage_location.tenant_id AND a.code=md_storage_location.parent_code"+condition+")";
+                else sql+=condition;
             }
             return sql;
+        }
+        private static boolean isStorage(MasterData.Kind kind){
+            return kind==MasterData.Kind.WAREHOUSE||kind==MasterData.Kind.STORAGE_AREA||kind==MasterData.Kind.STORAGE_LOCATION;
         }
         /** @param parameters 可信结构化查询 @return 相同条件下的分页SQL */
         public static String list(Map<String,Object> parameters){var q=query(parameters);var fields=q.kind()==MasterData.Kind.PARTNER&&q.id()==null?List.of("partnerType","creditCode","contactName","phone","address"):q.kind().fields();return "SELECT BIN_TO_UUID(id) id,code,name,enabled,version,BIN_TO_UUID(created_by) audit_created_by,created_at,BIN_TO_UUID(updated_by) audit_updated_by,updated_at,"+(q.kind()==MasterData.Kind.PARTNER?"BIN_TO_UUID(organization_id) data_organization_id,":"")+String.join(",",fields.stream().map(q.kind()::column).toList())+" FROM "+q.kind().table()+where(q)+" ORDER BY code,id LIMIT #{query.size} OFFSET #{query.offset}";}

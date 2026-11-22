@@ -15,6 +15,41 @@ import com.appnexus.masterdata.api.product.ProductStructureCommands.State;
 /** 规格、可选SKU和组合结构领域服务；父锁/CAS及追加历史同事务，不触及库存、定价或拆装。 */
 public final class ProductStructureService implements com.appnexus.masterdata.api.product.ProductStructureManagement {
  /** {@inheritDoc} */
+ @Override
+ public ProductIdentity resolveIdentity(VerifiedTenantContext c, String productId, IdentityKind kind,
+     String identityId, long expectedProductVersion) {
+  require(c, "read");
+  uuid(identityId);
+  if (kind == null || expectedProductVersion < 0) throw invalid();
+  return write(() -> {
+   var product = parent(c, productId, false, null);
+   long version = ((Number) product.get("version")).longValue();
+   if (version != expectedProductVersion) throw changed();
+   String unitId = (String) product.get("unitId");
+   if (!"ENABLED".equals(product.get("status")) || product.get("archived") != null
+       || "LEGACY_PENDING".equals(product.get("structure")) || unitId == null) throw invalid();
+   requireMeasurementUnit(c, unitId);
+   if (kind == IdentityKind.PRODUCT) {
+    if (!productId.equals(identityId) || !"NONE".equals(product.get("specification_mode"))) throw invalid();
+    return new ProductIdentity(productId, kind, identityId, null, unitId, version, null);
+   }
+   var rows = kind == IdentityKind.SKU
+       ? statements.skus(tenant(c), productId) : statements.specifications(tenant(c), productId);
+   var identity = rows.stream()
+       .filter(row -> identityId.equals(row.get("id")) && effective(row.get("effective")))
+       .findFirst().orElseThrow(ProductStructureService::invalid);
+   String specificationId = kind == IdentityKind.SKU ? (String) identity.get("specificationId") : identityId;
+   return new ProductIdentity(productId, kind, identityId, specificationId, unitId, version,
+       ((Number) identity.get("version")).longValue());
+  });
+ }
+
+ // MySQL 对逻辑表达式可能返回数值，只有明确的真值才允许用于库存。
+ private static boolean effective(Object value) {
+  return Boolean.TRUE.equals(value) || value instanceof Number flag && flag.intValue()==1;
+ }
+
+ /** {@inheritDoc} */
  public Object measurement(VerifiedTenantContext c,String product){
   require(c,"read");
   var parent=parent(c,product,false,null);
@@ -69,20 +104,44 @@ public final class ProductStructureService implements com.appnexus.masterdata.ap
  public Object calculatePackaging(VerifiedTenantContext c,String product,String code,String amount){
   require(c,"read");
   var parent=parent(c,product,false,null);
-  Object rows=measurementConfiguration(parent).get("packaging");
-  if(!(rows instanceof List<?> packaging)||parent.get("unitId")==null)throw invalid();
-  String base=(String)parent.get("unitId");
-  int scale=requireMeasurementUnit(c,base);
   var quantity=com.appnexus.masterdata.domain.product.UnitConversionRules.decimal(amount,true);
-  for(Object value:packaging){
-   if(value instanceof Map<?,?> pack&&Objects.equals(code,pack.get("code"))){
-    int sourceScale=requireMeasurementUnit(c,(String)pack.get("unitId"));
-    if(quantity.stripTrailingZeros().scale()>sourceScale)throw invalid();
-    var factor=com.appnexus.masterdata.domain.product.UnitConversionRules.decimal((String)pack.get("quantity"),true);
-    var result=new LinkedHashMap<String,Object>(com.appnexus.masterdata.domain.product.UnitConversionRules.calculate(quantity,factor,scale));
-    result.put("baseUnitId",base);
-    result.put("version",parent.get("version"));
-    return result;
+  var evidence=packagingEvidence(c,product,parent,code,quantity);
+  var result=new LinkedHashMap<String,Object>(com.appnexus.masterdata.domain.product.UnitConversionRules.calculate(
+      quantity,evidence.factor(),evidence.targetScale()));
+  result.put("baseUnitId",evidence.targetUnitId());
+  result.put("version",evidence.productVersion());
+  return result;
+ }
+
+ /** {@inheritDoc} */
+ @Override
+ public PackagingEvidence packagingEvidence(VerifiedTenantContext c, String productId, String packagingCode,
+     long expectedProductVersion, String quantity) {
+  require(c, "read");
+  return write(() -> {
+   var product=parent(c,productId,false,null);
+   if (((Number) product.get("version")).longValue()!=expectedProductVersion) throw changed();
+   if (!"ENABLED".equals(product.get("status")) || product.get("archived")!=null
+       || "LEGACY_PENDING".equals(product.get("structure"))) throw invalid();
+   var amount=com.appnexus.masterdata.domain.product.UnitConversionRules.decimal(quantity,true);
+   return packagingEvidence(c,productId,product,packagingCode,amount);
+  });
+ }
+
+ private PackagingEvidence packagingEvidence(VerifiedTenantContext c, String productId,
+     Map<String,Object> parent, String code, BigDecimal quantity) {
+  Object rows=measurementConfiguration(parent).get("packaging");
+  if (!(rows instanceof List<?> packaging) || parent.get("unitId")==null) throw invalid();
+  String base=(String) parent.get("unitId");
+  int scale=requireMeasurementUnit(c,base);
+  for (Object value:packaging) {
+   if (value instanceof Map<?,?> pack && Objects.equals(code,pack.get("code"))) {
+    String source=(String) pack.get("unitId");
+    int sourceScale=requireMeasurementUnit(c,source);
+    if (quantity.stripTrailingZeros().scale()>sourceScale) throw invalid();
+    var factor=com.appnexus.masterdata.domain.product.UnitConversionRules.decimal((String) pack.get("quantity"),true);
+    return new PackagingEvidence(productId,code,((Number) parent.get("version")).longValue(),
+        source,base,factor,scale,quantity.multiply(factor));
    }
   }
   throw invalid();

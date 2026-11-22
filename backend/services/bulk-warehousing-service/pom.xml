@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>com.appnexus</groupId>
+    <artifactId>services</artifactId>
+    <version>0.1.0-SNAPSHOT</version>
+  </parent>
+  <artifactId>bulk-warehousing-service</artifactId>
+  <dependencies>
+    <!-- 进仓引用只调用主数据公开契约，档案和关系继续由主数据维护。 -->
+    <dependency><groupId>com.appnexus</groupId><artifactId>master-data-service</artifactId><version>${project.version}</version></dependency>
+    <dependency><groupId>com.appnexus</groupId><artifactId>platform-tenant</artifactId><version>${project.version}</version></dependency>
+    <!-- Spring 仅用于组合运行装配。 -->
+    <dependency><groupId>org.springframework</groupId><artifactId>spring-context</artifactId></dependency>
+    <!-- 同库引用校验读事务仅在装配入口建立，已有进仓事务可直接加入。 -->
+    <dependency><groupId>org.springframework</groupId><artifactId>spring-tx</artifactId></dependency>
+    <!-- 受控固定语句与租户权限计划共用组合应用基础设施。 -->
+    <dependency><groupId>org.mybatis.spring.boot</groupId><artifactId>mybatis-spring-boot-starter</artifactId><version>${mybatis-spring-boot.version}</version></dependency>
+    <dependency><groupId>com.appnexus</groupId><artifactId>platform-authorization</artifactId><version>${project.version}</version></dependency>
+    <dependency><groupId>com.appnexus</groupId><artifactId>business-object-contracts</artifactId><version>${project.version}</version></dependency>
+    <dependency><groupId>com.appnexus</groupId><artifactId>mybatis-scope</artifactId><version>${project.version}</version></dependency>
+    <!-- 第一方 API 和操作声明由组合应用统一发现。 -->
+    <dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-web</artifactId></dependency>
+    <dependency><groupId>com.appnexus</groupId><artifactId>operation-contracts</artifactId><version>${project.version}</version></dependency>
+  </dependencies>
+</project>

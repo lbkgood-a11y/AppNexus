@@ -2551,3 +2551,302 @@ productSku:
   saved: "商品明细状态已更新"
   attribute: "属性"
   attributeValue: "属性值包含"
+
+warehouseTitle:
+  tripReserved: 车次占用
+  tripIssued: 车次已出
+  recoveryEntries: 续办与追溯
+  recoveryCoils: 原授权返仓卷
+  recoveryEmpty: 该授权下没有可查看的返仓续办卷
+  replaceRecovery: 建立新车次
+  continueRecovery: 继续办理
+  traceRecovery: 查看追溯
+  vehicleNumber: 车辆
+  tripId: 车次编号
+  title: 仓储货权与额度
+  searchTitle: 货权与额度查询
+  ownerId: 货主
+  warehouseId: 仓库
+  productId: 商品
+  identityId: 品规
+  allIdentities: 全部品规
+  physical: 实物货权余额
+  coils: 在库钢卷
+  authorizations: 提货授权单据额度
+  unitId: 单位
+  onHandTitle: 在库货权
+  pickable: 可提量
+  serial: 卷号
+  quantity: 账面量
+  status: 状态
+  operations: 操作
+  authorizationId: 提货授权编号
+  noticeId: 出仓通知编号
+  cap: 上限
+  reserved: 占用
+  issued: 已出
+  remaining: 剩余
+  previous: 上一页
+  next: 下一页
+  choose: 请选择货主、仓库和商品后查询
+  empty: 当前条件下无记录
+  queryFailed: 余额查询失败
+  transfer: 过户
+  dialogTitle: 同仓不动货过户
+  transferSummary: "卷号 {coil}，原货主 {owner}，账面量 {quantity} {unit}。"
+  toOwner: 转入货主
+  evidenceId: 批准凭证 UUID
+  evidenceFormat: 请输入批准凭证的 UUID
+  confirmTransfer: 确认过户
+  transferSuccess: 过户已提交
+  states:
+    AVAILABLE: 可提
+    FROZEN: 已冻结
+    OCCUPIED: 已占用
+    PENDING_QUALITY: 待检
+    LOCATION_UNAVAILABLE: 库位不可执行
+    ACTIVE: 有效
+    EXPIRED: 已过期
+    CLOSED: 已关闭
+  errors:
+    OUTBOUND_FROZEN: 钢卷已冻结，解除冻结后才能过户。
+    OUTBOUND_OCCUPIED: 钢卷已占用，撤配后才能过户。
+    WAREHOUSING_TITLE_VERSION_CHANGED: 货权已变化，请关闭弹窗并刷新后重试。
+    WAREHOUSING_TITLE_NOT_TRANSFERABLE: 当前库存无法过户，请刷新核对库存状态。
+
+coilFlow:
+  recoveryInfo: 提货授权续办
+  recoveryTrips: 授权车次与凭证
+  recoveryRestrictions: 原卷监管凭证
+  recoveryUnavailable: 原提货授权续办信息不可用。
+  recoveryColumns:
+    tripId: 车次编号
+    vehicleNumber: 车辆
+    kind: 记录类型
+    id: 记录编号
+    evidenceId: 业务凭证
+    occurredAt: 操作时间
+    cap: 车次上限
+    reserved: 车次占用
+    issued: 车次已出
+  recoveryKinds:
+    PLANNED: 已建车次
+    ALLOCATED: 配货
+    CANCELLED: 撤销配货
+    REVIEW: 复磅通过
+    INVALID_REVIEW: 复磅已失效
+    HELD_REVIEW: 复磅拦截
+    HANDOVER: 交接完成
+    REVERSED_HANDOVER: 交接已冲回
+  restrictionColumns:
+    id: 冻结编号
+    evidenceId: 冻结凭证
+    releaseEvidenceId: 解除凭证
+  cancelAllocation: 撤销配货
+  cancelAllocationConfirm: 撤销会释放本卷占用并使原车次复磅失效，监管冻结继续生效。确认撤销原配货？
+  cancelledTrip: 已撤销配货的车次
+  allocationCancelled: 配货已撤销，原复磅已失效。解除冻结后请建立新车次。
+  openGateRestriction: 监管记录（新标签页）
+  handoverFrozen: 当前车次有卷处于冻结状态，门岗未交接。原配货和复磅保留，凭证解除后可在本页重试。
+  returnTransit: 返仓在途单
+  viewReturnTransit: 查看返仓凭证
+  reissueUnavailable: 当前原卷无法发起二次出仓，请核对接管、放行和可发状态。
+  reissueGates:
+    FROZEN: 当前卷已冻结，无法发起二次出仓。
+    PENDING_QUALITY: 当前卷仍待检，无法发起二次出仓。
+    OCCUPIED: 当前卷已被占用，无法发起二次出仓。
+    DISPATCHED: 当前卷已出仓。
+  coilCount: "履约卷数"
+  coilProgress: "第 {current} 卷，共 {total} 卷"
+  coilNet: "{serial} 实测分摊"
+  startReturn: "发起返仓"
+  heading: 整卷履约
+  execute: 履约作业
+  trace: 单据追溯
+  lookup: 查询原卷
+  invalidReceipt: 请输入有效的库存身份 UUID。
+  invalid: 请输入有效的业务值。
+  unitRequired: 商品需要已配置的库存基础单位。
+  differentOwner: 请选择不同的转入货主。
+  held: 复磅未通过，请核对依据后重新提交。
+  submitted: 作业已提交
+  timestamp: ISO 8601 时点，含时区
+  unit: 单位
+  owner: 货主
+  warehouse: 仓库
+  area: 库区
+  location: 库位
+  product: 商品
+  item: 品规
+  accepted: 已提交单据
+  inboundId: 入仓通知编号
+  outboundId: 出仓通知编号
+  tripId: 车次编号
+  receiptId: 原库存身份
+  serial: 卷号
+  custodyId: 接管编号
+  measurementId: 实收计量凭证
+  currentStock: 当前库存与货权
+  onHand: 在库量
+  pending: 待检量
+  titleQuantity: 在库货权
+  authorizationBalance: 提货授权单据额度
+  authorizationId: 提货授权编号
+  reserved: 占用
+  issued: 已出
+  remaining: 剩余
+  documents: 原卷关联单据
+  kind: 类型
+  id: 单据编号
+  parentId: 关联编号
+  quantity: 数量
+  empty: 实收成功或按原库存身份查询后显示关联单据
+  kinds:
+    INBOUND: 入仓通知
+    TRANSFER: 货权过户
+    OUTBOUND: 出仓通知
+    ALLOCATION: 配货记录
+    WEIGHING: 复磅记录
+    HANDOVER: 门岗交接
+    RETURN: 实际返仓
+    REVERSAL: 交接冲销
+    RETURN_DISPATCH: 返仓发运
+    RETURN_REROUTE: 在途改仓
+    RETURN_LOSS: 短损结清
+    RETURN_LOSS_REOPENED: 短损重开
+  steps:
+    inbound: 签发入仓通知
+    custody: 确认接管
+    receive: 实收并入待检
+    title: 登记货权
+    quality: 质检放行
+    identify: 绑定原卷号
+    transfer: 同仓过户
+    outbound: 签发出仓通知
+    authorize: 签发提货授权
+    trip: 建立车次
+    allocate: 整卷配货
+    vehicle: 核验车辆限载
+    weigh: 提交复磅
+    handover: 门岗交接
+    return: 实际返仓
+  fields:
+    limit: 入仓批准上限
+    custodyEvidence: 接管凭证 UUID
+    measurement: 实收计量凭证 UUID
+    quantity: 实收量
+    titleEvidence: 权利凭证 UUID
+    effective: 权利生效时点
+    qualityEvidence: 合格证据 UUID
+    serial: 实际卷号
+    newOwner: 转入货主
+    transferEvidence: 过户凭证 UUID
+    cap: 出仓批准上限
+    pickup: 提货方
+    authorizationCap: 授权上限
+    expiry: 授权截止时点
+    vehicleNumber: 车牌或车辆编号
+    tripCap: 车次上限
+    vehicleEvidence: 限载依据 UUID
+    payload: 车辆载货上限
+    grossLimit: 车辆总重上限
+    ticket: 复磅凭证 UUID
+    gross: 复磅毛重
+    tare: 复磅皮重
+    net: 整卷实测分摊
+    gateEvidence: 门岗交接凭证 UUID
+    returnCustody: 返仓接管凭证 UUID
+    returnTitle: 返仓货权凭证 UUID
+
+returnTransit:
+  restrictions: 监管记录
+  restrictionHistory: 冻结与解除记录
+  restrictionStatus: 监管状态
+  restrictionNumber: 冻结编号
+  freezeEvidence: 冻结凭证 UUID
+  liftEvidence: 解除凭证 UUID
+  frozen: 冻结中
+  lifted: 已解除
+  createdBy: 冻结登记账号
+  createdAt: 冻结时间
+  updatedBy: 最近修改账号
+  updatedAt: 最近修改时间
+  startOutbound: 发起新出仓
+  eligibleCoils: "可返仓卷"
+  noEligibleCoils: "当前无可登记返仓的原卷"
+  openOriginal: "查看原交接"
+  qualityStatus: 返仓质检
+  qualityReleased: 已质检放行
+  qualityPending: 待检
+  qualityEvidenceId: 返仓质检凭证
+  qualityEvidence: 质检凭证 UUID
+  heading: 跨仓返仓在途
+  dispatch: 登记发运
+  track: 在途跟踪
+  query: 查询发运
+  handoverId: 原门岗交接编号
+  planWarehouse: 原计划接收仓
+  sourceWarehouse: 原出仓
+  dispatchEvidence: 发运凭证 UUID
+  receiptIds: 原库存身份列表
+  receiptHint: 每卷一个 UUID，用换行分隔
+  transitId: 发运编号
+  original: 原发运计划
+  coils: 发运卷清单
+  quotas: 原三级额度
+  history: 逐卷凭证历史
+  stock: 接管后库存与货权
+  serial: 卷号
+  bookQuantity: 账面量
+  measuredQuantity: 原实测量
+  receivingWarehouseId: 当前接收仓
+  state: 状态
+  operations: 操作
+  quotaKind: 额度级别
+  id: 单据编号
+  cap: 上限
+  reserved: 占用
+  issued: 已出
+  remaining: 剩余
+  kind: 类型
+  evidenceId: 操作凭证
+  titleEvidenceId: 返仓货权凭证
+  warehouseId: 接收路径
+  actualWarehouse: 实际接收仓
+  newWarehouse: 新接收仓
+  area: 接收库区
+  location: 接收库位
+  custodyEvidence: 接管凭证 UUID
+  approvalEvidence: 批准凭证 UUID
+  responsible: 责任伙伴
+  reason: 原因
+  onHand: 在库量
+  pending: 待检量
+  title: 在库货权
+  unit: 单位
+  confirm: 确认提交
+  posted: 在途操作已提交
+  empty: 登记发运或按发运编号查询
+  invalid: 请输入有效的业务 UUID。
+  invalidCoils: 请填写 1 至 500 个不重复的库存身份 UUID。
+  quotaKinds:
+    notice: 出仓通知
+    authorization: 提货授权
+    trip: 车次
+  states:
+    IN_TRANSIT: 在途
+    RECEIVED: 已接管
+    LOSS_SETTLED: 短损已结清
+  actions:
+    freeze: 登记冻结
+    lift: 解除冻结
+    quality: 返仓质检放行
+    receive: 实际接管
+    loss: 短损结清
+    reopen: 补到重开
+    reroute: 在途改仓
+  errors:
+    OUTBOUND_RETURN_TRANSIT_WAREHOUSE_MISMATCH: 实际接收仓与当前接收仓不一致，请核对原卷的生效路由。
+    OUTBOUND_RETURN_TRANSIT_ROUTE_CHANGED: 接收路由已变化，请刷新发运清单后再试。
+    OUTBOUND_RETURN_LOSS_SETTLED: 原卷短损已结清，须复核重开后才能接管或改仓。
+    OUTBOUND_RETURN_TRANSIT_COIL_MISMATCH: 该卷不在当前可处置的发运范围内。

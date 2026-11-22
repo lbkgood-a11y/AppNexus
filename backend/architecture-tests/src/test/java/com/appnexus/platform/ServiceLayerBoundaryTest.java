@@ -59,6 +59,38 @@ class ServiceLayerBoundaryTest {
       .withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
       .importPackages("com.appnexus");
 
+  /** 仓储引用链必须实际进入扫描，同时只依赖主数据的公开入口。 */
+  @Test void inboundReferencesUsePublicMasterDataBoundary() {
+    assertTrue(classes.contain("com.appnexus.bulkwarehousing.adapter.integration.MasterDataInboundReceiptReferences"));
+    noClasses().that().resideInAPackage("com.appnexus.bulkwarehousing..")
+        .should().dependOnClassesThat().resideInAnyPackage("com.appnexus.masterdata.application..",
+            "com.appnexus.masterdata.domain..", "com.appnexus.masterdata.adapter..",
+            "com.appnexus.masterdata.bootstrap..")
+        .check(classes);
+    assertTrue(classes.contain("com.appnexus.bulkwarehousing.application.ResolveInboundReceiptReferences"));
+    noClasses().that().resideInAnyPackage("com.appnexus.bulkwarehousing.api..", "com.appnexus.bulkwarehousing.application..")
+        .should().dependOnClassesThat().resideInAnyPackage("com.appnexus.masterdata..",
+            "com.appnexus.bulkwarehousing.adapter..", "org.springframework..").check(classes);
+  }
+
+  /** 仓储七个生产领域均进入扫描，各业务包通过应用传递事实。 */
+  @Test void warehousingDomainsArePresentAndIndependent() {
+    var domains = java.util.Map.of("receiving", "ReceivingLimit", "stock", "StockAvailability",
+        "title", "TitleTransferRules", "dispatch", "DispatchQuota", "evidence", "MeasurementAllocation",
+        "returns", "ReturnBalance", "process", "CoilDispatchSteps");
+    String root = "com.appnexus.bulkwarehousing.domain.";
+    domains.forEach((feature, type) -> {
+      assertTrue(classes.contain(root + feature + "." + type));
+      var otherDomains = domains.keySet().stream().filter(other -> !other.equals(feature))
+          .map(other -> root + other + "..").toArray(String[]::new);
+      noClasses().that().resideInAPackage(root + feature + "..")
+          .should().dependOnClassesThat().resideInAnyPackage(otherDomains).check(classes);
+    });
+    noClasses().that().resideInAPackage(root + ".")
+        .should().dependOnClassesThat().resideInAnyPackage("com.appnexus.bulkwarehousing.api..",
+            "com.appnexus.bulkwarehousing.bootstrap..", "com.appnexus.contracts..").check(classes);
+  }
+
   /** 跨服务扫描实际领域及核心代码，禁止技术框架和外层适配器依赖。 */
   @Test void domainAndCoreRemainIndependentOfTechnology() {
     noClasses().that().resideInAnyPackage("..domain..", "..core..")

@@ -1,0 +1,21 @@
+{
+  "name": "@appnexus/warehousing",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/types.ts",
+    "./coil-title": "./src/CoilTitleWorkspace.vue",
+    "./coil-flow": "./src/CoilFlowWorkspace.vue",
+    "./flow-types": "./src/flow.ts",
+    "./return-transit": "./src/ReturnTransitWorkspace.vue",
+    "./return-transit-types": "./src/returnTransit.ts"
+  },
+  "dependencies": {
+    "@appnexus/ui": "workspace:*"
+  },
+  "peerDependencies": {
+    "element-plus": "^2.13.6",
+    "vue": "^3.5.31",
+    "vue-i18n": "^11.3.0"
+  }
+}

@@ -46,7 +46,9 @@ public final class MyBatisUnitConversionRepository implements UnitConversionRepo
   /** {@inheritDoc} */
   @Override public Calculation calculation(String tenant,String id) {
     var rows=mapper.calculation(tenantBytes(tenant),id);if(rows.size()!=1)return null;var row=rows.getFirst();
-    return new Calculation((BigDecimal)row.get("factor"),((Number)row.get("scale")).intValue());
+    return new Calculation((String) row.get("sourceId"), (String) row.get("targetId"),
+        ((Number) row.get("version")).longValue(), (BigDecimal) row.get("factor"),
+        ((Number) row.get("scale")).intValue());
   }
   /** 可信租户UUID转数据库二进制；不从请求体读取租户，正式Mapper拦截器再次覆盖验证。 */
   private byte[] tenantBytes(String value){var id=java.util.UUID.fromString(value);return java.nio.ByteBuffer.allocate(16).putLong(id.getMostSignificantBits()).putLong(id.getLeastSignificantBits()).array();}

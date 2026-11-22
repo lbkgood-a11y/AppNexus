@@ -19,8 +19,13 @@ public final class WarehouseDeclaration implements Provider {
                         field("phone", "联系电话", "Telephone", "PHONE"),
                         field("email", "联系邮箱", "Contact email", "EMAIL"),
                         field("ownershipCertificate", "权属证明", "Ownership certificate", "IDENTIFIER"),
-                        field("personalGuarantee", "个人担保", "Personal guarantee", "TEXT")))), Map.of());
-        return new Descriptor("Warehouse", "仓库管理", "Warehouses", "master-data", 4, Category.MASTER_DATA, List.of(), List.of(
+                        field("personalGuarantee", "个人担保", "Personal guarantee", "TEXT")))),
+                Map.of("list",Set.of("ALL","RULES"),"create",Set.of("ALL"),
+                    "update",Set.of("ALL"),"setStatus",Set.of("ALL")), List.of(
+                    new DataDimension("organizationId","归属组织","Owning organization","UUID",Set.of("EQ","IN")),
+                    new DataDimension("warehouseType","仓库类型","Warehouse type","TEXT",Set.of("EQ","IN")),
+                    new DataDimension("operatingMode","经营模式","Operating mode","TEXT",Set.of("EQ","IN"))));
+        return new Descriptor("Warehouse", "仓库管理", "Warehouses", "master-data", 5, Category.MASTER_DATA, List.of(), List.of(
                 operation("Warehouse", "fieldRestrictions", "读取仓库字段限制", "Read warehouse field restrictions", "masterdata.warehouse:read",
                         new PageOperation("master-data/warehouse", "/master-data/warehouse", "读取仓库字段限制", "Read warehouse field restrictions", "GET", "/api/master-data/warehouse/field-restrictions")),
                 operation("Warehouse", "list", "查询仓库管理", "list Warehouses", "masterdata.warehouse:read",

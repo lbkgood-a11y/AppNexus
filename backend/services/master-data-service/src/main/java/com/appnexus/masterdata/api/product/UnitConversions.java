@@ -4,6 +4,21 @@ import com.appnexus.platform.tenant.VerifiedTenantContext;
 
 /** 商品同维度显式单位换算输入端口；不修改商品基础单位或动态属性保存单位。 */
 public interface UnitConversions {
+  /** 正式过账可留存的换算证据，数量及系数为精确十进制。 */
+  record ConversionEvidence(String ruleId, long version, String sourceUnitId, String targetUnitId,
+                            java.math.BigDecimal factor, int targetScale,
+                            java.math.BigDecimal convertedQuantity) {}
+
+  /**
+   * 使用已启用且同量纲的规则生成换算证据。
+   * @param c 服务端可信租户和成员
+   * @param id 换算规则 UUID
+   * @param expectedVersion 规则非负版本，变动后调用方须复核
+   * @param quantity 正十进制源数量，格式沿用试算
+   * @return 同一读取中的规则依据、精度及结果
+   */
+  ConversionEvidence evidence(VerifiedTenantContext c, String id, long expectedVersion, String quantity);
+
   /**
    * 新增固定换算关系，系数不可原地修改。
    * @param sourceUnitId 已授权租户内启用的源单位 UUID

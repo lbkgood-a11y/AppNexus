@@ -2660,3 +2660,302 @@ productSku:
   saved: "SKU status updated"
   attribute: "Attribute"
   attributeValue: "Attribute value contains"
+
+warehouseTitle:
+  tripReserved: Trip reserved
+  tripIssued: Trip issued
+  recoveryEntries: Resume or trace
+  recoveryCoils: Returned coils on this authorization
+  recoveryEmpty: No returned coils are available on this authorization
+  replaceRecovery: Plan replacement trip
+  continueRecovery: Continue trip
+  traceRecovery: View history
+  vehicleNumber: Vehicle
+  tripId: Trip ID
+  title: Warehouse title and balances
+  searchTitle: Title and balance search
+  ownerId: Owner
+  warehouseId: Warehouse
+  productId: Product
+  identityId: Specification
+  allIdentities: All specifications
+  physical: Physical title balance
+  coils: In-stock coils
+  authorizations: Pickup authorization balances
+  unitId: Unit
+  onHandTitle: On-hand title
+  pickable: Pickable quantity
+  serial: Coil number
+  quantity: Book quantity
+  status: Status
+  operations: Actions
+  authorizationId: Authorization ID
+  noticeId: Outbound notice ID
+  cap: Limit
+  reserved: Reserved
+  issued: Issued
+  remaining: Remaining
+  previous: Previous
+  next: Next
+  choose: Select an owner, warehouse and product to search
+  empty: No records match the current filters
+  queryFailed: Could not query balances
+  transfer: Transfer
+  dialogTitle: Transfer title without moving stock
+  transferSummary: "Coil {coil}, current owner {owner}, book quantity {quantity} {unit}."
+  toOwner: Receiving owner
+  evidenceId: Approval evidence UUID
+  evidenceFormat: Enter a valid approval evidence UUID
+  confirmTransfer: Confirm transfer
+  transferSuccess: Title transfer posted
+  states:
+    AVAILABLE: Pickable
+    FROZEN: Frozen
+    OCCUPIED: Reserved
+    PENDING_QUALITY: Pending inspection
+    LOCATION_UNAVAILABLE: Location unavailable
+    ACTIVE: Active
+    EXPIRED: Expired
+    CLOSED: Closed
+  errors:
+    OUTBOUND_FROZEN: Lift the restriction before transferring this coil.
+    OUTBOUND_OCCUPIED: Release the reservation before transferring this coil.
+    WAREHOUSING_TITLE_VERSION_CHANGED: Title has changed. Close this dialog and refresh before trying again.
+    WAREHOUSING_TITLE_NOT_TRANSFERABLE: Refresh and check the coil's current stock status.
+
+coilFlow:
+  recoveryInfo: Resume pickup authorization
+  recoveryTrips: Authorization trips and evidence
+  recoveryRestrictions: Coil restriction evidence
+  recoveryUnavailable: This pickup authorization cannot be loaded.
+  recoveryColumns:
+    tripId: Trip ID
+    vehicleNumber: Vehicle
+    kind: Record type
+    id: Record ID
+    evidenceId: Evidence
+    occurredAt: Recorded at
+    cap: Trip limit
+    reserved: Trip reserved
+    issued: Trip issued
+  recoveryKinds:
+    PLANNED: Trip planned
+    ALLOCATED: Allocation
+    CANCELLED: Allocation cancelled
+    REVIEW: Weighing approved
+    INVALID_REVIEW: Weighing invalidated
+    HELD_REVIEW: Weighing held
+    HANDOVER: Handover completed
+    REVERSED_HANDOVER: Handover reversed
+  restrictionColumns:
+    id: Restriction ID
+    evidenceId: Freeze evidence
+    releaseEvidenceId: Release evidence
+  cancelAllocation: Cancel allocation
+  cancelAllocationConfirm: This releases the coil allocation and invalidates weighing for the trip. The freeze stays active. Cancel this allocation?
+  cancelledTrip: Trip with cancelled allocation
+  allocationCancelled: Allocation cancelled. The previous weighing is invalid. Lift the freeze before planning a new trip.
+  openGateRestriction: Restrictions (new tab)
+  handoverFrozen: A coil on this trip is frozen. Allocation and weighing are retained. Lift the restriction before retrying here.
+  returnTransit: Return transit record
+  viewReturnTransit: View return evidence
+  reissueUnavailable: Check custody, quality release, and stock availability before starting another shipment.
+  reissueGates:
+    FROZEN: This coil is frozen and cannot be shipped again.
+    PENDING_QUALITY: This coil is awaiting inspection and cannot be shipped again.
+    OCCUPIED: This coil is already allocated.
+    DISPATCHED: This coil has already shipped.
+  coilCount: "Coils in this fulfillment"
+  coilProgress: "Coil {current} of {total}"
+  coilNet: "Measured share for {serial}"
+  startReturn: "Start return"
+  heading: Coil fulfillment
+  execute: Fulfillment
+  trace: Trace documents
+  lookup: Find original coil
+  invalidReceipt: Enter a valid stock identity UUID.
+  invalid: Enter a valid business value.
+  unitRequired: The product needs a configured base stock unit.
+  differentOwner: Select a different receiving owner.
+  held: Weighing review was held. Check the evidence and resubmit.
+  submitted: Operation posted
+  timestamp: ISO 8601 timestamp with time zone
+  unit: Unit
+  owner: Owner
+  warehouse: Warehouse
+  area: Storage area
+  location: Storage location
+  product: Product
+  item: Specification
+  accepted: Posted documents
+  inboundId: Inbound notice ID
+  outboundId: Outbound notice ID
+  tripId: Trip ID
+  receiptId: Original stock identity
+  serial: Coil number
+  custodyId: Custody ID
+  measurementId: Receipt measurement evidence
+  currentStock: Current stock and title
+  onHand: On hand
+  pending: Pending inspection
+  titleQuantity: On-hand title
+  authorizationBalance: Pickup authorization balance
+  authorizationId: Authorization ID
+  reserved: Reserved
+  issued: Issued
+  remaining: Remaining
+  documents: Original coil documents
+  kind: Type
+  id: Document ID
+  parentId: Related ID
+  quantity: Quantity
+  empty: Related documents appear after receipt or when you look up a coil
+  kinds:
+    INBOUND: Inbound notice
+    TRANSFER: Title transfer
+    OUTBOUND: Outbound notice
+    ALLOCATION: Allocation
+    WEIGHING: Weighing review
+    HANDOVER: Gate handover
+    RETURN: Actual return
+    REVERSAL: Handover reversal
+    RETURN_DISPATCH: Return dispatch
+    RETURN_REROUTE: Return reroute
+    RETURN_LOSS: Shortfall settlement
+    RETURN_LOSS_REOPENED: Shortfall reopened
+  steps:
+    inbound: Issue inbound notice
+    custody: Confirm custody
+    receive: Receive for inspection
+    title: Register title
+    quality: Release quality hold
+    identify: Assign coil number
+    transfer: Transfer title
+    outbound: Issue outbound notice
+    authorize: Issue pickup authorization
+    trip: Create trip
+    allocate: Allocate coil
+    vehicle: Verify vehicle limits
+    weigh: Review weighing
+    handover: Confirm gate handover
+    return: Accept actual return
+  fields:
+    limit: Inbound limit
+    custodyEvidence: Custody evidence UUID
+    measurement: Receipt measurement UUID
+    quantity: Received quantity
+    titleEvidence: Title evidence UUID
+    effective: Title effective time
+    qualityEvidence: Quality evidence UUID
+    serial: Coil number
+    newOwner: Receiving owner
+    transferEvidence: Transfer evidence UUID
+    cap: Outbound limit
+    pickup: Pickup partner
+    authorizationCap: Authorization limit
+    expiry: Authorization expiry
+    vehicleNumber: Vehicle number
+    tripCap: Trip limit
+    vehicleEvidence: Limits evidence UUID
+    payload: Payload limit
+    grossLimit: Gross limit
+    ticket: Weigh ticket UUID
+    gross: Measured gross
+    tare: Measured tare
+    net: Measured coil share
+    gateEvidence: Gate evidence UUID
+    returnCustody: Return custody evidence UUID
+    returnTitle: Return title evidence UUID
+
+returnTransit:
+  restrictions: Restrictions
+  restrictionHistory: Freeze and release history
+  restrictionStatus: Restriction status
+  restrictionNumber: Restriction ID
+  freezeEvidence: Freeze evidence UUID
+  liftEvidence: Release evidence UUID
+  frozen: Frozen
+  lifted: Released
+  createdBy: Recorded by
+  createdAt: Frozen at
+  updatedBy: Last updated by
+  updatedAt: Last updated at
+  startOutbound: Start new outbound
+  eligibleCoils: "Coils eligible for return"
+  noEligibleCoils: "No original coils are available to dispatch for return"
+  openOriginal: "View original handover"
+  qualityStatus: Return inspection
+  qualityReleased: Quality released
+  qualityPending: Pending inspection
+  qualityEvidenceId: Return inspection evidence
+  qualityEvidence: Inspection evidence UUID
+  heading: Cross-warehouse return transit
+  dispatch: Register dispatch
+  track: Track returns
+  query: Find dispatch
+  handoverId: Original gate handover ID
+  planWarehouse: Originally planned warehouse
+  sourceWarehouse: Original outbound warehouse
+  dispatchEvidence: Dispatch evidence UUID
+  receiptIds: Original stock identities
+  receiptHint: One coil UUID per line
+  transitId: Dispatch ID
+  original: Original dispatch plan
+  coils: Dispatched coils
+  quotas: Original three-level quotas
+  history: Coil evidence history
+  stock: Stock and title after custody
+  serial: Coil number
+  bookQuantity: Book quantity
+  measuredQuantity: Original measured quantity
+  receivingWarehouseId: Current receiving warehouse
+  state: Status
+  operations: Actions
+  quotaKind: Quota level
+  id: Document ID
+  cap: Limit
+  reserved: Reserved
+  issued: Issued
+  remaining: Remaining
+  kind: Type
+  evidenceId: Operation evidence
+  titleEvidenceId: Return title evidence
+  warehouseId: Receiving route
+  actualWarehouse: Actual receiving warehouse
+  newWarehouse: New receiving warehouse
+  area: Receiving area
+  location: Receiving location
+  custodyEvidence: Custody evidence UUID
+  approvalEvidence: Approval evidence UUID
+  responsible: Responsible partner
+  reason: Reason
+  onHand: On hand
+  pending: Pending inspection
+  title: On-hand title
+  unit: Unit
+  confirm: Confirm
+  posted: Transit operation posted
+  empty: Register a dispatch or look up an existing dispatch
+  invalid: Enter a valid business UUID.
+  invalidCoils: Enter 1 to 500 unique stock UUIDs.
+  quotaKinds:
+    notice: Outbound notice
+    authorization: Pickup authorization
+    trip: Trip
+  states:
+    IN_TRANSIT: In transit
+    RECEIVED: Received
+    LOSS_SETTLED: Loss settled
+  actions:
+    freeze: Freeze coil
+    lift: Lift freeze
+    quality: Release return quality
+    receive: Confirm custody
+    loss: Settle loss
+    reopen: Reopen after arrival
+    reroute: Reroute in transit
+  errors:
+    OUTBOUND_RETURN_TRANSIT_WAREHOUSE_MISMATCH: The actual warehouse differs from the current receiving warehouse. Check the coil's active route.
+    OUTBOUND_RETURN_TRANSIT_ROUTE_CHANGED: The route has changed. Refresh the dispatch before retrying.
+    OUTBOUND_RETURN_LOSS_SETTLED: Reopen the settled loss before receiving or rerouting this coil.
+    OUTBOUND_RETURN_TRANSIT_COIL_MISMATCH: This coil is outside the current dispatch operation scope.

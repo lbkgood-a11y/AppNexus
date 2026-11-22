@@ -22,6 +22,105 @@ import org.springframework.web.context.request.*;
  @Signature(type=org.apache.ibatis.executor.Executor.class,method="query",args={org.apache.ibatis.mapping.MappedStatement.class,Object.class,org.apache.ibatis.session.RowBounds.class,org.apache.ibatis.session.ResultHandler.class})
 })
 public final class TenantSqlInterceptor implements Interceptor {
+    private final com.appnexus.platform.authorization.ScopedWriteGate scopedWrites;
+    /** @param scopedWrites 与当前事务绑定的标准记录许可 */
+    public TenantSqlInterceptor(com.appnexus.platform.authorization.ScopedWriteGate scopedWrites){this.scopedWrites=scopedWrites;}
+    private void verifyScope(Class<?> mapper,String id,BoundSql sql){
+        String name=id.substring(id.lastIndexOf('.')+1);
+        for (var method : mapper.getMethods()) {
+            if (!method.getName().equals(name)) continue;
+            for (var guard : method.getAnnotationsByType(GuardedScope.class)) {
+                verifyGuard(guard,sql);
+            }
+        }
+    }
+
+    private void verifyGuard(GuardedScope guard,BoundSql sql){
+        var parameters=SystemMetaObject.forObject(sql.getParameterObject());
+        if(!guard.when().isEmpty()&&!guard.whenValue().equals(String.valueOf(parameters.getValue(guard.when()))))return;
+        if(!guard.predicate().isEmpty()){
+            if(!(parameters.getValue(guard.predicate()) instanceof com.appnexus.platform.authorization.RowAccessControl.Predicate predicate)
+                ||predicate.plan()==null||!guard.resource().equals(predicate.plan().resource())
+                ||!sameScopeTenant(parameters.getValue(guard.tenant()),predicate.plan().subject().tenantId())
+                ||!sql.getSql().contains(ScopedSql.fragment(predicate.sql())))throw new SecurityException("SCOPED_SQL_PLAN_REQUIRED");
+            var subject=predicate.plan().subject();
+            if(guard.actions().length>0&&Arrays.stream(guard.actions()).noneMatch(action->
+                predicate.plan().permissionCode().equals(guard.resource()+":"+action)))throw new SecurityException("SCOPED_SQL_PLAN_REQUIRED");
+            if(RequestContextHolder.getRequestAttributes() instanceof ServletRequestAttributes request
+                &&request.getRequest().getAttribute(VerifiedTenantContext.class.getName()) instanceof VerifiedTenantContext context
+                &&(!context.accountId().equals(subject.accountId())||!context.memberId().equals(subject.memberId())
+                ||!context.tenantId().equals(subject.tenantId())))throw new SecurityException("SCOPED_SQL_SUBJECT_MISMATCH");
+            for(int i=0;i<predicate.parameters().size();i++){
+                String expected=guard.predicate()+".parameters["+i+"]";
+                if(sql.getParameterMappings().stream().noneMatch(parameter->parameter.getProperty().equals(expected)))
+                    throw new SecurityException("SCOPED_SQL_BINDING_REQUIRED");
+            }
+        }else{
+            var tenant=scopeTenant(parameters.getValue(guard.tenant()));
+            if(!guard.serviceOperation().isEmpty()){
+                if(guard.serviceKeys().length==0||guard.operationPermissions().length>0
+                    ||!guard.catalogPublication().isEmpty()||!guard.recordId().isEmpty()
+                    ||!guard.target().isEmpty()||guard.parentKey().length>0
+                    ||sql.getParameterMappings().stream().noneMatch(param->param.getProperty().equals(guard.tenant())))
+                    throw new SecurityException("SCOPED_WRITE_PLAN_REQUIRED");
+                var keys=new ArrayList<String>();
+                for(String path:guard.serviceKeys()){
+                    if(!(parameters.getValue(path) instanceof String key)
+                        ||sql.getParameterMappings().stream().noneMatch(param->param.getProperty().equals(path)))
+                        throw new SecurityException("SCOPED_WRITE_PLAN_REQUIRED");
+                    keys.add(key);
+                }
+                scopedWrites.requireServiceOperation(tenant,guard.serviceOperation(),keys);
+                return;
+            }
+            if(!guard.catalogPublication().isEmpty()){
+                if(guard.operationPermissions().length>0||!guard.recordId().isEmpty()
+                    ||!guard.target().isEmpty()||guard.parentKey().length>0)
+                    throw new SecurityException("SCOPED_WRITE_PLAN_REQUIRED");
+                scopedWrites.requireCatalogPublication(tenant,guard.catalogPublication());
+                return;
+            }
+            if(guard.operationPermissions().length>0){
+                if(!guard.recordId().isEmpty()||!guard.target().isEmpty()||guard.parentKey().length>0)
+                    throw new SecurityException("SCOPED_WRITE_PLAN_REQUIRED");
+                scopedWrites.requireOperation(tenant,guard.operationPermissions());
+                return;
+            }
+            var record=UUID.fromString(String.valueOf(parameters.getValue(guard.recordId())));
+            if(guard.parentKey().length>0){
+                if(!guard.target().isEmpty())throw new SecurityException("SCOPED_WRITE_PLAN_REQUIRED");
+                var parentKeys=new ArrayList<String>();
+                for(String path:guard.parentKey()){
+                    if(!(parameters.getValue(path) instanceof String key))
+                        throw new SecurityException("SCOPED_WRITE_PLAN_REQUIRED");
+                    parentKeys.add(key);
+                }
+                scopedWrites.requireParentKey(tenant,record,guard.resource(),guard.actions(),parentKeys);
+                return;
+            }
+            boolean bindTarget=!guard.target().isEmpty();
+            var target=bindTarget?parameters.getValue(guard.target()):null;
+            scopedWrites.require(tenant,record,guard.resource(),guard.actions(),
+                target==null?null:UUID.fromString(target.toString()),bindTarget);
+        }
+    }
+
+    /** 组织聚合 SQL 使用二进制租户 UUID；主档 Mapper 使用规范文本 UUID。 */
+    private UUID scopeTenant(Object value){
+        if(value instanceof byte[] bytes && bytes.length==16){
+            var buffer=java.nio.ByteBuffer.wrap(bytes);
+            return new UUID(buffer.getLong(),buffer.getLong());
+        }
+        return UUID.fromString(String.valueOf(value));
+    }
+
+    private boolean sameScopeTenant(Object parameter,UUID expected){
+        if(expected==null)return false;
+        if(parameter instanceof byte[] bytes)return Arrays.equals(bytes,java.nio.ByteBuffer.allocate(16)
+            .putLong(expected.getMostSignificantBits()).putLong(expected.getLeastSignificantBits()).array());
+        return expected.toString().equals(String.valueOf(parameter));
+    }
+
     @Override public Object intercept(Invocation invocation) throws Throwable {
         if (invocation.getTarget() instanceof org.apache.ibatis.executor.Executor) {
             Object executor=invocation.getTarget();
@@ -42,6 +141,7 @@ public final class TenantSqlInterceptor implements Interceptor {
         Class<?> mapper=Class.forName(namespace);
         var declaration=mapper.getAnnotation(TenantScoped.class);
         var aggregate=mapper.getAnnotation(TenantAggregateScoped.class);
+        verifyScope(mapper,statement.getId(),handler.getBoundSql());
         var sql=handler.getBoundSql().getSql();
         String normalized=sql.trim().replaceAll("\s+"," ").toLowerCase(Locale.ROOT);
         if(declaration==null && aggregate!=null) {

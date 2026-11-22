@@ -76,8 +76,11 @@ public interface RowAccessControl {
      * 不可变的参数化附加条件，不是可接受任意 SQL 的执行入口。
      * @param sql 由平台实现生成的固定 SQL 形状；不得作为租户条件使用
      * @param parameters 占位符对应标量文本，UUID按映射转换；深复制且不可修改
+     * @param plan 标准受控入口使用的本次计划；旧适配器可为空
      */
-    record Predicate(String sql, List<String> parameters) {
+    record Predicate(String sql,List<String> parameters,AccessPlan plan) {
+        /** 保留旧专用存储适配器的编译入口；受控 Mapper 不接受没有计划的谓词。 */
+        public Predicate(String sql,List<String> parameters){this(sql,parameters,null);}
         public Predicate {
             java.util.Objects.requireNonNull(sql);
             parameters = List.copyOf(parameters);

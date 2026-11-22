@@ -609,5 +609,45 @@
       "frontend/modules/authorization/src/RoleUsers.vue"
     ],
     "reason": "平台账号与租户成员分别复用真实主体角色覆盖接口；加入前重读完整快照并追加角色，保留版本校验及其他角色。"
+  },
+  {
+    "file": "frontend/modules/warehousing/src/CoilFlowWorkspace.vue",
+    "expression": "activeOperation",
+    "reason": "整卷当前阶段按钮仅映射固定的真实仓储命令。",
+    "operations": [
+      "BulkInboundReceipt.issue",
+      "BulkInboundReceipt.take_custody",
+      "BulkInboundReceipt.receive",
+      "BulkInboundTitleRegistration.register",
+      "BulkInboundQualityRelease.release",
+      "BulkCoilOutbound.identify",
+      "BulkCoilTitleTransfer.transfer",
+      "BulkCoilOutbound.issue",
+      "BulkCoilOutbound.authorize",
+      "BulkCoilOutbound.plan",
+      "BulkCoilOutbound.allocate",
+      "BulkCoilOutbound.vehicle_limits",
+      "BulkCoilOutbound.review_weighing",
+      "BulkCoilOutbound.handover",
+      "BulkCoilOutbound.return_coils"
+    ],
+    "sources": [
+      "backend/services/bulk-warehousing-service/src/main/java/com/appnexus/bulkwarehousing/adapter/web/InboundReceivingController.java",
+      "backend/services/bulk-warehousing-service/src/main/java/com/appnexus/bulkwarehousing/adapter/web/OutboundStockController.java"
+    ]
+  },
+  {
+    "file": "frontend/modules/warehousing/src/ReturnTransitWorkspace.vue",
+    "expression": "activeOperation",
+    "reason": "逐卷处置确认按四种真实服务端业务操作切换。",
+    "operations": [
+      "BulkCoilOutbound.return_coils",
+      "BulkCoilOutbound.settle_transit_loss",
+      "BulkCoilOutbound.reopen_transit_loss",
+      "BulkCoilOutbound.reroute_transit_coil"
+    ],
+    "sources": [
+      "backend/services/bulk-warehousing-service/src/main/java/com/appnexus/bulkwarehousing/adapter/web/OutboundStockController.java"
+    ]
   }
 ]

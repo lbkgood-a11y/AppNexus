@@ -4,6 +4,19 @@ import java.util.*;
 import com.appnexus.masterdata.api.masterdata.MasterData.*;
 /** 主数据管理公开用例；调用方不得绕过服务端权限、行范围及字段保护直接访问存储。 */
 public interface MasterDataManagement {
+ /** 已启用仓库、库区及库位的解析结果，仅包含稳定标识和当前版本。 */
+ record StoragePosition(String warehouseId, String areaId, String locationId,
+                        long warehouseVersion, long areaVersion, long locationVersion) {}
+
+ /**
+  * 在同一事务内按已有读取权限校验整条保管位置关系。
+  * @param c 服务端可信租户和成员
+  * @param expected 三个主数据 UUID 和非负预期版本，均必填
+  * @return 核验后的稳定位置引用
+  * @throws MasterData.Rejection 无权、位置不可用或预期版本过时
+  */
+ StoragePosition resolveStoragePosition(VerifiedTenantContext c, StoragePosition expected);
+
  /** 主数据公开操作；沿用可信主体、功能权限、数据范围及原子事务约束。 */
  Object partnerAccess(VerifiedTenantContext c);
  /** 主数据公开操作；沿用可信主体、功能权限、数据范围及原子事务约束。 */

@@ -24,4 +24,9 @@ public record AccessPlan(AccessAuthorization.Subject subject,String permissionCo
         Objects.requireNonNull(rows);fields=Map.copyOf(fields);Objects.requireNonNull(evaluatedAt);
         rows=new DataScopeAuthorization.DataScope(rows.type(),Set.copyOf(rows.organizationIds()),rows.rules());
     }
+
+    /** @return 计划显式授予固定租户全部范围；规则分支仍须由相应的范围执行器消费。 */
+    public boolean tenantWide(){
+        return rows.type()==DataScopeAuthorization.ScopeType.ALL;
+    }
 }
