@@ -120,6 +120,15 @@ public interface CoilOutbound {
   record ReturnTransit(String id,String handoverId,String sourceWarehouseId,String receivingWarehouseId,
                        String unitId,List<TransitCoil> coils,String evidenceId,List<TransitEvidence> history,
                        ReturnQuota noticeQuota,ReturnQuota authorizationQuota,ReturnQuota tripQuota) {}
+  /** 返仓确认行仅展示已批准的接管事实，不读取当前库存余额。 */
+  record ReturnDocumentLine(String receiptId,String warehouseId,String transitId,String qualityEvidenceId,BigDecimal quantity) {}
+
+  /** 已确认的返仓业务主单与原接管明细。 */
+  record ReturnDocument(PartialReturnResult header,List<ReturnDocumentLine> lines) {}
+
+  /** @param c 可信租户成员 @param id 返仓确认 UUID @return 经原出仓及接收仓权限复核的确认单 */
+  ReturnDocument returnDocument(VerifiedTenantContext c,String id);
+
   /** 原单据额度快照，当前操作员另有授权余额读取权时提供。 */
   record ReturnQuota(String id,BigDecimal cap,BigDecimal reserved,BigDecimal issued,BigDecimal remaining) {}
   /** 逐卷实际处置凭证，来源及目标仓在返回前校验。 */

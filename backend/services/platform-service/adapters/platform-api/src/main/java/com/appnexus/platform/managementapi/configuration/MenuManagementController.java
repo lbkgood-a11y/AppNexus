@@ -44,10 +44,8 @@ public class MenuManagementController {
  @com.appnexus.contracts.operation.OperationBinding(id="NavigationMenu.features", reference=true)
  @EndpointOperation("configuration.menu:read") @GetMapping("/features")
     ResponseEntity<List<Feature>> features(Authentication authentication){
-        return result(()->{service.list(actor(authentication));var pages=new ArrayList<>(NavigationPages.all());
-            // 个人中心属于固定自助路由，仅加入功能目录，不加入可配置的菜单页面选择目录。
-            pages.add(new NavigationPages.Page("account/profile","/account/profile","个人中心","Account profile",MenuManagement.Scope.AUTHENTICATED,null,NavigationPages.Gate.PERMISSION));
-            return pages.stream().map(page->new Feature(page,operationCatalog.permissions(page.key()))).toList();});
+        return result(()->{service.list(actor(authentication));
+            return NavigationPages.routes().stream().map(page->new Feature(page,operationCatalog.permissions(page.key()))).toList();});
     }
 
     /** 页面选择目录复用菜单管理授权，不允许通过输入路径注册任意组件。 */

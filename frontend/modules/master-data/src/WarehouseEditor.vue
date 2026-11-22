@@ -4,7 +4,7 @@ import {onBeforeRouteLeave} from "vue-router";
 import {useI18n} from "vue-i18n";
 import {ElMessage,ElMessageBox,type FormInstance,type FormRules} from "element-plus";
 import {AppIcon} from "@appnexus/icons";
-import {GeographyPicker,geographyPath,type GeographyNode,PageHeader,TabbedDetailTemplate,RecordAuditDetails,FloatingError,LoadErrorResult,presentLoadError,setErrorFeedback,type LoadIssue} from "@appnexus/ui";
+import {referenceName,GeographyPicker,geographyPath,type GeographyNode,PageHeader,TabbedDetailTemplate,RecordAuditDetails,FloatingError,LoadErrorResult,presentLoadError,setErrorFeedback,type LoadIssue} from "@appnexus/ui";
 import type {MasterDataApi,MasterDataInput,MasterDataRow,DictionaryOption} from "./index";
 import WarehouseMapPicker from "./WarehouseMapPicker.vue";
 import {warehouseGroups,warehouseDictionaryFields,warehouseNumericFields} from "./warehouse";
@@ -45,7 +45,7 @@ function fieldMode(field:string){return fieldRestrictions.value[field];}
 function label(field:string){return t("warehouseProfile.fields."+field);}
 /** 停用或未知历史选项可以原样保留；不得作为其他记录的新选项。 */
 function options(field:string){const current=draft.attributes[field];const rows=dictionary.value[field]??[];return [...rows.filter(row=>row.enabled||row.value===current),...(current&&!rows.some(row=>row.value===current)?[{value:current,name:current,enabled:false}]:[])];}
-function display(field:string){const value=draft.attributes[field];if(!value)return "—";if(booleanFields.includes(field)&&fieldMode(field)!=="MASKED")return t(value==="true"?"partner.yes":"partner.no");return field==="region"?(geographyPath(geographyNodes.value,value).map(n=>n.name).join("-")||value):dictionary.value[field]?.find(row=>row.value===value)?.name??value;}
+function display(field:string){const value=draft.attributes[field];if(!value)return "—";const name=record.value?.[`${field}Name`];if(name)return name;if(booleanFields.includes(field)&&fieldMode(field)!=="MASKED")return t(value==="true"?"partner.yes":"partner.no");return field==="region"?(geographyPath(geographyNodes.value,value).map(n=>n.name).join("-")||value):dictionary.value[field]?.find(row=>row.value===value)?.name??value;}
 /** 前端数量与坐标规则与后端一致，不将空值或0互换，也不转换十进制精度。 */
 function validNumber(field:string,value:string){if(!value)return !["longitude","latitude"].includes(field)||!draft.attributes[field==="longitude"?"latitude":"longitude"];if(["longitude","latitude"].includes(field))return /^-?[0-9]{1,3}(\.[0-9]{1,6})?$/.test(value)&&Math.abs(Number(value))<=(field==="longitude"?180:90)&&!!draft.attributes[field==="longitude"?"latitude":"longitude"];return /^[0-9]{1,18}(\.[0-9]{1,6})?$/.test(value);}
 const rules=computed<FormRules>(()=>{
@@ -93,10 +93,10 @@ onBeforeUnmount(()=>window.removeEventListener("beforeunload",beforeUnload));
         <el-form-item v-if="canEdit" :label="t('partner.organization')" prop="organizationId">
          <el-select v-model="draft.organizationId" filterable>
           <el-option v-for="organization in organizations" :key="organization.id" :label="organization.name" :value="organization.id"/>
-          <el-option v-if="draft.organizationId&&!organizations.some(item=>item.id===draft.organizationId)" :label="draft.organizationId" :value="draft.organizationId" disabled/>
+          <el-option v-if="draft.organizationId&&!organizations.some(item=>item.id===draft.organizationId)" :label="t('referenceName.unavailable')" :value="draft.organizationId" disabled/>
          </el-select>
         </el-form-item>
-        <div v-else class="detail-readonly-field"><span>{{t('partner.organization')}}</span><strong>{{draft.organizationId||'—'}}</strong></div>
+        <div v-else class="detail-readonly-field"><span>{{t('partner.organization')}}</span><strong>{{record?.organizationName || referenceName(draft.organizationId, organizations, item => item.name, t('referenceName.unavailable'))}}</strong></div>
         <div class="detail-readonly-field"><span>{{t('masterData.status')}}</span><strong>{{record?t('masterData.'+(record.enabled?'enabled':'disabled')):t('masterData.enabled')}}</strong></div>
        </template>
        <template v-for="field in fields" :key="field">

@@ -2,7 +2,7 @@
 import { computed, onMounted, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { ElMessage, ElMessageBox, type FormInstance } from "element-plus";
-import { BusinessWorkspace, FloatingError, ManagementTable, setErrorFeedback, type ManagementColumn } from "@appnexus/ui";
+import { BusinessWorkspace, FloatingError, ManagementTable, referenceName, setErrorFeedback, type ManagementColumn } from "@appnexus/ui";
 import { steps, type AuthorizationRecovery, type CoilFlowApi, type CoilTrace, type FlowStep, type PositionOption, type ProductOptions } from "./flow";
 import type { ReturnTransit, StockRestriction } from "./returnTransit";
 import type { AuthorizationBalance, WarehouseOption } from "./types";
@@ -49,7 +49,7 @@ const operation:Record<FlowStep,string>={
 const activeOperation=computed(()=>current.value ? operation[current.value] : "");
 type Field=[key:string,kind:"amount"|"uuid"|"time"|"text"|"partner"];
 const fields:Record<FlowStep,Field[]>={
-  inbound:[["limit","amount"]],custody:[["custodyEvidence","uuid"]],receive:[["measurement","uuid"],["quantity","amount"]],
+  inbound:[["limit","amount"]],custody:[["custodyEvidence","uuid"]],receive:[["measurement","uuid"],["receiptBatchNo","text"],["quantity","amount"]],
   title:[["titleEvidence","uuid"],["effective","time"]],quality:[["qualityEvidence","uuid"]],identify:[["serial","text"]],
   transfer:[["newOwner","partner"],["transferEvidence","uuid"]],outbound:[["cap","amount"]],
   authorize:[["pickup","partner"],["authorizationCap","amount"],["expiry","time"]],
@@ -99,7 +99,9 @@ const auditFormat=computed(()=>new Intl.DateTimeFormat(locale.value,{dateStyle:"
 const formatter=computed(()=>new Intl.NumberFormat(locale.value,{maximumFractionDigits:12}));
 const quantity=(value:number)=>formatter.value.format(value);
 const text=(key:string)=>t("coilFlow."+key);
-const ownerLabel=(id:string)=>owners.value.find(row=>row.id===id)?.label??id;
+/** 只使用已有授权目录的标签；历史引用或未加载名称时显示本地化占位。 */
+const ownerLabel=(id:string)=>referenceName(id,owners.value,row=>row.label,t("referenceName.unavailable"));
+const warehouseLabel=(id:string)=>referenceName(id,warehouses.value,row=>row.label,t("referenceName.unavailable"));
 
 function label(field:Field) {
   const [key,kind]=field;
@@ -191,7 +193,7 @@ function payload(step:FlowStep,id:string):Record<string,unknown> {
   switch(step) {
     case "inbound": return {id,warehouseId,ownerPartnerId:setup.owner,item:item.value,baseUnitId:unitId,limit:input.limit};
     case "custody": return {id,noticeId:progress.inbound,position:position.value,evidenceId:input.custodyEvidence};
-    case "receive": return {id,custodyId:activeCoil.value.custody,measurementId:input.measurement,position:position.value,
+    case "receive": return {id,custodyId:activeCoil.value.custody,measurementId:input.measurement,receiptBatchNo:input.receiptBatchNo,position:position.value,
       item:item.value,ownerPartnerId:setup.owner,sourceUnitId:unitId,quantity:input.quantity};
     case "title": return {receiptId:activeCoil.value.receipt,evidenceId:input.titleEvidence,effectiveAt:input.effective};
     case "quality": return {receiptId:activeCoil.value.receipt,evidenceId:input.qualityEvidence};
@@ -486,7 +488,7 @@ onMounted(async()=>{
             </el-button>
           </div>
         </el-form>
-        <el-form v-else-if="current && (!reissueTransit || reissueReady)" :key="current+':'+activeCoilIndex" ref="form" :model="input" inline
+        <el-form v-else-if="current && (!reissueTransit || reissueReady)" :key="current+':'+activeCoilIndex" ref="form" :model="input" inline data-form-style="special"
           :disabled="submitting" @submit.prevent="submit">
           <div class="management-filter">
             <el-tag v-if="perCoil(current) && coils.length>1" type="info">
@@ -567,7 +569,7 @@ onMounted(async()=>{
           <el-descriptions v-if="trace" :title="text('currentStock')" :column="2" border v-loading="tracing">
             <el-descriptions-item :label="text('receiptId')"><span class="coil-flow-id">{{trace.stock.receiptId}}</span></el-descriptions-item>
             <el-descriptions-item v-if="reissueTransit" :label="text('warehouse')">
-              <span class="coil-flow-id">{{warehouses.find(row=>row.id===trace?.stock.warehouseId)?.label??trace.stock.warehouseId}}</span>
+              <span class="coil-flow-id">{{warehouseLabel(trace.stock.warehouseId)}}</span>
             </el-descriptions-item>
             <el-descriptions-item v-if="reissueTransit" :label="text('returnTransit')">
               <el-button v-if="mode==='execute' && (current==='handover' || (current==='trip' && cancelledTrip))"
@@ -578,11 +580,12 @@ onMounted(async()=>{
             </el-descriptions-item>
             <el-descriptions-item :label="text('serial')">{{trace.stock.serial??"—"}}</el-descriptions-item>
             <el-descriptions-item :label="text('owner')"><span class="coil-flow-id">{{ownerLabel(trace.stock.ownerId)}}</span></el-descriptions-item>
-            <el-descriptions-item :label="text('unit')"><span class="coil-flow-id">{{product?.unitName??trace.stock.unitId}}</span></el-descriptions-item>
+            <el-descriptions-item :label="text('unit')"><span class="coil-flow-id">{{product?.unitId===trace.stock.unitId && product?.unitName || t('referenceName.unavailable')}}</span></el-descriptions-item>
             <el-descriptions-item :label="text('onHand')">{{quantity(trace.stock.onHand)}}</el-descriptions-item>
             <el-descriptions-item :label="text('pending')">{{quantity(trace.stock.pending)}}</el-descriptions-item>
             <el-descriptions-item :label="text('titleQuantity')">{{quantity(trace.stock.title)}}</el-descriptions-item>
             <el-descriptions-item :label="text('custodyId')"><span class="coil-flow-id">{{trace.stock.custodyId}}</span></el-descriptions-item>
+            <el-descriptions-item :label="text('receiptBatchNo')">{{ trace.stock.receiptBatchNo || "—" }}</el-descriptions-item>
             <el-descriptions-item :label="text('measurementId')"><span class="coil-flow-id">{{trace.stock.measurementId}}</span></el-descriptions-item>
             <el-descriptions-item :label="text('fields.titleEvidence')"><span class="coil-flow-id">{{trace.stock.titleEvidenceId??"—"}}</span></el-descriptions-item>
             <el-descriptions-item :label="text('fields.qualityEvidence')"><span class="coil-flow-id">{{trace.stock.qualityEvidenceId??"—"}}</span></el-descriptions-item>

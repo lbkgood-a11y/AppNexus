@@ -4,6 +4,7 @@
   "type": "module",
   "exports": {
     ".": "./src/types.ts",
+    "./inventory-overview": "./src/InventoryOverview.vue",
     "./coil-title": "./src/CoilTitleWorkspace.vue",
     "./coil-flow": "./src/CoilFlowWorkspace.vue",
     "./flow-types": "./src/flow.ts",

@@ -58,6 +58,7 @@ public final class CoilTitleTransferService implements CoilTitleTransfer,DataAcc
     if (command.fromOwnerId().equals(command.toOwnerId())) throw invalid();
     var key=digest(command);
     return stock.transaction(() -> {
+      writes.authorizeOperation(plan);
       masterData.requireWarehouse(c,command.warehouseId());
       masterData.owner(c,command.fromOwnerId());
       masterData.owner(c,command.toOwnerId());

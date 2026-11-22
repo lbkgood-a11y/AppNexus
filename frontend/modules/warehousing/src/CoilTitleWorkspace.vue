@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { referenceName } from "@appnexus/ui";
 import { computed, onMounted, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { ElMessage, type FormInstance } from "element-plus";
@@ -53,8 +54,8 @@ const evidenceRules=computed(() => [
 ]);
 const formatter=computed(()=>new Intl.NumberFormat(locale.value,{maximumFractionDigits:12}));
 const amount=(value:number) => formatter.value.format(value);
-const unit=(id:string) => units.value.find(row=>row.id===id)?.label ?? id;
-const label=(id:string) => labels.get(id) ?? id;
+const unit=(id:string) => referenceName(id,units.value,row=>row.label,t("referenceName.unavailable"));
+const label=(id:string) => labels.get(id) ?? t("referenceName.unavailable");
 const status=(value:string) => t("warehouseTitle.states."+value);
 function errorText(cause:unknown) {
   const code=(cause as {response?:{data?:{code?:string}}})?.response?.data?.code;

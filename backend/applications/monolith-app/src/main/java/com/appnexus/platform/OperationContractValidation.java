@@ -23,7 +23,7 @@ public class OperationContractValidation {
    if(operation.eligibility()==com.appnexus.contracts.operation.OperationBinding.Eligibility.PERMISSION&&operation.permissions().isEmpty())throw new IllegalStateException("权限操作缺少授权表达式："+operation.id());
    if(!operation.id().equals(operation.objectType()+"."+operation.operationCode()))throw new IllegalStateException("对象操作身份不一致："+operation.id());
    if(operation.id().isBlank()||operation.nameZh().isBlank()||operation.nameEn().isBlank()||operation.policy().isBlank()||operation.endpoints().isEmpty())throw new IllegalStateException("操作契约不完整："+operation.id());
-   for(var page:operation.pages())if(NavigationPages.find(page)==null&&!page.equals("account/profile"))throw new IllegalStateException("未知操作页面："+page+":"+operation.id());
+   for(var page:operation.pages())if(NavigationPages.findRoute(page)==null)throw new IllegalStateException("未知操作页面："+page+":"+operation.id());
    validatePermissions(operation,dedicatedOperations);
   }
  };}

@@ -142,12 +142,22 @@ class ProductV1IntegrationTest extends DatabaseTestSupport {
       .hasMessage("INBOUND_CONVERSION_UNIT_MISMATCH");
 
   var coalReceipts=receiveCoalInBatches(context,position,item,owner,target.id());
+  var inventoryFilter=new WarehouseBalances.OverviewFilter(position.warehouseId(),owner,product);
+  var inventory=warehouseBalances.overview(context,inventoryFilter,null,20);
+  assertThat(inventory.rows()).filteredOn(row->row.receiptId().equals(coalReceipts.id()))
+      .singleElement().satisfies(row->{
+       assertThat(row.specification()).isEqualTo("仓储规格");
+       assertThat(row.skuCode()).isEqualTo("REF-SKU");
+       assertThat(row.receiptBatchNo()).isEqualTo("收货批次-01");
+      });
+  assertThat(inventory.rows()).anySatisfy(row->assertThat(row.receiptBatchNo()).isNull());
   verifyCoilOutbound(context,position,item,owner,target.id(),target.code());
   verifyCoilReweigh(context,position,item,owner,target.id(),target.code());
   verifyCrossWarehouseReturn(context,position,item,owner,target.id(),target.code());
   verifyCoilReturnTransit(context,position,item,owner,target.id(),target.code());
   verifyCoilTitleTransfer(context,item,owner,target.id(),target.code());
   verifyPartialCoilReturn(context,position,item,owner,target.id(),target.code());
+  verifyMultilineInbound(context,item,owner,target.id(),spec);
 
   UUID unprivilegedAccount=UUID.randomUUID(), unprivilegedMember=UUID.randomUUID();
   jdbc.update("INSERT INTO identity_account(id,username,display_name,password_hash) VALUES(UUID_TO_BIN(?),?,'无仓储引用权限','unused')",
@@ -161,6 +171,8 @@ class ProductV1IntegrationTest extends DatabaseTestSupport {
   assertThatThrownBy(()->warehouseBalances.physical(unprivileged,restrictedBalance)).isInstanceOf(SecurityException.class);
   assertThatThrownBy(()->warehouseBalances.authorizations(unprivileged,restrictedBalance,null,50))
       .isInstanceOf(SecurityException.class);
+  assertThatThrownBy(()->warehouseBalances.document(unprivileged,
+      WarehouseBalances.DocumentKind.INBOUND_RECEIPT,coalReceipts.id())).isInstanceOf(SecurityException.class);
   assertThatThrownBy(()->warehouseBalances.trace(unprivileged,coalReceipts.id()))
       .isInstanceOf(SecurityException.class);
   assertThatThrownBy(()->outboundStock.check(unprivileged,coalReceipts.id())).isInstanceOf(SecurityException.class);
@@ -170,6 +182,8 @@ class ProductV1IntegrationTest extends DatabaseTestSupport {
   assertThatThrownBy(()->conversions.evidence(unprivileged,rule,0,"1250")).hasMessage("MASTER_DATA_DENIED");
 
   bindReferenceContext(outside);
+  assertThatThrownBy(()->warehouseBalances.document(outside,WarehouseBalances.DocumentKind.INBOUND_RECEIPT,coalReceipts.id()))
+      .hasMessage("OUTBOUND_ACCESS_DENIED");
   assertThatThrownBy(()->outboundStock.check(outside,coalReceipts.id())).hasMessage("OUTBOUND_ACCESS_DENIED");
   assertThatThrownBy(()->inboundReceiving.receive(outside,coalReceipts)).isInstanceOf(RuntimeException.class);
   assertThatThrownBy(()->inboundReferences.resolve(outside,request))
@@ -188,6 +202,108 @@ class ProductV1IntegrationTest extends DatabaseTestSupport {
   assertThatThrownBy(()->conversions.evidence(context,rule,1,"1250")).hasMessage("PRODUCT_CONVERSION_INVALID");
  }
 
+ /** 两个独立商品身份及同一行并发实收，均通过真实应用事务和 MySQL。 */
+ private void verifyMultilineInbound(VerifiedTenantContext c,
+     InboundReceiptReferences.Item item,String owner,String unit,String spec) throws Exception {
+  bindReferenceContext(c);
+  String warehouse=masterData.create(c,MasterData.Kind.WAREHOUSE,
+      new MasterData.Input("MULTILINE-W","多行入仓验收仓",Map.of(),0)).get("id");
+  var position=returnPosition(c,warehouse,"MULTILINE-W","MULTILINE-POS");
+  String secondSku=newId();
+  jdbc.update("""
+     INSERT INTO md_product_sku(id,tenant_id,product_id,specification_id,code)
+     VALUES(UUID_TO_BIN(?),UUID_TO_BIN(?),UUID_TO_BIN(?),UUID_TO_BIN(?),'REF-SKU-MULTILINE')
+     """,secondSku,c.tenantId().toString(),item.productId(),spec);
+  var secondItem=new InboundReceiptReferences.Item(item.productId(),InboundReceiptReferences.IdentityKind.SKU,secondSku,item.productVersion());
+  String notice=newId(),firstLine=newId(),secondLine=newId(),number="MULTI-"+newId();
+  inboundReceiving.issue(c,new InboundReceiving.Notice(notice,position.warehouseId(),owner,null,null,null,
+      number,null,null,List.of(new InboundReceiving.NoticeLine(firstLine,item,unit,new BigDecimal("100"),null,null),
+          new InboundReceiving.NoticeLine(secondLine,secondItem,unit,new BigDecimal("80"),null,null))));
+  var found=warehouseBalances.document(c,WarehouseBalances.DocumentKind.INBOUND_NOTICE,number);
+  assertThat(found.header().noticeId()).isEqualTo(notice);
+  assertThat(found.lines()).extracting(WarehouseBalances.NoticeLineView::identityId).containsExactly(item.identityId(),secondSku);
+  assertThatThrownBy(()->inboundReceiving.takeCustody(c,new InboundReceiving.Custody(newId(),notice,position,newId())))
+      .hasMessage("INBOUND_ACCESS_DENIED");
+  var first=new InboundReceiving.Custody(newId(),notice,position,newId(),firstLine,"TRUCK-01");
+  var competing=new InboundReceiving.Custody(newId(),notice,position,newId(),firstLine,"TRUCK-02");
+  var second=new InboundReceiving.Custody(newId(),notice,position,newId(),secondLine,"TRUCK-01");
+  for(var custody:List.of(first,competing,second)) inboundReceiving.takeCustody(c,custody);
+  var firstReceipt=new InboundReceiving.Receipt(newId(),first.id(),newId(),
+      new InboundReceiptReferences.Request(position,item,owner,unit,"60",new InboundReceiptReferences.SameUnit()));
+  var over=new InboundReceiving.Receipt(newId(),competing.id(),newId(),
+      new InboundReceiptReferences.Request(position,item,owner,unit,"60",new InboundReceiptReferences.SameUnit()));
+  assertThatThrownBy(()->commitWhileCompeting(c,()->inboundReceiving.receive(c,firstReceipt),
+      ()->inboundReceiving.receive(c,over))).hasRootCauseMessage("INBOUND_LIMIT_EXCEEDED");
+  assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM bw_stock_receipt WHERE tenant_id=UUID_TO_BIN(?) AND receipt_id=UUID_TO_BIN(?)",
+      Integer.class,c.tenantId().toString(),over.id())).isZero();
+  var finalFirst=new InboundReceiving.Receipt(newId(),competing.id(),newId(),
+      new InboundReceiptReferences.Request(position,item,owner,unit,"40",new InboundReceiptReferences.SameUnit()));
+  var finalSecond=new InboundReceiving.Receipt(newId(),second.id(),newId(),
+      new InboundReceiptReferences.Request(position,secondItem,owner,unit,"80",new InboundReceiptReferences.SameUnit()));
+  inboundReceiving.receive(c,finalFirst);
+  assertThat(inboundReceiving.receive(c,finalSecond)).isEqualTo(inboundReceiving.receive(c,finalSecond));
+  var complete=warehouseBalances.document(c,WarehouseBalances.DocumentKind.INBOUND_NOTICE,notice);
+  assertThat(complete.header().status()).isEqualTo("COMPLETED");
+  assertThat(complete.lines()).extracting(WarehouseBalances.NoticeLineView::receivedQuantity)
+      .usingElementComparator(BigDecimal::compareTo).containsExactly(new BigDecimal("100"),new BigDecimal("80"));
+  assertThat(complete.custodies()).allSatisfy(custody->assertThat(custody.receiptId()).isNotNull());
+  assertThat(warehouseBalances.trace(c,finalSecond.id()).stock().identityId()).isEqualTo(secondSku);
+  verifyEntryAndReceiptDocuments(c,position,item,secondItem,owner,unit);
+
+ }
+
+ /** 同车两个品规，分两单实收；任一行越限时整张确认单回滚。 */
+ private void verifyEntryAndReceiptDocuments(VerifiedTenantContext c,InboundReceiptReferences.Position position,
+     InboundReceiptReferences.Item firstItem,InboundReceiptReferences.Item secondItem,String owner,String unit) {
+  String notice=newId(),firstLine=newId(),secondLine=newId(),entryId=newId(),firstCustody=newId(),secondCustody=newId();
+  inboundReceiving.issue(c,new InboundReceiving.Notice(notice,position.warehouseId(),owner,null,null,null,
+      "ENTRY-"+newId(),null,null,List.of(
+      new InboundReceiving.NoticeLine(firstLine,firstItem,unit,new BigDecimal("100"),null,null),
+      new InboundReceiving.NoticeLine(secondLine,secondItem,unit,new BigDecimal("80"),null,null))));
+  var entry=new InboundReceiving.Entry(entryId,notice,"QA-TRUCK","验收承运方",java.time.Instant.now(),"测试同车多行",List.of(
+      new InboundReceiving.EntryLine(firstCustody,firstLine,position,newId(),new BigDecimal("100")),
+      new InboundReceiving.EntryLine(secondCustody,secondLine,position,newId(),new BigDecimal("80"))));
+  inboundReceiving.recordEntry(c,entry);
+  inboundReceiving.recordEntry(c,entry);
+  var before=warehouseBalances.inboundEntry(c,entryId);
+  assertThat(before.lines()).extracting(WarehouseBalances.BatchLine::identityId)
+      .containsExactly(firstItem.identityId(),secondItem.identityId());
+  assertThat(before.lines()).allSatisfy(row->assertThat(row.processed()).isFalse());
+  assertThat(before.vehicleNumber()).isEqualTo("QA-TRUCK");
+
+  var accepted=new InboundReceiving.ReceiptLine(newId(),firstCustody,newId(),new BigDecimal("60"),new BigDecimal("40"),"外包装破损");
+  var exceeds=new InboundReceiving.ReceiptLine(newId(),secondCustody,newId(),new BigDecimal("90"),BigDecimal.ZERO,null);
+  var invalid=new InboundReceiving.ReceiptDocument(newId(),entryId,"WB-BATCH-01",null,List.of(accepted,exceeds));
+  assertThatThrownBy(()->inboundReceiving.confirmReceiptDocument(c,invalid)).hasMessage("INBOUND_LIMIT_EXCEEDED");
+  assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM bw_stock_receipt WHERE tenant_id=UUID_TO_BIN(?) AND receipt_id=UUID_TO_BIN(?)",
+      Integer.class,c.tenantId().toString(),accepted.id())).isZero();
+  assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM bw_inbound_receipt_document WHERE tenant_id=UUID_TO_BIN(?) AND id=UUID_TO_BIN(?)",
+      Integer.class,c.tenantId().toString(),invalid.id())).isZero();
+
+  var first=new InboundReceiving.ReceiptDocument(newId(),entryId,"WB-BATCH-01",null,List.of(accepted));
+  inboundReceiving.confirmReceiptDocument(c,first);
+  inboundReceiving.confirmReceiptDocument(c,first);
+  var posted=warehouseBalances.receiptDocument(c,first.id());
+  assertThat(posted.lines()).singleElement().satisfies(row->{
+    assertThat(row.receivedQuantity()).isEqualByComparingTo("60");
+    assertThat(row.rejectionQuantity()).isEqualByComparingTo("40");
+    assertThat(row.stockStatus()).isEqualTo("PENDING_QUALITY");
+  });
+  assertThat(warehouseBalances.inboundEntry(c,entryId).lines()).extracting(WarehouseBalances.BatchLine::processed)
+      .containsExactly(true,false);
+  var rejected=new InboundReceiving.ReceiptLine(newId(),secondCustody,null,BigDecimal.ZERO,new BigDecimal("80"),"标识不一致");
+  var second=new InboundReceiving.ReceiptDocument(newId(),entryId,"WB-BATCH-02",null,List.of(rejected));
+  inboundReceiving.confirmReceiptDocument(c,second);
+  assertThat(warehouseBalances.receiptDocument(c,second.id()).lines()).singleElement().satisfies(row->{
+    assertThat(row.receiptId()).isNull();
+    assertThat(row.stockStatus()).isEqualTo("REJECTED");
+  });
+  assertThat(warehouseBalances.inboundEntry(c,entryId).lines()).allSatisfy(row->assertThat(row.processed()).isTrue());
+  var current=warehouseBalances.document(c,WarehouseBalances.DocumentKind.INBOUND_NOTICE,notice);
+  assertThat(current.lines()).extracting(WarehouseBalances.NoticeLineView::receivedQuantity)
+      .usingElementComparator(BigDecimal::compareTo).containsExactly(new BigDecimal("60"),BigDecimal.ZERO);
+ }
+
  /** 实际调用仓储装配入口，验证煤炭车次独立接管、过账和故障回滚。 */
  private InboundReceiving.Receipt receiveCoalInBatches(VerifiedTenantContext context,
      InboundReceiptReferences.Position position, InboundReceiptReferences.Item item, String owner, String unit) throws Exception {
@@ -197,6 +313,12 @@ class ProductV1IntegrationTest extends DatabaseTestSupport {
   assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM bw_inbound_notice WHERE id=UUID_TO_BIN(?)",Integer.class,noticeId))
       .isZero();
   inboundReceiving.issue(context,inboundNotice);
+  var unreceived=warehouseBalances.document(context,WarehouseBalances.DocumentKind.INBOUND_NOTICE,noticeId);
+  assertThat(unreceived.header().completedQuantity()).isEqualByComparingTo("0");
+  assertThat(unreceived.related()).isEmpty();
+  assertThatThrownBy(()->warehouseBalances.document(context,WarehouseBalances.DocumentKind.OUTBOUND_NOTICE,noticeId))
+      .hasMessage("OUTBOUND_ACCESS_DENIED");
+
   var failedCustody=new InboundReceiving.Custody(newId(),noticeId,position,newId());
   verifyRejectedStockWrite("bw_inbound_custody","id",failedCustody.id(),"FALSE",
       ()->inboundReceiving.takeCustody(context,failedCustody));
@@ -205,7 +327,9 @@ class ProductV1IntegrationTest extends DatabaseTestSupport {
   assertThat(jdbc.queryForObject("SELECT flow_version FROM bw_inbound_notice WHERE id=UUID_TO_BIN(?)",
       Integer.class,noticeId)).isEqualTo(2);
   jdbc.update("UPDATE bw_inbound_notice SET flow_version=1 WHERE id=UUID_TO_BIN(?)",noticeId);
-  var first=coalReceipt(context,noticeId,position,item,owner,unit,"39000");
+  var firstInput=coalReceipt(context,noticeId,position,item,owner,unit,"39000");
+  var first=new InboundReceiving.Receipt(firstInput.id(),firstInput.custodyId(),firstInput.measurementId(),
+      firstInput.references(),"收货批次-01");
   verifyExcludedWarehouseOperations(context,Map.of(
       "BulkInboundReceipt.issue",()->inboundReceiving.issue(context,inboundNotice),
       "BulkInboundReceipt.take_custody",()->inboundReceiving.takeCustody(context,failedCustody),
@@ -218,6 +342,16 @@ class ProductV1IntegrationTest extends DatabaseTestSupport {
   var firstPosting=inboundReceiving.receive(context,first);
   assertThat(firstPosting.quantity()).isEqualByComparingTo("39000");
   assertThat(inboundReceiving.receive(context,first)).isEqualTo(firstPosting);
+  assertThat(warehouseBalances.trace(context,first.id()).stock().receiptBatchNo()).isEqualTo("收货批次-01");
+  var directReceipt=warehouseBalances.document(context,WarehouseBalances.DocumentKind.INBOUND_RECEIPT,first.id());
+  assertThat(directReceipt.header().parentId()).isEqualTo(noticeId);
+  assertThat(directReceipt.header().quantity()).isEqualByComparingTo("39000");
+  assertThat(warehouseBalances.document(context,WarehouseBalances.DocumentKind.INBOUND_NOTICE,noticeId).related())
+      .anyMatch(line->line.kind().equals("RECEIPT")&&line.id().equals(first.id()));
+
+  var changedBatch=new InboundReceiving.Receipt(first.id(),first.custodyId(),first.measurementId(),
+      first.references(),"收货批次-02");
+  assertThatThrownBy(()->inboundReceiving.receive(context,changedBatch)).hasMessage("INBOUND_REQUEST_CONFLICT");
   var changed=new InboundReceiving.Receipt(first.id(),first.custodyId(),UUID.randomUUID().toString(),first.references());
   assertThatThrownBy(()->inboundReceiving.receive(context,changed)).hasMessage("INBOUND_REQUEST_CONFLICT");
   assertThat(inboundReceiving.receive(context,second).quantity()).isEqualByComparingTo("39000");
@@ -328,6 +462,11 @@ class ProductV1IntegrationTest extends DatabaseTestSupport {
   var releaseSecond=new InboundDisposition.Decision(second.id(),quality.evidenceId());
   assertThat(inboundDisposition.releaseQuality(context,releaseSecond).pendingQuantity()).isEqualByComparingTo("0");
   assertThat(inboundDisposition.releaseQuality(context,releaseSecond).registeredQuantity()).isEqualByComparingTo("39000");
+  assertThat(warehouseBalances.document(context,WarehouseBalances.DocumentKind.INBOUND_TITLE,second.id())
+      .header().quantity()).isEqualByComparingTo("39000");
+  assertThat(warehouseBalances.document(context,WarehouseBalances.DocumentKind.INBOUND_QUALITY,second.id())
+      .header().evidenceId()).isEqualTo(releaseSecond.evidenceId());
+
   assertThatThrownBy(()->inboundDisposition.releaseQuality(context,
       new InboundDisposition.Decision(second.id(),UUID.randomUUID().toString()))).hasMessage("INBOUND_QUALITY_CONFLICT");
   assertThat(jdbc.queryForObject("SELECT SUM(inbound_quantity) FROM bw_stock_receipt WHERE tenant_id=UUID_TO_BIN(?)",
@@ -357,6 +496,8 @@ class ProductV1IntegrationTest extends DatabaseTestSupport {
   assertThat(outboundStock.restrictionHistory(context,receiptId)).filteredOn(history->history.id().equals(lift.id()))
       .allSatisfy(history->assertThat(history.releaseEvidenceId()).isNull()).hasSize(1);
   outboundStock.lift(context,lift);
+  assertThat(outboundStock.restrictionDocument(context,restriction.id()).releaseEvidenceId()).isEqualTo(lift.evidenceId());
+
   outboundStock.lift(context,lift);
   assertBlockedStock(context,receiptId,OutboundStock.Gate.FROZEN);
   assertThat(outboundStock.restrictionHistory(context,receiptId))
@@ -464,8 +605,9 @@ class ProductV1IntegrationTest extends DatabaseTestSupport {
    }
   } finally {
    var current=rolePermissions.getAuthorization(admin,role);
-   rolePermissions.replaceAuthorization(admin,role,current.roleVersion(),original.permissionIds(),original.dataPolicies(),
+   var restored=rolePermissions.replaceAuthorization(admin,role,current.roleVersion(),original.permissionIds(),original.dataPolicies(),
        "恢复仓储逐操作范围验收策略");
+   assertThat(restored.dataPolicies()).isEqualTo(original.dataPolicies());
   }
  }
 
@@ -503,11 +645,17 @@ class ProductV1IntegrationTest extends DatabaseTestSupport {
   assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM bw_outbound_notice WHERE id=UUID_TO_BIN(?)",Integer.class,notice))
       .isZero();
   coilOutbound.issue(c,outboundNotice);
+  var unallocated=warehouseBalances.document(c,WarehouseBalances.DocumentKind.OUTBOUND_NOTICE,notice);
+  assertThat(unallocated.header().reserved()).isEqualByComparingTo("0");
+  assertThat(unallocated.header().quantity()).isEqualByComparingTo("100000");
+
   var authorization=new CoilOutbound.Authorization(auth,notice,owner,expiry,new BigDecimal("100000"));
   verifyRejectedStockWrite("bw_pickup_authorization","id",auth,"FALSE",()->coilOutbound.authorize(c,authorization));
   assertThat(jdbc.queryForObject("SELECT committed FROM bw_outbound_notice WHERE id=UUID_TO_BIN(?)",BigDecimal.class,notice))
       .isEqualByComparingTo("0");
   coilOutbound.authorize(c,authorization);
+  assertThat(warehouseBalances.authorization(c,auth).noticeId()).isEqualTo(notice);
+
   assertThatThrownBy(()->coilOutbound.authorize(c,new CoilOutbound.Authorization(
       UUID.randomUUID().toString(),notice,owner,expiry,BigDecimal.ONE))).hasMessage("OUTBOUND_NOTICE_COMMITMENT_LIMIT");
   String small=UUID.randomUUID().toString(), v1=UUID.randomUUID().toString(), v2=UUID.randomUUID().toString();
@@ -517,6 +665,10 @@ class ProductV1IntegrationTest extends DatabaseTestSupport {
   assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM bw_outbound_trip WHERE id=UUID_TO_BIN(?)",Integer.class,v1))
       .isZero();
   coilOutbound.plan(c,planOne);
+  var planned=warehouseBalances.document(c,WarehouseBalances.DocumentKind.OUTBOUND_TRIP,v1);
+  assertThat(planned.header().vehicleNumber()).isEqualTo("TRUCK-1");
+  assertThat(planned.related()).isEmpty();
+
   coilOutbound.plan(c,new CoilOutbound.Trip(v2,auth,"TRUCK-2",new BigDecimal("55000")));
   var preReserve=new CoilOutbound.PreReserve(auth,BigDecimal.ZERO,new BigDecimal("100000"));
   verifyRejectedStockWrite("bw_pickup_authorization","id",auth,"reserved=0",()->coilOutbound.preReserve(c,preReserve));
@@ -680,7 +832,7 @@ class ProductV1IntegrationTest extends DatabaseTestSupport {
     for (var path:mapping.value()) assertThat(routes.put(path,requestType)).isNull();
    }
   }
-  assertThat(routes).hasSize(29);
+  assertThat(routes).hasSize(31).containsKeys("/api/bulk-inbound-entries","/api/bulk-inbound-receipt-documents");
   var json=new tools.jackson.databind.ObjectMapper();
   for (var entry:routes.entrySet()) {
    String route=entry.getKey();
@@ -982,6 +1134,13 @@ class ProductV1IntegrationTest extends DatabaseTestSupport {
   assertThat(response.path("restoredReservation").decimalValue()).isEqualByComparingTo("53000");
   bindReferenceContext(c);
   assertThat(coilOutbound.reverseHandover(c,mistaken).id()).isEqualTo(mistaken.id());
+  assertThat(warehouseBalances.document(c,WarehouseBalances.DocumentKind.HANDOVER_REVERSAL,mistaken.id())
+      .header().parentId()).isEqualTo(first.id());
+  assertThat(warehouseBalances.document(c,WarehouseBalances.DocumentKind.OUTBOUND_CONFIRMATION,first.id())
+      .header().quantity()).isEqualByComparingTo("53000");
+  assertThat(warehouseBalances.document(c,WarehouseBalances.DocumentKind.OUTBOUND_TRIP,first.tripId()).related())
+      .extracting(WarehouseBalances.DocumentRelation::kind).contains("ALLOCATION","WEIGHING");
+
   assertThat(warehouseBalances.trace(c,first.receiptIds().getFirst()).documents()).anySatisfy(event -> {
    assertThat(event.kind()).isEqualTo("REVERSAL");
    assertThat(event.id()).isEqualTo(mistaken.id());
@@ -1046,6 +1205,9 @@ class ProductV1IntegrationTest extends DatabaseTestSupport {
   assertThat(credit.restoredQuota()).isEqualByComparingTo("53000");
   assertThat(credit.restoredReservation()).isEqualByComparingTo("0");
   assertThat(coilOutbound.reverseHandover(c,returned)).isEqualTo(credit);
+  assertThat(coilOutbound.returnDocument(c,returned.returnId()).header().restoredStock())
+      .isEqualByComparingTo("51000");
+
   verifyReversalBalances(notice,authorization,second.tripId(),receipt,"47000","0","0","0","0");
   assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM bw_stock_occupation WHERE receipt_id=UUID_TO_BIN(?) AND released_at IS NULL",
       Integer.class,receipt)).isZero();
@@ -1100,7 +1262,8 @@ class ProductV1IntegrationTest extends DatabaseTestSupport {
       new MasterData.Input("CROSS-RETURN-W","实际接收仓库",Map.of(),0)).get("id");
   var destination=returnPosition(c,receivingWarehouse,"CROSS-RETURN-W","CROSS-RETURN-ISOLATION");
   inboundReceiving.issue(c,new InboundReceiving.Notice(inbound,source.warehouseId(),owner,item,unit,new BigDecimal("51000")));
-  var roll=receiveWeighFixture(c,inbound,source,item,owner,unit,unitCode,"51000","CROSS-WAREHOUSE-51");
+  var roll=receiveWeighFixture(c,inbound,source,item,owner,unit,unitCode,"51000","CROSS-WAREHOUSE-51",
+      "收货批次-跨仓");
   var expiry=java.time.Instant.now().plusSeconds(3600);
   coilOutbound.issue(c,new CoilOutbound.Notice(notice,source.warehouseId(),owner,item,unit,unitCode,new BigDecimal("53000")));
   coilOutbound.authorize(c,new CoilOutbound.Authorization(authorization,notice,owner,expiry,new BigDecimal("53000")));
@@ -1112,6 +1275,9 @@ class ProductV1IntegrationTest extends DatabaseTestSupport {
   var review=coilOutbound.reviewWeighing(c,weigh(allocation,vehicle,unit,"53000"));
   var original=new CoilOutbound.Handover(newId(),trip,review.id(),newId(),vehicle,owner,List.of(roll.id()));
   coilOutbound.handover(c,original);
+  var shipped=warehouseBalances.trace(c,roll.id());
+  assertThat(shipped.stock().onHand()).isZero();
+  assertThat(shipped.stock().receiptBatchNo()).isEqualTo("收货批次-跨仓");
   var request=returnTo(original.id(),roll.id(),destination);
   var freeze=new OutboundStock.Freeze(newId(),roll.id(),newId());
   outboundStock.freeze(c,freeze);
@@ -1163,6 +1329,9 @@ class ProductV1IntegrationTest extends DatabaseTestSupport {
    assertThat(json.readTree(response.getContentAsString()).path("restoredQuota").decimalValue()).isEqualByComparingTo("53000");
    bindReferenceContext(c);
    assertThat(coilOutbound.returnCoils(c,request).restoredStock()).isEqualByComparingTo("51000");
+   assertThat(coilOutbound.returnDocument(c,request.id()).lines()).singleElement()
+       .satisfies(line->assertThat(line.warehouseId()).isEqualTo(destination.warehouseId()));
+
    assertThatThrownBy(()->coilOutbound.returnCoils(c,returnTo(original.id(),roll.id(),destination)))
        .hasMessage("OUTBOUND_HANDOVER_REVERSED");
    verifyReversalBalances(notice,authorization,trip,roll.id(),"0","0","0","0","0");
@@ -1201,6 +1370,7 @@ class ProductV1IntegrationTest extends DatabaseTestSupport {
 
    var trace=warehouseBalances.trace(c,roll.id());
    assertThat(trace.stock().warehouseId()).isEqualTo(destination.warehouseId());
+   assertThat(trace.stock().receiptBatchNo()).isEqualTo("收货批次-跨仓");
    assertThat(trace.documents()).extracting(WarehouseBalances.TraceDocument::kind)
        .contains("INBOUND","ALLOCATION","WEIGHING","HANDOVER","RETURN");
    scopeCrossReturnWarehouses(admin,role,readPermission,Set.of(UUID.fromString(destination.warehouseId())));
@@ -1747,6 +1917,9 @@ class ProductV1IntegrationTest extends DatabaseTestSupport {
   assertThat(transferred.getStatus()).as(transferred.getContentAsString()).isEqualTo(200);
   bindReferenceContext(c);
   var result=coilTitleTransfer.transfer(c,command);
+  assertThat(warehouseBalances.document(c,WarehouseBalances.DocumentKind.TITLE_TRANSFER,command.id())
+      .header().otherOwnerId()).isEqualTo(ownerB);
+
   assertThat(result.quantity()).isEqualByComparingTo("51000");
   assertThat(result.locationId()).isEqualTo(position.locationId());
   assertThat(result.titleRevision()).isPositive();
@@ -2125,7 +2298,15 @@ class ProductV1IntegrationTest extends DatabaseTestSupport {
  private InboundReceiving.Receipt receiveWeighFixture(VerifiedTenantContext c,String inbound,
      InboundReceiptReferences.Position position,InboundReceiptReferences.Item item,
      String owner,String unit,String unitCode,String quantity,String serial) {
-  var receipt=coalReceipt(c,inbound,position,item,owner,unit,quantity);
+  return receiveWeighFixture(c,inbound,position,item,owner,unit,unitCode,quantity,serial,null);
+ }
+
+ private InboundReceiving.Receipt receiveWeighFixture(VerifiedTenantContext c,String inbound,
+     InboundReceiptReferences.Position position,InboundReceiptReferences.Item item,
+     String owner,String unit,String unitCode,String quantity,String serial,String receiptBatchNo) {
+  var input=coalReceipt(c,inbound,position,item,owner,unit,quantity);
+  var receipt=new InboundReceiving.Receipt(input.id(),input.custodyId(),input.measurementId(),
+      input.references(),receiptBatchNo);
   inboundReceiving.receive(c,receipt);
   inboundDisposition.registerTitle(c,new InboundDisposition.TitleDecision(receipt.id(),UUID.randomUUID().toString(),
       java.time.Instant.parse("2026-11-20T09:00:00Z")));

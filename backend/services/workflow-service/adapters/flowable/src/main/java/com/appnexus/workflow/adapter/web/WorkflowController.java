@@ -155,6 +155,7 @@ public final class WorkflowController {
 
   @com.appnexus.contracts.operation.OperationBinding(id="WorkflowInstance.read", reference=true, eligibility=com.appnexus.contracts.operation.OperationBinding.Eligibility.OBJECT)
   @com.appnexus.contracts.operation.RecordAuditSource(table="wf_instance",binaryKey=false,binaryTenant=false,path="instance")
+  @com.appnexus.contracts.operation.RecordAuditNames(paths={"tasks","audit"},event=true)
  @GetMapping("/instances/{id}")
   public Object detail(HttpServletRequest r, @PathVariable String id) {
     return reply(() -> runtime.detail(context(r), id));

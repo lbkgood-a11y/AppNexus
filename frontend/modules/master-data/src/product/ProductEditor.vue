@@ -39,8 +39,8 @@ const detailTabs=computed(()=>[
 ].filter(item=>operations.value.includes(item.operation)));
 const detailTab=ref("");
 const canReadHistory=computed(()=>!!record.value&&operations.value.includes("Product.readChanges"));
-const organizationLabel=computed(()=>organizationOptions.value.find(item=>item.id===draft.organizationId)?.name
- ?? (draft.organizationId||t("productV1.organizationUnknown")));
+const organizationLabel=computed(()=>(record.value?.organizationId===draft.organizationId ? record.value?.organizationName : undefined)
+ ?? organizationOptions.value.find(item=>item.id===draft.organizationId)?.name ?? t("productV1.organizationUnknown"));
 watch(detailTabs,tabs=>{if(!tabs.some(item=>item.name===detailTab.value))detailTab.value=tabs[0]?.name??"";});
 const canUpdate=computed(()=>props.mode!=="view"&&!record.value?.approvalPending&&operations.value.includes(id.value?"Product.update":"Product.create")&&!failed.value&&!record.value?.archivedAt&&record.value?.structureState!=="LEGACY_PENDING");
 const canStructure=computed(()=>props.mode!=="view"&&!record.value?.approvalPending&&operations.value.includes("Product.previewStructure")&&operations.value.includes("Product.migrateStructure")&&!failed.value&&!record.value?.archivedAt&&record.value?.status!=="ENABLED"&&(record.value?.structureState!=="LEGACY_PENDING"||record.value?.legacyDisposition==="CONFIRMED_NONE"));

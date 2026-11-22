@@ -24,8 +24,14 @@ public final class OutboundStockDeclaration implements Provider {
   /** {@inheritDoc} */
   @Override public Descriptor descriptor() {
     var actions=Arrays.stream(OutboundOperations.values()).filter(op -> op.object().equals(object)).toList();
-    var operations=actions.stream().map(OutboundStockDeclaration::operation).toList();
+    var operations=new java.util.ArrayList<>(actions.stream().map(OutboundStockDeclaration::operation).toList());
     var scopes=actions.stream().collect(Collectors.toMap(OutboundOperations::code,op -> Set.of("ALL")));
+    if (OutboundOperations.RESTRICTION.equals(object)) {
+      operations.add(DedicatedOperations.operation("BulkStockRestriction","read_document","按单号查询监管单","Read restriction by number",
+          OutboundOperations.READ_RESTRICTIONS.permission(),WarehousingPage.queryPage(
+              "stock-restrictions","库存监管单","Stock restrictions","/api/bulk-stock-restrictions/{id}")));
+      scopes.put("read_document",Set.of("ALL"));
+    }
     return new Descriptor(object,zh,en,"bulk-warehousing",1,Category.TRANSACTION,List.of(),operations,
         new DataAccess("TENANT",List.of(new DataResource(actions.getFirst().resource(),"",zh,en,List.of())),scopes));
   }
@@ -38,7 +44,8 @@ public final class OutboundStockDeclaration implements Provider {
       var path="/api/bulk-stock-restrictions/by-receipt/{id}";
       return DedicatedOperations.operation(op.object(),op.code(),op.nameZh(),op.nameEn(),op.permission(),
           WarehousingPage.flowPage(op.nameZh(),op.nameEn(),"GET",path),
-          WarehousingPage.transitPage(op.nameZh(),op.nameEn(),"GET",path));
+          WarehousingPage.transitPage(op.nameZh(),op.nameEn(),"GET",path),
+          WarehousingPage.queryPage("stock-restrictions","库存监管单","Stock restrictions",path));
     }
     String path=switch(op) {
       case FREEZE -> "/api/bulk-stock-restrictions";

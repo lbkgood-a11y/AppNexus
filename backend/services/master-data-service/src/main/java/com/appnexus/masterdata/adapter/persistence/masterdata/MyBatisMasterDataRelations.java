@@ -41,7 +41,7 @@ public final class MyBatisMasterDataRelations implements MasterDataRelations {
     this.warehouseJoin=new StandardCrudScope(planning,rowAccess,references,warehouseMapping("w."));
   }
 
-  private static RowAccessControl.Mapping warehouseMapping(String prefix){
+  static RowAccessControl.Mapping warehouseMapping(String prefix){
     var id=new RowAccessControl.Column(prefix+"id",DataGrantRules.ValueType.UUID);
     var organization=new RowAccessControl.Column(prefix+"organization_id",DataGrantRules.ValueType.UUID);
     return new RowAccessControl.Mapping(WAREHOUSE_RESOURCE,id,organization,Map.of(
@@ -50,7 +50,7 @@ public final class MyBatisMasterDataRelations implements MasterDataRelations {
         "operatingMode",new RowAccessControl.Column(prefix+"operating_mode",DataGrantRules.ValueType.TEXT)));
   }
   private PartnerDataAccess partner(){if(partner==null)throw new Rejection(403,"MASTER_DATA_DENIED");return partner;}
-  @Override public Object geographyCatalog(VerifiedTenantContext c){return new MyBatisGeographyCatalog(geographyMapper).nodes(c.tenantId());}
+  @Override public Object geographyCatalog(VerifiedTenantContext c){return MyBatisGeographyCatalog.nodes(geographyMapper,c.tenantId());}
   @Override public Object geographyTree(VerifiedTenantContext c,Kind kind,String parent,int page,int size){return new TenantGeography(geographyMapper,c.tenantId(),false).children(parent,page,size,kind==Kind.COUNTRY_REGION);}
   @Override public void prepareStorage(VerifiedTenantContext c,Kind kind,String id,Map<String,String> values,boolean creating){
     if(creating&&(kind==Kind.STORAGE_AREA||kind==Kind.STORAGE_LOCATION)){

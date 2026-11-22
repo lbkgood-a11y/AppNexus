@@ -141,7 +141,8 @@ class MasterDataMySqlTest {
       assertThat(service.list(c,Kind.SUBDIVISION,"LOCAL",null,1,20,null,"CN-FJ").total()).isZero();
       assertThatThrownBy(()->service.update(c,Kind.SUBDIVISION,county,new Input("LOCAL_COUNTY","过期",Map.of("parentCode","US"),0))).isInstanceOf(Rejection.class);
       assertThat(((GeographyHierarchy.Page)service.geographyTree(c,Kind.SUBDIVISION,"CUSTOM_COUNTRY",1,50)).rows()).extracting(GeographyHierarchy.Node::code).containsExactly("LOCAL_CITY");
-      var summary=new com.appnexus.masterdata.adapter.persistence.masterdata.MyBatisGeographyCatalog(geography).nodes(c.tenantId());
+      var summary=new com.appnexus.masterdata.adapter.persistence.masterdata.MyBatisGeographyCatalog(geography,
+          org.mockito.Mockito.mock(com.appnexus.platform.authorization.ScopedWriteGate.class),new DataSourceTransactionManager(source)).nodes(c.tenantId());
       assertThat(summary.stream().filter(n->n.code().equals("LOCAL_CITY")).findFirst().orElseThrow().parentCode()).isEqualTo("CUSTOM_COUNTRY");
       service.update(c,Kind.COUNTRY_REGION,customCountry,new Input("CUSTOM_COUNTRY","移动国别",Map.of("parentCode","continent:EU"),0));
       assertThat(service.list(c,Kind.SUBDIVISION,"EU-CUSTOM_COUNTRY",null,1,20).total()).isEqualTo(2);

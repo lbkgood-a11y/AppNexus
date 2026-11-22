@@ -1,28 +1,64 @@
 <script setup lang="ts">
 import {computed,nextTick,onMounted,reactive,ref} from "vue";
 import {useI18n} from "vue-i18n";
-import {ElMessage,ElMessageBox,type FormInstance} from "element-plus";
-import {BusinessWorkspace,PageHeader,TabbedDetailTemplate,ManagementTable,ManagedDialog,AppPagination,FloatingError,InfoHint,RecordAuditDetails,setErrorFeedback,type ManagementColumn} from "@appnexus/ui";
+import {ElMessage,ElMessageBox,type FormInstance,type LoadFunction,type TreeInstance} from "element-plus";
+import {TreeListTemplate,PageHeader,TabbedDetailTemplate,ManagementTable,ManagedDialog,AppPagination,FloatingError,InfoHint,RecordAuditDetails,setErrorFeedback,type ManagementColumn} from "@appnexus/ui";
 import ProductStructure from "./ProductStructure.vue";
-import type {ProductApi,ProductConfiguration,ProductRecord,ProductRow} from "./product";
+import SkuAttributeFilter from "./SkuAttributeFilter.vue";
+import type {ProductApi,ProductConfiguration,ProductRecord} from "./product";
+import type { ProductCatalogApi } from "./catalog";
 /** 商品明细工作台：按商品固定配置投影动态属性，复用既有SKU身份与聚合命令，不遍历商品伪造全局分页。 */
-const props=defineProps<{api:ProductApi;errorText:(e:unknown)=>string}>();
+const props=defineProps<{api:ProductApi;listCatalog:ProductCatalogApi["list"];errorText:(e:unknown)=>string}>();
 const {t}=useI18n();
-const products=ref<ProductRow[]>([]),productTotal=ref(0),productPage=ref(1),keyword=ref(""),selected=ref("");
+const selected = ref("");
+const tree = ref<TreeInstance>();
+const treeCollapsed = ref(false);
+const treeError = ref("");
+const checkingOperations = ref(true);
+const operationsLoaded = ref(false);
+const treeGeneration = ref(0);
+const rootKey = "root";
+const allProductsKey = "all-products";
+const canListProducts = computed(() => operations.value.includes("Product.list"));
+const canListCategories = computed(() => operations.value.includes("ProductCategory.list"));
+const treeTitle = computed(() => t("productSku.tree"));
+const activeNode = ref(rootKey);
+type SkuTreeNode =
+  | { key: string; kind: "root" | "all"; name?: never }
+  | { key: string; kind: "category" | "product"; id: string; name: string; leaf?: boolean };
+
 const product=ref<ProductRecord>(),configuration=ref<ProductConfiguration>(),structure=ref<Awaited<ReturnType<ProductApi['structure']>>>();
 const loadIssue = ref<{ message: string; retryable: boolean }>();
-const loading=ref(false),searching=ref(false),busy=ref(false),error=ref(""),operations=ref<string[]>([]),code=ref(""),specification=ref(""),status=ref(""),attributeId=ref(""),attributeValue=ref("");
+const loading=ref(false),busy=ref(false),error=ref(""),operations=ref<string[]>([]),code=ref(""),specification=ref(""),status=ref("");
+const attributeFilter = ref({ attributeId: "", attributeValue: "" });
 const page=ref(1),size=ref(20),createOpen=ref(false),structureOpen=ref(false),detailId=ref(""),form=ref<FormInstance>();
 const draft=reactive({code:"",specificationId:""});
 const applied=reactive({code:"",specification:"",status:"",attributeId:"",attributeValue:""});
 /** 查询按钮提交本地筛选；数据范围始终限定在服务端已授权返回的当前商品。 */
-function search(){Object.assign(applied,{code:code.value,specification:specification.value,status:status.value,attributeId:attributeId.value,attributeValue:attributeValue.value});page.value=1;}
-let selectionRequest=0,searchRequest=0;
+function search(){Object.assign(applied,{code:code.value,specification:specification.value,status:status.value,...attributeFilter.value});page.value=1;}
+let selectionRequest=0;
 const specFields=computed(()=>configuration.value?.fields.filter(f=>f.purpose==='SPEC')??[]);
-const writeAllowed=computed(()=>!!product.value&&product.value.status!=='ENABLED'&&!product.value.approvalPending&&!product.value.archivedAt&&product.value.structureState==='COMPLETE');
+/** 与服务端父商品状态校验对齐；未完成的草稿可继续维护结构，记录权限仍由服务端判定。 */
+const writeAllowed = computed(() => {
+ const record = product.value;
+ return !!record && record.status !== "ENABLED" && !record.approvalPending &&
+   !record.archivedAt && record.structureState !== "LEGACY_PENDING";
+});
 const specs=computed(()=>new Map((structure.value?.specifications??[]).map(s=>[s.id,s])));
 /** 可分配候选排除已占用SKU及退出/停用规格；服务端仍以原事务复核，客户端列表不是授权依据。 */
 const available=computed(()=>structure.value?.specifications.filter(s=>s.enabled&&!s.retiredAt&&!structure.value?.skus.some(k=>k.specificationId===s.id))??[]);
+/** 区分操作准入与当前商品的业务限制，避免将缺少可分配规格误判为无权。 */
+const createNotice = computed(() => {
+ const record = product.value;
+ if (!record || !operationsLoaded.value || checkingOperations.value || loading.value || busy.value) return "";
+ if (!operations.value.includes("Product.createSku")) return t("productSku.createDenied");
+ if (record.archivedAt) return t("productSku.createArchived");
+ if (record.approvalPending) return t("productSku.createApproval");
+ if (record.status === "ENABLED") return t("productSku.createEnabled");
+ if (record.structureState === "LEGACY_PENDING") return t("productSku.createLegacy");
+ if (structure.value?.mode === "NONE") return t("productSku.none");
+ return available.value.length ? "" : t("productSku.createNoSpecification");
+});
 const allRows=computed<Record<string,any>[]>(()=>(structure.value?.skus??[]).map(k=>({...k,specification:specs.value.get(k.specificationId)})));
 const detail = computed(() => allRows.value.find(row => row.id === detailId.value));
 const detailActions = ref<HTMLElement>();
@@ -69,12 +105,69 @@ function attribute(row:Record<string,any>,id:string){
  }
  const v=row.specification?.values?.find((v:Record<string,any>)=>(v.revisionId??v.templateItemId)===id);if(!v)return '—';if(v.dataType==='BOOLEAN')return t(v.booleanValue?'productV1.yes':'productV1.no');return v.textValue??v.dateValue??v.integerValue??v.decimalValue??(v.choices?.map((c:Record<string,any>)=>c.label).join(' / ')||'—');
 }
-async function findProducts(query=keyword.value,p=1){const request=++searchRequest;keyword.value=query;productPage.value=p;searching.value=true;try{const r=await props.api.list({name:query,code:'',archived:false,page:p,size:20});if(request!==searchRequest)return;products.value=r.rows;productTotal.value=r.total;}catch(e){if(request!==searchRequest)return;products.value=[];productTotal.value=0;await setErrorFeedback(error,props.errorText(e));}finally{if(request===searchRequest)searching.value=false;}}
-/** 选择变化时重置筛选；重试当前商品时保留筛选条件。 */
-function selectProduct(id?: string) {
-  selected.value = id ?? "";
+/** 按分支读取完整分页；每页 100 条，分类与商品分别使用原授权接口。 */
+async function readBranch<T>(read: (page: number) => Promise<{ rows: T[]; total: number }>) {
+  const rows: T[] = [];
+  for (let page = 1; ; page++) {
+    const result = await read(page);
+    rows.push(...result.rows);
+    if (!result.rows.length || rows.length >= result.total) return rows;
+  }
+}
+
+/** 分类只挂直属商品；全部商品入口保留无分类草稿及无分类权限用户的可达性。 */
+const loadTree: LoadFunction = async (node, resolve, reject) => {
+  if (node.level === 0) {
+    resolve([{ key: rootKey, kind: "root" } satisfies SkuTreeNode]);
+    return;
+  }
+  const branch = node.data as SkuTreeNode;
+  const categoryId = branch.kind === "category" ? branch.id : undefined;
+  try {
+    const [categories, products] = await Promise.all([
+      canListCategories.value && branch.kind !== "all"
+        ? readBranch(page => props.listCatalog("category", { keyword: "", parentId: categoryId, page, size: 100 }))
+        : [],
+      branch.kind !== "root" || !canListCategories.value
+        ? readBranch(page => props.api.list({ name: "", code: "", categoryId, archived: false, page, size: 100 }))
+        : []
+    ]);
+    const children = categories.map((category): SkuTreeNode => ({
+      key: "category:" + category.id, kind: "category", id: category.id, name: category.name
+    }));
+    if (branch.kind === "root" && canListCategories.value) {
+      children.push({ key: allProductsKey, kind: "all" });
+    }
+    resolve([
+      ...children,
+      ...products.map((item): SkuTreeNode => ({
+        key: "product:" + branch.key + ":" + item.id,
+        kind: "product", id: item.id, name: item.name, leaf: true
+      }))
+    ]);
+  } catch (cause) {
+    reject();
+    treeError.value = props.errorText(cause);
+  }
+};
+
+/** 分类只用于定位商品，切换范围时清理旧明细及筛选条件。 */
+function selectNode(node: SkuTreeNode) {
+  if (busy.value) {
+    tree.value?.setCurrentKey(activeNode.value, false);
+    return;
+  }
+  if (activeNode.value === node.key) return;
+  activeNode.value = node.key;
+  selected.value = node.kind === "product" ? node.id : "";
   reset();
-  return refresh();
+  void refresh();
+}
+
+function retryTree() {
+  treeError.value = "";
+  selectNode({ key: rootKey, kind: "root" });
+  treeGeneration.value++;
 }
 
 /** 丢弃迟到响应，避免把另一商品的父版本用于当前商品的写入。 */
@@ -109,36 +202,83 @@ async function refresh() {
     if (request === selectionRequest) loading.value = false;
   }
 }
-function reset(){code.value='';specification.value='';status.value='';attributeId.value='';attributeValue.value='';search();}
-function openCreate(){draft.code='';draft.specificationId='';createOpen.value=true;}
+function reset(){code.value='';specification.value='';status.value='';attributeFilter.value={attributeId:"",attributeValue:""};search();}
+function openCreate(){if(!writeAllowed.value||!available.value.length||busy.value||loading.value)return;draft.code='';draft.specificationId='';createOpen.value=true;}
 /** 一个SKU命令只绑定已有规格；新增规格与分配货号分开提交，失败不制造已成功的组合反馈。 */
-async function create(){if(busy.value||!product.value||!await form.value?.validate().catch(()=>false))return;busy.value=true;try{await props.api.createSku(product.value.id,{...draft,version:structure.value!.version});createOpen.value=false;await refresh();ElMessage.success(t('productSku.created'));}catch(e){await setErrorFeedback(error,props.errorText(e));}finally{busy.value=false;}}
-async function toggle(row:Record<string,any>){try{await ElMessageBox.confirm(t('productStructure.stateHint'),t('productSku.title'),{confirmButtonText:t(row.enabled?'masterData.disable':'masterData.enable'),cancelButtonText:t('masterData.cancel')});}catch{return;}busy.value=true;try{await props.api.structureState(selected.value,'sku',row.id,{enabled:!row.enabled,rowVersion:row.version,version:structure.value!.version});await refresh();ElMessage.success(t('productSku.saved'));}catch(e){await setErrorFeedback(error,props.errorText(e));}finally{busy.value=false;}}
+async function create(){if(busy.value||!product.value)return;busy.value=true;try{if(!await form.value?.validate().catch(()=>false))return;await props.api.createSku(product.value.id,{...draft,version:structure.value!.version});createOpen.value=false;await refresh();ElMessage.success(t('productSku.created'));}catch(e){await setErrorFeedback(error,props.errorText(e));}finally{busy.value=false;}}
+async function toggle(row:Record<string,any>){if(busy.value)return;busy.value=true;try{const confirmed=await ElMessageBox.confirm(t('productStructure.stateHint'),t('productSku.title'),{confirmButtonText:t(row.enabled?'masterData.disable':'masterData.enable'),cancelButtonText:t('masterData.cancel')}).catch(()=>false);if(!confirmed)return;await props.api.structureState(selected.value,'sku',row.id,{enabled:!row.enabled,rowVersion:row.version,version:structure.value!.version});await refresh();ElMessage.success(t('productSku.saved'));}catch(e){await setErrorFeedback(error,props.errorText(e));}finally{busy.value=false;}}
 async function structureChanged(){const id=selected.value;const request=selectionRequest;try{const [p,s]=await Promise.all([props.api.read(id),props.api.structure(id)]);if(request!==selectionRequest)return;product.value=p;structure.value=s;}catch(e){await setErrorFeedback(error,props.errorText(e));}}
-onMounted(async()=>{try{operations.value=await props.api.operations();if(operations.value.includes('Product.list'))await findProducts('');}catch(e){await setErrorFeedback(error,props.errorText(e));}});
+async function loadOperations() {
+  checkingOperations.value = true;
+  operationsLoaded.value = false;
+  error.value = "";
+  try {
+    operations.value = await props.api.operations();
+    operationsLoaded.value = true;
+  } catch (cause) {
+    await setErrorFeedback(error, props.errorText(cause));
+  } finally {
+    checkingOperations.value = false;
+  }
+}
+
+onMounted(loadOperations);
 </script>
 <template>
 <!-- 单根宿主承接应用壳的 main-content；边距、工作区边框和区块间距统一由全局模板维护。 -->
 <div class="management-page">
-<BusinessWorkspace v-show="!detail" :title="t('productSku.title')">
- <template #feedback><FloatingError :title="error"><el-button :disabled="loading||busy||searching" @click="selected?refresh():findProducts()">{{t('masterData.retry')}}</el-button></FloatingError></template>
+<TreeListTemplate v-show="!detail" v-model:collapsed="treeCollapsed" :title="t('productSku.title')" :tree-label="treeTitle">
+ <template #treeHeader>{{ treeTitle }}</template>
+ <template #tree>
+  <el-tree
+    v-if="canListProducts"
+    ref="tree"
+    :key="treeGeneration"
+    :aria-label="treeTitle"
+    node-key="key"
+    :current-node-key="activeNode"
+    :default-expanded-keys="[rootKey]"
+    :props="{ label: 'name', isLeaf: 'leaf', disabled: () => busy }"
+    highlight-current
+    lazy
+    :load="loadTree"
+    @node-click="selectNode"
+  >
+    <template #default="{ data }">
+      <span class="el-tree-node__label" :title="data.name">
+        {{ data.kind === 'root' ? treeTitle : data.kind === 'all' ? t('productV1.allProducts') : data.name }}
+      </span>
+    </template>
+  </el-tree>
+  <el-alert v-if="treeError" :title="treeError" type="error" :closable="false">
+    <el-button v-operation="'Product.list'" text :disabled="busy" @click="retryTree">{{ t('masterData.retry') }}</el-button>
+  </el-alert>
+ </template>
+  <template #feedback>
+  <FloatingError :title="error">
+    <el-button v-if="!canListProducts" :disabled="checkingOperations" @click="loadOperations">{{ t('masterData.retry') }}</el-button>
+  </FloatingError>
+  <el-alert v-if="createNotice" :title="createNotice" type="info" :closable="false" />
+ </template>
 <template #search><el-form inline class="sku-search" @submit.prevent="search">
   <div class="management-filter">
-  <el-form-item :label="t('productSku.product')"><el-select v-model="selected" filterable remote clearable :remote-method="q=>findProducts(q)" :loading="searching" :disabled="busy" :placeholder="t('productSku.choose')" class="sku-product-select" @change="selectProduct"><el-option v-for="p in products" :key="p.id" :value="p.id" :label="p.code+' / '+p.name"/><template #footer><AppPagination :current-page="productPage" :page-size="20" :total="productTotal" @current-change="p=>findProducts(keyword,p)"/></template></el-select></el-form-item>
   <el-form-item :label="t('productSku.code')"><el-input v-model="code" clearable/></el-form-item>
   <el-form-item :label="t('productStructure.specification')"><el-input v-model="specification" clearable/></el-form-item>
   <el-form-item :label="t('masterData.status')"><el-select v-model="status" clearable class="sku-status-select"><el-option value="true" :label="t('masterData.enabled')"/><el-option value="false" :label="t('masterData.disabled')"/></el-select></el-form-item>
-  <el-form-item :label="t('productSku.attribute')"><el-select v-model="attributeId" clearable class="sku-status-select" @change="attributeValue=''"><el-option v-for="f in attributes" :key="f.id" :value="f.id" :label="f.name"/></el-select></el-form-item><el-form-item :label="t('productSku.attributeValue')"><el-input v-model="attributeValue" :disabled="!attributeId" clearable/></el-form-item>
+  <el-form-item :label="t('productSku.attribute')">
+    <SkuAttributeFilter v-model="attributeFilter" :options="attributes" />
+  </el-form-item>
   </div>
   <div class="management-filter-actions"><el-button v-operation="'Product.readStructure'" type="primary" native-type="submit" :disabled="!product||loading||busy">{{t('masterData.search')}}</el-button><el-button :disabled="loading||busy" @click="reset">{{t('masterData.reset')}}</el-button></div>
  </el-form></template>
- <template #data>
+ <template #table>
   <el-result v-if="loadIssue" :icon="loadIssue.retryable ? 'error' : 'warning'" :title="loadIssue.message">
     <template v-if="loadIssue.retryable" #extra>
       <el-button v-operation="'Product.readStructure'" type="primary" :disabled="busy" @click="refresh">{{t('masterData.retry')}}</el-button>
     </template>
   </el-result>
-  <ManagementTable v-else embedded :total="filtered.length" :empty-text="t(!selected?'productSku.choose':structure?.mode==='NONE'?'productSku.none':'productSku.empty')" :title="product?.name??t('productSku.title')" :columns="columns" :rows="rows" :loading="loading||busy" @refresh="refresh">
+  <el-empty v-else-if="!selected && !checkingOperations" :description="t(canListProducts ? 'productSku.choose' : 'masterData.noPermission')" />
+  <ManagementTable v-else embedded :total="filtered.length" :empty-text="t(structure?.mode==='NONE'?'productSku.none':'productSku.empty')" :title="product?.name??t('productSku.title')" :columns="columns" :rows="rows" :loading="checkingOperations||loading||busy" @refresh="refresh">
    <template #titleHelp><InfoHint :content="t('productSku.hint')"/></template>
    <template #actions><el-button v-operation="'Product.createSku'" type="primary" :disabled="!writeAllowed||!available.length||busy||loading" @click="openCreate">{{t('productSku.create')}}</el-button><el-button v-operation="'Product.readStructure'" :disabled="!product||busy||loading" @click="structureOpen=true">{{t('productSku.specifications')}}</el-button></template>
    <template #specification="{row}">{{row.specification?.name??'—'}}</template>
@@ -149,7 +289,7 @@ onMounted(async()=>{try{operations.value=await props.api.operations();if(operati
    <template #pagination><AppPagination :current-page="page" :page-size="size" :total="filtered.length" @current-change="p=>page=p" @size-change="s=>{size=s;page=1}"/></template>
   </ManagementTable>
  </template>
-</BusinessWorkspace>
+</TreeListTemplate>
 <ManagedDialog v-model="createOpen" :title="t('productSku.create')" :busy="busy"><el-form ref="form" :model="draft" label-position="top" class="business-border-label-form" @submit.prevent="create"><el-form-item :label="t('productSku.code')" prop="code" :rules="[{required:true,message:t('masterData.required')},{pattern:/^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/,message:t('productSku.codeHint')}]"><el-input v-model="draft.code" maxlength="64"/></el-form-item><el-form-item :label="t('productStructure.specification')" prop="specificationId" :rules="[{required:true,message:t('masterData.required')}]"><el-select v-model="draft.specificationId" filterable><el-option v-for="s in available" :key="s.id" :value="s.id" :label="s.name"/></el-select></el-form-item></el-form><template #footer><el-button :disabled="busy" @click="createOpen=false">{{t('masterData.cancel')}}</el-button><el-button v-operation="'Product.createSku'" type="primary" :loading="busy" @click="create">{{t('masterData.save')}}</el-button></template></ManagedDialog>
 <ManagedDialog v-model="structureOpen" :title="t('productSku.specifications')"><ProductStructure v-if="structureOpen&&product" :key="product.id+':'+structure?.version" :id="product.id" :version="structure?.version??product.version" :readonly="!writeAllowed" :api="api" :fields="specFields" :error-text="errorText" @changed="structureChanged"/></ManagedDialog>
 <TabbedDetailTemplate v-if="detail" master-data>
@@ -197,9 +337,8 @@ onMounted(async()=>{try{operations.value=await props.api.operations();if(operati
  display: grid;
  gap: var(--app-section-gap, 8px);
 }
-.sku-product-select { width: 320px; max-width: 100%; }
 .sku-status-select { width: 140px; max-width: 100%; }
 @media (max-width: 600px) {
- .sku-product-select, .sku-status-select { width: 100%; }
+ .sku-status-select { width: 100%; }
 }
 </style>

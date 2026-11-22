@@ -14,7 +14,7 @@ import static org.assertj.core.api.Assertions.*;
 /** 真实授权中心与MySQL验证对象能力矩阵，不用允许全部的功能、范围或字段替身。 */
 @SpringBootTest(properties={"app.workflow.engine.enabled=true","app.workflow.worker.enabled=false"})
 @ActiveProfiles("local")
-class ObjectCapabilityAuthorizationTest extends DatabaseTestSupport {
+class ObjectCapabilityAuthorizationTest extends WorkflowDatabaseTestSupport {
   @Autowired BusinessObjectPlatform platform;
   @Autowired BusinessObjectExecution execution;
   @Autowired com.appnexus.contracts.workflow.WorkflowPlatform workflowPlatform;

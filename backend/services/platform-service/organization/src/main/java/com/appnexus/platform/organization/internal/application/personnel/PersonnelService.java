@@ -68,7 +68,10 @@ public final class PersonnelService implements com.appnexus.platform.organizatio
     var people=statements.profile(c,id).stream().map(row->{var values=new LinkedHashMap<String,String>();for(String field:Kind.PERSON.fields)values.put(field,(String)row.get(field));return new Row((String)row.get("id"),(String)row.get("code"),(String)row.get("name"),values,Boolean.TRUE.equals(row.get("enabled")),((Number)row.get("version")).longValue());}).toList();
     if(people.isEmpty())throw new Rejection(404,"PERSON_NOT_FOUND");
     var rawAudit=statements.audit(c.tenantId().toString(),id).getFirst();String creator=(String)rawAudit.get("created_by"),updater=(String)rawAudit.get("updated_by");
-    var audit=new Audit(creator,directory.accountName(c.tenantId(),creator),utc(rawAudit.get("created_at")),updater,directory.accountName(c.tenantId(),updater),utc(rawAudit.get("updated_at")));
+    var actorIds=java.util.stream.Stream.of(creator,updater).filter(Objects::nonNull).distinct().toList();
+    var actorNames=directory.accountNames(c.tenantId(),actorIds);
+    var audit=new Audit(creator,creator==null?"":actorNames.getOrDefault(creator,""),utc(rawAudit.get("created_at")),
+        updater,updater==null?"":actorNames.getOrDefault(updater,""),utc(rawAudit.get("updated_at")));
     var details=new ArrayList<>(statements.details(c.tenantId().toString(),id).stream().map(row->new Detail((String)row.get("id"),(String)row.get("section_code"),decode((String)row.get("content")))).toList());
     for(var affiliation:directory.affiliations(c.tenantId(),uuid(id)))details.add(new Detail(affiliation.id(),affiliation.section(),affiliation.values()));
     var catalog=directory.catalog(c.tenantId());

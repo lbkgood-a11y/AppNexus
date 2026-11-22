@@ -61,7 +61,10 @@ class MenuManagementTest extends DatabaseTestSupport {
   mvc.perform(get("/bff/platform/operation-catalog").with(authenticated(actor.toString(),0))).andExpect(status().isOk()).andExpect(header().string("Cache-Control","no-store"));
   mvc.perform(get("/bff/platform/menus/features").with(authenticated(actor.toString(),0)))
     .andExpect(status().isOk()).andExpect(header().string("Cache-Control","no-store"))
-    .andExpect(jsonPath("$[?(@.page.key == 'platform/features')].operations[0]").value("configuration.menu:read"));
+    .andExpect(jsonPath("$[?(@.page.key == 'platform/features')].operations[0]").value("configuration.menu:read"))
+    .andExpect(jsonPath("$[?(@.page.key == 'account/profile')].page.path").value("/account/profile"));
+  mvc.perform(get("/bff/platform/menus/pages").with(authenticated(actor.toString(),0)))
+    .andExpect(status().isOk()).andExpect(jsonPath("$[?(@.key == 'account/profile')]").isEmpty());
  }
 
  /** 隐藏不取消合法路由，停用才阻断；诊断与真实导航必须得出一致结果。 */
@@ -167,17 +170,33 @@ class MenuManagementTest extends DatabaseTestSupport {
   administration.addMember(actor,tenant.id(),account);
   UUID member=UUID.fromString(jdbc.queryForObject("SELECT BIN_TO_UUID(id) FROM tenant_member WHERE tenant_id=UUID_TO_BIN(?) AND account_id=UUID_TO_BIN(?)",String.class,tenant.id().toString(),account.toString()));
   UUID ownerMember=UUID.fromString(jdbc.queryForObject("SELECT BIN_TO_UUID(id) FROM tenant_member WHERE tenant_id=UUID_TO_BIN(?) AND account_id=UUID_TO_BIN(?)",String.class,tenant.id().toString(),owner.toString()));
-  // 验证真实迁移后的两组导航；目录不赋权，无叶子权限的成员也不能看到空分组。
+  // 验证真实迁移后的三组导航；目录不赋权，无叶子权限的成员也不能看到空分组。
   var ownerItems=navigation.current(owner,tenant.id(),ownerMember,1).items();
   var products=ownerItems.stream().filter(item->item.code().equals("builtin.navigation.masterdata.products")).findFirst().orElseThrow();
   var warehouses=ownerItems.stream().filter(item->item.code().equals("builtin.navigation.masterdata.warehouses")).findFirst().orElseThrow();
-  assertThat(products.parentId()).isEqualTo(warehouses.parentId());
+  var masterData=ownerItems.stream().filter(item->item.code().equals("builtin.navigation.master-data")).findFirst().orElseThrow();
+  var warehousing=ownerItems.stream().filter(item->item.code().equals("builtin.navigation.warehousing")).findFirst().orElseThrow();
+  assertThat(products.parentId()).isEqualTo(masterData.id());
+  assertThat(warehouses.parentId()).isEqualTo(masterData.id());
+  assertThat(warehouses.titleZh()).isEqualTo("仓库资料");
+  assertThat(warehousing.parentId()).isNull();
+  assertThat(warehousing.titleZh()).isEqualTo("仓储管理");
+  assertThat(warehousing.titleEn()).isEqualTo("Warehouse management");
   assertThat(ownerItems.stream().filter(item->products.id().equals(item.parentId())).map(MenuManagement.Menu::component))
     .containsExactly("master-data/product","master-data/product-sku","master-data/product-category","master-data/product-unit","master-data/product-attribute","master-data/product-template");
   assertThat(ownerItems.stream().filter(item->warehouses.id().equals(item.parentId())).map(MenuManagement.Menu::component))
     .containsExactly("master-data/warehouse","master-data/storage");
+  assertThat(ownerItems.stream().filter(item->warehousing.id().equals(item.parentId()) && item.component()!=null)
+      .map(MenuManagement.Menu::component))
+    .containsExactly("warehousing/inventory-overview","warehousing/coil-title","warehousing/coil-flow","warehousing/return-transit");
+  assertWarehouseDocuments(ownerItems,warehousing,"inbound",
+      "inbound-notices","inbound-entries","inbound-receipts","inbound-titles","inbound-quality");
+  assertWarehouseDocuments(ownerItems,warehousing,"title-control","title-transfers","stock-restrictions");
+  assertWarehouseDocuments(ownerItems,warehousing,"outbound",
+      "outbound-notices","pickup-authorizations","outbound-trips","outbound-confirmations","handover-reversals");
+  assertWarehouseDocuments(ownerItems,warehousing,"returns","return-dispatches","return-confirmations");
   assertThat(navigation.current(account,tenant.id(),member,1).items()).extracting(MenuManagement.Menu::id)
-    .doesNotContain(products.id(),warehouses.id());
+    .doesNotContain(products.id(),warehouses.id(),warehousing.id());
   // 待办及本人单据入口可存在；不能把公共导航存在误判为获得组织或配置管理权。
   assertThat(navigation.current(account,tenant.id(),member,1).items()).extracting(MenuManagement.Menu::component)
     .doesNotContain("organization/index","roles/index","business-objects/index","platform/business-objects");
@@ -186,6 +205,16 @@ class MenuManagementTest extends DatabaseTestSupport {
   organizationGrants.revoke(tenant.id(),member,ownerMember,com.appnexus.platform.authorization.OrganizationCapability.READ);
   assertThat(navigation.current(account,tenant.id(),member,1).items()).extracting(MenuManagement.Menu::component)
     .doesNotContain("organization/index","roles/index","business-objects/index","platform/business-objects");
+ }
+
+ /** 核对实际可用的内置单据分组、顺序及构建内页面契约。 */
+ private static void assertWarehouseDocuments(java.util.List<MenuManagement.Menu> items,
+     MenuManagement.Menu parent,String group,String... documents) {
+  var folder=items.stream().filter(item->item.code().equals("builtin.navigation.warehousing."+group))
+      .findFirst().orElseThrow();
+  assertThat(folder.parentId()).isEqualTo(parent.id());
+  assertThat(items.stream().filter(item->folder.id().equals(item.parentId())).map(MenuManagement.Menu::component))
+      .containsExactly(java.util.Arrays.stream(documents).map(key->"warehousing/"+key).toArray(String[]::new));
  }
 
  private MenuManagement.Command external(UUID parent,String code,String address,MenuManagement.Scope scope,int sort,boolean visible){

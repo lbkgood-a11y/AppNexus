@@ -30,6 +30,8 @@ public class ProductApiContractConfiguration {
                 case "preview" -> "productPreviewStructureMigration";
                 case "migrate" -> "productMigrateStructure";
                 case "options" -> "productReadOptions";
+                case "createOrganizations" -> "productListCreateOrganizations";
+                case "updateOrganizations" -> "productListUpdateOrganizations";
                 case "configuration" -> "productReadConfiguration";
                 case "stage" -> "productStageLegacy";
                 case "reconcile" -> "productReconcileLegacy";

@@ -22,7 +22,7 @@ import org.apache.ibatis.annotations.*;
       "findReview","insertReview","insertWeighLine","currentReview","applyMeasured","otherVehicleLoad","findDispatch","postDispatch","postDispatchLine",
       "deductStock","deductTitle","issueNotice","issueAuthorization","issueTrip","issuedCoils","findReturn","returnFor","insertReturn","insertReturnLine",
       "findReversal","insertReversal","restoreStock","restoreTitle","reverseLines","reverseHeader",
-      "restoreNoticeQuota","restoreAuthorizationQuota","restoreTripQuota","findPartialReturn","activeIssuedCoils",
+      "restoreNoticeQuota","restoreAuthorizationQuota","restoreTripQuota","findPartialReturn","legacyReturnDocument","returnDocumentLines","activeIssuedCoils",
       "insertPartialReturn","insertPartialReturnLine","moveCoilWarehouse","restorePendingStock","reverseSingleLine","subtractTripIssued",
       "findReturnedStock","historicalQualityEvidence","markReturnedQuality","clearReturnedPending","findTransit","transitCoils","findTransitLink",
       "hasTransit","insertTransit","insertTransitLine","receiveTransitLine",
@@ -666,13 +666,46 @@ public interface CoilOutboundMapper {
       @Param("id") String id,@Param("qty") BigDecimal quantity,@Param("hold") BigDecimal hold);
 
   /** 读取已记账的退回批次，重放不再过账。 */
-  @com.appnexus.persistence.mybatis.GuardedScope(tenant="__verifiedTenant",operationPermissions={"warehousing.outbound.coil:return_coils","warehousing.outbound.coil:release_returned_quality"})
+  @com.appnexus.persistence.mybatis.GuardedScope(tenant="__verifiedTenant",operationPermissions={"warehousing.outbound.coil:return_coils","warehousing.outbound.coil:release_returned_quality","warehousing.outbound.coil:read_return_transit"})
   @Select("""
       SELECT BIN_TO_UUID(handover_id) handoverId,restored_quota quota,restored_stock stock,
         BIN_TO_UUID(unit_id) unitId,request_digest digest FROM bw_coil_partial_return
       WHERE tenant_id=#{__verifiedTenant} AND id=UUID_TO_BIN(#{id})
       """)
   Map<String,Object> findPartialReturn(@Param("__verifiedTenant") byte[] tenant,@Param("id") String returnId);
+
+  /** 早期整车退回仍按原确认编号读取，数量来自已入账冲销。 */
+  @com.appnexus.persistence.mybatis.GuardedScope(tenant="__verifiedTenant",operationPermissions="warehousing.outbound.coil:read_return_transit")
+  @Select("""
+      SELECT BIN_TO_UUID(a.handover_id) handoverId,v.restored_quota quota,v.restored_stock stock,
+        BIN_TO_UUID(v.unit_id) unitId
+      FROM bw_coil_return_acceptance a
+      JOIN bw_coil_handover_reversal v ON v.tenant_id=a.tenant_id AND v.return_id=a.id AND v.handover_id=a.handover_id
+      WHERE a.tenant_id=#{__verifiedTenant} AND a.id=UUID_TO_BIN(#{id})
+      """)
+  Map<String,Object> legacyReturnDocument(@Param("__verifiedTenant") byte[] tenant,@Param("id") String id);
+
+  /** 读取原接管行及来源发运，直接按租户和返仓确认主键定位。 */
+  @com.appnexus.persistence.mybatis.GuardedScope(tenant="__verifiedTenant",operationPermissions="warehousing.outbound.coil:read_return_transit")
+  @Select("""
+      SELECT BIN_TO_UUID(r.receipt_id) receiptId,BIN_TO_UUID(r.receiving_warehouse_id) warehouseId,
+        BIN_TO_UUID(t.transit_id) transitId,BIN_TO_UUID(r.quality_evidence_id) qualityEvidenceId,
+        r.restored_stock quantity
+      FROM bw_coil_partial_return_line r
+      LEFT JOIN bw_coil_return_transit_line t ON t.tenant_id=r.tenant_id
+        AND t.received_return_id=r.return_id AND t.receipt_id=r.receipt_id AND t.handover_id=r.handover_id
+      WHERE r.tenant_id=#{__verifiedTenant} AND r.return_id=UUID_TO_BIN(#{id})
+      UNION ALL
+      SELECT BIN_TO_UUID(l.receipt_id),BIN_TO_UUID(h.source_warehouse_id),NULL,
+        BIN_TO_UUID(a.quality_evidence_id),h.stock_deduction
+      FROM bw_coil_return_acceptance a
+      JOIN bw_coil_return_line l ON l.tenant_id=a.tenant_id AND l.return_id=a.id
+      JOIN bw_coil_handover_line h ON h.tenant_id=a.tenant_id AND h.handover_id=a.handover_id AND h.receipt_id=l.receipt_id
+      WHERE a.tenant_id=#{__verifiedTenant} AND a.id=UUID_TO_BIN(#{id})
+        AND NOT EXISTS(SELECT 1 FROM bw_coil_partial_return p WHERE p.tenant_id=a.tenant_id AND p.id=a.id)
+      ORDER BY receiptId
+      """)
+  List<Map<String,Object>> returnDocumentLines(@Param("__verifiedTenant") byte[] tenant,@Param("id") String id);
 
   /** 只读取未完成退回的原卷，按库存键保持加锁顺序。 */
   @Select("""

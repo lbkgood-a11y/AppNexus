@@ -15,6 +15,9 @@ import org.springframework.test.context.ActiveProfiles;
 @ActiveProfiles("local")
 class GlobalRecordAuditTest extends DatabaseTestSupport {
     @Autowired JdbcTemplate jdbc;
+    @Autowired com.appnexus.platform.authorization.AccessAuthorization authorization;
+    @Autowired org.springframework.transaction.PlatformTransactionManager manager;
+    @Autowired com.appnexus.platform.organization.PersonnelDirectory directory;
     @Autowired @org.springframework.beans.factory.annotation.Qualifier("requestMappingHandlerMapping")
     org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping mappings;
 
@@ -103,19 +106,67 @@ class GlobalRecordAuditTest extends DatabaseTestSupport {
             authenticate(actor);
             jdbc.update("INSERT INTO platform_tenant(id,name) VALUES(UUID_TO_BIN(?),'审计读取测试')",tenant);
             jdbc.update("INSERT INTO md_warehouse(id,tenant_id,code,name) VALUES(UUID_TO_BIN(?),UUID_TO_BIN(?),'READ','读取')",id,tenant);
+            jdbc.update("INSERT INTO identity_account(id,username,display_name,password_hash) VALUES(UUID_TO_BIN(?),?,'审计账号名','unused')",actor.toString(),"audit-"+actor);
             var request=new org.springframework.mock.web.MockHttpServletRequest("GET","/test-audit");
             request.setAttribute(com.appnexus.platform.tenant.VerifiedTenantContext.class.getName(),new com.appnexus.platform.tenant.VerifiedTenantContext(actor,UUID.fromString(tenant),UUID.randomUUID(),1));
-            var advice=new RecordAuditResponseAdvice(MapperFixtures.mapper(jdbc,com.appnexus.platform.persistence.AuditProjectionMapper.class),request);
+            var advice=new RecordAuditResponseAdvice(MapperFixtures.mapper(jdbc,com.appnexus.platform.persistence.AuditProjectionMapper.class),directory,request,authorization,null,null,null,null);
             var method=new org.springframework.core.MethodParameter(getClass().getDeclaredMethod("auditedRows"),-1);
             var response=new org.springframework.http.server.ServletServerHttpResponse(new org.springframework.mock.web.MockHttpServletResponse());
             Object projected=advice.beforeBodyWrite(List.of(Map.of("id",id)),method,org.springframework.http.MediaType.APPLICATION_JSON,null,null,response);
             var audit=((tools.jackson.databind.JsonNode)projected).get(0).get("audit");
             assertThat(audit.get("createdBy").asString()).isEqualToIgnoringCase(actor.toString());
+            assertThat(audit.has("createdByName")).isFalse();
+            jdbc.update("INSERT INTO tenant_member(id,tenant_id,account_id) VALUES(UUID_TO_BIN(?),UUID_TO_BIN(?),UUID_TO_BIN(?))",UUID.randomUUID().toString(),tenant,actor.toString());
+            projected=advice.beforeBodyWrite(List.of(Map.of("id",id)),method,org.springframework.http.MediaType.APPLICATION_JSON,null,null,response);
+            audit=((tools.jackson.databind.JsonNode)projected).get(0).get("audit");
+            assertThat(audit.get("createdByName").asString()).isEqualTo("审计账号名");
+            assertThat(audit.get("updatedByName").asString()).isEqualTo("审计账号名");
+            UUID deputy=UUID.randomUUID();
+            jdbc.update("INSERT INTO identity_account(id,username,display_name,password_hash) VALUES(UUID_TO_BIN(?),?,'另一位操作人','unused')",deputy.toString(),"audit-"+deputy);
+            jdbc.update("INSERT INTO tenant_member(id,tenant_id,account_id) VALUES(UUID_TO_BIN(?),UUID_TO_BIN(?),UUID_TO_BIN(?))",UUID.randomUUID().toString(),tenant,deputy.toString());
+            var transaction=new org.springframework.transaction.support.TransactionTemplate(manager);
+            transaction.executeWithoutResult(status->{
+                long before=selectCount();
+                assertThat(directory.accountNames(UUID.fromString(tenant),List.of(actor.toString(),deputy.toString(),UUID.randomUUID().toString())))
+                    .containsExactlyInAnyOrderEntriesOf(Map.of(actor.toString(),"审计账号名",deputy.toString(),"另一位操作人"));
+                assertThat(selectCount()-before).isEqualTo(1);
+            });
             request.setAttribute(com.appnexus.platform.tenant.VerifiedTenantContext.class.getName(),new com.appnexus.platform.tenant.VerifiedTenantContext(actor,UUID.randomUUID(),UUID.randomUUID(),1));
             projected=advice.beforeBodyWrite(List.of(Map.of("id",id)),method,org.springframework.http.MediaType.APPLICATION_JSON,null,null,response);
             assertThat(((tools.jackson.databind.JsonNode)projected).get(0).has("audit")).isFalse();
         }finally{SecurityContextHolder.clearContext();}
     }
+    /** 使用真实会话 SQL 计数，验证 1000 个不同引用严格按 200 上限分批。 */
+    @Test void thousandAuditReferencesUseFiveSelects(){
+        UUID tenant=UUID.randomUUID();
+        jdbc.update("INSERT INTO platform_tenant(id,name) VALUES(UUID_TO_BIN(?),'名称批量规模')",tenant.toString());
+        var ids=java.util.stream.IntStream.range(0,1000).mapToObj(ignored->UUID.randomUUID().toString()).toList();
+        jdbc.batchUpdate("INSERT INTO identity_account(id,username,display_name,password_hash) VALUES(UUID_TO_BIN(?),?,'批量账号','unused')",
+            ids.stream().map(id->new Object[]{id,"batch-audit-"+id}).toList());
+        jdbc.batchUpdate("INSERT INTO tenant_member(id,tenant_id,account_id) VALUES(UUID_TO_BIN(?),UUID_TO_BIN(?),UUID_TO_BIN(?))",
+            ids.stream().map(id->new Object[]{UUID.randomUUID().toString(),tenant.toString(),id}).toList());
+        var keys=ids.stream().map(id->new com.appnexus.contracts.operation.ReferenceNames.Key("account",id)).toList();
+        new org.springframework.transaction.support.TransactionTemplate(manager).executeWithoutResult(status->{
+            long before=selectCount(),start=System.nanoTime();
+            var result=com.appnexus.contracts.operation.ReferenceNames.resolveKeys((scope,batch)->{
+                var names=directory.accountNames(scope,batch.stream().map(com.appnexus.contracts.operation.ReferenceNames.Key::value).toList());
+                var values=new HashMap<com.appnexus.contracts.operation.ReferenceNames.Key,String>();
+                batch.forEach(key->values.put(key,names.get(key.value())));
+                return values;
+            },tenant,keys);
+            long millis=(System.nanoTime()-start)/1_000_000;
+            assertThat(selectCount()-before).isEqualTo(5);
+            assertThat(result).hasSize(1000).containsValue("批量账号").doesNotContainValue(null);
+            System.out.println("Audit references: 1000 accounts, 5 SELECT, "+millis+" ms");
+        });
+    }
+
+    /** 会话状态查询本身不计入 SELECT，统计批量目录真实 SQL 次数。 */
+    private long selectCount(){
+        return Objects.requireNonNull(jdbc.queryForObject("SHOW SESSION STATUS LIKE 'Com_select'",
+            (row,index)->row.getLong("Value")));
+    }
+
     /** 仅测试方法元数据，模拟模块构建内声明；不暴露 HTTP 测试入口。 */
     @com.appnexus.contracts.operation.RecordAuditSource(table="md_warehouse")
     private void auditedRows(){}

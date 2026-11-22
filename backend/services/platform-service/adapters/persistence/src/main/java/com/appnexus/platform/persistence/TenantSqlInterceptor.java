@@ -23,8 +23,14 @@ import org.springframework.web.context.request.*;
 })
 public final class TenantSqlInterceptor implements Interceptor {
     private final com.appnexus.platform.authorization.ScopedWriteGate scopedWrites;
-    /** @param scopedWrites 与当前事务绑定的标准记录许可 */
-    public TenantSqlInterceptor(com.appnexus.platform.authorization.ScopedWriteGate scopedWrites){this.scopedWrites=scopedWrites;}
+    private final org.springframework.beans.factory.ObjectProvider<com.appnexus.platform.authorization.AccessAuthorization> authorization;
+    /** @param scopedWrites 与当前事务绑定的标准记录许可
+     * @param authorization 平台查询权限执行器，延迟解析以避免持久化装配循环 */
+    public TenantSqlInterceptor(com.appnexus.platform.authorization.ScopedWriteGate scopedWrites,
+        org.springframework.beans.factory.ObjectProvider<com.appnexus.platform.authorization.AccessAuthorization> authorization){
+        this.scopedWrites=scopedWrites;
+        this.authorization=authorization;
+    }
     private void verifyScope(Class<?> mapper,String id,BoundSql sql,boolean select){
         String name=id.substring(id.lastIndexOf('.')+1);
         for (var method : mapper.getMethods()) {
@@ -38,6 +44,17 @@ public final class TenantSqlInterceptor implements Interceptor {
     private void verifyGuard(GuardedScope guard,BoundSql sql,boolean select){
         var parameters=SystemMetaObject.forObject(sql.getParameterObject());
         if(!guard.when().isEmpty()&&!guard.whenValue().equals(String.valueOf(parameters.getValue(guard.when()))))return;
+        if(!guard.platformActor().isEmpty()){
+            String path=guard.platformActor();
+            if(!select||!guard.tenant().isEmpty()||guard.platformPermission().isEmpty()
+                ||sql.getParameterMappings().stream().noneMatch(param->param.getProperty().equals(path)))
+                throw new SecurityException("PLATFORM_SQL_PERMISSION_REQUIRED");
+            var actor=scopeTenant(parameters.getValue(path));
+            if(!authorization.getObject().hasPermission(
+                com.appnexus.platform.authorization.AccessAuthorization.Subject.platform(actor),guard.platformPermission()))
+                throw new SecurityException("PLATFORM_SQL_PERMISSION_REQUIRED");
+            return;
+        }
         String binding=guard.predicate();
         boolean readFallback=!guard.readFallback().isEmpty();
         if(readFallback){

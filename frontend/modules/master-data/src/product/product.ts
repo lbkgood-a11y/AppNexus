@@ -5,7 +5,7 @@ export interface ProductField {templateItemId:string;attributeId:string;revision
 export interface ProductConfiguration {id:string;categoryId:string;revision:number;path:string;serviceUnitRequired:boolean;fields:ProductField[];templates:Record<string,string|null>}
 export interface ProductOption {id:string;code:string;name:string;configId?:string|null}
 export interface ProductRow {organizationId?:string|null;audit?:RecordAudit;id:string;code:string;name:string;productForm:string|null;status:"DRAFT"|"ENABLED"|"DISABLED";structureState:string;archivedAt:string|null;version:number}
-export interface ProductRecord extends ProductRow {approvalPending?:boolean;specificationMode?:"NONE"|"STANDARD"|"CUSTOM";
+export interface ProductRecord extends ProductRow {organizationName?:string;approvalPending?:boolean;specificationMode?:"NONE"|"STANDARD"|"CUSTOM";
  barcode?:string;shortName:string|null;description:string|null;brand:string|null;origin:string|null;categoryId:string|null;configId:string|null;unitId:string|null;structureRevision:number;
  completionIssues:string[];audit:RecordAudit;
  values:Array<{templateItemId:string;revisionId:string;attributeName:string;dataType:string;textValue:string|null;integerValue:string|null;decimalValue:string|null;booleanValue:boolean|null;dateValue:string|null}>;

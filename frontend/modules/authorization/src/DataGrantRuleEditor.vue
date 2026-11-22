@@ -23,7 +23,7 @@ const visibleRules=computed(()=>{
 const searchable=computed(()=>!!props.resource&&!!props.recordSearch?.resources.includes(props.resource));
 const recordOptions=computed(()=>{
  const options=new Map(recordItems.value.map(item=>[item.id,item]));
- for(const id of props.modelValue.flatMap(rule=>rule.recordIds))if(!options.has(id))options.set(id,{id,name:selectedLabels.value[id]??id});
+ for(const id of props.modelValue.flatMap(rule=>rule.recordIds))if(!options.has(id))options.set(id,{id,name:selectedLabels.value[id]??t("referenceName.unavailable")});
  return [...options.values()];
 });
 /** 只在当前资源上下文回显候选，过期请求及失败不能覆盖草稿或保留他域目录。 */
@@ -35,17 +35,15 @@ async function searchRecords(keyword:string,nextPage=1){
 function moreRecords(){void searchRecords(query.value,page.value+1);}
 watch([()=>props.resource,()=>props.recordSearch,()=>props.disabled],()=>recordState.reset());
 const selectedIds=computed(()=>[...new Set(props.modelValue.flatMap(rule=>rule.recordIds))].sort().join(","));
-/** 刷新后补查已授权的记录名，每批最多八条；会话切换、卸载或失败时保留 UUID 回显。 */
-watch([selectedIds,()=>props.resource,()=>props.recordSearch,()=>props.disabled,recordsOnly],async ([ids,resource,source,_disabled,only],_,onCleanup)=>{
- if(!only||!ids||!resource||!source?.resolve||!source.resources.includes(resource))return;
+/** 仅批量回显同一资源已有引用，切换资源后丢弃过期结果。 */
+watch([selectedIds,()=>props.resource,()=>props.recordSearch,()=>props.disabled],async ([ids,resource,source],_,onCleanup)=>{
+ if(!ids||!resource||!source?.resolve||!source.resources.includes(resource))return;
  let active=true;onCleanup(()=>{active=false;});
  const missing=ids.split(",").filter(id=>!selectedLabels.value[id]);
- for(let i=0;i<missing.length&&active;i+=8){
-  const results=await Promise.allSettled(missing.slice(i,i+8).map(id=>source.resolve!(resource,id)));
+ for(let i=0;i<missing.length&&active;i+=100){
+  const result=await source.resolve(resource,missing.slice(i,i+100)).catch(()=>[]);
   if(!active)return;
-  for(const result of results)if(result.status==="fulfilled"&&result.value){
-   selectedLabels.value[result.value.id]=result.value.name;
-  }
+  for(const row of result)selectedLabels.value[row.id]=row.name;
  }
 },{immediate:true});
 onBeforeUnmount(()=>recordState.reset());

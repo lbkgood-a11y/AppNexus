@@ -28,6 +28,9 @@ public interface InboundReferenceSource {
   /** @param context 可信租户主体 @param id 新业务引用的启用仓库 UUID */
   void requireWarehouse(VerifiedTenantContext context, String id);
 
+  /** @param context 可信租户主体 @param ids 新业务引用的仓库 UUID 集合，任一不可读或停用均拒绝 */
+  void requireWarehouses(VerifiedTenantContext context,java.util.Collection<String> ids);
+
   /** @param context 可信租户主体 @param expected 已选位置及版本 @return 有效位置 */
   Position position(VerifiedTenantContext context, Position expected);
 

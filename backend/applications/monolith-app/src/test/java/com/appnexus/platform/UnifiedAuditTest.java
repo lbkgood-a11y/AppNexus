@@ -19,6 +19,23 @@ class UnifiedAuditTest extends DatabaseTestSupport {
     @Autowired MyBatisPlatformAdministration administration;
     @Autowired com.appnexus.platform.persistence.organization.OrganizationAdministratorBootstrap bootstrap;
 
+    @Autowired com.appnexus.platform.organization.PersonnelDirectory directory;
+
+    /** 平台域按原审计权限读取多个账号名称，普通账号直接调用仍被 SQL 门禁拒绝。 */
+    @Test void platformActorNamesRequirePlatformAuditPermission(){
+        administration.initializeAdministrator("admin-test");
+        String platform=jdbc.queryForObject("SELECT BIN_TO_UUID(id) FROM identity_account WHERE username='admin-test'",String.class);
+        String display=jdbc.queryForObject("SELECT display_name FROM identity_account WHERE id=UUID_TO_BIN(?)",String.class,platform);
+        var other=UUID.randomUUID();
+        jdbc.update("INSERT INTO identity_account(id,username,display_name,password_hash) VALUES(UUID_TO_BIN(?),?,'审计第二账号','unused')",
+            other.toString(),"audit-platform-"+other);
+        var ids=List.of(platform,other.toString(),UUID.randomUUID().toString());
+        assertThat(directory.platformAccountNames(UUID.fromString(platform),ids))
+            .containsExactlyInAnyOrderEntriesOf(java.util.Map.of(platform,display,other.toString(),"审计第二账号"));
+        assertThatThrownBy(()->directory.platformAccountNames(other,ids))
+            .hasRootCauseInstanceOf(SecurityException.class);
+    }
+
     /** 平台代查与租户本人查询使用各自角色策略，同一审计摘要不会跨管理域套用字段权限。 */
     @Test void auditTargetIsProtectedInEachActorDomain(){
         administration.initializeAdministrator("admin-test");

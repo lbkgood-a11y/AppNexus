@@ -19,6 +19,13 @@ public interface BusinessValueCatalog {
    * @return 字段到真实字典选项；缺失字典为空，不回退硬编码
    */
   Map<String,List<Option>> options(UUID tenant,Map<String,String> bindings);
+
+  /** 字典编码与持久化业务值共同标识名称。 */
+  record NameKey(String dictionary,String value){}
+  /** @param tenant 由已授权业务响应绑定的可信租户
+   * @param keys 单批已声明的字典引用，最多 200 个
+   * @return 含未删除的停用历史项名称，可见性沿用原业务读取 */
+  Map<NameKey,String> names(UUID tenant,List<NameKey> keys);
   /**
    * 在业务写事务中复核启用状态并登记引用；已有且未变的停用值可保留，未知新值拒绝。
    * @param tenant 可信租户 UUID

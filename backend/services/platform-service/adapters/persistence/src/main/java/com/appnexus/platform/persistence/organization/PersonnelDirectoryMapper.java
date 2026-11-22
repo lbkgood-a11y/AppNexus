@@ -82,9 +82,47 @@ public interface PersonnelDirectoryMapper {
  @com.appnexus.persistence.mybatis.GuardedScope(resource="masterdata.person",tenant="tenant",recordId="person",actions="detail_delete")
  int deletePosition(@Param("tenant") String tenant,@Param("person") String person,@Param("id") String id);
 
- /** 固定人员关系SQL；操作、租户、人员及组织有效性由公开端口复核，不复制授权规则。 */
- @Select("SELECT a.display_name FROM identity_account a JOIN tenant_member m ON m.account_id=a.id WHERE m.tenant_id=UUID_TO_BIN(#{p0}) AND a.id=UUID_TO_BIN(#{p1})")
- List<Map<String,Object>> statement15(@Param("p0") Object p0,@Param("p1") Object p1);
+ /** @param tenant 已授权审计的可信租户
+  * @param batch 固定的 UUID JSON 数组，许可与 SQL 绑定使用同一批次
+  * @return 批量账号显示名称，允许历史成员且不返回其他账号资料 */
+ @com.appnexus.persistence.mybatis.GuardedScope(tenant="tenant",serviceOperation="record-audit:resolve-actors",serviceKeys={"batch"})
+ @Select("""
+  SELECT BIN_TO_UUID(a.id) id,a.display_name
+  FROM JSON_TABLE(#{batch}, '$[*]' COLUMNS (reference_id VARCHAR(36) PATH '$')) requested
+  JOIN identity_account a ON a.id=UUID_TO_BIN(requested.reference_id)
+  WHERE EXISTS (SELECT 1 FROM tenant_member m WHERE m.tenant_id=UUID_TO_BIN(#{tenant}) AND m.account_id=a.id)
+  """)
+ List<Map<String,Object>> auditAccountNames(@Param("tenant") String tenant,@Param("batch") String batch);
+
+ /** @param tenant 可信租户 UUID @param batch 类型及 UUID 的固定 JSON 数组 @return 当前批的组织和岗位名称 */
+ @com.appnexus.persistence.mybatis.GuardedScope(tenant="tenant",catalogPublication="organization.unit:read")
+ @Select("""
+  WITH requested AS (
+    SELECT kind,reference_id FROM JSON_TABLE(#{batch}, '$[*]' COLUMNS (kind VARCHAR(16) PATH '$.kind', reference_id VARCHAR(36) PATH '$.id')) refs
+  ), allowed AS (
+    SELECT reference_id FROM JSON_TABLE(#{scope}, '$[*]' COLUMNS (reference_id VARCHAR(36) PATH '$')) scopes
+  )
+  SELECT r.kind,BIN_TO_UUID(o.id) id,o.name FROM requested r
+  JOIN tenant_organization_unit o ON o.id=UUID_TO_BIN(r.reference_id) AND o.tenant_id=UUID_TO_BIN(#{tenant})
+  WHERE r.kind='organization' AND (#{all} OR EXISTS (SELECT 1 FROM allowed a WHERE o.id=UUID_TO_BIN(a.reference_id)))
+  UNION ALL
+  SELECT r.kind,BIN_TO_UUID(p.id) id,p.name FROM requested r
+  JOIN tenant_organization_position p ON p.id=UUID_TO_BIN(r.reference_id) AND p.tenant_id=UUID_TO_BIN(#{tenant})
+  WHERE r.kind='position' AND (#{all} OR EXISTS (SELECT 1 FROM allowed a WHERE p.organization_id=UUID_TO_BIN(a.reference_id)))
+  """)
+ List<Map<String,Object>> organizationReferenceNames(@Param("tenant") String tenant,@Param("batch") String batch,
+     @Param("all") boolean all,@Param("scope") String scope);
+
+ /** @param actor 已认证的平台账号 UUID @param batch 当前批的账号 UUID JSON 数组
+  * @return 仅平台审计读取权允许返回的显示名 */
+ @com.appnexus.persistence.mybatis.GuardedScope(platformActor="actor",platformPermission="audit.entry:read")
+ @Select("""
+  SELECT BIN_TO_UUID(a.id) id,a.display_name
+  FROM JSON_TABLE(#{batch}, '$[*]' COLUMNS (reference_id VARCHAR(36) PATH '$')) requested
+  JOIN identity_account a ON a.id=UUID_TO_BIN(requested.reference_id)
+  WHERE UUID_TO_BIN(#{actor}) IS NOT NULL
+  """)
+ List<Map<String,Object>> platformAuditAccountNames(@Param("actor") String actor,@Param("batch") String batch);
 
  /** @param tenant 可信租户 @param organization 已校验组织UUID @param kind POSITION或LEADER @param reference 岗位UUID，仅POSITION使用 @return 当前有效任职人员UUID，不授予档案权限 */
  @Select({"<script>","SELECT DISTINCT BIN_TO_UUID(a.person_id) FROM tenant_person_position a JOIN tenant_organization_position p ON p.tenant_id=a.tenant_id AND p.id=a.position_id JOIN tenant_organization_unit u ON u.tenant_id=p.tenant_id AND u.id=p.organization_id",

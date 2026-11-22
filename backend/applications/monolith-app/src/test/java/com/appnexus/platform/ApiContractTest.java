@@ -31,6 +31,10 @@ class ApiContractTest extends DatabaseTestSupport {
             Map<String,Object> contract=mapper.readValue(json,new tools.jackson.core.type.TypeReference<Map<String,Object>>(){});
             @SuppressWarnings("unchecked") var paths=(Map<String,Object>)contract.get("paths");
             assertThat(paths).isNotEmpty();
+            if(group.equals("app")){
+                assertProductOrganizationOption(paths,"create","productListCreateOrganizations");
+                assertProductOrganizationOption(paths,"update","productListUpdateOrganizations");
+            }
             for(String path:paths.keySet()){
                 if(group.equals("partner-v1"))assertThat(path).startsWith("/v1/");
                 else if(group.equals("platform"))assertThat(path).startsWith("/bff/platform/");
@@ -43,6 +47,18 @@ class ApiContractTest extends DatabaseTestSupport {
             Files.writeString(directory.resolve("openapi-"+group+".yaml"),"# 从正式 Controller 生成，禁止手工修改；权限说明见专项设计。\n"+new org.yaml.snakeyaml.Yaml(options).dump(contract));
         }
     }
+    /** 两个已执行的组织候选 GET 需要各自稳定的 SDK 方法名。 */
+    private static void assertProductOrganizationOption(Map<String,Object> paths,String action,String operationId){
+        var path=assertPath(paths,"/api/master-data/product/organizations/"+action);
+        assertThat(assertPath(path,"get")).containsEntry("operationId",operationId);
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Map<String,Object> assertPath(Map<String,Object> parent,String key){
+        assertThat(parent.get(key)).as(key).isInstanceOf(Map.class);
+        return (Map<String,Object>)parent.get(key);
+    }
+
     @Test void contractMetadataCannotBeReadByAnonymousOrOrdinaryAccount()throws Exception{
         mvc.perform(get("/v3/api-docs/platform")).andExpect(status().isUnauthorized());
         UUID ordinary=UUID.randomUUID();jdbc.update("INSERT INTO identity_account(id,username,display_name,password_hash) VALUES(UUID_TO_BIN(?),?,'Contract test','unused')",ordinary.toString(),"contract-"+ordinary);

@@ -1,5 +1,45 @@
 [
   {
+    "file": "frontend/apps/admin/src/views/warehousing/inbound-batch-workspace.vue",
+    "expression": "operation",
+    "operations": [
+      "BulkInboundReceipt.record_entry",
+      "BulkInboundReceipt.confirm_document"
+    ],
+    "sources": [
+      "frontend/apps/admin/src/views/warehousing/inbound-batch-workspace.vue"
+    ],
+    "reason": "按真实批次工作区选用原接管或实收操作，未新增角色权限。"
+  },
+  {
+    "file": "frontend/apps/admin/src/views/warehousing/inbound-notice-workspace.vue",
+    "expression": "operation",
+    "operations": [
+      "BulkInboundReceipt.issue",
+      "BulkInboundReceipt.take_custody",
+      "BulkInboundReceipt.receive"
+    ],
+    "sources": [
+      "frontend/apps/admin/src/views/warehousing/inbound-notice-workspace.vue"
+    ],
+    "reason": "当前表单类型映射原唯一签发、接管或实收操作，服务端仍逐请求执行原准入。"
+  },
+  {
+    "file": "frontend/apps/admin/src/views/warehousing/documents.vue",
+    "expression": "readOperation",
+    "operations": [
+      "BulkWarehouseStockBalance.read_document",
+      "BulkWarehouseStockBalance.read_entry",
+      "BulkWarehouseStockBalance.read_receipt_document",
+      "BulkStockRestriction.read_document",
+      "BulkCoilOutbound.read_authorization_document",
+      "BulkCoilOutbound.read_return_document",
+      "BulkCoilOutbound.read_return_transit"
+    ],
+    "sources": ["frontend/apps/admin/src/views/warehousing/documents.vue"],
+    "reason": "依固定路由选择实际读取操作，服务端按原接口逐次准入及核对范围。"
+  },
+  {
     "file": "frontend/modules/organization/src/Management.vue",
     "expression": "saveOperation",
     "operations": [

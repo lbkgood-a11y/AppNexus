@@ -19,7 +19,7 @@ import org.springframework.test.web.servlet.MockMvc;
     properties = {"app.workflow.engine.enabled=true", "app.workflow.worker.enabled=false"})
 @ActiveProfiles("local")
 @AutoConfigureMockMvc
-class WorkflowSecurityTest extends DatabaseTestSupport {
+class WorkflowSecurityTest extends WorkflowDatabaseTestSupport {
   @Autowired OperationRegistry operationRegistry;
  @Autowired MockMvc mvc;
   @Autowired JdbcTemplate jdbc;

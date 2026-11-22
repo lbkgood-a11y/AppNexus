@@ -43,6 +43,13 @@ public final class PersonDataService implements com.appnexus.platform.organizati
     this.fieldPolicy=new PersonFieldPolicy(protection,catalog);
   }
 
+  /** {@inheritDoc} */
+  @Override public Map<String,String> names(VerifiedTenantContext context,List<String> ids){
+    require(context,Kind.PERSON,"read");
+    if(ids.size()>200)throw new IllegalArgumentException("PERSON_NAME_BATCH_TOO_LARGE");
+    return ids.isEmpty()?Map.of():mapper.names(context,ids.stream().map(UUID::fromString).map(UUID::toString).distinct().toList());
+  }
+
   /**
    * 分页读取当前租户同类档案，不开放跨租户或免权限目录。
    *

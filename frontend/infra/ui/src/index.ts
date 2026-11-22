@@ -45,3 +45,5 @@ export function setTableLocale(locale: string) {
   VxeUI.setI18n("en-US", enUS);
   VxeUI.setLanguage(locale.startsWith("zh") ? "zh-CN" : "en-US");
 }
+
+export { referenceName } from "./referenceName";

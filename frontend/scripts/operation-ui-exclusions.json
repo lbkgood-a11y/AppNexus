@@ -1,5 +1,21 @@
 [
   {
+    "key": "[\"frontend/apps/admin/src/views/warehousing/inbound-batch-workspace.vue\",\"el-button\",\"emit('cancel')\",null,null,\"{{ t(\\\"masterData.cancel\\\") }}\"]",
+    "reason": "关闭内存草稿，未发出业务命令。"
+  },
+  {
+    "key": "[\"frontend/apps/admin/src/views/warehousing/inbound-notice-workspace.vue\",\"el-button\",\"lines.splice(index,1)\",null,null,\"{{ label('removeLine') }}\"]",
+    "reason": "只在内存维护签发草稿或关闭表单，不执行服务端写入。"
+  },
+  {
+    "key": "[\"frontend/apps/admin/src/views/warehousing/inbound-notice-workspace.vue\",\"el-button\",\"lines.push(newLine())\",null,null,\"{{ label('addLine') }}\"]",
+    "reason": "只在内存维护签发草稿或关闭表单，不执行服务端写入。"
+  },
+  {
+    "key": "[\"frontend/apps/admin/src/views/warehousing/inbound-notice-workspace.vue\",\"el-button\",\"emit('cancel')\",null,null,\"{{ t(\\\"masterData.cancel\\\") }}\"]",
+    "reason": "只在内存维护签发草稿或关闭表单，不执行服务端写入。"
+  },
+  {
     "key": "[\"frontend/apps/admin/src/components/ReDialog/index.vue\",\"el-button\",\"\\n              () => {\\n                fullscreen = !fullscreen;\\n                eventsCallBack('fullscreenCallBack', { ...options, fullscreen }, index, true);\\n              }\\n            \",null,null,\"{ fullscreen = !fullscreen; eventsCallBack('fullscreenCallBack', { ...options, fullscreen }, index, true); } \\\">\"]",
     "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
   },
@@ -1028,8 +1044,8 @@
     "reason": "只切换表格全屏显示，不发起业务写入。"
   },
   {
-    "key": "[\"frontend/modules/master-data/src/product/ProductSkuManagement.vue\",\"el-button\",\"selected?refresh():findProducts()\",null,null,\"{{t('masterData.retry')}}\"]",
-    "reason": "重试读取已授权的商品/规格列表，沿用原服务端读取准入，不创建SKU。"
+    "key": "[\"frontend/modules/master-data/src/product/ProductSkuManagement.vue\",\"el-button\",\"loadOperations\",null,null,\"{{ t('masterData.retry') }}\"]",
+    "reason": "重试加载当前会话的操作决策，由原会话入口鉴权。"
   },
   {
     "key": "[\"frontend/modules/master-data/src/product/ProductSkuManagement.vue\",\"el-button\",\"createOpen=false\",null,null,\"{{t('masterData.cancel')}}\"]",

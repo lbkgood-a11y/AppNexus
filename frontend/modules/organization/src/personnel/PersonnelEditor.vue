@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { referenceName } from "@appnexus/ui";
 import {personnelAccess,type PersonnelMode} from "./access";
 import {AppIcon} from "@appnexus/icons";
 import {computed,onBeforeUnmount,onMounted,reactive,ref} from "vue";
@@ -81,8 +82,9 @@ function time(value:string|null|undefined){return value?new Intl.DateTimeFormat(
 /** 明细值只读展示，未解析到已失效引用时保留标识用于排查，不伪装有效关系。 */
 function display(row:PersonnelDetail,field:string){
  const value=row.values[field];if(!value)return "—";
- if(field==="organizationId")return catalog.value.organizations.find(o=>o.id===value)?.name??value;
- if(field==="positionId")return catalog.value.positions.find(p=>p.id===value)?.name??value;
+ const resolved=row[`${field}Name`];if(resolved)return resolved;
+ if(field==="organizationId")return referenceName(value,catalog.value.organizations,item=>item.name,t("referenceName.unavailable"));
+ if(field==="positionId")return referenceName(value,catalog.value.positions,item=>item.name,t("referenceName.unavailable"));
  return dictionaryName(field,value);
 }
 /** 重建基础草稿只在主动加载或写入成功后执行；不会在后台刷新时覆盖用户输入。 */
@@ -201,7 +203,7 @@ onBeforeUnmount(()=>window.removeEventListener("beforeunload",beforeUnload));
        </div>
        <div v-else class="detail-field-grid detail-readonly-grid">
         <template v-if="group.key==='basic'"><div class="detail-readonly-field"><span>{{t('personnel.code')}}</span><strong>{{draft.code||'—'}}</strong></div><div class="detail-readonly-field"><span>{{t('personnel.name')}}</span><strong>{{draft.name||'—'}}</strong></div></template>
-        <div v-for="field in group.fields.filter(field=>profileMode(field)!=='HIDDEN')" :key="field" class="detail-readonly-field" :class="{'detail-field-wide':field==='remarks'}"><span>{{label(field)}}</span><strong>{{draft.attributes[field]?dictionaryName(field,draft.attributes[field]):'—'}}</strong></div>
+        <div v-for="field in group.fields.filter(field=>profileMode(field)!=='HIDDEN')" :key="field" class="detail-readonly-field" :class="{'detail-field-wide':field==='remarks'}"><span>{{label(field)}}</span><strong>{{draft.attributes[field]?profile?.person?.[`${field}Name`] || dictionaryName(field,draft.attributes[field]):'—'}}</strong></div>
        </div>
       </div>
      </el-card>

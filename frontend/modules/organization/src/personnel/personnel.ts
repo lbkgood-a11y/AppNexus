@@ -7,12 +7,12 @@ export interface PersonnelCatalog {
   users:{memberId:string;accountId:string;name:string}[];
 }
 /** 十类明细的固定字段值；客户端不得添加任意属性，后端重复校验。 */
-export interface PersonnelDetail {id:string;section:string;values:Record<string,string>}
+export interface PersonnelDetail extends Partial<Record<`${string}Name`,string>> {id:string;section:string;values:Record<string,string>}
 /** 多对多关联；同一用户可关联多个人员，关联不赋予业务权限。 */
 export interface PersonnelAssignment {id:string;memberId:string;userName:string;active:boolean}
 /** 人员聚合，审计账号是实际执行账号，不替换为被代表人员；存量未知审计信息为空。 */
 export interface PersonnelProfile {
-  person:PersonnelRow;
+  person:PersonnelRow & Partial<Record<`${string}Name`,string>>;
   audit:{createdBy:string|null;createdByName:string;createdAt:string|null;updatedBy:string|null;updatedByName:string;updatedAt:string|null};
   details:PersonnelDetail[];assignments:PersonnelAssignment[];
   detailFieldRestrictions?:Record<string,string>;

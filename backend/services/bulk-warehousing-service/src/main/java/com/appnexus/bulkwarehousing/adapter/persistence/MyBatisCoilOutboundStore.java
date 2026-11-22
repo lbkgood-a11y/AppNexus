@@ -298,6 +298,20 @@ public final class MyBatisCoilOutboundStore implements CoilOutboundStore {
   }
 
   /** {@inheritDoc} */
+  @Override public PartialReturnResult legacyReturnDocument(VerifiedTenantContext c,String id) {
+    var row=mapper.legacyReturnDocument(tenant(c),id);
+    return row==null ? null : new PartialReturnResult(id,text(row,"handoverId"),
+        decimal(row,"quota"),decimal(row,"stock"),text(row,"unitId"));
+  }
+
+  /** {@inheritDoc} */
+  @Override public List<ReturnDocumentLine> returnDocumentLines(VerifiedTenantContext c,String id) {
+    return mapper.returnDocumentLines(tenant(c),id).stream().map(row->new ReturnDocumentLine(
+        text(row,"receiptId"),text(row,"warehouseId"),text(row,"transitId"),text(row,"qualityEvidenceId"),
+        decimal(row,"quantity"))).toList();
+  }
+
+  /** {@inheritDoc} */
   @Override public List<IssuedCoil> activeIssuedCoils(VerifiedTenantContext c,String id) {
     return mapper.activeIssuedCoils(tenant(c),id).stream().map(row -> new IssuedCoil(
         text(row,"allocationId"),text(row,"receiptId"),decimal(row,"issued"),decimal(row,"deduction"))).toList();

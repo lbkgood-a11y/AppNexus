@@ -28,6 +28,7 @@ export interface CoilTrace {
     noticeId: string;
     custodyId: string;
     measurementId: string;
+    receiptBatchNo?: string | null;
     ownerId: string;
     warehouseId: string;
     productId: string;

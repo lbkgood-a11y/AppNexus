@@ -6,14 +6,21 @@ import org.testcontainers.mysql.MySQLContainer;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.utility.DockerImageName;
-abstract class DatabaseTestSupport {
-    static final MySQLContainer MYSQL = new MySQLContainer("mysql:8.4");
-    static final GenericContainer<?> VALKEY = new GenericContainer<>(DockerImageName.parse("valkey/valkey:8-alpine"))
-        .withExposedPorts(6379).withCommand("valkey-server", "--requirepass", "integration-test-password")
-        .waitingFor(Wait.forLogMessage(".*Ready to accept connections.*", 1));
+/** 默认组合测试使用未启用工作流的数据库和会话容器。 */
+abstract class DatabaseTestSupport extends IntegrationDatabaseTestSupport {
+    static final MySQLContainer MYSQL = startMySql();
+    static final GenericContainer<?> VALKEY = startValkey();
+
+    @DynamicPropertySource
+    static void infrastructure(DynamicPropertyRegistry properties) {
+        registerInfrastructure(properties, MYSQL, VALKEY);
+    }
+}
+
+/** 两种装配共用测试登录协议，分别绑定各自的数据库与会话容器。 */
+abstract class IntegrationDatabaseTestSupport {
     static final Path KEY_STORE;
     static {
-        MYSQL.start(); VALKEY.start();
         try {
             KEY_STORE = Files.createTempDirectory("appnexus-test-keys").resolve("signing.p12");
             var keytool = Path.of(System.getProperty("java.home"), "bin", "keytool").toString();
@@ -26,14 +33,35 @@ abstract class DatabaseTestSupport {
             if (process.waitFor() != 0) throw new IllegalStateException("Cannot create test signing key");
         } catch (Exception error) { throw new ExceptionInInitializerError(error); }
     }
-    @DynamicPropertySource
-    static void infrastructure(DynamicPropertyRegistry properties) {
-        properties.add("spring.datasource.url", () -> MYSQL.getJdbcUrl() +
+    /** @return 隔离的真实 MySQL 实例，启动时由所选应用装配执行迁移。 */
+    static MySQLContainer startMySql() {
+        var mysql = new MySQLContainer("mysql:8.4");
+        mysql.start();
+        return mysql;
+    }
+
+    /** @return 与当前 MySQL 实例配对的 Valkey 会话与缓存容器。 */
+    static GenericContainer<?> startValkey() {
+        var valkey = new GenericContainer<>(DockerImageName.parse("valkey/valkey:8-alpine"))
+            .withExposedPorts(6379).withCommand("valkey-server", "--requirepass", "integration-test-password")
+            .waitingFor(Wait.forLogMessage(".*Ready to accept connections.*", 1));
+        valkey.start();
+        return valkey;
+    }
+
+    /**
+     * @param properties 当前 Spring 测试装配的动态配置
+     * @param mysql 仅供相同工作流装配共享的数据库
+     * @param valkey 同一装配的独立会话容器
+     */
+    static void registerInfrastructure(DynamicPropertyRegistry properties, MySQLContainer mysql,
+            GenericContainer<?> valkey) {
+        properties.add("spring.datasource.url", () -> mysql.getJdbcUrl() +
             "?preserveInstants=true&connectionTimeZone=UTC&forceConnectionTimeZoneToSession=true");
-        properties.add("spring.datasource.username", MYSQL::getUsername);
-        properties.add("spring.datasource.password", MYSQL::getPassword);
-        properties.add("spring.data.redis.host", VALKEY::getHost);
-        properties.add("spring.data.redis.port", () -> VALKEY.getMappedPort(6379));
+        properties.add("spring.datasource.username", mysql::getUsername);
+        properties.add("spring.datasource.password", mysql::getPassword);
+        properties.add("spring.data.redis.host", valkey::getHost);
+        properties.add("spring.data.redis.port", () -> valkey.getMappedPort(6379));
         properties.add("spring.data.redis.password", () -> "integration-test-password");
         properties.add("app.signing-key-store", KEY_STORE::toString);
         properties.add("app.signing-key-password", () -> "integration-test-password");

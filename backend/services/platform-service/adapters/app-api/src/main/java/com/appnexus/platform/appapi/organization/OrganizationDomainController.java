@@ -1,4 +1,6 @@
 package com.appnexus.platform.appapi.organization;
+import com.appnexus.contracts.operation.ResponseReferenceNames;
+import com.appnexus.contracts.operation.ResponseReferenceNames.Binding;
 import com.appnexus.platform.security.*;
 import com.appnexus.platform.organization.OrganizationStructure; import java.time.Instant; import java.util.*;
 import org.springframework.http.*; import org.springframework.web.bind.annotation.*;
@@ -18,6 +20,8 @@ import org.springframework.http.*; import org.springframework.web.bind.annotatio
  /** 操作契约关联下方真实接口；仅供展示与一致性校验，主体、权限及业务约束仍由原用例执行。 */
  @com.appnexus.contracts.operation.OperationBinding(id="OrganizationUnit.list",reference=true)
  @EndpointOperation("organization.unit:read") @com.appnexus.contracts.operation.RecordAuditSource(table="tenant_organization_unit")
+ @ResponseReferenceNames({
+     @Binding(path="",type="organization",id="parentId",name="parentName")})
  @GetMapping("/units") List<?> units(){return domain.units();} @com.appnexus.contracts.operation.OperationBinding(id="OrganizationUnit.create",reference=true)
  @EndpointOperation("organization.unit:create") @PostMapping("/units") ResponseEntity<?> createUnit(@RequestBody UnitInput i){return ResponseEntity.status(201).body(domain.createUnit(code(i.code()),Objects.requireNonNull(i.typeId()),i.parentId(),name(i.name())));} @com.appnexus.contracts.operation.OperationBinding(id="OrganizationUnit.update",reference=true)
  @EndpointOperation("organization.unit:update") @PutMapping("/units/{id}") Object updateUnit(@PathVariable UUID id,@RequestBody UnitInput i){return domain.updateUnit(id,name(i.name()),required(i.enabled()),required(i.version()));} @com.appnexus.contracts.operation.OperationBinding(id="OrganizationUnit.move",reference=true)
@@ -27,6 +31,10 @@ import org.springframework.http.*; import org.springframework.web.bind.annotatio
 
  @com.appnexus.contracts.operation.OperationBinding(id="OrganizationRelation.list", reference=true)
  @EndpointOperation("organization.unit:read") @com.appnexus.contracts.operation.RecordAuditSource(table="tenant_organization_relation")
+ @ResponseReferenceNames({
+     @Binding(path="",type="organization",id="sourceId",name="sourceName"),
+     @Binding(path="",type="organization",id="targetId",name="targetName"),
+     @Binding(type="dictionary:organization_relation_type",id="relationType",name="relationTypeName",uuid=false)})
  @GetMapping("/relations") List<?> relations(){return domain.relations();} @com.appnexus.contracts.operation.OperationBinding(id="OrganizationRelation.create", reference=true)
  @EndpointOperation("organization.unit:create") @PostMapping("/relations") ResponseEntity<?> createRelation(@RequestBody RelationInput i){return ResponseEntity.status(201).body(domain.createRelation(code(i.relationType()),Objects.requireNonNull(i.sourceId()),Objects.requireNonNull(i.targetId())));} @com.appnexus.contracts.operation.OperationBinding(id="OrganizationRelation.delete", reference=true)
  @EndpointOperation("organization.unit:delete") @DeleteMapping("/relations/{id}") void deleteRelation(@PathVariable UUID id,@RequestParam long version){domain.deleteRelation(id,version);}
@@ -34,6 +42,8 @@ import org.springframework.http.*; import org.springframework.web.bind.annotatio
 
  @com.appnexus.contracts.operation.OperationBinding(id="Position.list", reference=true)
  @EndpointOperation("organization.unit:read") @com.appnexus.contracts.operation.RecordAuditSource(table="tenant_organization_position")
+ @ResponseReferenceNames({
+     @Binding(path="",type="organization",id="organizationId",name="organizationName")})
  @GetMapping("/positions") List<?> positions(){return domain.positions();} @com.appnexus.contracts.operation.OperationBinding(id="Position.create", reference=true)
  @EndpointOperation("organization.unit:create") @PostMapping("/positions") ResponseEntity<?> createPosition(@RequestBody PositionInput i){return ResponseEntity.status(201).body(domain.createPosition(Objects.requireNonNull(i.organizationId()),code(i.code()),name(i.name())));} @com.appnexus.contracts.operation.OperationBinding(id="Position.update", reference=true)
  @EndpointOperation("organization.unit:update") @PutMapping("/positions/{id}") Object updatePosition(@PathVariable UUID id,@RequestBody PositionInput i){return domain.updatePosition(id,name(i.name()),required(i.enabled()),required(i.version()));}
@@ -41,13 +51,18 @@ import org.springframework.http.*; import org.springframework.web.bind.annotatio
 
  @com.appnexus.contracts.operation.OperationBinding(id="PositionAssignment.list", reference=true)
  @EndpointOperation("organization.unit:read") @com.appnexus.contracts.operation.RecordAuditSource(table="tenant_person_position")
+ @ResponseReferenceNames({
+     @Binding(path="",type="position",id="positionId",name="positionName"),
+     @Binding(type="person",id="personId",name="personName")})
  @GetMapping("/assignments") List<?> assignments(){return domain.assignments();} @com.appnexus.contracts.operation.OperationBinding(id="PositionAssignment.create", reference=true)
  @EndpointOperation("organization.unit:create") @PostMapping("/assignments") ResponseEntity<?> createAssignment(@RequestBody AssignmentInput i){return ResponseEntity.status(201).body(domain.createAssignment(Objects.requireNonNull(i.personId()),Objects.requireNonNull(i.positionId()),Objects.requireNonNull(i.startsAt()),i.endsAt()));} @com.appnexus.contracts.operation.OperationBinding(id="PositionAssignment.update", reference=true)
  @EndpointOperation("organization.unit:update") @PutMapping("/assignments/{id}") Object updateAssignment(@PathVariable UUID id,@RequestBody AssignmentInput i){return domain.updateAssignment(id,i.endsAt(),required(i.enabled()),required(i.version()));}
  /** 操作契约关联下方真实接口；仅供展示与一致性校验，主体、权限及业务约束仍由原用例执行。 */
 
  @com.appnexus.contracts.operation.OperationBinding(id="OrganizationUnit.listLeaders", reference=true)
- @EndpointOperation("organization.unit:read") @GetMapping("/leaders") List<?> leaders(){return domain.leaders();} @com.appnexus.contracts.operation.OperationBinding(id="OrganizationUnit.setLeader", reference=true)
+ @EndpointOperation("organization.unit:read") @ResponseReferenceNames({
+     @Binding(path="",type="organization",id="organizationId",name="organizationName")})
+ @GetMapping("/leaders") List<?> leaders(){return domain.leaders();} @com.appnexus.contracts.operation.OperationBinding(id="OrganizationUnit.setLeader", reference=true)
  @EndpointOperation("organization.unit:update") @PutMapping("/leaders") void leader(@RequestBody LeaderInput i){domain.setLeader(Objects.requireNonNull(i.organizationId()),Objects.requireNonNull(i.assignmentId()),i.selected());}
  /** 操作契约关联下方真实接口；仅供展示与一致性校验，主体、权限及业务约束仍由原用例执行。 */
  @com.appnexus.contracts.operation.OperationBinding(id="PersonDirectory.list",reference=true)

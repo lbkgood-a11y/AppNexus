@@ -11,6 +11,18 @@ public interface GeographyMapper {
  @Select({"<script>","SELECT code,name,parent_code,<choose><when test='country'>code country_code FROM md_country_region</when><otherwise>country_code FROM md_subdivision</otherwise></choose> WHERE tenant_id=UUID_TO_BIN(#{tenant}) ORDER BY code<if test='lock'> FOR UPDATE</if>","</script>"}) List<Map<String,Object>> nodes(@Param("tenant") String tenant,@Param("country") boolean country,@Param("lock") boolean lock);
  /** @param tenant 可信租户 @return 当前租户目录含状态，UNION每支独立限定租户 */
  @Select("SELECT code,name,code country_code,'' parent_code,enabled FROM md_country_region WHERE tenant_id=UUID_TO_BIN(#{tenant}) UNION ALL SELECT code,name,country_code,CASE WHEN parent_code='' THEN country_code ELSE parent_code END parent_code,enabled FROM md_subdivision WHERE tenant_id=UUID_TO_BIN(#{tenant}) ORDER BY code") List<Map<String,Object>> catalog(@Param("tenant") String tenant);
+
+ /** @param tenant 可信租户 @param batch 已授权响应地理编码 JSON 数组 @return 国别和区划的批量名称 */
+ @com.appnexus.persistence.mybatis.GuardedScope(tenant="tenant",serviceOperation="geography-reference:resolve-names",serviceKeys={"batch"})
+ @Select("""
+     WITH requested AS (
+       SELECT code FROM JSON_TABLE(#{batch}, '$[*]' COLUMNS (code VARCHAR(200) PATH '$')) refs
+     )
+     SELECT d.code,d.name FROM requested r JOIN md_country_region d ON d.code=r.code AND d.tenant_id=UUID_TO_BIN(#{tenant})
+     UNION ALL
+     SELECT d.code,d.name FROM requested r JOIN md_subdivision d ON d.code=r.code AND d.tenant_id=UUID_TO_BIN(#{tenant})
+     """)
+ List<Map<String,Object>> names(@Param("tenant") String tenant,@Param("batch") String batch);
  /** @param tenant 可信租户 @return 已建区划国别事实 */
  @Select("SELECT code,country_code FROM md_subdivision WHERE tenant_id=UUID_TO_BIN(#{tenant})") List<Map<String,Object>> subdivisions(@Param("tenant") String tenant);
  /** @param tenant 可信租户 @param code 原区划编码 @param country 领域父链计算国别 @param actor 实际账号 @return 同事务推进国别/版本/审计 */

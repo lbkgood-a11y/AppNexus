@@ -9,8 +9,31 @@ import org.springframework.stereotype.Service;
 @Service
 public final class MyBatisPersonnelDirectory implements PersonnelDirectory {
   private final PersonnelDirectoryMapper mapper;
-  /** @param mapper 宿主 JDBC，只查询组织领域拥有的关系及公开账号名称 */
-  public MyBatisPersonnelDirectory(PersonnelDirectoryMapper mapper){this.mapper=mapper;}
+  private final com.appnexus.platform.authorization.ScopedWriteGate gate;
+  private final com.appnexus.platform.authorization.AccessAuthorization authorization;
+  private final org.springframework.beans.factory.ObjectProvider<com.appnexus.platform.authorization.AccessPlanning> planning;
+  private final org.springframework.beans.factory.ObjectProvider<com.appnexus.platform.authorization.RowAccessControl> rows;
+  private final tools.jackson.databind.json.JsonMapper json=tools.jackson.databind.json.JsonMapper.builder().build();
+  private final org.springframework.transaction.support.TransactionTemplate transaction;
+  /** @param mapper 组织及账号目录固定查询
+   * @param gate 将审计名称读取限定为本事务的确切租户和批次
+    * @param manager 宿主数据库事务管理器
+   * @param authorization 原组织读取功能准入
+   * @param planning 延迟取得组织读权限计划，目录装配不可触发依赖该目录的工作流对象
+   * @param rows 延迟取得公共组织行范围执行器 */
+  public MyBatisPersonnelDirectory(PersonnelDirectoryMapper mapper,
+      com.appnexus.platform.authorization.ScopedWriteGate gate,
+      org.springframework.transaction.PlatformTransactionManager manager,com.appnexus.platform.authorization.AccessAuthorization authorization,
+      org.springframework.beans.factory.ObjectProvider<com.appnexus.platform.authorization.AccessPlanning> planning,
+      org.springframework.beans.factory.ObjectProvider<com.appnexus.platform.authorization.RowAccessControl> rows){
+    this.mapper=mapper;
+    this.gate=gate;
+    this.authorization=authorization;
+    this.planning=planning;
+    this.rows=rows;
+    this.transaction=new org.springframework.transaction.support.TransactionTemplate(manager);
+
+  }
   /** 租户账号目录与组织无直接关系；仅保留有效成员，人员关联由主数据独立管理。 */
   private static final String USERS="SELECT BIN_TO_UUID(m.id) member_id,BIN_TO_UUID(a.id) account_id,a.display_name FROM tenant_member m JOIN identity_account a ON a.id=m.account_id WHERE m.tenant_id=UUID_TO_BIN(?) AND m.enabled=TRUE AND m.removed_at IS NULL AND a.enabled=TRUE";
   @Override public Catalog catalog(UUID tenant){
@@ -58,9 +81,61 @@ public final class MyBatisPersonnelDirectory implements PersonnelDirectory {
     if(kind.equals("POSITION"))UUID.fromString(reference);
     return mapper.resolve(tenant.toString(),organization.toString(),kind,reference);
   }
-  @Override public String accountName(UUID tenant,String account){
-    if(account==null)return "";
-    return mapper.statement15(tenant.toString(),account).stream().map(row->text(row,"display_name")).toList().stream().findFirst().orElse("");
+  /** {@inheritDoc} */
+  @Override public Map<OrganizationNameKey,String> organizationReferenceNames(com.appnexus.platform.tenant.VerifiedTenantContext context,List<OrganizationNameKey> references){
+    if(references.isEmpty())return Map.of();
+    if(references.size()>200)throw new IllegalArgumentException("ORGANIZATION_NAME_BATCH_TOO_LARGE");
+    var subject=new com.appnexus.platform.authorization.AccessAuthorization.Subject(context.accountId(),context.tenantId(),context.memberId(),context.personId(),context.organizationId());
+    String permission="organization.unit:read";
+    if(!authorization.hasPermission(subject,permission))return Map.of();
+    com.appnexus.platform.authorization.RowAccessControl.OrganizationRange range;
+    try{range=rows.getObject().organizationRange(planning.getObject().plan(subject,permission,"organization.unit"),"organizationId");}
+    catch(SecurityException denied){return Map.of();}
+    if(!range.all()&&range.ids().isEmpty())return Map.of();
+    var batch=references.stream().map(key->new OrganizationNameKey(key.kind(),UUID.fromString(key.id()).toString())).distinct().toList();
+    String requested=json.writeValueAsString(batch),scope=json.writeValueAsString(range.ids());
+    return transaction.execute(status->{
+      gate.authorizeCatalogPublication(authorization,subject,permission);
+      var result=new HashMap<OrganizationNameKey,String>();
+      for(var row:mapper.organizationReferenceNames(context.tenantId().toString(),requested,range.all(),scope)){
+        result.put(new OrganizationNameKey(text(row,"kind"),text(row,"id").toLowerCase(Locale.ROOT)),text(row,"name"));
+      }
+      return Map.copyOf(result);
+    });
+  }
+
+  /** {@inheritDoc} */
+  @Override public Map<String,String> accountNames(UUID tenant,List<String> accounts){
+    Objects.requireNonNull(tenant);
+    if(accounts.isEmpty())return Map.of();
+    String batch=accountBatch(accounts);
+    return transaction.execute(status->{
+      // 此端口只供已授权审计记录调用，成员范围由固定 SQL 强制校验。
+      gate.authorizeServiceOperation(tenant,"record-audit:resolve-actors",List.of(batch),()->true);
+      return names(mapper.auditAccountNames(tenant.toString(),batch));
+    });
+  }
+
+  /** {@inheritDoc} */
+  @Override public Map<String,String> platformAccountNames(UUID actor,List<String> accounts){
+    Objects.requireNonNull(actor);
+    if(accounts.isEmpty())return Map.of();
+    return names(mapper.platformAuditAccountNames(actor.toString(),accountBatch(accounts)));
+  }
+
+  private static String accountBatch(List<String> accounts){
+    if(accounts.size()>200)throw new IllegalArgumentException("AUDIT_ACCOUNT_BATCH_TOO_LARGE");
+    return accounts.stream().map(UUID::fromString).distinct()
+        .map(id->"\""+id+"\"").collect(java.util.stream.Collectors.joining(",","[","]"));
+  }
+
+  private static Map<String,String> names(List<Map<String,Object>> rows){
+    var names=new HashMap<String,String>();
+    for(var row:rows){
+      String name=text(row,"display_name");
+      if(!name.isBlank())names.put(text(row,"id").toLowerCase(Locale.ROOT),name);
+    }
+    return Map.copyOf(names);
   }
  private static String text(Map<String,Object> row,String key){return Objects.toString(row.get(key),"");}
  private static boolean flag(Map<String,Object> row,String key){Object value=row.get(key);return Boolean.TRUE.equals(value)||value instanceof Number number&&number.intValue()!=0;}

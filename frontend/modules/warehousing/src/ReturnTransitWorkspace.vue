@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { referenceName } from "@appnexus/ui";
 import { computed, onMounted, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { ElMessage, type FormInstance } from "element-plus";
@@ -51,8 +52,8 @@ const evidenceRules=computed(()=>[...required.value,{pattern:uuid,message:text("
 const formatter=computed(()=>new Intl.NumberFormat(locale.value,{maximumFractionDigits:12}));
 const amount=(n:number)=>formatter.value.format(n);
 const auditTime=computed(()=>new Intl.DateTimeFormat(locale.value,{dateStyle:"medium",timeStyle:"medium"}));
-const warehouseLabel=(id:string|null)=>warehouses.value.find(row=>row.id===id)?.label??id??"—";
-const unit=computed(()=>units.value.find(row=>row.id===manifest.value?.unitId)?.label??manifest.value?.unitId??"—");
+const warehouseLabel=(id:string|null)=>referenceName(id,warehouses.value,row=>row.label,t("referenceName.unavailable"));
+const unit=computed(()=>manifest.value?.unitName || referenceName(manifest.value?.unitId,units.value,row=>row.label,t("referenceName.unavailable")));
 const columns=(entries:[key:string,width:number][]):ManagementColumn[] =>
   entries.map(([key,minWidth])=>({key,label:text(key),minWidth,prop:key}));
 const coilColumns=computed(()=>columns([["serial",138],["bookQuantity",105],["measuredQuantity",105],
@@ -346,7 +347,7 @@ onMounted(async()=>{
       </template>
       <template #feedback><FloatingError :title="error" /></template>
       <template #search>
-        <el-form v-if="mode==='dispatch'" ref="dispatchForm" :model="dispatchDraft" inline :disabled="busy"
+        <el-form v-if="mode==='dispatch'" ref="dispatchForm" :model="dispatchDraft" inline data-form-style="special" :disabled="busy"
           @submit.prevent="dispatch">
           <div class="management-filter">
             <el-form-item :label="text('handoverId')" prop="handoverId" :rules="evidenceRules">
@@ -399,13 +400,13 @@ onMounted(async()=>{
               <el-button v-if="manifest.coils.length" v-operation="'BulkWarehouseStockBalance.trace'" link type="primary"
                 @click="openOriginal(manifest.coils[0]!.receiptId)">{{text('openOriginal')}}</el-button>
             </el-descriptions-item>
-            <el-descriptions-item :label="text('sourceWarehouse')">{{warehouseLabel(manifest.sourceWarehouseId)}}</el-descriptions-item>
-            <el-descriptions-item :label="text('planWarehouse')">{{warehouseLabel(manifest.receivingWarehouseId)}}</el-descriptions-item>
+            <el-descriptions-item :label="text('sourceWarehouse')">{{manifest.sourceWarehouseName || warehouseLabel(manifest.sourceWarehouseId)}}</el-descriptions-item>
+            <el-descriptions-item :label="text('planWarehouse')">{{manifest.receivingWarehouseName || warehouseLabel(manifest.receivingWarehouseId)}}</el-descriptions-item>
             <el-descriptions-item :label="text('dispatchEvidence')"><span class="return-transit-id">{{manifest.evidenceId}}</span></el-descriptions-item>
             <el-descriptions-item :label="text('unit')">{{unit}}</el-descriptions-item>
           </el-descriptions>
           <ManagementTable embedded :title="text('coils')" :rows="manifest.coils" :columns="coilColumns" @refresh="query()">
-            <template #receivingWarehouseId="{row}">{{warehouseLabel(row.receivingWarehouseId)}}</template>
+            <template #receivingWarehouseId="{row}">{{row.receivingWarehouseName || warehouseLabel(row.receivingWarehouseId)}}</template>
             <template #state="{row}"><el-tag :type="row.state==='RECEIVED'?'success':row.state==='LOSS_SETTLED'?'danger':'warning'">
               {{text('states.'+row.state)}}
             </el-tag></template>
@@ -462,6 +463,7 @@ onMounted(async()=>{
           </ManagementTable>
           <el-descriptions v-if="selectedTrace" :title="text('stock')" :column="2" border>
             <el-descriptions-item :label="text('serial')">{{selectedTrace.stock.serial}}</el-descriptions-item>
+            <el-descriptions-item :label="t('coilFlow.receiptBatchNo')">{{selectedTrace.stock.receiptBatchNo || "—"}}</el-descriptions-item>
             <el-descriptions-item :label="text('actualWarehouse')">{{warehouseLabel(selectedTrace.stock.warehouseId)}}</el-descriptions-item>
             <el-descriptions-item :label="text('onHand')">{{amount(selectedTrace.stock.onHand)}}</el-descriptions-item>
             <el-descriptions-item :label="text('pending')">{{amount(selectedTrace.stock.pending)}}</el-descriptions-item>

@@ -1,7 +1,7 @@
 /** 固定主数据对象；页面不能声明任意实体或 API 路径。 */
 export type MasterDataKind = "partner" | "warehouse" | "storage-area" | "storage-location" | "country-region" | "subdivision";
 /** 当前租户公共档案；人员档案不是登录账号或组织任职。 */
-export interface MasterDataRow { id:string; code:string; name:string; attributes:Record<string,string>; enabled:boolean; version:number; audit:import("@appnexus/ui").RecordAudit; contacts?:PartnerDetail[]; bankAccounts?:PartnerDetail[]; organizationId?:string|null; fieldRestrictions?:Record<string,Record<string,string>> }
+export interface MasterDataRow extends Partial<Record<`${string}Name`,string>> { id:string; code:string; name:string; attributes:Record<string,string>; enabled:boolean; version:number; audit:import("@appnexus/ui").RecordAudit; contacts?:PartnerDetail[]; bankAccounts?:PartnerDetail[]; organizationId?:string|null; fieldRestrictions?:Record<string,Record<string,string>> }
 /** 新增或编辑输入；version 为非负版本，编码仅在创建时确定，属性限于此类白名单。 */
 export interface MasterDataInput { code:string; name:string; attributes:Record<string,string>; version:number; contacts?:PartnerDetailInput[]; bankAccounts?:PartnerDetailInput[]; organizationId?:string|null }
 /** 页面请求由应用壳注入，复用真实会话、CSRF 和统一操作准入；不存在模拟数据回退。 */
@@ -61,7 +61,7 @@ export const masterDataOperations = {
 /** 客商聚合明细输入；标识仅用于原客商下修改，新增时省略，审计禁止进入写入契约。 */
 export interface PartnerDetailInput {id?:string;values:Record<string,string>}
 /** 明细审计由服务端写入；页面仅展示，不从目录推测账号姓名。 */
-export interface PartnerDetail extends PartnerDetailInput {audit?:import("@appnexus/ui").RecordAudit}
+export interface PartnerDetail extends PartnerDetailInput, Partial<Record<`${string}Name`,string>> {audit?:import("@appnexus/ui").RecordAudit}
 
 /** 租户业务字典选项，名称由字典维护，启用状态由后端复核。 */
 export interface DictionaryOption {value:string;name:string;enabled:boolean}

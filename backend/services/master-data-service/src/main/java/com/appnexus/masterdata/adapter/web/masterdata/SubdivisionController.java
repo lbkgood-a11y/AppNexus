@@ -1,4 +1,6 @@
 package com.appnexus.masterdata.adapter.web.masterdata;
+import com.appnexus.contracts.operation.ResponseReferenceNames;
+import com.appnexus.contracts.operation.ResponseReferenceNames.Binding;
 import com.appnexus.masterdata.api.masterdata.MasterDataManagement;
 
 import com.appnexus.contracts.operation.*;
@@ -29,6 +31,10 @@ public final class SubdivisionController {
    * @return 当前分支对应分页结果；树与标准选项不代表已建立的租户业务记录
    */
   @OperationBinding(id="Subdivision.list",reference=true)
+  @RecordAuditNames(paths={"rows.audit"})
+ @ResponseReferenceNames({
+     @Binding(path="rows",type="geography",id="attributes.countryCode",name="countryCodeName",uuid=false),
+     @Binding(path="rows",type="geography",id="attributes.parentCode",name="parentCodeName",uuid=false)})
   @GetMapping("")
   public Object list(HttpServletRequest r,@RequestParam(defaultValue="") String keyword,@RequestParam(required=false) Boolean enabled,@RequestParam(defaultValue="1") int page,@RequestParam(defaultValue="20") int size,@RequestParam(defaultValue="false") boolean standards,@RequestParam(defaultValue="false") boolean tree,@RequestParam(defaultValue="") String parent,@RequestParam(defaultValue="") String scope) {if(tree)return service.geographyTree(context(r),Kind.SUBDIVISION,parent,page,size);if(standards)return service.geographyOptions(context(r),Kind.SUBDIVISION,keyword,page,size);return service.list(context(r),Kind.SUBDIVISION,keyword,enabled,page,size,null,scope);}
   /** 新增行政区划；真实鉴权、租户与并发校验由同一业务执行器负责。 */

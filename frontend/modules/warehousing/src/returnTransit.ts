@@ -11,6 +11,7 @@ export interface TransitCoil {
   lossId:string|null;
   state:"IN_TRANSIT"|"RECEIVED"|"LOSS_SETTLED";
   receivingWarehouseId:string;
+  receivingWarehouseName?:string;
   rerouteId:string|null;
 }
 export interface TransitQuota {
@@ -19,10 +20,12 @@ export interface TransitQuota {
 export interface TransitEvidence {
   kind:string; id:string; receiptId:string; evidenceId:string; titleEvidenceId:string|null; qualityEvidenceId:string|null;
   previousWarehouseId:string|null; warehouseId:string|null; reason:string|null;
+  previousWarehouseName?:string; warehouseName?:string;
 }
 export interface ReturnTransit {
   id:string; handoverId:string; sourceWarehouseId:string; receivingWarehouseId:string;
   unitId:string; evidenceId:string; coils:TransitCoil[]; history:TransitEvidence[];
+  sourceWarehouseName?:string; receivingWarehouseName?:string; unitName?:string;
   noticeQuota:TransitQuota|null; authorizationQuota:TransitQuota|null; tripQuota:TransitQuota|null;
 }
 /** 从原交接读取的当前可发运卷；候选仅用于引导，提交时再次核验。 */

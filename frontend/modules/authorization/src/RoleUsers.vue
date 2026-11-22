@@ -83,7 +83,7 @@ const saveOperation=computed(()=>location.hash.includes('/platform/')?'Account.r
 <template>
  <section class="role-users">
   <div class="role-users-context"><strong>{{ roleName || '—' }}</strong></div>
-  <el-form inline class="role-users-search" @submit.prevent="search()">
+  <el-form inline class="role-users-search query-border-label-form" @submit.prevent="search()">
    <el-form-item :label="t('authorizationCenter.subjectQuery')"><el-input v-model="query" clearable :maxlength="100" /></el-form-item>
    <el-form-item class="management-filter-actions"><el-button type="primary" native-type="submit" :disabled="loading||saving">{{t('authorizationCenter.search')}}</el-button><el-button :disabled="loading||saving" @click="search(true)">{{t('authorizationCenter.reset')}}</el-button></el-form-item>
   </el-form>

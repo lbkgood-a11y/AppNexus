@@ -26,7 +26,18 @@ public final class CoilOutboundDeclaration implements Provider {
     operations.add(DedicatedOperations.operation(CoilOperations.OBJECT,"list_recovery_entries","查找授权续办卷",
         "Find coils for authorization recovery",CoilOperations.READ_AUTHORIZATION_BALANCES.permission(),
         new PageOperation("warehousing/coil-title","/warehousing/coil-title","查找授权续办卷","Find coils for authorization recovery","GET",entries)));
+    operations.add(DedicatedOperations.operation(CoilOperations.OBJECT,"read_authorization_document",
+        "按单号查询提货授权","Read pickup authorization by number",
+        CoilOperations.READ_AUTHORIZATION_BALANCES.permission(),
+        WarehousingPage.queryPage("pickup-authorizations","提货授权单","Pickup authorizations",
+            "/api/bulk-pickup-authorizations/{id}/balance")));
+    operations.add(DedicatedOperations.operation(CoilOperations.OBJECT,"read_return_document",
+        "按单号查询返仓确认","Read return confirmation by number",CoilOperations.READ_RETURN_TRANSIT.permission(),
+        WarehousingPage.queryPage("return-confirmations","返仓确认单","Return confirmations",
+            "/api/bulk-coil-return-confirmations/{id}")));
     var scopes=Arrays.stream(CoilOperations.values()).collect(Collectors.toMap(CoilOperations::code,op -> Set.of("ALL")));
+    scopes.put("read_authorization_document",Set.of("ALL"));
+    scopes.put("read_return_document",Set.of("ALL"));
     scopes.put("prepare_return",Set.of("ALL"));
     scopes.put("recover_authorization",Set.of("ALL"));
     scopes.put("list_recovery_entries",Set.of("ALL"));
@@ -39,13 +50,20 @@ public final class CoilOutboundDeclaration implements Provider {
       var path="/api/bulk-pickup-authorization-balances";
       return DedicatedOperations.operation(CoilOperations.OBJECT,op.code(),op.zh(),op.en(),op.permission(),
           new PageOperation("warehousing/coil-title","/warehousing/coil-title",op.zh(),op.en(),"GET",path),
-          WarehousingPage.flowPage(op.zh(),op.en(),"GET",path));
+          WarehousingPage.flowPage(op.zh(),op.en(),"GET",path),
+          WarehousingPage.queryPage("pickup-authorizations","提货授权单","Pickup authorizations",path));
     }
-    if (op==CoilOperations.ISSUE || op==CoilOperations.READ_RETURN_TRANSIT) {
-      String path=op==CoilOperations.ISSUE ? "/api/bulk-outbound-notices" : "/api/bulk-coil-return-transits/{id}";
-      String method=op==CoilOperations.ISSUE ? "POST" : "GET";
+    if (op==CoilOperations.READ_RETURN_TRANSIT) {
+      var path="/api/bulk-coil-return-transits/{id}";
       return DedicatedOperations.operation(CoilOperations.OBJECT,op.code(),op.zh(),op.en(),op.permission(),
-          WarehousingPage.flowPage(op.zh(),op.en(),method,path),WarehousingPage.transitPage(op.zh(),op.en(),method,path));
+          WarehousingPage.flowPage(op.zh(),op.en(),"GET",path),WarehousingPage.transitPage(op.zh(),op.en(),"GET",path),
+          WarehousingPage.queryPage("return-dispatches","返仓发运单","Return dispatches",path),
+          WarehousingPage.queryPage("return-confirmations","返仓确认单","Return confirmations",path));
+    }
+    if (op==CoilOperations.ISSUE) {
+      var path="/api/bulk-outbound-notices";
+      return DedicatedOperations.operation(CoilOperations.OBJECT,op.code(),op.zh(),op.en(),op.permission(),
+          WarehousingPage.flowPage(op.zh(),op.en(),"POST",path),WarehousingPage.transitPage(op.zh(),op.en(),"POST",path));
     }
     String transitPath=switch(op) {
       case DISPATCH_RETURN -> "/api/bulk-coil-return-transits";

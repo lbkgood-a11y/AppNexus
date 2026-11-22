@@ -2148,6 +2148,8 @@ personnel: {"view": "View", "title": "Personnel profile", "basic": "Basic inform
 # 人员身份模型：组织任职使用人员，不再使用账号成员。
 identityModel: {"person": "Person", "select": "Select personnel identity", "none": "No personnel identity", "empty": "No personnel and organization is available. Contact an administrator."}
 
+referenceName:
+  unavailable: Name unavailable
 recordAudit:
   title: Audit information
   view: View audit
@@ -2681,9 +2683,16 @@ coding:
 productSku:
   title: "Product SKUs"
   product: "Product"
-  choose: "Select a product; search by product name"
+  tree: "Categories and products"
+  choose: "Select a product from the tree"
   code: "Item number"
   create: "Create SKU"
+  createDenied: "Creating a SKU requires the Manage product structure permission."
+  createArchived: "This product draft is archived."
+  createApproval: "Wait for product approval to finish before creating a SKU."
+  createEnabled: "Disable the product in Product Management before creating a SKU."
+  createLegacy: "Migrate the legacy specifications in Product Management before creating a SKU."
+  createNoSpecification: "No specifications are available for SKU assignment. Check specification status and existing assignments in Specifications and components."
   specifications: "Manage specifications and structure"
   hint: "Select a product to manage its SKUs. Item number and specification filters apply to that product only. Dynamic attributes use the saved specification configuration. Each specification has at most one immutable item number. Disable the product in Products before structure changes; pending approvals freeze edits."
   none: "This product has no specifications. Use the product directly; no default SKU is created."
@@ -2758,6 +2767,7 @@ warehouseTitle:
     WAREHOUSING_TITLE_NOT_TRANSFERABLE: Refresh and check the coil's current stock status.
 
 coilFlow:
+  createNotice: New
   recoveryInfo: Resume pickup authorization
   recoveryTrips: Authorization trips and evidence
   recoveryRestrictions: Coil restriction evidence
@@ -2828,6 +2838,7 @@ coilFlow:
   receiptId: Original stock identity
   serial: Coil number
   custodyId: Custody ID
+  receiptBatchNo: Receiving batch no.
   measurementId: Receipt measurement evidence
   currentStock: Current stock and title
   onHand: On hand
@@ -2877,6 +2888,7 @@ coilFlow:
     limit: Inbound limit
     custodyEvidence: Custody evidence UUID
     measurement: Receipt measurement UUID
+    receiptBatchNo: Receiving batch no.
     quantity: Received quantity
     titleEvidence: Title evidence UUID
     effective: Title effective time
@@ -2993,3 +3005,24 @@ returnTransit:
     OUTBOUND_RETURN_TRANSIT_ROUTE_CHANGED: The route has changed. Refresh the dispatch before retrying.
     OUTBOUND_RETURN_LOSS_SETTLED: Reopen the settled loss before receiving or rerouting this coil.
     OUTBOUND_RETURN_TRANSIT_COIL_MISMATCH: This coil is outside the current dispatch operation scope.
+
+inventoryOverview:
+  specification: Specification
+  skuCode: SKU code
+  receiptBatchNo: Receiving batch no.
+  title: Inventory overview
+  all: All
+  empty: No matching inventory
+  failed: Inventory query failed
+  product: Product
+  warehouse: Warehouse
+  owner: Owner
+  serial: Coil serial
+  onHand: On hand
+  pending: Pending inspection
+  unit: Unit
+  receiptId: Receipt ID
+
+inboundNotice: {"issuedAt": "Issued at", "expectedArrivalAt": "Expected arrival", "noticeNo": "Document number (optional)", "remark": "Notes", "line": "Line", "removeLine": "Remove line", "addLine": "Add line", "plannedQuantity": "Planned quantity", "approvedQuantity": "Approved limit", "receivedQuantity": "Received quantity", "arrivalBatchNo": "Arrival batch number", "receiptBatchNo": "Receipt batch number", "requiredNumber": "Enter a valid inbound notice number.", "lineNo": "Line number", "lineId": "Notice line ID", "identityKind": "Item type", "productVersion": "Product version", "flowVersion": "Flow version", "locationId": "Location ID", "operations": "Actions", "lines": "Notice lines", "custodies": "Custody batches", "takeCustody": "Record custody", "receive": "Confirm receipt", "states": {"DRAFT": "Draft", "ISSUED": "Issued", "RECEIVING": "Receiving", "COMPLETED": "Completed", "CLOSED": "Closed", "CANCELLED": "Cancelled"}}
+
+inboundBatch: {"measurementId": "Measurement evidence UUID", "fromNotice": "Open source notice", "fromEntry": "Open source entry", "stockStatus": "Stock posting", "stockStates": {"REJECTED": "Rejected without posting", "PENDING_QUALITY": "Posted, quality pending", "POSTED": "Posted"}, "newEntry": "Record inbound entry", "newReceipt": "New receipt confirmation", "header": "Document header", "noticeId": "Source notice UUID", "entryId": "Source entry UUID", "vehicleNumber": "Vehicle or voyage", "carrier": "Carrier", "arrivedAt": "Arrival time", "measurementRef": "Weighbridge or measurement number", "remark": "Notes", "line": "Line", "lines": "Document lines", "identityId": "Item UUID", "unitId": "Unit UUID", "expectedQuantity": "Arrival quantity (optional)", "custodyId": "Custody line UUID", "receivedQuantity": "Accepted quantity", "rejectionQuantity": "Rejected quantity", "rejectionReason": "Rejection reason", "recordEntry": "Submit inbound entry", "confirmReceipt": "Confirm receipt", "processed": "Receipt status", "received": "Confirmed", "pending": "Pending", "entry": "Inbound entry", "receipt": "Receipt confirmation"}

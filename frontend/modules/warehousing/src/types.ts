@@ -1,3 +1,5 @@
+import type { RecordAudit } from "@appnexus/ui";
+
 /** 两类余额与整卷明细共用筛选，品规为空时查询整个商品。 */
 export interface WarehouseScope {
   ownerId: string;
@@ -88,4 +90,35 @@ export interface WarehouseTitleApi {
   /** 按原授权找回当前可续办的原卷及已完成的只读历史。 */
   recoveryEntries(authorizationId:string,afterId?:string):Promise<CursorPage<AuthorizationRecoveryEntry>>;
   transfer(input: TitleTransferInput): Promise<unknown>;
+}
+
+/** 库存总览的三个筛选项均可省略。 */
+export interface InventoryFilter {
+  warehouseId?: string;
+  ownerId?: string;
+  productId?: string;
+}
+
+/** 按实收身份显示当前在库量和待检量，保留原实收单位。 */
+export interface InventoryRow {
+  receiptId: string;
+  serial?: string;
+  warehouse: string;
+  owner: string;
+  product: string;
+  specification?: string | null;
+  skuCode?: string | null;
+  receiptBatchNo?: string | null;
+  unit: string | null;
+  onHand: number;
+  pending: number;
+  audit: RecordAudit;
+}
+
+/** 使用宿主认证请求和受权限限制的主数据选项。 */
+export interface InventoryOverviewApi {
+  list(filters: InventoryFilter, afterId?: string): Promise<CursorPage<InventoryRow>>;
+  warehouses(keyword: string): Promise<WarehouseOption[]>;
+  owners(keyword: string): Promise<WarehouseOption[]>;
+  products(keyword: string): Promise<WarehouseOption[]>;
 }

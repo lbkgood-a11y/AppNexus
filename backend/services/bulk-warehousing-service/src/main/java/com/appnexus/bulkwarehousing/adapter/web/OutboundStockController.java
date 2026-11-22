@@ -1,5 +1,7 @@
 package com.appnexus.bulkwarehousing.adapter.web;
 
+import com.appnexus.contracts.operation.ResponseReferenceNames;
+import com.appnexus.contracts.operation.ResponseReferenceNames.Binding;
 import com.appnexus.bulkwarehousing.api.OutboundStock;
 import com.appnexus.bulkwarehousing.api.CoilOutbound;
 import com.appnexus.bulkwarehousing.api.CoilTitleTransfer;
@@ -27,6 +29,26 @@ public final class OutboundStockController {
     this.coils=coils;
     this.titles=titles;
     this.balances=balances;
+  }
+
+  /**
+   * @param request 宿主验证的租户会话
+   * @param warehouseId 可选当前仓库 UUID
+   * @param ownerId 可选货主 UUID
+   * @param productId 可选商品 UUID
+   * @param afterId 可选续查实收 UUID
+   * @param limit 每页 1–100 行，缺省 20 行
+   * @return 授权范围内的当前实物库存
+   */
+  @com.appnexus.contracts.operation.RecordAuditNames(paths={"rows.audit"})
+  @GetMapping("/api/bulk-warehouse-inventory")
+  @OperationBinding(id="BulkWarehouseStockBalance.read_overview",reference=true)
+  public WarehouseBalances.OverviewPage inventory(HttpServletRequest request,
+      @RequestParam(required=false) String warehouseId,@RequestParam(required=false) String ownerId,
+      @RequestParam(required=false) String productId,@RequestParam(required=false) String afterId,
+      @RequestParam(defaultValue="20") int limit) {
+    return balances.overview(context(request),new WarehouseBalances.OverviewFilter(warehouseId,ownerId,productId),
+        afterId,limit);
   }
 
   /** @param id 已过账库存身份 UUID @return 当前可发条件，不产生占用 */
@@ -197,6 +219,14 @@ public final class OutboundStockController {
   }
 
   /** @param request 可信查询请求 @param id 在途批次 UUID @return 已接管及缺卷范围 */
+  @ResponseReferenceNames({
+      @Binding(path="",type="warehouse",id="sourceWarehouseId",name="sourceWarehouseName"),
+      @Binding(path="",type="warehouse",id="receivingWarehouseId",name="receivingWarehouseName"),
+      @Binding(path="",type="product-unit",id="unitId",name="unitName"),
+      @Binding(path="coils",type="warehouse",id="receivingWarehouseId",name="receivingWarehouseName"),
+      @Binding(path="history",type="warehouse",id="previousWarehouseId",name="previousWarehouseName"),
+      @Binding(path="history",type="warehouse",id="warehouseId",name="warehouseName"),
+      @Binding(path="history",type="partner",id="responsiblePartnerId",name="responsiblePartnerName")})
   @GetMapping("/api/bulk-coil-return-transits/{id}")
   @OperationBinding(id="BulkCoilOutbound.read_return_transit",reference=true)
   public CoilOutbound.ReturnTransit returnTransit(HttpServletRequest request,@PathVariable String id) {
@@ -285,7 +315,100 @@ public final class OutboundStockController {
         afterId,limit);
   }
 
+  /** @param request 可信仓储请求 @param id 提货授权编号 @return 授权范围内的原额度 */
+  @GetMapping("/api/bulk-pickup-authorizations/{id}/balance")
+  @OperationBinding(id="BulkCoilOutbound.read_authorization_document",reference=true)
+  public WarehouseBalances.AuthorizationBalance authorizationDocument(HttpServletRequest request,@PathVariable String id) {
+    return balances.authorization(context(request),id);
+  }
+
+  /** @param request 可信仓储请求 @param id 返仓确认编号 @return 原实收接管事实及关联发运 */
+  @ResponseReferenceNames({
+      @Binding(path="lines",type="warehouse",id="warehouseId",name="warehouseName")})
+  @GetMapping("/api/bulk-coil-return-confirmations/{id}")
+  @OperationBinding(id="BulkCoilOutbound.read_return_document",reference=true)
+  public CoilOutbound.ReturnDocument returnDocument(HttpServletRequest request,@PathVariable String id) {
+    return coils.returnDocument(context(request),id);
+  }
+
+  /** @param request 可信仓储请求 @param id 冻结编号 @return 有权库存的冻结及解除凭证 */
+  @GetMapping("/api/bulk-stock-restrictions/{id}")
+  @OperationBinding(id="BulkStockRestriction.read_document",reference=true)
+  public OutboundStock.RestrictionEvidence restrictionDocument(HttpServletRequest request,@PathVariable String id) {
+    return stock.restrictionDocument(context(request),id);
+  }
+
+  /** @param request 可信仓储请求 @param id 入场单 UUID @return 已授权主单及接管明细 */
+  @com.appnexus.contracts.operation.RecordAuditNames(paths={"audit"})
+  @ResponseReferenceNames({
+      @Binding(path="",type="warehouse",id="warehouseId",name="warehouseName"),
+      @Binding(path="",type="partner",id="ownerId",name="ownerName"),
+      @Binding(path="lines",type="product",id="productId",name="productName"),
+      @Binding(path="lines",type="product",id="identityId",name="identityName",when="identityKind",equalsValue="PRODUCT"),
+      @Binding(path="lines",type="product-specification",id="identityId",name="identityName",when="identityKind",equalsValue="SPECIFICATION"),
+      @Binding(path="lines",type="product-sku",id="identityId",name="identityName",when="identityKind",equalsValue="SKU"),
+      @Binding(path="lines",type="product-unit",id="unitId",name="unitName"),
+      @Binding(path="lines.position",type="warehouse",id="warehouseId",name="warehouseName"),
+      @Binding(path="lines.position",type="storage-area",id="areaId",name="areaName"),
+      @Binding(path="lines.position",type="storage-location",id="locationId",name="locationName")})
+  @GetMapping("/api/bulk-inbound-entries/{id}")
+  @OperationBinding(id="BulkWarehouseStockBalance.read_entry",reference=true)
+  public WarehouseBalances.BatchDocument inboundEntry(HttpServletRequest request,@PathVariable String id) {
+    return balances.inboundEntry(context(request),id);
+  }
+
+  /** @param request 可信仓储请求 @param id 实收单 UUID @return 已授权实收和拒收明细 */
+  @com.appnexus.contracts.operation.RecordAuditNames(paths={"audit"})
+  @ResponseReferenceNames({
+      @Binding(path="",type="warehouse",id="warehouseId",name="warehouseName"),
+      @Binding(path="",type="partner",id="ownerId",name="ownerName"),
+      @Binding(path="lines",type="product",id="productId",name="productName"),
+      @Binding(path="lines",type="product",id="identityId",name="identityName",when="identityKind",equalsValue="PRODUCT"),
+      @Binding(path="lines",type="product-specification",id="identityId",name="identityName",when="identityKind",equalsValue="SPECIFICATION"),
+      @Binding(path="lines",type="product-sku",id="identityId",name="identityName",when="identityKind",equalsValue="SKU"),
+      @Binding(path="lines",type="product-unit",id="unitId",name="unitName"),
+      @Binding(path="lines.position",type="warehouse",id="warehouseId",name="warehouseName"),
+      @Binding(path="lines.position",type="storage-area",id="areaId",name="areaName"),
+      @Binding(path="lines.position",type="storage-location",id="locationId",name="locationName")})
+  @GetMapping("/api/bulk-inbound-receipt-documents/{id}")
+  @OperationBinding(id="BulkWarehouseStockBalance.read_receipt_document",reference=true)
+  public WarehouseBalances.BatchDocument inboundReceiptDocument(HttpServletRequest request,@PathVariable String id) {
+    return balances.receiptDocument(context(request),id);
+  }
+
+  /** @param request 可信仓储请求 @param kind 固定单据类别 @param documentNo 单据 UUID
+   * @return 已授权主单及相关作业凭证 */
+  @com.appnexus.contracts.operation.RecordAuditNames(paths={"header.audit"})
+  @ResponseReferenceNames({
+      @Binding(path="header",type="warehouse",id="warehouseId",name="warehouseName"),
+      @Binding(path="header",type="partner",id="ownerId",name="ownerName"),
+      @Binding(path="header",type="partner",id="otherOwnerId",name="otherOwnerName"),
+      @Binding(path="header",type="product",id="productId",name="productName"),
+      @Binding(path="header",type="product-unit",id="unitId",name="unitName"),
+      @Binding(path="lines",type="product",id="productId",name="productName"),
+      @Binding(path="lines",type="product",id="identityId",name="identityName",when="identityKind",equalsValue="PRODUCT"),
+      @Binding(path="lines",type="product-specification",id="identityId",name="identityName",when="identityKind",equalsValue="SPECIFICATION"),
+      @Binding(path="lines",type="product-sku",id="identityId",name="identityName",when="identityKind",equalsValue="SKU"),
+      @Binding(path="lines",type="product-unit",id="unitId",name="unitName"),
+      @Binding(path="custodies.position",type="warehouse",id="warehouseId",name="warehouseName"),
+      @Binding(path="custodies.position",type="storage-area",id="areaId",name="areaName"),
+      @Binding(path="custodies.position",type="storage-location",id="locationId",name="locationName")})
+  @GetMapping("/api/bulk-warehouse-documents/{kind}/{documentNo}")
+  @OperationBinding(id="BulkWarehouseStockBalance.read_document",reference=true)
+  public WarehouseBalances.DocumentDetail warehouseDocument(HttpServletRequest request,
+      @PathVariable WarehouseBalances.DocumentKind kind,@PathVariable String documentNo) {
+    return balances.document(context(request),kind,documentNo);
+  }
+
   /** @param request 可信仓储请求 @param id 原实收库存身份 UUID @return 实物及有权历史单据 */
+  @ResponseReferenceNames({
+      @Binding(path="stock",type="warehouse",id="warehouseId",name="warehouseName"),
+      @Binding(path="stock",type="partner",id="ownerId",name="ownerName"),
+      @Binding(path="stock",type="product",id="productId",name="productName"),
+      @Binding(path="stock",type="product-unit",id="unitId",name="unitName"),
+      @Binding(path="documents",type="warehouse",id="warehouseId",name="warehouseName"),
+      @Binding(path="documents",type="partner",id="ownerId",name="ownerName"),
+      @Binding(path="documents",type="partner",id="otherOwnerId",name="otherOwnerName")})
   @GetMapping("/api/bulk-warehouse-stock-balances/coils/{id}/trace")
   @OperationBinding(id="BulkWarehouseStockBalance.trace",reference=true)
   public WarehouseBalances.CoilTrace coilTrace(HttpServletRequest request,@PathVariable String id) {
@@ -293,6 +416,8 @@ public final class OutboundStockController {
   }
 
   /** @param request 已认证仓储请求 @param handoverId 原交接 UUID @return 当前可登记发运的原卷 */
+  @ResponseReferenceNames({
+      @Binding(path="",type="warehouse",id="sourceWarehouseId",name="sourceWarehouseName")})
   @GetMapping("/api/bulk-coil-return-transits/eligible-coils/{handoverId}")
   @OperationBinding(id="BulkCoilOutbound.prepare_return",reference=true)
   public CoilOutbound.ReturnPreparation prepareReturn(HttpServletRequest request,@PathVariable String handoverId) {

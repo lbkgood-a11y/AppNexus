@@ -8,6 +8,9 @@ import com.appnexus.platform.organization.PersonnelData.*;
 public interface PersonManagement {
  /** @param c 当前可信成员 @return 不含人员原值的可编辑字段限制 */
  Map<String,com.appnexus.platform.authorization.FieldSecurity.Mode> fieldRestrictions(VerifiedTenantContext c);
+ /** @param context 可信主体 @param ids 同一批人员 UUID，最多 200
+  * @return 原人员读取范围允许的名称 */
+ Map<String,String> names(VerifiedTenantContext context,List<String> ids);
  /** 人员公开操作；可信主体、独立权限、范围与事务约束由真实用例复核。 */
  Page list(VerifiedTenantContext c,Kind kind,String keyword,Boolean enabled,int page,int size);
  /** 人员公开操作；可信主体、独立权限、范围与事务约束由真实用例复核。 */

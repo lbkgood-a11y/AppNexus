@@ -26,8 +26,8 @@ export interface DataRecordSearch {
  resources:readonly string[];
  /** 关键词为名称或编码，最长200字符；page从1开始，每页20条，total为同一受控查询总数。 */
  search:(resource:string,query:string,page:number)=>Promise<{items:AuthorizationOption[];total:number}>;
- /** 仅用于回显已保存的记录名，沿用对应业务详情授权；未找到时保留规则中的记录 ID。 */
- resolve?:(resource:string,id:string)=>Promise<AuthorizationOption|undefined>;
+ /** 批量回显已保存记录名，单批最多 100 个 ID，仍受对应对象读取权限限制。 */
+ resolve?:(resource:string,ids:string[])=>Promise<AuthorizationOption[]>;
 }
 /** 当前管理域的角色策略模板摘要，不携带业务原值。 */
 export interface PolicyTemplate { id: string; name: string }

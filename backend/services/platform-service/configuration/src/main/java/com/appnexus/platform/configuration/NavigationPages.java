@@ -28,6 +28,22 @@ public final class NavigationPages {
             new Page("master-data/partner","/master-data/partner","客商管理","Business partners",MenuManagement.Scope.TENANT,"masterdata.partner:read",Gate.PERMISSION),
             new Page("master-data/storage","/master-data/storage","库区与库位","Storage areas and locations",MenuManagement.Scope.TENANT,"masterdata.storagearea:read",Gate.PERMISSION),
             new Page("master-data/warehouse","/master-data/warehouse","仓库管理","Warehouses",MenuManagement.Scope.TENANT,"masterdata.warehouse:read",Gate.PERMISSION),
+            warehouseDocument("inbound-notices","入仓通知单","Inbound notices","warehousing.coil.stockbalance:read"),
+            warehouseDocument("inbound-entries","入场接管单","Inbound entries","warehousing.coil.stockbalance:read"),
+            warehouseDocument("inbound-receipts","实收确认单","Inbound receipts","warehousing.coil.stockbalance:read"),
+            warehouseDocument("inbound-titles","入仓货权登记","Inbound title registrations","warehousing.coil.stockbalance:read"),
+            warehouseDocument("inbound-quality","入仓质量放行","Inbound quality releases","warehousing.coil.stockbalance:read"),
+            warehouseDocument("title-transfers","货权过户单","Title transfers","warehousing.coil.stockbalance:read"),
+            warehouseDocument("stock-restrictions","库存监管单","Stock restrictions","warehousing.stock.restriction:read"),
+            warehouseDocument("outbound-notices","出仓通知单","Outbound notices","warehousing.coil.stockbalance:read"),
+            warehouseDocument("pickup-authorizations","提货授权单","Pickup authorizations","warehousing.outbound.coil:read_authorization_balances"),
+            warehouseDocument("outbound-trips","车次作业单","Outbound trips","warehousing.coil.stockbalance:read"),
+            warehouseDocument("outbound-confirmations","出仓确认单","Outbound confirmations","warehousing.coil.stockbalance:read"),
+            warehouseDocument("handover-reversals","出仓交接冲销单","Handover reversals","warehousing.coil.stockbalance:read"),
+            warehouseDocument("return-dispatches","返仓发运单","Return dispatches","warehousing.outbound.coil:read_return_transit"),
+            warehouseDocument("return-confirmations","返仓确认单","Return confirmations","warehousing.outbound.coil:read_return_transit"),
+            new Page("warehousing/inventory-overview","/warehousing/inventory-overview","库存总览","Inventory overview",
+                MenuManagement.Scope.TENANT,"warehousing.coil.stockbalance:read_overview",Gate.PERMISSION),
             new Page("warehousing/return-transit","/warehousing/return-transit","跨仓返仓在途","Cross-warehouse return transit",
                 MenuManagement.Scope.TENANT,"warehousing.outbound.coil:read_return_transit",Gate.PERMISSION),
             new Page("warehousing/coil-flow","/warehousing/coil-flow","整卷履约","Coil fulfillment",
@@ -64,8 +80,30 @@ public final class NavigationPages {
         );
     }
 
-    /** 未知标识返回 null，由发布校验和运行时导航失败关闭。 */
+    /** 已登录账号的固定自助页，独立于可发布菜单目录。 */
+    private static final Page ACCOUNT_PROFILE=new Page("account/profile","/account/profile",
+        "个人中心","Account profile",MenuManagement.Scope.AUTHENTICATED,null,Gate.PERMISSION);
+
+    /** @return 可发布页面和固定自助页面，供只读功能目录校验与展示 */
+    public static List<Page> routes() {
+        return java.util.stream.Stream.concat(all().stream(),java.util.stream.Stream.of(ACCOUNT_PROFILE)).toList();
+    }
+
+    /**
+     * @param key 业务操作声明使用的构建内页面标识
+     * @return 对应的实际路由声明，未知标识返回 null
+     */
+    public static Page findRoute(String key) {
+        return ACCOUNT_PROFILE.key().equals(key) ? ACCOUNT_PROFILE : find(key);
+    }
+
+    /** 未知或不可发布的标识返回 null，由发布校验和运行时导航失败关闭。 */
     public static Page find(String key) { return all().stream().filter(page -> page.key().equals(key)).findFirst().orElse(null); }
+    /** 仓储查询菜单沿用实际读取操作的租户权限。 */
+    private static Page warehouseDocument(String key,String zh,String en,String permission) {
+        String component = "warehousing/" + key;
+        return new Page(component,"/" + component,zh,en,MenuManagement.Scope.TENANT,permission,Gate.PERMISSION);
+    }
     private static Page platform(String key,String path,String zh,String en,String permission) {
         return new Page(key,path,zh,en,MenuManagement.Scope.PLATFORM,permission,Gate.PLATFORM_ADMIN);
     }

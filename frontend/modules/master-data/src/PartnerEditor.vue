@@ -5,14 +5,14 @@ import {computed,onMounted,onBeforeUnmount,reactive,ref} from "vue";
 import {onBeforeRouteLeave} from "vue-router";
 import {useI18n} from "vue-i18n";
 import {ElMessage,ElMessageBox,type FormInstance,type FormRules} from "element-plus";
-import {GeographyPicker,geographyPath,type GeographyNode,type GeographySelection,PageHeader,TabbedDetailTemplate,ManagementTable,ManagedDialog,InfoHint,FloatingError,LoadErrorResult,presentLoadError,setErrorFeedback,type LoadIssue,type ManagementColumn} from "@appnexus/ui";
+import {GeographyPicker,geographyPath,type GeographyNode,type GeographySelection,PageHeader,TabbedDetailTemplate,RecordAuditDetails,ManagementTable,ManagedDialog,InfoHint,FloatingError,LoadErrorResult,presentLoadError,setErrorFeedback,type LoadIssue,type ManagementColumn} from "@appnexus/ui";
 import type {MasterDataApi,MasterDataRow,MasterDataInput,PartnerDetail,DictionaryOption} from "./index";
 import {partnerBasic,partnerAdditional,partnerDictionaryFields,partnerSections} from "./partner";
 /** 客商主数据详情；复用人员样板和公共明细表格，主档及明细以父版本原子保存。 */
 const loadIssue = ref<LoadIssue>();
 const props=defineProps<{id:string;mode?:"view"|"edit";api:MasterDataApi;errorText:(error:unknown)=>string}>();
 const emit=defineEmits<{close:[]}>();
-const {t,locale}=useI18n();
+const {t}=useI18n();
 const id=ref(props.id),record=ref<MasterDataRow>(),allowed=ref<string[]>([]),loading=ref(false),busy=ref(false),failed=ref(false),error=ref("");
 const geographyNodes=ref<GeographyNode[]>([]);
 /** 服务端限制只用于页面可编辑提示，所有写入仍由后端复核；未知历史归属不自动选择当前组织。 */
@@ -45,7 +45,7 @@ const columns=computed<ManagementColumn[]>(()=>[...partnerSections[tab.value].fi
 function label(key:string){return t("partner.fields."+key);}
 /** 启用项可新选；历史停用或未知值只显示原值，不能给其他记录新选。 */
 function options(field:string,current:string[]=[]){const rows=dictionaryOptions.value[field]??[];return [...rows.filter(row=>row.enabled||current.includes(row.value)),...current.filter(value=>value&&!rows.some(row=>row.value===value)).map(value=>({value,name:value,enabled:false}))];}
-function optionName(field:string,value:string){return dictionaryOptions.value[field]?.find(row=>row.value===value)?.name??value;}
+function optionName(field:string,value:string){return dictionaryOptions.value[field]?.find(row=>row.value===value)?.name??(partnerDictionaryFields.includes(field)?t("referenceName.unavailable"):value);}
 const rules=computed<FormRules>(()=>({code:[{required:true,message:t("masterData.required"),trigger:"blur"},{pattern:/^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/,message:t("masterData.codeRule"),trigger:"blur"}],name:[{required:true,whitespace:true,message:t("masterData.required"),trigger:"blur"}],"attributes.partnerType":[{required:true,message:t("masterData.required"),trigger:"change"}],"attributes.registeredCapital":restricted("masterdata.partner","registeredCapital")?[]:[{pattern:/^(?:[0-9]{1,18}(\.[0-9]{1,6})?)?$/,message:t("partner.capitalRule"),trigger:"blur"}],"attributes.registeredCurrency":restricted("masterdata.partner","registeredCurrency")?[]:[{pattern:/^(?:[A-Z]{3})?$/,message:t("partner.currencyRule"),trigger:"blur"}]}));
 const detailRules=computed<FormRules>(()=>{
  const required=tab.value==="contacts"?["contactType","contactName","phone","address","isDefault"]:["taxAccount","basicAccount","isDefault","bankName","accountNumber","currency"];
@@ -55,9 +55,7 @@ const detailRules=computed<FormRules>(()=>{
  return result;
 });
 /** 缺省与 0 区别展示；布尔值带文本，日期保持业务日期，不转 UTC 时间。 */
-function display(value:string|undefined,key:string){if(!value)return "—";if(booleanFields.includes(key))return t(value==="true"?"partner.yes":"partner.no");if(key==="partnerType")return (value==="BOTH"?["CUSTOMER","SUPPLIER"]:value.split(",")).map(v=>optionName("partnerType",v)).join(" / ");return ["countryRegion","registeredPlace"].includes(key)?(geographyPath(geographyNodes.value,value).map(n=>n.name).join("-")||value):optionName(key,value);}
-/** 审计仅格式化服务端 UTC 时间；未知历史不填当前时间，也不额外读取账号目录。 */
-function time(value:string|null|undefined){return value?new Intl.DateTimeFormat(locale.value,{dateStyle:"medium",timeStyle:"short"}).format(new Date(value)):t("recordAudit.unknown");}
+function display(value:string|undefined,key:string,resolved?:string){if(!value)return "—";if(resolved)return resolved;if(booleanFields.includes(key))return t(value==="true"?"partner.yes":"partner.no");if(key==="partnerType")return (value==="BOTH"?["CUSTOMER","SUPPLIER"]:value.split(",")).map(v=>optionName("partnerType",v)).join(" / ");return ["countryRegion","registeredPlace"].includes(key)?(geographyPath(geographyNodes.value,value).map(n=>n.name).join("-")||value):optionName(key,value);}
 /** 成功读取后才替换草稿；刷新需用户确认，读取失败保留输入并停止写入。 */
 function accept(row:MasterDataRow){record.value=row;draft.organizationId=row.organizationId??"";fieldRestrictions.value=row.fieldRestrictions??fieldRestrictions.value;draft.code=row.code;draft.name=row.name;draft.version=row.version;draft.attributes=Object.fromEntries([...partnerBasic,...partnerAdditional].map(key=>[key,row.attributes[key]??""]));details.contacts=structuredClone(row.contacts??[]);details.bankAccounts=structuredClone(row.bankAccounts??[]);baseline.value=snapshot();}
 async function load(){loading.value=true;failed.value=false;loadIssue.value=undefined;try{allowed.value=await props.api.operations();dictionaryOptions.value=await props.api.partnerOptions();const dataAccess=await props.api.partnerAccess(canEdit.value?(id.value?"update":"create"):"read");organizations.value=dataAccess.organizations;fieldRestrictions.value=dataAccess.fieldRestrictions;geographyNodes.value=await props.api.geographyDirectory("partner");if(id.value)accept(await props.api.readPartner(id.value));else baseline.value=snapshot();}catch(e){failed.value=true;if((e as {response?:{status:number}})?.response?.status===403){record.value=undefined;allowed.value=[];draft.name="";draft.code="";draft.attributes={};details.contacts=[];details.bankAccounts=[];}await presentLoadError(error,loadIssue,props.errorText(e),true,(e as {response?:{status?:number}})?.response?.status===403);}finally{loading.value=false;}}
@@ -111,7 +109,7 @@ onBeforeUnmount(()=>window.removeEventListener("beforeunload",beforeUnload));
         <div v-else class="detail-readonly-field"><span>{{t('masterData.code')}}</span><strong>{{draft.code||'—'}}</strong></div>
         <el-form-item v-if="canEdit" :label="t('partner.commonName')" prop="name"><el-input v-model="draft.name" maxlength="200" /></el-form-item><div v-else class="detail-readonly-field"><span>{{t('partner.commonName')}}</span><strong>{{draft.name||'—'}}</strong></div>
        </template>
-       <el-form-item v-if="group.key==='basic'&&canEdit" :label="t('partner.organization')" :required="!id"><el-select v-model="draft.organizationId" filterable><el-option v-for="item in organizations" :key="item.id" :value="item.id" :label="item.name" /></el-select></el-form-item><div v-else-if="group.key==='basic'" class="detail-readonly-field"><span>{{t('partner.organization')}}</span><strong>{{organizations.find(item=>item.id===draft.organizationId)?.name||t('partner.unknownOrganization')}}</strong></div>
+       <el-form-item v-if="group.key==='basic'&&canEdit" :label="t('partner.organization')" :required="!id"><el-select v-model="draft.organizationId" filterable><el-option v-for="item in organizations" :key="item.id" :value="item.id" :label="item.name" /></el-select></el-form-item><div v-else-if="group.key==='basic'" class="detail-readonly-field"><span>{{t('partner.organization')}}</span><strong>{{record?.organizationName || organizations.find(item=>item.id===draft.organizationId)?.name || t('partner.unknownOrganization')}}</strong></div>
        <template v-for="field in group.fields.filter(key=>!hidden('masterdata.partner',key))" :key="field">
         <el-form-item v-if="canEdit&&!restricted('masterdata.partner',field)" :label="label(field)" :prop="'attributes.'+field" :class="{'detail-field-wide':field==='remarks'||field==='partnerType'}">
          <GeographyPicker v-if="field==='countryRegion'||field==='registeredPlace'" v-model="draft.attributes[field]" :nodes="geographyNodes" :kind="field==='countryRegion'?'country':'region'" :country-code="field==='registeredPlace'?draft.attributes.countryRegion:undefined" @select="field==='countryRegion'?selectCountry($event):selectRegisteredPlace($event)" />
@@ -121,19 +119,19 @@ onBeforeUnmount(()=>window.removeEventListener("beforeunload",beforeUnload));
          <el-date-picker v-else-if="field==='establishedOn'" v-model="draft.attributes[field]" type="date" value-format="YYYY-MM-DD" format="YYYY-MM-DD" :disabled-date="date=>date.getTime()>Date.now()" />
          <el-input v-else v-model="draft.attributes[field]" :maxlength="500" :type="field==='remarks'?'textarea':'text'" :rows="1" />
         </el-form-item>
-        <div v-else class="detail-readonly-field" :class="{'detail-field-wide':field==='remarks'||field==='partnerType'}"><span>{{label(field)}}</span><strong>{{display(draft.attributes[field],field)}}</strong></div>
+        <div v-else class="detail-readonly-field" :class="{'detail-field-wide':field==='remarks'||field==='partnerType'}"><span>{{label(field)}}</span><strong>{{display(draft.attributes[field],field,record?.[`${field}Name`])}}</strong></div>
        </template>
       </div>
      </el-card>
     </el-form>
    </template>
-   <template #system><h2 class="detail-section-title">{{t('partner.system')}}</h2><div class="detail-audit-grid"><div v-for="key in ['createdBy','createdAt','updatedBy','updatedAt'] as const" :key="key" class="detail-audit-item"><div><span>{{t('recordAudit.'+key)}}</span><strong>{{key.endsWith('At')?time(record?.audit?.[key]):record?.audit?.[key]||t('recordAudit.unknownActor')}}</strong></div></div></div></template>
+   <template #system><h2 class="detail-section-title">{{t('partner.system')}}</h2><RecordAuditDetails :audit="record?.audit ?? {createdBy:null,createdAt:null,updatedBy:null,updatedAt:null}" :pending="!id" inline /></template>
    <template #tabs>
     <el-tabs v-model="tab"><el-tab-pane v-for="(_,section) in partnerSections" :key="section" :name="section" :label="t('partner.'+section)" /></el-tabs>
     <ManagementTable :key="tab" :title="t('partner.'+tab)" :rows="details[tab]" :columns="columns" :loading="loading" :busy="busy" heading-level="h2" embedded @refresh="reload">
      <template #titleHelp><InfoHint :content="t('partner.atomicHint')" /></template>
      <template #actions><el-button v-operation="operation" type="primary" :disabled="!canEdit||busy||loading||restrictedDetail||details[tab].length>=100" @click="editDetail()">{{t('partner.add')}}</el-button></template>
-     <template v-for="field in partnerSections[tab]" :key="field" #[field]="{row}">{{display(row.values[field],field)}}</template>
+     <template v-for="field in partnerSections[tab]" :key="field" #[field]="{row}">{{display(row.values[field],field,row[`${field}Name`])}}</template>
      <template #operations="{row}"><el-button v-operation="operation" link type="primary" :disabled="!canEdit||busy||loading" @click="editDetail(details[tab].indexOf(row))">{{t('masterData.edit')}}</el-button><el-button v-operation="operation" link type="danger" :disabled="!canEdit||busy||loading||restrictedDetail" @click="removeDetail(details[tab].indexOf(row))">{{t('partner.remove')}}</el-button></template>
     </ManagementTable>
    </template>

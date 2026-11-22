@@ -1,4 +1,6 @@
 package com.appnexus.masterdata.adapter.web.product;
+import com.appnexus.contracts.operation.ResponseReferenceNames;
+import com.appnexus.contracts.operation.ResponseReferenceNames.Binding;
 import com.appnexus.masterdata.api.product.ProductManagement;
 import com.appnexus.masterdata.api.product.ProductMainData.*;
 import com.appnexus.masterdata.api.product.ProductStructureData.*;
@@ -27,6 +29,9 @@ public final class ProductController {
  @PutMapping("/{id}/status") @OperationBinding(id="Product.setStatus",reference=true) public Object status(HttpServletRequest r,@PathVariable String id,@RequestBody Status i){return service.updateStatus(ctx(r),id,i);}
 
  /** 已授权完整详情；只读用户无需编辑权。 */
+ @com.appnexus.contracts.operation.RecordAuditNames(paths={"audit"})
+ @ResponseReferenceNames({
+     @Binding(path="",type="organization",id="organizationId",name="organizationName")})
  @GetMapping("/{id}")
  @OperationBinding(id="Product.read",reference=true)
  public Object read(HttpServletRequest r,@PathVariable String id){return service.read(ctx(r),id);}

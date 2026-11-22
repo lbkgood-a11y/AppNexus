@@ -18,8 +18,8 @@ public class BusinessObjectIntegrationValidation {
       var pages=new ArrayList<BusinessObjects.PageOperation>();if(action.pageOperation()!=null)pages.add(action.pageOperation());
       action.aliases().forEach(alias->pages.add(alias.pageOperation()));
       for(var operation:pages){
-        var page=NavigationPages.find(operation.pageKey());
-        if(page==null?!("account/profile".equals(operation.pageKey())&&"/account/profile".equals(operation.pagePath())):!page.path().equals(operation.pagePath()))throw new IllegalStateException("BUSINESS_OBJECT_PAGE_PERMISSION_REGISTRATION_INVALID:"+action.operationId());
+        var page=NavigationPages.findRoute(operation.pageKey());
+        if(page==null||!page.path().equals(operation.pagePath()))throw new IllegalStateException("BUSINESS_OBJECT_PAGE_PERMISSION_REGISTRATION_INVALID:"+action.operationId());
         boolean found=mappings.getHandlerMethods().keySet().stream().anyMatch(mapping->mapping.getPatternValues().contains(operation.apiPath())&&mapping.getMethodsCondition().getMethods().stream().anyMatch(method->method.name().equals(operation.method())));
         if(!found)throw new IllegalStateException("BUSINESS_OBJECT_API_REGISTRATION_INVALID:"+action.operationId());
         boolean bound=mappings.getHandlerMethods().entrySet().stream().anyMatch(entry->entry.getKey().getPatternValues().contains(operation.apiPath())&&java.util.Arrays.stream(entry.getValue().getMethod().getAnnotationsByType(com.appnexus.contracts.operation.OperationBinding.class)).anyMatch(binding->binding.reference()?binding.id().equals(action.operationId()):java.util.Arrays.asList(binding.pages()).contains(operation.pageKey())&&java.util.Arrays.asList(binding.permissions()).contains(action.permissionCode())));

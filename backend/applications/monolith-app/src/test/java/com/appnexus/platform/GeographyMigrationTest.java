@@ -29,10 +29,10 @@ class GeographyMigrationTest {
       assertThat(row.get("parent_code")).isEqualTo("CN-MCA-350100");assertThat(row.get("created_by")).isNull();assertThat(row.get("updated_by")).isNull();assertThat(row.get("created_at")).isNotNull();
       assertThat(Flyway.configure().dataSource(source).load().migrate().migrationsExecuted).isZero();
       assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM md_subdivision WHERE tenant_id=UUID_TO_BIN(?)",Integer.class,other.toString())).isZero();
-      var catalog=new com.appnexus.masterdata.adapter.persistence.masterdata.MyBatisGeographyCatalog(MapperFixtures.mapper(jdbc,com.appnexus.masterdata.adapter.persistence.GeographyMapper.class));
-      assertThat(catalog.nodes(tenant)).hasSize(8473);
-      assertThat(catalog.nodes(other)).isEmpty();
-      assertThat(catalog.nodes(tenant).stream().filter(n->n.code().equals("CN-FJ")).findFirst().orElseThrow().enabled()).isFalse();
+      var mapper=MapperFixtures.mapper(jdbc,com.appnexus.masterdata.adapter.persistence.GeographyMapper.class);
+      assertThat(com.appnexus.masterdata.adapter.persistence.masterdata.MyBatisGeographyCatalog.nodes(mapper,tenant)).hasSize(8473);
+      assertThat(com.appnexus.masterdata.adapter.persistence.masterdata.MyBatisGeographyCatalog.nodes(mapper,other)).isEmpty();
+      assertThat(com.appnexus.masterdata.adapter.persistence.masterdata.MyBatisGeographyCatalog.nodes(mapper,tenant).stream().filter(n->n.code().equals("CN-FJ")).findFirst().orElseThrow().enabled()).isFalse();
       jdbc.update("INSERT INTO platform_tenant(id,name) VALUES(UUID_TO_BIN(?),'新租户')",other.toString());
       new com.appnexus.masterdata.bootstrap.MasterDataConfiguration.GeographyProvisioning(MapperFixtures.mapper(jdbc,com.appnexus.masterdata.adapter.persistence.GeographyMapper.class)).provision(new com.appnexus.platform.tenant.TenantProvisioned(other,actor));
       GeographyDefaults.seed(MapperFixtures.mapper(jdbc,com.appnexus.masterdata.adapter.persistence.GeographyMapper.class),other,actor);

@@ -2,6 +2,7 @@ package com.appnexus.bulkwarehousing.adapter.integration;
 
 import com.appnexus.bulkwarehousing.api.InboundReceiptReferences.*;
 import com.appnexus.bulkwarehousing.application.InboundReferenceSource;
+import java.util.Map;
 import com.appnexus.masterdata.api.masterdata.MasterData;
 import com.appnexus.masterdata.api.masterdata.MasterDataManagement;
 import com.appnexus.masterdata.api.product.ProductStructureManagement;
@@ -17,6 +18,7 @@ public final class MasterDataInboundReceiptReferences implements InboundReferenc
   private final UnitConversions conversions;
   private final ProductCatalogManagement catalog;
   private final ProductManagement productRead;
+  private final com.appnexus.masterdata.api.masterdata.MasterDataReferenceNames names;
 
   /**
    * @param masterData 现有位置和业务伙伴的授权读取入口
@@ -24,14 +26,17 @@ public final class MasterDataInboundReceiptReferences implements InboundReferenc
    * @param conversions 现有单位换算证据的授权读取入口
    * @param catalog 现有计量单位目录的授权读取入口
    * @param productRead 既有商品记录范围读取入口
+   * @param names 主数据所属服务的授权批量投影
    */
   public MasterDataInboundReceiptReferences(MasterDataManagement masterData,
-      ProductStructureManagement products, UnitConversions conversions,ProductCatalogManagement catalog,ProductManagement productRead) {
+      ProductStructureManagement products, UnitConversions conversions,ProductCatalogManagement catalog,ProductManagement productRead,
+      com.appnexus.masterdata.api.masterdata.MasterDataReferenceNames names) {
     this.masterData = masterData;
     this.products = products;
     this.conversions = conversions;
     this.catalog = catalog;
     this.productRead = productRead;
+    this.names = names;
   }
 
   /** {@inheritDoc} */
@@ -65,6 +70,15 @@ public final class MasterDataInboundReceiptReferences implements InboundReferenc
   public void requireWarehouse(VerifiedTenantContext context, String id) {
     if (masterData.list(context, MasterData.Kind.WAREHOUSE, "", true, 1, 1, id).rows().size()!=1) {
       throw new com.appnexus.contracts.businessobject.BusinessObjects.Rejection(403, "INBOUND_ACCESS_DENIED");
+    }
+  }
+
+  /** {@inheritDoc} */
+  @Override public void requireWarehouses(VerifiedTenantContext context,java.util.Collection<String> ids){
+    var keys=ids.stream().map(id->new com.appnexus.contracts.operation.ReferenceNames.Key(
+        com.appnexus.masterdata.api.masterdata.MasterDataReferenceNames.ACTIVE_WAREHOUSE,id)).toList();
+    if(com.appnexus.contracts.operation.ReferenceNames.resolveKeys(names,context,keys).containsValue(null)){
+      throw new com.appnexus.contracts.businessobject.BusinessObjects.Rejection(403,"INBOUND_ACCESS_DENIED");
     }
   }
 

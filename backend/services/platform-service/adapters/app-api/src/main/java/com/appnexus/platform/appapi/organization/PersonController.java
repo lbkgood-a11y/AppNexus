@@ -1,4 +1,6 @@
 package com.appnexus.platform.appapi.organization;
+import com.appnexus.contracts.operation.ResponseReferenceNames;
+import com.appnexus.contracts.operation.ResponseReferenceNames.Binding;
 import com.appnexus.platform.organization.PersonnelManagement;
 import com.appnexus.platform.organization.PersonManagement;
 import com.appnexus.platform.organization.PersonData;
@@ -46,6 +48,29 @@ public final class PersonController {
 
   /** 读取人员详情；复用可信租户、独立权限和父档案版本，不扩大账号任职或业务权限。 */
   @OperationBinding(id="Person.read", reference=true)
+ @ResponseReferenceNames({
+     @Binding(path="details",type="organization",id="values.organizationId",name="organizationName"),
+     @Binding(path="details",type="position",id="values.positionId",name="positionName"),
+     @Binding(path="person",type="geography",id="attributes.nativePlace",name="nativePlaceName",uuid=false),
+     @Binding(path="person",type="geography",id="attributes.countryRegion",name="countryRegionName",uuid=false),
+     @Binding(path="person",type="geography",id="attributes.province",name="provinceName",uuid=false),
+     @Binding(path="person",type="geography",id="attributes.city",name="cityName",uuid=false),
+     @Binding(path="person",type="dictionary:person_gender",id="attributes.gender",name="genderName",uuid=false),
+     @Binding(path="person",type="dictionary:identity_type",id="attributes.identityType",name="identityTypeName",uuid=false),
+     @Binding(path="person",type="dictionary:work_nature",id="attributes.workNature",name="workNatureName",uuid=false),
+     @Binding(path="person",type="dictionary:blood_type",id="attributes.bloodType",name="bloodTypeName",uuid=false),
+     @Binding(path="person",type="dictionary:marital_status",id="attributes.maritalStatus",name="maritalStatusName",uuid=false),
+     @Binding(path="person",type="dictionary:employment_status",id="attributes.employmentStatus",name="employmentStatusName",uuid=false),
+     @Binding(path="person",type="dictionary:ethnicity",id="attributes.ethnicity",name="ethnicityName",uuid=false),
+     @Binding(path="person",type="dictionary:political_status",id="attributes.politicalStatus",name="politicalStatusName",uuid=false),
+     @Binding(path="details",type="dictionary:certificate_status",id="values.certificateStatus",name="certificateStatusName",uuid=false),
+     @Binding(path="details",type="dictionary:reward_penalty_type",id="values.recordType",name="recordTypeName",uuid=false),
+     @Binding(path="details",type="dictionary:education_level",id="values.educationLevel",name="educationLevelName",uuid=false),
+     @Binding(path="details",type="dictionary:skill_level",id="values.skillLevel",name="skillLevelName",uuid=false),
+     @Binding(path="details",type="dictionary:certificate_type",id="values.certificateType",name="certificateTypeName",uuid=false),
+     @Binding(path="details",type="dictionary:person_contact_type",id="values.contactType",name="contactTypeName",uuid=false),
+     @Binding(path="details",type="dictionary:address_type",id="values.addressType",name="addressTypeName",uuid=false),
+     @Binding(path="details",type="dictionary:academic_degree",id="values.degree",name="degreeName",uuid=false)})
   @GetMapping("/{id}")
   public Object read(HttpServletRequest r,@PathVariable String id){return personnel.read(context(r),id);}
 

@@ -19,6 +19,8 @@ import static org.assertj.core.api.Assertions.*;
 class BusinessValueDictionaryTest extends DatabaseTestSupport {
  @Autowired JdbcTemplate jdbc;
  @Autowired BusinessValueCatalog catalog;
+ @Autowired GeographyCatalog geography;
+ @Autowired com.appnexus.platform.organization.PersonnelDirectory directory;
  @Autowired DictionaryManagement management;
  @Autowired MasterDataService master;
  @Autowired com.appnexus.masterdata.application.product.ProductCatalogService productCatalog;
@@ -35,16 +37,84 @@ class BusinessValueDictionaryTest extends DatabaseTestSupport {
  }
  @org.junit.jupiter.api.AfterEach void clearRequest(){org.springframework.web.context.request.RequestContextHolder.resetRequestAttributes();}
  private void request(VerifiedTenantContext c){var request=new org.springframework.mock.web.MockHttpServletRequest();request.setAttribute(VerifiedTenantContext.class.getName(),c);org.springframework.web.context.request.RequestContextHolder.setRequestAttributes(new org.springframework.web.context.request.ServletRequestAttributes(request));}
+ /** 真实 MySQL 八并发测量，单轮解析 600 个字典、地理、组织及岗位引用。 */
+ @Test void catalogNameBatchesHaveBoundedQueriesUnderConcurrentReads() throws Exception {
+  var c=tenant();
+  String tenant=c.tenantId().toString(),actor=c.accountId().toString(),org=organization(c);
+  String organizationType=jdbc.queryForObject("SELECT BIN_TO_UUID(type_id) FROM tenant_organization_unit WHERE id=UUID_TO_BIN(?)",String.class,org);
+  String dictionaryId=jdbc.queryForObject("SELECT BIN_TO_UUID(id) FROM tenant_dictionary WHERE tenant_id=UUID_TO_BIN(?) AND code='partner_type'",String.class,tenant);
+  var dictionaryRecords=new ArrayList<Object[]>();
+  var geographyRecords=new ArrayList<Object[]>();
+  var organizationRecords=new ArrayList<Object[]>();
+  var positionRecords=new ArrayList<Object[]>();
+  var dictionaryKeys=new ArrayList<BusinessValueCatalog.NameKey>();
+  var geographyKeys=new ArrayList<String>();
+  var organizationKeys=new ArrayList<com.appnexus.platform.organization.PersonnelDirectory.OrganizationNameKey>();
+  for(int i=0;i<200;i++){
+    String id=UUID.randomUUID().toString(),code="NAME_"+i,lower="name_"+i;
+    dictionaryRecords.add(new Object[]{UUID.randomUUID().toString(),tenant,dictionaryId,lower,code,code,actor,actor});
+    geographyRecords.add(new Object[]{UUID.randomUUID().toString(),tenant,code,code});
+    dictionaryKeys.add(new BusinessValueCatalog.NameKey("partner_type",code));
+    geographyKeys.add(code);
+    if(i<100){
+      organizationRecords.add(new Object[]{tenant,id,code,organizationType,code});
+      organizationKeys.add(new com.appnexus.platform.organization.PersonnelDirectory.OrganizationNameKey("organization",id));
+    }else{
+      positionRecords.add(new Object[]{tenant,id,org,code,code});
+      organizationKeys.add(new com.appnexus.platform.organization.PersonnelDirectory.OrganizationNameKey("position",id));
+    }
+  }
+  jdbc.batchUpdate("""
+      INSERT INTO tenant_dictionary_item(id,tenant_id,dictionary_id,code,item_value,name,created_by,updated_by)
+      VALUES(UUID_TO_BIN(?),UUID_TO_BIN(?),UUID_TO_BIN(?),?,?,?,UUID_TO_BIN(?),UUID_TO_BIN(?))
+      """,dictionaryRecords);
+  jdbc.batchUpdate("INSERT INTO md_country_region(id,tenant_id,code,name) VALUES(UUID_TO_BIN(?),UUID_TO_BIN(?),?,?)",geographyRecords);
+  jdbc.batchUpdate("INSERT INTO tenant_organization_unit(tenant_id,id,code,type_id,name) VALUES(UUID_TO_BIN(?),UUID_TO_BIN(?),?,UUID_TO_BIN(?),?)",organizationRecords);
+  jdbc.batchUpdate("INSERT INTO tenant_organization_position(tenant_id,id,organization_id,code,name) VALUES(UUID_TO_BIN(?),UUID_TO_BIN(?),UUID_TO_BIN(?),?,?)",positionRecords);
+  var transaction=new TransactionTemplate(manager);
+  var other=tenant();
+  assertThat(catalog.names(other.tenantId(),dictionaryKeys)).isEmpty();
+  assertThat(geography.names(other.tenantId(),geographyKeys)).isEmpty();
+  assertThat(directory.organizationReferenceNames(other,organizationKeys)).isEmpty();
+  java.util.concurrent.Callable<long[]> read=()->transaction.execute(status->{
+    long before=selectCount(),start=System.nanoTime();
+    assertThat(catalog.names(c.tenantId(),dictionaryKeys)).hasSize(200);
+    assertThat(geography.names(c.tenantId(),geographyKeys)).hasSize(200);
+    assertThat(directory.organizationReferenceNames(c,organizationKeys)).hasSize(200);
+    return new long[]{(System.nanoTime()-start)/1_000_000,selectCount()-before};
+  });
+  long[] warm=read.call();
+  try(var pool=java.util.concurrent.Executors.newFixedThreadPool(8)){
+    var samples=pool.invokeAll(Collections.nCopies(48,read),30,java.util.concurrent.TimeUnit.SECONDS);
+    var timings=new ArrayList<Long>();
+    for(var sample:samples){
+      long[] result=sample.get();
+      assertThat(result[1]).isEqualTo(warm[1]).isLessThan(30);
+      timings.add(result[0]);
+    }
+    timings.sort(Long::compareTo);
+    long p95=timings.get((int)Math.ceil(timings.size()*0.95)-1);
+    System.out.println("Catalog names: 600 references, 8 workers, 48 samples, "+warm[1]+" SELECT/request, p95 "+p95+" ms");
+  }
+ }
+
+ private long selectCount(){
+  return Objects.requireNonNull(jdbc.queryForObject("SHOW SESSION STATUS LIKE 'Com_select'",(row,index)->row.getLong("Value")));
+ }
+
  @Test void configurableValuesRespectStatusReferencesAndTenant(){
   var c=tenant();request(c);var context=new DictionaryManagement.Context(c.accountId(),c.tenantId(),c.memberId());
   assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM tenant_dictionary WHERE tenant_id=UUID_TO_BIN(?)",Integer.class,c.tenantId().toString())).isEqualTo(25);
   var dictionary=management.dictionaries(context).stream().filter(row->row.code().equals("partner_type")).findFirst().orElseThrow();
   var option=management.createItem(context,dictionary.id(),new DictionaryManagement.CreateItem(null,"custom_role","CUSTOM_ROLE","自定义客商类型",null,1));
   var productUnit=productCatalog.createUnit(c,new com.appnexus.masterdata.api.product.ProductCatalogData.UnitInput("PIECE","件","COUNT",0,0));
-  products.create(c,new com.appnexus.masterdata.api.product.ProductMainData.Input("UNIT","商品单位",null,null,null,"PHYSICAL",productUnit.id(),null,null,null,null));
-  assertThatThrownBy(()->products.create(c,new com.appnexus.masterdata.api.product.ProductMainData.Input("BADUNIT","非法商品单位",null,null,null,"PHYSICAL",UUID.randomUUID().toString(),null,null,null,null))).isInstanceOf(MasterData.Rejection.class);
-  // 客商新增必须指定可信租户内启用组织；字典测试不能依赖历史缺省归属绕过真实执行约束。
+  // 商品与客商各自执行归属校验，让无效单位断言实际抵达引用检查。
   String organization=organization(c);
+  products.create(c,new com.appnexus.masterdata.api.product.ProductMainData.Input(
+      "UNIT","商品单位",null,null,null,"PHYSICAL",productUnit.id(),null,null,null,null,"",organization));
+  assertThatThrownBy(()->products.create(c,new com.appnexus.masterdata.api.product.ProductMainData.Input(
+      "BADUNIT","非法商品单位",null,null,null,"PHYSICAL",UUID.randomUUID().toString(),null,null,null,null,"",organization)))
+      .isInstanceOf(MasterData.Rejection.class).hasMessage("PRODUCT_V1_INPUT_INVALID");
   var attributes=Map.of("partnerType","CUSTOM_ROLE","nature","PRIVATE");
   String id=master.create(c,MasterData.Kind.PARTNER,new MasterData.Input("DYNAMIC","动态字典客商",attributes,0,null,null,organization)).get("id");
   assertThat(catalog.options(c.tenantId(),BusinessValueCatalog.PARTNER).get("partnerType")).anyMatch(row->row.value().equals("CUSTOM_ROLE")&&row.enabled());
@@ -56,8 +126,15 @@ class BusinessValueDictionaryTest extends DatabaseTestSupport {
   assertThatThrownBy(()->management.deleteItem(context,dictionary.id(),option.id(),1)).hasMessageContaining("字典项已被业务引用");
   org.springframework.web.context.request.RequestContextHolder.resetRequestAttributes();
   var other=tenant();
-  assertThatThrownBy(()->master.create(other,MasterData.Kind.PARTNER,new MasterData.Input("CROSS","跨租户非法值",attributes,0))).isInstanceOf(MasterData.Rejection.class);
-  assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM md_partner WHERE tenant_id=UUID_TO_BIN(?) AND code IN ('DENIED','CROSS')",Integer.class,c.tenantId().toString())).isZero();
+  request(other);
+  String otherOrganization=organization(other);
+  assertThatThrownBy(()->master.create(other,MasterData.Kind.PARTNER,
+      new MasterData.Input("CROSS","跨租户非法值",attributes,0,null,null,otherOrganization)))
+      .isInstanceOf(MasterData.Rejection.class);
+  assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM md_partner WHERE tenant_id=UUID_TO_BIN(?) AND code='DENIED'",
+      Integer.class,c.tenantId().toString())).isZero();
+  assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM md_partner WHERE tenant_id=UUID_TO_BIN(?) AND code='CROSS'",
+      Integer.class,other.tenantId().toString())).isZero();
  }
  /** 为字典引用测试创建实际租户内组织，防止缺少必填归属使拒绝断言误通过。 */
  private String organization(VerifiedTenantContext c){

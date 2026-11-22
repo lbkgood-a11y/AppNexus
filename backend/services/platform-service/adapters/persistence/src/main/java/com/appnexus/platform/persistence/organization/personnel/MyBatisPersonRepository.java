@@ -39,6 +39,16 @@ public final class MyBatisPersonRepository implements PersonRepository, com.appn
    return new PersonPage(PersonnelStorageValues.stable(mapper.list(tenant,keyword,enabled,size,offset,predicate)),
        mapper.count(tenant,keyword,enabled,predicate));
  }
+ /** {@inheritDoc} */
+ @Override public Map<String,String> names(VerifiedTenantContext context,List<String> ids){
+   var result=new java.util.HashMap<String,String>();
+   RowAccessControl.Predicate predicate;
+   try{predicate=readPredicate(context);}catch(SecurityException denied){return Map.of();}
+   for(var row:mapper.names(context.tenantId().toString(),ids,predicate)){
+     result.put((String)row.get("id"),(String)row.get("name"));
+   }
+   return Map.copyOf(result);
+ }
  /** 人员档案 ID 即业务人员 ID；记录选择和动态条件均由统一执行器编译。 */
  RowAccessControl.Predicate readPredicate(VerifiedTenantContext context){return scope.predicate(plan(context,"read"));}
  private AccessPlan plan(VerifiedTenantContext context,String action){

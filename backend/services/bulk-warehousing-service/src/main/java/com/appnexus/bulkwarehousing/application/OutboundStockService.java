@@ -37,8 +37,11 @@ public final class OutboundStockService implements OutboundStock, DataAccessExec
 
   /** {@inheritDoc} */
   @Override public Gate check(VerifiedTenantContext context,String receiptId) {
-    require(context,OutboundOperations.CHECK);
-    return store.transaction(() -> gate(authorizedStock(context,receiptId)));
+    var plan=require(context,OutboundOperations.CHECK);
+    return store.transaction(() -> {
+      writes.authorizeOperation(plan);
+      return gate(authorizedStock(context,receiptId));
+    });
   }
 
   /** {@inheritDoc} */
@@ -46,11 +49,11 @@ public final class OutboundStockService implements OutboundStock, DataAccessExec
     var plan=require(context,OutboundOperations.RESERVE);
     validate(hold);
     return store.transaction(() -> {
+      writes.authorizeOperation(plan);
       var stock=authorizedStock(context,hold.receiptId());
       if (!StockAvailability.supportsStandaloneReservation(stock.coil())) {
         throw new Rejection(409, "OUTBOUND_COIL_QUOTA_REQUIRED");
       }
-      writes.authorizeOperation(plan);
       var original=store.occupation(context,hold.id());
       var change=StockAvailability.reserve(original==null ? null : original.receiptId(),
           hold.receiptId(),original!=null && original.released());
@@ -68,8 +71,8 @@ public final class OutboundStockService implements OutboundStock, DataAccessExec
     var plan=require(context,OutboundOperations.RELEASE);
     validate(hold);
     store.transaction(() -> {
-      authorizedStock(context,hold.receiptId());
       writes.authorizeOperation(plan);
+      authorizedStock(context,hold.receiptId());
       var original=store.occupation(context,hold.id());
       switch (StockAvailability.release(original==null ? null : original.receiptId(),hold.receiptId(),
           original!=null && original.quotaManaged(),original!=null && original.released())) {
@@ -86,9 +89,23 @@ public final class OutboundStockService implements OutboundStock, DataAccessExec
   @Override public List<RestrictionEvidence> restrictionHistory(VerifiedTenantContext context,String receiptId) {
     var plan=require(context,OutboundOperations.READ_RESTRICTIONS);
     return store.transaction(() -> {
-      authorizedStock(context,receiptId);
       writes.authorizeOperation(plan);
+      authorizedStock(context,receiptId);
       return store.restrictionHistory(context,receiptId);
+    });
+  }
+
+  /** {@inheritDoc} */
+  @Override public RestrictionEvidence restrictionDocument(VerifiedTenantContext context,String id) {
+    var plan=require(context,OutboundOperations.READ_RESTRICTIONS);
+    uuid(id);
+    return store.transaction(()->{
+      writes.authorizeOperation(plan);
+      var record=store.restriction(context,id);
+      if (record==null) throw denied();
+      authorizedStock(context,record.receiptId());
+      return store.restrictionHistory(context,record.receiptId()).stream()
+          .filter(row->id.equals(row.id())).findFirst().orElseThrow(OutboundStockService::denied);
     });
   }
 
@@ -98,8 +115,8 @@ public final class OutboundStockService implements OutboundStock, DataAccessExec
     validate(freeze);
     store.transaction(() -> {
       // 已发批也可登记待返仓或待冲销的监管限制；冻结从不改变在库量。
-      authorizedStock(context,freeze.receiptId());
       writes.authorizeOperation(plan);
+      authorizedStock(context,freeze.receiptId());
       var original=store.restriction(context,freeze.id());
       var decision=TitleTransferRules.freeze(original!=null && original.receiptId().equals(freeze.receiptId()),
           original==null ? null : original.evidenceId(),freeze.evidenceId(),
@@ -121,8 +138,8 @@ public final class OutboundStockService implements OutboundStock, DataAccessExec
     var plan=require(context,OutboundOperations.LIFT);
     validate(freeze);
     store.transaction(() -> {
-      authorizedStock(context,freeze.receiptId());
       writes.authorizeOperation(plan);
+      authorizedStock(context,freeze.receiptId());
       var original=store.restriction(context,freeze.id());
       var decision=TitleTransferRules.lift(original!=null && original.receiptId().equals(freeze.receiptId()),
           original==null ? null : original.releaseEvidence(),freeze.evidenceId());

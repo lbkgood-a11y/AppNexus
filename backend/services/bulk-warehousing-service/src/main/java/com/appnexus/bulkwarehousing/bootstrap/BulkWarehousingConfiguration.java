@@ -107,8 +107,9 @@ public class BulkWarehousingConfiguration {
   /** @param mapper 两类余额 SQL @param stock 库存身份锁 @param source 复用主数据范围
    * @param access 统一权限 @return 余额及追溯查询 */
   @Bean public WarehouseBalanceService warehouseBalances(WarehouseBalanceMapper mapper,MyBatisOutboundStockStore stock,
-      MasterDataInboundReceiptReferences source,AccessPlanning access,com.appnexus.platform.authorization.ScopedWriteGate operations) {
-    return new WarehouseBalanceService(new MyBatisWarehouseBalanceStore(mapper),stock,source,access,operations);
+      MasterDataInboundReceiptReferences source,com.appnexus.masterdata.api.masterdata.MasterDataReferenceNames names,
+      AccessPlanning access,com.appnexus.platform.authorization.ScopedWriteGate operations) {
+    return new WarehouseBalanceService(new MyBatisWarehouseBalanceStore(mapper),stock,source,names::load,access,operations);
   }
 
   /** @param receiving 受控入仓用例 @return 第一方命令控制器 */
@@ -147,8 +148,9 @@ public class BulkWarehousingConfiguration {
 
   /** @return 受治理的主数据出站适配器 */
   @Bean public MasterDataInboundReceiptReferences inboundMasterData(MasterDataManagement masterData,
-      ProductStructureManagement products,UnitConversions conversions,ProductCatalogManagement catalog,ProductManagement productRead) {
-    return new MasterDataInboundReceiptReferences(masterData,products,conversions,catalog,productRead);
+      ProductStructureManagement products,UnitConversions conversions,ProductCatalogManagement catalog,ProductManagement productRead,
+      com.appnexus.masterdata.api.masterdata.MasterDataReferenceNames names) {
+    return new MasterDataInboundReceiptReferences(masterData,products,conversions,catalog,productRead,names);
   }
 
   /**

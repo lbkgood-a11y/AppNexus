@@ -8,6 +8,7 @@ public final class ProductStructureController {
  /** @param service 负责父子归属、CAS、租户和事务的执行器 */
  public ProductStructureController(ProductStructureManagement service){this.service=service;}
  /** 查询商品结构；父子状态、可信租户和当前版本由领域端复核。 */
+ @com.appnexus.contracts.operation.RecordAuditNames(paths={"specifications.audit","skus.audit","components.audit"})
  @GetMapping("") @OperationBinding(id="Product.readStructure",reference=true)
  public Object readStructure(HttpServletRequest r,@PathVariable String product){return service.read(c(r),product);}
  /** 新增商品规格；父子状态、可信租户和当前版本由领域端复核。 */

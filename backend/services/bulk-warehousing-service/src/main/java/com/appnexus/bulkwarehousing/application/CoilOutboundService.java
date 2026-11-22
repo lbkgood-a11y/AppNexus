@@ -627,6 +627,23 @@ public final class CoilOutboundService implements CoilOutbound,DataAccessExecuto
   }
 
   /** {@inheritDoc} */
+  @Override public ReturnDocument returnDocument(VerifiedTenantContext c,String id) {
+    var plan=require(c,CoilOperations.READ_RETURN_TRANSIT);
+    uuid(id);
+    return write(plan,()->{
+      var posted=quotas.partialReturn(c,id);
+      var header=posted==null ? quotas.legacyReturnDocument(c,id) : posted.result();
+      if (header==null) throw denied();
+      var lines=quotas.returnDocumentLines(c,id);
+      if (lines.isEmpty()) throw denied();
+      var warehouses=new java.util.HashSet<String>();
+      for (var line:lines) warehouses.add(line.warehouseId());
+      lockOriginal(c,header.handoverId(),warehouses);
+      return new ReturnDocument(header,lines);
+    });
+  }
+
+  /** {@inheritDoc} */
   @Override public ReturnTransit returnTransit(VerifiedTenantContext c,String id) {
     var plan=require(c,CoilOperations.READ_RETURN_TRANSIT);
     uuid(id);
@@ -769,20 +786,14 @@ public final class CoilOutboundService implements CoilOutbound,DataAccessExecuto
   private ReturnTransit transitResult(VerifiedTenantContext c,Chain chain,Transit transit) {
     var coils=quotas.transitCoils(c,transit.id());
     // 同一发运可有多个当前接收仓，完整清单不得越过任何一卷的读取范围。
-    coils.stream().map(TransitCoil::receivingWarehouseId).distinct()
-        .forEach(warehouse -> masterData.requireWarehouse(c,warehouse));
     var history=quotas.transitEvidence(c,transit.id());
-    var historicalWarehouses=new java.util.HashSet<String>();
-    historicalWarehouses.add(transit.warehouseId());
-    coils.forEach(coil -> historicalWarehouses.add(coil.receivingWarehouseId()));
-    for (var fact:history) {
-      if (fact.previousWarehouseId()!=null && historicalWarehouses.add(fact.previousWarehouseId())) {
-        masterData.requireWarehouse(c,fact.previousWarehouseId());
-      }
-      if (fact.warehouseId()!=null && historicalWarehouses.add(fact.warehouseId())) {
-        masterData.requireWarehouse(c,fact.warehouseId());
-      }
+    var warehouses=new java.util.LinkedHashSet<String>();
+    coils.forEach(coil->warehouses.add(coil.receivingWarehouseId()));
+    for(var fact:history){
+      if(fact.previousWarehouseId()!=null&&!fact.previousWarehouseId().equals(transit.warehouseId()))warehouses.add(fact.previousWarehouseId());
+      if(fact.warehouseId()!=null&&!fact.warehouseId().equals(transit.warehouseId()))warehouses.add(fact.warehouseId());
     }
+    masterData.requireWarehouses(c,warehouses);
     boolean showQuota=canReadAuthorizationBalances(c);
     return new ReturnTransit(transit.id(),transit.handoverId(),chain.notice().warehouseId(),transit.warehouseId(),
         chain.notice().unitId(),coils,transit.evidenceId(),history,
@@ -978,7 +989,7 @@ public final class CoilOutboundService implements CoilOutbound,DataAccessExecuto
     if (link==null) throw denied();
     var warehouses=new java.util.TreeSet<>(receivingWarehouses);
     warehouses.add(link.warehouseId());
-    for (var warehouse:warehouses) masterData.requireWarehouse(c,warehouse);
+    masterData.requireWarehouses(c,warehouses);
     for (var warehouse:warehouses) quotas.guard(c,warehouse);
     // 原仓控制锁已持有；复用锁定原通知、授权及车次，并复核原货主。
     return lockChain(c,"trip",original.result().tripId());

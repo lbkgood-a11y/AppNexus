@@ -506,7 +506,7 @@ async function recover() {
             :title="t('workflow.node')"
           /><vxe-column :title="t('workflow.actor')"
             ><template #default="{ row }"
-              ><span v-if="row.actor">{{ row.actor }}</span
+              ><span v-if="row.actor">{{ row.actorName || t("referenceName.unavailable") }}</span
               ><el-tag v-else type="warning">{{
                 t("workflow.noAssignee")
               }}</el-tag></template

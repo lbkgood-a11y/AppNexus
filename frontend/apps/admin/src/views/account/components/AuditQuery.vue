@@ -10,7 +10,7 @@ import { currentTenant } from "@/utils/tenantContext";
 import { displayInstant, refreshDisplayFormat } from "@/utils/displayFormat";
 
 /** 个人中心承载受权租户或平台审计摘要，复用 Element Plus 表格和分页，不请求敏感原值。 */
-interface Entry { source: string; eventId: string; actor: string; action: string; target: string | null; traceId: string | null; status: number | null; occurredAt: string }
+interface Entry { source: string; eventId: string; actor: string | null; actorName?: string; action: string; target: string | null; traceId: string | null; status: number | null; occurredAt: string }
 const { t, locale } = useI18n();
 const rows = ref<Entry[]>([]), total = ref(0), page = ref(1), loading = ref(false), error = ref("");
 let generation = 0;
@@ -33,7 +33,9 @@ onMounted(() => { void refreshDisplayFormat(); void load(); });
     <vxe-table :column-config="{ resizable: true }"  :data="rows" :loading="loading" :empty-text="t(error ? 'account.logsRetry' : 'account.noLogs')" border="inner">
       <vxe-column field="source" :title="t('account.auditSource')" min-width="120" />
       <vxe-column field="action" :title="t('account.event')" min-width="200" />
-      <vxe-column field="actor" :title="t('account.auditActor')" min-width="260" />
+      <vxe-column field="actorName" :title="t('account.auditActor')" min-width="260">
+        <template #default="{ row }">{{ row.actorName || t(row.actor ? 'referenceName.unavailable' : 'recordAudit.unknownActor') }}</template>
+      </vxe-column>
       <vxe-column field="target" :title="t('account.auditTarget')" min-width="220" />
       <vxe-column :title="t('account.auditTrace')" min-width="260"><template #default="{ row }">{{ row.traceId || '—' }}</template></vxe-column>
       <vxe-column :title="t('account.eventTime')" min-width="220"><template #default="{ row }">{{ displayInstant(row.occurredAt, locale) }}</template></vxe-column>

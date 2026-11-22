@@ -367,12 +367,16 @@ class AccessBuildGate {
     }
 
     private static boolean validGuard(AnnotationTree annotation,Set<String> parameters){
-        if(!boundPath(value(annotation,"tenant"),parameters))return false;
+        boolean platform=!value(annotation,"platformActor").isEmpty();
+        if(platform){
+            if(!boundPath(value(annotation,"platformActor"),parameters)||value(annotation,"platformPermission").isEmpty()
+                    ||!value(annotation,"tenant").isEmpty())return false;
+        }else if(!boundPath(value(annotation,"tenant"),parameters)||!value(annotation,"platformPermission").isEmpty())return false;
         for(String key:List.of("predicate","readFallback","recordId","target","when")){
             var path=value(annotation,key);
             if(!path.isEmpty()&&!boundPath(path,parameters))return false;
         }
-        int modes=0;
+        int modes=platform?1:0;
         if(!value(annotation,"predicate").isEmpty()){
             if(!validPath(value(annotation,"predicate"))||value(annotation,"resource").isEmpty())return false;
             modes++;

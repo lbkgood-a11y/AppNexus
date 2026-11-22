@@ -11,4 +11,7 @@ public interface GeographyCatalog {
    * @return 完整目录摘要，不使用普通列表分页截断
    */
   List<Node> nodes(UUID tenantId);
+  /** @param tenantId 可信租户 @param codes 去重的地理编码，单批最多 200 个
+   * @return 当前租户地理名称以及标准洲名称 */
+  Map<String,String> names(UUID tenantId,List<String> codes);
 }

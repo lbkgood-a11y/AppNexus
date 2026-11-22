@@ -19,6 +19,9 @@ public interface OutboundStock {
   /** @param context 已验证租户主体 @param receiptId 库存身份 UUID @return 该身份的冻结和解除历史 */
   List<RestrictionEvidence> restrictionHistory(VerifiedTenantContext context,String receiptId);
 
+  /** @param context 可信租户成员 @param id 冻结指令 UUID @return 经原库存范围验证的冻结凭证 */
+  RestrictionEvidence restrictionDocument(VerifiedTenantContext context,String id);
+
   /** 配货占用编号及库存身份 UUID；重复请求必须沿用原编号。 */
   record Hold(String id, String receiptId) {}
 

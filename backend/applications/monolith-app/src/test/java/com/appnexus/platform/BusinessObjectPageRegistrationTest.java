@@ -60,11 +60,32 @@ class BusinessObjectPageRegistrationTest {
   /** 所有统一声明页面键必须映射真实路由，禁止将页面键拼成URL。 */
   @Test void unifiedObjectPagesUseRegisteredRoutes(){
     var objects=java.util.List.of(new com.appnexus.masterdata.adapter.integration.partner.BusinessPartnerDeclaration().descriptor(),new com.appnexus.platform.security.OrganizationUnitDeclaration().descriptor(),new com.appnexus.platform.security.AccountDeclaration().descriptor(),new com.appnexus.platform.security.TenantMemberDeclaration().descriptor(),new com.appnexus.platform.security.PersonDirectoryDeclaration().descriptor());
+    var apiOnly=new java.util.ArrayList<String>();
     for(var object:objects)for(var action:object.operations()){
-      var page=NavigationPages.find(action.pageOperation().pageKey());
-      assertThat(page).as(action.operationId()).isNotNull();
-      assertThat(action.pageOperation().pagePath()).as(action.operationId()).isEqualTo(page.path());
+      var pages=new java.util.ArrayList<com.appnexus.contracts.businessobject.BusinessObjects.PageOperation>();
+      if(action.pageOperation()!=null)pages.add(action.pageOperation());
+      action.aliases().forEach(alias->pages.add(alias.pageOperation()));
+      if(pages.isEmpty()){
+        assertThat(action.supportedServices()).as(action.operationId()).isEmpty();
+        apiOnly.add(action.operationId());
+      }
+      for(var operation:pages){
+        var page=NavigationPages.findRoute(operation.pageKey());
+        assertThat(page).as(action.operationId()).isNotNull();
+        assertThat(operation.pagePath()).as(action.operationId()).isEqualTo(page.path());
+      }
     }
+    // 这些真实专用 API 无业务页面；入口继续由启动时操作契约门禁验证。
+    assertThat(apiOnly).containsExactlyInAnyOrder(
+        "Account.securityLogs","Account.operationDiagnostics","Account.sessionStatus",
+        "Account.requestRecovery","Account.completeRecovery",
+        "TenantMember.operationDiagnostics","TenantMember.nativeTenants","TenantMember.selectNativeTenant",
+        "TenantMember.availableTenants","TenantMember.currentTenant","TenantMember.selectTenant",
+        "TenantMember.workspaceContext");
+    var account=NavigationPages.findRoute("account/profile");
+    assertThat(account.scope()).isEqualTo(com.appnexus.platform.configuration.MenuManagement.Scope.AUTHENTICATED);
+    assertThat(NavigationPages.find(account.key())).isNull();
+    assertThat(NavigationPages.routes()).containsOnlyOnce(account);
   }
   @Test void declaredApiMatchesRealControllerMapping() throws Exception {
     var operation=com.appnexus.leave.api.LeaveOperations.SUBMIT_OPERATION.pageOperation();

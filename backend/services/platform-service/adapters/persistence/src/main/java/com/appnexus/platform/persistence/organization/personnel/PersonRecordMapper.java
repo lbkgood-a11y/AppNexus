@@ -16,6 +16,13 @@ public interface PersonRecordMapper {
  @GuardedScope(predicate="access",resource="masterdata.person",tenant="tenant",actions="read")
  @SelectProvider(type=ReadSql.class,method="list")
  List<Map<String,Object>> list(@Param("tenant") String tenant,@Param("keyword") String keyword,@Param("enabled") Boolean enabled,@Param("size") int size,@Param("offset") int offset,@Param("access") RowAccessControl.Predicate access);
+ /** @param tenant 可信租户 @param ids 一批人员 UUID @param access 原读取范围 @return 已授权名称 */
+ @GuardedScope(predicate="access",resource="masterdata.person",tenant="tenant",actions="read")
+ @Select({"<script>","<bind name='rangeSql' value='@com.appnexus.persistence.mybatis.ScopedSql@bind(access.sql(),access.parameters(),&quot;access&quot;)'/>",
+    "SELECT BIN_TO_UUID(id) id,name FROM md_person WHERE tenant_id=UUID_TO_BIN(#{tenant}) AND id IN",
+    "<foreach collection='ids' item='id' open='(' separator=',' close=')'>UUID_TO_BIN(#{id})</foreach>",
+    "${rangeSql}</script>"})
+ List<Map<String,Object>> names(@Param("tenant") String tenant,@Param("ids") List<String> ids,@Param("access") RowAccessControl.Predicate access);
  /** 列表COUNT与数据使用相同租户及过滤条件。 */
  @GuardedScope(predicate="access",resource="masterdata.person",tenant="tenant",actions="read")
  @SelectProvider(type=ReadSql.class,method="count")

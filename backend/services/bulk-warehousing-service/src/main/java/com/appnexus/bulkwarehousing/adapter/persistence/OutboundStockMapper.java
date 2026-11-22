@@ -9,7 +9,7 @@ import org.apache.ibatis.annotations.*;
 /** 出仓门禁固定查询及占用、冻结写入。业务命令先锁同一库存身份。 */
 @Mapper
 @TenantAggregateScoped(requireTenantMatch=true,
-    tables={"bw_stock_receipt","bw_inbound_receipt","bw_inbound_custody","bw_inbound_notice",
+    tables={"bw_inbound_notice_line","bw_stock_receipt","bw_inbound_receipt","bw_inbound_custody","bw_inbound_notice",
         "bw_inbound_title","bw_inbound_quality_release","bw_stock_occupation","bw_stock_restriction","bw_stock_coil","bw_coil_allocation"},
     statements={"warehouse","facts","occupation","reserve","release","restore","restriction","restrictionHistory","freeze","lift"})
 public interface OutboundStockMapper {
@@ -22,7 +22,17 @@ public interface OutboundStockMapper {
       """)
   String warehouse(@Param("__verifiedTenant") byte[] tenant,@Param("id") String receiptId);
 
-  /** 读取已锁定库存的正式数量、全量权利与质量状态及当前限制。 */
+  /** 读取已锁定库存的正式数量、权利、质量及监管事实；仅接受实际引用方的同事务许可。 */
+  @com.appnexus.persistence.mybatis.GuardedScope(tenant="__verifiedTenant",operationPermissions={
+      "warehousing.outbound.stock:check","warehousing.outbound.stock:reserve","warehousing.outbound.stock:release",
+      "warehousing.stock.restriction:read","warehousing.stock.restriction:freeze","warehousing.stock.restriction:lift",
+      "warehousing.coil.stockbalance:read","warehousing.coil.title:transfer","warehousing.outbound.coil:identify",
+      "warehousing.outbound.coil:plan","warehousing.outbound.coil:allocate","warehousing.outbound.coil:cancel",
+      "warehousing.outbound.coil:read_authorization_balances","warehousing.outbound.coil:review_weighing",
+      "warehousing.outbound.coil:handover","warehousing.outbound.coil:accept_return",
+      "warehousing.outbound.coil:reverse_handover","warehousing.outbound.coil:return_coils",
+      "warehousing.outbound.coil:dispatch_return",
+      "warehousing.outbound.coil:release_returned_quality"})
   @Select("""
       SELECT BIN_TO_UUID(COALESCE(s.current_warehouse_id,c.warehouse_id)) warehouseId,BIN_TO_UUID(COALESCE(s.current_area_id,c.area_id)) areaId,
         BIN_TO_UUID(COALESCE(s.current_location_id,c.location_id)) locationId,
@@ -30,8 +40,8 @@ public interface OutboundStockMapper {
         COALESCE(s.current_area_version,c.area_version) areaVersion,
         COALESCE(s.current_location_version,c.location_version) locationVersion,
         BIN_TO_UUID(COALESCE(t.owner_id,n.owner_id)) ownerId,COALESCE(t.title_revision,0) titleRevision,
-        BIN_TO_UUID(n.product_id) productId,
-        BIN_TO_UUID(n.identity_id) identityId,BIN_TO_UUID(r.unit_id) unitId,s.inbound_quantity quantity,
+        BIN_TO_UUID(nl.product_id) productId,
+        BIN_TO_UUID(nl.identity_id) identityId,BIN_TO_UUID(r.unit_id) unitId,s.inbound_quantity quantity,
         CASE WHEN s.pending_quantity=0 AND q.quantity=s.inbound_quantity THEN 1 ELSE 0 END qualityReady,
         CASE WHEN t.quantity=s.inbound_quantity
           AND t.effective_at<=CURRENT_TIMESTAMP(6) THEN 1 ELSE 0 END titleReady,
@@ -45,6 +55,7 @@ public interface OutboundStockMapper {
       JOIN bw_inbound_receipt r ON r.tenant_id=s.tenant_id AND r.id=s.receipt_id
       JOIN bw_inbound_custody c ON c.tenant_id=r.tenant_id AND c.id=r.custody_id
       JOIN bw_inbound_notice n ON n.tenant_id=c.tenant_id AND n.id=c.notice_id
+      JOIN bw_inbound_notice_line nl ON nl.tenant_id=c.tenant_id AND nl.notice_id=c.notice_id AND nl.id=c.notice_line_id
       LEFT JOIN bw_inbound_title t ON t.tenant_id=s.tenant_id AND t.receipt_id=s.receipt_id
       LEFT JOIN bw_inbound_quality_release q ON q.tenant_id=s.tenant_id AND q.receipt_id=s.receipt_id
       WHERE s.tenant_id=#{__verifiedTenant} AND s.receipt_id=UUID_TO_BIN(#{id})
@@ -100,7 +111,7 @@ public interface OutboundStockMapper {
   List<Map<String,Object>> restrictionHistory(@Param("__verifiedTenant") byte[] tenant,@Param("id") String receiptId);
 
   /** 按冻结编号读取原依据。 */
-  @com.appnexus.persistence.mybatis.GuardedScope(tenant="__verifiedTenant",operationPermissions={"warehousing.stock.restriction:freeze","warehousing.stock.restriction:lift"})
+  @com.appnexus.persistence.mybatis.GuardedScope(tenant="__verifiedTenant",operationPermissions={"warehousing.stock.restriction:freeze","warehousing.stock.restriction:lift","warehousing.stock.restriction:read"})
   @Select("""
       SELECT BIN_TO_UUID(receipt_id) receiptId,BIN_TO_UUID(evidence_id) evidenceId,
         BIN_TO_UUID(release_evidence_id) releaseEvidence FROM bw_stock_restriction

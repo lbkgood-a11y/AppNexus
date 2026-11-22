@@ -39,8 +39,19 @@ public interface PersonnelDirectory {
  boolean deleteAffiliation(UUID tenantId,UUID personId,String section,UUID id);
  /** @return 有效岗位/负责人对应人员；未知 kind 返回空，所有引用限定同租户 */
  List<String> resolvePersons(UUID tenantId,UUID organizationId,String kind,String reference);
- /** @param tenantId 可信租户
-  * @param accountId 真实审计账号，可空；历史未知不伪造
-  * @return 该账号在同租户成员中的显示名，无结果返回空文本 */
- String accountName(UUID tenantId,String accountId);
+ /** 组织和岗位各自使用名称键，避免两个目录的 UUID 互相覆盖。 */
+ record OrganizationNameKey(String kind,String id){}
+ /** @param context 可信租户主体，必须具有组织目录阅读权限
+  * @param references 组织或岗位类型和 UUID，每批最多 200 项
+  * @return 已授权的名称 */
+ Map<OrganizationNameKey,String> organizationReferenceNames(com.appnexus.platform.tenant.VerifiedTenantContext context,List<OrganizationNameKey> references);
+ /** 解析已获准读取的审计账号，复用同租户目录并保留历史成员。
+  * @param tenantId 可信租户，必填
+  * @param accountIds 响应内去重后的审计账号 UUID
+  * @return 按账号 UUID 索引的非空显示名 */
+ Map<String,String> accountNames(UUID tenantId,List<String> accountIds);
+ /** @param actor 已通过认证的平台账号
+  * @param accountIds 授权平台审计结果中的账号 UUID，每批最多 200 项
+  * @return 平台审计权限允许的账号显示名 */
+ Map<String,String> platformAccountNames(UUID actor,List<String> accountIds);
 }

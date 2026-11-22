@@ -11,15 +11,11 @@ type RecordName={id:string;code:string;name:string};
 const recordName=(row:RecordName)=>({id:row.id,name:row.code+" · "+row.name});
 const recordSearch:DataRecordSearch={
  resources:Object.keys(recordPaths),
- async resolve(resource,id){
-  if(!Object.hasOwn(recordPaths,resource)||!/^[0-9a-f-]{36}$/.test(id))return;
-  const path=recordPaths[resource];
-  let row:RecordName|undefined;
-  if(resource==="organization.unit")row=(await http.request<RecordName[]>("get",path)).find(item=>item.id===id);
-  else if(resource==="masterdata.product")row=await http.request<RecordName>("get",path+"/"+encodeURIComponent(id));
-  else if(resource==="masterdata.person")row=(await http.request<{person:RecordName}>("get",path+"/"+encodeURIComponent(id))).person;
-  else row=(await http.request<{rows:RecordName[]}>("get",path,{params:{id,page:1,size:1}})).rows[0];
-  return row?recordName(row):undefined;
+ async resolve(resource,ids){
+  if(!Object.hasOwn(recordPaths,resource)||ids.length>100||ids.some(id=>!/^[0-9a-f-]{36}$/i.test(id)))return [];
+  const result=await http.request<{recordReferences:{id:string;name?:string}[]}>
+    ("get","/api/access/data-policy-metadata",{params:{recordResource:resource,recordIds:ids.join(",")}});
+  return result.recordReferences.flatMap(row=>row.name?[{id:row.id,name:row.name}]:[]);
  },
  async search(resource,query,page){
   if(!Object.hasOwn(recordPaths,resource)||query.length>200||!Number.isInteger(page)||page<1)throw new Error("DATA_RECORD_QUERY_INVALID");

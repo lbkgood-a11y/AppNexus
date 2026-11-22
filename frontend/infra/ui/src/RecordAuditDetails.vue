@@ -6,8 +6,8 @@ export interface RecordAudit {
   createdAt: string | null;
   updatedBy: string | null;
   updatedAt: string | null;
-  createdByName?: string;
-  updatedByName?: string;
+  createdByName?: string | null;
+  updatedByName?: string | null;
 }
 /** 复用 Element Plus 描述列表；不请求额外数据，也不在前端解析权限或保存操作者。 */
 const props=withDefaults(defineProps<{
@@ -18,6 +18,11 @@ const props=withDefaults(defineProps<{
   inline?: boolean;
 }>(),{pending:false,inline:false});
 const { t, locale } = useI18n();
+/** 已授权的账号名缺失时区分未记录与不可解析，不回退到账号标识。 */
+function actor(value: string | null, name?: string | null) {
+  if (props.pending) return "—";
+  return name?.trim() || t(value ? "referenceName.unavailable" : "recordAudit.unknownActor");
+}
 /** UTC 时间点按当前语言和浏览器时区显示；缺失值保持未知，不回填当前时刻。 */
 function time(value: string | null) {
   if (props.pending) return "—";
@@ -29,13 +34,13 @@ function time(value: string | null) {
 <template>
   <div v-if="inline" class="detail-audit-grid">
     <div v-for="key in ['createdBy','createdAt','updatedBy','updatedAt'] as const" :key="key" class="detail-audit-item">
-      <div><span>{{ t('recordAudit.'+key) }}</span><strong>{{ key.endsWith('At') ? time(audit[key]) : pending ? '—' : (key==='createdBy' ? audit.createdByName : audit.updatedByName) || audit[key] || t('recordAudit.unknownActor') }}</strong></div>
+      <div><span>{{ t('recordAudit.'+key) }}</span><strong>{{ key.endsWith('At') ? time(audit[key]) : actor(audit[key], key==='createdBy' ? audit.createdByName : audit.updatedByName) }}</strong></div>
     </div>
   </div>
   <el-descriptions v-else :column="1" border>
-    <el-descriptions-item :label="t('recordAudit.createdBy')"><span class="record-audit-actor">{{ pending ? '—' : audit.createdByName || audit.createdBy || t('recordAudit.unknownActor') }}</span></el-descriptions-item>
+    <el-descriptions-item :label="t('recordAudit.createdBy')"><span class="record-audit-actor">{{ actor(audit.createdBy, audit.createdByName) }}</span></el-descriptions-item>
     <el-descriptions-item :label="t('recordAudit.createdAt')">{{ time(audit.createdAt) }}</el-descriptions-item>
-    <el-descriptions-item :label="t('recordAudit.updatedBy')"><span class="record-audit-actor">{{ pending ? '—' : audit.updatedByName || audit.updatedBy || t('recordAudit.unknownActor') }}</span></el-descriptions-item>
+    <el-descriptions-item :label="t('recordAudit.updatedBy')"><span class="record-audit-actor">{{ actor(audit.updatedBy, audit.updatedByName) }}</span></el-descriptions-item>
     <el-descriptions-item :label="t('recordAudit.updatedAt')">{{ time(audit.updatedAt) }}</el-descriptions-item>
   </el-descriptions>
 </template>

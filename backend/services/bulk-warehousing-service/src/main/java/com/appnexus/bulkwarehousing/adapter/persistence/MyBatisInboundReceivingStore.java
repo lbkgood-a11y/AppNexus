@@ -34,7 +34,12 @@ public final class MyBatisInboundReceivingStore implements InboundReceivingStore
 
   /** {@inheritDoc} */
   @Override public void issue(VerifiedTenantContext c,Notice notice,int flowVersion) {
-    mapper.issue(tenant(c),actor(c),notice,flowVersion);
+    var legacy=notice.item();
+    mapper.issue(tenant(c),actor(c),notice,flowVersion,legacy==null?null:legacy.productId(),
+        legacy==null?null:legacy.kind().name(),legacy==null?null:legacy.identityId(),
+        legacy==null?null:legacy.productVersion());
+    int lineNo=0;
+    for (var line:notice.lines()) mapper.issueLine(tenant(c),actor(c),notice.id(),++lineNo,line);
   }
 
   /** {@inheritDoc} */
@@ -48,19 +53,20 @@ public final class MyBatisInboundReceivingStore implements InboundReceivingStore
   }
 
   /** {@inheritDoc} */
-  @Override public LockedNotice lockNotice(VerifiedTenantContext c,String id) {
-    var row=mapper.lockNotice(tenant(c),id);
+  @Override public LockedNotice lockNotice(VerifiedTenantContext c,String id,String lineId) {
+    var row=mapper.lockNotice(tenant(c),id,lineId);
     if (row==null) return null;
     var item=new Item(string(row,"productId"),IdentityKind.valueOf(string(row,"kind")),
         string(row,"identityId"),version(row,"productVersion"));
     var notice=new Notice(id,string(row,"warehouseId"),string(row,"ownerId"),item,string(row,"unitId"),
         (BigDecimal) row.get("lim"));
-    return new LockedNotice(notice,(BigDecimal) row.get("received"));
+    return new LockedNotice(notice,string(row,"lineId"),string(row,"status"),(BigDecimal) row.get("received"));
   }
 
   /** {@inheritDoc} */
   @Override public void takeCustody(VerifiedTenantContext c,Custody custody) {
     mapper.custody(tenant(c),actor(c),custody);
+    mapper.startReceiving(tenant(c),actor(c),custody.noticeId());
   }
 
   /** {@inheritDoc} */
@@ -69,7 +75,38 @@ public final class MyBatisInboundReceivingStore implements InboundReceivingStore
     if (row==null) return null;
     var position=new Position(string(row,"warehouseId"),string(row,"areaId"),string(row,"locationId"),
         version(row,"warehouseVersion"),version(row,"areaVersion"),version(row,"locationVersion"));
-    return new Custody(id,string(row,"noticeId"),position,string(row,"evidenceId"));
+    return new Custody(id,string(row,"noticeId"),position,string(row,"evidenceId"),string(row,"lineId"),string(row,"arrivalBatchNo"),string(row,"entryId"),
+        row.get("expectedQuantity") instanceof BigDecimal amount ? amount.stripTrailingZeros() : null);
+  }
+
+  /** {@inheritDoc} */
+  @Override public EntryClaim claimEntry(VerifiedTenantContext context,Entry entry,String digest) {
+    mapper.claimEntry(tenant(context),actor(context),entry,digest);
+    return lockEntry(context,entry.id());
+  }
+
+  /** {@inheritDoc} */
+  @Override public EntryClaim lockEntry(VerifiedTenantContext context,String entryId) {
+    var row=mapper.lockEntry(tenant(context),entryId);
+    return row==null ? null : new EntryClaim(string(row,"noticeId"),string(row,"digest"));
+  }
+
+  /** {@inheritDoc} */
+  @Override public String claimReceiptDocument(VerifiedTenantContext context,ReceiptDocument document,String digest) {
+    mapper.claimReceiptDocument(tenant(context),actor(context),document,digest);
+    return mapper.receiptDocumentDigest(tenant(context),document.id());
+  }
+
+  /** {@inheritDoc} */
+  @Override public Confirmation confirmation(VerifiedTenantContext context,String custodyId) {
+    var row=mapper.confirmation(tenant(context),custodyId);
+    return row==null ? null : new Confirmation(string(row,"documentId"),string(row,"lineId"));
+  }
+
+  /** {@inheritDoc} */
+  @Override public void attachReceiptLine(VerifiedTenantContext context,ReceiptDocument document,
+      ReceiptLine line,String receiptId) {
+    mapper.attachReceiptLine(tenant(context),actor(context),document,line,receiptId);
   }
 
   /** {@inheritDoc} */
@@ -81,13 +118,14 @@ public final class MyBatisInboundReceivingStore implements InboundReceivingStore
   }
 
   /** {@inheritDoc} */
-  @Override public void post(VerifiedTenantContext c,Receipt receipt,Posting posting,String noticeId,
+  @Override public void post(VerifiedTenantContext c,Receipt receipt,Posting posting,String noticeId,String lineId,
       String digest,String evidence) {
-    mapper.receipt(tenant(c),actor(c),posting,receipt.measurementId(),digest,evidence);
+    mapper.receipt(tenant(c),actor(c),posting,receipt.measurementId(),digest,evidence,receipt.receiptBatchNo());
     mapper.stock(tenant(c),actor(c),posting);
-    if (mapper.increase(tenant(c),actor(c),noticeId,posting.quantity())!=1) {
+    if (mapper.increase(tenant(c),actor(c),lineId,posting.quantity())!=1) {
       throw new Rejection(409,"INBOUND_LIMIT_EXCEEDED");
     }
+    mapper.updateHeaderProgress(tenant(c),actor(c),noticeId,posting.quantity());
   }
 
   /** {@inheritDoc} */

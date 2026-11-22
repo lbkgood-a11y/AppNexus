@@ -87,7 +87,7 @@ defineExpose({ canLeave: async () => true });
 <template>
   <div class="subject-workspace">
     <section class="subject-directory">
-      <el-form class="subject-search" inline @submit.prevent="search()">
+      <el-form class="subject-search query-border-label-form" inline @submit.prevent="search()">
         <el-form-item :label="t('authorizationCenter.subjectQuery')"><el-input v-model="query" clearable :maxlength="100" /></el-form-item>
         <el-form-item><el-button type="primary" native-type="submit" :disabled="loading">{{ t('authorizationCenter.search') }}</el-button><el-button :disabled="loading" @click="search(true)">{{ t('authorizationCenter.reset') }}</el-button></el-form-item>
       </el-form>

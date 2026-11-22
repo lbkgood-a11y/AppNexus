@@ -30,6 +30,10 @@ public @interface GuardedScope {
      * 权限谓词只接受 resource:action 中的动作部分。
      */
     String[] actions() default {};
+    /** 仅平台读取使用的可信账号 UUID 参数路径，与租户门禁互斥。 */
+    String platformActor() default "";
+    /** 平台读取必须通过的已登记功能权限编码。 */
+    String platformPermission() default "";
     /** 租户 UUID 参数路径。 */
     String tenant() default "";
     /** 记录 UUID 参数路径。 */

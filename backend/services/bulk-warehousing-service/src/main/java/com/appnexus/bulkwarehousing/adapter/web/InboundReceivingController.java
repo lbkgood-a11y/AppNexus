@@ -42,10 +42,26 @@ public final class InboundReceivingController {
     receiving.takeCustody(context(request),custody);
   }
 
+  /** @param request 可信安全请求 @param entry 同一通知下一车多品规的主单及接管行 */
+  @PostMapping("/api/bulk-inbound-entries")
+  @ResponseStatus(HttpStatus.NO_CONTENT)
+  @OperationBinding(id="BulkInboundReceipt.record_entry",reference=true)
+  public void recordEntry(HttpServletRequest request,@RequestBody InboundReceiving.Entry entry) {
+    receiving.recordEntry(context(request),entry);
+  }
+
+  /** @param request 可信安全请求 @param document 来源入场及实际合格和拒收明细 */
+  @PostMapping("/api/bulk-inbound-receipt-documents")
+  @ResponseStatus(HttpStatus.NO_CONTENT)
+  @OperationBinding(id="BulkInboundReceipt.confirm_document",reference=true)
+  public void confirmReceiptDocument(HttpServletRequest request,@RequestBody InboundReceiving.ReceiptDocument document) {
+    receiving.confirmReceiptDocument(context(request),document);
+  }
+
   /** 收货的传输契约。无换算规则和包装编码时使用基础单位。 */
   public record ReceiptInput(String id,String custodyId,String measurementId,Position position,Item item,
       String ownerPartnerId,String sourceUnitId,String quantity,String conversionRuleId,
-      Long conversionRuleVersion,String packagingCode) {}
+      Long conversionRuleVersion,String packagingCode,String receiptBatchNo) {}
 
   /** @param request 经安全链的请求 @param input 有效计量证据及实收数量 @return 已提交过账 */
   @PostMapping("/api/bulk-inbound-receipts")
@@ -54,7 +70,7 @@ public final class InboundReceivingController {
     var references=new Request(input.position(),input.item(),input.ownerPartnerId(),input.sourceUnitId(),
         input.quantity(),conversion(input));
     return receiving.receive(context(request),new InboundReceiving.Receipt(
-        input.id(),input.custodyId(),input.measurementId(),references));
+        input.id(),input.custodyId(),input.measurementId(),references,input.receiptBatchNo()));
   }
 
   /** @param request 经安全链的请求 @param decision 货权依据 @return 当前登记及待检量 */

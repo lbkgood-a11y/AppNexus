@@ -1,4 +1,6 @@
 package com.appnexus.masterdata.adapter.web.masterdata;
+import com.appnexus.contracts.operation.ResponseReferenceNames;
+import com.appnexus.contracts.operation.ResponseReferenceNames.Binding;
 import com.appnexus.masterdata.api.masterdata.MasterDataManagement;
 
 import com.appnexus.contracts.operation.*;
@@ -23,7 +25,13 @@ public final class WarehouseController {
    * @param service 负责真实授权和事务的主数据服务 */
   public WarehouseController(MasterDataManagement service){this.service=service;}
   /** 查询仓库管理；id缺省分页，传UUID查询已授权详情；options默认false，true只返回本租户字典，仍复核仓库读取权限。 */
+ @com.appnexus.contracts.operation.RecordAuditNames(paths={"audit","rows.audit"})
   @OperationBinding(id="Warehouse.list", reference=true)
+ @ResponseReferenceNames({
+     @Binding(path="rows",type="organization",id="organizationId",name="organizationName"),
+     @Binding(path="rows",type="dictionary:warehouse_type",id="attributes.warehouseType",name="warehouseTypeName",uuid=false),
+     @Binding(path="rows",type="dictionary:warehouse_operating_mode",id="attributes.operatingMode",name="operatingModeName",uuid=false),
+     @Binding(path="rows",type="geography",id="attributes.region",name="regionName",uuid=false)})
   @GetMapping("")
   public Object list(HttpServletRequest r,@RequestParam(defaultValue="") String keyword,@RequestParam(required=false) Boolean enabled,@RequestParam(defaultValue="1") int page,@RequestParam(defaultValue="20") int size,@RequestParam(required=false) String id,@RequestParam(defaultValue="false") boolean options,@RequestParam(defaultValue="false") boolean geography,@RequestParam(required=false) String organizationAction) {if(organizationAction!=null)return service.warehouseOrganizations(context(r),organizationAction);if(geography)return service.geographyCatalog(context(r),Kind.WAREHOUSE);if(options)return service.warehouseOptions(context(r));return service.list(context(r),Kind.WAREHOUSE,keyword,enabled,page,size,id);}
   /** 新增仓库管理；geography 默认 false，为 true 返回本租户地理摘要，仍复核当前业务读取权。真实鉴权、租户与并发校验由同一业务执行器负责。 */

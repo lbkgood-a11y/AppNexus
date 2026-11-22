@@ -89,6 +89,12 @@ public interface CoilOutboundStore {
 
   /** 查询原批次，用于重放与质检。 */
   PostedPartialReturn partialReturn(VerifiedTenantContext c,String id);
+  /** 按旧式整车退回编号读取确认结果，缺失返回空。 */
+  PartialReturnResult legacyReturnDocument(VerifiedTenantContext c,String id);
+
+  /** 读取确认单的全部接收仓及接管行，用于复用原返仓准入。 */
+  List<ReturnDocumentLine> returnDocumentLines(VerifiedTenantContext c,String id);
+
   /** 查询原交接尚未冲回的卷。 */
   List<IssuedCoil> activeIssuedCoils(VerifiedTenantContext c,String handoverId);
   /** 原交接行与经主数据解析的实际返仓位置。 */

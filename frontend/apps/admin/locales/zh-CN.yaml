@@ -2039,6 +2039,8 @@ personnel: {"view": "查看", "title": "人员档案", "basic": "基本信息", 
 # 人员身份模型：组织任职使用人员，不再使用账号成员。
 identityModel: {"person": "人员", "select": "选择人员身份", "none": "未选择人员身份", "empty": "当前账号没有可用人员与组织，请联系管理员关联。"}
 
+referenceName:
+  unavailable: 名称不可用
 recordAudit:
   title: 审计信息
   view: 查看审计
@@ -2572,9 +2574,16 @@ coding:
 productSku:
   title: "商品明细管理"
   product: "所属商品"
-  choose: "请先选择商品，可按商品名称搜索"
+  tree: "商品分类与商品"
+  choose: "请从左侧树选择商品"
   code: "货号"
   create: "新增商品明细"
+  createDenied: "新增商品明细需要“维护规格SKU及组合”权限。"
+  createArchived: "商品草稿已归档，无法新增明细。"
+  createApproval: "商品正在审批，审批结束后才能新增明细。"
+  createEnabled: "请先在商品管理中停用商品。"
+  createLegacy: "请先在商品管理中完成旧版规格迁移。"
+  createNoSpecification: "没有可分配货号的规格。请在规格与组合维护中检查规格状态和货号分配情况。"
   specifications: "规格与组合维护"
   hint: "先选择商品，再维护其商品明细。货号和规格筛选仅作用于当前商品；动态属性按规格实际保存的配置展示。每个规格最多分配一个货号，货号创建后不可改写。结构维护前须在商品管理停用商品；审批中不可修改。"
   none: "该商品无规格，直接使用商品主档，不创建默认SKU。"
@@ -2649,6 +2658,7 @@ warehouseTitle:
     WAREHOUSING_TITLE_NOT_TRANSFERABLE: 当前库存无法过户，请刷新核对库存状态。
 
 coilFlow:
+  createNotice: 新建
   recoveryInfo: 提货授权续办
   recoveryTrips: 授权车次与凭证
   recoveryRestrictions: 原卷监管凭证
@@ -2719,6 +2729,7 @@ coilFlow:
   receiptId: 原库存身份
   serial: 卷号
   custodyId: 接管编号
+  receiptBatchNo: 收货批次号
   measurementId: 实收计量凭证
   currentStock: 当前库存与货权
   onHand: 在库量
@@ -2768,6 +2779,7 @@ coilFlow:
     limit: 入仓批准上限
     custodyEvidence: 接管凭证 UUID
     measurement: 实收计量凭证 UUID
+    receiptBatchNo: 收货批次号
     quantity: 实收量
     titleEvidence: 权利凭证 UUID
     effective: 权利生效时点
@@ -2884,3 +2896,24 @@ returnTransit:
     OUTBOUND_RETURN_TRANSIT_ROUTE_CHANGED: 接收路由已变化，请刷新发运清单后再试。
     OUTBOUND_RETURN_LOSS_SETTLED: 原卷短损已结清，须复核重开后才能接管或改仓。
     OUTBOUND_RETURN_TRANSIT_COIL_MISMATCH: 该卷不在当前可处置的发运范围内。
+
+inventoryOverview:
+  specification: 规格
+  skuCode: SKU 编码
+  receiptBatchNo: 收货批次号
+  title: 库存总览
+  all: 全部
+  empty: 没有符合条件的在库记录
+  failed: 库存查询失败
+  product: 商品
+  warehouse: 仓库
+  owner: 货主
+  serial: 卷号
+  onHand: 在库量
+  pending: 待检量
+  unit: 单位
+  receiptId: 实收 ID
+
+inboundNotice: {"issuedAt": "签发时间", "expectedArrivalAt": "预计到货", "noticeNo": "业务单号（可选）", "remark": "备注", "line": "明细", "removeLine": "删除明细", "addLine": "添加明细", "plannedQuantity": "计划量", "approvedQuantity": "批准上限", "receivedQuantity": "已实收量", "arrivalBatchNo": "到货批次号", "receiptBatchNo": "实收批次号", "requiredNumber": "请输入有效的入仓通知单号。", "lineNo": "行号", "lineId": "明细标识", "identityKind": "品规类型", "productVersion": "商品版本", "flowVersion": "流程版本", "locationId": "库位标识", "operations": "操作", "lines": "通知明细", "custodies": "分批接管记录", "takeCustody": "登记接管", "receive": "确认实收", "states": {"DRAFT": "草稿", "ISSUED": "已签发", "RECEIVING": "接收中", "COMPLETED": "已完成", "CLOSED": "已关闭", "CANCELLED": "已撤销"}}
+
+inboundBatch: {"measurementId": "计量凭证 UUID", "fromNotice": "从入仓通知登记", "fromEntry": "从入场接管确认", "stockStatus": "库存处理", "stockStates": {"REJECTED": "拒收未入账", "PENDING_QUALITY": "已过账待检", "POSTED": "已过账"}, "newEntry": "登记入场接管", "newReceipt": "新建实收确认", "header": "单据主信息", "noticeId": "来源通知 UUID", "entryId": "来源入场接管 UUID", "vehicleNumber": "车牌或船次", "carrier": "承运方", "arrivedAt": "入场时间", "measurementRef": "磅单或计量单号", "remark": "备注", "line": "明细", "lines": "单据明细", "identityId": "商品身份 UUID", "unitId": "计量单位 UUID", "expectedQuantity": "到货数量（可选）", "custodyId": "接管明细 UUID", "receivedQuantity": "合格实收量", "rejectionQuantity": "拒收数量", "rejectionReason": "拒收原因", "recordEntry": "提交入场接管", "confirmReceipt": "确认实收", "processed": "实收状态", "received": "已确认", "pending": "待确认", "entry": "入场接管单", "receipt": "实收确认单"}

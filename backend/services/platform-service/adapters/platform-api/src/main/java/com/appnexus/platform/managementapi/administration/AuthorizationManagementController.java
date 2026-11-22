@@ -124,8 +124,38 @@ public class AuthorizationManagementController {
  @com.appnexus.contracts.operation.OperationBinding(id="PermissionCatalog.listTenant", reference=true)
  @EndpointOperation("access.tenant.role:grant") @GetMapping("/api/access/permissions") ResponseEntity<List<PermissionCatalog.Permission>> tenantPermissionCatalog(Authentication a,HttpServletRequest r){return ok(()->{var context=tenant(a,r);subjectRoles.memberRoles(context,context.actorMemberId());return permissions.list(PermissionCatalog.ScopeType.TENANT,true);});}
  /** 操作契约关联下方真实接口；仅供展示与一致性校验，主体、权限及业务约束仍由原用例执行。 */
+ /** 批量回显授权配置中已有的记录键，名称仍由源对象读取权限决定。 */
  @com.appnexus.contracts.operation.OperationBinding(id="PermissionCatalog.scopesTenant", reference=true)
- @EndpointOperation("access.tenant.role:grant") @GetMapping("/api/access/data-policy-metadata") ResponseEntity<?> tenantDataPolicyMetadata(Authentication a,HttpServletRequest r,@RequestParam(defaultValue="false") boolean declarations,@RequestParam(defaultValue="false") boolean organizations,@RequestParam(defaultValue="false") boolean conditionOptions){return ok(()->{var context=tenant(a,r);subjectRoles.memberRoles(context,context.actorMemberId());if(conditionOptions)return conditionOptions(context.tenantId());if(declarations)return dataAccess.list(PermissionCatalog.ScopeType.TENANT);if(organizations)return dataReferences.organizations(AccessAuthorization.Subject.tenant(context.actorAccountId(),context.tenantId(),context.actorMemberId()),"access.tenant.role:grant");return dataPolicyMetadata.list(PermissionCatalog.ScopeType.TENANT);});}
+ @com.appnexus.contracts.operation.ResponseReferenceNames({
+   @com.appnexus.contracts.operation.ResponseReferenceNames.Binding(path="recordReferences",type="warehouse",id="id",name="name",when="resource",equalsValue="masterdata.warehouse"),
+   @com.appnexus.contracts.operation.ResponseReferenceNames.Binding(path="recordReferences",type="partner",id="id",name="name",when="resource",equalsValue="masterdata.partner"),
+   @com.appnexus.contracts.operation.ResponseReferenceNames.Binding(path="recordReferences",type="product",id="id",name="name",when="resource",equalsValue="masterdata.product"),
+   @com.appnexus.contracts.operation.ResponseReferenceNames.Binding(path="recordReferences",type="person",id="id",name="name",when="resource",equalsValue="masterdata.person"),
+   @com.appnexus.contracts.operation.ResponseReferenceNames.Binding(path="recordReferences",type="organization",id="id",name="name",when="resource",equalsValue="organization.unit")
+ })
+ @EndpointOperation("access.tenant.role:grant") @GetMapping("/api/access/data-policy-metadata")
+ ResponseEntity<?> tenantDataPolicyMetadata(Authentication a,HttpServletRequest r,
+     @RequestParam(defaultValue="false") boolean declarations,@RequestParam(defaultValue="false") boolean organizations,
+     @RequestParam(defaultValue="false") boolean conditionOptions,@RequestParam(required=false) String recordResource,
+     @RequestParam(required=false) List<UUID> recordIds){
+   return ok(()->{
+     var context=tenant(a,r);
+     subjectRoles.memberRoles(context,context.actorMemberId());
+     if(recordResource!=null){
+       if(!Set.of("masterdata.partner","masterdata.warehouse","masterdata.product","masterdata.person","organization.unit").contains(recordResource)
+           ||recordIds==null||recordIds.size()>200){
+         throw new RoleManagementException("DATA_RECORD_QUERY_INVALID","记录范围候选批次无效");
+       }
+       return Map.of("recordReferences",recordIds.stream().distinct()
+           .map(id->Map.of("id",id.toString(),"resource",recordResource)).toList());
+     }
+     if(conditionOptions)return conditionOptions(context.tenantId());
+     if(declarations)return dataAccess.list(PermissionCatalog.ScopeType.TENANT);
+     if(organizations)return dataReferences.organizations(AccessAuthorization.Subject.tenant(context.actorAccountId(),context.tenantId(),
+         context.actorMemberId()),"access.tenant.role:grant");
+     return dataPolicyMetadata.list(PermissionCatalog.ScopeType.TENANT);
+   });
+ }
  /** 操作契约关联下方真实接口；仅供展示与一致性校验，主体、权限及业务约束仍由原用例执行。 */
  @com.appnexus.contracts.operation.OperationBinding(id="TenantMember.rolesExplainSelf", reference=true)
  @EndpointOperation("access.tenant.role:grant") @GetMapping("/api/access/effective-permissions") ResponseEntity<List<EffectiveAuthorizationQuery.Explanation>> tenantEffectivePermissions(Authentication a,HttpServletRequest r){return ok(()->{var context=tenant(a,r);subjectRoles.memberRoles(context,context.actorMemberId());return effectiveAuthorizations.tenantMember(context.tenantId(),context.actorMemberId());});}

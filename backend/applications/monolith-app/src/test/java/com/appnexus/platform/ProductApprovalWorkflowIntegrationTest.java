@@ -22,7 +22,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.jdbc.core.JdbcTemplate;
 /** 真实MySQL、Flowable、业务策略和可靠终态交付；组织选人端口采用隔离测试身份，不改共享账号。 */
 @SpringBootTest(properties={"app.workflow.engine.enabled=true","app.workflow.worker.enabled=false"}) @ActiveProfiles("local")
-class ProductApprovalWorkflowIntegrationTest extends DatabaseTestSupport {
+class ProductApprovalWorkflowIntegrationTest extends WorkflowDatabaseTestSupport {
  @Autowired JdbcTemplate jdbc;
  @Autowired ProductService products;
  @Autowired ProductCatalogService catalog;

@@ -15,7 +15,7 @@ import static org.assertj.core.api.Assertions.*;
 /** 开启真实引擎验证公共执行装配，使用500条隔离记录检查对象锁定查询的主键执行计划。 */
 @SpringBootTest(properties={"app.workflow.engine.enabled=true","app.workflow.worker.enabled=false"})
 @ActiveProfiles("local")
-class ObjectExecutionAssemblyTest extends DatabaseTestSupport {
+class ObjectExecutionAssemblyTest extends WorkflowDatabaseTestSupport {
   @Autowired BusinessObjectExecution execution;
   @Autowired WorkflowRuntime workflow;
   @Autowired List<Provider> providers;
@@ -24,8 +24,18 @@ class ObjectExecutionAssemblyTest extends DatabaseTestSupport {
   /** 启用工作流的组合应用应同时装配全部对象，旧归属编码不会重复占据目录。 */
   @Test void completeProviderInventoryRegistersOneOwnerPerObject() {
     assertThat(providers).extracting(provider->provider.descriptor().objectType())
-        .doesNotHaveDuplicates().hasSize(50)
-        .contains("PlatformTask","DictionaryItemReference","Tenant","PrintOutput","WorkflowJob","Warehouse")
+        .doesNotHaveDuplicates()
+        .containsExactlyInAnyOrder(
+            "Account","AuditEvent","AuthorizationTemplate","BusinessDictionary","BusinessObject","BusinessPartner",
+            "CodingEncoder","CodingRule","CountryRegion","DictionaryItemReference","IntegrationClient","LeaveRequest",
+            "NavigationMenu","OrganizationAuthorization","OrganizationRelation","OrganizationType","OrganizationUnit",
+            "PermissionCatalog","Person","PersonDirectory","PlatformRole","PlatformTask","Position","PositionAssignment",
+            "PrintDataContract","PrintDevice","PrintDocument","PrintJob","PrintOutput","PrintScene","PrintTemplate",
+            "Product","ProductApproval","ProductAttribute","ProductCategory","ProductTemplate","ProductUnit",
+            "StorageArea","StorageLocation","Subdivision","Tenant","TenantInvitation","TenantMember","TenantParameter",
+            "TenantRole","Warehouse","WorkflowDefinition","WorkflowInstance","WorkflowJob","WorkflowTask",
+            "BulkCoilOutbound","BulkCoilTitleTransfer","BulkInboundQualityRelease","BulkInboundReceipt",
+            "BulkInboundTitleRegistration","BulkOutboundStock","BulkStockRestriction","BulkWarehouseStockBalance")
         .doesNotContain("AccountProfile","AccountMfa","AccountSession","AccountRoleAssignment",
                 "MemberRoleAssignment","MemberAuthorization","OrganizationLeader","DictionaryItem","RoleAuthorization");
   }

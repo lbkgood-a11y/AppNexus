@@ -34,6 +34,7 @@ class ProductBrowserFixtureTest extends DatabaseTestSupport {
  @Autowired InboundDisposition warehouseFixtureDisposition;
  @Autowired CoilOutbound warehouseFixtureCoils;
  @Autowired OutboundStock warehouseFixtureStock;
+ @Autowired CoilTitleTransfer warehouseFixtureTitles;
  @Autowired org.springframework.security.crypto.password.PasswordEncoder warehouseFixturePasswords;
 
  /** 以真实业务命令准备在库、冻结及已占整卷，供工作区浏览器验收。 */
@@ -75,6 +76,30 @@ class ProductBrowserFixtureTest extends DatabaseTestSupport {
        VALUES(UUID_TO_BIN(?),UUID_TO_BIN(?),'WAREHOUSE-A','钢卷货主甲','CUSTOMER',UUID_TO_BIN(?)),
          (UUID_TO_BIN(?),UUID_TO_BIN(?),'WAREHOUSE-B','钢卷货主乙','CUSTOMER',UUID_TO_BIN(?))
        """,ownerA,tenant.toString(),organization,ownerB,tenant.toString(),organization);
+   if(Boolean.getBoolean("reference.catalog.browser.qa")){
+    String person=UUID.randomUUID().toString(),position=UUID.randomUUID().toString();
+    jdbc.update("INSERT INTO md_person(id,tenant_id,code,name,gender) VALUES(UUID_TO_BIN(?),UUID_TO_BIN(?),'REF-QA-PERSON','批量名称验收人员','MALE')",person,tenant.toString());
+    jdbc.update("INSERT INTO tenant_organization_position(tenant_id,id,organization_id,code,name) VALUES(UUID_TO_BIN(?),UUID_TO_BIN(?),UUID_TO_BIN(?),'REF-QA-POSITION','批量名称验收岗位')",tenant.toString(),position,organization);
+    jdbc.update("INSERT INTO tenant_person_organization(tenant_id,id,person_id,organization_id,is_primary) VALUES(UUID_TO_BIN(?),UUID_TO_BIN(UUID()),UUID_TO_BIN(?),UUID_TO_BIN(?),TRUE)",tenant.toString(),person,organization);
+    jdbc.update("INSERT INTO tenant_person_position(tenant_id,id,person_id,position_id,starts_at) VALUES(UUID_TO_BIN(?),UUID_TO_BIN(UUID()),UUID_TO_BIN(?),UUID_TO_BIN(?),UTC_TIMESTAMP(6))",tenant.toString(),person,position);
+    extra.put("referencePerson",person);
+    extra.put("referencePosition",position);
+
+    // 合成已授权档案供真实浏览器回显及 100 行 HTTP 页并发计时。
+    var markets=new ArrayList<Object[]>();
+    var partners=new ArrayList<Object[]>();
+    int sampleRows=Integer.getInteger("reference.catalog.qa.rows",500);
+    for(int i=0;i<sampleRows;i++){
+      String code="REF_QA_"+i;
+      markets.add(new Object[]{UUID.randomUUID().toString(),tenant.toString(),code,"验收国别 "+i});
+      partners.add(new Object[]{UUID.randomUUID().toString(),tenant.toString(),code,"验收客商 "+i,organization,code});
+    }
+    jdbc.batchUpdate("INSERT INTO md_country_region(id,tenant_id,code,name) VALUES(UUID_TO_BIN(?),UUID_TO_BIN(?),?,?)",markets);
+    jdbc.batchUpdate("""
+        INSERT INTO md_partner(id,tenant_id,code,name,partner_type,organization_id,country_region)
+        VALUES(UUID_TO_BIN(?),UUID_TO_BIN(?),?,?,'CUSTOMER',UUID_TO_BIN(?),?)
+        """,partners);
+   }
    jdbc.update("""
        INSERT INTO md_warehouse(id,tenant_id,code,name) VALUES(UUID_TO_BIN(?),UUID_TO_BIN(?),'FOREIGN-W','外部仓')
        """,foreignWarehouse,foreignTenant.toString());
@@ -111,6 +136,24 @@ class ProductBrowserFixtureTest extends DatabaseTestSupport {
     extra.put("linkedWarehouse",createReturnWarehouse(context,"LINK-RETURN-W","串联接收"));
    } else if (Boolean.getBoolean("warehouse.transit.browser.qa")) {
     prepareBrowserTransit(context,position,item,ownerA,unit,extra);
+    if (Boolean.getBoolean("warehouse.documents.browser.qa")) {
+     String pending=warehouseFixtureId(),outbound=warehouseFixtureId(),authorization=warehouseFixtureId(),trip=warehouseFixtureId();
+     var cap=new BigDecimal("100000");
+     warehouseFixtureReceiving.issue(context,new InboundReceiving.Notice(pending,warehouse,ownerA,item,unit.id(),cap));
+     warehouseFixtureCoils.issue(context,new CoilOutbound.Notice(outbound,warehouse,ownerA,item,unit.id(),unit.code(),cap));
+     warehouseFixtureCoils.authorize(context,new CoilOutbound.Authorization(authorization,outbound,ownerA,
+         java.time.Instant.now().plusSeconds(3600),cap));
+     warehouseFixtureCoils.plan(context,new CoilOutbound.Trip(trip,authorization,"DOCUMENT-EMPTY",cap));
+     String coil=prepareBrowserCoil(context,position,item,ownerA,unit,pending,"21000","DOCUMENT-TITLE");
+     String transfer=warehouseFixtureId(),restriction=warehouseFixtureId();
+     warehouseFixtureTitles.transfer(context,new CoilTitleTransfer.Command(transfer,coil,warehouse,ownerA,ownerB,0,warehouseFixtureId()));
+     warehouseFixtureStock.freeze(context,new OutboundStock.Freeze(restriction,coil,warehouseFixtureId()));
+     String unreceived=warehouseFixtureId();
+     warehouseFixtureReceiving.issue(context,new InboundReceiving.Notice(unreceived,warehouse,ownerA,item,unit.id(),cap));
+     extra.putAll(Map.of("unreceived",unreceived,"unallocated",outbound,"emptyTrip",trip,"emptyAuthorization",authorization,
+         "transfer",transfer,"restriction",restriction,"sourceLocation",location));
+    }
+
    } else if (!Boolean.getBoolean("warehouse.flow.browser.qa")) {
     warehouseFixtureReceiving.issue(context,new InboundReceiving.Notice(notice,warehouse,ownerA,item,unit.id(),new BigDecimal("69000")));
     prepareBrowserCoil(context,position,item,ownerA,unit,notice,"51000","BROWSER-COIL-READY");
@@ -177,6 +220,7 @@ class ProductBrowserFixtureTest extends DatabaseTestSupport {
   String handover=warehouseFixtureId();
   warehouseFixtureCoils.handover(context,new CoilOutbound.Handover(handover,trip,review.id(),
       warehouseFixtureId(),vehicle,owner,List.of(first,second)));
+  fixture.putAll(Map.of("postedInbound",inbound,"postedNotice",notice,"postedAuthorization",authorization,"postedTrip",trip));
   fixture.putAll(Map.of("handover",handover,"first",first,"second",second,
       "oldWarehouse",createReturnWarehouse(context,"RETURN-UI-OLD","原接收"),
       "newWarehouse",createReturnWarehouse(context,"RETURN-UI-NEW","改派接收")));

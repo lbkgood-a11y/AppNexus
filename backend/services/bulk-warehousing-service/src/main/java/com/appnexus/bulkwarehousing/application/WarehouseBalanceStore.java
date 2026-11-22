@@ -6,8 +6,37 @@ import com.appnexus.platform.tenant.VerifiedTenantContext;
 import java.math.BigDecimal;
 import java.util.List;
 
-/** 货权库存和授权额度的两个独立只读存储投影。 */
+/** 实物库存、货权、授权额度及仓储单据的只读存储投影。 */
 public interface WarehouseBalanceStore {
+  /** 尚未应用主数据引用可见性的在库实收事实，仅限查询用例内部使用。 */
+  record OverviewSlice(String receiptId,String serial,String warehouseId,String ownerId,String productId,
+      String identityKind,String identityId,String receiptBatchNo,
+      String unitId,BigDecimal onHand,BigDecimal pending,OverviewAudit audit) {}
+
+  /**
+   * @param c 可信租户
+   * @param filter 可选当前仓库、货主及商品 UUID
+   * @param afterId 可选实收 UUID，按数据库主键顺序排除该行
+   * @param limit 本次扫描量，应用以固定批次读取以避免一次加载全部库存
+   * @return 原始在库切片，必须复核引用后才可返回
+   */
+  List<OverviewSlice> overview(VerifiedTenantContext c,OverviewFilter filter,String afterId,int limit);
+
+  /** 单据按可信租户、固定类型和主键读取，应用返回前复核仓库、货主和商品。 */
+  DocumentHeader document(VerifiedTenantContext c,DocumentKind kind,String id);
+
+  /** 在原查询事务中读取批次头与明细，应用层执行仓库、货主与各品规可见性。 */
+  BatchDocument inboundBatch(VerifiedTenantContext context,String id,boolean receipt);
+
+  /** 已授权通知下的批准明细。 */
+  List<NoticeLineView> inboundLines(VerifiedTenantContext context,String noticeId);
+
+  /** 已授权通知下的接管及实收确认关联。 */
+  List<NoticeCustodyView> inboundCustodies(VerifiedTenantContext context,String noticeId);
+
+  /** 读取已授权主单的关联凭证，最多 101 条，用于提示截断。 */
+  List<DocumentRelation> documentRelations(VerifiedTenantContext c,DocumentKind kind,String id);
+
   /** 读取原实收及当前仓储事实。缺失返回空。 */
   TraceStock traceStock(VerifiedTenantContext c,String id);
   /**
@@ -31,6 +60,12 @@ public interface WarehouseBalanceStore {
 
   /** 读取货主当前在库的货权，按库存位置分组。 */
   List<StockSlice> physical(VerifiedTenantContext c,Scope scope);
+
+  /** 授权主键读取所需的业务范围及原额度投影。 */
+  record AuthorizationDocument(Scope scope,AuthorizationBalance balance) {}
+
+  /** 按授权 UUID 查询单条额度及范围。 */
+  AuthorizationDocument authorization(VerifiedTenantContext c,String id);
 
   /** 读取定向授权额度，独立于实物库存。 */
   List<AuthorizationBalance> authorizations(VerifiedTenantContext c,Scope scope,String afterId,int limit);

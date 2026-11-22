@@ -6,6 +6,8 @@ import com.appnexus.platform.organization.PersonData.Input;
 public interface PersonRepository {
  
  
+ /** @param context 可信主体 @param ids 目标人员 UUID @return 权限范围内的名称 */
+ Map<String,String> names(VerifiedTenantContext context,List<String> ids);
  /** 同一个可信数据范围覆盖人员分页及总数。 */
  record PersonPage(List<Map<String,Object>> rows,long total){}
  /**

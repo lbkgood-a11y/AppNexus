@@ -17,6 +17,7 @@ public final class ProductUnitController {
   /** @param service 负责租户隔离、授权、事务与CAS的领域服务 */
   public ProductUnitController(ProductCatalogManagement service){this.service=service;}
   /** 查询分页；关键词最多200字符，页码默认1，每页默认20且范围1至100。 */
+  @RecordAuditNames(paths={"rows.audit"})
   @GetMapping
   @OperationBinding(id="ProductUnit.list", reference=true)
   public Object list(HttpServletRequest request,@RequestParam(defaultValue="") String keyword,@RequestParam(defaultValue="1") int page,@RequestParam(defaultValue="20") int size,@RequestParam(required=false) String groupCode){

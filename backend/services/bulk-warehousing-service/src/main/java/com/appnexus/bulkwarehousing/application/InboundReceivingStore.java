@@ -9,7 +9,27 @@ import java.util.function.Supplier;
 /** 固定入仓存储端口。聚合写入及审计参加同一连接上的业务事务。 */
 public interface InboundReceivingStore {
   /** 加锁通知及当前累计实收。 */
-  record LockedNotice(Notice notice, BigDecimal received) {}
+  record LockedNotice(Notice notice,String lineId,String status,BigDecimal received) {}
+  /** 已存在的入场头，摘要用于区分重放和冲突。 */
+  record EntryClaim(String noticeId,String digest) {}
+  /** 对应入场范围已确认的业务行。 */
+  record Confirmation(String documentId,String lineId) {}
+
+  /** 只在同一原接管写事务内认领入场头，返回原签发归属和摘要。 */
+  EntryClaim claimEntry(VerifiedTenantContext context,Entry entry,String digest);
+
+  /** 锁定已授权入场头，以固定顺序串行其确认提交。 */
+  EntryClaim lockEntry(VerifiedTenantContext context,String entryId);
+
+  /** 认领同一事务内的实收头，返回已保存的摘要。 */
+  String claimReceiptDocument(VerifiedTenantContext context,ReceiptDocument document,String digest);
+
+  /** 核对同一接管范围的既有实收确认归属。 */
+  Confirmation confirmation(VerifiedTenantContext context,String custodyId);
+
+  /** 添加合格实收和拒收的决定；全拒收时无库存过账。 */
+  void attachReceiptLine(VerifiedTenantContext context,ReceiptDocument document,ReceiptLine line,String receiptId);
+
   /** 原实收过账和幂等摘要。 */
   record Posted(Posting posting, String digest) {}
 
@@ -35,7 +55,7 @@ public interface InboundReceivingStore {
 
   void issue(VerifiedTenantContext context, Notice notice,int flowVersion);
   /** 锁定可信租户内的通知，缺失返回空。 */
-  LockedNotice lockNotice(VerifiedTenantContext context, String id);
+  LockedNotice lockNotice(VerifiedTenantContext context,String id,String lineId);
   /** 保存实际接管及可信审计人。 */
   void takeCustody(VerifiedTenantContext context, Custody custody);
   /** 读取可信租户内的接管，缺失返回空。 */
@@ -43,6 +63,6 @@ public interface InboundReceivingStore {
   /** 读取原收货结果，用于请求重试。 */
   Posted posted(VerifiedTenantContext context, String custodyId);
   /** 原子追加实收、待检余额及累计量，由调用方持有通知聚合锁。 */
-  void post(VerifiedTenantContext context, Receipt receipt, Posting posting, String noticeId,
+  void post(VerifiedTenantContext context, Receipt receipt, Posting posting, String noticeId,String lineId,
       String digest, String quantityEvidence);
 }

@@ -17,6 +17,7 @@ public final class StorageLocationController {
   public StorageLocationController(MasterDataManagement service){this.service=service;}
   /** 查询本租户档案；scope 为直属上级编码，缺省不限；page 从1开始，size 为1–100条，默认20；id 缺省分页，指定UUID读取详情。 */
   @OperationBinding(id="StorageLocation.list",reference=true)
+  @RecordAuditNames(paths={"rows.audit"})
   @GetMapping("")
   public Object list(HttpServletRequest r,@RequestParam(defaultValue="") String keyword,@RequestParam(required=false) Boolean enabled,@RequestParam(defaultValue="1") int page,@RequestParam(defaultValue="20") int size,@RequestParam(required=false) String id,@RequestParam(defaultValue="") String scope) {return service.list(context(r),Kind.STORAGE_LOCATION,keyword,enabled,page,size,id,scope);}
   /** 新增库位；上级必须为当前租户启用档案，编码创建后不可修改，初始启用。 */
