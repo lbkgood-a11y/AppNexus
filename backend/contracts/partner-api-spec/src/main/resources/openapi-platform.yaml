@@ -905,6 +905,7 @@ paths:
       responses:
         '200':
           description: OK
+      deprecated: true
   /bff/platform/roles:
     get:
       tags:
@@ -1221,6 +1222,94 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Explanation'
+  /bff/platform/events:
+    get:
+      tags:
+      - event-workbench-controller
+      operationId: listPlatformEvents
+      parameters:
+      - name: tenant
+        in: query
+        required: false
+        schema:
+          type: string
+          format: uuid
+      - name: type
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: status
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: from
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date-time
+      - name: until
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date-time
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 1
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/EventPage'
+  /bff/platform/events/{eventId}:
+    get:
+      tags:
+      - event-workbench-controller
+      operationId: readPlatformEvent
+      parameters:
+      - name: eventId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/EventDetails'
+  /bff/platform/event-deliveries/{deliveryId}/retry:
+    post:
+      tags:
+      - event-workbench-controller
+      operationId: retryPlatformEventDelivery
+      parameters:
+      - name: deliveryId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RetryRequest'
+        required: true
+      responses:
+        '204':
+          description: No Content
   /bff/platform/tasks:
     get:
       tags:
@@ -1235,6 +1324,7 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Task'
+      deprecated: true
   /bff/platform/permissions:
     get:
       tags:
@@ -2008,6 +2098,38 @@ components:
         total:
           type: integer
           format: int64
+    EventPage:
+      type: object
+      properties:
+        rows:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+        total:
+          type: integer
+          format: int64
+    EventDetails:
+      type: object
+      properties:
+        event:
+          type: object
+          additionalProperties: {}
+        deliveries:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+        attempts:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+    RetryRequest:
+      type: object
+      properties:
+        reason:
+          type: string
     Task:
       type: object
       properties:

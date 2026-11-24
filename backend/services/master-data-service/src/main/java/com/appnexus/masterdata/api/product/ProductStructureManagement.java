@@ -36,6 +36,38 @@ public interface ProductStructureManagement {
  Object measurement(VerifiedTenantContext c,String product);
  /** 原子保存整套计量配置，版本冲突时拒绝。 */
  Object saveMeasurement(VerifiedTenantContext c,String product,ProductMeasurement.Change input);
+ /** 在父商品版本与货号版本均匹配时修改货号计价及包装。 */
+ Object saveSkuMeasurement(VerifiedTenantContext c,String product,String sku,ProductMeasurement.SkuChange change);
+ /** 保存 SPU 采用的规格轴模板，原有规格保留自身采用版本。 */
+ Object saveSpecificationTemplate(VerifiedTenantContext c,String product,ProductStructureCommands.SpecificationTemplate input);
+ /** 以商品版本保存 SPU 确认的普通货号模板。 */
+ Object saveSkuAttributeTemplate(VerifiedTenantContext c,String product,ProductStructureCommands.SkuAttributeTemplate input);
+ /** 读取授权货号的普通属性定义、值和父子版本。 */
+ Object skuAttributes(VerifiedTenantContext c,String product,String sku);
+ /** 校验并完整保存普通属性值，不修改货号规格轴。 */
+ Object saveSkuAttributes(VerifiedTenantContext c,String product,String sku,ProductStructureCommands.SkuAttributes input);
+ /** 保存货号实际采用的批次规则，使用父子版本保护。 */
+ Object saveSkuBatchTemplate(VerifiedTenantContext c,String product,String sku,ProductStructureCommands.SkuBatchTemplate input);
+ /** 已绑定批次模板的固定字段；字段及属性修订均来自版本快照。 */
+ record BatchField(String templateItemId,String name,String dataType,boolean required) {}
+ /** @param templateVersionId 已确认的批次模板版本 UUID，无配置时为空 @param fields 固定字段，按模板顺序 */
+ record SkuBatchRule(String templateVersionId,java.util.List<BatchField> fields) {}
+ /** @param c 可信租户主体 @param product 货号所属商品 UUID @param sku 可收货 SKU UUID @param version 通知行固定商品版本
+  * @return 当前货号已确认的规则，未配置时返回空字段集合 */
+ SkuBatchRule skuBatchRule(VerifiedTenantContext c,String product,String sku,long version);
+ /**
+  * 校验接管行固定 SKU 下的批次属性，返回可随仓储实收保存的规范化快照。
+  * @param c 可信租户主体
+  * @param product 可信通知行所属商品 UUID
+  * @param sku 可信通知行 SKU UUID
+  * @param version 通知行固定商品版本
+  * @param batchNo 实收批次号，已绑定模板时必填
+  * @param templateVersionId 客户端确认的模板版本，须与 SKU 绑定相同
+  * @param values 已填字段，最多 200 项，空集合仅在模板无必填项时可用
+  * @return JSON 快照；货号未配置批次模板且无输入时返回 null
+  */
+ String validateSkuBatch(VerifiedTenantContext c,String product,String sku,long version,String batchNo,
+     String templateVersionId,java.util.List<ProductMainData.Value> values);
  /** 商品包装换算依据，版本取自保存此配置的商品档案。 */
  record PackagingEvidence(String productId, String packagingCode, long productVersion,
      String sourceUnitId, String targetUnitId, java.math.BigDecimal factor,
@@ -52,6 +84,19 @@ public interface ProductStructureManagement {
   */
  PackagingEvidence packagingEvidence(VerifiedTenantContext c, String productId,
      String packagingCode, long expectedProductVersion, String quantity);
+
+ /**
+  * 根据已授权且生效的货号获取正式过账证据。
+  * @param skuId 商品所属货号 UUID，必填
+  * @param packagingCode 货号包装档位编码；未配置货号计量时沿用商品包装
+  * @param expectedProductVersion 预期商品版本，必填
+  * @param quantity 正十进制包装数量
+  * @param c 服务端可信租户和成员
+  * @param productId 货号所属商品 UUID
+  * @return 已校验来源单位、目标单位、系数和换算结果
+  */
+ PackagingEvidence skuPackagingEvidence(VerifiedTenantContext c,String productId,String skuId,
+     String packagingCode,long expectedProductVersion,String quantity);
 
  /** 使用服务端已保存规格试算；quantity 为精确正十进制文本。 */
  Object calculatePackaging(VerifiedTenantContext c,String product,String code,String quantity);

@@ -9,20 +9,25 @@ public final class MyBatisProductCatalogRepository implements ProductCatalogRepo
  /** @return 由原用例授权和存储层固定租户条件保护的资源，未开放可配置行范围 */
  @Override public Set<String> enforcedResources(){return Set.of("masterdata.productcategory", "masterdata.productunit", "masterdata.productunit.group", "masterdata.productcategory.configuration");}
  private final ProductCatalogMapper mapper;
+ private final MasterStatusHistoryMapper statusHistory;
  /** @param mapper 原固定SQL映射，与父聚合共用事务连接 */
- public MyBatisProductCatalogRepository(ProductCatalogMapper mapper){this.mapper=mapper;}
+ public MyBatisProductCatalogRepository(ProductCatalogMapper mapper, MasterStatusHistoryMapper statusHistory){this.mapper=mapper;this.statusHistory=statusHistory;}
  /** {@inheritDoc} */
  public int createUnit(String id,String tenant,String code,String name,String dimension,int scale,String creator,String updater){return mapper.createUnit(id,tenant,code,name,dimension,scale,creator,updater);}
  /** {@inheritDoc} */
  public int renameUnit(String name,String actor,String tenant,String unit,String code,String dimension,int scale,long version){return mapper.renameUnit(name,actor,tenant,unit,code,dimension,scale,version);}
  /** {@inheritDoc} */
- public int setUnitStatus(boolean enabled,String actor,String tenant,String unit,long version){return mapper.setUnitStatus(enabled,actor,tenant,unit,version);}
+ public int setUnitStatus(boolean enabled,String actor,String tenant,String unit,long version){int changed = mapper.setUnitStatus(enabled,actor,tenant,unit,version);
+  if (changed == 1) statusHistory.append(tenant, "ProductUnit", unit, version, enabled, actor);
+  return changed;}
  /** {@inheritDoc} */
  public int createCategory(String id,String tenant,String code,String name,String parent,String creator,String updater){return mapper.createCategory(id,tenant,code,name,parent,creator,updater);}
  /** {@inheritDoc} */
  public int moveCategory(String name,String parent,String actor,String tenant,String category,long version){return mapper.moveCategory(name,parent,actor,tenant,category,version);}
  /** {@inheritDoc} */
- public int setCategoryStatus(boolean enabled,String actor,String tenant,String category,long version){return mapper.setCategoryStatus(enabled,actor,tenant,category,version);}
+ public int setCategoryStatus(boolean enabled,String actor,String tenant,String category,long version){int changed = mapper.setCategoryStatus(enabled,actor,tenant,category,version);
+  if (changed == 1) statusHistory.append(tenant, "ProductCategory", category, version, enabled, actor);
+  return changed;}
  /** {@inheritDoc} */
  public List<Map<String,Object>> publishedTemplate(String tenant,String templateVersion){return ProductStorageValues.stable(mapper.publishedTemplate(tenant,templateVersion));}
  /** {@inheritDoc} */

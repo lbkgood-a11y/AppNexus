@@ -1,4 +1,4 @@
-import { executeObjectCommand } from "./objectExecution";
+import { issueObjectCode, listCodingOptions } from "./objectExecution";
 import { http } from "@/utils/http";
 import type { MasterDataApi, MasterDataKind } from "@appnexus/master-data";
 /** 固定主数据路径，租户与操作者只由服务端会话确定。 */
@@ -10,8 +10,8 @@ async function mutate<T>(method:"post"|"put"|"delete",url:string,data:object):Pr
 }
 /** 真实后端适配器；操作入口来自统一准入，读取及写入仍在业务服务复核。 */
 export const masterDataApi:MasterDataApi={
-  codingOptions:(type,field)=>http.request("get",`/api/business-objects/${encodeURIComponent(type)}/coding-options`,{params:{field}}),
-  issueCode:(type,key,requestId)=>executeObjectCommand(`/api/business-objects/${encodeURIComponent(type)}/encoders/${encodeURIComponent(key)}/issue`,{},requestId),
+  codingOptions:listCodingOptions,
+  issueCode:issueObjectCode,
   partnerAccess:(organizationAction)=>http.request("get",path("partner"),{params:{dataAccess:true,organizationAction}}),
   geographyDirectory:kind=>http.request("get",path(kind),{params:{geography:true}}),
   readPartner:async id=>{const result=await http.request<{rows:import("@appnexus/master-data").MasterDataRow[]}>("get",path("partner"),{params:{id,page:1,size:1}});if(!result.rows[0])throw new Error("MASTER_DATA_CHANGED");return result.rows[0];},
@@ -27,6 +27,7 @@ export const masterDataApi:MasterDataApi={
   list:(kind,query)=>http.request("get",path(kind),{params:query}),
   create:(kind,input)=>mutate("post",path(kind),input),
   update:(kind,id,input)=>mutate("put",path(kind,id),input),
+  statusHistory:(kind,id,page,size)=>http.request("get",path(kind,id)+"/status-history",{params:{page,size}}),
   setStatus:(kind,id,input)=>mutate("put",path(kind,id)+"/status",input)
 };
 

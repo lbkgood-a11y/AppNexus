@@ -34,6 +34,24 @@ class ApiContractTest extends DatabaseTestSupport {
             if(group.equals("app")){
                 assertProductOrganizationOption(paths,"create","productListCreateOrganizations");
                 assertProductOrganizationOption(paths,"update","productListUpdateOrganizations");
+                assertThat(assertPath(paths,"/api/bulk-inbound-workbench/queue")).containsOnlyKeys("get");
+                assertThat(assertPath(paths,"/api/bulk-inbound-workbench/tasks/{id}")).containsOnlyKeys("get");
+                assertThat(assertPath(paths,"/api/bulk-inbound-notices/{id}/tasks")).containsOnlyKeys("get","post");
+                assertThat(assertPath(paths,"/api/bulk-inbound-quality-orders:register-sample")).containsKeys("get","post");
+                assertThat(assertPath(paths,"/api/bulk-inbound-metering-orders:record-gross")).containsKeys("get","post");
+                assertThat(assertPath(paths,"/api/bulk-inbound-receipt-orders:create-bulk-draft")).containsKeys("get","post");
+                var meter = assertPath(assertPath(paths,"/api/bulk-inbound-metering-orders:register-external"),"post");
+                var response = assertPath(assertPath(meter,"responses"),"200");
+                var content = assertPath(assertPath(response,"content"),"*/*");
+                assertThat(assertPath(content,"schema")).containsEntry("$ref","#/components/schemas/ExternalMeasurementRegistration");
+            }
+            if(group.equals("platform")){
+                assertThat(assertPath(assertPath(paths,"/bff/platform/events"),"get")).containsEntry("operationId","listPlatformEvents");
+                assertThat(assertPath(assertPath(paths,"/bff/platform/events/{eventId}"),"get")).containsEntry("operationId","readPlatformEvent");
+                assertThat(assertPath(assertPath(paths,"/bff/platform/event-deliveries/{deliveryId}/retry"),"post"))
+                        .containsEntry("operationId","retryPlatformEventDelivery");
+                assertThat(assertPath(assertPath(paths,"/bff/platform/tasks"),"get")).containsEntry("deprecated",true);
+                assertThat(assertPath(assertPath(paths,"/bff/platform/tasks/{id}/retry"),"post")).containsEntry("deprecated",true);
             }
             for(String path:paths.keySet()){
                 if(group.equals("partner-v1"))assertThat(path).startsWith("/v1/");

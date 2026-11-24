@@ -21,13 +21,23 @@ public class MasterDataConfiguration {
   /** @param mapper 固定单位换算Mapper，与事务共用连接 @param access 可信功能权限端口 @param manager 同数据源 REQUIRED 事务管理器 @param writes 公共事务门禁 @return 商品单位换算纯应用用例，不提供技术兼容构造入口 */
   @Bean public static com.appnexus.masterdata.application.product.ProductUnitConversionService conversions(
       com.appnexus.masterdata.adapter.persistence.UnitConversionMapper mapper,AccessAuthorization access,PlatformTransactionManager manager,
-      com.appnexus.platform.authorization.ScopedWriteGate writes){
+      com.appnexus.platform.authorization.ScopedWriteGate writes, com.appnexus.masterdata.adapter.persistence.MasterStatusHistoryMapper statusHistory){
     return new com.appnexus.masterdata.application.product.ProductUnitConversionService(
-        new com.appnexus.masterdata.adapter.persistence.MyBatisUnitConversionRepository(mapper),access,
+        new com.appnexus.masterdata.adapter.persistence.MyBatisUnitConversionRepository(mapper,statusHistory),access,
         new com.appnexus.masterdata.adapter.transaction.SpringRecordTransaction(manager),writes);
   }
   /** 商品父记录端口由组合装配提供；与商品明细沿用同一数据源及事务管理器。 */
   @Bean public com.appnexus.masterdata.application.product.ProductRepository productRecords(com.appnexus.masterdata.adapter.persistence.ProductRecordMapper mapper){return new com.appnexus.masterdata.adapter.persistence.MyBatisProductRepository(mapper);}
+
+  /** @return 沿用主档准入与同一数据源读事务的启停历史查询 */
+  @Bean public com.appnexus.masterdata.application.masterdata.StatusHistoryQuery statusHistory(
+      com.appnexus.masterdata.api.masterdata.MasterDataManagement records,
+      AccessAuthorization access, PlatformTransactionManager manager,
+      com.appnexus.masterdata.adapter.persistence.MasterStatusHistoryMapper mapper) {
+    return new com.appnexus.masterdata.application.masterdata.StatusHistoryQuery(records, access,
+        new com.appnexus.masterdata.adapter.transaction.SpringRecordTransaction(manager),
+        new com.appnexus.masterdata.adapter.persistence.MyBatisStatusHistoryRepository(mapper));
+  }
 
   /** 同步订阅开通事件，复用发布方事务；本模块缺省装配时不建立跨模块数据库访问。 */
   @Bean public GeographyProvisioning geographyProvisioning(GeographyMapper mapper){return new GeographyProvisioning(mapper);}
@@ -41,8 +51,8 @@ public class MasterDataConfiguration {
   /**
    * @return 复用宿主事务、可信租户和公开授权端口的主数据执行器 */
   @Bean public MasterDataService masterDataService(com.appnexus.masterdata.adapter.persistence.MasterRecordMapper records,MasterReadMapper reads,GeographyMapper geography,StorageHierarchyMapper storage,PartnerDetailMapper details,AccessAuthorization access,PlatformTransactionManager manager,com.appnexus.platform.configuration.BusinessValueCatalog dictionaries,PartnerDataAccess partner,FieldProtection fields,DataAccessCatalog catalog,com.appnexus.platform.authorization.AccessPlanning planning,com.appnexus.platform.authorization.RowAccessControl rowAccess,com.appnexus.platform.authorization.DataAccessReferences references,
-      com.appnexus.platform.authorization.ScopedWriteGate writes){
-    return create(records,reads,geography,storage,details,access,manager,dictionaries,partner,fields,catalog,planning,rowAccess,references,writes);
+      com.appnexus.platform.authorization.ScopedWriteGate writes, com.appnexus.masterdata.adapter.persistence.MasterStatusHistoryMapper statusHistory){
+    return create(records,reads,geography,storage,details,access,manager,dictionaries,partner,fields,catalog,planning,rowAccess,references,writes,statusHistory);
   }
   /**
    * 组合主数据输入用例与技术输出，独立数据库测试沿用相同装配。
@@ -68,8 +78,8 @@ public class MasterDataConfiguration {
       AccessAuthorization access,PlatformTransactionManager manager,com.appnexus.platform.configuration.BusinessValueCatalog dictionaries,
       PartnerDataAccess partner,FieldProtection fields,DataAccessCatalog catalog,com.appnexus.platform.authorization.AccessPlanning planning,
       com.appnexus.platform.authorization.RowAccessControl rowAccess,com.appnexus.platform.authorization.DataAccessReferences references,
-      com.appnexus.platform.authorization.ScopedWriteGate writes){
-    return new MasterDataService(access,dictionaries,new com.appnexus.masterdata.adapter.persistence.MyBatisMasterDataRepository(records,access,writes),
+      com.appnexus.platform.authorization.ScopedWriteGate writes, com.appnexus.masterdata.adapter.persistence.MasterStatusHistoryMapper statusHistory){
+    return new MasterDataService(access,dictionaries,new com.appnexus.masterdata.adapter.persistence.MyBatisMasterDataRepository(records,access,writes,statusHistory),
         new MyBatisMasterDataRelations(reads,geography,storage,details,dictionaries,partner,planning,rowAccess,references,writes),
         new com.appnexus.masterdata.adapter.transaction.SpringRecordTransaction(manager),partner,fields,catalog);
   }

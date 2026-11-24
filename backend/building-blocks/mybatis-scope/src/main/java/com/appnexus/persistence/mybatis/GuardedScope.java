@@ -34,6 +34,8 @@ public @interface GuardedScope {
     String platformActor() default "";
     /** 平台读取必须通过的已登记功能权限编码。 */
     String platformPermission() default "";
+    /** 平台配置更新显式允许在同事务中写入，账号和平台操作仍须实时验证。 */
+    boolean platformUpdate() default false;
     /** 租户 UUID 参数路径。 */
     String tenant() default "";
     /** 记录 UUID 参数路径。 */

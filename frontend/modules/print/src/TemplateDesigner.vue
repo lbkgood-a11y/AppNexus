@@ -147,7 +147,7 @@ async function design(){await action(async()=>{await session.value!.design();mod
 <template>
   <div v-loading="loading" class="native-designer">
     <header class="workbench-title">
-      <div class="workbench-identity"><strong>{{name||t('printing.design')}}</strong><el-tag v-if="session&&!loading" :type="dirty?'warning':'success'" effect="plain" role="status">{{t(dirty?'printWorkbench.unsaved':'printWorkbench.saved')}}</el-tag></div>
+      <div class="workbench-identity"><strong>{{name||t('printing.design')}}</strong><el-tag class="app-status-tag" v-if="session&&!loading" :type="dirty?'warning':'success'" role="status">{{t(dirty?'printWorkbench.unsaved':'printWorkbench.saved')}}</el-tag></div>
       <div class="title-actions"><el-tooltip v-if="contract?.designOnly" :content="t('printing.designOnlyHint')"><el-tag type="info" effect="plain">{{t('printWorkbench.preview')}}</el-tag></el-tooltip><slot name="actions"/></div>
     </header>
     <FloatingError v-if="error" :title="error" scope="error" type="error" :closable="false" show-icon>

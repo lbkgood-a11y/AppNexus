@@ -4,8 +4,9 @@ import { computed,onMounted,onUnmounted,reactive,ref } from "vue";
 import {useI18n} from "vue-i18n";
 import {ElMessage,ElMessageBox,ElTree,type LoadFunction,type FormInstance} from "element-plus";
 import {BusinessWorkspace,TreeListTemplate,ManagementTable,ManagedDialog,AppPagination,FloatingError,LoadErrorResult,presentLoadError,setErrorFeedback,type LoadIssue,type ManagementColumn} from "@appnexus/ui";
+import StatusHistoryButton from "../StatusHistoryButton.vue";
 import UnitConversions from "./UnitConversions.vue";
-import {templatePurposes,type TemplatePurpose,type CatalogKind,type CatalogRow,type CatalogTemplateItem,type CatalogVersion,type ProductCatalogApi} from "./catalog";
+import {categoryTemplatePurposes,templatePurposes,type TemplatePurpose,type CatalogKind,type CatalogRow,type CatalogTemplateItem,type CatalogVersion,type ProductCatalogApi} from "./catalog";
 /** 商品配置领域组合：模板容器不负责固定修订/四槽发布，因此在领域模块组合现有表单与表格。 */
 const loadIssue = ref<LoadIssue>();
 // 分类左树等待首轮列表读取成功再发请求，避免同一接口故障同时阻断两个区域。
@@ -48,7 +49,7 @@ const templateItems=ref<Array<{attributeId:string;revisionId:string;groupCode:st
 const editingVersion=ref<string>();
 const initialOptions=ref([{code:"",label:""}]);
 const candidates=ref<CatalogRow[]>([]),revisionOptions=ref<CatalogVersion[]>([]),templateOptions=ref<Array<CatalogVersion&{purpose:string;label:string}>>([]);
-const draft=reactive({options:initialOptions,code:"",name:"",dimensionCode:"",precisionScale:0,parentId:null as string|null,purpose:"BASIC",dataType:"TEXT",unitId:null as string|null,numericScale:0,revisionId:"",attributeId:"",required:false,allowCustom:false,searchable:false,min:"",max:"",minLength:null as number|null,maxLength:null as number|null,minItems:null as number|null,maxItems:null as number|null,minDate:"",maxDate:"",groupId:null as string|null,serviceUnitRequired:false,BASIC:null as string|null,QUALITY:null as string|null,EXTENSION:null as string|null,SPEC:null as string|null});
+const draft=reactive({options:initialOptions,code:"",name:"",dimensionCode:"",precisionScale:0,parentId:null as string|null,purpose:"BASIC",dataType:"TEXT",unitId:null as string|null,numericScale:0,revisionId:"",attributeId:"",required:false,allowCustom:false,searchable:false,min:"",max:"",minLength:null as number|null,maxLength:null as number|null,minItems:null as number|null,maxItems:null as number|null,minDate:"",maxDate:"",groupId:null as string|null,serviceUnitRequired:false,BASIC:null as string|null,QUALITY:null as string|null,EXTENSION:null as string|null,SPEC:null as string|null,SKU:null as string|null,BATCH:null as string|null});
 /** 固定操作语义映射；只选择实际Controller声明，不拼权限码或不完整操作名。 */
 const operationMap={
  unit:{list:"ProductUnit.list",create:"ProductUnit.create",update:"ProductUnit.update",status:"ProductUnit.setStatus",readVersions:"",newVersion:"",publish:""},
@@ -60,7 +61,24 @@ const operation=computed(()=>operationMap[props.kind]);
 const usesSidebar = computed(() => props.kind !== "unit");
 const dataSlot = computed(() => usesSidebar.value ? "table" : "data");
 const templatePurpose = ref<TemplatePurpose>("BASIC");
-const purposeNodes = computed(() => templatePurposes.map(id => ({ id, label: t("productCatalog." + id) })));
+/** 按实际取值归属展示模板；分组节点仅用于导航，叶节点使用原用途编码查询。 */
+const purposeNodes = computed(() => [
+  {
+    id: "product-purpose-group",
+    label: t("productCatalog.productAttributeTemplates"),
+    children: categoryTemplatePurposes.filter(id => id !== "SPEC").map(id => ({ id, label: t("productCatalog." + id) }))
+  },
+  {
+    id: "sku-purpose-group",
+    label: t("productCatalog.skuAttributeTemplates"),
+    children: ["SPEC", "SKU"].map(id => ({ id, label: t("productCatalog." + id) }))
+  },
+  {
+    id: "batch-purpose-group",
+    label: t("productCatalog.batchAttributeTemplates"),
+    children: [{ id: "BATCH", label: t("productCatalog.BATCH") }]
+  }
+]);
 const attributeScope = ref("attributes");
 const attributeTemplates = ref<Array<{id:string;label:string;items:CatalogTemplateItem[]}>>([]);
 const attributeCatalog = ref<CatalogRow[]>([]);
@@ -138,23 +156,24 @@ function selectAttributeScope(node:{id:string}) {
 }
 
 /** 用途切换保留关键词并从第一页查询，创建模板时默认使用当前用途。 */
-function selectPurpose(node: {id: TemplatePurpose}) {
-  if (templatePurpose.value === node.id) return;
-  templatePurpose.value = node.id;
+function selectPurpose(node: {id: string}) {
+  const purpose = templatePurposes.find(id => id === node.id);
+  if (!purpose || templatePurpose.value === purpose) return;
+  templatePurpose.value = purpose;
   search();
 }
 const title=computed(()=>t("productCatalog."+props.kind));
 /** 操作列按当前获准操作计宽；只读用户不预留写入按钮的大片空白。 */
-const operationWidth=computed(()=>{const map=operation.value;const allowed=operations.value;let count=[map.update,map.status,map.readVersions,map.newVersion].filter(id=>id&&allowed.includes(id)).length;if(props.kind==="category"){count++;if(allowed.includes("ProductCategory.publishConfiguration"))count++;}if(props.kind==="attribute"&&allowed.includes(map.update)&&allowed.includes(groupListOp.value))count++;return Math.max(110,Math.min(560,count*110));});
+const operationWidth=computed(()=>{const map=operation.value;const allowed=operations.value;let count=[map.update,map.status,map.status.replace(/\.setStatus$/, '.readStatusHistory'),map.readVersions,map.newVersion].filter(id=>id&&allowed.includes(id)).length;if(props.kind==="category"){count++;if(allowed.includes("ProductCategory.publishConfiguration"))count++;}if(props.kind==="attribute"&&allowed.includes(map.update)&&allowed.includes(groupListOp.value))count++;return Math.max(110,Math.min(560,count*110));});
 const columns=computed<ManagementColumn[]>(()=>[
+ {key:"state",label:t("masterData.status"),width:100},
+ {key:"code",prop:"code",label:t("masterData.code"),minWidth:150},
  ...(props.kind==="attribute"&&canReadTemplates.value?[{key:"attributeTemplates",label:t("productCatalog.assignedTemplates"),minWidth:160}]:[]),
  ...(props.kind==="attribute"?[{key:"name",prop:"name",label:t("productCatalog.attributeName"),minWidth:180}]:[]),
- {key:"code",prop:"code",label:t("masterData.code"),minWidth:150},
  ...(props.kind!=="attribute"?[{key:"name",prop:"name",label:t("masterData.name"),minWidth:180}]:[]),
  ...(props.kind==="attribute"?[{key:"dataType",label:t("productCatalog.dataType"),width:120}]:[]),
  ...(props.kind==="unit"?[{key:"dimensionCode",prop:"dimensionCode",label:t("productCatalog.dimension"),minWidth:120},{key:"precisionScale",prop:"precisionScale",label:t("productCatalog.precision"),width:90}]:[]),
  ...(props.kind==="template"?[{key:"purpose",prop:"purpose",label:t("productCatalog.purpose"),width:120}]:[]),
- {key:"state",label:t("masterData.status"),width:100},
  // 属性页保留模板、名称和类型的首屏空间，操作列在表格内随列滚动。
  {key:"operations",label:t("masterData.actions"),width:operationWidth.value,fixed:narrow.value||props.kind==="attribute"?undefined:"right"}
 ]);
@@ -224,7 +243,7 @@ function up(){ancestors.value.pop();parent.value=ancestors.value.at(-1)?.id;sear
 /** 打开领域表单时只请求实际需要的授权目录；没有权限时失败而不造候选。 */
 async function edit(which:typeof mode.value,row?:CatalogRow){
 
- editingVersion.value=undefined;templateItems.value=[];initialOptions.value=[{code:"",label:""}];draft.groupId=row?.groupId||null;draft.min="";draft.max="";draft.minLength=null;draft.maxLength=null;draft.minItems=null;draft.maxItems=null;draft.minDate="";draft.maxDate="";draft.searchable=false;draft.allowCustom=false;draft.required=false;draft.unitId=null;draft.dataType="TEXT";draft.numericScale=0;selected.value=row;mode.value=which;draft.code=row?.code??"";draft.name=row?.name??"";draft.dimensionCode=row?.dimensionCode??unitGroupCode.value??"";draft.precisionScale=row?.precisionScale??0;draft.parentId=row?.parentId??parent.value??null;draft.purpose=row?.purpose??templatePurpose.value;draft.BASIC=null;draft.QUALITY=null;draft.EXTENSION=null;draft.SPEC=null;draft.serviceUnitRequired=false;draft.attributeId="";draft.revisionId="";
+ editingVersion.value=undefined;templateItems.value=[];initialOptions.value=[{code:"",label:""}];draft.groupId=row?.groupId||null;draft.min="";draft.max="";draft.minLength=null;draft.maxLength=null;draft.minItems=null;draft.maxItems=null;draft.minDate="";draft.maxDate="";draft.searchable=false;draft.allowCustom=false;draft.required=false;draft.unitId=null;draft.dataType="TEXT";draft.numericScale=0;selected.value=row;mode.value=which;draft.code=row?.code??"";draft.name=row?.name??"";draft.dimensionCode=row?.dimensionCode??unitGroupCode.value??"";draft.precisionScale=row?.precisionScale??0;draft.parentId=row?.parentId??parent.value??null;draft.purpose=row?.purpose??templatePurpose.value;draft.BASIC=null;draft.QUALITY=null;draft.EXTENSION=null;draft.SPEC=null;draft.SKU=null;draft.BATCH=null;draft.serviceUnitRequired=false;draft.attributeId="";draft.revisionId="";
  try{
  if(props.kind==="attribute"){
   if((which==="create"||which==="edit")&&operations.value.includes("ProductAttribute.listGroups"))groups.value=await props.api.groups();
@@ -232,7 +251,7 @@ async function edit(which:typeof mode.value,row?:CatalogRow){
  }
  if(which==="version"){groups.value=await props.api.groups();candidates.value=(await props.api.list("attribute",{keyword:"",page:1,size:100})).rows;}
  if(which==="config"){
- if(row?.currentConfigId){const old=await props.api.configuration(row.id,row.currentConfigId);draft.BASIC=old.templates.BASIC;draft.QUALITY=old.templates.QUALITY;draft.EXTENSION=old.templates.EXTENSION;draft.SPEC=old.templates.SPEC;draft.serviceUnitRequired=old.serviceUnitRequired;}
+ if(row?.currentConfigId){const old=await props.api.configuration(row.id,row.currentConfigId);draft.BASIC=old.templates.BASIC;draft.QUALITY=old.templates.QUALITY;draft.EXTENSION=old.templates.EXTENSION;draft.SPEC=old.templates.SPEC;draft.SKU=old.templates.SKU??null;draft.BATCH=old.templates.BATCH??null;draft.serviceUnitRequired=old.serviceUnitRequired;}
  templateOptions.value=[];
  const templates=(await props.api.list("template",{keyword:"",page:1,size:100})).rows;
  for(const item of templates){for(const v of await props.api.versions("template",item.id))if(v.state==="PUBLISHED")templateOptions.value.push({...v,purpose:item.purpose??"",label:item.code+" / "+v.versionNo});}
@@ -253,7 +272,7 @@ async function save(){
  busy.value=true;
  try{
  const version=selected.value?.version??0;
- if(mode.value==="config")await props.api.publishConfiguration(selected.value!.id,{templates:{BASIC:draft.BASIC,SPEC:draft.SPEC,QUALITY:draft.QUALITY,EXTENSION:draft.EXTENSION},serviceUnitRequired:draft.serviceUnitRequired,version});
+ if(mode.value==="config")await props.api.publishConfiguration(selected.value!.id,{templates:{BASIC:draft.BASIC,SPEC:draft.SPEC,QUALITY:draft.QUALITY,EXTENSION:draft.EXTENSION,SKU:draft.SKU,BATCH:draft.BATCH},serviceUnitRequired:draft.serviceUnitRequired,version});
  else if(mode.value==="revision")await (editingVersion.value?props.api.updateRevision(editingVersion.value,revisionPayload(version)):props.api.createRevision(selected.value!.id,revisionPayload(version)));
  else if(mode.value==="version")await (editingVersion.value?props.api.updateVersion(editingVersion.value,{description:draft.name,items:templateItems.value.map(({label,...item})=>item),version}):props.api.createVersion(selected.value!.id,{description:draft.name,items:templateItems.value.map(({label,...item})=>item),version}));
  else{
@@ -322,7 +341,7 @@ onMounted(load);
 <template v-if="usesSidebar" #treeHeader><el-input v-if="kind==='category'" v-model="treeKeyword" clearable :aria-label="t('productCatalog.searchLoadedTree')" :placeholder="t('productCatalog.searchLoadedTree')" @input="categoryTree?.filter(treeKeyword)"/><span v-else-if="kind==='template'">{{t('productCatalog.purpose')}}</span><span v-else>{{title}}</span></template>
 <template v-if="usesSidebar" #tree><el-tree v-if="kind==='category'" :key="treeGeneration" ref="categoryTree" node-key="id" :current-node-key="parent||'ROOT'" :default-expanded-keys="['ROOT']" highlight-current lazy :load="loadTree" :props="{label:'name',isLeaf:'leaf'}" :filter-node-method="filterTree" @node-click="selectTree"/>
   <el-tree v-else-if="kind==='attribute'" :data="attributeNodes" node-key="id" :current-node-key="attributeScope" :default-expanded-keys="['templates']" :aria-label="title" :expand-on-click-node="false" highlight-current @node-click="selectAttributeScope"/>
-  <el-tree v-else-if="kind==='template'" :data="purposeNodes" node-key="id" :current-node-key="templatePurpose" :aria-label="t('productCatalog.purpose')" highlight-current @node-click="selectPurpose"/>
+  <el-tree v-else-if="kind==='template'" :data="purposeNodes" node-key="id" :current-node-key="templatePurpose" :aria-label="t('productCatalog.purpose')" default-expand-all highlight-current @node-click="selectPurpose"/>
 </template>
  <template #search><el-form inline class="management-filter" @submit.prevent="search"><el-form-item :label="t('masterData.keyword')"><el-input v-model="keyword" clearable maxlength="200"/></el-form-item><el-form-item v-if="kind==='unit'" :label="t('productCatalog.dimension')"><el-select v-model="unitGroupCode" clearable filterable @change="search"><el-option v-for="group in unitGroups" :key="group.code" :value="group.code" :label="group.name"/></el-select></el-form-item><el-button v-if="kind==='category'&&parent" v-operation="'ProductCategory.list'" :disabled="loading||busy" @click="up">{{t('productCatalog.parent')}}</el-button><span v-if="kind==='category'">{{ancestors.map(r=>r.name).join(' / ')}}</span><el-form-item class="management-filter-actions"><el-button v-operation="operation.list" native-type="submit" type="primary" :loading="loading" :disabled="busy">{{t('masterData.search')}}</el-button><el-button v-operation="operation.list" :disabled="loading||busy" @click="reset">{{t('masterData.reset')}}</el-button></el-form-item></el-form></template>
  <template #[dataSlot]>
@@ -335,11 +354,12 @@ onMounted(load);
  <template #name="{row}">{{row.name || "—"}}</template>
  <template #attributeTemplates="{row}">{{attributeTemplateNames.get(row.id)?.join(" / ") || "—"}}</template>
  <template #dataType="{row}">{{row.dataType ? t("productCatalog."+row.dataType) : "—"}}</template>
- <template #purpose="{row}">{{t("productCatalog."+row.purpose)}}</template><template #state="{row}"><el-tag :type="row.enabled?'success':'info'">{{t(row.enabled?'masterData.enabled':'masterData.disabled')}}</el-tag></template>
+ <template #purpose="{row}">{{t("productCatalog."+row.purpose)}}</template><template #state="{row}"><el-tag class="app-status-tag" :type="row.enabled?'success':'info'">{{t(row.enabled?'masterData.enabled':'masterData.disabled')}}</el-tag></template>
  <template #operations="{row}">
  <el-button v-if="kind==='category'" v-operation="'ProductCategory.list'" link @click="descend(row)">{{t('productCatalog.children')}}</el-button>
  <el-button v-operation="operation.update" link type="primary" :disabled="busy" @click="kind==='attribute'?editAttribute(row):edit('edit',row)">{{t('masterData.edit')}}</el-button>
  <el-button v-if="kind==='attribute'&&operations.includes(groupListOp)" v-operation="operation.update" link :disabled="busy" @click="edit('edit',row)">{{t('productCatalog.group')}}</el-button>
+ <StatusHistoryButton :operation="operation.status.replace(/\.setStatus$/, '.readStatusHistory')" :load="(page,size)=>api.statusHistory(kind,row.id,page,size)" :error-text="errorText" />
  <el-button v-operation="operation.status" link :type="row.enabled?'danger':'primary'" :disabled="busy" @click="toggle(row)">{{t(row.enabled?'masterData.disable':'masterData.enable')}}</el-button>
  <el-button v-if="kind==='category'" v-operation="'ProductCategory.publishConfiguration'" link type="primary" @click="edit('config',row)">{{t('productCatalog.configuration')}}</el-button>
  <el-button v-if="kind==='attribute'||kind==='template'" v-operation="operation.readVersions" link @click="showVersions(row)">{{t('productCatalog.versions')}}</el-button>
@@ -354,6 +374,7 @@ onMounted(load);
 <el-form scroll-to-error ref="form" class="business-border-label-form" :model="draft" label-position="top" @submit.prevent="save">
  <template v-if="mode==='create'||mode==='edit'">
  <el-form-item :label="t('masterData.code')" prop="code" :rules="[{required:true,message:t('masterData.required')},{pattern:/^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/,message:t('masterData.codeRule')}]"><span v-if="mode==='edit'">{{draft.code}}</span><el-input v-else v-model="draft.code" maxlength="64"/></el-form-item>
+ <el-form-item v-if="mode==='edit'&&selected" :label="t('masterData.status')"><el-tag class="app-status-tag" :type="selected.enabled?'success':'info'">{{t(selected.enabled?'masterData.enabled':'masterData.disabled')}}</el-tag></el-form-item>
  <el-form-item v-if="kind!=='attribute'" :label="t('masterData.name')" prop="name" :rules="[{required:true,whitespace:true,message:t('masterData.required')}]"><el-input v-model="draft.name" maxlength="200"/></el-form-item>
  <template v-if="kind==='unit'"><el-form-item :label="t('productCatalog.dimension')" prop="dimensionCode" :rules="[{required:true,message:t('masterData.required')}]"><el-select v-model="draft.dimensionCode" filterable :disabled="mode==='edit'"><el-option v-for="group in unitGroups" :key="group.code" :value="group.code" :label="group.name"/></el-select></el-form-item><el-form-item :label="t('productCatalog.precision')"><el-input-number v-model="draft.precisionScale" :min="0" :max="12" :disabled="mode==='edit'"/></el-form-item></template>
  <el-form-item v-if="kind==='category'" :label="t('productCatalog.parentCategory')"><el-tree-select v-model="draft.parentId" clearable check-strictly lazy :load="loadParents" :props="{label:'name',children:'children',isLeaf:'leaf'}" :cache-data="ancestors" node-key="id" :render-after-expand="false" @clear="draft.parentId=null"/></el-form-item>
@@ -383,12 +404,21 @@ onMounted(load);
  <el-form-item :label="t('productCatalog.attribute')" prop="attributeId"><el-select v-model="draft.attributeId" @change="chooseAttribute"><el-option v-for="r in candidates" :key="r.id" :value="r.id" :label="r.code"/></el-select></el-form-item>
  <el-form-item :label="t('productCatalog.versions')" prop="revisionId"><el-select v-model="draft.revisionId" @change="draft.searchable=false;draft.allowCustom=false"><el-option v-for="r in revisionOptions.filter(r=>r.state==='PUBLISHED')" :key="r.id" :value="r.id" :label="r.name+' / '+r.revision"/></el-select></el-form-item><el-checkbox v-model="draft.required">{{t('productCatalog.required')}}</el-checkbox><el-checkbox v-model="draft.searchable" :disabled="revisionOptions.find(r=>r.id===draft.revisionId)?.dataType==='TEXT'">{{t('productCatalog.searchable')}}</el-checkbox><el-checkbox v-model="draft.allowCustom" :disabled="!['SINGLE_SELECT','MULTI_SELECT'].includes(revisionOptions.find(r=>r.id===draft.revisionId)?.dataType??'')">{{t('productCatalog.allowCustom')}}</el-checkbox><el-button v-operation="'ProductTemplate.createVersion'" :disabled="!draft.revisionId||templateItems.length>=200" @click="addTemplateItem">{{t('productCatalog.addItem')}}</el-button><VxeTable border show-overflow :column-config="{resizable:true}" :data="templateItems"><VxeColumn field="label" :title="t('productCatalog.attribute')"/><VxeColumn :title="t('masterData.actions')"><template #default="{ rowIndex }"><el-button v-operation="'ProductTemplate.createVersion'" link @click="templateItems.splice(rowIndex,1)">{{t('productV1.removeCondition')}}</el-button></template></VxeColumn></VxeTable>
  </template>
- <template v-if="mode==='config'"><el-form-item v-for="purpose in templatePurposes" :key="purpose" :label="t('productCatalog.'+purpose)"><el-select v-model="draft[purpose]" clearable @clear="draft[purpose]=null"><el-option v-for="v in templateOptions.filter(r=>r.purpose===purpose)" :key="v.id" :value="v.id" :label="v.label"/></el-select></el-form-item><el-checkbox v-model="draft.serviceUnitRequired">{{t('productCatalog.serviceUnitRequired')}}</el-checkbox></template>
+ <template v-if="mode==='config'">
+   <el-form-item v-for="purpose in templatePurposes" :key="purpose"
+     :label="t(purpose === 'SKU' || purpose === 'BATCH' || purpose === 'SPEC' ? 'productCatalog.default'+purpose : 'productCatalog.'+purpose)">
+     <el-select v-model="draft[purpose]" clearable @clear="draft[purpose]=null">
+       <el-option v-for="option in templateOptions.filter(row=>row.purpose===purpose)" :key="option.id"
+         :value="option.id" :label="option.label"/>
+     </el-select>
+   </el-form-item>
+   <el-checkbox v-model="draft.serviceUnitRequired">{{t('productCatalog.serviceUnitRequired')}}</el-checkbox>
+ </template>
 </el-form>
 <template #footer><el-button :disabled="busy" @click="dialog=false">{{t('masterData.cancel')}}</el-button><el-button v-operation="saveOperation" type="primary" :loading="busy" @click="save">{{t(mode==='config'?'productCatalog.publish':'masterData.save')}}</el-button></template>
 </ManagedDialog>
-<ManagedDialog v-model="historyOpen" :title="t('productCatalog.versions')" :busy="busy"><VxeTable border show-overflow :column-config="{resizable:true}" :data="history"><VxeColumn :title="t('productV1.version')" width="100"><template #default="{row}">{{row.revision??row.versionNo}}</template></VxeColumn><VxeColumn :title="t(kind==='template'?'productCatalog.versionNote':'masterData.name')" min-width="160"><template #default="{row}">{{row.name||row.description||'—'}}</template></VxeColumn><VxeColumn :title="t('masterData.status')"><template #default="{row}"><el-tag :type="row.state==='PUBLISHED'?'success':'info'">{{t("productCatalog.state_"+row.state)}}</el-tag></template></VxeColumn><VxeColumn :title="t('masterData.actions')"><template #default="{row}"><el-button v-if="row.state==='DRAFT'" v-operation="operation.publish" link :disabled="busy" @click="publish(row as unknown as CatalogVersion)">{{t('productCatalog.publish')}}</el-button><el-button v-if="row.state==='DRAFT'&&kind==='attribute'" v-operation="'ProductAttribute.updateRevision'" link @click="editVersion(row as unknown as CatalogVersion)">{{t('masterData.edit')}}</el-button><el-button v-if="row.state==='DRAFT'&&kind==='template'" v-operation="'ProductTemplate.updateVersion'" link @click="editVersion(row as unknown as CatalogVersion)">{{t('masterData.edit')}}</el-button><el-button v-if="row.state==='PUBLISHED'&&kind==='attribute'" v-operation="'ProductAttribute.retireRevision'" link @click="retire(row as unknown as CatalogVersion)">{{t('productCatalog.retire')}}</el-button><el-button v-if="row.state==='PUBLISHED'&&kind==='template'" v-operation="'ProductTemplate.retire'" link @click="retire(row as unknown as CatalogVersion)">{{t('productCatalog.retire')}}</el-button></template></VxeColumn></VxeTable></ManagedDialog>
-<ManagedDialog v-model="groupOpen" :title="groupTitle"><el-button v-operation="groupCreateOp" @click="newGroup">{{t('masterData.create')}}</el-button><VxeTable border show-overflow :column-config="{resizable:true}" :data="groups"><VxeColumn field="code" :title="t('masterData.code')"/><VxeColumn field="name" :title="t('masterData.name')"/><VxeColumn :title="t('masterData.actions')"><template #default="{row}"><el-button v-operation="groupEditOp" link @click="editGroup(row as CatalogRow)">{{t('masterData.edit')}}</el-button><el-button v-if="kind==='attribute'" v-operation="'ProductAttribute.setGroupStatus'" link @click="toggleGroup(row as CatalogRow)">{{t(row.enabled?'masterData.disable':'masterData.enable')}}</el-button></template></VxeColumn></VxeTable></ManagedDialog>
+<ManagedDialog v-model="historyOpen" :title="t('productCatalog.versions')" :busy="busy"><VxeTable border show-overflow :column-config="{resizable:true}" :data="history"><VxeColumn :title="t('productV1.version')" width="100"><template #default="{row}">{{row.revision??row.versionNo}}</template></VxeColumn><VxeColumn :title="t(kind==='template'?'productCatalog.versionNote':'masterData.name')" min-width="160"><template #default="{row}">{{row.name||row.description||'—'}}</template></VxeColumn><VxeColumn :title="t('masterData.status')"><template #default="{row}"><el-tag class="app-status-tag" :type="row.state==='PUBLISHED'?'success':'info'">{{t("productCatalog.state_"+row.state)}}</el-tag></template></VxeColumn><VxeColumn :title="t('masterData.actions')"><template #default="{row}"><el-button v-if="row.state==='DRAFT'" v-operation="operation.publish" link :disabled="busy" @click="publish(row as unknown as CatalogVersion)">{{t('productCatalog.publish')}}</el-button><el-button v-if="row.state==='DRAFT'&&kind==='attribute'" v-operation="'ProductAttribute.updateRevision'" link @click="editVersion(row as unknown as CatalogVersion)">{{t('masterData.edit')}}</el-button><el-button v-if="row.state==='DRAFT'&&kind==='template'" v-operation="'ProductTemplate.updateVersion'" link @click="editVersion(row as unknown as CatalogVersion)">{{t('masterData.edit')}}</el-button><el-button v-if="row.state==='PUBLISHED'&&kind==='attribute'" v-operation="'ProductAttribute.retireRevision'" link @click="retire(row as unknown as CatalogVersion)">{{t('productCatalog.retire')}}</el-button><el-button v-if="row.state==='PUBLISHED'&&kind==='template'" v-operation="'ProductTemplate.retire'" link @click="retire(row as unknown as CatalogVersion)">{{t('productCatalog.retire')}}</el-button></template></VxeColumn></VxeTable></ManagedDialog>
+<ManagedDialog v-model="groupOpen" :title="groupTitle"><el-button v-operation="groupCreateOp" @click="newGroup">{{t('masterData.create')}}</el-button><VxeTable border show-overflow :column-config="{resizable:true}" :data="groups"><VxeColumn v-if="kind==='attribute'" :title="t('masterData.status')" width="100"><template #default="{row}"><el-tag class="app-status-tag" :type="row.enabled?'success':'info'">{{t(row.enabled?'masterData.enabled':'masterData.disabled')}}</el-tag></template></VxeColumn><VxeColumn field="code" :title="t('masterData.code')"/><VxeColumn field="name" :title="t('masterData.name')"/><VxeColumn :title="t('masterData.actions')"><template #default="{row}"><el-button v-operation="groupEditOp" link @click="editGroup(row as CatalogRow)">{{t('masterData.edit')}}</el-button><StatusHistoryButton v-if="kind==='attribute'" operation="ProductAttribute.readGroupStatusHistory" :load="(page,size)=>api.statusHistory('attribute-group',String(row.id),page,size)" :error-text="errorText" /><el-button v-if="kind==='attribute'" v-operation="'ProductAttribute.setGroupStatus'" link @click="toggleGroup(row as CatalogRow)">{{t(row.enabled?'masterData.disable':'masterData.enable')}}</el-button></template></VxeColumn></VxeTable></ManagedDialog>
 <ManagedDialog v-model="groupEditorOpen" :title="groupTitle" :busy="groupSaving"><el-form scroll-to-error ref="groupForm" class="business-border-label-form" label-position="top" :model="groupDraft" @submit.prevent="saveGroup"><el-form-item :label="t('masterData.code')" prop="code" :rules="[{required:true,message:t('masterData.required')},{pattern:/^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/,message:t('masterData.codeRule')}]"><span v-if="editingGroup">{{groupDraft.code}}</span><el-input v-else v-model="groupDraft.code" maxlength="64" :disabled="groupSaving"/></el-form-item><el-form-item :label="t('masterData.name')" prop="name" :rules="[{required:true,whitespace:true,message:t('masterData.required')}]"><el-input v-model="groupDraft.name" maxlength="200" :disabled="groupSaving"/></el-form-item></el-form><template #footer><el-button :disabled="groupSaving" @click="groupEditorOpen=false">{{t('masterData.cancel')}}</el-button><el-button v-if="editingGroup" v-operation="groupEditOp" type="primary" :loading="groupSaving" @click="saveGroup">{{t('masterData.save')}}</el-button><el-button v-else v-operation="groupCreateOp" type="primary" :loading="groupSaving" @click="saveGroup">{{t('masterData.save')}}</el-button></template></ManagedDialog></div>
 </template>
 

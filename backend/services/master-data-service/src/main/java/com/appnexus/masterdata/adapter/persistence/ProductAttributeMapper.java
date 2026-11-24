@@ -131,7 +131,7 @@ public interface ProductAttributeMapper {
      """)
  List<Map<String,Object>> attributes(@Param("tenant") String tenant);
  /** @param group 构建内对象选择，不接收表名 @param tenant 可信租户 @param id 已校验UUID @param enabled 目标状态 @param actor 实际账号 @param version 原CAS版本 @return 更新行数 */
- @Update({"<script>","UPDATE <choose><when test='group'>md_product_attribute_group</when><otherwise>md_product_attribute</otherwise></choose> SET enabled=#{enabled},version=version+1,updated_by=UUID_TO_BIN(#{actor}),updated_at=CURRENT_TIMESTAMP(6) WHERE tenant_id=UUID_TO_BIN(#{tenant}) AND id=UUID_TO_BIN(#{id}) AND version=#{version}","</script>"})
+ @Update({"<script>","UPDATE <choose><when test='group'>md_product_attribute_group</when><otherwise>md_product_attribute</otherwise></choose> SET enabled=#{enabled},version=version+1,updated_by=UUID_TO_BIN(#{actor}),updated_at=CURRENT_TIMESTAMP(6) WHERE tenant_id=UUID_TO_BIN(#{tenant}) AND id=UUID_TO_BIN(#{id}) AND version=#{version} AND enabled&lt;&gt;#{enabled}","</script>"})
  @com.appnexus.persistence.mybatis.GuardedScope(tenant="tenant",serviceOperation="masterdata.productattribute:set_status",serviceKeys={"id"})
  int status(@Param("group") boolean group,@Param("tenant") String tenant,@Param("id") String id,@Param("enabled") boolean enabled,@Param("actor") String actor,@Param("version") long version);
 }

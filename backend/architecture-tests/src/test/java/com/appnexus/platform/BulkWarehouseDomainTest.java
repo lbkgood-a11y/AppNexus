@@ -8,8 +8,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.appnexus.bulkwarehousing.domain.stock.BatchConversion;
 import java.math.BigDecimal;
 import com.appnexus.bulkwarehousing.domain.stock.BatchLineage;
-import com.appnexus.bulkwarehousing.domain.process.WarehouseFlowTemplate;
-import com.appnexus.bulkwarehousing.domain.process.WarehouseFlowCatalog;
 import com.appnexus.bulkwarehousing.domain.title.TitleShareBalance;
 import java.util.List;
 import java.util.Map;
@@ -52,38 +50,11 @@ class BulkWarehouseDomainTest {
   }
 
   /** 固定模板只接受该版本声明的步骤和有效前置事实。 */
-  @Test void fixedTemplatesRequireCurrentEvidence() {
-    var template = WarehouseFlowTemplate.COIL_DISPATCH_V1;
-    assertEquals(1, template.version());
-    assertFalse(template.permits(WarehouseFlowTemplate.Step.HANDOVER, Set.of()));
-    assertTrue(template.permits(WarehouseFlowTemplate.Step.HANDOVER, Set.of(WarehouseFlowTemplate.Step.WEIGHING)));
-    assertFalse(template.permits(WarehouseFlowTemplate.Step.RECEIVE, Set.of(WarehouseFlowTemplate.Step.CUSTODY)));
-  }
-
-  /** 精确策略优先，历史引用始终按原编码和版本续办。 */
-  @Test void resolvesPublishedStrategyAndRetainedVersionIndependently() {
-    var receiving = WarehouseFlowTemplate.RECEIVING_V1;
-    var original = WarehouseFlowTemplate.COIL_DISPATCH_V1;
-    var dispatch = original.requiring(2, WarehouseFlowTemplate.Step.HANDOVER, WarehouseFlowTemplate.Step.ALLOCATION);
-    var exact = new WarehouseFlowCatalog.Policy("operation", "road", dispatch);
-    var fallback = new WarehouseFlowCatalog.Policy("operation", null, receiving);
-    var catalog = new WarehouseFlowCatalog(List.of(fallback, exact), List.of(receiving, original, dispatch));
-    assertEquals(dispatch, catalog.select("operation", "road"));
-    assertEquals(receiving, catalog.select("operation", "rail"));
-    var confirmed = Set.of(WarehouseFlowTemplate.Step.WEIGHING);
-    assertTrue(catalog.resume(original.code(), 1).permits(WarehouseFlowTemplate.Step.HANDOVER, confirmed));
-    assertFalse(catalog.resume(original.code(), 2).permits(WarehouseFlowTemplate.Step.HANDOVER, confirmed));
-    assertThrows(IllegalStateException.class, () -> catalog.resume(original.code(), 3));
-    assertThrows(IllegalStateException.class, () -> catalog.select("unknown", "road"));
-    var ambiguous = new WarehouseFlowCatalog(List.of(exact, exact), List.of(dispatch));
-    assertThrows(IllegalStateException.class, () -> ambiguous.select("operation", "road"));
-  }
 
   private static BatchConversion.Line line(String stockId, String quantity) {
-    return new BatchConversion.Line(stockId, amount(quantity));
+    return new BatchConversion.Line(stockId,amount(quantity));
   }
 
-  private static BigDecimal amount(String value) {
-    return new BigDecimal(value);
-  }
+  /** 构造规则测试用的精确十进制数量。 */
+  private static BigDecimal amount(String value) { return new BigDecimal(value); }
 }

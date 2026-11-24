@@ -120,9 +120,13 @@ public final class MasterDataInboundReceiptReferences implements InboundReferenc
   /** {@inheritDoc} */
   @Override
   public Calculation packaging(VerifiedTenantContext context, Item item, Packaging packaging, String quantity) {
-    var evidence = products.packagingEvidence(context, item.productId(), packaging.code(),
+    var evidence = item.kind()==IdentityKind.SKU
+        ? products.skuPackagingEvidence(context,item.productId(),item.identityId(),packaging.code(),item.productVersion(),quantity)
+        : products.packagingEvidence(context, item.productId(), packaging.code(),
         item.productVersion(), quantity);
     return new Calculation(evidence.sourceUnitId(), evidence.targetUnitId(),
         evidence.convertedQuantity(), evidence.factor(), evidence.targetScale());
   }
+
+
 }

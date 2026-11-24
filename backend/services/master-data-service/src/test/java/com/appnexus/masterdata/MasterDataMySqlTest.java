@@ -58,7 +58,8 @@ class MasterDataMySqlTest {
       try(var connection=source.getConnection()){ScriptUtils.executeSqlScript(connection,new ClassPathResource("db/migration/V107__editable_geography_parent.sql"));}
       try(var connection=source.getConnection()){ScriptUtils.executeSqlScript(connection,new ClassPathResource("db/migration/V118__storage_hierarchy.sql"));}
       try(var connection=source.getConnection()){ScriptUtils.executeSqlScript(connection,new ClassPathResource("db/migration/V122__partner_data_ownership.sql"));
-        ScriptUtils.executeSqlScript(connection,new ClassPathResource("db/migration/V150__warehouse_organization_ownership.sql"));}
+        ScriptUtils.executeSqlScript(connection,new ClassPathResource("db/migration/V150__warehouse_organization_ownership.sql"));
+        ScriptUtils.executeSqlScript(connection,new ClassPathResource("db/migration/V176__master_data_status_history.sql"));}
       assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM access_permission",Integer.class)).isEqualTo(36);
       assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM access_role_permission",Integer.class)).isEqualTo(36);
       var c=new VerifiedTenantContext(UUID.randomUUID(),UUID.randomUUID(),UUID.randomUUID(),1);
@@ -76,11 +77,11 @@ class MasterDataMySqlTest {
       // 固定 Mapper 使用同一数据源，事务仍与原授权及审计写入保持一致。
       var factory=new org.mybatis.spring.SqlSessionFactoryBean();factory.setDataSource(source);
       var config=new org.apache.ibatis.session.Configuration();config.setLocalCacheScope(org.apache.ibatis.session.LocalCacheScope.STATEMENT);config.setCacheEnabled(false);config.setCallSettersOnNulls(true);
-      for(Class<?> type:List.of(com.appnexus.masterdata.adapter.persistence.MasterRecordMapper.class,com.appnexus.masterdata.adapter.persistence.MasterReadMapper.class,com.appnexus.masterdata.adapter.persistence.GeographyMapper.class,com.appnexus.masterdata.adapter.persistence.StorageHierarchyMapper.class,com.appnexus.masterdata.adapter.persistence.PartnerDetailMapper.class))config.addMapper(type);
+      for(Class<?> type:List.of(com.appnexus.masterdata.adapter.persistence.MasterStatusHistoryMapper.class,com.appnexus.masterdata.adapter.persistence.MasterRecordMapper.class,com.appnexus.masterdata.adapter.persistence.MasterReadMapper.class,com.appnexus.masterdata.adapter.persistence.GeographyMapper.class,com.appnexus.masterdata.adapter.persistence.StorageHierarchyMapper.class,com.appnexus.masterdata.adapter.persistence.PartnerDetailMapper.class))config.addMapper(type);
       factory.setConfiguration(config);var session=new org.mybatis.spring.SqlSessionTemplate(factory.getObject());
       var records=session.getMapper(com.appnexus.masterdata.adapter.persistence.MasterRecordMapper.class);var reads=session.getMapper(com.appnexus.masterdata.adapter.persistence.MasterReadMapper.class);var geography=session.getMapper(com.appnexus.masterdata.adapter.persistence.GeographyMapper.class);var storage=session.getMapper(com.appnexus.masterdata.adapter.persistence.StorageHierarchyMapper.class);var details=session.getMapper(com.appnexus.masterdata.adapter.persistence.PartnerDetailMapper.class);
       var rowAccess=new com.appnexus.platform.persistence.platformscope.MySqlRowAccessControl();
-      var service=MasterDataConfiguration.create(records,reads,geography,storage,details,access,new DataSourceTransactionManager(source),catalog,new PartnerDataAccess(planning,fields,references,reads,dataCatalog,rowAccess,details,org.mockito.Mockito.mock(com.appnexus.platform.authorization.ScopedWriteGate.class)),fields,dataCatalog,planning,rowAccess,references,org.mockito.Mockito.mock(com.appnexus.platform.authorization.ScopedWriteGate.class));
+      var service=MasterDataConfiguration.create(records,reads,geography,storage,details,access,new DataSourceTransactionManager(source),catalog,new PartnerDataAccess(planning,fields,references,reads,dataCatalog,rowAccess,details,org.mockito.Mockito.mock(com.appnexus.platform.authorization.ScopedWriteGate.class)),fields,dataCatalog,planning,rowAccess,references,org.mockito.Mockito.mock(com.appnexus.platform.authorization.ScopedWriteGate.class),session.getMapper(com.appnexus.masterdata.adapter.persistence.MasterStatusHistoryMapper.class));
       verifyStorageHierarchy(service,jdbc);
       for(var kind:Kind.values()){
         // 通用档案测试先前已停用上级；恢复父级后才能验证下一级的独立写入。
@@ -124,6 +125,15 @@ class MasterDataMySqlTest {
         assertThat(service.list(c,kind,"",true,1,20).total()).isZero();
         assertThat(service.list(c,kind,"",false,1,20).rows().getFirst().version()).isEqualTo(2);
         assertThatThrownBy(()->service.setStatus(c,kind,id,new Status(true,1))).isInstanceOf(Rejection.class);
+        var history = session.getMapper(com.appnexus.masterdata.adapter.persistence.MasterStatusHistoryMapper.class);
+        assertThat(history.list(c.tenantId().toString(), kind.objectType, id, 0, 20))
+          .singleElement().satisfies(event -> {
+            assertThat(event.version()).isEqualTo(2);
+            assertThat(event.beforeEnabled()).isTrue();
+            assertThat(event.afterEnabled()).isFalse();
+            assertThat(event.createdBy()).isEqualTo(c.accountId().toString());
+          });
+        assertThat(history.count(other.tenantId().toString(), kind.objectType, id)).isZero();
       }
       // 自定义节点、跨国移动和后代同步使用真实事务，拒绝循环及外租户父级后不推进审计。
       String customCountry=service.create(c,Kind.COUNTRY_REGION,new Input("CUSTOM_COUNTRY","自定义国别",Map.of("parentCode","continent:AS"),0)).get("id");

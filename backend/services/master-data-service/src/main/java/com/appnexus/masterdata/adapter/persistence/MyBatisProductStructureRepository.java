@@ -42,6 +42,50 @@ public final class MyBatisProductStructureRepository implements ProductStructure
  /** {@inheritDoc} */
  public Integer specificationCount(String tenant,String product,String specification){return mapper.specificationCount(tenant,product,specification);}
  /** {@inheritDoc} */
+ /** {@inheritDoc} */
+ public int updateSpecificationTemplate(String tenant,String product,String template){
+  return mapper.updateSpecificationTemplate(tenant,product,template);
+ }
+ /** {@inheritDoc} */
+ public List<Map<String,Object>> specificationTemplateFields(String tenant,String product,String template,Predicate access){
+  return mapper.specificationTemplateFields(tenant,product,template,access);
+ }
+ /** {@inheritDoc} */
+ public int initializeSpecificationValues(String tenant,String product,String specification,String template,String values){
+  return mapper.initializeSpecificationValues(tenant,product,specification,template,values);
+ }
+ /** {@inheritDoc} */
+ public int updateSkuAttributeTemplate(String tenant,String product,String template){
+  return mapper.updateSkuAttributeTemplate(tenant,product,template);
+ }
+ /** {@inheritDoc} */
+ public List<Map<String,Object>> skuAttributeBinding(String tenant,String product,String sku,Predicate access){
+  return mapper.skuAttributeBinding(tenant,product,sku,access);
+ }
+ /** {@inheritDoc} */
+ public List<Map<String,Object>> skuAttributeFields(String tenant,String product,String sku,String template,Predicate access){
+  return mapper.skuAttributeFields(tenant,product,sku,template,access);
+ }
+ /** {@inheritDoc} */
+ public int updateSkuAttributes(String tenant,String product,String sku,long version,String template,String values,String actor){
+  return mapper.updateSkuAttributes(tenant,product,sku,version,template,values,actor);
+ }
+ /** {@inheritDoc} */
+ public List<Map<String,Object>> skuBatchFields(String tenant,String product,String sku,String template,Predicate access){
+  return mapper.skuBatchFields(tenant,product,sku,template,access);
+ }
+ /** {@inheritDoc} */
+ public int updateSkuBatchTemplate(String tenant,String product,String sku,long version,String templateVersion,String actor){
+  return mapper.updateSkuBatchTemplate(tenant,product,sku,version,templateVersion,actor);
+ }
+ /** {@inheritDoc} */
+ public int updateSkuMeasurement(String tenant,String product,String sku,long version,String configuration,String actor){
+  return mapper.updateSkuMeasurement(tenant,product,sku,version,configuration,actor);
+ }
+ /** {@inheritDoc} */
+ public int initializeSkuMeasurement(String tenant,String product,String sku,String configuration){
+  return mapper.initializeSkuMeasurement(tenant,product,sku,configuration);
+ }
  public int createSku(String id,String tenant,String product,String specification,String code,String creator,String updater){return mapper.createSku(id,tenant,product,specification,code,creator,updater);}
  /** {@inheritDoc} */
  public Integer unitPrecision(String tenant,String unit){return mapper.unitPrecision(tenant,unit);}

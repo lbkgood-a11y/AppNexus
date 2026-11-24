@@ -98,13 +98,14 @@ const columns = computed<ManagementColumn[]>(() =>
     {key:"operations",label:t("workflow.operations"),width:180,fixed:"right"},
   ] : tab.value === "definitions"
     ? [
-        { key: "name", prop: "name", label: t("workflow.name"), minWidth: 180 },
+        { key: "enabled", label: t("workflow.state"), width: 100 },
         {
           key: "objectType",
           prop: "objectType",
           label: t("workflow.objectType"),
           minWidth: 130,
         },
+        { key: "name", prop: "name", label: t("workflow.name"), minWidth: 180 },
         { key: "mode", label: t("workflow.mode"), minWidth: 130 },
         {
           key: "published",
@@ -112,7 +113,6 @@ const columns = computed<ManagementColumn[]>(() =>
           label: t("workflow.publishedVersion"),
           width: 100,
         },
-        { key: "enabled", label: t("workflow.state"), width: 100 },
         {
           key: "operations",
           label: t("workflow.operations"),
@@ -121,6 +121,7 @@ const columns = computed<ManagementColumn[]>(() =>
         },
       ]
     : [
+        { key: "state", label: t("workflow.state"), minWidth: 110 },
         {
           key: "object_type",
           prop: "object_type",
@@ -139,7 +140,6 @@ const columns = computed<ManagementColumn[]>(() =>
           label: t("workflow.node"),
           minWidth: 130,
         },
-        { key: "state", label: t("workflow.state"), minWidth: 110 },
         {
           key: "operations",
           label: t("workflow.operations"),
@@ -359,11 +359,11 @@ async function recover() {
             t("workflow.modes." + row.mode)
           }}</template
           ><template #enabled="{ row }"
-            ><el-tag :type="row.enabled ? 'success' : 'info'">{{
+            ><el-tag class="app-status-tag" :type="row.enabled ? 'success' : 'info'">{{
               t(row.enabled ? "workflow.enabled" : "workflow.disabled")
             }}</el-tag></template
           ><template #state="{ row }"
-            ><el-tag>{{
+            ><el-tag class="app-status-tag">{{
               t("workflow.states." + row.state, row.state)
             }}</el-tag></template
           ><template #operations="{ row }"
@@ -414,17 +414,13 @@ async function recover() {
         type="error"
         :closable="false"
       /><template v-if="selectedTask"
-        ><el-descriptions :column="1" border
-          ><el-descriptions-item :label="t('workflow.objectType')">{{
+        ><section class="readonly-detail-section"><dl class="detail-field-grid"><div class="detail-readonly-field"><dt>{{ t('workflow.objectType') }}</dt><dd>{{
             selectedTask.instance.object_type
-          }}</el-descriptions-item
-          ><el-descriptions-item :label="t('workflow.objectId')">{{
+          }}</dd></div><div class="detail-readonly-field"><dt>{{ t('workflow.objectId') }}</dt><dd>{{
             selectedTask.instance.object_id
-          }}</el-descriptions-item
-          ><el-descriptions-item :label="t('workflow.state')">{{
+          }}</dd></div><div class="detail-readonly-field"><dt>{{ t('workflow.state') }}</dt><dd>{{
             t("workflow.states." + selectedTask.task.state)
-          }}</el-descriptions-item></el-descriptions
-        ><RecordAuditDetails v-if="selectedTask.task.audit" :audit="selectedTask.task.audit" /><el-button
+          }}</dd></div></dl></section><RecordAuditDetails v-if="selectedTask.task.audit" :audit="selectedTask.task.audit" /><el-button
           v-if="selectedTask.business.route"
           class="business-link"
           @click="businessRoute"
@@ -485,19 +481,14 @@ async function recover() {
         type="error"
         :closable="false"
       /><template v-if="detail"
-        ><el-descriptions :column="1" border
-          ><el-descriptions-item :label="t('workflow.objectId')">{{
+        ><section class="readonly-detail-section"><dl class="detail-field-grid"><div class="detail-readonly-field"><dt>{{ t('workflow.objectId') }}</dt><dd>{{
             detail.instance.object_id
-          }}</el-descriptions-item
-          ><el-descriptions-item :label="t('workflow.state')"
-            >{{ t("workflow.states." + detail.instance.state) }} /
+          }}</dd></div><div class="detail-readonly-field"><dt>{{ t('workflow.state') }}</dt><dd>{{ t("workflow.states." + detail.instance.state) }} /
             {{
               detail.instance.result
                 ? t("workflow.states." + detail.instance.result)
                 : "—"
-            }}</el-descriptions-item
-          ></el-descriptions
-        >
+            }}</dd></div></dl></section>
         <RecordAuditDetails v-if="detail.instance.audit" :audit="detail.instance.audit" />
         <h3>{{ t("workflow.tasks") }}</h3>
         <vxe-table :column-config="{ resizable: true }"  :data="detail.tasks"

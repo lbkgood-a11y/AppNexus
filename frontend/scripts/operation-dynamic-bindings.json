@@ -1,40 +1,60 @@
 [
   {
-    "file": "frontend/apps/admin/src/views/warehousing/inbound-batch-workspace.vue",
+    "file": "frontend/modules/master-data/src/StatusHistoryButton.vue",
     "expression": "operation",
     "operations": [
-      "BulkInboundReceipt.record_entry",
-      "BulkInboundReceipt.confirm_document"
+      "BusinessPartner.readStatusHistory",
+      "Warehouse.readStatusHistory",
+      "StorageArea.readStatusHistory",
+      "StorageLocation.readStatusHistory",
+      "CountryRegion.readStatusHistory",
+      "Subdivision.readStatusHistory",
+      "ProductCategory.readStatusHistory",
+      "ProductUnit.readStatusHistory",
+      "ProductAttribute.readStatusHistory",
+      "ProductTemplate.readStatusHistory",
+      "ProductAttribute.readGroupStatusHistory",
+      "ProductUnit.readConversionStatusHistory"
     ],
     "sources": [
-      "frontend/apps/admin/src/views/warehousing/inbound-batch-workspace.vue"
+      "frontend/modules/master-data/src/PartnerEditor.vue",
+      "frontend/modules/master-data/src/WarehouseEditor.vue",
+      "frontend/modules/master-data/src/Management.vue",
+      "frontend/modules/master-data/src/product/CatalogManagement.vue",
+      "frontend/modules/master-data/src/product/UnitConversions.vue"
     ],
-    "reason": "按真实批次工作区选用原接管或实收操作，未新增角色权限。"
+    "reason": "公共启停历史入口接受各固定主档和子资源的现有读取权限绑定，不提供通用绕行接口。"
+  },
+  {
+    "file": "frontend/modules/master-data/src/product/ProductSkuManagement.vue",
+    "expression": "editMeasurementTarget ? 'Product.saveSkuMeasurement' : 'Product.createSku'",
+    "operations": [
+      "Product.saveSkuMeasurement",
+      "Product.createSku"
+    ],
+    "sources": [
+      "frontend/modules/master-data/src/product/ProductSkuManagement.vue"
+    ],
+    "reason": "同一编辑表单按实际目标调用 SKU 计量保存或 SKU 创建，分别使用对应服务端操作。"
   },
   {
     "file": "frontend/apps/admin/src/views/warehousing/inbound-notice-workspace.vue",
     "expression": "operation",
     "operations": [
       "BulkInboundReceipt.issue",
-      "BulkInboundReceipt.take_custody",
-      "BulkInboundReceipt.receive"
+      "BulkInboundReceipt.update"
     ],
     "sources": [
       "frontend/apps/admin/src/views/warehousing/inbound-notice-workspace.vue"
     ],
-    "reason": "当前表单类型映射原唯一签发、接管或实收操作，服务端仍逐请求执行原准入。"
+    "reason": "表单只映射入仓通知的签发操作，服务端仍逐请求执行原准入。"
   },
   {
     "file": "frontend/apps/admin/src/views/warehousing/documents.vue",
     "expression": "readOperation",
     "operations": [
-      "BulkWarehouseStockBalance.read_document",
-      "BulkWarehouseStockBalance.read_entry",
-      "BulkWarehouseStockBalance.read_receipt_document",
-      "BulkStockRestriction.read_document",
-      "BulkCoilOutbound.read_authorization_document",
-      "BulkCoilOutbound.read_return_document",
-      "BulkCoilOutbound.read_return_transit"
+      "BulkWarehouseStockBalance.list_inbound_notices",
+      "BulkWarehouseStockBalance.read_document"
     ],
     "sources": ["frontend/apps/admin/src/views/warehousing/documents.vue"],
     "reason": "依固定路由选择实际读取操作，服务端按原接口逐次准入及核对范围。"
@@ -598,6 +618,18 @@
   },
   {
     "file": "frontend/modules/master-data/src/product/ProductEditor.vue",
+    "expression": "templateOperation",
+    "operations": [
+      "Product.saveSpecificationTemplate",
+      "Product.saveSkuAttributeTemplate"
+    ],
+    "sources": [
+      "frontend/modules/master-data/src/product/ProductEditor.vue"
+    ],
+    "reason": "既有模板弹窗按用途分别调用商品规格模板与 SKU 属性模板的保存操作。"
+  },
+  {
+    "file": "frontend/modules/master-data/src/product/ProductEditor.vue",
     "expression": "saveOperation",
     "operations": [
       "Product.create",
@@ -670,45 +702,5 @@
       "frontend/modules/authorization/src/RoleUsers.vue"
     ],
     "reason": "平台账号与租户成员分别复用真实主体角色覆盖接口；加入前重读完整快照并追加角色，保留版本校验及其他角色。"
-  },
-  {
-    "file": "frontend/modules/warehousing/src/CoilFlowWorkspace.vue",
-    "expression": "activeOperation",
-    "reason": "整卷当前阶段按钮仅映射固定的真实仓储命令。",
-    "operations": [
-      "BulkInboundReceipt.issue",
-      "BulkInboundReceipt.take_custody",
-      "BulkInboundReceipt.receive",
-      "BulkInboundTitleRegistration.register",
-      "BulkInboundQualityRelease.release",
-      "BulkCoilOutbound.identify",
-      "BulkCoilTitleTransfer.transfer",
-      "BulkCoilOutbound.issue",
-      "BulkCoilOutbound.authorize",
-      "BulkCoilOutbound.plan",
-      "BulkCoilOutbound.allocate",
-      "BulkCoilOutbound.vehicle_limits",
-      "BulkCoilOutbound.review_weighing",
-      "BulkCoilOutbound.handover",
-      "BulkCoilOutbound.return_coils"
-    ],
-    "sources": [
-      "backend/services/bulk-warehousing-service/src/main/java/com/appnexus/bulkwarehousing/adapter/web/InboundReceivingController.java",
-      "backend/services/bulk-warehousing-service/src/main/java/com/appnexus/bulkwarehousing/adapter/web/OutboundStockController.java"
-    ]
-  },
-  {
-    "file": "frontend/modules/warehousing/src/ReturnTransitWorkspace.vue",
-    "expression": "activeOperation",
-    "reason": "逐卷处置确认按四种真实服务端业务操作切换。",
-    "operations": [
-      "BulkCoilOutbound.return_coils",
-      "BulkCoilOutbound.settle_transit_loss",
-      "BulkCoilOutbound.reopen_transit_loss",
-      "BulkCoilOutbound.reroute_transit_coil"
-    ],
-    "sources": [
-      "backend/services/bulk-warehousing-service/src/main/java/com/appnexus/bulkwarehousing/adapter/web/OutboundStockController.java"
-    ]
   }
 ]

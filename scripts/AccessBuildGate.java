@@ -470,7 +470,9 @@ class AccessBuildGate {
 
     private static void add(Map<String,String> issues,String kind,String target,String fingerprint,String reason){
         try{
-            var digest=MessageDigest.getInstance("SHA-256").digest(fingerprint.getBytes(StandardCharsets.UTF_8));
+            // javac 的 AST 文本使用宿主换行符，统一为 LF 以保留跨平台的现有基线指纹。
+            var normalized=fingerprint.replace("\r\n","\n");
+            var digest=MessageDigest.getInstance("SHA-256").digest(normalized.getBytes(StandardCharsets.UTF_8));
             issues.put(kind+" "+target+" "+HexFormat.of().formatHex(digest),reason);
         }catch(java.security.NoSuchAlgorithmException e){throw new IllegalStateException(e);}
     }

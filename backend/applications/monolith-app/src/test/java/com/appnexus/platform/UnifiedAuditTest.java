@@ -6,13 +6,18 @@ import java.util.*;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.jdbc.core.JdbcTemplate;
 import static org.assertj.core.api.Assertions.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 /** 统一审计固定读模型验证租户隔离、追踪关联和敏感原值不进入摘要。 */
 @SpringBootTest
 @ActiveProfiles("local")
+@AutoConfigureMockMvc
 class UnifiedAuditTest extends DatabaseTestSupport {
     @Autowired AuditQueries audit;
     @Autowired JdbcTemplate jdbc;
@@ -20,6 +25,31 @@ class UnifiedAuditTest extends DatabaseTestSupport {
     @Autowired com.appnexus.platform.persistence.organization.OrganizationAdministratorBootstrap bootstrap;
 
     @Autowired com.appnexus.platform.organization.PersonnelDirectory directory;
+    @Autowired MockMvc mvc;
+
+    /** 经真实会话和响应组装验证平台审计契约，集成客户端标识即使形似账号也不查名。 */
+    @Test void platformAuditResponsePreservesActorAndResolvesOnlyAccounts() throws Exception {
+        administration.initializeAdministrator("admin-test");
+        String actor=jdbc.queryForObject("SELECT BIN_TO_UUID(id) FROM identity_account WHERE username='admin-test'",String.class);
+        String display=jdbc.queryForObject("SELECT display_name FROM identity_account WHERE id=UUID_TO_BIN(?)",String.class,actor);
+        String tenant=UUID.randomUUID().toString();
+        jdbc.update("INSERT INTO platform_administration_audit(actor_account_id,action,target_id) VALUES(UUID_TO_BIN(?),'AUDIT_NAME_HTTP_TEST',UUID_TO_BIN(?))",actor,actor);
+        jdbc.update("INSERT INTO integration_call_audit(tenant_id,client_id,operation,trace_id,status) VALUES(UUID_TO_BIN(?),?,'reference.test',?,200)",
+            tenant,actor,UUID.randomUUID().toString().replace("-",""));
+
+        mvc.perform(get("/bff/platform/audits").param("pageSize","1").with(authenticated(actor,0L)))
+            .andExpect(status().isOk())
+            .andExpect(header().string("Cache-Control","no-store"))
+            .andExpect(jsonPath("$.pageSize").value(1))
+            .andExpect(jsonPath("$.items[0].action").value("AUDIT_NAME_HTTP_TEST"))
+            .andExpect(jsonPath("$.items[0].actor").value(actor))
+            .andExpect(jsonPath("$.items[0].actorName").value(display));
+        mvc.perform(get("/bff/platform/audits").param("tenantId",tenant).with(authenticated(actor,0L)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.items[0].source").value("integration"))
+            .andExpect(jsonPath("$.items[0].actor").value(actor))
+            .andExpect(jsonPath("$.items[0].actorName").doesNotExist());
+    }
 
     /** 平台域按原审计权限读取多个账号名称，普通账号直接调用仍被 SQL 门禁拒绝。 */
     @Test void platformActorNamesRequirePlatformAuditPermission(){

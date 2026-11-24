@@ -8,13 +8,25 @@ import com.appnexus.persistence.mybatis.TenantAggregateScoped;
  * 商品快照固定查询映射；不开放任意列名、表名、SQL或客户端事实输入。
  */
 @Mapper
-@TenantAggregateScoped(requireTenantMatch=true,tables={"md_product_approval","md_product_attribute_option","md_product_attribute_revision","md_product_category_config","md_product_category_template","md_product_component","md_product_image","md_product_sku","md_product_spec_choice","md_product_spec_value","md_product_specification","md_product_unit","md_product_v1","md_product_v1_attribute_choice","md_product_v1_attribute_value"},statements={"approvalPending","measurement","specifications","specificationValues","specificationChoices","skus","components","images","values","choices","categoryConfiguration","baseUnit","templates"})
+@TenantAggregateScoped(requireTenantMatch=true,tables={"md_product_approval","md_product_attribute_option","md_product_attribute_revision","md_product_category_config","md_product_category_template","md_product_component","md_product_image","md_product_sku","md_product_spec_choice","md_product_spec_value","md_product_specification","md_product_unit","md_product_v1","md_product_v1_attribute_choice","md_product_v1_attribute_value"},statements={"approvalPending","measurement","skuAttributeTemplate","specificationTemplate","specifications","specificationValues","specificationChoices","skus","components","images","values","choices","categoryConfiguration","baseUnit","templates"})
 public interface ProductSnapshotMapper {
  /** 已授权父商品的计量快照，JSON 原文用于恢复当时的配置。 */
  @com.appnexus.persistence.mybatis.GuardedScope(resource="masterdata.product",tenant="__verifiedTenant",recordId="product",readFallback="access",
      actions={"create","update","set_status","manage_structure","manage_draft","migrate_structure","stage_legacy","masterdata.product.approval:submit"})
  @Select({"<script>","SELECT CAST(measurement_config AS CHAR) FROM md_product_v1 WHERE tenant_id=#{__verifiedTenant} AND id=UUID_TO_BIN(#{product})","<if test=\"access != null\"><bind name=\"rangeSql\" value=\"@com.appnexus.persistence.mybatis.ScopedSql@bind(access.sql(), access.parameters(), &quot;access&quot;)\"/> ${rangeSql}</if>","</script>"})
  String measurement(@Param("__verifiedTenant") byte[] tenant,@Param("product") String product,@Param("access") Predicate access);
+
+ /** 读取已授权商品确认的普通货号模板，供详情与变更快照引用。 */
+ @com.appnexus.persistence.mybatis.GuardedScope(resource="masterdata.product",tenant="__verifiedTenant",recordId="product",readFallback="access",
+     actions={"create","update","set_status","manage_structure","manage_draft","migrate_structure","stage_legacy","masterdata.product.approval:submit"})
+ @Select({"<script>","SELECT BIN_TO_UUID(sku_attribute_template_version_id) FROM md_product_v1 WHERE tenant_id=#{__verifiedTenant} AND id=UUID_TO_BIN(#{product})","<if test=\"access != null\"><bind name=\"rangeSql\" value=\"@com.appnexus.persistence.mybatis.ScopedSql@bind(access.sql(), access.parameters(), &quot;access&quot;)\"/> ${rangeSql}</if>","</script>"})
+ String skuAttributeTemplate(@Param("__verifiedTenant") byte[] tenant,@Param("product") String product,@Param("access") Predicate access);
+
+ /** 读取已授权商品确认的规格轴模板，供详情与变更快照引用。 */
+ @com.appnexus.persistence.mybatis.GuardedScope(resource="masterdata.product",tenant="__verifiedTenant",recordId="product",readFallback="access",
+     actions={"create","update","set_status","manage_structure","manage_draft","migrate_structure","stage_legacy","masterdata.product.approval:submit"})
+ @Select({"<script>","SELECT BIN_TO_UUID(specification_template_version_id) FROM md_product_v1 WHERE tenant_id=#{__verifiedTenant} AND id=UUID_TO_BIN(#{product})","<if test=\"access != null\"><bind name=\"rangeSql\" value=\"@com.appnexus.persistence.mybatis.ScopedSql@bind(access.sql(), access.parameters(), &quot;access&quot;)\"/> ${rangeSql}</if>","</script>"})
+ String specificationTemplate(@Param("__verifiedTenant") byte[] tenant,@Param("product") String product,@Param("access") Predicate access);
 
  /**
  * approvalPending 只读固定SQL；父记录已在同用例授权，所有关联仍强制同租户及父商品。
@@ -35,7 +47,7 @@ public interface ProductSnapshotMapper {
  */
  @com.appnexus.persistence.mybatis.GuardedScope(resource="masterdata.product",tenant="__verifiedTenant",recordId="id",readFallback="access",
      actions={"create","update","set_status","manage_structure","manage_draft","migrate_structure","stage_legacy","masterdata.product.approval:submit"})
- @Select({"<script>","SELECT BIN_TO_UUID(id) id,mode,name,enabled,retired_at retiredAt,combination_canonical combination FROM md_product_specification WHERE tenant_id=#{__verifiedTenant} AND product_id=UUID_TO_BIN(#{id})","<if test=\"access != null\"><bind name=\"rangeSql\" value=\"@com.appnexus.persistence.mybatis.ScopedSql@bind(access.sql(), access.parameters(), &quot;access&quot;)\"/> AND EXISTS (SELECT 1 FROM md_product_v1 WHERE tenant_id=#{__verifiedTenant} AND id=UUID_TO_BIN(#{id}) ${rangeSql})</if>"," ORDER BY id","</script>"})
+ @Select({"<script>","SELECT BIN_TO_UUID(id) id,mode,name,enabled,retired_at retiredAt,BIN_TO_UUID(template_version_id) templateVersionId,CAST(template_values AS CHAR) templateValues,combination_canonical combination FROM md_product_specification WHERE tenant_id=#{__verifiedTenant} AND product_id=UUID_TO_BIN(#{id})","<if test=\"access != null\"><bind name=\"rangeSql\" value=\"@com.appnexus.persistence.mybatis.ScopedSql@bind(access.sql(), access.parameters(), &quot;access&quot;)\"/> AND EXISTS (SELECT 1 FROM md_product_v1 WHERE tenant_id=#{__verifiedTenant} AND id=UUID_TO_BIN(#{id}) ${rangeSql})</if>"," ORDER BY id","</script>"})
  List<Map<String,Object>> specifications(@Param("__verifiedTenant") byte[] tenant,@Param("id") String id,@Param("access") Predicate access);
 
  /**
@@ -68,7 +80,7 @@ public interface ProductSnapshotMapper {
  */
  @com.appnexus.persistence.mybatis.GuardedScope(resource="masterdata.product",tenant="__verifiedTenant",recordId="id",readFallback="access",
      actions={"create","update","set_status","manage_structure","manage_draft","migrate_structure","stage_legacy","masterdata.product.approval:submit"})
- @Select({"<script>","SELECT BIN_TO_UUID(id) id,BIN_TO_UUID(specification_id) specificationId,code,enabled,version FROM md_product_sku WHERE tenant_id=#{__verifiedTenant} AND product_id=UUID_TO_BIN(#{id})","<if test=\"access != null\"><bind name=\"rangeSql\" value=\"@com.appnexus.persistence.mybatis.ScopedSql@bind(access.sql(), access.parameters(), &quot;access&quot;)\"/> AND EXISTS (SELECT 1 FROM md_product_v1 WHERE tenant_id=#{__verifiedTenant} AND id=UUID_TO_BIN(#{id}) ${rangeSql})</if>"," ORDER BY id","</script>"})
+ @Select({"<script>","SELECT BIN_TO_UUID(id) id,BIN_TO_UUID(specification_id) specificationId,code,enabled,version,BIN_TO_UUID(batch_template_version_id) batchTemplateVersionId,BIN_TO_UUID(attribute_template_version_id) attributeTemplateVersionId,CAST(attribute_values AS CHAR) attributeValues,CAST(measurement_config AS CHAR) measurementConfig FROM md_product_sku WHERE tenant_id=#{__verifiedTenant} AND product_id=UUID_TO_BIN(#{id})","<if test=\"access != null\"><bind name=\"rangeSql\" value=\"@com.appnexus.persistence.mybatis.ScopedSql@bind(access.sql(), access.parameters(), &quot;access&quot;)\"/> AND EXISTS (SELECT 1 FROM md_product_v1 WHERE tenant_id=#{__verifiedTenant} AND id=UUID_TO_BIN(#{id}) ${rangeSql})</if>"," ORDER BY id","</script>"})
  List<Map<String,Object>> skus(@Param("__verifiedTenant") byte[] tenant,@Param("id") String id,@Param("access") Predicate access);
 
  /**

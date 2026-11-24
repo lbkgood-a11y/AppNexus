@@ -9,12 +9,12 @@ export interface RecordAudit {
   createdByName?: string | null;
   updatedByName?: string | null;
 }
-/** 复用 Element Plus 描述列表；不请求额外数据，也不在前端解析权限或保存操作者。 */
+/** 使用公共只读审计布局展示授权响应中的审计信息，不发起额外请求。 */
 const props=withDefaults(defineProps<{
   audit: RecordAudit;
   /** 未保存记录尚无审计事实，默认false；为true时四字段显示占位，不误称历史未知。 */
   pending?: boolean;
-  /** 主数据详情使用既有横向四栏样板，默认false保留审计弹窗描述列表。 */
+  /** 主数据详情系统卡片内嵌时为 true，默认 false，使用独立的审计清单。 */
   inline?: boolean;
 }>(),{pending:false,inline:false});
 const { t, locale } = useI18n();
@@ -32,18 +32,10 @@ function time(value: string | null) {
 }
 </script>
 <template>
-  <div v-if="inline" class="detail-audit-grid">
+  <dl :class="inline ? 'detail-audit-grid' : 'detail-audit-list'">
     <div v-for="key in ['createdBy','createdAt','updatedBy','updatedAt'] as const" :key="key" class="detail-audit-item">
-      <div><span>{{ t('recordAudit.'+key) }}</span><strong>{{ key.endsWith('At') ? time(audit[key]) : actor(audit[key], key==='createdBy' ? audit.createdByName : audit.updatedByName) }}</strong></div>
+      <dt>{{ t('recordAudit.'+key) }}</dt>
+      <dd>{{ key.endsWith('At') ? time(audit[key]) : actor(audit[key], key==='createdBy' ? audit.createdByName : audit.updatedByName) }}</dd>
     </div>
-  </div>
-  <el-descriptions v-else :column="1" border>
-    <el-descriptions-item :label="t('recordAudit.createdBy')"><span class="record-audit-actor">{{ actor(audit.createdBy, audit.createdByName) }}</span></el-descriptions-item>
-    <el-descriptions-item :label="t('recordAudit.createdAt')">{{ time(audit.createdAt) }}</el-descriptions-item>
-    <el-descriptions-item :label="t('recordAudit.updatedBy')"><span class="record-audit-actor">{{ actor(audit.updatedBy, audit.updatedByName) }}</span></el-descriptions-item>
-    <el-descriptions-item :label="t('recordAudit.updatedAt')">{{ time(audit.updatedAt) }}</el-descriptions-item>
-  </el-descriptions>
+  </dl>
 </template>
-<style scoped>
-.record-audit-actor { overflow-wrap: anywhere; color: var(--el-text-color-secondary); }
-</style>

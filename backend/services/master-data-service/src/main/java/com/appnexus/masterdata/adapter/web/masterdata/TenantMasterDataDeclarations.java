@@ -43,6 +43,7 @@ public class TenantMasterDataDeclarations {
                         operation(kind, page, "list", "查询" + nameZh, "Read " + nameEn, "read", "GET", ""),
                         operation(kind, page, "create", "新增" + nameZh, "Create " + nameEn, "create", "POST", ""),
                         operation(kind, page, "update", "编辑" + nameZh, "Update " + nameEn, "update", "PUT", "/{id}"),
+                        operation(kind, page, "readStatusHistory", "查看启停历史", "Read status history", "read", "GET", "/{id}/status-history"),
                         operation(kind, page, "setStatus", "启停" + nameZh, "Set status of " + nameEn,
                                 "set_status", "PUT", "/{id}/status")), access);
     }

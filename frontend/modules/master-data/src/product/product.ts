@@ -1,7 +1,15 @@
 import type {RecordAudit} from "@appnexus/ui";
 /** V1无规格商品，数值属性始终使用字符串，避免浏览器浮点/大整数精度损失。 */
 export interface ProductValue {templateItemId:string;value:string|null;optionIds:string[];customValues?:string[]}
-export interface ProductField {templateItemId:string;attributeId:string;revisionId:string;purpose:"BASIC"|"SPEC"|"QUALITY"|"EXTENSION";name:string;dataType:string;numericScale:number|null;validationJson?:string|null;groupCode:string;groupName:string;requiredFlag:boolean;allowCustom:boolean;searchable:boolean;unitId:string|null;unitCode:string|null;unitName:string|null;options:Array<{id:string;code:string;label:string;enabled:boolean}>}
+export interface ProductField {templateItemId:string;attributeId:string;revisionId:string;purpose:"BASIC"|"SPEC"|"QUALITY"|"EXTENSION"|"SKU";name:string;dataType:string;numericScale:number|null;validationJson?:string|null;groupCode:string;groupName:string;requiredFlag:boolean;allowCustom:boolean;searchable:boolean;unitId:string|null;unitCode:string|null;unitName:string|null;options:Array<{id:string;code:string;label:string;enabled:boolean}>}
+/** 普通货号属性工作区绑定同一模板版本及父子版本。 */
+export interface SkuAttributeConfiguration {
+ version:number;
+ rowVersion:number;
+ templateVersionId:string|null;
+ fields:ProductField[];
+ values:ProductValue[];
+}
 export interface ProductConfiguration {id:string;categoryId:string;revision:number;path:string;serviceUnitRequired:boolean;fields:ProductField[];templates:Record<string,string|null>}
 export interface ProductOption {id:string;code:string;name:string;configId?:string|null}
 export interface ProductRow {organizationId?:string|null;audit?:RecordAudit;id:string;code:string;name:string;productForm:string|null;status:"DRAFT"|"ENABLED"|"DISABLED";structureState:string;archivedAt:string|null;version:number}
@@ -11,7 +19,7 @@ export interface ProductRecord extends ProductRow {organizationName?:string;appr
  values:Array<{templateItemId:string;revisionId:string;attributeName:string;dataType:string;textValue:string|null;integerValue:string|null;decimalValue:string|null;booleanValue:boolean|null;dateValue:string|null}>;
  choices:Array<{templateItemId:string;optionId:string;optionCode:string;label:string;customText?:string|null}>;
  baseUnit?:{code:string;name:string};categoryConfiguration?:{revision:number;path:string};
- legacyEnabled:boolean|null;legacySpecificationOriginal:string|null;legacyDisposition:string|null;
+ skuAttributeTemplateVersionId?:string|null;specificationTemplateVersionId?:string|null;legacyEnabled:boolean|null;legacySpecificationOriginal:string|null;legacyDisposition:string|null;
 }
 export interface ProductDraft {organizationId:string|null;code:string;name:string;barcode?:string;shortName:string|null;categoryId:string|null;configId:string|null;productForm:string|null;unitId:string|null;description:string|null;brand:string|null;origin:string|null;values:ProductValue[]}
 export interface ProductUpdate {organizationId?:string|null;name:string;barcode?:string;shortName:string|null;description:string|null;brand:string|null;origin:string|null;values:ProductValue[];version:number}
@@ -48,9 +56,21 @@ export interface ProductApi {
  approvals(id:string):Promise<Array<Record<string,any>>>;
  approvalOrganizations():Promise<Array<{id:string;name:string}>>;
  submitApproval(id:string,version:number,organizationId:string,key:string):Promise<unknown>;
- structure(id:string):Promise<{mode:string;form:string;version:number;specifications:Array<Record<string,any>>;skus:Array<Record<string,any>>;components:Array<Record<string,any>>}>;
+ structure(id:string):Promise<{mode:string;form:string;version:number;specificationFields?:ProductField[];specificationTemplateVersionId?:string;specifications:Array<Record<string,any>>;skus:Array<Record<string,any>>;components:Array<Record<string,any>>}>;
  createSpecification(id:string,data:object):Promise<unknown>;
  createSku(id:string,data:object):Promise<unknown>;
+ /** 以父商品和货号版本保存已有货号的计价及包装，库存单位保持生效值。 */
+ saveSkuMeasurement(id:string,sku:string,data:object):Promise<unknown>;
+ /** 确认 SPU 生效的规格轴版本，空值解除。 */
+ saveSpecificationTemplate(id:string,data:{version:number;templateVersionId:string|null}):Promise<{version:number}>;
+ /** 确认 SPU 生效的普通货号模板，空值解除。 */
+ saveSkuAttributeTemplate(id:string,data:{version:number;templateVersionId:string|null}):Promise<{version:number}>;
+ /** 读取已有货号的固定规则及值。 */
+ skuAttributes(id:string,sku:string):Promise<SkuAttributeConfiguration>;
+ /** 以固定模板版本及父子版本保存普通属性。 */
+ saveSkuAttributes(id:string,sku:string,data:Omit<SkuAttributeConfiguration,"fields">):Promise<unknown>;
+ /** 使用父子版本确认已发布的批次模板；传 null 解除绑定。 */
+ saveSkuBatchTemplate(id:string,sku:string,data:{version:number;rowVersion:number;templateVersionId:string|null}):Promise<unknown>;
  addComponent(id:string,data:object):Promise<unknown>;
  structureState(id:string,kind:string,row:string,data:object):Promise<unknown>;
  images(id:string):Promise<Array<{id:string;width:number;height:number}>>;

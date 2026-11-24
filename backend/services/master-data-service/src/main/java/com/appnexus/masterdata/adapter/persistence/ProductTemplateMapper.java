@@ -87,7 +87,7 @@ public interface ProductTemplateMapper {
  int updateTemplate(@Param("p0") Object p0,@Param("p1") Object p1,@Param("p2") Object p2,@Param("p3") Object p3,@Param("p4") Object p4,@Param("p5") Object p5,@Param("p6") Object p6);
 
  /** 固定业务语句19；准入、参数规则、聚合锁及事务由原用例负责，所有值绑定。 */
- @Update("UPDATE md_product_template SET enabled=#{p0},version=version+1,updated_by=UUID_TO_BIN(#{p1}),updated_at=CURRENT_TIMESTAMP(6) WHERE tenant_id=UUID_TO_BIN(#{p2}) AND id=UUID_TO_BIN(#{p3}) AND version=#{p4}")
+ @Update("UPDATE md_product_template SET enabled=#{p0},version=version+1,updated_by=UUID_TO_BIN(#{p1}),updated_at=CURRENT_TIMESTAMP(6) WHERE tenant_id=UUID_TO_BIN(#{p2}) AND id=UUID_TO_BIN(#{p3}) AND version=#{p4} AND enabled<>#{p0}")
  @com.appnexus.persistence.mybatis.GuardedScope(tenant="p2",serviceOperation="masterdata.producttemplate:set_status",serviceKeys={"p3"})
  int setTemplateStatus(@Param("p0") Object p0,@Param("p1") Object p1,@Param("p2") Object p2,@Param("p3") Object p3,@Param("p4") Object p4);
 

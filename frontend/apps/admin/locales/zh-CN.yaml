@@ -2240,7 +2240,15 @@ productMeasurement:
   PACKAGING: "固定包装"
   MEASURED: "实测"
 productCatalog:
-  SPEC: "规格属性"
+  defaultSPEC: "默认规格轴模板"
+  defaultSKU: "默认普通货号模板"
+  defaultBATCH: "默认批次模板"
+  productAttributeTemplates: "商品属性模板"
+  skuAttributeTemplates: "货号属性模板"
+  batchAttributeTemplates: "批次属性模板"
+  SKU: "普通货号属性"
+  BATCH: "批次属性"
+  SPEC: "货号规格轴"
   rootCategories: "根分类"
   searchLoadedTree: "搜索已加载分类"
   state_DRAFT: "草稿"
@@ -2249,7 +2257,7 @@ productCatalog:
   parentCategory: "上级分类（空为根）"
   allowCustom: "枚举允许自定义输入"
   unit: "计量单位"
-  category: "商品分类"
+  category: "商品类目"
   attribute: "商品属性"
   template: "属性模板"
   description: "维护分类、单位、属性和模板，保留已发布版本供商品引用"
@@ -2267,9 +2275,9 @@ productCatalog:
   versionNote: "版本说明"
   required: "启用时必填"
   serviceUnitRequired: "服务商品基础单位必填"
-  BASIC: "基础属性"
-  QUALITY: "档案质量属性"
-  EXTENSION: "扩展属性"
+  BASIC: "商品基础属性"
+  QUALITY: "商品质量属性"
+  EXTENSION: "商品扩展属性"
   TEXT: "文本"
   INTEGER: "整数"
   DECIMAL: "精确小数"
@@ -2302,12 +2310,19 @@ productCatalog:
   maxItems: "最多选项数"
 
 productV1:
+  specificationTemplateRequired: "请先在商品（SPU）确认生效规格轴模板。"
+  specificationTemplate: "生效规格轴模板"
+  skuTemplate: "生效普通货号模板"
+  skuTemplateUnavailable: "当前版本已不可重新选择"
   organizationId: 归属组织
   organizationRequired: 请选择有权的归属组织
   organizationUnknown: 历史归属未知；请按实际业务归属维护
   event_COMPONENT_REPLACE: "更新组合明细"
   specifications: "至少一条有效标准规格"
   components: "有效且版本一致的组成商品"
+  event_SPECIFICATION_TEMPLATE_UPDATE: "确认生效规格轴模板"
+  event_SKU_ATTRIBUTE_TEMPLATE_UPDATE: "确认生效普通货号模板"
+  event_SKU_ATTRIBUTES_UPDATE: "维护普通货号属性"
   event_SPEC_CREATE: "新增规格"
   event_SKU_CREATE: "新增SKU"
   event_COMPONENT_ADD: "新增组合明细"
@@ -2321,14 +2336,14 @@ productV1:
   rangeHint: "允许范围：{min} 至 {max}（含边界）"
   invalidNumber: "请输入合法、精度范围内的数值。"
   barcode: "商品条码"
-  title: "商品档案"
+  title: "商品（SPU）"
   create: "新增商品草稿"
   details: "详情 / 维护"
   descriptionHint: "统一商品主档、动态属性、规格与SKU、组合及完整生命周期"
   basic: "基本信息"
   back: "返回列表"
   shortName: "简称"
-  categoryId: "商品分类"
+  categoryId: "商品类目"
   categoryConfigId: "已发布分类配置"
   baseUnitId: "基础计量单位"
   productForm: "商品形态"
@@ -2572,330 +2587,59 @@ coding:
     DAY: 每天
 
 productSku:
-  title: "商品明细管理"
+  noAttributeTemplate: "所属商品尚未确认生效的普通货号属性模板。"
+  batchTemplate: "批次规则"
+  batchConfigured: "已配置"
+  batchUnconfigured: "未配置"
+  currentBatchUnavailable: "已采用的版本不可重新选择"
+  editMeasurement: "维护货号计量"
+  ownMeasurement: "设置货号独立计量"
+  inventoryUnitId: "库存单位"
+  pricingUnitId: "计价单位"
+  addPackaging: "添加包装档位"
+  packagingUnit: "包装单位"
+  packagingQuantity: "每包装的库存单位数量"
+  removePackaging: "移除包装档位"
+  title: "货号管理（SKU）"
   product: "所属商品"
-  tree: "商品分类与商品"
+  tree: "商品类目与商品"
   choose: "请从左侧树选择商品"
   code: "货号"
-  create: "新增商品明细"
-  createDenied: "新增商品明细需要“维护规格SKU及组合”权限。"
+  create: "新增货号"
+  createDenied: "新增货号需要“维护规格SKU及组合”权限。"
   createArchived: "商品草稿已归档，无法新增明细。"
   createApproval: "商品正在审批，审批结束后才能新增明细。"
-  createEnabled: "请先在商品管理中停用商品。"
-  createLegacy: "请先在商品管理中完成旧版规格迁移。"
+  createEnabled: "请先在商品（SPU）中停用商品。"
+  createLegacy: "请先在商品（SPU）中完成旧版规格迁移。"
   createNoSpecification: "没有可分配货号的规格。请在规格与组合维护中检查规格状态和货号分配情况。"
   specifications: "规格与组合维护"
-  hint: "先选择商品，再维护其商品明细。货号和规格筛选仅作用于当前商品；动态属性按规格实际保存的配置展示。每个规格最多分配一个货号，货号创建后不可改写。结构维护前须在商品管理停用商品；审批中不可修改。"
+  hint: "先选择商品，再维护其货号。货号和规格筛选仅作用于当前商品；规格轴按规格实际保存的配置展示。每个规格最多分配一个货号，货号创建后不可改写。结构维护前须在商品（SPU）停用商品；审批中不可修改。"
   none: "该商品无规格，直接使用商品主档，不创建默认SKU。"
-  empty: "暂无商品明细，可先维护规格，再为规格分配货号。"
-  detail: "商品明细详情"
+  empty: "暂无货号，可先维护规格，再为规格分配货号。"
+  detail: "货号详情"
   codeHint: "请输入1至64位字母、数字、点、下划线或短横线，首位为字母或数字"
-  created: "商品明细已创建"
-  saved: "商品明细状态已更新"
+  created: "货号已创建"
+  saved: "货号状态已更新"
   attribute: "属性"
   attributeValue: "属性值包含"
 
 warehouseTitle:
-  tripReserved: 车次占用
-  tripIssued: 车次已出
-  recoveryEntries: 续办与追溯
-  recoveryCoils: 原授权返仓卷
-  recoveryEmpty: 该授权下没有可查看的返仓续办卷
-  replaceRecovery: 建立新车次
-  continueRecovery: 继续办理
-  traceRecovery: 查看追溯
-  vehicleNumber: 车辆
-  tripId: 车次编号
-  title: 仓储货权与额度
-  searchTitle: 货权与额度查询
   ownerId: 货主
   warehouseId: 仓库
   productId: 商品
-  identityId: 品规
-  allIdentities: 全部品规
-  physical: 实物货权余额
-  coils: 在库钢卷
-  authorizations: 提货授权单据额度
-  unitId: 单位
-  onHandTitle: 在库货权
-  pickable: 可提量
-  serial: 卷号
-  quantity: 账面量
-  status: 状态
-  operations: 操作
-  authorizationId: 提货授权编号
-  noticeId: 出仓通知编号
-  cap: 上限
-  reserved: 占用
-  issued: 已出
-  remaining: 剩余
   previous: 上一页
   next: 下一页
-  choose: 请选择货主、仓库和商品后查询
-  empty: 当前条件下无记录
-  queryFailed: 余额查询失败
-  transfer: 过户
-  dialogTitle: 同仓不动货过户
-  transferSummary: "卷号 {coil}，原货主 {owner}，账面量 {quantity} {unit}。"
-  toOwner: 转入货主
-  evidenceId: 批准凭证 UUID
-  evidenceFormat: 请输入批准凭证的 UUID
-  confirmTransfer: 确认过户
-  transferSuccess: 过户已提交
-  states:
-    AVAILABLE: 可提
-    FROZEN: 已冻结
-    OCCUPIED: 已占用
-    PENDING_QUALITY: 待检
-    LOCATION_UNAVAILABLE: 库位不可执行
-    ACTIVE: 有效
-    EXPIRED: 已过期
-    CLOSED: 已关闭
-  errors:
-    OUTBOUND_FROZEN: 钢卷已冻结，解除冻结后才能过户。
-    OUTBOUND_OCCUPIED: 钢卷已占用，撤配后才能过户。
-    WAREHOUSING_TITLE_VERSION_CHANGED: 货权已变化，请关闭弹窗并刷新后重试。
-    WAREHOUSING_TITLE_NOT_TRANSFERABLE: 当前库存无法过户，请刷新核对库存状态。
 
 coilFlow:
   createNotice: 新建
-  recoveryInfo: 提货授权续办
-  recoveryTrips: 授权车次与凭证
-  recoveryRestrictions: 原卷监管凭证
-  recoveryUnavailable: 原提货授权续办信息不可用。
-  recoveryColumns:
-    tripId: 车次编号
-    vehicleNumber: 车辆
-    kind: 记录类型
-    id: 记录编号
-    evidenceId: 业务凭证
-    occurredAt: 操作时间
-    cap: 车次上限
-    reserved: 车次占用
-    issued: 车次已出
-  recoveryKinds:
-    PLANNED: 已建车次
-    ALLOCATED: 配货
-    CANCELLED: 撤销配货
-    REVIEW: 复磅通过
-    INVALID_REVIEW: 复磅已失效
-    HELD_REVIEW: 复磅拦截
-    HANDOVER: 交接完成
-    REVERSED_HANDOVER: 交接已冲回
-  restrictionColumns:
-    id: 冻结编号
-    evidenceId: 冻结凭证
-    releaseEvidenceId: 解除凭证
-  cancelAllocation: 撤销配货
-  cancelAllocationConfirm: 撤销会释放本卷占用并使原车次复磅失效，监管冻结继续生效。确认撤销原配货？
-  cancelledTrip: 已撤销配货的车次
-  allocationCancelled: 配货已撤销，原复磅已失效。解除冻结后请建立新车次。
-  openGateRestriction: 监管记录（新标签页）
-  handoverFrozen: 当前车次有卷处于冻结状态，门岗未交接。原配货和复磅保留，凭证解除后可在本页重试。
-  returnTransit: 返仓在途单
-  viewReturnTransit: 查看返仓凭证
-  reissueUnavailable: 当前原卷无法发起二次出仓，请核对接管、放行和可发状态。
-  reissueGates:
-    FROZEN: 当前卷已冻结，无法发起二次出仓。
-    PENDING_QUALITY: 当前卷仍待检，无法发起二次出仓。
-    OCCUPIED: 当前卷已被占用，无法发起二次出仓。
-    DISPATCHED: 当前卷已出仓。
-  coilCount: "履约卷数"
-  coilProgress: "第 {current} 卷，共 {total} 卷"
-  coilNet: "{serial} 实测分摊"
-  startReturn: "发起返仓"
-  heading: 整卷履约
-  execute: 履约作业
-  trace: 单据追溯
-  lookup: 查询原卷
-  invalidReceipt: 请输入有效的库存身份 UUID。
-  invalid: 请输入有效的业务值。
-  unitRequired: 商品需要已配置的库存基础单位。
-  differentOwner: 请选择不同的转入货主。
-  held: 复磅未通过，请核对依据后重新提交。
   submitted: 作业已提交
-  timestamp: ISO 8601 时点，含时区
   unit: 单位
   owner: 货主
   warehouse: 仓库
-  area: 库区
-  location: 库位
   product: 商品
   item: 品规
-  accepted: 已提交单据
-  inboundId: 入仓通知编号
-  outboundId: 出仓通知编号
-  tripId: 车次编号
-  receiptId: 原库存身份
-  serial: 卷号
-  custodyId: 接管编号
-  receiptBatchNo: 收货批次号
-  measurementId: 实收计量凭证
-  currentStock: 当前库存与货权
-  onHand: 在库量
-  pending: 待检量
-  titleQuantity: 在库货权
-  authorizationBalance: 提货授权单据额度
-  authorizationId: 提货授权编号
-  reserved: 占用
-  issued: 已出
-  remaining: 剩余
-  documents: 原卷关联单据
-  kind: 类型
-  id: 单据编号
-  parentId: 关联编号
-  quantity: 数量
-  empty: 实收成功或按原库存身份查询后显示关联单据
-  kinds:
-    INBOUND: 入仓通知
-    TRANSFER: 货权过户
-    OUTBOUND: 出仓通知
-    ALLOCATION: 配货记录
-    WEIGHING: 复磅记录
-    HANDOVER: 门岗交接
-    RETURN: 实际返仓
-    REVERSAL: 交接冲销
-    RETURN_DISPATCH: 返仓发运
-    RETURN_REROUTE: 在途改仓
-    RETURN_LOSS: 短损结清
-    RETURN_LOSS_REOPENED: 短损重开
   steps:
     inbound: 签发入仓通知
-    custody: 确认接管
-    receive: 实收并入待检
-    title: 登记货权
-    quality: 质检放行
-    identify: 绑定原卷号
-    transfer: 同仓过户
-    outbound: 签发出仓通知
-    authorize: 签发提货授权
-    trip: 建立车次
-    allocate: 整卷配货
-    vehicle: 核验车辆限载
-    weigh: 提交复磅
-    handover: 门岗交接
-    return: 实际返仓
-  fields:
-    limit: 入仓批准上限
-    custodyEvidence: 接管凭证 UUID
-    measurement: 实收计量凭证 UUID
-    receiptBatchNo: 收货批次号
-    quantity: 实收量
-    titleEvidence: 权利凭证 UUID
-    effective: 权利生效时点
-    qualityEvidence: 合格证据 UUID
-    serial: 实际卷号
-    newOwner: 转入货主
-    transferEvidence: 过户凭证 UUID
-    cap: 出仓批准上限
-    pickup: 提货方
-    authorizationCap: 授权上限
-    expiry: 授权截止时点
-    vehicleNumber: 车牌或车辆编号
-    tripCap: 车次上限
-    vehicleEvidence: 限载依据 UUID
-    payload: 车辆载货上限
-    grossLimit: 车辆总重上限
-    ticket: 复磅凭证 UUID
-    gross: 复磅毛重
-    tare: 复磅皮重
-    net: 整卷实测分摊
-    gateEvidence: 门岗交接凭证 UUID
-    returnCustody: 返仓接管凭证 UUID
-    returnTitle: 返仓货权凭证 UUID
-
-returnTransit:
-  restrictions: 监管记录
-  restrictionHistory: 冻结与解除记录
-  restrictionStatus: 监管状态
-  restrictionNumber: 冻结编号
-  freezeEvidence: 冻结凭证 UUID
-  liftEvidence: 解除凭证 UUID
-  frozen: 冻结中
-  lifted: 已解除
-  createdBy: 冻结登记账号
-  createdAt: 冻结时间
-  updatedBy: 最近修改账号
-  updatedAt: 最近修改时间
-  startOutbound: 发起新出仓
-  eligibleCoils: "可返仓卷"
-  noEligibleCoils: "当前无可登记返仓的原卷"
-  openOriginal: "查看原交接"
-  qualityStatus: 返仓质检
-  qualityReleased: 已质检放行
-  qualityPending: 待检
-  qualityEvidenceId: 返仓质检凭证
-  qualityEvidence: 质检凭证 UUID
-  heading: 跨仓返仓在途
-  dispatch: 登记发运
-  track: 在途跟踪
-  query: 查询发运
-  handoverId: 原门岗交接编号
-  planWarehouse: 原计划接收仓
-  sourceWarehouse: 原出仓
-  dispatchEvidence: 发运凭证 UUID
-  receiptIds: 原库存身份列表
-  receiptHint: 每卷一个 UUID，用换行分隔
-  transitId: 发运编号
-  original: 原发运计划
-  coils: 发运卷清单
-  quotas: 原三级额度
-  history: 逐卷凭证历史
-  stock: 接管后库存与货权
-  serial: 卷号
-  bookQuantity: 账面量
-  measuredQuantity: 原实测量
-  receivingWarehouseId: 当前接收仓
-  state: 状态
-  operations: 操作
-  quotaKind: 额度级别
-  id: 单据编号
-  cap: 上限
-  reserved: 占用
-  issued: 已出
-  remaining: 剩余
-  kind: 类型
-  evidenceId: 操作凭证
-  titleEvidenceId: 返仓货权凭证
-  warehouseId: 接收路径
-  actualWarehouse: 实际接收仓
-  newWarehouse: 新接收仓
-  area: 接收库区
-  location: 接收库位
-  custodyEvidence: 接管凭证 UUID
-  approvalEvidence: 批准凭证 UUID
-  responsible: 责任伙伴
-  reason: 原因
-  onHand: 在库量
-  pending: 待检量
-  title: 在库货权
-  unit: 单位
-  confirm: 确认提交
-  posted: 在途操作已提交
-  empty: 登记发运或按发运编号查询
-  invalid: 请输入有效的业务 UUID。
-  invalidCoils: 请填写 1 至 500 个不重复的库存身份 UUID。
-  quotaKinds:
-    notice: 出仓通知
-    authorization: 提货授权
-    trip: 车次
-  states:
-    IN_TRANSIT: 在途
-    RECEIVED: 已接管
-    LOSS_SETTLED: 短损已结清
-  actions:
-    freeze: 登记冻结
-    lift: 解除冻结
-    quality: 返仓质检放行
-    receive: 实际接管
-    loss: 短损结清
-    reopen: 补到重开
-    reroute: 在途改仓
-  errors:
-    OUTBOUND_RETURN_TRANSIT_WAREHOUSE_MISMATCH: 实际接收仓与当前接收仓不一致，请核对原卷的生效路由。
-    OUTBOUND_RETURN_TRANSIT_ROUTE_CHANGED: 接收路由已变化，请刷新发运清单后再试。
-    OUTBOUND_RETURN_LOSS_SETTLED: 原卷短损已结清，须复核重开后才能接管或改仓。
-    OUTBOUND_RETURN_TRANSIT_COIL_MISMATCH: 该卷不在当前可处置的发运范围内。
 
 inventoryOverview:
   specification: 规格
@@ -2914,6 +2658,66 @@ inventoryOverview:
   unit: 单位
   receiptId: 实收 ID
 
-inboundNotice: {"issuedAt": "签发时间", "expectedArrivalAt": "预计到货", "noticeNo": "业务单号（可选）", "remark": "备注", "line": "明细", "removeLine": "删除明细", "addLine": "添加明细", "plannedQuantity": "计划量", "approvedQuantity": "批准上限", "receivedQuantity": "已实收量", "arrivalBatchNo": "到货批次号", "receiptBatchNo": "实收批次号", "requiredNumber": "请输入有效的入仓通知单号。", "lineNo": "行号", "lineId": "明细标识", "identityKind": "品规类型", "productVersion": "商品版本", "flowVersion": "流程版本", "locationId": "库位标识", "operations": "操作", "lines": "通知明细", "custodies": "分批接管记录", "takeCustody": "登记接管", "receive": "确认实收", "states": {"DRAFT": "草稿", "ISSUED": "已签发", "RECEIVING": "接收中", "COMPLETED": "已完成", "CLOSED": "已关闭", "CANCELLED": "已撤销"}}
+inboundNotice: {"driverName": "司机姓名", "driverPhone": "联系电话", "driverIdNumber": "证件号", "sku": "货号（SKU）", "approvedQuantityHint": "限制此明细分批入库的累计实收数量，按库存单位计算，超过上限时拒绝确认。", "applyLine": "应用明细", "removeLineConfirm": "从当前入仓通知草稿移除这条明细？", "appointmentNo": "业务单号（选填）", "appointmentNoPlaceholder": "预约单号或其他上游单号", "plannedConveyance": "车船号", "plannedConveyancePlaceholder": "车牌号或船号", "contractNo": "合同号", "issuedAt": "签发时间", "expectedArrivalAt": "预计到货时间", "noticeNo": "入仓通知单号", "noticeNoPlaceholder": "留空自动生成", "remark": "备注", "line": "明细", "removeLine": "删除明细", "addLine": "添加明细", "plannedQuantity": "计划量", "approvedQuantity": "批准上限", "receivedQuantity": "已实收量", "arrivalBatchNo": "到货批次号", "receiptBatchNo": "实收批次号", "requiredNumber": "请输入有效的入仓通知单号。", "lineId": "明细标识", "identityKind": "品规类型", "productVersion": "商品版本", "flowVersion": "流程版本", "locationId": "库位标识", "operations": "操作", "lines": "通知明细", "custodies": "分批接管记录", "takeCustody": "登记接管", "receive": "确认实收", "states": {"DRAFT": "草稿", "ISSUED": "已签发", "RECEIVING": "接收中", "COMPLETED": "已完成", "CLOSED": "已关闭", "CANCELLED": "已撤销"}}
 
-inboundBatch: {"measurementId": "计量凭证 UUID", "fromNotice": "从入仓通知登记", "fromEntry": "从入场接管确认", "stockStatus": "库存处理", "stockStates": {"REJECTED": "拒收未入账", "PENDING_QUALITY": "已过账待检", "POSTED": "已过账"}, "newEntry": "登记入场接管", "newReceipt": "新建实收确认", "header": "单据主信息", "noticeId": "来源通知 UUID", "entryId": "来源入场接管 UUID", "vehicleNumber": "车牌或船次", "carrier": "承运方", "arrivedAt": "入场时间", "measurementRef": "磅单或计量单号", "remark": "备注", "line": "明细", "lines": "单据明细", "identityId": "商品身份 UUID", "unitId": "计量单位 UUID", "expectedQuantity": "到货数量（可选）", "custodyId": "接管明细 UUID", "receivedQuantity": "合格实收量", "rejectionQuantity": "拒收数量", "rejectionReason": "拒收原因", "recordEntry": "提交入场接管", "confirmReceipt": "确认实收", "processed": "实收状态", "received": "已确认", "pending": "待确认", "entry": "入场接管单", "receipt": "实收确认单"}
+attachments:
+  policies: 附件配置
+  ledger: 附件管理
+  type: 文件类型
+  extensions: 扩展名
+  enabled: 启用状态
+  allowed: 允许
+  blocked: 停用
+  maximum: 最大大小（字节）
+  hardLimit: 硬上限（字节）
+  save: 保存
+  businessId: 业务 ID
+  tenant: 租户 ID
+  search: 查询
+  fileName: 附件名称
+  size: 大小（字节）
+  status: 上传状态
+  createdAt: 上传时间
+  detail: 查看详情
+  storagePath: 存储路径
+  createdBy: 上传人
+  updatedAt: 最后修改时间
+  allTypes: 全部类型
+  startDate: 开始日期
+  endDate: 结束日期
+  states:
+    WRITING: 写入中
+    AVAILABLE: 可用
+    FAILED: 写入失败
+
+eventWorkbench:
+  title: 事件工作台
+  eventId: 事件标识
+  tenant: 租户标识
+  type: 事件类型
+  status: 投递状态
+  createdAt: 创建时间
+  updatedAt: 更新时间
+  createdBy: 创建账号
+  updatedBy: 更新账号
+  search: 查询
+  progress: 投递进度
+  counts: "{done} 成功 · {manual} 待人工 · {pending} 待处理 · {processing} 处理中"
+  detail: 事件详情
+  subject: 业务引用
+  consumer: 消费者
+  attempts: 本轮次数
+  totalAttempts: 累计次数
+  nextAt: 下次执行时间
+  failure: 失败码
+  retry: 重试投递
+  reason: 请输入本次重试原因
+  reasonLength: 重试原因须为 1–200 个字符
+  retried: 已提交重试
+  deliveries: 消费者投递
+  history: 最近执行记录
+  attemptNo: 尝试序号
+  PENDING: 待处理
+  PROCESSING: 处理中
+  DONE: 已完成
+  MANUAL: 待人工

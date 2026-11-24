@@ -9,9 +9,10 @@ const props=defineProps<{descriptor:Descriptor;api:BusinessObjectApi;errorText:(
 const {t}=useI18n();
 /** 绑定列表只展示服务端当前租户配置，固定规则版本不随新版本自动升级。 */
 const columns=computed<ManagementColumn[]>(()=>[
- {key:'name',prop:'name',label:t('businessObject.name'),minWidth:160},{key:'field',prop:'field',label:t('coding.field'),minWidth:120},
- {key:'ruleKey',prop:'ruleKey',label:t('coding.ruleKey'),minWidth:180},{key:'ruleVersion',prop:'ruleVersion',label:t('coding.version'),width:100},
- {key:'enabled',label:t('businessObject.state'),width:100},{key:'operations',label:t('businessObject.operations'),width:120,fixed:'right'}]);const rows=ref<EncoderRow[]>([]),rules=ref<CodingRuleRow[]>([]),loading=ref(false),busy=ref(false),error=ref(""),key=ref(""),existing=ref<EncoderRow>(),form=ref<FormInstance>();
+ {key:'enabled',label:t('businessObject.state'),width:100},{key:'encoderKey',prop:'encoderKey',label:t('coding.key'),minWidth:140},
+ {key:'name',prop:'name',label:t('businessObject.name'),minWidth:160},
+ {key:'field',prop:'field',label:t('coding.field'),minWidth:120},{key:'ruleKey',prop:'ruleKey',label:t('coding.ruleKey'),minWidth:180},
+ {key:'ruleVersion',prop:'ruleVersion',label:t('coding.version'),width:100},{key:'operations',label:t('businessObject.operations'),width:120,fixed:'right'}]);const rows=ref<EncoderRow[]>([]),rules=ref<CodingRuleRow[]>([]),loading=ref(false),busy=ref(false),error=ref(""),key=ref(""),existing=ref<EncoderRow>(),form=ref<FormInstance>();
 const draft=reactive<EncoderInput>({revision:-1,field:props.descriptor.codingFields?.[0]?.field??"",name:"",enabled:true,ruleKey:"",ruleVersion:0});
 const ruleId=computed({get:()=>draft.ruleKey?`${draft.ruleKey}:${draft.ruleVersion}`:"",set:(value:string)=>{const row=rules.value.find(r=>`${r.ruleKey}:${r.ruleVersion}`===value);draft.ruleKey=row?.ruleKey??"";draft.ruleVersion=row?.ruleVersion??0;}});
 const chosen=computed(()=>rules.value.find(r=>r.ruleKey===draft.ruleKey&&r.ruleVersion===draft.ruleVersion));
@@ -29,7 +30,7 @@ onMounted(load);
   <ManagementTable :title="t('coding.bindingsTitle')" :rows="rows" :columns="columns" :loading="loading" :busy="busy" embedded @refresh="load">
    <template #titleHelp><InfoHint :content="t('coding.bindingHint')" /></template>
    <template #actions><el-button v-operation="'CodingEncoder.save'" :disabled="busy" @click="select()">{{t('coding.newBinding')}}</el-button></template>
-   <template #enabled="{row}"><el-tag :type="row.enabled?'success':'info'">{{t(row.enabled?'businessObject.enabled':'businessObject.disabled')}}</el-tag></template>
+   <template #enabled="{row}"><el-tag class="app-status-tag" :type="row.enabled?'success':'info'">{{t(row.enabled?'businessObject.enabled':'businessObject.disabled')}}</el-tag></template>
    <template #operations="{row}"><el-button v-operation="'CodingEncoder.save'" link type="primary" :disabled="busy" @click="select(row)">{{t('businessObject.configure')}}</el-button></template>
   </ManagementTable>
   <section class="coding-binding-editor">
@@ -38,10 +39,10 @@ onMounted(load);
 
   <el-form ref="form" :model="draft" label-position="top" class="business-border-label-form coding-binding-form" :disabled="busy">
    <el-form-item :label="t('coding.key')" required><el-input v-model="key" :disabled="!!existing||busy" maxlength="40" /></el-form-item>
+   <el-form-item :label="t('businessObject.state')"><el-switch v-model="draft.enabled" :disabled="busy" :active-text="t('businessObject.enabled')" :inactive-text="t('businessObject.disabled')" /></el-form-item>
    <el-form-item :label="t('businessObject.name')" prop="name" :rules="[{required:true,whitespace:true,max:100,message:t('coding.required')}]"><el-input v-model="draft.name" maxlength="100" :disabled="busy" /></el-form-item>
    <el-form-item :label="t('coding.field')" prop="field" :rules="[{required:true,message:t('coding.required')}]"><el-select v-model="draft.field" :disabled="busy"><el-option v-for="field in descriptor.codingFields" :key="field.field" :label="field.field" :value="field.field" /></el-select></el-form-item>
    <el-form-item :label="t('coding.ruleVersion')" prop="ruleKey" :rules="[{required:true,message:t('coding.required')}]"><el-select v-model="ruleId" filterable :disabled="busy"><el-option v-for="row in rules" :key="`${row.ruleKey}:${row.ruleVersion}`" :label="`${row.name} · ${row.ruleKey} · v${row.ruleVersion}`" :value="`${row.ruleKey}:${row.ruleVersion}`" /></el-select></el-form-item>
-   <el-form-item :label="t('businessObject.state')"><el-switch v-model="draft.enabled" :disabled="busy" :active-text="t('businessObject.enabled')" :inactive-text="t('businessObject.disabled')" /></el-form-item>
    <el-form-item><el-button v-operation="'CodingEncoder.save'" type="primary" :loading="busy" @click="save">{{t('coding.saveBinding')}}</el-button></el-form-item>
   </el-form>
   <el-descriptions :column="1" border><el-descriptions-item :label="t('coding.preview')">{{preview}}</el-descriptions-item></el-descriptions>

@@ -22,6 +22,7 @@ import static com.appnexus.masterdata.api.masterdata.MasterData.*;
 class BusinessPartnerDataAccessTest extends DatabaseTestSupport {
     @Autowired com.appnexus.platform.businessobject.BusinessObjectManagement businessObjects;
     @Autowired OperationRegistry operations;
+    @Autowired com.appnexus.masterdata.application.masterdata.StatusHistoryQuery statusHistory;
     @Autowired MasterDataService service;@Autowired MyBatisPlatformAdministration administration;
     @Autowired RoleManagement roles;@Autowired RolePermissionManagement permissions;@Autowired SubjectRoleManagement subjects;
     @Autowired MemberAuthorizationManagement members;@Autowired DataAccessCatalog catalog;@Autowired FieldCatalog fields;
@@ -49,7 +50,7 @@ class BusinessPartnerDataAccessTest extends DatabaseTestSupport {
         var explicitAll=new com.appnexus.platform.authorization.RowAccessControl.Predicate("",List.of(),plan);
         assertThatThrownBy(()->sql.getMapper(UnguardedSqlProbe.class).count(tenant,explicitAll))
             .hasRootCauseMessage("SCOPED_SQL_PLAN_REQUIRED");
-        assertThatThrownBy(()->partnerRecords.status(tenant,Kind.PARTNER,id,false,0))
+        assertThatThrownBy(()->partnerRecords.status(tenant,Kind.PARTNER,id,false,0,subject.accountId().toString()))
             .hasRootCauseMessage("SCOPED_WRITE_PLAN_REQUIRED");
     }
 
@@ -60,10 +61,10 @@ class BusinessPartnerDataAccessTest extends DatabaseTestSupport {
         var directory=businessObjects.catalog(new com.appnexus.contracts.businessobject.BusinessObjects.Context(null,actor.toString(),UUID.randomUUID().toString()),true);
         assertThat(directory.stream().map(row->(com.appnexus.contracts.businessobject.BusinessObjects.Descriptor)row.get("descriptor")).filter(d->d.objectType().equals("BusinessPartner")).toList()).singleElement().satisfies(d->{
             assertThat(d.category()).isEqualTo(com.appnexus.contracts.businessobject.BusinessObjects.Category.MASTER_DATA);
-            assertThat(d.dataAccess()).isNotNull();assertThat(d.operations()).hasSize(4);
+            assertThat(d.dataAccess()).isNotNull();assertThat(d.operations()).hasSize(5);
             assertThat(d.operations()).allSatisfy(op->assertThat(op.supportedServices()).containsExactly("BUSINESS"));
         });
-        assertThat(operations.objects().stream().filter(o->o.code().equals("BusinessPartner")).toList()).singleElement().satisfies(o->assertThat(o.operations()).hasSize(4));
+        assertThat(operations.objects().stream().filter(o->o.code().equals("BusinessPartner")).toList()).singleElement().satisfies(o->assertThat(o.operations()).hasSize(5));
         mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get("/bff/platform/business-objects").with(authenticated(actor.toString(),0)))
             .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().isOk())
             .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath("$[?(@.descriptor.objectType == 'BusinessPartner')].descriptor.nameZh").value(org.hamcrest.Matchers.contains("客商管理")));
@@ -224,6 +225,28 @@ class BusinessPartnerDataAccessTest extends DatabaseTestSupport {
         assertThatThrownBy(()->service.update(u,Kind.PARTNER,first,new Input("FIRST","删明细绕过",Map.of("partnerType","CUSTOMER"),1,List.of(),null))).isInstanceOf(Rejection.class).hasMessage("DATA_FIELD_WRITE_DENIED");
         assertThatThrownBy(()->service.update(u,Kind.PARTNER,first,new Input("FIRST","改银行绕过",Map.of("partnerType","CUSTOMER"),1,null,List.of(new DetailInput(row.bankAccounts().getFirst().id(),Map.of("accountNumber","changed")))))).isInstanceOf(Rejection.class).hasMessage("DATA_FIELD_WRITE_DENIED");
         var unchanged=service.list(c,Kind.PARTNER,"",null,1,1,first).rows().getFirst();assertThat(unchanged.version()).isEqualTo(1);assertThat(unchanged.name()).isEqualTo("合法修改");
+        var historySubject = com.appnexus.masterdata.api.masterdata.StatusHistory.Subject.PARTNER;
+        service.setStatus(c, Kind.PARTNER, first, new Status(false, unchanged.version()));
+        service.setStatus(c, Kind.PARTNER, first, new Status(true, unchanged.version() + 1));
+        assertThat(statusHistory.list(u, historySubject, first, 1, 1).total()).isEqualTo(2);
+        assertThat(statusHistory.list(u, historySubject, first, 1, 1).rows())
+            .singleElement().satisfies(event -> {
+                assertThat(event.beforeEnabled()).isFalse();
+                assertThat(event.afterEnabled()).isTrue();
+                assertThat(event.createdBy()).isEqualTo(owner.toString());
+            });
+        assertThatThrownBy(() -> statusHistory.list(u, historySubject, blocked, 1, 20))
+            .isInstanceOf(Rejection.class);
+        assertThatThrownBy(() -> statusHistory.list(foreign, historySubject, first, 1, 20))
+            .isInstanceOf(Rejection.class);
+        mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                .get("/api/master-data/partner/{id}/status-history", first).cookie(cookie).param("size","1"))
+            .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().isOk())
+            .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath("$.total").value(2))
+            .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath("$.rows[0].afterEnabled").value(true));
+        mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                .get("/api/master-data/partner/{id}/status-history", blocked).cookie(cookie))
+            .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().isForbidden());
         var grant=members.get(rc,u.memberId());var branch=grant.grants().getFirst();
         var custom=policies.stream().map(p->new RolePermissionManagement.DataPolicy(p.permissionId(),DataScopeAuthorization.ScopeType.ORGANIZATION,"masterdata.partner",Set.of(b))).collect(java.util.stream.Collectors.toSet());
         members.replace(rc,u.memberId(),new MemberAuthorizationManagement.Grant(role.id(),ids,custom,null,saved.roleVersion(),false),grant.authorityVersion(),"成员自定义B");

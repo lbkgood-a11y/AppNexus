@@ -19,7 +19,7 @@ public interface ProductTemplateRepository {
   * @param tenant 服务端可信租户UUID文本，必填，不接受请求体指定
   * @param code 固定业务编码，1至64字符，创建后不可修改
   * @param name 名称，去首尾空白后1至200字符，必填
-  * @param purpose 固定槽用途BASIC、SPEC、QUALITY或EXTENSION，按原业务准入限制
+  * @param purpose 模板用途编码，区分商品主档、规格轴、普通货号及批次，不随编辑变化
   * @param creator 可信创建账号UUID文本，不覆盖已有创建信息
   * @param updater 本次可信实际账号UUID文本，修改信息与业务同事务
   * @return 原固定事实或受影响行数；CAS写入非1由用例拒绝并回滚
@@ -42,7 +42,7 @@ public interface ProductTemplateRepository {
   * @param tenant 服务端可信租户UUID文本，必填，不接受请求体指定
   * @param template 当前租户模板UUID，必须通过对应操作准入
   * @param revision 固定版本UUID或按接口原类型的配置修订号，不跨租户或跨父对象
-  * @param purpose 固定槽用途BASIC、SPEC、QUALITY或EXTENSION，按原业务准入限制
+  * @param purpose 模板用途编码，区分商品主档、规格轴、普通货号及批次，不随编辑变化
   * @param description 版本说明，最多1000字符，按原契约允许空文本
   * @param creator 可信创建账号UUID文本，不覆盖已有创建信息
   * @param updater 本次可信实际账号UUID文本，修改信息与业务同事务
@@ -137,7 +137,7 @@ public interface ProductTemplateRepository {
   * @param tenant 服务端可信租户UUID文本，必填，不接受请求体指定
   * @param template 当前租户模板UUID，必须通过对应操作准入
   * @param code 固定业务编码，1至64字符，创建后不可修改
-  * @param purpose 固定槽用途BASIC、SPEC、QUALITY或EXTENSION，按原业务准入限制
+  * @param purpose 模板用途编码，区分商品主档、规格轴、普通货号及批次，不随编辑变化
   * @param version 非负父聚合CAS版本，冲突整笔回滚
   * @return 原固定事实或受影响行数；CAS写入非1由用例拒绝并回滚
   */

@@ -37,6 +37,8 @@ public final class WarehouseDeclaration implements Provider {
                         new PageOperation("master-data/warehouse", "/master-data/warehouse", "新增仓库管理", "create Warehouses", "POST", "/api/master-data/warehouse")),
                 operation("Warehouse", "update", "编辑仓库管理", "update Warehouses", "masterdata.warehouse:update",
                         new PageOperation("master-data/warehouse", "/master-data/warehouse", "编辑仓库管理", "update Warehouses", "PUT", "/api/master-data/warehouse/{id}")),
+                operation("Warehouse", "readStatusHistory", "查看启停历史", "Read status history", "masterdata.warehouse:read",
+                        new PageOperation("master-data/warehouse", "/master-data/warehouse", "查看启停历史", "Read status history", "GET", "/api/master-data/warehouse/{id}/status-history")),
                 operation("Warehouse", "setStatus", "启停仓库管理", "setStatus Warehouses", "masterdata.warehouse:set_status",
                         new PageOperation("master-data/warehouse", "/master-data/warehouse", "启停仓库管理", "setStatus Warehouses", "PUT", "/api/master-data/warehouse/{id}/status")),
                 com.appnexus.contracts.businessobject.DedicatedOperations.operation("Warehouse", "mapConfiguration", "地图配置", "Map configuration", "masterdata.warehouse:read"),

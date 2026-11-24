@@ -1,9 +1,8 @@
 package com.appnexus.bulkwarehousing.application;
 
-import static com.appnexus.bulkwarehousing.application.OutboundStockService.*;
+import com.appnexus.contracts.businessobject.BusinessObjects.Rejection;
+import java.util.UUID;
 
-import com.appnexus.bulkwarehousing.api.CoilOperations;
-import com.appnexus.bulkwarehousing.api.InboundReceiptReferences.Position;
 import com.appnexus.bulkwarehousing.api.WarehouseBalances;
 import com.appnexus.contracts.businessobject.BusinessObjects.DataAccessExecutor;
 import com.appnexus.contracts.operation.ReferenceNames;
@@ -14,32 +13,29 @@ import com.appnexus.platform.authorization.AccessPlanning;
 import com.appnexus.platform.authorization.AccessPlan;
 import com.appnexus.platform.authorization.ScopedWriteGate;
 import com.appnexus.platform.tenant.VerifiedTenantContext;
-import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Set;
 
-/** 按权属库存计算可提量，独立读取授权余额，并按原权限查询仓储单据。 */
+/** 按统一权限读取入仓通知和库存总览，并复核主数据引用可见性。 */
 public final class WarehouseBalanceService implements WarehouseBalances,DataAccessExecutor {
   private final WarehouseBalanceStore balances;
-  private final OutboundStockStore stock;
-  private final InboundReferenceSource masterData;
   private final InventoryOverviewReferences overviewReferences;
   private final AccessPlanning access;
   private final ScopedWriteGate operations;
+  private final com.appnexus.platform.authorization.FieldProtection fields;
 
-  /** @param balances 定向余额投影 @param stock 原库存事务和并发保护
-   * @param masterData 现有主数据权限 @param overviewReferences 库存展示的授权引用 @param access 统一权限计划 @param operations 查询事务内的受控操作许可 */
-  public WarehouseBalanceService(WarehouseBalanceStore balances,OutboundStockStore stock,
-      InboundReferenceSource masterData,InventoryOverviewReferences overviewReferences,
-      AccessPlanning access,ScopedWriteGate operations) {
+  /** @param balances 定向余额投影
+   * @param overviewReferences 库存展示的授权引用 @param access 统一权限计划 @param operations 查询事务内的受控操作许可 */
+  public WarehouseBalanceService(WarehouseBalanceStore balances,
+      InventoryOverviewReferences overviewReferences,
+      AccessPlanning access,ScopedWriteGate operations,com.appnexus.platform.authorization.FieldProtection fields) {
     this.balances=balances;
-    this.stock=stock;
-    this.masterData=masterData;
     this.overviewReferences=overviewReferences;
     this.access=access;
     this.operations=operations;
+    this.fields=fields;
   }
 
   /** {@inheritDoc} */
@@ -98,144 +94,79 @@ public final class WarehouseBalanceService implements WarehouseBalances,DataAcce
   }
 
   /** {@inheritDoc} */
-  @Override public List<Physical> physical(VerifiedTenantContext c,Scope scope) {
-    var plan=require(c,READ_PERMISSION,RESOURCE,scope);
-    var groups=new LinkedHashMap<IdentityUnit,Physical>();
-    var positions=new HashMap<Position,Boolean>();
-    for (var row:authorized(plan,()->balances.physical(c,scope))) {
-      var key=new IdentityUnit(row.identityId(),row.unitId());
-      var existing=groups.getOrDefault(key,new Physical(row.identityId(),row.unitId(),BigDecimal.ZERO,BigDecimal.ZERO));
-      var eligible=row.eligible().signum()>0 && positions.computeIfAbsent(row.position(),pos -> masterData.usablePosition(c,pos))
-          ? row.eligible() : BigDecimal.ZERO;
-      groups.put(key,new Physical(key.identity(),key.unit(),existing.onHandTitle().add(row.title()).stripTrailingZeros(),
-          existing.pickable().add(eligible).stripTrailingZeros()));
+  @Override public NoticePage inboundNotices(VerifiedTenantContext c,NoticeFilter filter,int page,int pageSize) {
+    var plan=requireAccess(c,READ_PERMISSION,RESOURCE);
+    if (page<1) throw invalid();
+    validatePage(null,pageSize);
+    if(filter.warehouseId()!=null)uuid(filter.warehouseId());
+    if(filter.ownerId()!=null)uuid(filter.ownerId());
+    validateNoticeFilter(filter.documentNo());
+    validateNoticeFilter(filter.appointmentNo());
+    return authorized(plan,()->readNoticePage(c,filter,(page-1L)*pageSize,pageSize));
+  }
+
+  /** 按可见记录计数和切页，仅在内存保留请求页与每批的授权数据。 */
+  private NoticePage readNoticePage(VerifiedTenantContext c,NoticeFilter filter,long offset,int pageSize) {
+    var rows=new java.util.ArrayList<DocumentHeader>(pageSize);
+    long total=0;
+    String cursor=null;
+    final int scanSize=30;
+    // 在同一读取事务中扫描候选；未授权的通知既不占页内位置，也不计入总数。
+    while(true){
+      var candidates=balances.inboundNotices(c,filter,cursor,scanSize);
+      if(candidates.isEmpty())break;
+      var products=balances.inboundNoticeProducts(c,candidates.stream().map(DocumentHeader::noticeId).toList());
+      var required=new HashMap<String,List<ReferenceNames.Key>>();
+      for(var row:candidates){
+        var ids=products.get(row.noticeId());
+        if(ids==null || ids.isEmpty())continue;
+        var keys=new java.util.ArrayList<ReferenceNames.Key>(ids.size()+2);
+        keys.add(new ReferenceNames.Key(ACTIVE_WAREHOUSE,row.warehouseId()));
+        keys.add(new ReferenceNames.Key(ACTIVE_PARTNER,row.ownerId()));
+        for(var id:ids)keys.add(new ReferenceNames.Key(PRODUCT,id));
+        required.put(row.noticeId(),keys);
+      }
+      var visible=ReferenceNames.resolveKeys(overviewReferences,c,required.values().stream().flatMap(List::stream).distinct().toList());
+      for(var row:candidates){
+        var keys=required.get(row.noticeId());
+        if(keys==null || keys.stream().anyMatch(key->visible.get(key)==null))continue;
+        if(total>=offset && rows.size()<pageSize)rows.add(row);
+        total++;
+      }
+      if(candidates.size()<scanSize)break;
+      cursor=candidates.getLast().noticeId();
     }
-    return List.copyOf(groups.values());
+    return new NoticePage(List.copyOf(rows),total);
   }
 
-  /** {@inheritDoc} */
-  @Override public CoilPage coils(VerifiedTenantContext c,Scope scope,String afterId,int limit) {
-    var plan=require(c,READ_PERMISSION,RESOURCE,scope);
-    validatePage(afterId,limit);
-    var rows=authorized(plan,()->balances.coils(c,scope,afterId,limit+1));
-    var positions=new HashMap<Position,Boolean>();
-    var page=rows.stream().limit(limit).map(row -> {
-      boolean validLocation=positions.computeIfAbsent(row.position(),pos -> masterData.usablePosition(c,pos));
-      boolean transferable=validLocation && ("AVAILABLE".equals(row.status()) || "PENDING_QUALITY".equals(row.status()));
-      return new Coil(row.receiptId(),row.serial(),row.identityId(),row.unitId(),row.quantity(),row.titleRevision(),
-          validLocation ? row.status() : "LOCATION_UNAVAILABLE",transferable);
-    }).toList();
-    return new CoilPage(page,rows.size()>limit ? page.getLast().receiptId() : null);
-  }
-
-  /** {@inheritDoc} */
-  @Override public AuthorizationPage authorizations(VerifiedTenantContext c,Scope scope,String afterId,int limit) {
-    var plan=require(c,CoilOperations.READ_AUTHORIZATION_BALANCES.permission(),CoilOperations.RESOURCE,scope);
-    validatePage(afterId,limit);
-    var rows=authorized(plan,()->balances.authorizations(c,scope,afterId,limit+1));
-    if (rows.size()<=limit) return new AuthorizationPage(rows,null);
-    var page=List.copyOf(rows.subList(0,limit));
-    return new AuthorizationPage(page,page.getLast().authorizationId());
-  }
-
-  /** {@inheritDoc} */
-  @Override public AuthorizationBalance authorization(VerifiedTenantContext c,String id) {
-    var permission=CoilOperations.READ_AUTHORIZATION_BALANCES.permission();
-    var plan=requireAccess(c,permission,CoilOperations.RESOURCE);
-    uuid(id);
-    return authorized(plan,()->{
-      var document=balances.authorization(c,id);
-      if (document==null) throw denied();
-      require(c,permission,CoilOperations.RESOURCE,document.scope());
-      return document.balance();
-    });
+  /** 列表按业务编号精确匹配，拒绝首尾空白、控制字符和超长参数。 */
+  private static void validateNoticeFilter(String value) {
+    if(value!=null&&(value.isBlank()||!value.equals(value.strip())||value.codePointCount(0,value.length())>64
+        ||value.codePoints().anyMatch(Character::isISOControl)))throw invalid();
   }
 
   /** {@inheritDoc} */
   @Override public DocumentDetail document(VerifiedTenantContext c,DocumentKind kind,String documentNo) {
     var plan=requireAccess(c,READ_PERMISSION,RESOURCE);
-    if (kind==null) throw invalid();
-    if (kind==DocumentKind.INBOUND_NOTICE) {
-      if (documentNo==null || documentNo.isBlank() || !documentNo.equals(documentNo.strip())
-          || documentNo.codePointCount(0,documentNo.length())>64 || documentNo.codePoints().anyMatch(Character::isISOControl)) throw invalid();
-    } else uuid(documentNo);
+    if (kind!=DocumentKind.INBOUND_NOTICE) throw invalid();
+    if (documentNo==null || documentNo.isBlank() || !documentNo.equals(documentNo.strip())
+        || documentNo.codePointCount(0,documentNo.length())>64 || documentNo.codePoints().anyMatch(Character::isISOControl)) throw invalid();
     return authorized(plan,()->{
-      var header=balances.document(c,kind,documentNo);
+      var header=balances.document(c,documentNo);
       if (header==null) throw denied();
-      String source=kind==DocumentKind.INBOUND_NOTICE ? header.noticeId() : documentNo;
-      List<NoticeLineView> lines=kind==DocumentKind.INBOUND_NOTICE ? balances.inboundLines(c,source) : List.of();
-      if(kind==DocumentKind.INBOUND_NOTICE&&lines.isEmpty())throw denied();
+      var lines=balances.inboundLines(c,header.noticeId());
+      if (lines.isEmpty()) throw denied();
       var required=new java.util.ArrayList<ReferenceNames.Key>();
       required.add(new ReferenceNames.Key(ACTIVE_WAREHOUSE,header.warehouseId()));
       required.add(new ReferenceNames.Key(ACTIVE_PARTNER,header.ownerId()));
-      if(header.otherOwnerId()!=null)required.add(new ReferenceNames.Key(ACTIVE_PARTNER,header.otherOwnerId()));
-      if(lines.isEmpty())required.add(new ReferenceNames.Key(PRODUCT,header.productId()));
-      else for(var line:lines)required.add(new ReferenceNames.Key(PRODUCT,line.productId()));
+      for(var line:lines)required.add(new ReferenceNames.Key(PRODUCT,line.productId()));
       requireReferences(c,required);
-      var related=balances.documentRelations(c,kind,source);
-      var custodies=kind==DocumentKind.INBOUND_NOTICE ? balances.inboundCustodies(c,source) : List.<NoticeCustodyView>of();
-      return new DocumentDetail(header,related.stream().limit(100).toList(),
-          related.size()>100 || custodies.size()>100,lines,custodies.stream().limit(100).toList());
+      return new DocumentDetail(protectDriver(c,header),lines,
+          fields.restrictions(Subject.tenant(c.accountId(),c.tenantId(),c.memberId()),"warehousing.inbound"));
     });
   }
 
-  /** {@inheritDoc} */
-  @Override public BatchDocument inboundEntry(VerifiedTenantContext context,String id) {
-    return readBatch(context,id,false);
-  }
-
-  /** {@inheritDoc} */
-  @Override public BatchDocument receiptDocument(VerifiedTenantContext context,String id) {
-    return readBatch(context,id,true);
-  }
-
-  /** 遵守原单据读取门禁与主数据引用校验；跨租户与不存在同一结果。 */
-  private BatchDocument readBatch(VerifiedTenantContext context,String id,boolean receipt) {
-    var plan=requireAccess(context,READ_PERMISSION,RESOURCE);
-    uuid(id);
-    return authorized(plan,()->{
-      var batch=balances.inboundBatch(context,id,receipt);
-      if (batch==null) throw new com.appnexus.contracts.businessobject.BusinessObjects.Rejection(404,"INBOUND_DOCUMENT_NOT_FOUND");
-      var required=new java.util.ArrayList<ReferenceNames.Key>();
-      required.add(new ReferenceNames.Key(ACTIVE_WAREHOUSE,batch.warehouseId()));
-      required.add(new ReferenceNames.Key(ACTIVE_PARTNER,batch.ownerId()));
-      for(var line:batch.lines())required.add(new ReferenceNames.Key(PRODUCT,line.productId()));
-      requireReferences(context,required);
-      return batch;
-    });
-  }
-
-  /** {@inheritDoc} */
-  @Override public CoilTrace trace(VerifiedTenantContext c,String receiptId) {
-    var plan=requireAccess(c,READ_PERMISSION,RESOURCE);
-    uuid(receiptId);
-    return authorized(plan,()->traceLocked(c,receiptId));
-  }
-
-  private CoilTrace traceLocked(VerifiedTenantContext c,String receiptId) {
-    // 相关业务提交均在同一库存锁保护；当前账面与单据不能跨越另一次过账读取。
-    if (stock.lock(c,receiptId)==null) throw denied();
-    var stock=balances.traceStock(c,receiptId);
-    if (stock==null) throw denied();
-    var docs=balances.traceDocuments(c,receiptId);
-    // 原业务要求追溯涉及的全部仓库和货主仍有效且可见。
-    var required=new java.util.ArrayList<ReferenceNames.Key>();
-    required.add(new ReferenceNames.Key(ACTIVE_WAREHOUSE,stock.warehouseId()));
-    required.add(new ReferenceNames.Key(ACTIVE_PARTNER,stock.ownerId()));
-    required.add(new ReferenceNames.Key(PRODUCT,stock.productId()));
-    for(var event:docs){
-      var doc=event.document();
-      required.add(new ReferenceNames.Key(ACTIVE_WAREHOUSE,doc.warehouseId()));
-      required.add(new ReferenceNames.Key(ACTIVE_PARTNER,doc.ownerId()));
-      if(event.previousWarehouseId()!=null)required.add(new ReferenceNames.Key(ACTIVE_WAREHOUSE,event.previousWarehouseId()));
-      if(event.responsiblePartnerId()!=null)required.add(new ReferenceNames.Key(ACTIVE_PARTNER,event.responsiblePartnerId()));
-      if(doc.otherOwnerId()!=null)required.add(new ReferenceNames.Key(ACTIVE_PARTNER,doc.otherOwnerId()));
-    }
-    requireReferences(c,required);
-    return new CoilTrace(stock,docs.stream().map(WarehouseBalanceStore.TraceEvent::document).toList());
-  }
-
-  /** 任一用于业务准入的引用不可见时，拒绝整条单据或追溯。 */
+  /** 任一用于业务准入的引用不可见时，拒绝整张入仓通知。 */
   private void requireReferences(VerifiedTenantContext context,List<ReferenceNames.Key> required){
     if(required.stream().anyMatch(key->key.value()==null))throw denied();
     var resolved=ReferenceNames.resolveKeys(overviewReferences,context,required);
@@ -248,22 +179,22 @@ public final class WarehouseBalanceService implements WarehouseBalances,DataAcce
     }
   }
 
+  /** 司机原文只经过平台统一字段投影后进入详情，业务层不实现脱敏算法。 */
+  private DocumentHeader protectDriver(VerifiedTenantContext context,DocumentHeader header) {
+    var source=header.driver();
+    if(source==null)return header;
+    var values=new java.util.HashMap<String,Object>();
+    values.put("driverName",source.driverName());
+    values.put("driverPhone",source.driverPhone());
+    values.put("driverIdNumber",source.driverIdNumber());
+    var projected=fields.project(Subject.tenant(context.accountId(),context.tenantId(),context.memberId()),"warehousing.inbound",values);
+    return header.withDriver(new com.appnexus.bulkwarehousing.api.InboundReceiving.Driver(
+        (String)projected.get("driverName"),(String)projected.get("driverPhone"),(String)projected.get("driverIdNumber")));
+  }
+
   private static void validatePage(String afterId,int limit) {
     if (limit<1 || limit>100) throw invalid();
     if (afterId!=null) uuid(afterId);
-  }
-
-  private AccessPlan require(VerifiedTenantContext c,String permission,String resource,Scope scope) {
-    var plan=requireAccess(c,permission,resource);
-    if (scope==null) throw invalid();
-    uuid(scope.ownerId());
-    uuid(scope.warehouseId());
-    uuid(scope.productId());
-    if (scope.identityId()!=null) uuid(scope.identityId());
-    masterData.requireWarehouse(c,scope.warehouseId());
-    masterData.owner(c,scope.ownerId());
-    masterData.requireProduct(c,scope.productId());
-    return plan;
   }
 
   private AccessPlan requireAccess(VerifiedTenantContext c,String permission,String resource) {
@@ -275,11 +206,20 @@ public final class WarehouseBalanceService implements WarehouseBalances,DataAcce
 
   /** 固定租户全部查询使用同一真实操作的事务凭据，仓库及其他引用继续由原用例复核。 */
   private <T>T authorized(AccessPlan plan,java.util.function.Supplier<T> query){
-    return stock.transaction(()->{
+    return balances.transaction(()->{
       operations.authorizeOperation(plan);
       return query.get();
     });
   }
 
-  private record IdentityUnit(String identity,String unit) {}
+  private static void uuid(String value) {
+    try {
+      if (value==null || !UUID.fromString(value).toString().equals(value)) throw invalid();
+    } catch (IllegalArgumentException error) {
+      throw invalid();
+    }
+  }
+
+  private static Rejection invalid() { return new Rejection(400,"OUTBOUND_INPUT_INVALID"); }
+  private static Rejection denied() { return new Rejection(403,"OUTBOUND_ACCESS_DENIED"); }
 }

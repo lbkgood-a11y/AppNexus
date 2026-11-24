@@ -62,6 +62,46 @@ class InboundNoticeLineMigrationTest {
           WHERE r.tenant_id=UUID_TO_BIN(?) AND r.id=UUID_TO_BIN(?)
           """,tenant,receipt)).containsEntry("request_digest",digest).containsEntry("receipt_batch_no","LOT-01");
       assertThat(Flyway.configure().dataSource(source).target("167").load().migrate().migrationsExecuted).isZero();
+      Flyway.configure().dataSource(source).target("179").load().migrate();
+      assertThat(jdbc.queryForObject("""
+          SELECT COUNT(*) FROM information_schema.columns
+          WHERE table_schema=DATABASE() AND table_name='bw_inbound_notice_line' AND column_name='line_no'
+          """,Integer.class)).isZero();
+      assertThat(jdbc.queryForObject("""
+          SELECT l.received_quantity FROM bw_inbound_notice_line l
+          JOIN bw_inbound_custody c ON c.tenant_id=l.tenant_id AND c.notice_id=l.notice_id AND c.notice_line_id=l.id
+          JOIN bw_inbound_receipt r ON r.tenant_id=c.tenant_id AND r.custody_id=c.id
+          WHERE r.tenant_id=UUID_TO_BIN(?) AND r.id=UUID_TO_BIN(?)
+          """,BigDecimal.class,tenant,receipt)).isEqualByComparingTo("40");
+      String titleOwner=id();
+      jdbc.update("""
+          INSERT INTO bw_inbound_title(tenant_id,receipt_id,owner_id,evidence_id,effective_at,quantity)
+          VALUES(UUID_TO_BIN(?),UUID_TO_BIN(?),UUID_TO_BIN(?),UUID_TO_BIN(?),
+            CURRENT_TIMESTAMP(6)+INTERVAL 1 DAY,40)
+          """,tenant,receipt,titleOwner,id());
+      jdbc.update("""
+          INSERT INTO bw_stock_coil(tenant_id,receipt_id,warehouse_id,serial)
+          VALUES(UUID_TO_BIN(?),UUID_TO_BIN(?),UUID_TO_BIN(?),'COIL-01')
+          """,tenant,receipt,warehouse);
+      Flyway.configure().dataSource(source).target("182").load().migrate();
+      assertThat(jdbc.queryForList("""
+          SELECT table_name FROM information_schema.tables
+          WHERE table_schema=DATABASE() AND LEFT(table_name,3)='bw_'
+          """,String.class)).containsExactlyInAnyOrder("bw_inbound_notice","bw_inbound_notice_line","bw_stock_receipt");
+      assertThat(jdbc.queryForMap("""
+          SELECT BIN_TO_UUID(origin_warehouse_id) warehouse,BIN_TO_UUID(origin_owner_id) owner,
+            BIN_TO_UUID(product_id) product,BIN_TO_UUID(unit_id) unit,receipt_batch_no,serial,
+            BIN_TO_UUID(title_owner_id) title_owner,title_effective_at,inbound_quantity,pending_quantity
+          FROM bw_stock_receipt WHERE tenant_id=UUID_TO_BIN(?) AND receipt_id=UUID_TO_BIN(?)
+          """,tenant,receipt)).containsEntry("warehouse",warehouse).containsEntry("owner",owner)
+          .containsEntry("product",product).containsEntry("unit",unit).containsEntry("receipt_batch_no","LOT-01")
+          .containsEntry("serial","COIL-01").containsEntry("title_owner",titleOwner)
+          .containsEntry("inbound_quantity",new BigDecimal("40.000000000000"))
+          .containsEntry("pending_quantity",new BigDecimal("40.000000000000"));
+      assertThat(jdbc.queryForObject("""
+          SELECT received_quantity FROM bw_inbound_notice_line
+          WHERE tenant_id=UUID_TO_BIN(?) AND notice_id=UUID_TO_BIN(?)
+          """,BigDecimal.class,tenant,notice)).isEqualByComparingTo("40");
     }
   }
 

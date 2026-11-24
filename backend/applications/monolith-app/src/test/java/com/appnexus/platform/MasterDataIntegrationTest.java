@@ -95,23 +95,17 @@ class MasterDataIntegrationTest extends DatabaseTestSupport {
         VALUES(UUID_TO_BIN(?),UUID_TO_BIN(?),'REF-N',UUID_TO_BIN(?),UUID_TO_BIN(?),1)
         """,t,notice,warehouse,owner);
     jdbc.update("""
-        INSERT INTO bw_inbound_notice_line(tenant_id,id,notice_id,line_no,product_id,identity_kind,identity_id,
+        INSERT INTO bw_inbound_notice_line(tenant_id,id,notice_id,product_id,identity_kind,identity_id,
             product_version,base_unit_id,approved_quantity,received_quantity)
-        VALUES(UUID_TO_BIN(?),UUID_TO_BIN(?),UUID_TO_BIN(?),1,UUID_TO_BIN(?),'PRODUCT',UUID_TO_BIN(?),0,UUID_TO_BIN(?),100,80)
+        VALUES(UUID_TO_BIN(?),UUID_TO_BIN(?),UUID_TO_BIN(?),UUID_TO_BIN(?),'PRODUCT',UUID_TO_BIN(?),0,UUID_TO_BIN(?),100,80)
         """,t,notice,notice,product,product,unit);
     for(int i=0;i<2;i++){
-        String custody=UUID.randomUUID().toString(),receipt=UUID.randomUUID().toString();
-        jdbc.update("""
-            INSERT INTO bw_inbound_custody(tenant_id,id,notice_id,notice_line_id,warehouse_id,area_id,location_id,
-                warehouse_version,area_version,location_version,evidence_id)
-            VALUES(UUID_TO_BIN(?),UUID_TO_BIN(?),UUID_TO_BIN(?),UUID_TO_BIN(?),UUID_TO_BIN(?),UUID_TO_BIN(?),
-                UUID_TO_BIN(?),0,0,0,UUID_TO_BIN(?))
-            """,t,custody,notice,notice,warehouse,UUID.randomUUID().toString(),UUID.randomUUID().toString(),UUID.randomUUID().toString());
-        jdbc.update("""
-            INSERT INTO bw_inbound_receipt(tenant_id,id,custody_id,measurement_id,quantity,unit_id,request_digest,quantity_evidence)
-            VALUES(UUID_TO_BIN(?),UUID_TO_BIN(?),UUID_TO_BIN(?),UUID_TO_BIN(?),40,UUID_TO_BIN(?),?,'reference fixture')
-            """,t,receipt,custody,UUID.randomUUID().toString(),unit,"a".repeat(64));
-        jdbc.update("INSERT INTO bw_stock_receipt(tenant_id,receipt_id,inbound_quantity,pending_quantity) VALUES(UUID_TO_BIN(?),UUID_TO_BIN(?),40,40)",t,receipt);
+      jdbc.update("""
+          INSERT INTO bw_stock_receipt(tenant_id,receipt_id,inbound_quantity,pending_quantity,
+            origin_warehouse_id,origin_owner_id,product_id,identity_kind,identity_id,unit_id)
+          VALUES(UUID_TO_BIN(?),UUID_TO_BIN(?),40,40,UUID_TO_BIN(?),UUID_TO_BIN(?),UUID_TO_BIN(?),
+            'PRODUCT',UUID_TO_BIN(?),UUID_TO_BIN(?))
+          """,t,UUID.randomUUID().toString(),warehouse,owner,product,product,unit);
     }
     var request=new org.springframework.mock.web.MockHttpServletRequest();
     request.setAttribute(com.appnexus.platform.tenant.VerifiedTenantContext.class.getName(),authorized);

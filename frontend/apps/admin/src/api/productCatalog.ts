@@ -12,6 +12,10 @@ export const productCatalogApi:ProductCatalogApi={
  unitGroups:()=>http.request("get",path("unit")+"/groups"),
  createUnitGroup:data=>write("post",path("unit")+"/groups",data),
  renameUnitGroup:(code,data)=>write("put",path("unit")+"/groups/"+encodeURIComponent(code),data),
+ statusHistory:(source,id,page,size)=>{
+  const owner=source==="attribute-group"?path("attribute")+"/groups":source==="conversion"?path("unit")+"/conversions":path(source);
+  return http.request("get",owner+"/"+encodeURIComponent(id)+"/status-history",{params:{page,size}});
+ },
  conversions:()=>http.request("get",path("unit")+"/conversions"),
  createConversion:data=>write("post",path("unit")+"/conversions",data),
  conversionStatus:(id,data)=>write("put",path("unit")+"/conversions/"+encodeURIComponent(id)+"/status",data),

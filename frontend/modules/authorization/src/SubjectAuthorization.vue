@@ -30,9 +30,9 @@ const columns = computed<ManagementColumn[]>(() => [
 /** 仅显示快照已分配角色；目录缺失时保留原标识，避免静默遗漏历史关系。 */
 const assignedRoles = computed(() => assignedRoleIds.value.map(id => roles.value.find(role => role.id === id) ?? { id, name: t("authorizationCenter.unavailableRole"), code: id, status: "" }));
 const roleColumns = computed<ManagementColumn[]>(() => [
-  { key: "name", prop: "name", label: t("roleManagement.name"), minWidth: 150 },
+  { key: "status", label: t("roleManagement.status"), width: 100 },
   { key: "code", prop: "code", label: t("roleManagement.code"), minWidth: 180 },
-  { key: "status", label: t("roleManagement.status"), width: 100 }
+  { key: "name", prop: "name", label: t("roleManagement.name"), minWidth: 150 }
 ]);
 
 /** 后到目录响应不得覆盖新查询；首次成功读取非空目录时默认选择首位用户。 */
@@ -106,7 +106,7 @@ defineExpose({ canLeave: async () => true });
         <el-alert v-if="subject.enabled === false" type="warning" :title="t('authorizationCenter.subjectDisabled')" :closable="false" />
         <FloatingError v-if="detailError" type="error" :title="detailError" scope="detailError" :closable="false" show-icon><el-button link @click="loadDetail">{{ t('authorizationCenter.reload') }}</el-button></FloatingError>
         <ManagementTable :title="t('authorizationCenter.subjectRoles')" heading-level="h2" :rows="assignedRoles" :columns="roleColumns" :loading="detailLoading" :total="assignedRoles.length" embedded @refresh="loadDetail">
-          <template #status="{ row }"><el-tag v-if="row.status" :type="row.status === 'ENABLED' ? 'success' : 'info'">{{ t('roleManagement.statuses.' + row.status) }}</el-tag><span v-else>—</span></template>
+          <template #status="{ row }"><el-tag class="app-status-tag" v-if="row.status" :type="row.status === 'ENABLED' ? 'success' : 'info'">{{ t('roleManagement.statuses.' + row.status) }}</el-tag><span v-else>—</span></template>
         </ManagementTable>
         </div>
         </section>
@@ -131,7 +131,7 @@ defineExpose({ canLeave: async () => true });
         <el-empty v-if="ready && !effective.length" :description="t('authorizationCenter.noEffectivePermissions')" />
         <el-collapse v-if="ready">
           <el-collapse-item v-for="item in effective" :key="item.permissionCode" :name="item.permissionCode">
-            <template #title><span class="permission-code">{{ item.permissionCode }}</span><el-tag :type="item.effective ? 'success' : 'info'">{{ t('authorizationCenter.' + (item.effective ? 'effective' : 'inactive')) }}</el-tag></template>
+            <template #title><span class="permission-code">{{ item.permissionCode }}</span><el-tag class="app-status-tag" :type="item.effective ? 'success' : 'info'">{{ t('authorizationCenter.' + (item.effective ? 'effective' : 'inactive')) }}</el-tag></template>
             <div v-for="source in item.sources" :key="source.roleId" class="permission-source">
               <strong>{{ source.roleName }}</strong>
               <span>{{ source.effective ? t('authorizationCenter.effective') : inactiveReason(source.inactiveReason) }}</span>

@@ -47,3 +47,4 @@ export function setTableLocale(locale: string) {
 }
 
 export { referenceName } from "./referenceName";
+export { default as AttachmentUpload } from "./AttachmentUpload.vue";

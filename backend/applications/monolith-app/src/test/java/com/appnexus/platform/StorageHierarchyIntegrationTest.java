@@ -95,7 +95,7 @@ class StorageHierarchyIntegrationTest extends DatabaseTestSupport {
       var attrs=kind==Kind.WAREHOUSE?Map.<String,String>of():Map.of("parentCode",kind==Kind.STORAGE_AREA?"WB":"AB");
       assertThatThrownBy(()->service.update(context,kind,hidden.get(key),new Input("B","越权修改",attrs,0))).hasMessage("MASTER_DATA_DENIED");
       assertThatThrownBy(()->service.setStatus(context,kind,hidden.get(key),new Status(false,0))).hasMessage("MASTER_DATA_DENIED");
-      assertThatThrownBy(()->records.status(tenant.toString(),kind,visible.get(key),false,0))
+      assertThatThrownBy(()->records.status(tenant.toString(),kind,visible.get(key),false,0,context.accountId().toString()))
           .hasRootCauseMessage("SCOPED_WRITE_PLAN_REQUIRED");
     }
     assertThatThrownBy(()->service.create(context,Kind.STORAGE_AREA,new Input("NEW","越权库区",Map.of("parentCode","WB"),0))).hasMessage("MASTER_DATA_DENIED");

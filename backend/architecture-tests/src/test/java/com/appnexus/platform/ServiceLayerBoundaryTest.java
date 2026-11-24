@@ -73,11 +73,10 @@ class ServiceLayerBoundaryTest {
             "com.appnexus.bulkwarehousing.adapter..", "org.springframework..").check(classes);
   }
 
-  /** 仓储七个生产领域均进入扫描，各业务包通过应用传递事实。 */
+  /** 扫描保留的仓储规则包，并检查业务包之间的依赖。 */
   @Test void warehousingDomainsArePresentAndIndependent() {
-    var domains = java.util.Map.of("receiving", "ReceivingLimit", "stock", "StockAvailability",
-        "title", "TitleTransferRules", "dispatch", "DispatchQuota", "evidence", "MeasurementAllocation",
-        "returns", "ReturnBalance", "process", "CoilDispatchSteps");
+    var domains = java.util.Map.of("receiving", "ReceivingLimit", "stock", "BatchConversion",
+        "title", "TitleShareBalance");
     String root = "com.appnexus.bulkwarehousing.domain.";
     domains.forEach((feature, type) -> {
       assertTrue(classes.contain(root + feature + "." + type));

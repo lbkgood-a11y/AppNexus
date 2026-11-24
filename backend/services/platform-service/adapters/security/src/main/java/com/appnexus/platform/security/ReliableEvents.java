@@ -1,96 +1,196 @@
 package com.appnexus.platform.security;
+
+import com.appnexus.contracts.data.TransactionalBusinessEvents;
+import com.appnexus.contracts.businessobject.BusinessObjects.ScheduledOperations;
+import com.appnexus.platform.authorization.AccessAuthorization;
+import com.appnexus.platform.authorization.ScopedWriteGate;
+import com.appnexus.platform.tenant.TaskManagement;
 import com.appnexus.platform.persistence.eventing.OutboxMapper;
-
 import java.util.*;
-
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.*;
 
-/**
- * 共享数据库事务事件及基础任务租约；只保存标识，不保存敏感 payload，不引入消息队列。
- * 发布必须参与已有业务事务；消费去重和副作用必须通过 consume 的同事务回调完成。
- */
+/** 同库事件发布及投递事务。消费者副作用须加入消费事务，外部调用不具备此原子性。 */
 @Service
-public class ReliableEvents {
-    private final OutboxMapper statements;
-
-    /** 零 UUID 为平台级事件边界，不允许租户业务使用其绕过隔离。 */
+public class ReliableEvents implements TransactionalBusinessEvents {
+    /** 平台事件使用零 UUID，租户事件必须绑定实际租户。 */
     public static final UUID PLATFORM=new UUID(0,0);
-    private static final Set<String> TYPES=Set.of("AUTHORITY_INVALIDATED","INTEGRATION_AUTHORITY_CHANGED");
-    
-    public ReliableEvents(OutboxMapper statements){this.statements=statements;}
-    /** 租约令牌必须与领取时一致；租户和聚合均由数据库记录返回。 */
-    public record Event(UUID id,UUID tenant,String type,String aggregate,int attempts,String lease){}
+    static final String AUTHORITY_CONSUMER="authority-invalidation";
+    private static final Set<String> AUTHORITY_TYPES=Set.of("AUTHORITY_INVALIDATED","INTEGRATION_AUTHORITY_CHANGED");
+    private static final String WORKER_SCOPE=PLATFORM.toString();
+    private final OutboxMapper mapper;
+    private final ScopedWriteGate gate;
+    private final ScheduledOperations scheduled;
+    private final AccessAuthorization access;
+    private final Map<Type,Map<String,Consumer>> subscriptions;
+
     /**
-     * 写业务事件；外部无事务调用直接拒绝，回滚不留下可消费事件。
-     * @param tenant 可信租户 UUID；平台事件必须显式使用 PLATFORM
-     * @param type 已登记事件类型，仅权限失效和集成授权变化
-     * @param aggregate 不可变聚合标识，1–100 位安全标识字符，禁止敏感原值
-     * @return 新事件 UUID，事务提交前不可消费
+     * @param mapper 与业务事务共用数据源的固定映射
+     * @param handlers 启动期声明的消费者，同类型下标识必须唯一且视为持久契约
+     */
+    public ReliableEvents(OutboxMapper mapper,List<Consumer> handlers,ScopedWriteGate gate,
+                          ScheduledOperations scheduled,AccessAuthorization access) {
+        this.mapper=mapper;
+        this.gate=gate;
+        this.scheduled=scheduled;
+        this.access=access;
+        subscriptions=registrations(handlers);
+    }
+
+    static Map<Type,Map<String,Consumer>> registrations(List<Consumer> handlers) {
+        var registrations=new EnumMap<Type,Map<String,Consumer>>(Type.class);
+        for(var handler:handlers) {
+            String id=handler.consumerId();
+            if(id==null || !id.matches("[a-z0-9][a-z0-9._:-]{0,99}"))
+                throw new IllegalArgumentException("无效的 Outbox 消费者标识");
+            for(var type:handler.types()) {
+                if(registrations.computeIfAbsent(type,key->new TreeMap<>()).putIfAbsent(id,handler)!=null)
+                    throw new IllegalStateException("重复的 Outbox 订阅 "+type+"/"+id);
+            }
+        }
+        registrations.replaceAll((type,byId)->Collections.unmodifiableMap(byId));
+        return Collections.unmodifiableMap(registrations);
+    }
+
+    /** 已领取的投递以及数据库返回的事件引用，累计序号和租约共同标记本次执行。 */
+    public record Event(UUID id,UUID tenant,String type,String aggregate,int attempts,String lease,
+                        UUID deliveryId,String consumer,int sequence) {}
+
+    /**
+     * @param tenant 可信租户或显式平台零 UUID
+     * @param type 已登记的权限事件类型
+     * @param aggregate 聚合引用，1–100 个安全字符
+     * @return 原事务提交后可见的事件 UUID
      */
     @Transactional(propagation=Propagation.MANDATORY)
-    public UUID publish(UUID tenant,String type,String aggregate){
-        if(tenant==null||!TYPES.contains(type)||aggregate==null||!aggregate.matches("[A-Za-z0-9._:-]{1,100}"))throw new IllegalArgumentException("Invalid event metadata");
-        UUID id=UUID.randomUUID();statements.statement1(id.toString(),tenant.toString(),type,aggregate);return id;
+    public UUID publish(UUID tenant,String type,String aggregate) {
+        if(tenant==null || !AUTHORITY_TYPES.contains(type) || aggregate==null || !aggregate.matches("[A-Za-z0-9._:-]{1,100}"))
+            throw new IllegalArgumentException("无效的事件引用");
+        return append(tenant,type,aggregate,Set.of(AUTHORITY_CONSUMER));
     }
+
+    /** {@inheritDoc} */
+    @Override
+    @Transactional(propagation=Propagation.MANDATORY)
+    public UUID publish(UUID tenant,Type type,UUID subjectId) {
+        if(tenant==null || PLATFORM.equals(tenant) || type==null || subjectId==null)
+            throw new IllegalArgumentException("业务事件必须绑定实际租户和记录");
+        var consumers=subscriptions.getOrDefault(type,Map.of()).keySet();
+        if(consumers.isEmpty()) throw new IllegalStateException("业务事件缺少订阅 "+type);
+        return append(tenant,type.name(),subjectId.toString(),consumers);
+    }
+
+    private UUID append(UUID tenant,String type,String aggregate,Set<String> consumers) {
+        UUID id=UUID.randomUUID();
+        // 发布端口为受控业务事务内部调用，授权同一事务内锁定事件 ID 和可信租户。
+        gate.authorizeServiceOperation(tenant,"system.platform.events:publish",List.of(id.toString()),()->true);
+        requireOne(mapper.append(id.toString(),tenant.toString(),type,aggregate));
+        for(String consumer:consumers) requireOne(mapper.appendDelivery(id.toString(),tenant.toString(),consumer));
+        return id;
+    }
+
+    /** @return 单条投递及 30 秒租约，领取与尝试历史同事务提交 */
+    @Transactional
+    public Optional<Event> claim() {
+        authorizeWorker(PLATFORM,"queue");
+        for(int skipped=0;skipped<20;skipped++) {
+            var rows=mapper.claimable(WORKER_SCOPE,"queue");
+            if(rows.isEmpty()) return Optional.empty();
+            var row=rows.getFirst();
+            var delivery=(String)row.get("delivery");
+            authorizeWorker(PLATFORM,delivery);
+            int attempts=((Number)row.get("attempts")).intValue();
+            int sequence=((Number)row.get("total_attempts")).intValue();
+            if("PROCESSING".equals(row.get("status"))) mapper.finishAttempt(WORKER_SCOPE,delivery,sequence,"LEASE_EXPIRED","LEASE_EXPIRED");
+            if(attempts>=5) {
+                requireOne(mapper.exhaust(WORKER_SCOPE,delivery));
+                continue;
+            }
+            String lease=UUID.randomUUID().toString();
+            requireOne(mapper.claim(WORKER_SCOPE,delivery,lease));
+            requireOne(mapper.startAttempt(WORKER_SCOPE,delivery,sequence+1));
+            return Optional.of(new Event(UUID.fromString((String)row.get("id")),UUID.fromString((String)row.get("tenant")),
+                (String)row.get("event_type"),(String)row.get("aggregate_id"),attempts+1,lease,
+                UUID.fromString(delivery),(String)row.get("consumer_id"),sequence+1));
+        }
+        return Optional.empty();
+    }
+
     /**
-     * 多实例 SKIP LOCKED 领取单条事件，30 秒租约；超过 5 次转人工，不静默丢弃。
-     * @return 无可领取事件时为空；调用方不能自行替换租户或 lease
+     * @param event 当前有效投递租约
+     * @param consumer 固定消费者标识，须与持久投递一致
+     * @param expectedTenant 可信期望租户，须与数据库一致
+     * @param effect 同库可回滚业务副作用
+     * @return 首次执行且确认成功；重复回执或租约失效返回 false
      */
     @Transactional
-    public Optional<Event> claim(){
-        statements.statement2();
-        var rows=statements.statement3();
-        if(rows.isEmpty())return Optional.empty();var row=rows.getFirst();String lease=UUID.randomUUID().toString();
-        String id=(String)row.get("id");statements.statement4(lease,id);
-        return Optional.of(new Event(UUID.fromString(id),UUID.fromString((String)row.get("tenant")),(String)row.get("event_type"),(String)row.get("aggregate_id"),((Number)row.get("attempts")).intValue()+1,lease));
+    public boolean consume(Event event,String consumer,UUID expectedTenant,Runnable effect) {
+        if(!event.tenant().equals(expectedTenant) || !event.consumer().equals(consumer))
+            throw new SecurityException("投递身份不符");
+        var delivery=event.deliveryId().toString();
+        authorizeWorker(PLATFORM,delivery);
+        var rows=mapper.lockLease(WORKER_SCOPE,delivery,event.lease(),event.sequence());
+        if(rows.isEmpty()) return false;
+        var row=rows.getFirst();
+        if(!expectedTenant.toString().equals(row.get("tenant")) || !event.id().toString().equals(row.get("event_id"))
+                || !consumer.equals(row.get("consumer_id"))) throw new SecurityException("投递身份不符");
+        authorizeWorker(expectedTenant,event.id().toString());
+        boolean first=mapper.receipt(expectedTenant.toString(),event.id().toString(),consumer)==1;
+        if(first) effect.run();
+        requireOne(mapper.finish(WORKER_SCOPE,delivery,event.sequence(),event.lease(),"DONE",null,0));
+        requireOne(mapper.finishAttempt(WORKER_SCOPE,delivery,event.sequence(),first?"DONE":"ALREADY_CONSUMED",null));
+        return first;
     }
-    /**
-     * 消费幂等及副作用原子提交；副作用异常时整体回滚，不能提前记为已消费。
-     * @param event 本次有效租约，不接受伪造租户
-     * @param consumer 固定消费者标识，1–100 位安全字符
-     * @param expectedTenant 消费者明确接受的租户，必须与数据库事件一致
-     * @param effect 同库事务副作用；不得发外部消息、HTTP 或执行不可回滚操作
-     * @return 首次执行为 true，已消费或租约失效为 false
-     */
+
+    /** 在消费事务回滚后记录故障，只推进该租约对应投递，最多五次自动领取。 */
     @Transactional
-    public boolean consume(Event event,String consumer,UUID expectedTenant,Runnable effect){
-        if(!consumer.matches("[A-Za-z0-9._:-]{1,100}")||!event.tenant().equals(expectedTenant))throw new SecurityException("Event tenant mismatch");
-        var rows=statements.statement5(event.id().toString(),event.lease());
-        if(rows.isEmpty())return false;
-        if(!expectedTenant.toString().equals(rows.getFirst().get("tenant")))throw new SecurityException("Event tenant mismatch");
-        int inserted=statements.statement6(expectedTenant.toString(),event.id().toString(),consumer);
-        if(inserted==1)effect.run();
-        statements.statement7(event.id().toString(),event.lease());
-        return inserted==1;
+    public boolean fail(Event event,boolean permanent) {
+        var delivery=event.deliveryId().toString();
+        authorizeWorker(PLATFORM,delivery);
+        String code=permanent?"PERMANENT":"TRANSIENT";
+        String state=permanent || event.attempts()>=5?"MANUAL":"PENDING";
+        if(mapper.finish(WORKER_SCOPE,delivery,event.sequence(),event.lease(),state,code,event.attempts()*10)!=1) return false;
+        requireOne(mapper.finishAttempt(WORKER_SCOPE,delivery,event.sequence(),"FAILED",code));
+        return true;
     }
-    /**
-     * 分类失败；永久错误立即转人工，临时故障按次数退避并最多领取五次。
-     * @param event 当前租约，旧 Worker 不能改写新租约
-     * @param permanent true 为不可自动恢复的业务/安全错误
-     * @return 成功更新当前租约时为 true
-     */
+
+    /** @return 原任务 API 的兼容投递摘要 */
+    public List<Task> tasks(UUID actor,int limit) {
+        if(limit<1 || limit>100) throw new IllegalArgumentException("无效的摘要数量");
+        return mapper.summaries(actor.toString(),limit).stream().map(row->new Task(UUID.fromString((String)row.get("id")),
+            UUID.fromString((String)row.get("tenant")),(String)row.get("event_type"),(String)row.get("status"),
+            ((Number)row.get("attempts")).intValue(),(String)row.get("failure_code"))).toList();
+    }
+
+    /** 原任务接口摘要，ID 为事件 UUID。 */
+    public record Task(UUID id,UUID tenant,String type,String status,int attempts,String failureCode) {}
+
+    /** 使用固定历史映射恢复原消费者，授权和审计由任务管理用例负责。 */
     @Transactional
-    public boolean fail(Event event,boolean permanent){
-        boolean manual=permanent||event.attempts()>=5;
-        return statements.statement8(manual?"MANUAL":"PENDING",permanent?"PERMANENT":"TRANSIENT",Math.min(300,event.attempts()*10),event.id().toString(),event.lease())==1;
+    public boolean retry(UUID id,UUID actor) {
+        authorizeRetry(actor,id.toString());
+        String delivery=mapper.legacyDelivery(WORKER_SCOPE,actor.toString(),id.toString());
+        return delivery!=null && retryDelivery(UUID.fromString(delivery),actor);
     }
-    /**
-     * 平台运维只读任务摘要，不返回敏感 payload。
-     * @param limit 1–100 条，默认入口使用 50，按最新创建时间排序
-     * @return 状态及租户边界，用于人工处理定位
-     */
-    public List<Task> tasks(int limit){
-        if(limit<1||limit>100)throw new IllegalArgumentException("Invalid task limit");
-        return statements.summaries(limit).stream().map(row->new Task(UUID.fromString((String)row.get("id")),UUID.fromString((String)row.get("tenant")),(String)row.get("event_type"),(String)row.get("status"),((Number)row.get("attempts")).intValue(),(String)row.get("failure_code"))).toList();
+
+    /** 在外层管理审计事务内验证权限并执行单投递恢复。 */
+    @Transactional(propagation=Propagation.MANDATORY)
+    public boolean retryDelivery(UUID id,UUID actor) {
+        authorizeRetry(actor,id.toString());
+        return mapper.retry(WORKER_SCOPE,id.toString(),actor.toString())==1;
     }
-    /** 任务元数据摘要，不暴露租约令牌或业务原值。 */
-    public record Task(UUID id,UUID tenant,String type,String status,int attempts,String failureCode){}
-    /**
-     * 明确人工重试，只允许 MANUAL，推进为新一轮处理；保留历史消费幂等记录。
-     * @param id 要处理的事件 UUID，必须由受权平台操作入口调用
-     * @return 当前确为人工状态且已恢复时为 true
-     */
-    @Transactional
-    public boolean retry(UUID id){return statements.statement9(id.toString())==1;}
+
+    private void authorizeRetry(UUID actor,String id) {
+        gate.authorizeServiceOperation(PLATFORM,"platform.task:retry",List.of(actor.toString(),id),
+            ()->access.hasPermission(AccessAuthorization.Subject.platform(actor),"platform.task:retry"));
+    }
+
+    private void authorizeWorker(UUID tenant,String key) {
+        scheduled.require(TaskManagement.PROCESS_EVENTS,TaskManagement.EVENT_WORKER_AUTHORITY);
+        gate.authorizeServiceOperation(tenant,TaskManagement.EVENT_WORKER_AUTHORITY,List.of(key),()->true);
+    }
+
+    private static void requireOne(int affected) {
+        if(affected!=1) throw new IllegalStateException("事件存储状态不一致");
+    }
 }

@@ -7,7 +7,9 @@
 withDefaults(defineProps<{
   /** 启用客商详情样板的布局密度，默认 false；无专项要求的业务详情应显式启用。 */
   masterData?: boolean;
-}>(),{masterData:false});
+  /** 系统信息在明细下方显示；默认沿用通用详情顺序。 */
+  systemLast?: boolean;
+}>(),{masterData:false,systemLast:false});
 defineSlots<{header?:()=>unknown;summary?:()=>unknown;content?:()=>unknown;system?:()=>unknown;tabs?:()=>unknown}>();
 </script>
 <template>
@@ -15,7 +17,8 @@ defineSlots<{header?:()=>unknown;summary?:()=>unknown;content?:()=>unknown;syste
   <slot name="header" />
   <slot v-if="$slots.content" name="content" />
   <el-card v-else shadow="never"><slot name="summary" /></el-card>
-  <el-card v-if="$slots.system" class="detail-system" shadow="never"><slot name="system" /></el-card>
+  <el-card v-if="$slots.system && !systemLast" class="detail-system" shadow="never"><slot name="system" /></el-card>
   <el-card v-if="$slots.tabs" class="tabbed-detail-template__tabs" shadow="never"><slot name="tabs" /></el-card>
+  <el-card v-if="$slots.system && systemLast" class="detail-system" shadow="never"><slot name="system" /></el-card>
  </div>
 </template>

@@ -17,4 +17,17 @@ public interface TaskManagement {
  List<Task> list(UUID actor);
  /** @param actor 可信账号 @param id 人工处理任务标识 @throws SecurityException 无平台管理资格 @throws IllegalStateException 状态冲突 */
  void retry(UUID actor,UUID id);
+
+ /** 事件查询条件，时间为 UTC，窗口上界不含；分页每页 20 条。 */
+ record EventFilter(UUID tenant,String type,String status,java.time.Instant from,java.time.Instant until,int page) {}
+ /** 平台摘要字段为受控映射，只包含事件标识、类型、投递进度和审计。 */
+ record EventPage(List<Map<String,Object>> rows,long total) {}
+ /** 事件详情包括消费者投递及尝试摘要。 */
+ record EventDetails(Map<String,Object> event,List<Map<String,Object>> deliveries,List<Map<String,Object>> attempts) {}
+ /** 按平台范围筛选并分页读取事件。 */
+ EventPage events(UUID actor,EventFilter filter);
+ /** 在平台管理域读取事件，缺失时返回空。 */
+ Optional<EventDetails> event(UUID actor,UUID eventId);
+ /** 以可信账号和明确原因恢复当前投递，失败时抛出状态冲突。 */
+ void retryDelivery(UUID actor,UUID deliveryId,String reason);
 }

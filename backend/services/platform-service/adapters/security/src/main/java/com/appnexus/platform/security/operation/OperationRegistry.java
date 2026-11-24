@@ -45,7 +45,14 @@ public final class OperationRegistry implements com.appnexus.platform.configurat
  }
  /** 页面权限来自真实操作契约；不把页面基础权限自动扩成全部业务资源。 */
  @Override public List<String> permissions(String page){if(page==null)return List.of();return all().stream().filter(item->item.pages().contains(page)).flatMap(item->item.permissions().stream()).flatMap(group->Arrays.stream(group.split("&"))).distinct().sorted().toList();}
- /** 聚合当前构建目录；重复标识的不同定义失败，防止静默覆盖。 */
+ private static String route(com.appnexus.contracts.businessobject.BusinessObjects.PageOperation page){
+  return page.method()+" "+page.apiPath();
+ }
+ private static Definition withEndpoints(Definition value,List<String> endpoints){
+  return new Definition(value.id(),value.objectType(),value.operationCode(),value.pages(),value.nameZh(),
+    value.nameEn(),value.permissions(),value.policy(),endpoints,value.eligibility());
+ }
+ /** 聚合当前构建目录，同一操作只合并已显式声明且元数据一致的入口。 */
  public synchronized List<Definition> all(){
   if(snapshot!=null)return snapshot;
   var result=new TreeMap<String,Definition>();
@@ -69,7 +76,20 @@ public final class OperationRegistry implements com.appnexus.platform.configurat
      value=new Definition(operation.operationId(),descriptor.objectType(),operation.operationCode(),List.copyOf(pages),operation.nameZh(),operation.nameEn(),operation.permissionCode().isBlank()?List.of():List.of(operation.permissionCode()),"业务对象归属、版本和操作状态由原业务用例复核",List.copyOf(endpoints),binding.eligibility());
     }
     var prior=result.putIfAbsent(value.id(),value);
-    if(prior!=null&&!prior.equals(value))throw new IllegalStateException("重复操作契约："+value.id());
+    if(prior!=null&&!prior.equals(value)){
+     if(!binding.reference() || !withEndpoints(prior,value.endpoints()).equals(value))
+      throw new IllegalStateException("重复操作契约："+value.id());
+     var operation=providers.stream().flatMap(provider->provider.descriptor().operations().stream())
+       .filter(entry->entry.operationId().equals(binding.id())).findFirst().orElseThrow();
+     var declared=new HashSet<String>();
+     if(operation.pageOperation()!=null)declared.add(route(operation.pageOperation()));
+     operation.aliases().forEach(alias->declared.add(route(alias.pageOperation())));
+     var combined=new TreeSet<>(prior.endpoints());
+     combined.addAll(value.endpoints());
+     // 仅合并 Provider 明确登记的同一操作入口，避免新路由隐式复用已有权限。
+     if(!declared.containsAll(combined))throw new IllegalStateException("重复操作契约："+value.id());
+     result.put(value.id(),withEndpoints(value,List.copyOf(combined)));
+    }
    }
   });
   // 公共对象执行入口不为每个对象重复标注 Controller；仍须证明声明指向真实 MVC 路由。

@@ -36,7 +36,7 @@ public final class ProductCatalogData {
   public record Status(Boolean enabled,long version) {}
   /**
    * 发布不可变完整四槽配置；空槽明确NULL，非空固定已发布模板版本，不创建假模板。
-   * @param templates 必须恰有BASIC/SPEC/QUALITY/EXTENSION四键，SPEC在V1必须NULL；缺失不表示沿用旧值
+   * @param templates 必传 BASIC/SPEC/QUALITY/EXTENSION，可选 SKU/BATCH 下游默认模板槽；缺省或空值表示该槽无绑定
    * @param serviceUnitRequired 服务单位是否必填，必填；false允许服务无单位
    * @param version 当前分类版本；发布成功推进分类version
    */

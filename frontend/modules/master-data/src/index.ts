@@ -5,6 +5,11 @@ export interface MasterDataRow extends Partial<Record<`${string}Name`,string>> {
 /** 新增或编辑输入；version 为非负版本，编码仅在创建时确定，属性限于此类白名单。 */
 export interface MasterDataInput { code:string; name:string; attributes:Record<string,string>; version:number; contacts?:PartnerDetailInput[]; bankAccounts?:PartnerDetailInput[]; organizationId?:string|null }
 /** 页面请求由应用壳注入，复用真实会话、CSRF 和统一操作准入；不存在模拟数据回退。 */
+/** 独立启停历史返回授权记录的新旧状态、操作者和数据库时间。 */
+export interface StatusHistoryPage {
+  rows: { version: number; beforeEnabled: boolean; afterEnabled: boolean; createdBy: string | null; createdByName?: string; createdAt: string }[];
+  total: number;
+}
 export interface MasterDataApi {
   /** 编码协助公开端口；请求键仅用于幂等，租户与账号由服务端会话确定。 */
   codingOptions?(type:string,field:string):Promise<{encoderKey:string;name:string}[]>;
@@ -36,6 +41,8 @@ export interface MasterDataApi {
   list(kind:MasterDataKind,query:{keyword:string;enabled?:boolean;page:number;size:number;scope?:string;id?:string}):Promise<{rows:MasterDataRow[];total:number}>;
   create(kind:MasterDataKind,input:MasterDataInput):Promise<{id:string}>;
   update(kind:MasterDataKind,id:string,input:MasterDataInput):Promise<void>;
+  /** 已授权记录的启停历史，page 从 1 开始，size 为 1 至 100。 */
+  statusHistory(kind: MasterDataKind, id: string, page: number, size: number): Promise<StatusHistoryPage>;
   setStatus(kind:MasterDataKind,id:string,input:{enabled:boolean;version:number}):Promise<void>;
 }
 /** 固定领域字段，与后端 DTO 和数据库列逐项对应；无任意 JSON 属性编辑器。 */

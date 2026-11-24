@@ -21,6 +21,7 @@ public final class BusinessPartnerDeclaration implements BusinessObjects.Provide
         var operations=List.of(operation("list","查询客商管理","Read business partners","read","GET",""),
             operation("create","新增客商管理","Create business partner","create","POST",""),
             operation("update","编辑客商管理","Update business partner","update","PUT","/{id}"),
+            operation("readStatusHistory","查看启停历史","Read status history","read","GET","/{id}/status-history"),
             operation("setStatus","启停客商管理","Change business partner status","set_status","PUT","/{id}/status"));
         var dataAccess=new DataAccess("TENANT",List.of(
             new DataResource(ROOT,"","客商主档","Business partner",fields(MasterData.Kind.PARTNER.fields)),

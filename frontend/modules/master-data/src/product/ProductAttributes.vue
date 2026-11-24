@@ -3,7 +3,7 @@ import {computed,watch} from "vue";
 import {useI18n} from "vue-i18n";
 import type {ProductField} from "./product";
 /** 领域动态表单只组合现有Element Plus，required仅提示启用要求，不阻断合法不完整草稿保存。 */
-const props=defineProps<{/** 商品详情使用公共字段网格；规格弹窗保留现有表单密度。 */detailProfile?:boolean;fields:ProductField[];values:Record<string,string|string[]>;readonly?:boolean;disabled?:boolean}>();
+const props=defineProps<{/** 商品详情使用公共字段网格；规格弹窗保留现有表单密度。 */detailProfile?:boolean;fields:ProductField[];values:Record<string,string|string[]>;readonly?:boolean;disabled?:boolean;requiredToSave?:boolean}>();
 const emit=defineEmits<{change:[id:string,value:string|string[]];valid:[value:boolean]}>();
 const {t}=useI18n();
 const groups=computed(()=>{const groups=new Map<string,{label:string;fields:ProductField[]}>();for(const field of props.fields){const key=field.purpose+":"+field.groupCode;if(!groups.has(key))groups.set(key,{label:t("productCatalog."+field.purpose)+(field.groupName?" / "+field.groupName:""),fields:[]});groups.get(key)!.fields.push(field);}return [...groups.values()];});
@@ -33,17 +33,17 @@ function inputError(field:ProductField):string{
 watch(()=>[props.fields,props.values],()=>emit("valid",props.fields.every(field=>!inputError(field))),{deep:true,immediate:true});
 </script>
 <template>
-<section v-for="group in groups" :key="group.label" class="product-attribute-group">
+<section v-for="group in groups" :key="group.label" class="product-attribute-group" :class="{'readonly-detail-section':readonly}">
 <div v-if="detailProfile" class="detail-section-heading"><h2>{{group.label}}</h2></div><h3 v-else>{{group.label}}</h3>
-<div v-if="readonly&&detailProfile" class="detail-field-grid">
+<dl v-if="readonly" class="detail-field-grid">
  <div v-for="field in group.fields" :key="field.templateItemId" class="detail-readonly-field">
-  <span>{{field.name}}</span><strong>{{display(field)}}</strong>
+  <dt>{{field.name}}</dt>
+  <dd>{{display(field)}}</dd>
  </div>
-</div>
-<el-descriptions v-else-if="readonly" :column="1" border><el-descriptions-item v-for="field in group.fields" :key="field.templateItemId" :label="field.name">{{display(field)}}</el-descriptions-item></el-descriptions>
+</dl>
 <div v-else :class="detailProfile ? 'detail-field-grid' : 'product-attribute-grid'">
 <el-form-item v-for="field in group.fields" :key="field.templateItemId" :error="inputError(field)">
-<template #label>{{field.name}}<span v-if="field.requiredFlag" class="required-hint"> · {{t('productV1.requiredToEnable')}}</span><span v-if="field.unitCode"> ({{field.unitCode}})</span></template>
+<template #label>{{field.name}}<span v-if="field.requiredFlag" class="required-hint"> · {{t(requiredToSave?'masterData.required':'productV1.requiredToEnable')}}</span><span v-if="field.unitCode"> ({{field.unitCode}})</span></template>
 <el-select v-if="field.dataType==='BOOLEAN'" :model-value="values[field.templateItemId]??''" clearable :disabled="disabled" @update:model-value="v=>change(field,v)"><el-option value="true" :label="t('productV1.yes')"/><el-option value="false" :label="t('productV1.no')"/></el-select>
 <el-select v-else-if="field.dataType==='SINGLE_SELECT'||field.dataType==='MULTI_SELECT'" :model-value="field.dataType==='SINGLE_SELECT'?((values[field.templateItemId] as string[])?.[0]??''):(values[field.templateItemId]??[])" :multiple="field.dataType==='MULTI_SELECT'" :allow-create="field.allowCustom" filterable clearable :disabled="disabled" @update:model-value="v=>change(field,field.dataType==='SINGLE_SELECT'?(v?[v]:[]):v)"><el-option v-for="option in field.options" :key="option.id" :value="option.id" :label="option.label" :disabled="!option.enabled"/></el-select>
 <el-date-picker v-else-if="field.dataType==='DATE'" :model-value="values[field.templateItemId]" type="date" value-format="YYYY-MM-DD" :disabled="disabled" @update:model-value="v=>change(field,v)"/>

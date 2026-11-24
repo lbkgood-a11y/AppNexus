@@ -28,9 +28,9 @@ const displayedUsers=computed(()=>matchedUsers.value.slice((userPage.value-1)*20
 watch([userQuery,relatedSubjects],()=>{userPage.value=1;});
 const detailTab=ref("scope");
 const operationColumns=computed<ManagementColumn[]>(()=>[
- {key:"name",prop:"name",label:t("authorizationCenter.memberOperations"),minWidth:180},
+ {key:"status",prop:"status",label:t("businessObject.state"),minWidth:130},
  {key:"code",prop:"code",label:t("authorizationCenter.permissionCode"),minWidth:200},
- {key:"status",prop:"status",label:t("businessObject.state"),minWidth:130}
+ {key:"name",prop:"name",label:t("authorizationCenter.memberOperations"),minWidth:180}
 ]);
 const changed=computed(()=>JSON.stringify(draft.value)!==baseline.value);
 /** 成员可选操作严格限定当前角色已发布上限；功能权限持续跟随角色，成员页面只配置范围与有效期。 */

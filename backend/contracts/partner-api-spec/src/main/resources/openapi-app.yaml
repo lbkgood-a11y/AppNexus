@@ -1603,8 +1603,1355 @@ paths:
       responses:
         '200':
           description: OK
+  /api/bulk-inbound-receipt-orders:
+    get:
+      tags:
+      - inbound-document-query-controller
+      operationId: listReceipt
+      parameters:
+      - name: number
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 1
+      - name: pageSize
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 20
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/InboundDocumentPage'
+  /api/bulk-inbound-receipt-orders/{id}:
+    get:
+      tags:
+      - inbound-document-query-controller
+      operationId: readReceipt
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: object
+                additionalProperties: {}
+  /api/bulk-inbound-quality-orders:
+    get:
+      tags:
+      - inbound-document-query-controller
+      operationId: listQuality
+      parameters:
+      - name: number
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 1
+      - name: pageSize
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 20
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/InboundDocumentPage'
+  /api/bulk-inbound-quality-orders/{id}:
+    get:
+      tags:
+      - inbound-document-query-controller
+      operationId: readQuality
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: object
+                additionalProperties: {}
+  /api/bulk-inbound-metering-orders:
+    get:
+      tags:
+      - inbound-document-query-controller
+      operationId: listMetering
+      parameters:
+      - name: number
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 1
+      - name: pageSize
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 20
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/InboundDocumentPage'
+  /api/bulk-inbound-metering-orders/{id}:
+    get:
+      tags:
+      - inbound-document-query-controller
+      operationId: readMetering
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: object
+                additionalProperties: {}
+  /api/bulk-inbound-notices/{id}/tasks:
+    get:
+      tags:
+      - inbound-task-registration-controller
+      operationId: inboundNoticeArrivals
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/InboundArrivalContext'
+    post:
+      tags:
+      - inbound-task-registration-controller
+      operationId: registerInboundNoticeArrival
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InboundArrivalCommand'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/InboundArrivalTask'
+  /api/bulk-inbound-receipt-orders:open-draft:
+    post:
+      tags:
+      - inbound-receipt-order-controller
+      operationId: openInboundReceipt
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OpenInboundReceiptRequest'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/OpenedInboundReceipt'
+  /api/bulk-inbound-workbench/queue:
+    get:
+      tags:
+      - inbound-workbench-controller
+      operationId: queue
+      parameters:
+      - name: stage
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - WAIT_QUALITY
+          - WAIT_GROSS
+          - UNLOADING
+          - WAIT_TARE
+          - WAIT_RECEIPT
+      - name: afterId
+        in: query
+        required: false
+        schema:
+          type: string
+          format: uuid
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 20
+      - name: unopened
+        in: query
+        required: false
+        schema:
+          type: boolean
+          default: false
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/QueuePage'
+  /api/bulk-inbound-quality-orders:register-sample:
+    get:
+      tags:
+      - inbound-document-query-controller
+      operationId: optionsSAMPLE
+      parameters:
+      - name: taskNo
+        in: query
+        required: false
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TaskOption'
+    post:
+      tags:
+      - inbound-quality-order-controller
+      operationId: registerSample
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterSampleRequest'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/Registered'
+  /api/bulk-inbound-quality-orders/{id}:decide:
+    post:
+      tags:
+      - inbound-quality-order-controller
+      operationId: decideQuality
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DecideInboundQualityRequest'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/Decided'
+  /api/bulk-inbound-metering-orders:register-external:
+    get:
+      tags:
+      - inbound-document-query-controller
+      operationId: optionsEXTERNAL
+      parameters:
+      - name: taskNo
+        in: query
+        required: false
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TaskOption'
+    post:
+      tags:
+      - inbound-metering-order-controller
+      operationId: registerExternal
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterExternalMeasurementRequest'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/ExternalMeasurementRegistration'
+  /api/bulk-inbound-receipt-orders:create-bulk-draft:
+    get:
+      tags:
+      - inbound-document-query-controller
+      operationId: optionsBULK
+      parameters:
+      - name: taskNo
+        in: query
+        required: false
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TaskOption'
+    post:
+      tags:
+      - inbound-receipt-order-controller
+      operationId: createBulkDraft
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateBulkReceiptDraftRequest'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/BulkReceiptDraft'
+  /api/bulk-inbound-receipt-orders/{id}:post:
+    post:
+      tags:
+      - inbound-receipt-order-controller
+      operationId: postInboundReceipt
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PostInboundReceiptRequest'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/InboundReceiptPosting'
+  /api/bulk-inbound-receipt-orders/{id}:reverse:
+    post:
+      tags:
+      - inbound-receipt-order-controller
+      operationId: reverseInboundReceipt
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReverseInboundReceiptRequest'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/InboundReceiptReversal'
+  /api/bulk-inbound-tasks/{id}:confirm-unloading:
+    post:
+      tags:
+      - ground-weighing-controller
+      operationId: confirmGroundUnloading
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConfirmGroundUnloadingRequest'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/GroundWeighingResult'
+  /api/bulk-inbound-metering-orders:record-gross:
+    get:
+      tags:
+      - inbound-document-query-controller
+      operationId: optionsGROSS
+      parameters:
+      - name: taskNo
+        in: query
+        required: false
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TaskOption'
+    post:
+      tags:
+      - ground-weighing-controller
+      operationId: recordGroundGross
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecordGroundGrossRequest'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/GroundWeighingResult'
+  /api/bulk-inbound-metering-orders:record-tare:
+    post:
+      tags:
+      - ground-weighing-controller
+      operationId: recordGroundTare
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecordGroundTareRequest'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/GroundWeighingResult'
+  /api/bulk-inbound-receipt-orders:create-steel-draft:
+    get:
+      tags:
+      - inbound-document-query-controller
+      operationId: optionsLPN
+      parameters:
+      - name: taskNo
+        in: query
+        required: false
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TaskOption'
+    post:
+      tags:
+      - inbound-receipt-order-controller
+      operationId: createSteelDraft
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSteelReceiptDraftRequest'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/SteelReceiptDraft'
+  /api/bulk-inbound-quality-orders:inspect-steel:
+    get:
+      tags:
+      - inbound-document-query-controller
+      operationId: optionsINSPECT
+      parameters:
+      - name: taskNo
+        in: query
+        required: false
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TaskOption'
+    post:
+      tags:
+      - inbound-quality-order-controller
+      operationId: inspectSteel
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InspectInboundSteelRequest'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/SteelInspection'
+  /api/bulk-inbound-metering-orders:confirm-steel:
+    get:
+      tags:
+      - inbound-document-query-controller
+      operationId: optionsDUAL
+      parameters:
+      - name: taskNo
+        in: query
+        required: false
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TaskOption'
+    post:
+      tags:
+      - inbound-metering-order-controller
+      operationId: confirmSteel
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConfirmSteelMeasurementRequest'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/SteelMeasurement'
+  /api/bulk-inbound-workbench/tasks/{id}:
+    get:
+      tags:
+      - inbound-workbench-controller
+      operationId: inboundWorkbenchDetail
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/WorkbenchDetail'
+  /api/bulk-inbound-workbench/tasks/{id}/receipt:
+    get:
+      tags:
+      - inbound-workbench-controller
+      operationId: workbenchReceipt
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: object
+                additionalProperties: {}
+  /api/bulk-inbound-workbench/tasks/{id}/quality:
+    get:
+      tags:
+      - inbound-workbench-controller
+      operationId: workbenchQuality
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: object
+                additionalProperties: {}
+  /api/bulk-inbound-workbench/tasks/{id}/metering:
+    get:
+      tags:
+      - inbound-workbench-controller
+      operationId: workbenchMeter
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: object
+                additionalProperties: {}
+  /api/bulk-inbound-workbench/tasks/{id}/identity:
+    get:
+      tags:
+      - inbound-workbench-controller
+      operationId: workbenchIdentity
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: object
+                additionalProperties: {}
 components:
   schemas:
+    OpenInboundReceiptRequest:
+      type: object
+      properties:
+        taskId:
+          type: string
+          format: uuid
+        taskVersion:
+          type: integer
+          format: int64
+    OpenedInboundReceipt:
+      type: object
+      properties:
+        receiptId:
+          type: string
+          format: uuid
+        receiptNo:
+          type: string
+    InboundArrivalCommand:
+      type: object
+      properties:
+        requestId:
+          type: string
+          format: uuid
+        templateId:
+          type: string
+          format: uuid
+        identity:
+          type: string
+          enum:
+          - PLATED
+          - UNPLATED
+          - OTHER
+        identifier:
+          type: string
+    InboundArrivalContext:
+      type: object
+      properties:
+        creatable:
+          type: boolean
+        template:
+          $ref: '#/components/schemas/InboundArrivalTemplate'
+        templates:
+          type: array
+          items:
+            $ref: '#/components/schemas/InboundArrivalTemplate'
+        tasks:
+          type: array
+          items:
+            $ref: '#/components/schemas/InboundArrivalTask'
+        identities:
+          type: array
+          items:
+            type: string
+            enum:
+            - PLATED
+            - UNPLATED
+            - OTHER
+    InboundArrivalTask:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        number:
+          type: string
+        status:
+          type: string
+        stage:
+          type: string
+    InboundArrivalTemplate:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        code:
+          type: string
+        version:
+          type: integer
+          format: int32
+        qualityStrategy:
+          type: string
+    TaskOption:
+      type: object
+      properties:
+        taskId:
+          type: string
+          format: uuid
+        taskNo:
+          type: string
+        taskVersion:
+          type: integer
+          format: int64
+        meteringVersion:
+          type: integer
+          format: int64
+    InboundDocumentPage:
+      type: object
+      properties:
+        rows:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+        total:
+          type: integer
+          format: int64
+    WorkbenchDetail:
+      type: object
+      properties:
+        taskId:
+          type: string
+          format: uuid
+        taskVersion:
+          type: integer
+          format: int64
+        stage:
+          type: string
+        status:
+          type: string
+        blind:
+          type: boolean
+        identity:
+          type: object
+          additionalProperties: {}
+        quality:
+          type: object
+          additionalProperties: {}
+        metering:
+          type: object
+          additionalProperties: {}
+        receipt:
+          type: object
+          additionalProperties: {}
+        totals:
+          type: object
+          additionalProperties: {}
+        risk:
+          type: object
+          additionalProperties: {}
+    SteelMeasurement:
+      type: object
+      properties:
+        meteringId:
+          type: string
+          format: uuid
+        meteringVersion:
+          type: integer
+          format: int64
+        taskVersion:
+          type: integer
+          format: int64
+        physicalNetKg:
+          type: string
+        theoreticalKg:
+          type: string
+        varianceRatio:
+          type: string
+        packages:
+          type: integer
+          format: int32
+    SteelWeighingTicketRequest:
+      type: object
+      properties:
+        station:
+          type: string
+        ticketNo:
+          type: string
+        observedAt:
+          type: string
+          format: date-time
+        kg:
+          type: string
+    ConfirmSteelMeasurementRequest:
+      type: object
+      properties:
+        taskId:
+          type: string
+          format: uuid
+        taskVersion:
+          type: integer
+          format: int64
+        steelMeteringNo:
+          type: string
+        basis:
+          type: string
+          enum:
+          - SCALE
+          - THEORETICAL
+        packages:
+          type: integer
+          format: int32
+        theoreticalKg:
+          type: string
+        gross:
+          $ref: '#/components/schemas/SteelWeighingTicketRequest'
+        tare:
+          $ref: '#/components/schemas/SteelWeighingTicketRequest'
+    SteelInspection:
+      type: object
+      properties:
+        qualityId:
+          type: string
+          format: uuid
+        decision:
+          type: string
+        taskVersion:
+          type: integer
+          format: int64
+    InspectInboundSteelRequest:
+      type: object
+      properties:
+        taskId:
+          type: string
+          format: uuid
+        taskVersion:
+          type: integer
+          format: int64
+        steelQualityNo:
+          type: string
+        heatNo:
+          type: string
+        certificateNo:
+          type: string
+        certificateId:
+          type: string
+          format: uuid
+        appearanceId:
+          type: string
+          format: uuid
+        certificateVerified:
+          type: boolean
+        appearanceVerified:
+          type: boolean
+    SteelReceiptDraft:
+      type: object
+      properties:
+        receiptId:
+          type: string
+          format: uuid
+        receiptVersion:
+          type: integer
+          format: int64
+        taskVersion:
+          type: integer
+          format: int64
+    SteelReceiptLineRequest:
+      type: object
+      properties:
+        noticeLineId:
+          type: string
+          format: uuid
+        lpn:
+          type: string
+        heatNo:
+          type: string
+        specification:
+          type: string
+        material:
+          type: string
+        theoreticalKg:
+          type: string
+        position:
+          $ref: '#/components/schemas/Position'
+        batchNo:
+          type: string
+        kilogramUnitId:
+          type: string
+          format: uuid
+        conversionRuleId:
+          type: string
+          format: uuid
+        conversionRuleVersion:
+          type: integer
+          format: int64
+    CreateSteelReceiptDraftRequest:
+      type: object
+      properties:
+        taskId:
+          type: string
+          format: uuid
+        taskVersion:
+          type: integer
+          format: int64
+        meteringVersion:
+          type: integer
+          format: int64
+        steelReceiptNo:
+          type: string
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/SteelReceiptLineRequest'
+    RecordGroundGrossRequest:
+      type: object
+      properties:
+        taskId:
+          type: string
+          format: uuid
+        taskVersion:
+          type: integer
+          format: int64
+        grossMeteringNo:
+          type: string
+        ticket:
+          $ref: '#/components/schemas/GroundWeighTicketRequest'
+    RecordGroundTareRequest:
+      type: object
+      properties:
+        taskId:
+          type: string
+          format: uuid
+        taskVersion:
+          type: integer
+          format: int64
+        meterVersion:
+          type: integer
+          format: int64
+        ticket:
+          $ref: '#/components/schemas/GroundWeighTicketRequest'
+    GroundWeighTicketRequest:
+      type: object
+      properties:
+        station:
+          type: string
+        ticketNo:
+          type: string
+        observedAt:
+          type: string
+          format: date-time
+        kg:
+          type: string
+    GroundWeighingResult:
+      type: object
+      properties:
+        meteringId:
+          type: string
+          format: uuid
+        meterVersion:
+          type: integer
+          format: int64
+        taskVersion:
+          type: integer
+          format: int64
+        state:
+          type: string
+        netKg:
+          type: string
+    ConfirmGroundUnloadingRequest:
+      type: object
+      properties:
+        taskVersion:
+          type: integer
+          format: int64
+        meterVersion:
+          type: integer
+          format: int64
+        outcome:
+          type: string
+          enum:
+          - ACCEPTED
+          - ACCEPTED_WITH_DEDUCTION
+          - RETURN
+        extraDeductionKg:
+          type: string
+    InboundReceiptReversal:
+      type: object
+      properties:
+        receiptId:
+          type: string
+          format: uuid
+        receiptVersion:
+          type: integer
+          format: int64
+    ReverseInboundReceiptRequest:
+      type: object
+      properties:
+        taskId:
+          type: string
+          format: uuid
+        taskVersion:
+          type: integer
+          format: int64
+        receiptVersion:
+          type: integer
+          format: int64
+    InboundReceiptPosting:
+      type: object
+      properties:
+        receiptId:
+          type: string
+          format: uuid
+        receiptVersion:
+          type: integer
+          format: int64
+    PostInboundReceiptRequest:
+      type: object
+      properties:
+        taskId:
+          type: string
+          format: uuid
+        taskVersion:
+          type: integer
+          format: int64
+        receiptVersion:
+          type: integer
+          format: int64
+    CreateBulkReceiptDraftRequest:
+      type: object
+      properties:
+        taskId:
+          type: string
+          format: uuid
+        taskVersion:
+          type: integer
+          format: int64
+        meteringVersion:
+          type: integer
+          format: int64
+        noticeLineId:
+          type: string
+          format: uuid
+        receiptNo:
+          type: string
+        batchNo:
+          type: string
+        position:
+          $ref: '#/components/schemas/Position'
+        kilogramUnitId:
+          type: string
+          format: uuid
+        conversionRuleId:
+          type: string
+          format: uuid
+        conversionRuleVersion:
+          type: integer
+          format: int64
+        replacesReceiptId:
+          type: string
+          format: uuid
+    Position:
+      type: object
+      properties:
+        warehouseId:
+          type: string
+        areaId:
+          type: string
+        locationId:
+          type: string
+        warehouseVersion:
+          type: integer
+          format: int64
+        areaVersion:
+          type: integer
+          format: int64
+        locationVersion:
+          type: integer
+          format: int64
+    BulkReceiptDraft:
+      type: object
+      properties:
+        receiptId:
+          type: string
+          format: uuid
+        receiptVersion:
+          type: integer
+          format: int64
+        taskVersion:
+          type: integer
+          format: int64
+        qualityState:
+          type: string
+    RegisterExternalMeasurementRequest:
+      type: object
+      properties:
+        taskId:
+          type: string
+          format: uuid
+        taskVersion:
+          type: integer
+          format: int64
+        meteringNo:
+          type: string
+        source:
+          type: string
+          enum:
+          - RAIL_SCALE
+          - DRAFT_SURVEY
+        externalReference:
+          type: string
+        netKg:
+          type: string
+    ExternalMeasurementRegistration:
+      type: object
+      properties:
+        meteringId:
+          type: string
+          format: uuid
+        meteringVersion:
+          type: integer
+          format: int64
+        taskVersion:
+          type: integer
+          format: int64
+        netKg:
+          type: string
+    DecideInboundQualityRequest:
+      type: object
+      properties:
+        taskId:
+          type: string
+          format: uuid
+        taskVersion:
+          type: integer
+          format: int64
+        qualityRowVersion:
+          type: integer
+          format: int64
+        metrics:
+          type: object
+          additionalProperties:
+            type: number
+    Decided:
+      type: object
+      properties:
+        qualityId:
+          type: string
+          format: uuid
+        decision:
+          type: string
+        qualityRowVersion:
+          type: integer
+          format: int64
+        taskVersion:
+          type: integer
+          format: int64
+    RegisterSampleRequest:
+      type: object
+      properties:
+        taskId:
+          type: string
+          format: uuid
+        taskVersion:
+          type: integer
+          format: int64
+        priorQualityId:
+          type: string
+          format: uuid
+        priorRowVersion:
+          type: integer
+          format: int64
+        qualityNo:
+          type: string
+        barcode:
+          type: string
+    Registered:
+      type: object
+      properties:
+        qualityId:
+          type: string
+          format: uuid
+        qualityVersion:
+          type: integer
+          format: int32
+        taskVersion:
+          type: integer
+          format: int64
+    QueueItem:
+      type: object
+      properties:
+        taskId:
+          type: string
+          format: uuid
+        taskNo:
+          type: string
+        stage:
+          type: string
+          enum:
+          - WAIT_QUALITY
+          - WAIT_GROSS
+          - UNLOADING
+          - WAIT_TARE
+          - WAIT_RECEIPT
+        stageStartedAt:
+          type: string
+          format: date-time
+    QueuePage:
+      type: object
+      properties:
+        rows:
+          type: array
+          items:
+            $ref: '#/components/schemas/QueueItem'
+        counts:
+          type: object
+          additionalProperties:
+            type: integer
+            format: int64
+        nextAfterId:
+          type: string
+          format: uuid
     Name:
       type: object
       properties:

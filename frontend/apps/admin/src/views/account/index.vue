@@ -131,10 +131,10 @@ onMounted(load);
             <el-input id="display-name" v-model="displayName" :aria-label="t('account.displayName')" maxlength="100" show-word-limit required size="large" /></div>
           <div class="account-field"><label for="account-email">{{ t("account.email") }}</label>
             <el-input id="account-email" v-model="email" type="email" maxlength="254" autocomplete="email" size="large" />
-            <p class="field-hint"><el-tag size="small" :type="profile.emailVerified ? 'success' : 'info'">{{ t(profile.emailVerified ? "account.verified" : "account.unverified") }}</el-tag> {{ t("account.contactChangeHint") }}</p></div>
+            <p class="field-hint"><el-tag class="app-status-tag" size="small" :type="profile.emailVerified ? 'success' : 'info'">{{ t(profile.emailVerified ? "account.verified" : "account.unverified") }}</el-tag> {{ t("account.contactChangeHint") }}</p></div>
           <div class="account-field"><label for="account-phone">{{ t("account.phoneNumber") }}</label>
             <el-input id="account-phone" v-model="phoneNumber" maxlength="16" autocomplete="tel" placeholder="+8613800000000" size="large" />
-            <p class="field-hint"><el-tag size="small" :type="profile.phoneVerified ? 'success' : 'info'">{{ t(profile.phoneVerified ? "account.verified" : "account.unverified") }}</el-tag> {{ t("account.phoneHint") }}</p></div>
+            <p class="field-hint"><el-tag class="app-status-tag" size="small" :type="profile.phoneVerified ? 'success' : 'info'">{{ t(profile.phoneVerified ? "account.verified" : "account.unverified") }}</el-tag> {{ t("account.phoneHint") }}</p></div>
           <div class="account-field"><label>{{ t("account.id") }}</label><code>{{ profile.id }}</code></div>
           <el-button v-operation="'Account.profileUpdate'" type="primary" native-type="submit" :loading="saving" :disabled="loading || !displayName.trim()">{{ t("account.save") }}</el-button>
         </form>
@@ -174,7 +174,7 @@ onMounted(load);
           <el-button :disabled="changing" @click="editingPassword = false">{{ t("account.cancel") }}</el-button>
         </form>
         <div class="setting-row"><div><h2>{{ t("account.sessionProtection") }}</h2><p>{{ t("account.sessionHint") }}</p></div>
-          <el-tag type="success" effect="plain">{{ t("account.enabled") }}</el-tag></div>
+          <el-tag class="app-status-tag" type="success">{{ t("account.enabled") }}</el-tag></div>
         <MultiFactorSettings />
       </section>
     </div>

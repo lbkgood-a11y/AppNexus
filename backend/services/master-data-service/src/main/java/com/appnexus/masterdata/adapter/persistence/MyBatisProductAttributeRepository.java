@@ -9,8 +9,9 @@ public final class MyBatisProductAttributeRepository implements ProductAttribute
  /** @return 由原用例授权和存储层固定租户条件保护的资源，未开放可配置行范围 */
  @Override public Set<String> enforcedResources(){return Set.of("masterdata.productattribute", "masterdata.productattribute.group", "masterdata.productattribute.revision", "masterdata.productattribute.option");}
  private final ProductAttributeMapper mapper;
+ private final MasterStatusHistoryMapper statusHistory;
  /** @param mapper 原固定SQL映射，与父聚合共用事务连接 */
- public MyBatisProductAttributeRepository(ProductAttributeMapper mapper){this.mapper=mapper;}
+ public MyBatisProductAttributeRepository(ProductAttributeMapper mapper, MasterStatusHistoryMapper statusHistory){this.mapper=mapper;this.statusHistory=statusHistory;}
  /** {@inheritDoc} */
  public List<Map<String,Object>> revisions(String tenant,String attribute){return ProductStorageValues.stable(mapper.revisions(tenant,attribute));}
  /** {@inheritDoc} */
@@ -62,5 +63,7 @@ public final class MyBatisProductAttributeRepository implements ProductAttribute
  /** {@inheritDoc} */
  public List<Map<String,Object>> attributes(String tenant){return ProductStorageValues.stable(mapper.attributes(tenant));}
  /** {@inheritDoc} */
- public int status(boolean group, String tenant, String id, boolean enabled, String actor, long version){return mapper.status(group,tenant,id,enabled,actor,version);}
+ public int status(boolean group, String tenant, String id, boolean enabled, String actor, long version){int changed = mapper.status(group,tenant,id,enabled,actor,version);
+  if (changed == 1) statusHistory.append(tenant, group ? "ProductAttribute.group" : "ProductAttribute", id, version, enabled, actor);
+  return changed;}
 }

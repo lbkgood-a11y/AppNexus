@@ -88,7 +88,7 @@ const saveOperation=computed(()=>location.hash.includes('/platform/')?'Account.r
    <el-form-item class="management-filter-actions"><el-button type="primary" native-type="submit" :disabled="loading||saving">{{t('authorizationCenter.search')}}</el-button><el-button :disabled="loading||saving" @click="search(true)">{{t('authorizationCenter.reset')}}</el-button></el-form-item>
   </el-form>
   <ManagementTable class="role-users-table" :title="t('authorizationCenter.allUsers')" :rows="visibleRows" :columns="columns" :total="total" :loading="loading" :busy="saving" embedded @refresh="load">
-   <template #operations="{row}"><el-tag v-if="row.assigned" type="success">{{t('authorizationCenter.inRole')}}</el-tag><el-button v-else v-operation="saveOperation" link type="primary" :disabled="saving||loading||!roleId||row.enabled===false" @click="changeMembership(row,true)">{{t('authorizationCenter.addToRole')}}</el-button></template>
+   <template #operations="{row}"><el-tag class="app-status-tag" v-if="row.assigned" type="success">{{t('authorizationCenter.inRole')}}</el-tag><el-button v-else v-operation="saveOperation" link type="primary" :disabled="saving||loading||!roleId||row.enabled===false" @click="changeMembership(row,true)">{{t('authorizationCenter.addToRole')}}</el-button></template>
    <template #pagination><AppPagination v-model:current-page="page" :page-size="20" :total="total" :disabled="loading||saving" /></template>
   </ManagementTable>
   <ManagementTable class="role-users-table role-members-table" :title="t('authorizationCenter.currentRoleUsers')" :rows="visibleMembers" :columns="columns" :total="members.length" :loading="loading" :busy="saving" embedded @refresh="load">

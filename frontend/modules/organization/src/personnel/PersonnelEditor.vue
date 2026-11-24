@@ -51,7 +51,7 @@ const editable=computed(()=>canEdit.value&&!loading.value&&!failed.value);
 const detailsLocked=computed(()=>props.mode!=="edit"||!canRead.value||busy.value||loading.value||dirty.value||!id.value||failed.value);
 const currentRows=computed<Array<PersonnelDetail|PersonnelAssignment>>(()=>isAssignment.value?(profile.value?.assignments??[]):(profile.value?.details??[]).filter(d=>d.section===tab.value));
 const detailColumns=computed<ManagementColumn[]>(()=>[
- ...(isAssignment.value?[{key:"userName",prop:"userName",label:t("personnel.userName"),minWidth:160},{key:"active",label:t("personnel.status"),width:130}]:dialogFields.value.filter(key=>detailMode(key)!=="HIDDEN").map(key=>({key,label:label(key),minWidth:key==="remarks"?220:150}))),
+ ...(isAssignment.value?[{key:"active",label:t("personnel.status"),width:130},{key:"userName",prop:"userName",label:t("personnel.userName"),minWidth:160}]:dialogFields.value.filter(key=>detailMode(key)!=="HIDDEN").map(key=>({key,label:label(key),minWidth:key==="remarks"?220:150}))),
  ...(props.mode==="edit"?[{key:"operations",label:t("masterData.actions"),width:190,fixed:"right" as const}]:[])]);
 const rules=computed<FormRules>(()=>({
  code:[{required:true,message:t("personnel.required"),trigger:"blur"},{pattern:/^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/,message:t("masterData.codeRule"),trigger:"blur"}],
@@ -173,10 +173,10 @@ onBeforeUnmount(()=>window.removeEventListener("beforeunload",beforeUnload));
 </script>
 <template>
  <div class="personnel-editor" v-loading="loading">
-  <FloatingError :title="error"><el-button :disabled="busy||loading" @click="reload">{{t('personnel.retry')}}</el-button></FloatingError>
+  <FloatingError :title="error"><el-button v-if="props.mode!=='view'" :disabled="busy||loading" @click="reload">{{t('personnel.retry')}}</el-button></FloatingError>
   <TabbedDetailTemplate master-data>
    <template #header><PageHeader :title="id?(draft.name||t('personnel.title')):t('personnel.new')">
-    <template #meta><el-tag v-if="props.mode==='view'" type="info">{{t('personnel.readOnly')}}</el-tag><el-tag v-if="draft.code" type="info" effect="plain">{{draft.code}}</el-tag><el-tag v-if="profile" :type="profile.person.enabled?'success':'info'">{{t('masterData.'+(profile.person.enabled?'enabled':'disabled'))}}</el-tag></template>
+    <template #meta><el-tag v-if="props.mode==='view'" type="info">{{t('personnel.readOnly')}}</el-tag><el-tag v-if="draft.code" type="info" effect="plain">{{draft.code}}</el-tag><el-tag class="app-status-tag" v-if="profile" :type="profile.person.enabled?'success':'info'">{{t('masterData.'+(profile.person.enabled?'enabled':'disabled'))}}</el-tag></template>
     <template #actions><el-button :disabled="busy" @click="back">{{t('personnel.back')}}</el-button><el-button v-if="props.mode==='edit'" v-operation="saveOperation" type="primary" :loading="busy" :disabled="!editable||!dirty" @click="save">{{t('masterData.save')}}</el-button></template>
    </PageHeader></template>
    <template #content>
@@ -184,13 +184,14 @@ onBeforeUnmount(()=>window.removeEventListener("beforeunload",beforeUnload));
     <el-result v-else-if="!loading&&!failed&&!canRead" icon="warning" :title="t('masterData.noPermission')" />
     <el-form v-else-if="!failed" ref="form" :model="draft" :rules="rules" label-position="top" :disabled="!editable||busy" class="detail-profile-form detail-border-label-form" @submit.prevent="save">
      <el-card v-for="group in profileGroups" :key="group.key" shadow="never" class="detail-section" :body-style="group.key==='details'&&!detailsExpanded?{padding:'0'}:undefined">
-      <template #header><div class="detail-section-heading"><h2>{{group.title}}</h2><el-button v-if="group.key==='details'" text :title="t(detailsExpanded?'personnel.collapseDetails':'personnel.expandDetails')" :aria-label="t(detailsExpanded?'personnel.collapseDetails':'personnel.expandDetails')" :aria-expanded="detailsExpanded" aria-controls="personnel-profile-details" @click="detailsExpanded=!detailsExpanded"><AppIcon :name="detailsExpanded?'arrowUp':'arrowDown'" :size="18" /></el-button></div></template>
-      <div v-show="group.key==='basic'||detailsExpanded" :id="group.key==='details'?'personnel-profile-details':undefined" :class="{'detail-identity-layout':group.key==='basic'}">
+      <template #header><div class="detail-section-heading"><h2>{{group.title}}</h2><el-button v-if="props.mode!=='view'&&group.key==='details'" text :title="t(detailsExpanded?'personnel.collapseDetails':'personnel.expandDetails')" :aria-label="t(detailsExpanded?'personnel.collapseDetails':'personnel.expandDetails')" :aria-expanded="detailsExpanded" aria-controls="personnel-profile-details" @click="detailsExpanded=!detailsExpanded"><AppIcon :name="detailsExpanded?'arrowUp':'arrowDown'" :size="18" /></el-button></div></template>
+      <div v-show="props.mode==='view'||group.key==='basic'||detailsExpanded" :id="group.key==='details'?'personnel-profile-details':undefined" :class="{'detail-identity-layout':group.key==='basic'}">
        <div v-if="group.key==='basic'" class="detail-identity-mark" aria-hidden="true"><el-avatar :size="64">{{initials}}<AppIcon v-if="!initials" name="user" :size="30" /></el-avatar></div>
        <div v-if="canEdit" class="detail-field-grid">
         <template v-if="group.key==='basic'">
          <!-- 已保存编码保持只读，单行省略仅影响展示；悬停或键盘聚焦通过模板 Tooltip 查看原值。 -->
          <el-form-item :label="t('personnel.code')" prop="code"><el-tooltip v-if="id" :content="draft.code" placement="top" :show-after="200" :popper-style="{maxWidth:'min(480px, calc(100vw - 24px))',overflowWrap:'anywhere'}"><span class="detail-code-value" tabindex="0">{{draft.code}}</span></el-tooltip><el-input v-else v-model="draft.code" maxlength="64" /></el-form-item>
+         <div v-if="profile" class="detail-readonly-field"><span>{{t('personnel.status')}}</span><el-tag class="app-status-tag" :type="profile.person.enabled?'success':'info'">{{t(profile.person.enabled?'masterData.enabled':'masterData.disabled')}}</el-tag></div>
          <el-form-item :label="t('personnel.name')" prop="name"><el-input v-model="draft.name" maxlength="200" /></el-form-item>
         </template>
         <div v-for="field in group.fields.filter(field=>profileMode(field)&&profileMode(field)!=='HIDDEN')" :key="'protected-'+field" class="detail-readonly-field"><span>{{label(field)}}</span><strong>{{draft.attributes[field]||'—'}}</strong></div>
@@ -202,7 +203,7 @@ onBeforeUnmount(()=>window.removeEventListener("beforeunload",beforeUnload));
         </el-form-item>
        </div>
        <div v-else class="detail-field-grid detail-readonly-grid">
-        <template v-if="group.key==='basic'"><div class="detail-readonly-field"><span>{{t('personnel.code')}}</span><strong>{{draft.code||'—'}}</strong></div><div class="detail-readonly-field"><span>{{t('personnel.name')}}</span><strong>{{draft.name||'—'}}</strong></div></template>
+        <template v-if="group.key==='basic'"><div class="detail-readonly-field"><span>{{t('personnel.code')}}</span><strong>{{draft.code||'—'}}</strong></div><div v-if="profile" class="detail-readonly-field"><span>{{t('personnel.status')}}</span><el-tag class="app-status-tag" :type="profile.person.enabled?'success':'info'">{{t(profile.person.enabled?'masterData.enabled':'masterData.disabled')}}</el-tag></div><div class="detail-readonly-field"><span>{{t('personnel.name')}}</span><strong>{{draft.name||'—'}}</strong></div></template>
         <div v-for="field in group.fields.filter(field=>profileMode(field)!=='HIDDEN')" :key="field" class="detail-readonly-field" :class="{'detail-field-wide':field==='remarks'}"><span>{{label(field)}}</span><strong>{{draft.attributes[field]?profile?.person?.[`${field}Name`] || dictionaryName(field,draft.attributes[field]):'—'}}</strong></div>
        </div>
       </div>
@@ -223,11 +224,11 @@ onBeforeUnmount(()=>window.removeEventListener("beforeunload",beforeUnload));
     <template v-else-if="canRead&&!failed">
      <el-tabs v-model="tab"><el-tab-pane v-for="(_,key) in personnelSections" :key="key" :name="key" :label="t('personnel.sections.'+key)" /><el-tab-pane name="assignments" :label="t('personnel.assignments')" /></el-tabs>
      <p v-if="dirty" class="personnel-inline-hint">{{t('personnel.dirty')}}</p>
-     <ManagementTable :title="t(isAssignment?'personnel.assignments':'personnel.sections.'+tab)" :rows="currentRows" :columns="detailColumns" :busy="busy" :loading="loading" heading-level="h2" embedded @refresh="reload">
-      <template #titleHelp><InfoHint :content="t(isAssignment?'personnel.assignmentHint':'personnel.organizationHint')" /></template>
+     <ManagementTable :title="t(isAssignment?'personnel.assignments':'personnel.sections.'+tab)" :rows="currentRows" :columns="detailColumns" :readonly-view="props.mode==='view'" :busy="busy" :loading="loading" heading-level="h2" embedded @refresh="reload">
+      <template v-if="props.mode!=='view'" #titleHelp><InfoHint :content="t(isAssignment?'personnel.assignmentHint':'personnel.organizationHint')" /></template>
       <template v-if="props.mode==='edit'" #actions><el-button v-operation="isAssignment?'Person.assign':'Person.createDetail'" type="primary" :disabled="detailsLocked||!canAddDetail" @click="openDetail()">{{t(isAssignment?'personnel.addAssignment':'personnel.addDetail')}}</el-button></template>
       <template v-for="field in (section?.fields??[])" :key="field" #[field]="{row}">{{display(row as PersonnelDetail,field)}}</template>
-      <template #active="{row}"><el-tag :type="('active' in row&&row.active)?'success':'warning'">{{t(('active' in row&&row.active)?'personnel.active':'personnel.inactive')}}</el-tag></template>
+      <template #active="{row}"><el-tag class="app-status-tag" :type="('active' in row&&row.active)?'success':'warning'">{{t(('active' in row&&row.active)?'personnel.active':'personnel.inactive')}}</el-tag></template>
       <template v-if="props.mode==='edit'" #operations="{row}"><el-button v-operation="isAssignment?'Person.updateAssignment':'Person.updateDetail'" link type="primary" :disabled="detailsLocked" @click="openDetail(row)">{{t('masterData.edit')}}</el-button><el-button v-operation="isAssignment?'Person.unassign':'Person.deleteDetail'" link type="danger" :disabled="detailsLocked||!canRemoveDetail" @click="remove(row)">{{t(isAssignment?'personnel.unassign':'personnel.deleteDetail')}}</el-button></template>
      </ManagementTable>
     </template>

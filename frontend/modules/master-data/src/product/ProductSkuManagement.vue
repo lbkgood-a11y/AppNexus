@@ -2,13 +2,16 @@
 import {computed,nextTick,onMounted,reactive,ref} from "vue";
 import {useI18n} from "vue-i18n";
 import {ElMessage,ElMessageBox,type FormInstance,type LoadFunction,type TreeInstance} from "element-plus";
+import ProductHistoryButton from "./ProductHistoryButton.vue";
 import {TreeListTemplate,PageHeader,TabbedDetailTemplate,ManagementTable,ManagedDialog,AppPagination,FloatingError,InfoHint,RecordAuditDetails,setErrorFeedback,type ManagementColumn} from "@appnexus/ui";
 import ProductStructure from "./ProductStructure.vue";
 import SkuAttributeFilter from "./SkuAttributeFilter.vue";
 import type {ProductApi,ProductConfiguration,ProductRecord} from "./product";
 import type { ProductCatalogApi } from "./catalog";
+import type { SkuAttributeConfiguration } from "./product";
+import ProductAttributes from "./ProductAttributes.vue";
 /** 商品明细工作台：按商品固定配置投影动态属性，复用既有SKU身份与聚合命令，不遍历商品伪造全局分页。 */
-const props=defineProps<{api:ProductApi;listCatalog:ProductCatalogApi["list"];errorText:(e:unknown)=>string}>();
+const props=defineProps<{api:ProductApi;listCatalog:ProductCatalogApi["list"];catalogVersions:ProductCatalogApi["versions"];errorText:(e:unknown)=>string}>();
 const {t}=useI18n();
 const selected = ref("");
 const tree = ref<TreeInstance>();
@@ -33,11 +36,38 @@ const loading=ref(false),busy=ref(false),error=ref(""),operations=ref<string[]>(
 const attributeFilter = ref({ attributeId: "", attributeValue: "" });
 const page=ref(1),size=ref(20),createOpen=ref(false),structureOpen=ref(false),detailId=ref(""),form=ref<FormInstance>();
 const draft=reactive({code:"",specificationId:""});
+const ownMeasurement=ref(false);
+const editMeasurementTarget=ref<{id:string;version:number;rowVersion:number;code:string;enabled:boolean}>();
+const measurementLoading=ref(false);
+const unitOptions=ref<Array<{id:string;code:string;name:string}>>([]);
+const measurement=reactive({
+ inventoryUnitId:"",
+ pricingUnitId:"",
+ packaging:[] as Array<{code:string;name:string;unitId:string;quantity:string}>
+});
+/** 从当前租户授权单位目录读取全部可选单位；失败后允许重新开启计量配置重试。 */
+async function loadSkuUnits(){
+ measurementLoading.value=true;
+ try {
+  const rows: typeof unitOptions.value=[];
+  for(let page=1;;page++){
+   const result=await props.api.options("unit","",page);
+   rows.push(...result.rows);
+   if(!result.rows.length||rows.length>=result.total)break;
+  }
+  unitOptions.value=rows;
+ } catch(e){
+  ownMeasurement.value=false;
+  await setErrorFeedback(error,props.errorText(e));
+ } finally {
+  measurementLoading.value=false;
+ }
+}
 const applied=reactive({code:"",specification:"",status:"",attributeId:"",attributeValue:""});
 /** 查询按钮提交本地筛选；数据范围始终限定在服务端已授权返回的当前商品。 */
 function search(){Object.assign(applied,{code:code.value,specification:specification.value,status:status.value,...attributeFilter.value});page.value=1;}
 let selectionRequest=0;
-const specFields=computed(()=>configuration.value?.fields.filter(f=>f.purpose==='SPEC')??[]);
+const specFields=computed(()=>structure.value?.specificationFields??[]);
 /** 与服务端父商品状态校验对齐；未完成的草稿可继续维护结构，记录权限仍由服务端判定。 */
 const writeAllowed = computed(() => {
  const record = product.value;
@@ -62,10 +92,132 @@ const createNotice = computed(() => {
 const allRows=computed<Record<string,any>[]>(()=>(structure.value?.skus??[]).map(k=>({...k,specification:specs.value.get(k.specificationId)})));
 const detail = computed(() => allRows.value.find(row => row.id === detailId.value));
 const detailActions = ref<HTMLElement>();
+const attributeDialog=ref(false);
+const attributeInput=ref<Record<string,string|string[]>>({});
+const attributeView=ref<SkuAttributeConfiguration>();
+const attributeTarget=ref<{product:string;sku:string}>();
+const attributeValid=ref(false);
+const canEditAttributes=computed(()=>writeAllowed.value&&operations.value.includes("Product.saveSkuAttributes"));
+const filledAttribute=(value:string|string[]|undefined)=>Array.isArray(value)?value.length>0:Boolean(value?.trim());
+const requiredAttributesReady=computed(()=>attributeView.value?.fields.every(
+ field=>!field.requiredFlag||filledAttribute(attributeInput.value[field.templateItemId]))??false);
+
+/** 打开时重新读取固定模板及行版本，不复用列表里可能过期的数据。 */
+async function openSkuAttributes(row:Record<string,any>){
+ const parent=product.value;
+ if(!row||!parent||busy.value)return;
+ busy.value=true;
+ try{
+  const view=await props.api.skuAttributes(parent.id,row.id);
+  if(product.value?.id!==parent.id)return;
+  attributeView.value=view;
+  attributeTarget.value={product:parent.id,sku:row.id};
+  attributeInput.value=Object.fromEntries(view.values.map(value=>[
+   value.templateItemId,value.value??[...value.optionIds,...(value.customValues??[]).map(text=>"custom:"+text)]
+  ]));
+  attributeDialog.value=true;
+ }catch(e){
+  await setErrorFeedback(error,props.errorText(e));
+ }finally{
+  busy.value=false;
+ }
+}
+
+/** 保持整数、小数、日期原文，分别提交标准选项和自定义选项。 */
+async function saveSkuAttributes(){
+ const target=attributeTarget.value;
+ const view=attributeView.value;
+ if(!target||!view?.templateVersionId||busy.value||!canEditAttributes.value
+    ||!attributeValid.value||!requiredAttributesReady.value||product.value?.id!==target.product)return;
+ busy.value=true;
+ try{
+  const values=view.fields.flatMap(field=>{
+   const value=attributeInput.value[field.templateItemId];
+   if(!filledAttribute(value))return [];
+   return [Array.isArray(value)
+    ? {templateItemId:field.templateItemId,value:null,optionIds:value.filter(item=>!item.startsWith("custom:")),
+       customValues:value.filter(item=>item.startsWith("custom:")).map(item=>item.slice(7))}
+    : {templateItemId:field.templateItemId,value:value as string,optionIds:[]}];
+  });
+  await props.api.saveSkuAttributes(target.product,target.sku,{
+   version:view.version,rowVersion:view.rowVersion,templateVersionId:view.templateVersionId,values
+  });
+  attributeDialog.value=false;
+  await refresh();
+  ElMessage.success(t("masterData.saved"));
+ }catch(e){
+  await setErrorFeedback(error,props.errorText(e));
+ }finally{
+  busy.value=false;
+ }
+}
+const batchOpen=ref(false);
+const batchChoices=ref<Array<{id:string;label:string;disabled?:boolean}>>([]);
+const batchSelection=ref<string|null>(null);
+const batchTarget=ref<{product:string;sku:string;version:number;rowVersion:number}>();
+
+/** 获取当前租户可采用的批次版本，类目的固定默认项可在确认前调整。 */
+async function openBatchTemplate(row: Record<string, any>){
+ const parent=product.value;
+ const version=structure.value?.version;
+ if(!row||!parent||version===undefined||busy.value||!writeAllowed.value)return;
+ busy.value=true;
+ try {
+  const definitions=[];
+  for(let page=1;;page++){
+   const result=await props.listCatalog("template",{keyword:"",purpose:"BATCH",page,size:100});
+   definitions.push(...result.rows.filter(definition=>definition.enabled));
+   if(!result.rows.length||page*100>=result.total)break;
+  }
+  const choices:Array<{id:string;label:string;disabled?:boolean}>=[];
+  for(const definition of definitions){
+   const versions=await props.catalogVersions("template",definition.id);
+   for(const candidate of versions){
+    if(candidate.state==="PUBLISHED"){
+     choices.push({id:candidate.id,label:definition.code+" / "+definition.name+" · r"+candidate.versionNo});
+    }
+   }
+  }
+  if(detail.value?.id!==row.id||product.value?.id!==parent.id)return;
+  const current=row.batchTemplateVersionId;
+  if(current&&!choices.some(choice=>choice.id===current)){
+   choices.push({id:current,label:t("productSku.currentBatchUnavailable"),disabled:true});
+  }
+  const categoryDefault=configuration.value?.templates.BATCH;
+  batchSelection.value=current??(choices.some(choice=>choice.id===categoryDefault)?categoryDefault!:null);
+  batchChoices.value=choices;
+  batchTarget.value={product:parent.id,sku:row.id,version,rowVersion:row.version};
+  batchOpen.value=true;
+ } catch(e){
+  await setErrorFeedback(error,props.errorText(e));
+ } finally {
+  busy.value=false;
+ }
+}
+
+/** 保存采用版本，不依据类目配置变更动态替换已采用的规则。 */
+async function saveBatchTemplate(){
+ const target=batchTarget.value;
+ if(!target||busy.value||!writeAllowed.value||product.value?.id!==target.product)return;
+ busy.value=true;
+ try{
+  await props.api.saveSkuBatchTemplate(target.product,target.sku,{
+   version:target.version,rowVersion:target.rowVersion,templateVersionId:batchSelection.value
+  });
+  batchOpen.value=false;
+  await refresh();
+  ElMessage.success(t("masterData.saved"));
+ }catch(e){
+  await setErrorFeedback(error,props.errorText(e));
+ }finally{
+  busy.value=false;
+ }
+}
 let detailTrigger: HTMLElement | null = null;
 
 /** 详情使用当前商品已授权的结构记录，返回时恢复列表操作的焦点。 */
 async function openDetail(id: string, event: MouseEvent) {
+ if(allRows.value.find(row=>row.id===id)?.measurement&&!unitOptions.value.length&&!measurementLoading.value)void loadSkuUnits();
  detailTrigger = event.currentTarget as HTMLElement;
  detailId.value = id;
  await nextTick();
@@ -89,11 +241,11 @@ const attributes=computed(()=>{
  return [...fields.values()];
 });
 const columns=computed<ManagementColumn[]>(()=>[
+ {key:'status',label:t('masterData.status'),width:110},
  {key:'code',prop:'code',label:t('productSku.code'),minWidth:170},
  {key:'specification',label:t('productStructure.specification'),minWidth:170},
- ...attributes.value.map(f=>({key:'attr_'+f.id,label:f.name+(f.unitCode?' ('+f.unitCode+')':''),minWidth:140})),
- {key:'status',label:t('masterData.status'),width:110},{key:'effective',label:t('productStructure.effective'),width:110},
- {key:'operations',label:t('masterData.actions'),width:180}
+ ...attributes.value.map(f=>({key:'attr_'+f.id,label:f.name+(f.unitCode?' ('+f.unitCode+')':''),minWidth:140})),{key:'effective',label:t('productStructure.effective'),width:110},
+ {key:'operations',label:t('masterData.actions'),minWidth:310}
 ]);
 /** false与零不作为空值处理；枚举标签来自规格快照，不根据当前选项重新解释。 */
 function attribute(row:Record<string,any>,id:string){
@@ -203,9 +355,57 @@ async function refresh() {
   }
 }
 function reset(){code.value='';specification.value='';status.value='';attributeFilter.value={attributeId:"",attributeValue:""};search();}
-function openCreate(){if(!writeAllowed.value||!available.value.length||busy.value||loading.value)return;draft.code='';draft.specificationId='';createOpen.value=true;}
+function openCreate(){if(!writeAllowed.value||!available.value.length||busy.value||loading.value)return;editMeasurementTarget.value=undefined;draft.code='';draft.specificationId='';ownMeasurement.value=false;measurement.inventoryUnitId='';measurement.pricingUnitId='';measurement.packaging=[];createOpen.value=true;}
 /** 一个SKU命令只绑定已有规格；新增规格与分配货号分开提交，失败不制造已成功的组合反馈。 */
-async function create(){if(busy.value||!product.value)return;busy.value=true;try{if(!await form.value?.validate().catch(()=>false))return;await props.api.createSku(product.value.id,{...draft,version:structure.value!.version});createOpen.value=false;await refresh();ElMessage.success(t('productSku.created'));}catch(e){await setErrorFeedback(error,props.errorText(e));}finally{busy.value=false;}}
+/** 同一套字段维护新增与已有货号，编辑使用打开时的父子版本。 */
+async function create(){
+ if(busy.value||measurementLoading.value||!product.value||!(editMeasurementTarget.value?writeAllowed.value:available.value.length))return;
+ if(ownMeasurement.value&&(!measurement.inventoryUnitId||!measurement.pricingUnitId))return;
+ busy.value=true;
+ try {
+  const edit=editMeasurementTarget.value;
+  if(edit){
+   await props.api.saveSkuMeasurement(product.value.id,edit.id,{
+    version:edit.version,rowVersion:edit.rowVersion,measurement
+   });
+  } else {
+   if(!await form.value?.validate().catch(()=>false))return;
+   await props.api.createSku(product.value.id,{...draft,version:structure.value!.version,measurement:ownMeasurement.value?measurement:undefined});
+  }
+  createOpen.value=false;
+  await refresh();
+  ElMessage.success(t(edit?'masterData.saved':'productSku.created'));
+ } catch(e){
+  await setErrorFeedback(error,props.errorText(e));
+ } finally {
+  busy.value=false;
+ }
+}
+
+/** 首次配置沿用生效商品单位及包装，避免切换为专属计量时丢失既有档位。 */
+async function openMeasurementEdit(row: Record<string, any>){
+ const parent=product.value;
+ const structureVersion=structure.value?.version;
+ if(!row||!parent||structureVersion===undefined||!writeAllowed.value||busy.value)return;
+ busy.value=true;
+ try {
+  const inherited=row.measurement?undefined:await props.api.measurement(parent.id);
+  const stock=row.measurement?.inventoryUnitId??inherited?.baseUnitId;
+  if(!stock||product.value?.id!==parent.id)return;
+  measurement.inventoryUnitId=stock;
+  measurement.pricingUnitId=row.measurement?.pricingUnitId??stock;
+  measurement.packaging=(row.measurement?.packaging??inherited?.configuration.packaging??[])
+   .map((pack:typeof measurement.packaging[number])=>({...pack}));
+  editMeasurementTarget.value={id:row.id,version:structureVersion,rowVersion:row.version,code:row.code,enabled:row.enabled};
+  ownMeasurement.value=true;
+  createOpen.value=true;
+  await loadSkuUnits();
+ } catch(e){
+  await setErrorFeedback(error,props.errorText(e));
+ } finally {
+  busy.value=false;
+ }
+}
 async function toggle(row:Record<string,any>){if(busy.value)return;busy.value=true;try{const confirmed=await ElMessageBox.confirm(t('productStructure.stateHint'),t('productSku.title'),{confirmButtonText:t(row.enabled?'masterData.disable':'masterData.enable'),cancelButtonText:t('masterData.cancel')}).catch(()=>false);if(!confirmed)return;await props.api.structureState(selected.value,'sku',row.id,{enabled:!row.enabled,rowVersion:row.version,version:structure.value!.version});await refresh();ElMessage.success(t('productSku.saved'));}catch(e){await setErrorFeedback(error,props.errorText(e));}finally{busy.value=false;}}
 async function structureChanged(){const id=selected.value;const request=selectionRequest;try{const [p,s]=await Promise.all([props.api.read(id),props.api.structure(id)]);if(request!==selectionRequest)return;product.value=p;structure.value=s;}catch(e){await setErrorFeedback(error,props.errorText(e));}}
 async function loadOperations() {
@@ -283,24 +483,76 @@ onMounted(loadOperations);
    <template #actions><el-button v-operation="'Product.createSku'" type="primary" :disabled="!writeAllowed||!available.length||busy||loading" @click="openCreate">{{t('productSku.create')}}</el-button><el-button v-operation="'Product.readStructure'" :disabled="!product||busy||loading" @click="structureOpen=true">{{t('productSku.specifications')}}</el-button></template>
    <template #specification="{row}">{{row.specification?.name??'—'}}</template>
    <template v-for="field in attributes" :key="field.id" #[`attr_${field.id}`]="{row}">{{attribute(row,field.id)}}</template>
-   <template #status="{row}"><el-tag :type="row.enabled?'success':'info'">{{t(row.enabled?'masterData.enabled':'masterData.disabled')}}</el-tag></template>
+   <template #status="{row}"><el-tag class="app-status-tag" :type="row.enabled?'success':'info'">{{t(row.enabled?'masterData.enabled':'masterData.disabled')}}</el-tag></template>
    <template #effective="{row}">{{t(row.effective?'productV1.yes':'productV1.no')}}</template>
-   <template #operations="{row}"><el-button v-operation="'Product.readStructure'" link type="primary" :disabled="busy||loading" @click="openDetail(row.id, $event)">{{t('partner.view')}}</el-button><el-button v-operation="'Product.setStructureState'" link :disabled="!writeAllowed||busy||!!row.specification?.retiredAt" @click="toggle(row)">{{t(row.enabled?'masterData.disable':'masterData.enable')}}</el-button></template>
+   <template #operations="{row}"><el-button v-operation="'Product.readSkuAttributes'" link :disabled="busy||loading" @click="openSkuAttributes(row)">{{t('productCatalog.SKU')}}</el-button><el-button v-operation="'Product.readStructure'" link type="primary" :disabled="busy||loading" @click="openDetail(row.id, $event)">{{t('partner.view')}}</el-button><el-button v-operation="'Product.setStructureState'" link :disabled="!writeAllowed||busy||!!row.specification?.retiredAt" @click="toggle(row)">{{t(row.enabled?'masterData.disable':'masterData.enable')}}</el-button><el-button v-if="writeAllowed" v-operation="'Product.saveSkuBatchTemplate'" link :disabled="busy" @click="openBatchTemplate(row)">{{t('productSku.batchTemplate')}}</el-button><el-button v-if="writeAllowed" v-operation="'Product.saveSkuMeasurement'" link :disabled="busy || measurementLoading" @click="openMeasurementEdit(row)">{{t('productSku.editMeasurement')}}</el-button></template>
    <template #pagination><AppPagination :current-page="page" :page-size="size" :total="filtered.length" @current-change="p=>page=p" @size-change="s=>{size=s;page=1}"/></template>
   </ManagementTable>
  </template>
 </TreeListTemplate>
-<ManagedDialog v-model="createOpen" :title="t('productSku.create')" :busy="busy"><el-form ref="form" :model="draft" label-position="top" class="business-border-label-form" @submit.prevent="create"><el-form-item :label="t('productSku.code')" prop="code" :rules="[{required:true,message:t('masterData.required')},{pattern:/^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/,message:t('productSku.codeHint')}]"><el-input v-model="draft.code" maxlength="64"/></el-form-item><el-form-item :label="t('productStructure.specification')" prop="specificationId" :rules="[{required:true,message:t('masterData.required')}]"><el-select v-model="draft.specificationId" filterable><el-option v-for="s in available" :key="s.id" :value="s.id" :label="s.name"/></el-select></el-form-item></el-form><template #footer><el-button :disabled="busy" @click="createOpen=false">{{t('masterData.cancel')}}</el-button><el-button v-operation="'Product.createSku'" type="primary" :loading="busy" @click="create">{{t('masterData.save')}}</el-button></template></ManagedDialog>
+<ManagedDialog v-model="createOpen" :title="t(editMeasurementTarget ? 'productSku.editMeasurement' : 'productSku.create')" :busy="busy"><el-form ref="form" :model="draft" label-position="top" class="business-border-label-form" @submit.prevent="create"><el-form-item v-if="!editMeasurementTarget" :label="t('productSku.code')" prop="code" :rules="[{required:true,message:t('masterData.required')},{pattern:/^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/,message:t('productSku.codeHint')}]"><el-input v-model="draft.code" maxlength="64"/></el-form-item><el-form-item v-else :label="t('productSku.code')"><span>{{editMeasurementTarget.code}}</span></el-form-item><el-form-item v-if="editMeasurementTarget" :label="t('masterData.status')"><el-tag class="app-status-tag" :type="editMeasurementTarget.enabled?'success':'info'">{{t(editMeasurementTarget.enabled?'masterData.enabled':'masterData.disabled')}}</el-tag></el-form-item><el-form-item v-if="!editMeasurementTarget" :label="t('productStructure.specification')" prop="specificationId" :rules="[{required:true,message:t('masterData.required')}]"><el-select v-model="draft.specificationId" filterable><el-option v-for="s in available" :key="s.id" :value="s.id" :label="s.name"/></el-select></el-form-item>
+ <el-form-item v-if="!editMeasurementTarget"><el-checkbox v-model="ownMeasurement" :disabled="measurementLoading" @change="value=>value&&loadSkuUnits()">{{t('productSku.ownMeasurement')}}</el-checkbox></el-form-item>
+ <template v-if="ownMeasurement || editMeasurementTarget">
+  <el-form-item v-for="role in (['inventoryUnitId','pricingUnitId'] as const)" :key="role" :label="t('productSku.'+role)" required>
+   <el-select v-model="measurement[role]" filterable :loading="measurementLoading" :disabled="!!editMeasurementTarget && role === 'inventoryUnitId'">
+    <el-option v-for="unit in unitOptions" :key="unit.id" :label="unit.code+' / '+unit.name" :value="unit.id"/>
+   </el-select>
+  </el-form-item>
+  <el-button :disabled="200 <= measurement.packaging.length" @click="measurement.packaging.push({code:'',name:'',unitId:'',quantity:''})">{{t('productSku.addPackaging')}}</el-button>
+  <el-card v-for="(pack,index) in measurement.packaging" :key="index" shadow="never">
+   <el-form-item :label="t('masterData.code')" required><el-input v-model.trim="pack.code" maxlength="64"/></el-form-item>
+   <el-form-item :label="t('masterData.name')" required><el-input v-model.trim="pack.name" maxlength="200"/></el-form-item>
+   <el-form-item :label="t('productSku.packagingUnit')" required>
+    <el-select v-model="pack.unitId" filterable>
+     <el-option v-for="unit in unitOptions" :key="unit.id" :label="unit.code+' / '+unit.name" :value="unit.id"/>
+    </el-select>
+   </el-form-item>
+   <el-form-item :label="t('productSku.packagingQuantity')" required><el-input v-model.trim="pack.quantity" maxlength="31"/></el-form-item>
+   <el-button @click="measurement.packaging.splice(index,1)">{{t('productSku.removePackaging')}}</el-button>
+  </el-card>
+ </template>
+ </el-form><template #footer><el-button :disabled="busy" @click="createOpen=false">{{t('masterData.cancel')}}</el-button><el-button v-operation="editMeasurementTarget ? 'Product.saveSkuMeasurement' : 'Product.createSku'" type="primary" :loading="busy" :disabled="measurementLoading || (ownMeasurement && (!measurement.inventoryUnitId || !measurement.pricingUnitId))" @click="create">{{t('masterData.save')}}</el-button></template></ManagedDialog>
+<ManagedDialog v-model="attributeDialog" :title="t('productCatalog.SKU')" :busy="busy">
+ <el-form class="business-border-label-form" label-position="top" @submit.prevent="saveSkuAttributes">
+  <ProductAttributes v-if="attributeView?.fields.length" :fields="attributeView.fields" :values="attributeInput"
+    :readonly="!canEditAttributes" :disabled="busy" required-to-save
+    @change="(id,value)=>attributeInput[id]=value" @valid="value=>attributeValid=value"/>
+  <el-empty v-else :description="t('productSku.noAttributeTemplate')"/>
+ </el-form>
+ <template #footer>
+  <el-button :disabled="busy" @click="attributeDialog=false">{{t('masterData.cancel')}}</el-button>
+  <el-button v-if="canEditAttributes && attributeView?.fields.length" v-operation="'Product.saveSkuAttributes'"
+    type="primary" :loading="busy" :disabled="!attributeValid || !requiredAttributesReady" @click="saveSkuAttributes">
+    {{t('masterData.save')}}
+  </el-button>
+ </template>
+</ManagedDialog>
+<ManagedDialog v-model="batchOpen" :title="t('productSku.batchTemplate')" :busy="busy">
+ <el-form class="business-border-label-form" label-position="top" @submit.prevent="saveBatchTemplate">
+  <el-form-item :label="t('productSku.batchTemplate')">
+   <el-select v-model="batchSelection" filterable clearable @clear="batchSelection=null">
+    <el-option v-for="choice in batchChoices" :key="choice.id" :label="choice.label" :value="choice.id" :disabled="choice.disabled"/>
+   </el-select>
+  </el-form-item>
+ </el-form>
+ <template #footer>
+  <el-button :disabled="busy" @click="batchOpen=false">{{t('masterData.cancel')}}</el-button>
+  <el-button v-operation="'Product.saveSkuBatchTemplate'" type="primary" :loading="busy" @click="saveBatchTemplate">{{t('masterData.save')}}</el-button>
+ </template>
+</ManagedDialog>
 <ManagedDialog v-model="structureOpen" :title="t('productSku.specifications')"><ProductStructure v-if="structureOpen&&product" :key="product.id+':'+structure?.version" :id="product.id" :version="structure?.version??product.version" :readonly="!writeAllowed" :api="api" :fields="specFields" :error-text="errorText" @changed="structureChanged"/></ManagedDialog>
 <TabbedDetailTemplate v-if="detail" master-data>
  <template #header>
   <PageHeader :title="t('productSku.detail')">
    <template #meta>
     <el-tag effect="plain">{{detail.code}}</el-tag>
-    <el-tag :type="detail.enabled?'success':'info'">{{t(detail.enabled?'masterData.enabled':'masterData.disabled')}}</el-tag>
+    <el-tag class="app-status-tag" :type="detail.enabled?'success':'info'">{{t(detail.enabled?'masterData.enabled':'masterData.disabled')}}</el-tag>
    </template>
    <template #actions>
     <div ref="detailActions"><el-button @click="closeDetail">{{t('productV1.back')}}</el-button></div>
+   </template>
+   <template v-if="product" #trailing>
+    <ProductHistoryButton :id="product.id" :api="api" :error-text="errorText" :subject="{collection:'skus',id:detail.id}" />
    </template>
   </PageHeader>
  </template>
@@ -308,11 +560,30 @@ onMounted(loadOperations);
   <el-card shadow="never" class="detail-section">
    <template #header><div class="detail-section-heading"><h2>{{t('productV1.basic')}}</h2></div></template>
    <div class="detail-field-grid">
+    <div class="detail-readonly-field"><span>{{t('productSku.code')}}</span><strong>{{detail.code}}</strong></div>
+    <div class="detail-readonly-field"><span>{{t('masterData.status')}}</span><el-tag class="app-status-tag" :type="detail.enabled?'success':'info'">{{t(detail.enabled?'masterData.enabled':'masterData.disabled')}}</el-tag></div>
     <div class="detail-readonly-field"><span>{{t('productSku.product')}}</span><strong>{{product?.name??'—'}}</strong></div>
     <div class="detail-readonly-field"><span>{{t('productV1.origin')}}</span><strong>{{product?.origin||'—'}}</strong></div>
     <div class="detail-readonly-field"><span>{{t('productStructure.specification')}}</span><strong>{{detail.specification?.name??'—'}}</strong></div>
     <div class="detail-readonly-field"><span>{{t('productStructure.effective')}}</span><strong>{{t(detail.effective?'productV1.yes':'productV1.no')}}</strong></div>
+    <div class="detail-readonly-field">
+     <span>{{t('productSku.batchTemplate')}}</span>
+     <strong>{{t(detail.batchTemplateVersionId?'productSku.batchConfigured':'productSku.batchUnconfigured')}}</strong>
+    </div>
     <div class="detail-readonly-field detail-field-wide"><span>{{t('productV1.description')}}</span><strong>{{detail.specification?.description||'—'}}</strong></div>
+   </div>
+  </el-card>
+  <el-card v-if="detail.measurement" shadow="never" class="detail-section">
+   <template #header><div class="detail-section-heading"><h2>{{t('productSku.ownMeasurement')}}</h2></div></template>
+   <div class="detail-field-grid" v-loading="measurementLoading">
+    <div v-for="role in (['inventoryUnitId','pricingUnitId'] as const)" :key="role" class="detail-readonly-field">
+     <span>{{t('productSku.'+role)}}</span>
+     <strong>{{unitOptions.find(unit=>unit.id===detail.measurement[role])?.name??'—'}}</strong>
+    </div>
+    <div v-for="pack in detail.measurement.packaging" :key="pack.code" class="detail-readonly-field">
+     <span>{{pack.code}} · {{pack.name}}</span>
+     <strong>{{pack.quantity}} {{unitOptions.find(unit=>unit.id===detail.measurement.inventoryUnitId)?.name??'—'}} / {{unitOptions.find(unit=>unit.id===pack.unitId)?.name??'—'}}</strong>
+    </div>
    </div>
   </el-card>
   <el-card v-if="attributes.length" shadow="never" class="detail-section">

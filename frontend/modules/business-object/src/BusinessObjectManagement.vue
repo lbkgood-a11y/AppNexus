@@ -96,10 +96,10 @@ const name=(d:Descriptor)=>locale.value.startsWith('zh')?d.nameZh:d.nameEn;
 const filtered=computed(()=>rows.value.filter(r=>[r.descriptor.objectType,r.descriptor.module,name(r.descriptor)].some(x=>x.toLowerCase().includes(applied.value.toLowerCase()))));
 const paged=computed(()=>filtered.value.slice((page.value-1)*size.value,page.value*size.value));
 const columns=computed<ManagementColumn[]>(()=>[
-  {key:'objectType',label:t('businessObject.code'),minWidth:180}, {key:'name',label:t('businessObject.name'),minWidth:160},
-  {key:'category',label:t('businessObject.category'),minWidth:140},
-  {key:'module',label:t('businessObject.module'),minWidth:100},{key:'version',label:t('businessObject.contractVersion'),width:140},
-  {key:'state',label:t('businessObject.state'),width:110},
+  {key:'state',label:t('businessObject.state'),width:110}, {key:'objectType',label:t('businessObject.code'),minWidth:180},
+  {key:'name',label:t('businessObject.name'),minWidth:160},
+  {key:'category',label:t('businessObject.category'),minWidth:140},{key:'module',label:t('businessObject.module'),minWidth:100},
+  {key:'version',label:t('businessObject.contractVersion'),width:140},
   {key:'operations',label:t('businessObject.operations'),minWidth:240,fixed:'right'}
 ]);
 async function run(action:()=>Promise<void>) {busy.value=true;error.value='';try{await action();}catch(e){await setErrorFeedback(error, props.errorText(e));}finally{busy.value=false;}}
@@ -155,7 +155,7 @@ onMounted(async()=>{await load();const type=router.currentRoute.value.query.type
     <template #data><ManagementTable :title="t(platform?'businessObject.platformTitle':'businessObject.title')" :rows="paged" :columns="columns" :loading="loading" :busy="busy" embedded @refresh="load">
       <template v-if="platform" #titleHelp><InfoHint :content="t('businessObject.catalogBoundary')" /></template>
       <template #objectType="{row}">{{row.descriptor.objectType}}</template><template #name="{row}">{{name(row.descriptor)}}</template><template #module="{row}">{{row.descriptor.module}}</template><template #version="{row}">{{row.descriptor.version}}</template>
-      <template #state="{row}"><el-tag :type="row.enabled?'success':'info'">{{t(row.enabled?'businessObject.enabled':'businessObject.disabled')}}</el-tag></template>
+      <template #state="{row}"><el-tag class="app-status-tag" :type="row.enabled?'success':'info'">{{t(row.enabled?'businessObject.enabled':'businessObject.disabled')}}</el-tag></template>
       <template #category="{row}"><el-tag type="info">{{t('businessObject.categories.'+row.descriptor.category)}}</el-tag></template>
       <template #operations="{row}"><el-button link type="primary" :disabled="busy" v-operation="platform ? 'BusinessObject.relationships' : 'BusinessObject.configuration'" @click="open(row.descriptor)">{{t(platform?'businessObject.viewDetails':'businessObject.configure')}}</el-button><el-button v-operation="'BusinessObject.state'" v-if="platform" link :type="row.enabled?'danger':'primary'" :disabled="busy" @click="activate(row)">{{t(row.enabled?'businessObject.disable':'businessObject.enable')}}</el-button></template>
       <template #empty><el-empty :description="t('businessObject.empty')" /></template>
@@ -170,7 +170,7 @@ onMounted(async()=>{await load();const type=router.currentRoute.value.query.type
       <el-tabs v-model="detailTab" class="object-detail-tabs">
       <el-tab-pane :label="t('businessObject.declarationTab')" name="declaration">
       <div class="object-contract-sections">
-      <el-descriptions :column="2" border><el-descriptions-item :label="t('businessObject.code')">{{selected.objectType}}</el-descriptions-item><el-descriptions-item :label="t('businessObject.contractVersion')">{{selected.version}}</el-descriptions-item></el-descriptions>
+      <section class="readonly-detail-section"><dl class="detail-field-grid"><div class="detail-readonly-field"><dt>{{ t('businessObject.code') }}</dt><dd>{{selected.objectType}}</dd></div><div class="detail-readonly-field"><dt>{{ t('businessObject.contractVersion') }}</dt><dd>{{selected.version}}</dd></div></dl></section>
       <section class="object-contract-section">
        <header><h3>{{t('businessObject.codingDeclaration')}}<InfoHint :content="t('businessObject.codingDeclarationHint')" /></h3></header>
        <VxeTable v-if="selected.codingFields?.length" size="small" :min-height="0" :data="selected.codingFields || []" :column-config="{resizable:true}" border="inner">
@@ -224,7 +224,7 @@ onMounted(async()=>{await load();const type=router.currentRoute.value.query.type
               <VxeColumn :field="locale.startsWith('zh')?'nameZh':'nameEn'" :title="t('businessObject.action')" min-width="160"/>
               <VxeColumn field="permissionCode" :title="t('businessObject.permission')" min-width="180"/>
               <VxeColumn :title="t('businessObject.accessOperationScopes')" min-width="200"><template #default="{row}">{{row.scopes.map((scope: string)=>t('authorizationCenter.scopes.'+scope)).join('、')}}</template></VxeColumn>
-              <VxeColumn :title="t('businessObject.accessConnection')" min-width="175"><template #default="{row}"><el-tag :type="row.guarded?'success':'info'">{{t(row.guarded?'businessObject.accessGuarded':'businessObject.accessDeclared')}}</el-tag></template></VxeColumn>
+              <VxeColumn :title="t('businessObject.accessConnection')" min-width="175"><template #default="{row}"><el-tag class="app-status-tag" :type="row.guarded?'success':'info'">{{t(row.guarded?'businessObject.accessGuarded':'businessObject.accessDeclared')}}</el-tag></template></VxeColumn>
             </VxeTable>
             <p v-else class="object-empty-note">{{t('businessObject.noAccessOperations')}}</p>
           </section>
@@ -277,7 +277,7 @@ onMounted(async()=>{await load();const type=router.currentRoute.value.query.type
           <vxe-column :title="t('businessObject.pageOperation')" min-width="230"><template #default="{row}">{{locale.startsWith('zh')?row.pageOperation.nameZh:row.pageOperation.nameEn}}<div>{{row.operationId}}</div></template></vxe-column>
           <vxe-column :title="t('businessObject.businessEndpoint')" min-width="260"><template #default="{row}">{{row.pageOperation.method}} {{row.pageOperation.apiPath}}</template></vxe-column>
           <vxe-column field="permissionCode" :title="t('businessObject.permission')" min-width="170" />
-          <vxe-column :title="t('businessObject.state')" width="100"><template #default="{row}"><el-tag :type="entryEnabled(row.operationId)?'success':'warning'">{{t(entryEnabled(row.operationId)?'businessObject.enabled':'businessObject.disabled')}}</el-tag></template></vxe-column>
+          <vxe-column :title="t('businessObject.state')" width="100"><template #default="{row}"><el-tag class="app-status-tag" :type="entryEnabled(row.operationId)?'success':'warning'">{{t(entryEnabled(row.operationId)?'businessObject.enabled':'businessObject.disabled')}}</el-tag></template></vxe-column>
           <vxe-column :title="t('businessObject.operations')" width="120"><template #default="{row}"><el-button v-operation="'BusinessObject.control'" link :type="entryEnabled(row.operationId)?'danger':'primary'" :disabled="busy" @click="controlEntry(row.operationId)">{{t(entryEnabled(row.operationId)?'businessObject.disableEntry':'businessObject.enableEntry')}}</el-button></template></vxe-column>
         </vxe-table>
         <AppPagination v-model:current-page="entryPage" :page-size="10" :total="entryRows.length" layout="prev, pager, next" />
@@ -297,7 +297,7 @@ onMounted(async()=>{await load();const type=router.currentRoute.value.query.type
         <VxeTable v-if="checks.length" size="small" :min-height="0" :column-config="{resizable:true}" :data="readinessRows" border="inner">
          <VxeColumn field="name" :title="t('businessObject.businessOperation')" min-width="200" />
          <VxeColumn v-for="column in [{key:'enabled',label:'platformEnabled'},{key:'connected',label:'pageConnected'},{key:'published',label:'executionPublished'}]" :key="column.key" :title="t('businessObject.'+column.label)" min-width="160">
-          <template #default="{row}"><el-tag :type="row[column.key]===undefined?'info':row[column.key]?'success':'warning'">{{readinessText(row[column.key])}}</el-tag></template>
+          <template #default="{row}"><el-tag class="app-status-tag" :type="row[column.key]===undefined?'info':row[column.key]?'success':'warning'">{{readinessText(row[column.key])}}</el-tag></template>
          </VxeColumn>
         </VxeTable>
         <el-collapse v-if="dependencyChecks.length">

@@ -10,6 +10,8 @@ import {ManagedDialog,FloatingError,setErrorFeedback} from "@appnexus/ui";
 const props=defineProps<{
  /** 当前手工或已发放编码；组件不会在挂载时覆盖。 */
  modelValue:string;
+ /** 可选的手工录入提示；默认继承 Element Plus 行为。 */
+ placeholder?:string;
  /** 同一业务声明的目标操作标识，必填；后端仍重新鉴权。 */
  operation:string;
  /** 最大字符数，1–128，必填；必须与业务字段和Provider声明一致。 */
@@ -40,8 +42,8 @@ async function generate(){
 }
 </script>
 <template>
- <el-input :model-value="modelValue" :maxlength="maxLength" :disabled="disabled||busy" @update:model-value="emit('update:modelValue',$event)"><template #append><el-button v-operation="operation" :disabled="disabled||busy" @click="open">{{t('coding.assist')}}</el-button></template></el-input>
- <ManagedDialog v-model="dialog" :title="t('coding.assist')" width="min(520px,calc(100vw - 32px))" :close-on-click-modal="false" :close-on-press-escape="!busy" :show-close="!busy">
+ <el-input :model-value="modelValue" :maxlength="maxLength" :placeholder="placeholder" :disabled="disabled||busy" @update:model-value="emit('update:modelValue',$event)"><template #append><el-button v-operation="operation" :disabled="disabled||busy" @click="open">{{t('coding.assist')}}</el-button></template></el-input>
+ <ManagedDialog v-model="dialog" :title="t('coding.assist')" width="min(520px,calc(100vw - 32px))" :close-on-click-modal="false" :busy="busy">
   <FloatingError v-if="error" :title="error" scope="error" type="error" :closable="false" />
   <div v-loading="loading"><el-alert :title="t('coding.issueHint')" type="info" :closable="false" /><el-form label-position="top" class="business-border-label-form"><el-form-item :label="t('coding.select')"><el-select v-model="selected" :disabled="busy||loading"><el-option v-for="row in rows" :key="row.encoderKey" :label="row.name" :value="row.encoderKey" /></el-select></el-form-item></el-form><el-empty v-if="!loading&&!error&&!rows.length" :description="t('coding.empty')" /></div>
   <template #footer><el-button :disabled="busy" @click="dialog=false">{{t('coding.cancel')}}</el-button><el-button v-operation="operation" :disabled="busy" @click="open">{{t('businessObject.refresh')}}</el-button><el-button v-operation="operation" type="primary" :loading="busy" :disabled="disabled||loading||!selected" @click="generate">{{t('coding.generate')}}</el-button></template>

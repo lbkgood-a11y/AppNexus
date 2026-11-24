@@ -190,11 +190,12 @@ public final class RecordAuditResponseAdvice implements ResponseBodyAdvice<Objec
         }
     }
 
-    /** 同一响应内按 UUID 去重后查询。字段隐去、无效或不可见时不解析，也不回填 ID。 */
+    /** 同一响应内按账号 UUID 去重后查询。集成调用的 actor 是客户端标识，即使符合 UUID 格式也不能查询账号目录。 */
     private void attachNames(UUID context,boolean platform,boolean event,Collection<Map<String,Object>> blocks){
         var actorFields=event?List.of("actor"):List.of("createdBy","updatedBy");
         var fields=actorFields.stream().map(field->new ReferenceNames.Field<Map<String,Object>>(
-            "account",block->accountId(block.get(field)))).toList();
+            "account",block->event && "integration".equals(block.get("source"))
+                ? null : accountId(block.get(field)))).toList();
         var resolved=new HashMap<ReferenceNames.Key,String>();
         ReferenceNames.resolve((scope,keys)->{
             var ids=keys.stream().map(ReferenceNames.Key::value).toList();

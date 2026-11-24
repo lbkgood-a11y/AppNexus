@@ -31,6 +31,8 @@ public final class ProductTemplateDeclaration implements Provider {
                         new PageOperation("master-data/product-template", "/master-data/product-template", "查看模板项", "Read template items", "GET", "/api/master-data/product-template/versions/{id}/items")),
                 operation("ProductTemplate", "update", "编辑模板定义", "Update template definition", "masterdata.producttemplate:update",
                         new PageOperation("master-data/product-template", "/master-data/product-template", "编辑模板定义", "Update template definition", "PUT", "/api/master-data/product-template/{id}")),
+                operation("ProductTemplate", "readStatusHistory", "查看启停历史", "Read status history", "masterdata.producttemplate:read",
+                        new PageOperation("master-data/product-template", "/master-data/product-template", "查看启停历史", "Read status history", "GET", "/api/master-data/product-template/{id}/status-history")),
                 operation("ProductTemplate", "setStatus", "启停模板", "Set template status", "masterdata.producttemplate:set_status",
                         new PageOperation("master-data/product-template", "/master-data/product-template", "启停模板", "Set template status", "PUT", "/api/master-data/product-template/{id}/status")),
                 operation("ProductTemplate", "retire", "退役模板版本", "Retire template version", "masterdata.producttemplate:publish",

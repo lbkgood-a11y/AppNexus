@@ -34,8 +34,7 @@ class ObjectExecutionAssemblyTest extends WorkflowDatabaseTestSupport {
             "Product","ProductApproval","ProductAttribute","ProductCategory","ProductTemplate","ProductUnit",
             "StorageArea","StorageLocation","Subdivision","Tenant","TenantInvitation","TenantMember","TenantParameter",
             "TenantRole","Warehouse","WorkflowDefinition","WorkflowInstance","WorkflowJob","WorkflowTask",
-            "BulkCoilOutbound","BulkCoilTitleTransfer","BulkInboundQualityRelease","BulkInboundReceipt",
-            "BulkInboundTitleRegistration","BulkOutboundStock","BulkStockRestriction","BulkWarehouseStockBalance")
+            "BulkInboundReceipt","BulkWarehouseStockBalance")
         .doesNotContain("AccountProfile","AccountMfa","AccountSession","AccountRoleAssignment",
                 "MemberRoleAssignment","MemberAuthorization","OrganizationLeader","DictionaryItem","RoleAuthorization");
   }

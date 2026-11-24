@@ -37,7 +37,7 @@ public final class ProductTemplateService implements com.appnexus.masterdata.api
   require(c,"read");uuid(id);
   return statements.items(tenant(c),id);
  }
- /** 创建独立模板身份；用途创建后不可修改，SPEC不开放。 */
+ /** 创建独立模板身份；用途创建后不可修改，规格轴、普通货号与批次分别发布版本。 */
  public Map<String,String> create(VerifiedTenantContext c,TemplateInput i){require(c,"create");valid(i);String id=UUID.randomUUID().toString();return write(()->{authorizeWrite(c,"create",id);statements.createTemplate(id,tenant(c),i.code().trim(),i.name().trim(),i.purpose(),actor(c),actor(c));return Map.of("id",id);});}
  /** 一次创建完整草稿项，父CAS保护版本号；错配修订和重复属性导致整体回滚。 */
  public Map<String,String> createVersion(VerifiedTenantContext c,String templateId,VersionInput i){require(c,"update");uuid(templateId);if(i==null||i.items()!=null&&i.items().size()>200||i.description()==null||i.description().length()>1000||i.version()<0||i.items()==null)throw invalid();String id=UUID.randomUUID().toString();return write(()->{lockTemplate(c,templateId,i.version(),"update");var purpose=statements.purpose(tenant(c),templateId);long no=statements.nextVersion(tenant(c),templateId);authorizeWrite(c,"update",templateId);statements.createVersion(id,tenant(c),templateId,no,purpose,i.description(),actor(c),actor(c));authorizeWrite(c,"update",id);saveItems(c,id,i.items());return Map.of("id",id,"version",String.valueOf(no),"purpose",purpose);});}
@@ -104,7 +104,7 @@ for(var item:items){if(item==null)throw invalid();uuid(item.attributeId());uuid(
  }
  private void require(VerifiedTenantContext c,String a){if(c==null||!access.hasPermission(AccessAuthorization.Subject.tenant(c.accountId(),c.tenantId(),c.memberId()),"masterdata.producttemplate:"+a))throw new MasterData.Rejection(403,"MASTER_DATA_DENIED");}
  private <T>T write(java.util.function.Supplier<T> work){return tx.write(work);}
- private static void valid(TemplateInput i){if(i==null||i.code()==null||!i.code().matches("[A-Za-z0-9][A-Za-z0-9._-]{0,63}")||i.name()==null||i.name().isBlank()||i.name().length()>200||i.purpose()==null||!Set.of("BASIC","SPEC","QUALITY","EXTENSION").contains(i.purpose())||i.version()<0)throw invalid();}
+ private static void valid(TemplateInput i){if(i==null||i.code()==null||!i.code().matches("[A-Za-z0-9][A-Za-z0-9._-]{0,63}")||i.name()==null||i.name().isBlank()||i.name().length()>200||i.purpose()==null||!Set.of("BASIC","SPEC","QUALITY","EXTENSION","SKU","BATCH").contains(i.purpose())||i.version()<0)throw invalid();}
  private static void uuid(String s){try{UUID.fromString(s);}catch(Exception e){throw invalid();}} private static String tenant(VerifiedTenantContext c){return c.tenantId().toString();} private static String actor(VerifiedTenantContext c){return c.accountId().toString();}
  private static MasterData.Rejection invalid(){return new MasterData.Rejection(400,"PRODUCT_TEMPLATE_INPUT_INVALID");} private static MasterData.Rejection changed(){return new MasterData.Rejection(409,"PRODUCT_TEMPLATE_CHANGED");}
 }

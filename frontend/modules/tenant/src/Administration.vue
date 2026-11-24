@@ -35,10 +35,10 @@ const pageDescription=computed(()=>t(tab.value==='users'?'administration.userDes
 const searchTitle=computed(()=>t(tab.value==='users'?'administration.userSearch':'administration.tenantSearch'));
 const tableTitle=computed(()=>tab.value==='members'?t('administration.membersOf',{name:tenant.value?.name}):t(tab.value==='users'?'administration.userList':'administration.tenantList'));
 const columns=computed<ManagementColumn[]>(()=>[
+ {key:'status',label:t('administration.status'),width:100},
  ...(tab.value!=='tenants'?[{key:'username',prop:'username',label:t('administration.username'),minWidth:150}]:[]),
  {key:'name',prop:tab.value==='tenants'?'name':'displayName',label:t(tab.value==='tenants'?'tenant.name':'administration.displayName'),minWidth:160},
  ...(tab.value==='users'?[{key:'email',label:t('administration.email'),minWidth:220},{key:'phone',label:t('administration.phoneNumber'),minWidth:170}]:[]),
- {key:'status',label:t('administration.status'),width:100},
  {key:'operations',label:t('tenant.operation'),minWidth:tab.value==='tenants'?400:tab.value==='users'?340:140,fixed:'right'}
 ]);
 const dialog=ref<"user"|"userEdit"|"tenant"|"tenantEdit"|"member"|"">("");
@@ -141,7 +141,7 @@ onBeforeUnmount(()=>{recoveryTicket.value="";form.password="";invitation.value=u
   <el-card v-if="!allowed" shadow="never" v-loading="loading"><el-empty v-if="!loading&&!error" :description="t('account.forbidden')" /><el-button :disabled="loading" @click="load">{{t('account.retry')}}</el-button></el-card>
   <template v-if="allowed">
    <BusinessWorkspace :search-title="searchTitle" :title="pageTitle" :description="pageDescription">
-    <template v-if="tab==='members'" #context><div class="management-context"><el-button link type="primary" :disabled="saving" @click="changeTab('tenants')">{{t('management.backTenants')}}</el-button><strong>{{tenant?.name}}</strong><el-tag :type="tenant?.enabled?'success':'info'">{{t(tenant?.enabled?'administration.enabled':'administration.disabled')}}</el-tag></div></template>
+    <template v-if="tab==='members'" #context><div class="management-context"><el-button link type="primary" :disabled="saving" @click="changeTab('tenants')">{{t('management.backTenants')}}</el-button><strong>{{tenant?.name}}</strong><el-tag class="app-status-tag" :type="tenant?.enabled?'success':'info'">{{t(tenant?.enabled?'administration.enabled':'administration.disabled')}}</el-tag></div></template>
     <template v-if="error && !dialog" #feedback><FloatingError type="error" :title="error" scope="error" :closable="false" show-icon><el-button link type="primary" :disabled="loading||saving" @click="load">{{t('account.retry')}}</el-button></FloatingError></template>
     <template #search><div class="management-filter">
     
@@ -155,9 +155,9 @@ onBeforeUnmount(()=>{recoveryTicket.value="";form.password="";invitation.value=u
     <el-button v-operation="tab==='users'?'Account.create':tab==='members'?'TenantMember.createManaged|TenantInvitation.invite':'Tenant.create'" type="primary" :disabled="loading||saving||(tab==='members'&&!tenant?.enabled)" @click="open(tab==='users'?'user':tab==='members'?'member':'tenant')">{{t(tab==='users'?'administration.createUser':tab==='members'?'administration.addMember':'administration.createTenant')}}</el-button>
     </template>
     <template #before><p v-if="tab==='members'" class="management-note">{{t('administration.memberHint')}}</p></template>
-    <template #status="{row}"><el-tag :type="row.enabled?'success':'info'">{{t(row.enabled?'administration.enabled':'administration.disabled')}}</el-tag></template>
-    <template #email="{row}"><div class="contact-cell"><span>{{(row as DirectoryUser).email||'—'}}</span><el-tag v-if="(row as DirectoryUser).email" size="small" :type="(row as DirectoryUser).emailVerified?'success':'info'">{{t((row as DirectoryUser).emailVerified?'administration.verified':'administration.unverified')}}</el-tag></div></template>
-    <template #phone="{row}"><div class="contact-cell"><span>{{(row as DirectoryUser).phoneNumber||'—'}}</span><el-tag v-if="(row as DirectoryUser).phoneNumber" size="small" :type="(row as DirectoryUser).phoneVerified?'success':'info'">{{t((row as DirectoryUser).phoneVerified?'administration.verified':'administration.unverified')}}</el-tag></div></template>
+    <template #status="{row}"><el-tag class="app-status-tag" :type="row.enabled?'success':'info'">{{t(row.enabled?'administration.enabled':'administration.disabled')}}</el-tag></template>
+    <template #email="{row}"><div class="contact-cell"><span>{{(row as DirectoryUser).email||'—'}}</span><el-tag class="app-status-tag" v-if="(row as DirectoryUser).email" size="small" :type="(row as DirectoryUser).emailVerified?'success':'info'">{{t((row as DirectoryUser).emailVerified?'administration.verified':'administration.unverified')}}</el-tag></div></template>
+    <template #phone="{row}"><div class="contact-cell"><span>{{(row as DirectoryUser).phoneNumber||'—'}}</span><el-tag class="app-status-tag" v-if="(row as DirectoryUser).phoneNumber" size="small" :type="(row as DirectoryUser).phoneVerified?'success':'info'">{{t((row as DirectoryUser).phoneVerified?'administration.verified':'administration.unverified')}}</el-tag></div></template>
     <template #operations="{row}">
      <el-button v-operation="'TenantMember.listManaged'" v-if="tab==='tenants'" link type="primary" :disabled="loading||saving" @click="manageMembers(row as DirectoryTenant)">{{t('administration.members')}}</el-button>
      <el-button v-operation="'IntegrationClient.list'" v-if="tab==='tenants'" link type="primary" :disabled="loading||saving" @click="clientTenant=row as DirectoryTenant">{{t('administration.clients')}}</el-button>
@@ -173,7 +173,7 @@ onBeforeUnmount(()=>{recoveryTicket.value="";form.password="";invitation.value=u
      <el-popconfirm v-if="tab==='members'&&!(row as DirectoryMember).removed" :title="t('administration.confirmRemoveMember')" :confirm-button-text="t('administration.removeMember')" :cancel-button-text="t('organization.cancel')" @confirm="removeMember(row as DirectoryMember)">
       <template #reference><el-button v-operation="'TenantMember.removeManaged'" link type="danger" :disabled="loading||saving">{{t('administration.removeMember')}}</el-button></template>
      </el-popconfirm>
-     <el-tag v-if="tab==='members'&&(row as DirectoryMember).removed" type="info">{{t('administration.removed')}}</el-tag>
+     <el-tag class="app-status-tag" v-if="tab==='members'&&(row as DirectoryMember).removed" type="info">{{t('administration.removed')}}</el-tag>
      <el-popconfirm :title="t(row.enabled?'administration.confirmDisable':'administration.confirmEnable')" :confirm-button-text="t(row.enabled?'administration.disable':'administration.enable')" :cancel-button-text="t('organization.cancel')" @confirm="state(row as DirectoryUser)">
       <template #reference><el-button v-operation="tab==='users'?'Account.setEnabled':tab==='tenants'?'Tenant.setEnabled':'TenantMember.setEnabledManaged'" v-if="tab!=='members'||!(row as DirectoryMember).removed" link :type="row.enabled?'danger':'primary'" :disabled="loading||saving">{{t(row.enabled?'administration.disable':'administration.enable')}}</el-button></template>
      </el-popconfirm>

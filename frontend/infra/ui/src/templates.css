@@ -262,17 +262,17 @@
 .master-data-detail .detail-field-wide {grid-column:span 2;}
 /* 只读编码按字段宽度单行省略，完整值由调用处的 Element Plus Tooltip 提供，不截断业务数据。 */
 .master-data-detail .detail-code-value {display:block;min-width:0;max-width:100%;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;padding:0 10px;border-radius:var(--el-border-radius-base);background:var(--el-color-primary-light-9);color:var(--el-color-primary);}
-.master-data-detail .detail-readonly-field {display:flex;flex-direction:column;gap:6px;min-width:0;padding:4px 0 14px;}
-.master-data-detail .detail-readonly-field > span {color:var(--el-text-color-secondary);font-size:13px;}
-.master-data-detail .detail-readonly-field > strong {font-weight:400;overflow-wrap:anywhere;line-height:1.6;}
 .master-data-detail .detail-system {background:color-mix(in srgb,var(--el-bg-color) 96%,var(--el-color-primary) 4%);}
 .master-data-detail .detail-system > .el-card__body {padding:12px 16px;}
 .master-data-detail .detail-audit-grid {display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;margin-top:14px;}
-.master-data-detail .detail-audit-item {display:flex;align-items:center;gap:10px;min-width:0;}
+/* 系统信息的标签和值同行，各模式共用；窄屏时仅长值自然折行。 */
+.detail-audit-list,.detail-audit-grid {margin:0;}
+.detail-audit-list {display:grid;gap:8px;}
+.detail-audit-item {display:flex;align-items:baseline;gap:8px;min-width:0;}
+.detail-audit-item > dt {flex:none;}
+.detail-audit-item > dd {min-width:0;}
 .master-data-detail .detail-audit-item > svg {flex:none;color:var(--el-text-color-secondary);}
-.master-data-detail .detail-audit-item > div {display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;min-width:0;font-size:12px;}
-.master-data-detail .detail-audit-item span {color:var(--el-text-color-secondary);}
-.master-data-detail .detail-audit-item strong {font-weight:400;color:var(--el-text-color-primary);overflow-wrap:anywhere;}
+.master-data-detail .detail-audit-item > div {display:flex;align-items:baseline;gap:8px;min-width:0;}
 .master-data-detail .tabbed-detail-template__tabs > .el-card__body {padding:0 12px 12px;}
 .master-data-detail .tabbed-detail-template__tabs > .el-card__body > .el-tabs > .el-tabs__header {margin:0 0 8px;}
 .master-data-detail .tabbed-detail-template__tabs .management-table {border:0;}
@@ -353,12 +353,22 @@
  font-size:12px;background:var(--el-bg-color);color:var(--el-text-color-regular);
  white-space:normal;overflow-wrap:anywhere;pointer-events:auto;
 }
+/* 步进器按钮自带 z-index:1。保留标签和字段原位置，只修正层叠顺序。 */
+.master-data-detail .detail-border-label-form .detail-field-grid > .el-form-item:has(.el-input-number) > .el-form-item__label {
+ z-index:2;
+}
 .master-data-detail .detail-border-label-form .el-form-item__content {min-height:36px;line-height:36px;}
 .master-data-detail .detail-border-label-form :is(.el-input__wrapper,.el-select__wrapper) {min-height:36px;box-sizing:border-box;}
 .master-data-detail .detail-border-label-form .el-textarea__inner {min-height:36px;line-height:24px;padding-top:6px;padding-bottom:4px;}
 .master-data-detail .detail-border-label-form .detail-code-value {
  display:block;width:100%;min-height:36px;padding:0 11px;box-sizing:border-box;
  background:var(--el-fill-color-light);box-shadow:0 0 0 1px var(--el-border-color) inset;color:var(--el-text-color-primary);
+}
+/* 表单网格中的只读状态与相邻输入框共享边框、圆角和尺寸，正文仍为普通只读文本。 */
+.master-data-detail .detail-border-label-form .detail-status-value {
+ display:flex;align-items:center;width:100%;min-width:0;min-height:36px;padding:6px 11px;box-sizing:border-box;
+ border-radius:var(--el-border-radius-base);box-shadow:0 0 0 1px var(--el-border-color) inset;
+ color:var(--el-text-color-regular);line-height:1.5;overflow-wrap:anywhere;
 }
 .master-data-detail .detail-border-label-form .el-form-item:focus-within > .el-form-item__label {color:var(--el-color-primary);}
 .master-data-detail .detail-border-label-form .el-form-item.is-error {margin-bottom:24px;}
@@ -367,7 +377,7 @@
 /* 英文长标签和放大字体可换行；表单不靠固定行高裁切标签。 */
 .master-data-detail .detail-border-label-form .el-form-item:has(> .el-form-item__label:empty) {padding-top:0;}
 @media(max-width:600px){
- .master-data-detail .detail-border-label-form :is(.el-input__wrapper,.el-select__wrapper,.detail-code-value) {min-height:40px;}
+ .master-data-detail .detail-border-label-form :is(.el-input__wrapper,.el-select__wrapper,.detail-code-value,.detail-status-value) {min-height:40px;}
 }
 
 /* 详情页头只容纳一行标题和标准按钮，移除重复上下留白；底部沿用全局 8px 页面间距。
@@ -398,6 +408,28 @@
  margin-top:auto;
 }
 @media(max-width:600px){.master-data-detail .page-header__main {gap:4px;}}
+
+/* 独立详情使用字段清单；共用详情模板保留查看与编辑的响应式分列。 */
+.readonly-detail-section + .readonly-detail-section {margin-block-start:var(--app-section-gap,8px);}
+.readonly-detail-section > .detail-section-title {margin:0 0 6px;font-size:var(--el-font-size-medium);}
+.readonly-detail-section > .detail-field-grid {display:block;margin:0;}
+.detail-readonly-field {display:flex;flex-direction:column;gap:4px;min-width:0;padding:4px 0 10px;}
+.detail-readonly-field > .app-status-tag {align-self:flex-start;max-width:100%;}
+.detail-readonly-field > :is(span,dt),
+.detail-audit-item :is(dt,span) {
+ color:var(--el-text-color-secondary);
+ font-size:var(--el-font-size-small);
+ overflow-wrap:anywhere;
+}
+.detail-readonly-field > :is(strong,dd),
+.detail-audit-item :is(dd,strong) {
+ margin:0;
+ color:var(--el-text-color-primary);
+ font-weight:400;
+ overflow-wrap:anywhere;
+ line-height:1.6;
+}
+
 
 /* 区块间距只作用于区块之间的真实间隔；内容 padding、导航高度和边框不随参数改变。
    宿主显示页面底色，使间隔与详情卡片间隔语义一致，不在白色区块内插入空白。

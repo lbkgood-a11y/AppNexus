@@ -9,7 +9,6 @@ import type {PersonnelRow} from "./types";
 import type {PersonnelApi} from "./personnel";
 /** 人员列表仅展示摘要，编辑时从真实详情接口读取；不在列表预加载证件或履历正文。 */
 const loadIssue = ref<LoadIssue>();
-const employmentOptions=ref<{value:string;name:string}[]>([]);
 const props=defineProps<{api:PersonnelApi;errorText:(e:unknown)=>string}>();
 const {t}=useI18n();
 const rows=ref<PersonnelRow[]>([]),total=ref(0),page=ref(1),size=ref(20),keyword=ref(""),status=ref("all");
@@ -18,14 +17,13 @@ const loading=ref(false),busy=ref(false),denied=ref(false),error=ref(""),editor=
 const allowed=ref<string[]>([]),mode=ref<PersonnelMode>("view");
 const access=computed(()=>personnelAccess(allowed.value,mode.value));
 const columns=computed<ManagementColumn[]>(()=>[
- {key:"code",prop:"code",label:t("personnel.code"),minWidth:150},{key:"name",prop:"name",label:t("personnel.name"),minWidth:140},
- {key:"phone",label:t("personnel.fields.phone"),minWidth:150},{key:"email",label:t("personnel.fields.email"),minWidth:180},
- {key:"employment",label:t("personnel.employmentStatus"),minWidth:130},{key:"status",label:t("personnel.status"),width:100},
+ {key:"status",label:t("personnel.status"),width:100},{key:"code",prop:"code",label:t("personnel.code"),minWidth:150},
+ {key:"name",prop:"name",label:t("personnel.name"),minWidth:140},{key:"phone",label:t("personnel.fields.phone"),minWidth:150},
+ {key:"email",label:t("personnel.fields.email"),minWidth:180},{key:"employment",label:t("personnel.employmentStatus"),minWidth:130},
  {key:"operations",label:t("masterData.actions"),width:260,fixed:"right"}]);
 /** 每次加载重新验证准入，403 清除原档案，网络故障保留原结果供核实。 */
 async function load(){if(loading.value||busy.value)return;loading.value=true;loadIssue.value=undefined;
  try{allowed.value=await props.api.operations();denied.value=!allowed.value.includes("Person.list");if(denied.value){rows.value=[];total.value=0;return;}
- employmentOptions.value=(await props.api.options()).dictionaries?.employmentStatus??[];
  const result=await props.api.list("person",{keyword:keyword.value,enabled:status.value==="all"?undefined:status.value==="enabled",page:page.value,size:size.value});rows.value=result.rows;total.value=result.total;
  }catch(e){if((e as {response?:{status:number}})?.response?.status===403){rows.value=[];total.value=0;allowed.value=[];denied.value=true;}await presentLoadError(error,loadIssue,props.errorText(e),!rows.value.length,(e as {response?:{status?:number}})?.response?.status===403);}finally{loading.value=false;}}
 /** 查询条件变化回到第一页。 */
@@ -61,8 +59,8 @@ onMounted(load);
    <ManagementTable v-else :title="t('masterData.person')" :rows="rows" :columns="columns" :loading="loading" :busy="busy" :total="total" embedded @refresh="load">
     <template #actions><el-button v-operation="'Person.create'" type="primary" :disabled="loading||busy" @click="show('','edit')">{{t('personnel.new')}}</el-button></template>
     <template #phone="{row}">{{row.attributes.phone||'—'}}</template><template #email="{row}">{{row.attributes.email||'—'}}</template>
-    <template #employment="{row}">{{row.attributes.employmentStatus?employmentOptions.find(option=>option.value===row.attributes.employmentStatus)?.name??row.attributes.employmentStatus:'—'}}</template>
-    <template #status="{row}"><el-tag :type="row.enabled?'success':'info'">{{t('masterData.'+(row.enabled?'enabled':'disabled'))}}</el-tag></template>
+    <template #employment="{row}">{{row.employmentStatusName || (row.attributes.employmentStatus ? t('referenceName.unavailable') : '—')}}</template>
+    <template #status="{row}"><el-tag class="app-status-tag" :type="row.enabled?'success':'info'">{{t('masterData.'+(row.enabled?'enabled':'disabled'))}}</el-tag></template>
     <template #operations="{row}"><el-button v-operation="'Person.read'" link type="primary" :disabled="loading||busy" @click="show(row.id,'view')">{{t('personnel.view')}}</el-button><el-button v-operation="'Person.update|Person.createDetail|Person.updateDetail|Person.deleteDetail|Person.assign|Person.updateAssignment|Person.unassign'" link type="primary" :disabled="loading||busy" @click="show(row.id,'edit')">{{t('masterData.edit')}}</el-button><el-button v-operation="'Person.setStatus'" link :type="row.enabled?'danger':'primary'" :disabled="loading||busy" @click="toggle(row)">{{t('masterData.'+(row.enabled?'disable':'enable'))}}</el-button></template>
     <template #pagination><AppPagination v-model:current-page="page" v-model:page-size="size" :total="total" :disabled="loading||busy" @current-change="load" @size-change="search" /></template>
    </ManagementTable>

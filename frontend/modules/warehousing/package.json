@@ -5,11 +5,11 @@
   "exports": {
     ".": "./src/types.ts",
     "./inventory-overview": "./src/InventoryOverview.vue",
-    "./coil-title": "./src/CoilTitleWorkspace.vue",
-    "./coil-flow": "./src/CoilFlowWorkspace.vue",
-    "./flow-types": "./src/flow.ts",
-    "./return-transit": "./src/ReturnTransitWorkspace.vue",
-    "./return-transit-types": "./src/returnTransit.ts"
+    "./inbound-workbench": "./src/InboundWorkbench.vue",
+    "./inbound-documents": "./src/InboundDocumentWorkspace.vue",
+    "./inbound-documents-types": "./src/inboundDocuments.ts",
+    "./inbound-workbench-types": "./src/inboundWorkbench.ts",
+    "./flow-types": "./src/flow.ts"
   },
   "dependencies": {
     "@appnexus/ui": "workspace:*"

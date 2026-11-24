@@ -25,8 +25,10 @@ public final class PersonController {
    * @param personnel 人员详情、十类明细和组织用户多对多关联服务
    * @param geography 地理目录公开端口；读取前复核人员权限 */
   public PersonController(PersonManagement service,PersonnelManagement personnel,com.appnexus.platform.configuration.GeographyCatalog geography){this.service=service;this.personnel=personnel;this.geography=geography;}
-  /** 查询人员管理；真实鉴权、租户与并发校验由同一业务执行器负责。 */
+  /** 查询人员摘要；只从已完成字段保护的当前页批量回填在职状态名称。 */
   @OperationBinding(id="Person.list", reference=true)
+  @ResponseReferenceNames(@Binding(path="rows",type="dictionary:employment_status",
+      id="attributes.employmentStatus",name="employmentStatusName",uuid=false))
   @GetMapping("")
   public Object list(HttpServletRequest r,@RequestParam(defaultValue="") String keyword,@RequestParam(required=false) Boolean enabled,@RequestParam(defaultValue="1") int page,@RequestParam(defaultValue="20") int size) {return service.list(context(r),Kind.PERSON,keyword,enabled,page,size);}
   /** 查询当前成员人员档案的字段限制，不返回人员资料。 */

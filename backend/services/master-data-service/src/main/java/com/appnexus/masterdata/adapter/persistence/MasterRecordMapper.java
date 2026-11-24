@@ -36,7 +36,7 @@ public interface MasterRecordMapper extends DataAccessDeclaration.Executor {
  @com.appnexus.persistence.mybatis.GuardedScope(resource="masterdata.storagearea",tenant="tenant",recordId="id",actions="set_status",when="kind",whenValue="STORAGE_AREA")
  @com.appnexus.persistence.mybatis.GuardedScope(tenant="tenant",serviceOperation="masterdata.countryregion:set_status",serviceKeys={"id"},when="kind",whenValue="COUNTRY_REGION")
  @com.appnexus.persistence.mybatis.GuardedScope(tenant="tenant",serviceOperation="masterdata.subdivision:set_status",serviceKeys={"id"},when="kind",whenValue="SUBDIVISION")
- int status(@Param("tenant") String tenant,@Param("kind") com.appnexus.masterdata.api.masterdata.MasterData.Kind kind,@Param("id") String id,@Param("enabled") boolean enabled,@Param("version") long version);
+ int status(@Param("tenant") String tenant,@Param("kind") com.appnexus.masterdata.api.masterdata.MasterData.Kind kind,@Param("id") String id,@Param("enabled") boolean enabled,@Param("version") long version,@Param("actor") String actor);
  /** 授权父记录中的原始字段用于写保护合并，不返回未授权原文。 */
  @com.appnexus.persistence.mybatis.GuardedScope(resource="masterdata.partner",tenant="tenant",recordId="id",actions="update",when="kind",whenValue="PARTNER")
  @com.appnexus.persistence.mybatis.GuardedScope(resource="masterdata.warehouse",tenant="tenant",recordId="id",actions="update",when="kind",whenValue="WAREHOUSE")

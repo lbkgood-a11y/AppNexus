@@ -31,3 +31,17 @@ export async function executeObjectCommand<T>(path: string, input: unknown, requ
   const csrf = await http.request<{ token: string; headerName: string }>("get", "/bff/csrf");
   return http.request("post", path, {data: input,headers: {[csrf.headerName]: csrf.token,"Idempotency-Key": requestId}});
 }
+
+/** 当前对象的编码规则候选，仅查询指定字段，不消耗序号。 */
+export function listCodingOptions(objectType: string, field: string) {
+  return http.request<{ encoderKey: string; name: string }[]>(
+    "get", `/api/business-objects/${encodeURIComponent(objectType)}/coding-options`, { params: { field } }
+  );
+}
+
+/** 使用用户主动选定的编码器发号，失败重试由调用方保留同一 UUID。 */
+export function issueObjectCode(objectType: string, key: string, requestId: string) {
+  return executeObjectCommand<{ code: string }>(
+    `/api/business-objects/${encodeURIComponent(objectType)}/encoders/${encodeURIComponent(key)}/issue`, {}, requestId
+  );
+}

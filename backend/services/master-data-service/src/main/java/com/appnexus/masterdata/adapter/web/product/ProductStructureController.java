@@ -29,6 +29,43 @@ public final class ProductStructureController {
  /** 以父商品版本保存计量配置。 */
  @PutMapping("/measurement") @OperationBinding(id="Product.saveMeasurement",reference=true)
  public Object saveMeasurement(HttpServletRequest r,@PathVariable String product,@RequestBody ProductMeasurement.Change change){return service.saveMeasurement(c(r),product,change);}
+ /** 以父子版本维护现有货号计量，不接受修改货号编码或所属规格。 */
+ @PutMapping("/skus/{sku}/measurement") @OperationBinding(id="Product.saveSkuMeasurement",reference=true)
+ public Object saveSkuMeasurement(HttpServletRequest r,@PathVariable String product,@PathVariable String sku,
+     @RequestBody ProductMeasurement.SkuChange change){
+  return service.saveSkuMeasurement(c(r),product,sku,change);
+ }
+ /** 确认商品生效规格轴模板。 */
+ @PutMapping("/specification-template") @OperationBinding(id="Product.saveSpecificationTemplate",reference=true)
+ public Object saveSpecificationTemplate(HttpServletRequest r,@PathVariable String product,
+     @RequestBody ProductStructureCommands.SpecificationTemplate input){
+  return service.saveSpecificationTemplate(c(r),product,input);
+ }
+ /** 保存 SPU 的生效模板，类目只提供默认候选。 */
+ @PutMapping("/sku-attribute-template") @OperationBinding(id="Product.saveSkuAttributeTemplate",reference=true)
+ public Object saveSkuAttributeTemplate(HttpServletRequest r,@PathVariable String product,
+     @RequestBody ProductStructureCommands.SkuAttributeTemplate input){
+  return service.saveSkuAttributeTemplate(c(r),product,input);
+ }
+ /** 读取授权货号普通属性工作区。 */
+ @GetMapping("/skus/{sku}/attributes") @OperationBinding(id="Product.readSkuAttributes",reference=true)
+ public Object skuAttributes(HttpServletRequest r,@PathVariable String product,@PathVariable String sku){
+  return service.skuAttributes(c(r),product,sku);
+ }
+
+ /** 以父子版本保存已有货号的普通属性。 */
+ @PutMapping("/skus/{sku}/attributes") @OperationBinding(id="Product.saveSkuAttributes",reference=true)
+ public Object saveSkuAttributes(HttpServletRequest r,@PathVariable String product,@PathVariable String sku,
+     @RequestBody ProductStructureCommands.SkuAttributes input){
+  return service.saveSkuAttributes(c(r),product,sku,input);
+ }
+
+ /** 保存该货号的批次模板版本；模板归属和发布状态由服务端校验。 */
+ @PutMapping("/skus/{sku}/batch-template") @OperationBinding(id="Product.saveSkuBatchTemplate",reference=true)
+ public Object saveSkuBatchTemplate(HttpServletRequest r,@PathVariable String product,@PathVariable String sku,
+     @RequestBody ProductStructureCommands.SkuBatchTemplate input){
+  return service.saveSkuBatchTemplate(c(r),product,sku,input);
+ }
  /** 根据当前商品已存规格试算。 */
  @GetMapping("/measurement/calculation") @OperationBinding(id="Product.calculatePackaging",reference=true)
  public Object calculatePackaging(HttpServletRequest r,@PathVariable String product,@RequestParam String code,@RequestParam String quantity){return service.calculatePackaging(c(r),product,code,quantity);}

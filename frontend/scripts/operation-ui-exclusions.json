@@ -1,7 +1,27 @@
 [
+{
+  "key": "[\"frontend/apps/admin/src/views/warehousing/documents.vue\",\"el-button\",\"backToList\",null,null,\"{{ t(\\\"partner.back\\\") }}\"]",
+  "reason": "返回通知列表只改变本地路由，列表读取继续由原统一操作授权。"
+},
   {
-    "key": "[\"frontend/apps/admin/src/views/warehousing/inbound-batch-workspace.vue\",\"el-button\",\"emit('cancel')\",null,null,\"{{ t(\\\"masterData.cancel\\\") }}\"]",
-    "reason": "关闭内存草稿，未发出业务命令。"
+    "key": "[\"frontend/modules/master-data/src/product/ProductEditor.vue\",\"el-button\",\"skuTemplateDialog=false\",null,null,\"{{t('masterData.cancel')}}\"]",
+    "reason": "关闭商品 SKU 属性模板编辑弹窗，未提交业务数据。"
+  },
+  {
+    "key": "[\"frontend/modules/master-data/src/product/ProductSkuManagement.vue\",\"el-button\",\"attributeDialog=false\",null,null,\"{{t('masterData.cancel')}}\"]",
+    "reason": "关闭 SKU 属性编辑弹窗，未提交业务数据。"
+  },
+  {
+    "key": "[\"frontend/modules/master-data/src/product/ProductSkuManagement.vue\",\"el-button\",\"measurement.packaging.push({code:'',name:'',unitId:'',quantity:''})\",null,null,\"{{t('productSku.addPackaging')}}\"]",
+    "reason": "仅在本地计量草稿增加包装行，提交时仍由 SKU 计量保存操作准入。"
+  },
+  {
+    "key": "[\"frontend/modules/master-data/src/product/ProductSkuManagement.vue\",\"el-button\",\"measurement.packaging.splice(index,1)\",null,null,\"{{t('productSku.removePackaging')}}\"]",
+    "reason": "仅在本地计量草稿移除包装行，提交时仍由 SKU 计量保存操作准入。"
+  },
+  {
+    "key": "[\"frontend/modules/master-data/src/product/ProductSkuManagement.vue\",\"el-button\",\"batchOpen=false\",null,null,\"{{t('masterData.cancel')}}\"]",
+    "reason": "关闭批次模板编辑弹窗，未发出保存请求。"
   },
   {
     "key": "[\"frontend/apps/admin/src/views/warehousing/inbound-notice-workspace.vue\",\"el-button\",\"lines.splice(index,1)\",null,null,\"{{ label('removeLine') }}\"]",
@@ -1080,15 +1100,15 @@
     "reason": "提交本地已加载工作流列表的关键词过滤并重置页码，不发起工作流命令或保存配置。"
   },
   {
-    "key": "[\"frontend/modules/warehousing/src/CoilTitleWorkspace.vue\",\"el-button\",\"reset\",null,null,\"{{t('masterData.reset')}}\"]",
-    "reason": "仅重置客户端筛选、游标和当前结果；不发起业务请求。"
+    "key": "[\"frontend/apps/admin/src/views/warehousing/inbound-notice-workspace.vue\",\"el-button\",\"emit('cancel')\",null,null,\"{{ t(\\\"partner.back\\\") }}\"]",
+    "reason": "仅返回入仓通知查询界面，不提交或写入单据。"
   },
   {
-    "key": "[\"frontend/modules/warehousing/src/CoilTitleWorkspace.vue\",\"el-button\",\"open=false\",null,null,\"{{t('masterData.cancel')}}\"]",
-    "reason": "仅关闭过户弹窗，不提交过户或其他业务操作。"
+    "key": "[\"frontend/apps/admin/src/views/warehousing/inbound-notice-workspace.vue\",\"el-button\",\"lineDialog = false\",null,null,\"{{ t('masterData.cancel') }}\"]",
+    "reason": "仅关闭明细编辑弹窗，放弃本次未应用的草稿修改。"
   },
   {
-    "key": "[\"frontend/modules/warehousing/src/ReturnTransitWorkspace.vue\",\"el-button\",\"actionOpen=false\",null,null,\"{{t('masterData.cancel')}}\"]",
-    "reason": "只关闭当前在途处置弹窗，不执行业务写入。"
+    "key": "[\"frontend/apps/admin/src/views/warehousing/documents.vue\",\"el-button\",\"resetDocumentQuery\",null,null,\"{{ t(\\\"masterData.reset\\\") }}\"]",
+    "reason": "仅清空页面查询条件、地址单号和本地结果，不写入业务数据。"
   }
 ]

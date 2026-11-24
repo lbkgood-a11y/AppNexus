@@ -9,11 +9,13 @@ import java.util.*;
 /** 主数据存储端口MyBatis适配；固定枚举映射，版本、审计与原聚合事务保持。 */
 public final class MyBatisMasterDataRepository implements MasterDataRepository {
  private final MasterRecordMapper mapper;
+ private final MasterStatusHistoryMapper statusHistory;
  private final AccessAuthorization access;
  private final ScopedWriteGate writes;
  /** @param mapper 固定主数据映射 @param access 原地理目录操作准入 @param writes 同数据源事务门禁 */
- public MyBatisMasterDataRepository(MasterRecordMapper mapper,AccessAuthorization access,ScopedWriteGate writes){
+ public MyBatisMasterDataRepository(MasterRecordMapper mapper,AccessAuthorization access,ScopedWriteGate writes,MasterStatusHistoryMapper statusHistory){
   this.mapper=Objects.requireNonNull(mapper);
+  this.statusHistory=Objects.requireNonNull(statusHistory);
   this.access=access;
   this.writes=writes;
  }
@@ -29,7 +31,8 @@ public final class MyBatisMasterDataRepository implements MasterDataRepository {
  }
  @Override public void create(VerifiedTenantContext c,Kind kind,String id,Input input,Map<String,String> values){authorizeGeography(c,kind,id,"create");mapper.create(c.tenantId().toString(),kind,id,input,values,c.accountId().toString());}
  @Override public void update(VerifiedTenantContext c,Kind kind,String id,Input input,Map<String,String> values){authorizeGeography(c,kind,id,"update");if(mapper.update(c.tenantId().toString(),kind,id,input,values)!=1)throw new Rejection(409,"MASTER_DATA_CHANGED");}
- @Override public void status(VerifiedTenantContext c,Kind kind,String id,Status input){authorizeGeography(c,kind,id,"set_status");if(mapper.status(c.tenantId().toString(),kind,id,input.enabled(),input.version())!=1)throw new Rejection(409,"MASTER_DATA_CHANGED");}
+ @Override public void status(VerifiedTenantContext c,Kind kind,String id,Status input){authorizeGeography(c,kind,id,"set_status");if(mapper.status(c.tenantId().toString(),kind,id,input.enabled(),input.version(),c.accountId().toString())!=1)throw new Rejection(409,"MASTER_DATA_CHANGED");
+  statusHistory.append(c.tenantId().toString(),kind.objectType,id,input.version(),input.enabled(),c.accountId().toString());}
  @Override public void organization(VerifiedTenantContext c,String id,String organization){mapper.organization(c.tenantId().toString(),id,organization);}
  @Override public Map<String,String> previous(VerifiedTenantContext c,Kind kind,String id){var rows=mapper.previous(c.tenantId().toString(),kind,id);return rows.isEmpty()?Map.of():rows.getFirst();}
  @Override public void audit(VerifiedTenantContext c,Kind kind,String id){mapper.audit(c.tenantId().toString(),kind,id,c.accountId().toString());}

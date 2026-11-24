@@ -24,6 +24,8 @@ public final class ProductCategoryDeclaration implements Provider {
                         new PageOperation("master-data/product-category", "/master-data/product-category", "新增商品分类", "Create category", "POST", "/api/master-data/product-category")),
                 operation("ProductCategory", "update", "编辑商品分类", "Update category", "masterdata.productcategory:update",
                         new PageOperation("master-data/product-category", "/master-data/product-category", "编辑商品分类", "Update category", "PUT", "/api/master-data/product-category/{id}")),
+                operation("ProductCategory", "readStatusHistory", "查看启停历史", "Read status history", "masterdata.productcategory:read",
+                        new PageOperation("master-data/product-category", "/master-data/product-category", "查看启停历史", "Read status history", "GET", "/api/master-data/product-category/{id}/status-history")),
                 operation("ProductCategory", "setStatus", "启停商品分类", "Set status", "masterdata.productcategory:set_status",
                         new PageOperation("master-data/product-category", "/master-data/product-category", "启停商品分类", "Set status", "PUT", "/api/master-data/product-category/{id}/status")),
                 operation("ProductCategory", "publishConfiguration", "发布分类配置", "Publish configuration", "masterdata.productcategory:publish",

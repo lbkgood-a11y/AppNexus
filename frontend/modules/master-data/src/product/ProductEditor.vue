@@ -5,15 +5,17 @@ import {computed,onMounted,reactive,ref,watch} from "vue";
 import {useI18n} from "vue-i18n";
 import {onBeforeRouteLeave} from "vue-router";
 import {ElMessage,ElMessageBox,type FormInstance} from "element-plus";
-import {TabbedDetailTemplate,AppPagination,PageHeader,RecordAuditDetails,ManagedDialog,FloatingError,LoadErrorResult,presentLoadError,setErrorFeedback,type LoadIssue} from "@appnexus/ui";
+import {TabbedDetailTemplate,PageHeader,RecordAuditDetails,ManagedDialog,FloatingError,LoadErrorResult,presentLoadError,setErrorFeedback,type LoadIssue} from "@appnexus/ui";
 import ProductApprovals from "./ProductApprovals.vue";
 import ProductStructure from "./ProductStructure.vue";
+import type {ProductCatalogApi} from "./catalog";
 import ProductImages from "./ProductImages.vue";
 import ProductAttributes from "./ProductAttributes.vue";
-import type {ProductApi,ProductRecord,ProductConfiguration,ProductDraft,ProductValue,ProductMigration,ProductPreview,ProductOption,ProductChange} from "./product";
+import ProductHistoryButton from "./ProductHistoryButton.vue";
+import type {ProductApi,ProductRecord,ProductConfiguration,ProductDraft,ProductValue,ProductMigration,ProductPreview,ProductOption} from "./product";
 /** 商品主档领域编辑器；普通修改不提交结构，迁移独立预览/确认，全量草稿只保存在内存。 */
 const loadIssue = ref<LoadIssue>();
-const props=defineProps<{id:string;mode?:"view"|"edit";api:ProductApi;errorText:(error:unknown)=>string}>();
+const props=defineProps<{id:string;mode?:"view"|"edit";api:ProductApi;listCatalog:ProductCatalogApi["list"];catalogVersions:ProductCatalogApi["versions"];errorText:(error:unknown)=>string}>();
 const emit=defineEmits<{close:[]}>();const {t,locale}=useI18n();
 /** 与公共审计详情保持相同的语言和浏览器时区；非法或未知时间不猜测。 */
 function displayTime(value:string|null|undefined){if(!value)return t("recordAudit.unknown");const date=new Date(value);return Number.isNaN(date.getTime())?t("recordAudit.unknown"):new Intl.DateTimeFormat(locale.value,{dateStyle:"medium",timeStyle:"medium"}).format(date);}
@@ -28,9 +30,7 @@ const attributesValid=ref(true);
 const values=reactive<Record<string,string|string[]>>({});
 const organizationOptions=ref<Array<{id:string;name:string}>>([]);
 const draft=reactive<ProductDraft>({organizationId:null,code:"",name:"",barcode:"",shortName:null,categoryId:null,configId:null,productForm:null,unitId:null,description:null,brand:null,origin:null,values:[]});
-const completion=ref<string[]>([]),changes=ref<ProductChange[]>([]),historyPage=ref(1),historyTotal=ref(0);
-const historyOpen=ref(false),historyLoading=ref(false),historyError=ref(""),historyDenied=ref(false);
-let historyRequest=0;
+const completion=ref<string[]>([]);
 const detailTabs=computed(()=>[
  {name:"measurement",label:"productMeasurement.title",operation:"Product.readMeasurement"},
  {name:"structure",label:"productStructure.title",operation:"Product.readStructure"},
@@ -38,6 +38,70 @@ const detailTabs=computed(()=>[
  {name:"images",label:"productImages.title",operation:"Product.listImages"}
 ].filter(item=>operations.value.includes(item.operation)));
 const detailTab=ref("");
+const skuTemplateDialog=ref(false);
+const templatePurpose=ref<"SKU"|"SPEC">("SKU");
+const templateLabel=computed(()=>t(templatePurpose.value==="SPEC"?"productV1.specificationTemplate":"productV1.skuTemplate"));
+const templateOperation=computed(()=>templatePurpose.value==="SPEC"?"Product.saveSpecificationTemplate":"Product.saveSkuAttributeTemplate");
+const skuTemplateChoice=ref<string|null>(null);
+const skuTemplateOptions=ref<Array<{id:string;name:string;disabled?:boolean}>>([]);
+const skuTemplateTarget=ref<{id:string;version:number}>();
+
+/** 类目默认项只预选，按实际已发布的 SKU 模板版本确认。 */
+async function openSkuTemplate(purpose:"SKU"|"SPEC"){
+ const item=record.value;
+ if(!item||busy.value||dirty.value)return;
+ busy.value=true;
+ try{
+  const definitions=[];
+  for(let page=1;;page++){
+   const result=await props.listCatalog("template",{keyword:"",purpose,page,size:100});
+   definitions.push(...result.rows.filter(row=>row.enabled));
+   if(!result.rows.length||page*100>=result.total)break;
+  }
+  const choices:Array<{id:string;name:string;disabled?:boolean}>=[];
+  for(const definition of definitions){
+   const versions=await props.catalogVersions("template",definition.id);
+   for(const version of versions){
+    if(version.state==="PUBLISHED"){
+     choices.push({id:version.id,name:definition.code+" / "+definition.name+" · r"+version.versionNo});
+    }
+   }
+  }
+  if(record.value?.id!==item.id)return;
+  const current=purpose==="SPEC"?item.specificationTemplateVersionId:item.skuAttributeTemplateVersionId;
+  if(current&&!choices.some(option=>option.id===current)){
+   choices.push({id:current,name:t("productV1.skuTemplateUnavailable"),disabled:true});
+  }
+  templatePurpose.value=purpose;
+  skuTemplateOptions.value=choices;
+  skuTemplateChoice.value=current??choices.find(option=>option.id===config.value?.templates[purpose])?.id??null;
+  skuTemplateTarget.value={id:item.id,version:item.version};
+  skuTemplateDialog.value=true;
+ }catch(e){
+  await setErrorFeedback(error,props.errorText(e));
+ }finally{
+  busy.value=false;
+ }
+}
+
+/** 单独确认模板，商品草稿不能随该操作误提交。 */
+async function saveSkuTemplate(){
+ const target=skuTemplateTarget.value;
+ if(!target||busy.value||dirty.value||record.value?.id!==target.id)return;
+ busy.value=true;
+ try{
+  const request={version:target.version,templateVersionId:skuTemplateChoice.value};
+  if(templatePurpose.value==="SPEC")await props.api.saveSpecificationTemplate(target.id,request);
+  else await props.api.saveSkuAttributeTemplate(target.id,request);
+  skuTemplateDialog.value=false;
+  await load();
+  ElMessage.success(t("masterData.saved"));
+ }catch(e){
+  await setErrorFeedback(error,props.errorText(e));
+ }finally{
+  busy.value=false;
+ }
+}
 const canReadHistory=computed(()=>!!record.value&&operations.value.includes("Product.readChanges"));
 const organizationLabel=computed(()=>(record.value?.organizationId===draft.organizationId ? record.value?.organizationName : undefined)
  ?? organizationOptions.value.find(item=>item.id===draft.organizationId)?.name ?? t("productV1.organizationUnknown"));
@@ -118,38 +182,6 @@ async function status(next:"ENABLED"|"DISABLED"){
  busy.value=true;try{await accept(await props.api.status(id.value,next,record.value!.version));ElMessage.success(t("masterData.statusSaved"));}catch(e){await fail(e);if(record.value){try{completion.value=(await props.api.read(id.value)).completionIssues;}catch{}}}finally{busy.value=false;}
 }
 async function archive(restore:boolean){try{await ElMessageBox.confirm(t(restore?"productV1.restoreHint":"productV1.archiveHint"),t("productV1.title"),{confirmButtonText:t(restore?"productV1.restore":"productV1.archive"),cancelButtonText:t("masterData.cancel")});}catch{return;}busy.value=true;try{await accept(await props.api.archive(id.value,record.value!.version,restore));}catch(e){await fail(e);}finally{busy.value=false;}}
-/** 每次打开按原读取授权请求第一页；历史异常仅影响弹窗，不清理详情或草稿。 */
-function openHistory(){
- if(!canReadHistory.value)return;
- historyPage.value=1;
- historyOpen.value=true;
- void readHistory();
-}
-async function readHistory(){
- if(!historyOpen.value||!canReadHistory.value)return;
- const request=++historyRequest;
- historyLoading.value=true;
- historyError.value="";
- historyDenied.value=false;
- try{
-  const data=await props.api.changes(id.value,historyPage.value,20);
-  if(request!==historyRequest)return;
-  changes.value=data.rows;
-  historyTotal.value=data.total;
- }catch(cause){
-  if(request===historyRequest){
-   changes.value=[];
-   historyTotal.value=0;
-   historyDenied.value=(cause as {response?:{status:number}})?.response?.status===403;
-   historyError.value=props.errorText(cause);
-  }
- }finally{
-  if(request===historyRequest)historyLoading.value=false;
- }
-}
-watch(historyOpen,open=>{if(!open){++historyRequest;changes.value=[];historyError.value="";historyLoading.value=false;historyTotal.value=0;}},{flush:"sync"});
-watch(canReadHistory,allowed=>{if(!allowed)historyOpen.value=false;});
-function snapshotText(value:string|null){if(!value)return t("recordAudit.unknown");try{const row=JSON.parse(value) as ProductRecord&{changeReason?:string};return [row.name,...(row.changeReason?[t("productV1.reason")+": "+row.changeReason]:[]),t("productV1."+row.status),t("productV1.version")+": "+row.version,t("productV1.structureVersion")+": "+row.structureRevision,...(row.values??[]).map(v=>v.attributeName+": "+(v.textValue??v.integerValue??v.decimalValue??v.booleanValue??v.dateValue??row.choices?.filter(c=>c.templateItemId===v.templateItemId).map(c=>c.label).join(" / ")??"—"))].join("\n");}catch{return t("productV1.snapshotUnsupported");}}
 onBeforeRouteLeave(async()=>!busy.value&&await confirmDiscard());
 onMounted(load);
 </script>
@@ -159,18 +191,18 @@ onMounted(load);
 <template #meta>
  <el-tag v-if="props.mode==='view'" type="info">{{t('partner.view')}}</el-tag>
  <el-tag v-if="id&&draft.code" effect="plain">{{draft.code}}</el-tag>
- <el-tag v-if="record" :type="record.status==='ENABLED'?'success':'info'">{{t('productV1.'+record.status)}}</el-tag>
- <el-tag v-if="record" effect="plain">{{t('productV1.'+record.structureState)}}</el-tag>
- <el-tag v-if="record?.approvalPending" type="warning">{{t('productApproval.SUBMITTED')}}</el-tag>
- <el-tag v-if="record?.archivedAt" type="info">{{t('productV1.archived')}}</el-tag>
+ <el-tag class="app-status-tag" v-if="record" :type="record.status==='ENABLED'?'success':'info'">{{t('productV1.'+record.status)}}</el-tag>
+ <el-tag class="app-status-tag" v-if="record">{{t('productV1.'+record.structureState)}}</el-tag>
+ <el-tag class="app-status-tag" v-if="record?.approvalPending" type="warning">{{t('productApproval.SUBMITTED')}}</el-tag>
+ <el-tag class="app-status-tag" v-if="record?.archivedAt" type="info">{{t('productV1.archived')}}</el-tag>
 </template>
 <template #actions>
 <el-button :disabled="busy" @click="close">{{t('productV1.back')}}</el-button>
-<el-button v-if="!migrationMode&&editing" v-operation="saveOperation" type="primary" :loading="busy" @click="save">{{t('masterData.save')}}</el-button>
+<el-button v-if="props.mode!=='view'&&!migrationMode&&editing" v-operation="saveOperation" type="primary" :loading="busy" @click="save">{{t('masterData.save')}}</el-button>
 <el-button v-if="id&&!migrationMode&&canStructure" v-operation="'Product.previewStructure'" :disabled="busy" @click="startMigration">{{t('productV1.migrate')}}</el-button>
 <el-button v-if="migrationMode" :disabled="busy" @click="cancelMigration">{{t('masterData.cancel')}}</el-button>
 <el-button v-if="migrationMode" v-operation="'Product.previewStructure'" type="primary" :loading="busy" @click="previewMigration">{{t('productV1.preview')}}</el-button>
-<template v-if="record&&!record.approvalPending&&props.mode!=='view'&&!migrationMode&&!dirty">
+<template v-if="props.mode!=='view'&&record&&!record.approvalPending&&!migrationMode&&!dirty">
 <el-button v-if="record.status!=='ENABLED'&&!record.archivedAt" v-operation="'Product.setStatus'" :disabled="busy" @click="status('ENABLED')">{{t('masterData.enable')}}</el-button>
 <el-button v-if="record.status==='ENABLED'" v-operation="'Product.setStatus'" type="danger" :disabled="busy" @click="status('DISABLED')">{{t('masterData.disable')}}</el-button>
 <el-button v-if="record.status==='DRAFT'&&!record.archivedAt" v-operation="'Product.archiveDraft'" :disabled="busy" @click="archive(false)">{{t('productV1.archive')}}</el-button>
@@ -178,12 +210,12 @@ onMounted(load);
 </template>
 </template>
 <template v-if="canReadHistory" #trailing>
-<el-button v-operation="'Product.readChanges'" :disabled="loading||busy" @click="openHistory">{{t('productV1.history')}}</el-button>
+<ProductHistoryButton :id="id" :api="api" :error-text="errorText" :disabled="loading||busy" />
 </template></PageHeader></template>
 <template #content>
-<FloatingError :title="error"><el-button v-operation="'Product.read'" :disabled="busy" @click="load">{{t('masterData.retry')}}</el-button></FloatingError>
+<FloatingError :title="error"><el-button v-if="props.mode!=='view'" v-operation="'Product.read'" :disabled="busy" @click="load">{{t('masterData.retry')}}</el-button></FloatingError>
 <el-skeleton v-if="loading" :rows="6" animated/>
-<LoadErrorResult v-else-if="loadIssue" :issue="loadIssue"><template #retry><el-button v-operation="'Product.read'" :disabled="busy||loading" @click="load">{{t('masterData.retry')}}</el-button></template></LoadErrorResult>
+<LoadErrorResult v-else-if="loadIssue" :issue="loadIssue"><template v-if="props.mode!=='view'" #retry><el-button v-operation="'Product.read'" :disabled="busy||loading" @click="load">{{t('masterData.retry')}}</el-button></template></LoadErrorResult>
 <el-form v-else-if="!failed" ref="form" class="detail-profile-form detail-border-label-form" :model="draft" label-position="top" @submit.prevent="migrationMode?previewMigration():save()">
 <el-card shadow="never" class="detail-section">
 <template #header><div class="detail-section-heading"><h2>{{t('productV1.basic')}}</h2></div></template>
@@ -197,6 +229,7 @@ onMounted(load);
 </el-form-item>
 <div v-else class="detail-readonly-field"><span>{{t('productV1.organizationId')}}</span><strong>{{organizationLabel}}</strong></div>
 <el-form-item v-if="editing&&!id" :label="t('masterData.code')" prop="code" :rules="[{required:true,message:t('masterData.required')},{pattern:/^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/,message:t('masterData.codeRule')}]"><el-input v-model="draft.code" maxlength="64" :disabled="busy"/></el-form-item><div v-else class="detail-readonly-field"><span>{{t('masterData.code')}}</span><strong>{{draft.code||'—'}}</strong></div>
+<div v-if="record" class="detail-readonly-field"><span>{{t('masterData.status')}}</span><el-tag class="app-status-tag" :type="record.status==='ENABLED'?'success':'info'">{{t('productV1.'+record.status)}}</el-tag></div>
 <el-form-item v-if="editing&&!migrationMode" :label="t('masterData.name')" prop="name" :rules="[{required:true,whitespace:true,message:t('masterData.required')}]"><el-input v-model="draft.name" maxlength="200" :disabled="busy"/></el-form-item><div v-else class="detail-readonly-field"><span>{{t('masterData.name')}}</span><strong>{{draft.name||'—'}}</strong></div>
 <el-form-item v-if="editing&&!migrationMode" :label="t('productV1.shortName')"><el-input v-model="draft.shortName" maxlength="100" :disabled="busy"/></el-form-item><div v-else class="detail-readonly-field"><span>{{t('productV1.shortName')}}</span><strong>{{draft.shortName||'—'}}</strong></div>
 <el-form-item v-if="editing&&structureEditable" :label="t('productV1.categoryId')">
@@ -237,20 +270,44 @@ onMounted(load);
 <template v-if="record&&!loading&&!failed&&detailTabs.length" #tabs>
  <el-tabs v-model="detailTab">
   <el-tab-pane v-for="item in detailTabs" :key="item.name" :name="item.name" :label="t(item.label)" lazy>
-   <template v-if="item.name==='measurement'"><ProductMeasurementPanel :key="record.version" :id="id" :readonly="!editing||record.approvalPending||record.status==='ENABLED'||dirty||!operations.includes('Product.saveMeasurement')" :api="api" :base-unit-name="record.baseUnit?.name" :error-text="errorText" @changed="load"/></template>
-   <template v-else-if="item.name==='structure'"><ProductStructure :key="record.version" :id="id" :version="record.version" :readonly="!editing||record.status==='ENABLED'||dirty" :api="api" :fields="config?.fields.filter(f=>f.purpose==='SPEC')??[]" :error-text="errorText" @changed="load"/></template>
-   <template v-else-if="item.name==='approval'"><ProductApprovals :key="record.version" :id="id" :version="record.version" :readonly="props.mode==='view'||record.status==='ENABLED'||dirty||!!record.archivedAt" :can-submit="operations.includes('ProductApproval.submit')" :api="api" :error-text="errorText" @changed="load"/></template>
+   <template v-if="item.name==='measurement'"><ProductMeasurementPanel :readonly-view="props.mode==='view'" :key="record.version" :id="id" :readonly="!editing||record.approvalPending||record.status==='ENABLED'||dirty||!operations.includes('Product.saveMeasurement')" :api="api" :base-unit-name="record.baseUnit?.name" :error-text="errorText" @changed="load"/></template>
+   <template v-else-if="item.name==='structure'">
+    <el-form-item :label="t('productV1.specificationTemplate')">
+     <el-tag :type="record.specificationTemplateVersionId?'success':'info'">
+      {{t(record.specificationTemplateVersionId?'productSku.batchConfigured':'productSku.batchUnconfigured')}}
+     </el-tag>
+     <el-button v-if="editing && record.status!=='ENABLED'" v-operation="'Product.saveSpecificationTemplate'"
+       link type="primary" :disabled="busy||dirty" @click="openSkuTemplate('SPEC')">{{t('masterData.edit')}}</el-button>
+    </el-form-item>
+    <el-form-item :label="t('productV1.skuTemplate')">
+     <el-tag :type="record.skuAttributeTemplateVersionId?'success':'info'">
+      {{t(record.skuAttributeTemplateVersionId?'productSku.batchConfigured':'productSku.batchUnconfigured')}}
+     </el-tag>
+     <el-button v-if="editing && record.status!=='ENABLED'" v-operation="'Product.saveSkuAttributeTemplate'"
+       link type="primary" :disabled="busy||dirty" @click="openSkuTemplate('SKU')">{{t('masterData.edit')}}</el-button>
+    </el-form-item>
+    <ProductStructure :readonly-view="props.mode==='view'" :key="record.version" :id="id" :version="record.version" :readonly="!editing||record.status==='ENABLED'||dirty" :api="api" :fields="config?.fields.filter(f=>f.purpose==='SPEC')??[]" :error-text="errorText" @changed="load"/></template>
+   <template v-else-if="item.name==='approval'"><ProductApprovals :key="record.version" :id="id" :version="record.version" :readonly="props.mode==='view'||record.status==='ENABLED'||dirty||!!record.archivedAt" :readonly-view="props.mode==='view'" :can-submit="operations.includes('ProductApproval.submit')" :api="api" :error-text="errorText" @changed="load"/></template>
    <template v-else><ProductImages :key="record.version" :id="id" :version="record.version" :readonly="!editing||record.status==='ENABLED'||dirty" :api="api" :error-text="errorText" @changed="load"/></template>
   </el-tab-pane>
  </el-tabs>
 </template>
 </TabbedDetailTemplate>
-<ManagedDialog v-model="historyOpen" :title="t('productV1.history')" width="min(1080px, calc(100vw - 32px))">
- <el-result v-if="historyError" :icon="historyDenied?'warning':'error'" :title="historyError">
-  <template v-if="!historyDenied" #extra><el-button v-operation="'Product.readChanges'" @click="readHistory">{{t('masterData.retry')}}</el-button></template>
- </el-result>
- <template v-else><VxeTable border :loading="historyLoading" :column-config="{resizable:true}" :data="changes"><VxeColumn field="version" :title="t('productV1.version')" width="90"/><VxeColumn :title="t('productV1.event')"><template #default="{row}">{{t('productV1.event_'+row.eventType)}}</template></VxeColumn><VxeColumn :title="t('recordAudit.createdAt')" min-width="180"><template #default="{row}">{{displayTime(row.createdAt)}}</template></VxeColumn><VxeColumn :title="t('productV1.before')"><template #default="{row}"><pre>{{row.schemaVersion===1?snapshotText(row.beforeSnapshot):t('productV1.snapshotUnsupported')}}</pre></template></VxeColumn><VxeColumn :title="t('productV1.after')"><template #default="{row}"><pre>{{row.schemaVersion===1?snapshotText(row.afterSnapshot):t('productV1.snapshotUnsupported')}}</pre></template></VxeColumn></VxeTable><AppPagination v-model:current-page="historyPage" :page-size="20" :total="historyTotal" :disabled="historyLoading" @current-change="readHistory"/></template>
-</ManagedDialog>
+<ManagedDialog v-model="skuTemplateDialog" :title="templateLabel" :busy="busy">
+  <el-form class="business-border-label-form" label-position="top" @submit.prevent="saveSkuTemplate">
+   <el-form-item :label="templateLabel">
+    <el-select v-model="skuTemplateChoice" filterable clearable @clear="skuTemplateChoice=null">
+     <el-option v-for="option in skuTemplateOptions" :key="option.id" :value="option.id"
+       :label="option.name" :disabled="option.disabled"/>
+    </el-select>
+   </el-form-item>
+  </el-form>
+  <template #footer>
+   <el-button :disabled="busy" @click="skuTemplateDialog=false">{{t('masterData.cancel')}}</el-button>
+   <el-button v-operation="templateOperation" type="primary" :loading="busy"
+     @click="saveSkuTemplate">{{t('masterData.save')}}</el-button>
+  </template>
+ </ManagedDialog>
 <ManagedDialog v-model="previewOpen" :title="t('productV1.preview')" :busy="busy">
 <template v-if="preview"><p>{{t('productV1.previewNotice')}}</p><el-descriptions :column="1" border><el-descriptions-item :label="t('productV1.version')">{{preview.sourceVersion}}</el-descriptions-item><el-descriptions-item :label="t('productV1.target')">{{config?.path||'—'}} / {{config?.revision??'—'}}</el-descriptions-item><el-descriptions-item :label="t('productV1.expires')">{{displayTime(preview.expiresAt)}}</el-descriptions-item></el-descriptions><p v-if="preview.completionIssues.length">{{t('productV1.completion')}}: {{preview.completionIssues.map(issueName).join(' / ')}}</p><el-checkbox v-if="preview.droppedItemIds.length" v-model="dropConfirmed">{{t('productV1.confirmDropped',{count:preview.droppedItemIds.length})}}</el-checkbox><p v-if="ambiguous">{{t('productV1.resultUnknown')}}</p></template>
 <template #footer><el-button :disabled="busy" @click="previewOpen=false">{{t('masterData.cancel')}}</el-button><el-button v-if="ambiguous" v-operation="'Product.read'" :disabled="busy" @click="verifyResult">{{t('productV1.verify')}}</el-button><el-button v-if="ambiguous" v-operation="'Product.migrateStructure'" :loading="busy" @click="executeMigration(true)">{{t('productV1.retrySame')}}</el-button><el-button v-else v-operation="'Product.migrateStructure'" type="primary" :loading="busy" :disabled="!preview?.executable||!dropConfirmed" @click="executeMigration()">{{t('productV1.execute')}}</el-button></template>

@@ -40,9 +40,22 @@ public final class ProductStructureService implements com.appnexus.masterdata.ap
        .filter(row -> identityId.equals(row.get("id")) && effective(row.get("effective")))
        .findFirst().orElseThrow(ProductStructureService::invalid);
    String specificationId = kind == IdentityKind.SKU ? (String) identity.get("specificationId") : identityId;
+   if(kind==IdentityKind.SKU && identity.get("measurementConfig") instanceof String json){
+    unitId=(String)((Map<?,?>)measurementContent.decode(json)).get("inventoryUnitId");
+    requireMeasurementUnit(c,unitId);
+   }
    return new ProductIdentity(productId, kind, identityId, specificationId, unitId, version,
        ((Number) identity.get("version")).longValue());
   });
+ }
+
+ /** 业务响应仅返回解码后的计量结构，数据库 JSON 文本留在持久化边界。 */
+ private Map<String,Object> skuView(Map<String,Object> row){
+  var view=new LinkedHashMap<>(row);
+  if(view.remove("measurementConfig") instanceof String json){
+   view.put("measurement",measurementContent.decode(json));
+  }
+  return view;
  }
 
  // MySQL 对逻辑表达式可能返回数值，只有明确的真值才允许用于库存。
@@ -129,11 +142,41 @@ public final class ProductStructureService implements com.appnexus.masterdata.ap
   });
  }
 
+ /** {@inheritDoc} */
+ @Override
+ public PackagingEvidence skuPackagingEvidence(VerifiedTenantContext c,String productId,String skuId,
+     String packagingCode,long expectedProductVersion,String quantity){
+  require(c,"read");
+  uuid(skuId);
+  return write(()->{
+   var product=parent(c,productId,false,null);
+   long version=((Number)product.get("version")).longValue();
+   if(version!=expectedProductVersion)throw changed();
+   if(!"ENABLED".equals(product.get("status"))||product.get("archived")!=null
+       ||"LEGACY_PENDING".equals(product.get("structure")))throw invalid();
+   var sku=statements.skus(tenant(c),productId,products.recordPredicate(c,"read")).stream()
+       .filter(row->skuId.equals(row.get("id"))&&effective(row.get("effective")))
+       .findFirst().orElseThrow(ProductStructureService::invalid);
+   var amount=com.appnexus.masterdata.domain.product.UnitConversionRules.decimal(quantity,true);
+   if(!(sku.get("measurementConfig") instanceof String json)){
+    return packagingEvidence(c,productId,product,packagingCode,amount);
+   }
+   var configuration=(Map<?,?>)measurementContent.decode(json);
+   return packagingEvidence(c,productId,version,(String)configuration.get("inventoryUnitId"),
+       configuration.get("packaging"),packagingCode,amount);
+  });
+ }
+
  private PackagingEvidence packagingEvidence(VerifiedTenantContext c, String productId,
      Map<String,Object> parent, String code, BigDecimal quantity) {
-  Object rows=measurementConfiguration(parent).get("packaging");
-  if (!(rows instanceof List<?> packaging) || parent.get("unitId")==null) throw invalid();
-  String base=(String) parent.get("unitId");
+  return packagingEvidence(c,productId,((Number)parent.get("version")).longValue(),
+      (String)parent.get("unitId"),measurementConfiguration(parent).get("packaging"),code,quantity);
+ }
+
+ private PackagingEvidence packagingEvidence(VerifiedTenantContext c,String productId,long version,
+     String base,Object rows,String code,BigDecimal quantity){
+  if (!(rows instanceof List<?> packaging) || base==null) throw invalid();
+
   int scale=requireMeasurementUnit(c,base);
   for (Object value:packaging) {
    if (value instanceof Map<?,?> pack && Objects.equals(code,pack.get("code"))) {
@@ -141,11 +184,287 @@ public final class ProductStructureService implements com.appnexus.masterdata.ap
     int sourceScale=requireMeasurementUnit(c,source);
     if (quantity.stripTrailingZeros().scale()>sourceScale) throw invalid();
     var factor=com.appnexus.masterdata.domain.product.UnitConversionRules.decimal((String) pack.get("quantity"),true);
-    return new PackagingEvidence(productId,code,((Number) parent.get("version")).longValue(),
+    return new PackagingEvidence(productId,code,version,
         source,base,factor,scale,quantity.multiply(factor));
    }
   }
   throw invalid();
+ }
+
+ /** 在父锁内校验并持久化一次性计量设置，失败由创建事务整体回滚。 */
+ private void initializeSkuMeasurement(VerifiedTenantContext c,String product,String sku,
+     com.appnexus.masterdata.api.product.ProductMeasurement.SkuConfiguration configuration){
+  if(configuration==null)return;
+  if(statements.initializeSkuMeasurement(tenant(c),product,sku,encodeSkuMeasurement(c,configuration))!=1)throw changed();
+ }
+
+ /** 统一校验新增与编辑计量配置，单位和精度均由服务端目录决定。 */
+ private String encodeSkuMeasurement(VerifiedTenantContext c,
+     com.appnexus.masterdata.api.product.ProductMeasurement.SkuConfiguration configuration){
+  String stock=configuration.inventoryUnitId();
+  String pricing=configuration.pricingUnitId();
+  int scale=requireMeasurementUnit(c,stock);
+  requireMeasurementUnit(c,pricing);
+  if(!stock.equals(pricing)&&!statements.hasMeasurementConversion(tenant(c),pricing,stock))throw invalid();
+  if(configuration.packaging()==null||configuration.packaging().size()>200)throw invalid();
+  var codes=new HashSet<String>();
+  for(var pack:configuration.packaging()){
+   if(pack==null||pack.code()==null||!pack.code().matches("[A-Za-z0-9][A-Za-z0-9._-]{0,63}")||!codes.add(pack.code())
+       ||pack.name()==null||pack.name().isBlank()||pack.name().length()>200||stock.equals(pack.unitId()))throw invalid();
+   requireMeasurementUnit(c,pack.unitId());
+   var quantity=com.appnexus.masterdata.domain.product.UnitConversionRules.decimal(pack.quantity(),true);
+   if(quantity.stripTrailingZeros().scale()>scale)throw invalid();
+  }
+  return measurementContent.encode(Map.of("inventoryUnitId",stock,"pricingUnitId",pricing,"packaging",configuration.packaging()));
+ }
+
+ /** {@inheritDoc} */
+ @Override
+ public Object saveSkuMeasurement(VerifiedTenantContext c,String product,String sku,
+     com.appnexus.masterdata.api.product.ProductMeasurement.SkuChange input){
+  require(c,"manage_structure");
+  require(c,"read");
+  uuid(sku);
+  if(input==null||input.rowVersion()==null||input.rowVersion()<0||input.measurement()==null)throw invalid();
+  return write(()->{
+   var parent=parent(c,product,true,input.version());
+   var row=statements.skus(tenant(c),product,products.recordPredicate(c,"read")).stream()
+       .filter(candidate->sku.equals(candidate.get("id"))).findFirst().orElseThrow(ProductStructureService::changed);
+   // 已登记货号可能已有库存，保留生效库存单位，避免旧余额按新单位解释。
+   String stock=row.get("measurementConfig") instanceof String json
+       ? (String)((Map<?,?>)measurementContent.decode(json)).get("inventoryUnitId")
+       : (String)parent.get("unitId");
+   if(!Objects.equals(stock,input.measurement().inventoryUnitId()))throw invalid();
+   var before=products.extensionSnapshot(c,product);
+   String content=encodeSkuMeasurement(c,input.measurement());
+   if(statements.updateSkuMeasurement(tenant(c),product,sku,input.rowVersion(),content,actor(c))!=1)throw changed();
+   finish(c,product,input.version(),"SKU_MEASUREMENT_UPDATE",before);
+   return Map.of("version",input.version()+1,"rowVersion",input.rowVersion()+1);
+  });
+ }
+ /** {@inheritDoc} */
+ @Override
+ public Object saveSkuBatchTemplate(VerifiedTenantContext c,String product,String sku,
+     com.appnexus.masterdata.api.product.ProductStructureCommands.SkuBatchTemplate input){
+  require(c,"manage_structure");
+  uuid(sku);
+  if(input==null||input.rowVersion()==null||input.rowVersion()<0)throw invalid();
+  if(input.templateVersionId()!=null)uuid(input.templateVersionId());
+  return write(()->{
+   parent(c,product,true,input.version());
+   var before=products.extensionSnapshot(c,product);
+   if(statements.updateSkuBatchTemplate(tenant(c),product,sku,input.rowVersion(),input.templateVersionId(),actor(c))!=1){
+    throw changed();
+   }
+   finish(c,product,input.version(),"SKU_BATCH_TEMPLATE_UPDATE",before);
+   return Map.of("version",input.version()+1,"rowVersion",input.rowVersion()+1);
+  });
+ }
+
+ /** {@inheritDoc} */
+ @Override
+ public SkuBatchRule skuBatchRule(VerifiedTenantContext c,String product,String sku,long version){
+  return write(()->{
+   var binding=batchBinding(c,product,sku,version);
+   var fields=binding.fields().stream().map(field->new BatchField((String)field.get("itemId"),
+       (String)field.get("name"),(String)field.get("data_type"),effective(field.get("requiredFlag")))).toList();
+   return new SkuBatchRule(binding.version(),fields);
+  });
+ }
+
+ /** {@inheritDoc} */
+ @Override
+ public String validateSkuBatch(VerifiedTenantContext c,String product,String sku,long version,String batchNo,
+     String templateVersionId,List<com.appnexus.masterdata.api.product.ProductMainData.Value> values){
+  return write(()->{
+   var binding=batchBinding(c,product,sku,version);
+   if(!Objects.equals(templateVersionId,binding.version()))throw changed();
+   if(binding.version()==null){
+    if(values!=null&&!values.isEmpty())throw invalid();
+    return null;
+   }
+   if(batchNo==null||batchNo.isBlank())throw invalid();
+   var snapshot=validatedAttributeSnapshot(c,binding.version(),binding.fields(),values);
+   return measurementContent.encode(Map.of("templateVersionId",binding.version(),"fields",snapshot));
+  });
+ }
+
+ /** 普通货号与批次共用固定模板校验，持久化的显示名称来自服务端字段定义。 */
+ private List<Map<String,Object>> validatedAttributeSnapshot(VerifiedTenantContext c,String template,
+     List<Map<String,Object>> fields,List<com.appnexus.masterdata.api.product.ProductMainData.Value> values){
+   var byId=new LinkedHashMap<String,Map<String,Object>>();
+   for(var row:fields)byId.put((String)row.get("itemId"),row);
+   var preparation=new ProductAttributePreparation(new ProductAttributePreparationPort(){
+    @Override public List<Map<String,Object>> definitions(VerifiedTenantContext context,String config,String item){
+     var row=byId.get(item);
+     return row==null?List.of():List.of(row);
+    }
+    @Override public int optionCount(VerifiedTenantContext context,String revision,String option){
+     return statements.validOptionCount(tenant(context),revision,option);
+    }
+    @Override public void validateRule(String type,String validation,String value,int count){
+     AttributeRulePolicy.value(type,ruleContent.decode(validation),value,count);
+    }
+   });
+   var prepared=preparation.prepare(c,template,values);
+   var supplied=new HashSet<String>();
+   for(var item:prepared)supplied.add(item.source().templateItemId());
+   if(fields.stream().anyMatch(field->effective(field.get("requiredFlag"))
+       &&!supplied.contains(field.get("itemId"))))throw invalid();
+   var snapshot=new ArrayList<Map<String,Object>>();
+   for(var item:prepared){
+    var value=item.source();
+    var field=byId.get(value.templateItemId());
+    var entry=new LinkedHashMap<String,Object>();
+    entry.put("templateItemId",value.templateItemId());
+    entry.put("name",field.get("name"));
+    entry.put("dataType",item.type());
+    entry.put("value",value.value());
+    entry.put("optionIds",value.optionIds()==null?List.of():value.optionIds());
+    entry.put("customValues",value.customValues()==null?List.of():value.customValues());
+    snapshot.add(entry);
+   }
+   return snapshot;
+ }
+
+ private record BatchBinding(String version,List<Map<String,Object>> fields){}
+
+ /** 同一事务读取生效 SKU 和它采用的固定模板，防止把别的版本字段当成当前规则。 */
+ private BatchBinding batchBinding(VerifiedTenantContext c,String product,String sku,long version){
+  resolveIdentity(c,product,IdentityKind.SKU,sku,version);
+  var predicate=products.recordPredicate(c,"read");
+  var row=statements.skus(tenant(c),product,predicate).stream()
+      .filter(candidate->sku.equals(candidate.get("id"))).findFirst().orElseThrow(ProductStructureService::changed);
+  String template=(String)row.get("batchTemplateVersionId");
+  if(template==null)return new BatchBinding(null,List.of());
+  var fields=statements.skuBatchFields(tenant(c),product,sku,template,predicate);
+  if(fields.isEmpty())throw changed();
+  return new BatchBinding(template,fields);
+ }
+
+ /** {@inheritDoc} */
+ @Override public Object saveSpecificationTemplate(VerifiedTenantContext c,String product,
+     com.appnexus.masterdata.api.product.ProductStructureCommands.SpecificationTemplate input){
+  require(c,"manage_structure");
+  if(input==null||input.version()==null)throw invalid();
+  if(input.templateVersionId()!=null)uuid(input.templateVersionId());
+  return write(()->{
+   var parent=parent(c,product,true,input.version());
+   if(Objects.equals(parent.get("specificationTemplateVersionId"),input.templateVersionId())){
+    return Map.of("version",input.version());
+   }
+   var before=products.extensionSnapshot(c,product);
+   if(statements.updateSpecificationTemplate(tenant(c),product,input.templateVersionId())!=1)throw changed();
+   if(input.templateVersionId()!=null&&"STANDARD".equals(parent.get("specification_mode"))){
+    var fields=statements.specificationTemplateFields(tenant(c),product,input.templateVersionId(),products.recordPredicate(c,"read"));
+    if(fields.isEmpty()||fields.stream().anyMatch(field->!Set.of("INTEGER","DECIMAL","BOOLEAN","SINGLE_SELECT")
+        .contains(field.get("data_type"))))throw invalid();
+   }
+   finish(c,product,input.version(),"SPECIFICATION_TEMPLATE_UPDATE",before);
+   return Map.of("version",input.version()+1);
+  });
+ }
+
+ /** {@inheritDoc} */
+ @Override public Object saveSkuAttributeTemplate(VerifiedTenantContext c,String product,
+     com.appnexus.masterdata.api.product.ProductStructureCommands.SkuAttributeTemplate input){
+  require(c,"manage_structure");
+  if(input==null||input.version()==null)throw invalid();
+  if(input.templateVersionId()!=null)uuid(input.templateVersionId());
+  return write(()->{
+   var parent=parent(c,product,true,input.version());
+   if(Objects.equals(parent.get("skuAttributeTemplateVersionId"),input.templateVersionId())){
+    return Map.of("version",input.version());
+   }
+   var before=products.extensionSnapshot(c,product);
+   if(statements.updateSkuAttributeTemplate(tenant(c),product,input.templateVersionId())!=1)throw changed();
+   finish(c,product,input.version(),"SKU_ATTRIBUTE_TEMPLATE_UPDATE",before);
+   return Map.of("version",input.version()+1);
+  });
+ }
+
+ /** {@inheritDoc} */
+ @Override public Object skuAttributes(VerifiedTenantContext c,String product,String sku){
+  require(c,"read");
+  uuid(sku);
+  return write(()->{
+   var parent=parent(c,product,false,null);
+   var access=products.recordPredicate(c,"read");
+   var row=skuAttributeBinding(c,product,sku,access);
+   var template=(String)row.get("templateVersionId");
+   var result=new LinkedHashMap<String,Object>();
+   result.put("version",parent.get("version"));
+   result.put("rowVersion",row.get("rowVersion"));
+   result.put("templateVersionId",template);
+   result.put("fields",template==null?List.of():skuAttributeView(
+       statements.skuAttributeFields(tenant(c),product,sku,template,access),"SKU"));
+   Object values=row.get("attributeValues") instanceof String json
+       ? ((Map<?,?>)measurementContent.decode(json)).get("fields") : List.of();
+   result.put("values",values);
+   return result;
+  });
+ }
+
+ /** {@inheritDoc} */
+ @Override public Object saveSkuAttributes(VerifiedTenantContext c,String product,String sku,
+     com.appnexus.masterdata.api.product.ProductStructureCommands.SkuAttributes input){
+  require(c,"manage_structure");
+  require(c,"read");
+  uuid(sku);
+  if(input==null||input.rowVersion()==null||input.rowVersion()<0||input.values()==null)throw invalid();
+  uuid(input.templateVersionId());
+  return write(()->{
+   parent(c,product,true,input.version());
+   var access=products.recordPredicate(c,"read");
+   var row=skuAttributeBinding(c,product,sku,access);
+   if(!input.templateVersionId().equals(row.get("templateVersionId")))throw changed();
+   var fields=statements.skuAttributeFields(tenant(c),product,sku,input.templateVersionId(),access);
+   if(fields.isEmpty())throw changed();
+   var values=validatedAttributeSnapshot(c,input.templateVersionId(),fields,input.values());
+   var before=products.extensionSnapshot(c,product);
+   String content=measurementContent.encode(Map.of("fields",values));
+   if(statements.updateSkuAttributes(tenant(c),product,sku,input.rowVersion(),input.templateVersionId(),content,actor(c))!=1){
+    throw changed();
+   }
+   finish(c,product,input.version(),"SKU_ATTRIBUTES_UPDATE",before);
+   return Map.of("version",input.version()+1,"rowVersion",input.rowVersion()+1);
+  });
+ }
+
+ private Map<String,Object> skuAttributeBinding(VerifiedTenantContext c,String product,String sku,
+     com.appnexus.platform.authorization.RowAccessControl.Predicate access){
+  return statements.skuAttributeBinding(tenant(c),product,sku,access).stream()
+      .findFirst().orElseThrow(ProductStructureService::changed);
+ }
+
+ /** 固定属性项与枚举选项共用一条范围查询，按模板顺序组装页面字段。 */
+ private List<Map<String,Object>> skuAttributeView(List<Map<String,Object>> rows,String purpose){
+  var fields=new LinkedHashMap<String,Map<String,Object>>();
+  var options=new LinkedHashMap<String,List<Map<String,Object>>>();
+  for(var row:rows){
+   String id=(String)row.get("itemId");
+   if(!fields.containsKey(id)){
+    var field=new LinkedHashMap<String,Object>();
+    for(String key:List.of("attributeId","name","groupCode","groupName","unitId","unitCode","unitName")){
+     field.put(key,row.get(key));
+    }
+    field.put("templateItemId",id);
+    field.put("revisionId",row.get("revision"));
+    field.put("purpose",purpose);
+    field.put("dataType",row.get("data_type"));
+    field.put("numericScale",row.get("numeric_scale"));
+    field.put("validationJson",row.get("validation"));
+    field.put("requiredFlag",effective(row.get("requiredFlag")));
+    field.put("allowCustom",effective(row.get("allow_custom")));
+    field.put("searchable",false);
+    options.put(id,new ArrayList<>());
+    field.put("options",options.get(id));
+    fields.put(id,field);
+   }
+   if(row.get("optionId")!=null)options.get(id).add(Map.of("id",row.get("optionId"),"code",row.get("optionCode"),
+       "label",row.get("optionLabel"),"enabled",effective(row.get("optionEnabled"))));
+  }
+  return List.copyOf(fields.values());
  }
 
  private Map<?,?> measurementConfiguration(Map<String,Object> parent){
@@ -179,46 +498,128 @@ public final class ProductStructureService implements com.appnexus.masterdata.ap
  
  
  /** 查询规格/SKU/组成，effective按商品与规格分层状态计算，不把SKU.enabled当可用事实。 */
- public Object read(VerifiedTenantContext c,String id){require(c,"read");var p=parent(c,id,false,null);var access=products.recordPredicate(c,"read");var out=new LinkedHashMap<String,Object>();out.put("mode",p.get("specification_mode"));out.put("form",p.get("product_form"));out.put("version",p.get("version"));out.put("specifications",statements.specifications(tenant(c),id,access));out.put("skus",statements.skus(tenant(c),id,access));out.put("components",statements.components(tenant(c),id,access));attachSpecificationValues(c,id,access,out);attachAudit(c,out,"specifications",ProductStructureRepository.Resource.SPECIFICATION);attachAudit(c,out,"skus",ProductStructureRepository.Resource.SKU);attachAudit(c,out,"components",ProductStructureRepository.Resource.COMPONENT);return out;}
- /** 标准规格组合值按模板稳定顺序规范化；哈希仅用于唯一索引，碰撞仍拒绝并保留原串。 */
- public Object createSpecification(VerifiedTenantContext c,String product,Specification i){require(c,"manage_structure");if(i==null||i.version()==null||i.name()==null||i.name().isBlank()||i.name().length()>200||i.description()!=null&&i.description().length()>2000)throw invalid();return write(()->{var p=parent(c,product,true,i.version());String mode=(String)p.get("specification_mode"),config=(String)p.get("configId");if(!Set.of("STANDARD","CUSTOM").contains(mode)||config==null)throw invalid();var before=products.extensionSnapshot(c,product);var values=i.values()==null?List.<SpecValue>of():i.values();if(values.size()>200)throw invalid();var prepared=new ArrayList<Object[]>();var canonical=new StringBuilder();
- if(mode.equals("CUSTOM")){if(values.isEmpty()&&(i.description()==null||i.description().isBlank()))throw invalid();}
- else {var definitions=statements.standardDefinitions(tenant(c),config);if(definitions.isEmpty()||definitions.size()!=values.size())throw invalid();var supplied=new HashMap<String,String>();for(var v:values){if(v==null||v.value()==null||supplied.put(v.templateItemId(),v.value())!=null)throw invalid();}
- for(var d:definitions){String item=(String)d.get("item"),revision=(String)d.get("revision"),type=(String)d.get("type"),raw=supplied.get(item),normal=raw;Long integer=null;BigDecimal decimal=null;Boolean bool=null;String option=null;if(raw==null)throw invalid();try{switch(type){case "INTEGER"->{if(!raw.matches("-?(0|[1-9][0-9]*)"))throw invalid();integer=Long.parseLong(raw);normal=integer.toString();}case "DECIMAL"->{if(!raw.matches("-?[0-9]+([.][0-9]+)?"))throw invalid();var n=new BigDecimal(raw);if(n.scale()>((Number)d.get("scale")).intValue()||n.precision()-n.scale()>18)throw invalid();decimal=n;normal=n.stripTrailingZeros().toPlainString();}case "BOOLEAN"->{if(!Set.of("true","false").contains(raw))throw invalid();bool=Boolean.parseBoolean(raw);}case "SINGLE_SELECT"->{uuid(raw);var opts=statements.standardOption(tenant(c),revision,raw);if(opts.size()!=1)throw invalid();option=raw;normal=(String)opts.getFirst().get("option_code");}default->throw invalid();}}catch(NumberFormatException e){throw invalid();}AttributeRulePolicy.value(type,ruleContent.decode((String)d.get("rules")),Set.of("INTEGER","DECIMAL","BOOLEAN").contains(type)?raw:null,type.equals("SINGLE_SELECT")?1:0);canonical.append(item).append(':').append(revision).append(':').append(type).append(':').append(normal.length()).append(':').append(normal).append(';');prepared.add(new Object[]{item,revision,type,integer,decimal,bool,option});}}
- String id=UUID.randomUUID().toString(),signature=mode.equals("STANDARD")?canonical.toString():null;byte[] hash=null;if(signature!=null)try{hash=java.security.MessageDigest.getInstance("SHA-256").digest(signature.getBytes(StandardCharsets.UTF_8));}catch(java.security.NoSuchAlgorithmException e){throw new IllegalStateException(e);}statements.createSpecification(id,tenant(c),product,config,mode,i.name().trim(),i.description(),signature,hash,actor(c),actor(c));for(var v:prepared)if(statements.createStandardValue(UUID.randomUUID().toString(),tenant(c),id,config,(String)v[0],(String)v[1],(String)v[2],(Long)v[3],(BigDecimal)v[4],(Boolean)v[5],(String)v[6],actor(c),actor(c),product)!=1)throw changed();if(mode.equals("CUSTOM"))saveCustomValues(c,product,id,config,values);finish(c,product,i.version(),"SPEC_CREATE",before);return Map.of("id",id);});}
- /** 自定义SPEC使用固定修订逐项校验；必填只在建立规格记录时校验，不强迫商品预建规格或SKU。 */
- private void saveCustomValues(VerifiedTenantContext c,String product,String specification,String config,List<SpecValue> values){
-  var definitions=statements.customDefinitions(tenant(c),config);
-  var supplied=new HashMap<String,SpecValue>();for(var value:values){if(value==null||value.templateItemId()==null||supplied.put(value.templateItemId(),value)!=null)throw invalid();}
-  for(var d:definitions){String item=(String)d.get("item"),revision=(String)d.get("revision"),type=(String)d.get("type");var value=supplied.remove(item);if(value==null){if(Boolean.TRUE.equals(d.get("requiredFlag")))throw invalid();continue;}
-   String raw=value.value();List<String> options=value.optionIds()==null?List.of():value.optionIds(),customs=value.customValues()==null?List.of():value.customValues();String text=null;java.time.LocalDate date=null;Long integer=null;BigDecimal decimal=null;Boolean bool=null;String option=null;
-   if(options.size()+customs.size()>50||options.stream().anyMatch(Objects::isNull)||customs.stream().anyMatch(Objects::isNull)||new HashSet<>(options).size()!=options.size()||new HashSet<>(customs).size()!=customs.size())throw invalid();
-   try{switch(type){
-    case "TEXT"->{if(raw==null||raw.isBlank()||raw.length()>2000)throw invalid();text=raw;}
-    case "DATE"->{if(raw==null||!raw.matches("[0-9]{4}-[0-9]{2}-[0-9]{2}"))throw invalid();date=java.time.LocalDate.parse(raw);}
-    case "INTEGER"->{if(raw==null||!raw.matches("-?(0|[1-9][0-9]*)"))throw invalid();integer=Long.parseLong(raw);}
-    case "DECIMAL"->{if(raw==null||!raw.matches("-?(0|[1-9][0-9]*)([.][0-9]+)?"))throw invalid();var n=new BigDecimal(raw);if(n.scale()>((Number)d.get("scale")).intValue()||n.precision()-n.scale()>18)throw invalid();decimal=n;}
-    case "BOOLEAN"->{if(!Set.of("true","false").contains(Objects.toString(raw,"")))throw invalid();bool=Boolean.parseBoolean(raw);}
-    case "SINGLE_SELECT","MULTI_SELECT"->{if(raw!=null||options.size()+customs.size()<1||type.equals("SINGLE_SELECT")&&options.size()+customs.size()!=1)throw invalid();}
-    default->throw invalid();
-   }}catch(NumberFormatException|java.time.DateTimeException e){throw invalid();}
-   boolean enumeration=type.equals("SINGLE_SELECT")||type.equals("MULTI_SELECT");if(!enumeration&&(!options.isEmpty()||!customs.isEmpty()))throw invalid();
-   for(String selected:options){uuid(selected);if(statements.validOptionCount(tenant(c),revision,selected)!=1)throw invalid();}
-   if(!customs.isEmpty()&&!Boolean.TRUE.equals(d.get("allowCustom")))throw invalid();for(String custom:customs)if(custom.isBlank()||custom.length()>2000||custom.chars().anyMatch(Character::isISOControl))throw invalid();
-   if(raw!=null&&type.equals("TEXT")&&raw.chars().anyMatch(ch->Character.isISOControl(ch)&&ch!='\n'&&ch!='\r'&&ch!='\t'))throw invalid();
-   AttributeRulePolicy.value(type,ruleContent.decode((String)d.get("rules")),enumeration?null:raw,options.size()+customs.size());String valueId=UUID.randomUUID().toString();
-   if(statements.createCustomValue(valueId,tenant(c),specification,config,item,revision,type,text,date,integer,decimal,bool,actor(c),actor(c),product)!=1)throw changed();
-   for(String selected:options)insertChoice(c,product,valueId,revision,type,selected,null);for(String custom:customs)insertChoice(c,product,valueId,revision,type,null,custom);
+ public Object read(VerifiedTenantContext c,String id){require(c,"read");var p=parent(c,id,false,null);var access=products.recordPredicate(c,"read");var out=new LinkedHashMap<String,Object>();out.put("mode",p.get("specification_mode"));out.put("form",p.get("product_form"));out.put("version",p.get("version"));attachSpecificationTemplate(c,id,p,access,out);out.put("specifications",statements.specifications(tenant(c),id,access));out.put("skus",statements.skus(tenant(c),id,access).stream().map(this::skuView).toList());out.put("components",statements.components(tenant(c),id,access));attachSpecificationValues(c,id,access,out);attachAudit(c,out,"specifications",ProductStructureRepository.Resource.SPECIFICATION);attachAudit(c,out,"skus",ProductStructureRepository.Resource.SKU);attachAudit(c,out,"components",ProductStructureRepository.Resource.COMPONENT);return out;}
+ /** 已确认版本的字段独立于类目默认配置；未确认时新规格不填模板字段。 */
+ private void attachSpecificationTemplate(VerifiedTenantContext c,String product,Map<String,Object> parent,
+     com.appnexus.platform.authorization.RowAccessControl.Predicate access,Map<String,Object> out){
+  if(parent.get("specificationTemplateVersionId") instanceof String template){
+   out.put("specificationTemplateVersionId",template);
+   out.put("specificationFields",skuAttributeView(statements.specificationTemplateFields(tenant(c),product,template,access),"SPEC"));
+  }else{
+   out.put("specificationFields",List.of());
   }
-  if(!supplied.isEmpty())throw invalid();
  }
- private void insertChoice(VerifiedTenantContext c,String product,String value,String revision,String type,String option,String custom){if(statements.createChoice(UUID.randomUUID().toString(),tenant(c),value,revision,type,option,custom,actor(c),actor(c),product)!=1)throw changed();}
- /** 仅原商品读取权限内投影规格值和固定名称；包含历史退役规格，不追最新模板。 */
- /** 在响应中合并自定义与标准选项，避免修改仓储返回的只读列表。 */
+
+ /** 已确认规格轴时，原规格标识和 SKU 关系不变，值采用独立版本快照。 */
+ private Map<String,String> createBoundSpecification(VerifiedTenantContext c,String product,String config,String mode,
+     String template,Specification input,List<SpecValue> values,Map<String,Object> before){
+  var definitions=statements.specificationTemplateFields(tenant(c),product,template,products.recordPredicate(c,"read"));
+  if(definitions.isEmpty())throw changed();
+  boolean standard=mode.equals("STANDARD");
+  var fieldTypes=new LinkedHashMap<String,String>();
+  for(var row:definitions)fieldTypes.put((String)row.get("itemId"),(String)row.get("data_type"));
+  if(standard&&(fieldTypes.size()!=values.size()||fieldTypes.values().stream()
+      .anyMatch(type->!Set.of("INTEGER","DECIMAL","BOOLEAN","SINGLE_SELECT").contains(type))))throw invalid();
+  if(!standard&&values.isEmpty()&&(input.description()==null||input.description().isBlank()))throw invalid();
+  var supplied=new ArrayList<com.appnexus.masterdata.api.product.ProductMainData.Value>();
+  for(var value:values){
+   if(value==null||value.templateItemId()==null)throw invalid();
+   if(standard&&"SINGLE_SELECT".equals(fieldTypes.get(value.templateItemId()))){
+    if(value.value()==null||value.optionIds()!=null&&!value.optionIds().isEmpty()
+        ||value.customValues()!=null&&!value.customValues().isEmpty())throw invalid();
+    supplied.add(new com.appnexus.masterdata.api.product.ProductMainData.Value(
+        value.templateItemId(),null,List.of(value.value()),List.of()));
+   }else supplied.add(new com.appnexus.masterdata.api.product.ProductMainData.Value(
+       value.templateItemId(),value.value(),value.optionIds(),value.customValues()));
+  }
+  var validated=validatedAttributeSnapshot(c,template,definitions,supplied);
+  var options=new HashMap<String,String>();
+  var units=new HashMap<String,String>();
+  for(var row:definitions){
+   if(row.get("optionId") instanceof String option)options.put(option,(String)row.get("optionLabel"));
+   units.put((String)row.get("itemId"),(String)row.get("unitCode"));
+  }
+  var byItem=new HashMap<String,Map<String,Object>>();
+  for(var field:validated)byItem.put((String)field.get("templateItemId"),field);
+  var snapshot=new ArrayList<Map<String,Object>>();
+  var canonical=new StringBuilder(template);
+  for(String id:fieldTypes.keySet()){
+   var field=byItem.get(id);
+   if(field==null)continue;
+   String type=(String)field.get("dataType"),raw=(String)field.get("value");
+   var view=new LinkedHashMap<String,Object>();
+   view.put("templateItemId",id);
+   view.put("name",field.get("name"));
+   view.put("dataType",type);
+   view.put("unitCode",units.get(id));
+   var choices=new ArrayList<Map<String,Object>>();
+   for(Object option:(List<?>)field.get("optionIds"))choices.add(Map.of("optionId",option,"label",options.get(option)));
+   for(Object text:(List<?>)field.get("customValues"))choices.add(Map.of("label",text,"customText",text));
+   view.put("choices",choices);
+   if(raw!=null){
+    String valueField=switch(type){
+     case "INTEGER"->"integerValue";
+     case "DECIMAL"->"decimalValue";
+     case "BOOLEAN"->"booleanValue";
+     case "DATE"->"dateValue";
+     default->"textValue";
+    };
+    view.put(valueField,"BOOLEAN".equals(type)?Boolean.valueOf(raw):raw);
+   }
+   if(standard){
+    String value=raw==null ? String.valueOf(((List<?>)field.get("optionIds")).getFirst())
+        : switch(type){
+          case "INTEGER"->Long.toString(Long.parseLong(raw));
+          case "DECIMAL"->new BigDecimal(raw).stripTrailingZeros().toPlainString();
+          default->raw;
+        };
+    canonical.append(id).append(':').append(value.length()).append(':').append(value).append(';');
+   }
+   snapshot.add(view);
+  }
+  String signature=standard?canonical.toString():null;
+  byte[] hash=null;
+  if(signature!=null){
+   try{hash=java.security.MessageDigest.getInstance("SHA-256").digest(signature.getBytes(StandardCharsets.UTF_8));}
+   catch(java.security.NoSuchAlgorithmException e){throw new IllegalStateException(e);}
+  }
+  String id=UUID.randomUUID().toString();
+  statements.createSpecification(id,tenant(c),product,config,mode,input.name().trim(),input.description(),signature,hash,actor(c),actor(c));
+  if(statements.initializeSpecificationValues(tenant(c),product,id,template,measurementContent.encode(Map.of("values",snapshot)))!=1)throw changed();
+  finish(c,product,input.version(),"SPEC_CREATE",before);
+  return Map.of("id",id);
+ }
+
+ /** 新规格只使用 SPU 确认的规格轴；无模板的自定义规格可仅使用说明。 */
+ public Object createSpecification(VerifiedTenantContext c,String product,Specification input){
+  require(c,"manage_structure");
+  if(input==null||input.version()==null||input.name()==null||input.name().isBlank()
+      ||input.name().length()>200||input.description()!=null&&input.description().length()>2000)throw invalid();
+  return write(()->{
+   var parent=parent(c,product,true,input.version());
+   String mode=(String)parent.get("specification_mode"),config=(String)parent.get("configId");
+   if(!Set.of("STANDARD","CUSTOM").contains(mode)||config==null)throw invalid();
+   var values=input.values()==null?List.<SpecValue>of():input.values();
+   if(values.size()>200)throw invalid();
+   var before=products.extensionSnapshot(c,product);
+   if(parent.get("specificationTemplateVersionId") instanceof String template){
+    return createBoundSpecification(c,product,config,mode,template,input,values,before);
+   }
+   if(!"CUSTOM".equals(mode)||!values.isEmpty()||input.description()==null||input.description().isBlank())throw invalid();
+   String id=UUID.randomUUID().toString();
+   statements.createSpecification(id,tenant(c),product,config,mode,input.name().trim(),input.description(),null,null,actor(c),actor(c));
+   finish(c,product,input.version(),"SPEC_CREATE",before);
+   return Map.of("id",id);
+  });
+ }
  @SuppressWarnings("unchecked")
  private void attachSpecificationValues(VerifiedTenantContext c,String product,com.appnexus.platform.authorization.RowAccessControl.Predicate access,Map<String, Object> output) {
   String tenantId = tenant(c);
   for (var spec : (List<Map<String, Object>>) output.get("specifications")) {
+   if(spec.remove("templateValues") instanceof String json){
+    spec.put("values",((Map<?,?>)measurementContent.decode(json)).get("values"));
+    continue;
+   }
    var values = statements.specificationValues(tenantId,spec.get("id").toString(),product,access);
    for (var value : values) {
     var choices = new ArrayList<>(statements.customChoices(tenantId,value.get("id").toString(),product,access));
@@ -231,7 +632,22 @@ public final class ProductStructureService implements com.appnexus.masterdata.ap
   }
  }
  /** 只有显式动作才创建SKU；父子归属复合外键兜底，SKU身份创建后不可修改。 */
- public Object createSku(VerifiedTenantContext c,String product,Sku i){require(c,"manage_structure");if(i==null||i.version()==null||i.code()==null||!i.code().matches("[A-Za-z0-9][A-Za-z0-9._-]{0,63}"))throw invalid();uuid(i.specificationId());return write(()->{parent(c,product,true,i.version());var before=products.extensionSnapshot(c,product);if(statements.specificationCount(tenant(c),product,i.specificationId())!=1)throw invalid();String id=UUID.randomUUID().toString();statements.createSku(id,tenant(c),product,i.specificationId(),i.code(),actor(c),actor(c));finish(c,product,i.version(),"SKU_CREATE",before);return Map.of("id",id);});}
+ public Object createSku(VerifiedTenantContext c,String product,Sku input){
+  require(c,"manage_structure");
+  if(input==null||input.version()==null||input.code()==null
+      ||!input.code().matches("[A-Za-z0-9][A-Za-z0-9._-]{0,63}"))throw invalid();
+  uuid(input.specificationId());
+  return write(()->{
+   parent(c,product,true,input.version());
+   var before=products.extensionSnapshot(c,product);
+   if(statements.specificationCount(tenant(c),product,input.specificationId())!=1)throw invalid();
+   String id=UUID.randomUUID().toString();
+   statements.createSku(id,tenant(c),product,input.specificationId(),input.code(),actor(c),actor(c));
+   initializeSkuMeasurement(c,product,id,input.measurement());
+   finish(c,product,input.version(),"SKU_CREATE",before);
+   return Map.of("id",id);
+  });
+ }
  /** 组合写入共用租户图锁，防止并发互加形成环；数量按组成基础单位精度，不自动换算。 */
  public Object addComponent(VerifiedTenantContext c,String product,Component i){require(c,"manage_structure");if(i==null||i.version()==null||i.componentVersion()==null||i.quantity()==null||!i.quantity().matches("(0|[1-9][0-9]{0,17})([.][0-9]{1,12})?"))throw invalid();uuid(i.componentId());var quantity=new BigDecimal(i.quantity());if(quantity.signum()<=0||product.equals(i.componentId()))throw invalid();return write(()->{graphLock(c);var p=parent(c,product,true,i.version());if(!"COMPOSITE".equals(p.get("product_form")))throw invalid();var before=products.extensionSnapshot(c,product);var child=parent(c,i.componentId(),false,null);if(!"ENABLED".equals(child.get("status"))||!i.componentVersion().equals(((Number)child.get("version")).longValue())||child.get("unitId")==null)throw invalid();Integer scale=statements.unitPrecision(tenant(c),child.get("unitId").toString());if(scale==null||quantity.scale()>scale)throw invalid();var seen=new HashSet<String>();var queue=new ArrayDeque<String>();queue.add(i.componentId());while(!queue.isEmpty()){String node=queue.remove();if(node.equals(product)||seen.size()>10000)throw invalid();if(!seen.add(node))continue;queue.addAll(statements.componentChildren(tenant(c),node));}var existing=statements.existingComponent(tenant(c),product,i.componentId());if(!existing.isEmpty()){if(Boolean.TRUE.equals(existing.getFirst().get("enabled")))throw invalid();String reused=(String)existing.getFirst().get("id");if(statements.updateComponent(quantity,i.componentVersion(),actor(c),tenant(c),reused,product)!=1)throw changed();finish(c,product,i.version(),"COMPONENT_REPLACE",before);return Map.of("id",reused);}String id=UUID.randomUUID().toString();statements.createComponent(id,tenant(c),product,i.componentId(),quantity,i.componentVersion(),actor(c),actor(c));finish(c,product,i.version(),"COMPONENT_ADD",before);return Map.of("id",id);});}
  /** 子对象启停按父CAS与子CAS原子修改；不能恢复退役规格，不能跨商品操作SKU。 */

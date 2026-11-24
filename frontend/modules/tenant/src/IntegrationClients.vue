@@ -17,9 +17,9 @@ const allowReferences = ref(false),purpose=ref("dictionary");
 const createVisible = ref(false);
 const form = ref<{ validate: () => Promise<boolean> }>();
 const columns = computed<ManagementColumn[]>(() => [
-  { key: "name", prop: "name", label: t("administration.clientName"), minWidth: 160 },
-  { key: "id", prop: "id", label: "Client ID", minWidth: 300 },
   { key: "status", label: t("administration.status"), width: 100 },
+  { key: "id", prop: "id", label: "Client ID", minWidth: 300 },
+  { key: "name", prop: "name", label: t("administration.clientName"), minWidth: 160 },
   { key: "operations", label: t("tenant.operation"), minWidth: 220 }
 ]);
 /** 读取失败保留旧目录并禁写，用户需先刷新，不能用陈旧版本覆盖。 */
@@ -63,7 +63,7 @@ onBeforeUnmount(() => { secret.value = undefined; name.value = ""; createVisible
           
           <el-button v-operation="'IntegrationClient.create'" type="primary" :disabled="loading || saving || !!error" @click="createVisible = true">{{ t('administration.createClient') }}</el-button>
         </template>
-        <template #status="{ row }"><el-tag :type="row.enabled ? 'success' : 'info'">{{ t(row.enabled ? "administration.enabled" : "administration.disabled") }}</el-tag></template>
+        <template #status="{ row }"><el-tag class="app-status-tag" :type="row.enabled ? 'success' : 'info'">{{ t(row.enabled ? "administration.enabled" : "administration.disabled") }}</el-tag></template>
         <template #operations="{ row }">
           <el-popconfirm :title="t('administration.clientStateConfirm')" :confirm-button-text="t(row.enabled ? 'administration.disable' : 'administration.enable')" :cancel-button-text="t('organization.cancel')" @confirm="write(() => props.api.clientState(row as IntegrationClient, !row.enabled))"><template #reference><el-button v-operation="'IntegrationClient.update'" link :type="row.enabled ? 'danger' : 'primary'" :disabled="saving || loading || !!error">{{ t(row.enabled ? "administration.disable" : "administration.enable") }}</el-button></template></el-popconfirm>
           <el-popconfirm :title="t('administration.clientRotateConfirm')" :confirm-button-text="t('administration.rotateClient')" :cancel-button-text="t('organization.cancel')" @confirm="rotate(row as IntegrationClient)"><template #reference><el-button v-operation="'IntegrationClient.rotate'" link type="danger" :disabled="saving || loading || !!error">{{ t("administration.rotateClient") }}</el-button></template></el-popconfirm>

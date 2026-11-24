@@ -3,12 +3,7 @@ package com.appnexus.bulkwarehousing.api;
 /** 入仓对象唯一操作标识；授权执行与业务对象声明复用同一编码。 */
 public enum InboundOperations {
   ISSUE("issue", "签发入仓通知", "Issue inbound notice"),
-  TAKE_CUSTODY("take_custody", "签认接管", "Take custody"),
-  RECEIVE("receive", "确认实收并过账", "Confirm and post receipt"),
-  REGISTER_TITLE("BulkInboundTitleRegistration", "warehousing.inbound.title", "register",
-      "登记入仓货权", "Register inbound title"),
-  RELEASE_QUALITY("BulkInboundQualityRelease", "warehousing.inbound.quality", "release",
-      "批准质量放行", "Release inbound quality");
+  UPDATE("update", "编辑入仓通知", "Edit inbound notice");
 
   public static final String OBJECT = "BulkInboundReceipt";
   public static final String RESOURCE = "warehousing.inbound";

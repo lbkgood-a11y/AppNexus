@@ -15,6 +15,7 @@ import org.springframework.test.context.ActiveProfiles;
 @ActiveProfiles("local")
 class GlobalRecordAuditTest extends DatabaseTestSupport {
     @Autowired JdbcTemplate jdbc;
+    @Autowired com.appnexus.masterdata.adapter.persistence.MasterStatusHistoryMapper statusHistory;
     @Autowired com.appnexus.platform.authorization.AccessAuthorization authorization;
     @Autowired org.springframework.transaction.PlatformTransactionManager manager;
     @Autowired com.appnexus.platform.organization.PersonnelDirectory directory;
@@ -33,6 +34,67 @@ class GlobalRecordAuditTest extends DatabaseTestSupport {
                 assertThat(type.equalsIgnoreCase("binary")).as(handler.toString()).isEqualTo(source.binaryTenant());
             }
         }
+    }
+
+    /** 固定接口禁止无归属的历史入口；未来新增对象须同步登记查询入口。 */
+    @Test void masterStatusHistoryRoutesHaveOwningOperations() {
+        var expected = java.util.Arrays.stream(com.appnexus.masterdata.api.masterdata.StatusHistory.Subject.values())
+            .map(subject -> switch (subject) {
+                case ATTRIBUTE_GROUP -> "ProductAttribute.readGroupStatusHistory";
+                case CONVERSION -> "ProductUnit.readConversionStatusHistory";
+                default -> subject.code + ".readStatusHistory";
+            }).toList();
+        var actual = mappings.getHandlerMethods().values().stream()
+            .filter(handler -> handler.getBeanType().getSimpleName().equals("MasterStatusHistoryController"))
+            .map(handler -> handler.getMethodAnnotation(com.appnexus.contracts.operation.OperationBinding.class))
+            .map(binding -> binding.id()).toList();
+        assertThat(actual).containsExactlyInAnyOrderElementsOf(expected);
+
+        var historyPaths = mappings.getHandlerMethods().entrySet().stream()
+            .filter(entry -> entry.getValue().getBeanType().getSimpleName().equals("MasterStatusHistoryController"))
+            .flatMap(entry -> entry.getKey().getPatternValues().stream()).toList();
+        var independentStatusPaths = mappings.getHandlerMethods().keySet().stream()
+            .flatMap(mapping -> mapping.getPatternValues().stream())
+            .filter(path -> path.startsWith("/api/master-data/") && path.endsWith("/{id}/status"))
+            .filter(path -> !path.equals("/api/master-data/product/{id}/status"))
+            .filter(path -> !path.equals("/api/master-data/product/{product}/structure-records/{kind}/{id}/status"))
+            .map(path -> path + "-history").toList();
+        assertThat(historyPaths).containsAll(independentStatusPaths);
+    }
+
+    /** 普通保存、版本冲突和事务回滚不会留下启停事实，成功状态事件保留可信操作者。 */
+    @Test void statusHistoryTracksOnlyCommittedTransitions() {
+        var id = UUID.randomUUID().toString();
+        var tenant = UUID.randomUUID().toString();
+        var actor = UUID.randomUUID().toString();
+        var tx = new org.springframework.transaction.support.TransactionTemplate(manager);
+        jdbc.update("""
+            INSERT INTO md_country_region(id,tenant_id,code,name)
+            VALUES(UUID_TO_BIN(?),UUID_TO_BIN(?),?,'历史验证')
+            """, id, tenant, "H-" + id);
+        String update = """
+            UPDATE md_country_region SET enabled=?,version=version+1,updated_by=UUID_TO_BIN(?)
+            WHERE tenant_id=UUID_TO_BIN(?) AND id=UUID_TO_BIN(?) AND version=?
+            """;
+        String history = """
+            SELECT CONCAT(before_enabled,after_enabled,':',to_version,':',BIN_TO_UUID(created_by))
+            FROM md_master_status_change WHERE tenant_id=UUID_TO_BIN(?) AND object_id=UUID_TO_BIN(?)
+            """;
+        assertThat(jdbc.update(update, true, actor, tenant, id, 0)).isOne();
+        assertThat(jdbc.update(update, false, actor, tenant, id, 0)).isZero();
+        tx.executeWithoutResult(status -> {
+            assertThat(jdbc.update(update, false, actor, tenant, id, 1)).isOne();
+            assertThat(statusHistory.append(tenant, "CountryRegion", id, 1, false, actor)).isOne();
+            assertThat(jdbc.queryForList(history, String.class, tenant, id)).containsExactly("10:2:" + actor);
+            status.setRollbackOnly();
+        });
+        assertThat(jdbc.queryForList(history, String.class, tenant, id)).isEmpty();
+        tx.executeWithoutResult(status -> {
+            assertThat(jdbc.update(update, false, actor, tenant, id, 1)).isOne();
+            assertThat(statusHistory.append(tenant, "CountryRegion", id, 1, false, actor)).isOne();
+        });
+        assertThat(jdbc.queryForList(history, String.class, tenant, id)).containsExactly("10:2:" + actor);
+        assertThat(jdbc.queryForList(history, String.class, UUID.randomUUID().toString(), id)).isEmpty();
     }
 
     @Test void ownedTablesHaveAllFourColumns(){

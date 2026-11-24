@@ -46,7 +46,7 @@ onMounted(()=>{void refreshDisplayFormat();void load();});
         <template #default="{ row }">{{ t("account.events." + row.action) }}</template>
       </vxe-column>
       <vxe-column :title="t('account.result')" width="120">
-        <template #default="{ row }"><el-tag :type="['LOGIN_FAILED','MFA_FAILED','REFRESH_TOKEN_REPLAY'].includes(row.action) ? 'danger' : 'success'" effect="plain">{{ t(['LOGIN_FAILED','MFA_FAILED','REFRESH_TOKEN_REPLAY'].includes(row.action) ? 'account.failed' : 'account.success') }}</el-tag></template>
+        <template #default="{ row }"><el-tag class="app-status-tag" :type="['LOGIN_FAILED','MFA_FAILED','REFRESH_TOKEN_REPLAY'].includes(row.action) ? 'danger' : 'success'">{{ t(['LOGIN_FAILED','MFA_FAILED','REFRESH_TOKEN_REPLAY'].includes(row.action) ? 'account.failed' : 'account.success') }}</el-tag></template>
       </vxe-column>
       <vxe-column :title="t('account.eventTime')" min-width="220">
         <template #default="{ row }"><time :datetime="row.occurredAt" :title="row.occurredAt">{{ time(row.occurredAt) }}</time></template>

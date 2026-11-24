@@ -65,7 +65,7 @@ onMounted(()=>{void refreshDisplayFormat();void load();});
     <FloatingError v-if="error" :title="error" scope="error" type="error" show-icon :closable="false" class="mb-4" />
     <vxe-table :column-config="{ resizable: true }"  :loading="loading" :data="error ? [] : rows" :empty-text="error ? t('account.logsRetry') : t('account.noSessions')" border="inner">
       <vxe-column :title="t('account.sessionType')" min-width="150">
-        <template #default="{ row }"><el-tag v-if="row.current" type="success" effect="plain">{{ t("account.currentSession") }}</el-tag>
+        <template #default="{ row }"><el-tag class="app-status-tag" v-if="row.current" type="success">{{ t("account.currentSession") }}</el-tag>
           <span v-else>{{ t("account.otherSession") }}</span></template>
       </vxe-column>
       <vxe-column :title="t('account.sessionCreated')" min-width="200"><template #default="{ row }">

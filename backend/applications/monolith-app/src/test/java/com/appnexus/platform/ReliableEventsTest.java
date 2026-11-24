@@ -30,28 +30,29 @@ class ReliableEventsTest extends DatabaseTestSupport {
     @Autowired MockMvc mvc;
     @Autowired com.appnexus.platform.persistence.platformscope.MyBatisPlatformAdministration administration;
     @Autowired JdbcTemplate jdbc;
+    @Autowired List<com.appnexus.contracts.data.TransactionalBusinessEvents.Consumer> handlers;
     @Autowired PlatformTransactionManager manager;
     @Autowired com.appnexus.platform.authorization.AuthorityEvents authorityEvents;
     private UUID publish(){return new TransactionTemplate(manager).execute(status->events.publish(UUID.randomUUID(),"AUTHORITY_INVALIDATED",UUID.randomUUID().toString()));}
     private ReliableEvents.Event claim(UUID id){
         // 测试仅隔离事件领取顺序，不修改租约机制；共享库中的其他事件先延后。
-        jdbc.update("UPDATE platform_outbox SET available_at=CURRENT_TIMESTAMP(6)+INTERVAL 1 HOUR WHERE status='PENDING' AND id<>UUID_TO_BIN(?)",id.toString());
+        jdbc.update("UPDATE platform_event_delivery SET available_at=CURRENT_TIMESTAMP(6)+INTERVAL 1 HOUR WHERE status='PENDING' AND event_id<>UUID_TO_BIN(?)",id.toString());
         return events.claim().orElseThrow();
     }
     /** 真实调度方法先复核 Provider，再按数据库租户与租约消费；拒绝时不领取。 */
     @Test void scheduledWorkerRequiresDeclarationBeforeClaiming() {
         UUID id = publish();
-        jdbc.update("UPDATE platform_outbox SET available_at=CURRENT_TIMESTAMP(6)+INTERVAL 1 HOUR WHERE status='PENDING' AND id<>UUID_TO_BIN(?)", id.toString());
+        jdbc.update("UPDATE platform_event_delivery SET available_at=CURRENT_TIMESTAMP(6)+INTERVAL 1 HOUR WHERE status='PENDING' AND event_id<>UUID_TO_BIN(?)", id.toString());
         var unregistered = new AuthorityEventWorker(events, new ScheduledObjectOperations(List.of()), true);
         assertThatThrownBy(unregistered::process).isInstanceOf(SecurityException.class)
                 .hasMessage("SCHEDULED_OBJECT_OPERATION_DENIED:" + TaskManagement.PROCESS_EVENTS);
-        assertThat(jdbc.queryForObject("SELECT attempts FROM platform_outbox WHERE id=UUID_TO_BIN(?)",
+        assertThat(jdbc.queryForObject("SELECT attempts FROM platform_event_delivery WHERE event_id=UUID_TO_BIN(?)",
                 Integer.class, id.toString())).isZero();
 
         var worker = new AuthorityEventWorker(events, scheduledOperations, true);
         worker.process();
         worker.process();
-        assertThat(jdbc.queryForObject("SELECT status FROM platform_outbox WHERE id=UUID_TO_BIN(?)",
+        assertThat(jdbc.queryForObject("SELECT status FROM platform_event_delivery WHERE event_id=UUID_TO_BIN(?)",
                 String.class, id.toString())).isEqualTo("DONE");
         assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM platform_event_consumption WHERE event_id=UUID_TO_BIN(?)",
                 Integer.class, id.toString())).isEqualTo(1);
@@ -79,13 +80,13 @@ class ReliableEventsTest extends DatabaseTestSupport {
         mvc.perform(get(tasks).with(authenticated(outsider.toString(), 0))).andExpect(status().isForbidden());
         mvc.perform(post(retry).with(authenticated(outsider.toString(), 0)).with(csrf()))
                 .andExpect(status().isForbidden());
-        assertThat(jdbc.queryForObject("SELECT status FROM platform_outbox WHERE id=UUID_TO_BIN(?)",
+        assertThat(jdbc.queryForObject("SELECT status FROM platform_event_delivery WHERE event_id=UUID_TO_BIN(?)",
                 String.class, eventId.toString())).isEqualTo("MANUAL");
         mvc.perform(post(retry).with(authenticated(administrator, 0)).with(csrf()))
                 .andExpect(status().isNoContent());
         mvc.perform(post(retry).with(authenticated(administrator, 0)).with(csrf()))
                 .andExpect(status().isConflict());
-        assertThat(jdbc.queryForObject("SELECT status FROM platform_outbox WHERE id=UUID_TO_BIN(?)",
+        assertThat(jdbc.queryForObject("SELECT status FROM platform_event_delivery WHERE event_id=UUID_TO_BIN(?)",
                 String.class, eventId.toString())).isEqualTo("PENDING");
     }
 
@@ -97,39 +98,42 @@ class ReliableEventsTest extends DatabaseTestSupport {
     }
     @Test void duplicateConsumptionAndForeignTenantCannotChangeState(){
         UUID id=publish();var event=claim(id);var count=new java.util.concurrent.atomic.AtomicInteger();
-        assertThatThrownBy(()->events.consume(event,"consumer",UUID.randomUUID(),count::incrementAndGet)).isInstanceOf(SecurityException.class);
-        assertThat(events.consume(event,"consumer",event.tenant(),count::incrementAndGet)).isTrue();
-        assertThat(events.consume(event,"consumer",event.tenant(),count::incrementAndGet)).isFalse();
+        assertThatThrownBy(()->events.consume(event,"authority-invalidation",UUID.randomUUID(),count::incrementAndGet)).isInstanceOf(SecurityException.class);
+        assertThat(events.consume(event,"authority-invalidation",event.tenant(),count::incrementAndGet)).isTrue();
+        assertThat(events.consume(event,"authority-invalidation",event.tenant(),count::incrementAndGet)).isFalse();
         assertThat(count.get()).isEqualTo(1);
-        assertThat(jdbc.queryForObject("SELECT status FROM platform_outbox WHERE id=UUID_TO_BIN(?)",String.class,id.toString())).isEqualTo("DONE");
+        assertThat(jdbc.queryForObject("SELECT status FROM platform_event_delivery WHERE event_id=UUID_TO_BIN(?)",String.class,id.toString())).isEqualTo("DONE");
     }
     @Test void expiredLeaseIsRecoveredAndStaleWorkerCannotComplete(){
         UUID id=publish();var first=claim(id);
-        jdbc.update("UPDATE platform_outbox SET lease_until=CURRENT_TIMESTAMP(6)-INTERVAL 1 SECOND WHERE id=UUID_TO_BIN(?)",id.toString());
+        jdbc.update("UPDATE platform_event_delivery SET lease_until=CURRENT_TIMESTAMP(6)-INTERVAL 1 SECOND WHERE event_id=UUID_TO_BIN(?)",id.toString());
         var second=events.claim().orElseThrow();assertThat(second.id()).isEqualTo(id);assertThat(second.lease()).isNotEqualTo(first.lease());
-        assertThat(events.consume(first,"consumer",first.tenant(),()->{})).isFalse();
-        assertThat(events.consume(second,"consumer",second.tenant(),()->{})).isTrue();
+        assertThat(events.consume(first,"authority-invalidation",first.tenant(),()->{})).isFalse();
+        assertThat(events.consume(second,"authority-invalidation",second.tenant(),()->{})).isTrue();
     }
     @Test void failedEffectRollsBackReceiptAndCanBeRetried(){
         UUID id=publish();var event=claim(id);
-        assertThatThrownBy(()->events.consume(event,"consumer",event.tenant(),()->{throw new IllegalStateException("test failure");})).isInstanceOf(IllegalStateException.class);
+        assertThatThrownBy(()->events.consume(event,"authority-invalidation",event.tenant(),()->{throw new IllegalStateException("test failure");})).isInstanceOf(IllegalStateException.class);
         assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM platform_event_consumption WHERE event_id=UUID_TO_BIN(?)",Integer.class,id.toString())).isZero();
         assertThat(events.fail(event,false)).isTrue();
-        jdbc.update("UPDATE platform_outbox SET available_at=CURRENT_TIMESTAMP(6) WHERE id=UUID_TO_BIN(?)",id.toString());
+        jdbc.update("UPDATE platform_event_delivery SET available_at=CURRENT_TIMESTAMP(6) WHERE event_id=UUID_TO_BIN(?)",id.toString());
         var retry=events.claim().orElseThrow();assertThat(retry.attempts()).isEqualTo(2);
         assertThat(events.fail(retry,true)).isTrue();
-        assertThat(jdbc.queryForObject("SELECT status FROM platform_outbox WHERE id=UUID_TO_BIN(?)",String.class,id.toString())).isEqualTo("MANUAL");
+        assertThat(jdbc.queryForObject("SELECT status FROM platform_event_delivery WHERE event_id=UUID_TO_BIN(?)",String.class,id.toString())).isEqualTo("MANUAL");
     }
     @Test void exhaustedCrashLeaseMovesToManual(){
         UUID id=publish();claim(id);
-        jdbc.update("UPDATE platform_outbox SET attempts=5,lease_until=CURRENT_TIMESTAMP(6)-INTERVAL 1 SECOND WHERE id=UUID_TO_BIN(?)",id.toString());
+        jdbc.update("UPDATE platform_event_delivery SET attempts=5,lease_until=CURRENT_TIMESTAMP(6)-INTERVAL 1 SECOND WHERE event_id=UUID_TO_BIN(?)",id.toString());
         events.claim();
-        assertThat(jdbc.queryForObject("SELECT status FROM platform_outbox WHERE id=UUID_TO_BIN(?)",String.class,id.toString())).isEqualTo("MANUAL");
-        assertThat(events.retry(id)).isTrue();assertThat(events.retry(id)).isFalse();
+        assertThat(jdbc.queryForObject("SELECT status FROM platform_event_delivery WHERE event_id=UUID_TO_BIN(?)",String.class,id.toString())).isEqualTo("MANUAL");
+        administration.initializeAdministrator("admin-test");
+        UUID actor=UUID.fromString(jdbc.queryForObject("SELECT BIN_TO_UUID(id) FROM identity_account WHERE username='admin-test'",String.class));
+        assertThat(events.retry(id,actor)).isTrue();
+        assertThat(events.retry(id,actor)).isFalse();
     }
     /** 消费者宕机前并行领取只能一个实例拿到该事件，另一个不能共享同一租约。 */
     @Test void concurrentClaimDoesNotReturnSameEventTwice()throws Exception{
-        UUID id=publish();jdbc.update("UPDATE platform_outbox SET available_at=CURRENT_TIMESTAMP(6)+INTERVAL 1 HOUR WHERE status='PENDING' AND id<>UUID_TO_BIN(?)",id.toString());
+        UUID id=publish();jdbc.update("UPDATE platform_event_delivery SET available_at=CURRENT_TIMESTAMP(6)+INTERVAL 1 HOUR WHERE status='PENDING' AND event_id<>UUID_TO_BIN(?)",id.toString());
         try(var pool=java.util.concurrent.Executors.newFixedThreadPool(2)){
             var gate=new java.util.concurrent.CountDownLatch(1);
             var first=pool.submit(()->{gate.await();return events.claim();});var second=pool.submit(()->{gate.await();return events.claim();});
@@ -144,5 +148,78 @@ class ReliableEventsTest extends DatabaseTestSupport {
         assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM platform_outbox WHERE aggregate_id=?",Integer.class,account.toString())).isZero();
         new TransactionTemplate(manager).executeWithoutResult(status->authorityEvents.invalidated(null,account));
         assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM platform_outbox WHERE aggregate_id=? AND event_type='AUTHORITY_INVALIDATED'",Integer.class,account.toString())).isEqualTo(1);
+    }
+
+    /** 实际发布为两个订阅者创建独立投递，HTTP 人工恢复仅影响目标投递。 */
+    @Test void multiConsumerRetryPreservesCompletedSibling() throws Exception {
+        administration.initializeAdministrator("admin-test");
+        String actor=jdbc.queryForObject("SELECT BIN_TO_UUID(id) FROM identity_account WHERE username='admin-test'",String.class);
+        UUID tenant=UUID.randomUUID(), subject=UUID.randomUUID();
+        UUID id=new TransactionTemplate(manager).execute(tx->events.publish(tenant,
+                com.appnexus.contracts.data.TransactionalBusinessEvents.Type.INBOUND_RECEIPT_POSTED,subject));
+        var first=claim(id);
+        var second=events.claim().orElseThrow();
+        assertThat(List.of(first.consumer(),second.consumer())).containsExactlyInAnyOrder("inbound-batch-quality","test-second");
+        var done=first.consumer().equals("inbound-batch-quality")?first:second;
+        var failed=done==first?second:first;
+        assertThat(events.consume(done,done.consumer(),tenant,
+                ()->jdbc.update("UPDATE platform_outbox SET updated_at=CURRENT_TIMESTAMP(6) WHERE id=UUID_TO_BIN(?)",id.toString()))).isTrue();
+        assertThatThrownBy(()->events.consume(failed,failed.consumer(),tenant,()->{throw new IllegalArgumentException("test");}))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThat(events.fail(failed,true)).isTrue();
+        mvc.perform(get("/bff/platform/events").param("tenant",tenant.toString()).with(authenticated(actor,0)))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.rows[0].manual").value(1));
+        mvc.perform(get("/bff/platform/events/"+id).with(authenticated(actor,0)))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.deliveries.length()").value(2));
+        mvc.perform(post("/bff/platform/tasks/"+id+"/retry").with(authenticated(actor,0)).with(csrf()))
+                .andExpect(status().isConflict());
+        String retry="/bff/platform/event-deliveries/"+failed.deliveryId()+"/retry";
+        mvc.perform(post(retry).with(authenticated(actor,0)).contentType("application/json")
+                .content("{\"reason\":\"missing csrf\"}")).andExpect(status().isForbidden());
+        try(var pool=java.util.concurrent.Executors.newFixedThreadPool(2)) {
+            var gate=new java.util.concurrent.CountDownLatch(1);
+            java.util.concurrent.Callable<Integer> request=()->{
+                gate.await();
+                return mvc.perform(post(retry).with(authenticated(actor,0)).with(csrf())
+                    .contentType("application/json").content("{\"reason\":\"verified\"}")).andReturn().getResponse().getStatus();
+            };
+            var left=pool.submit(request);
+            var right=pool.submit(request);
+            gate.countDown();
+            assertThat(List.of(left.get(),right.get())).containsExactlyInAnyOrder(204,409);
+        }
+        assertThat(jdbc.queryForObject("SELECT status FROM platform_event_delivery WHERE id=UUID_TO_BIN(?)",
+                String.class,done.deliveryId().toString())).isEqualTo("DONE");
+        assertThat(jdbc.queryForObject("SELECT status FROM platform_event_delivery WHERE id=UUID_TO_BIN(?)",
+                String.class,failed.deliveryId().toString())).isEqualTo("PENDING");
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM platform_event_consumption WHERE event_id=UUID_TO_BIN(?)",
+                Integer.class,id.toString())).isEqualTo(1);
+        assertThat(jdbc.queryForObject("SELECT operation_reason FROM platform_administration_audit WHERE target_id=UUID_TO_BIN(?)",
+                String.class,failed.deliveryId().toString())).isEqualTo("verified");
+        new AuthorityEventWorker(events,scheduledOperations,true,handlers).process();
+        assertThat(jdbc.queryForMap("SELECT attempts,total_attempts,status FROM platform_event_delivery WHERE id=UUID_TO_BIN(?)",
+                failed.deliveryId().toString())).containsEntry("attempts",1).containsEntry("total_attempts",2).containsEntry("status","DONE");
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM identity_account WHERE id=UUID_TO_BIN(?)",
+                Integer.class,subject.toString())).isEqualTo(1);
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM platform_event_consumption WHERE event_id=UUID_TO_BIN(?)",
+                Integer.class,id.toString())).isEqualTo(2);
+    }
+
+    /** 测试专用第二订阅者，生产注册表无虚构消费者。 */
+    @org.springframework.boot.test.context.TestConfiguration
+    static class SecondSubscriptionConfiguration {
+        @org.springframework.context.annotation.Bean
+        com.appnexus.contracts.data.TransactionalBusinessEvents.Consumer secondSubscription(JdbcTemplate jdbc) {
+            return new com.appnexus.contracts.data.TransactionalBusinessEvents.Consumer() {
+                public Set<com.appnexus.contracts.data.TransactionalBusinessEvents.Type> types() {
+                    return Set.of(com.appnexus.contracts.data.TransactionalBusinessEvents.Type.INBOUND_RECEIPT_POSTED);
+                }
+                public String consumerId() { return "test-second"; }
+                public void consume(com.appnexus.contracts.data.TransactionalBusinessEvents.Delivery delivery) {
+                    jdbc.update("INSERT INTO identity_account(id,username,display_name,password_hash) VALUES(UUID_TO_BIN(?),?,'Event test','unused')",
+                        delivery.subjectId().toString(),"event-consumer-"+delivery.subjectId());
+                }
+            };
+        }
     }
 }

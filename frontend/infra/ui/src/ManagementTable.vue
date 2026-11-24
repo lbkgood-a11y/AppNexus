@@ -23,6 +23,8 @@ const props = withDefaults(defineProps<{
   loading?: boolean;
   /** 业务写入中，默认 false；阻止刷新与在途写入交错。 */
   busy?: boolean;
+  /** 是否提供重新加载按钮；本地明细草稿没有独立读取接口时传 false。 */
+  refreshable?: boolean;
   /** 无数据文案；缺省使用统一空态，错误必须在调用页单独呈现。 */
   emptyText?: string;
   /** 服务端返回的记录总数；省略时标题区不展示数量，禁止用当前页行数替代。 */
@@ -31,6 +33,8 @@ const props = withDefaults(defineProps<{
   headingLevel?: "h1" | "h2";
   /** 嵌入业务工作区时移除重复卡片边界；全屏模式仍生成独立表面。 */
   embedded?: boolean;
+  /** 查看详情中的附属表格省略工具栏操作，默认 false；分页及表格数据照常显示。 */
+  readonlyView?: boolean;
   /** 树形表格稳定行标识字段；缺省为普通列表，业务方保证整树唯一。 */
   rowKey?: string;
   /** 是否填满父级分配的表体高度，默认 false；仅在已建立 flex 高度链的弹框或面板中启用，分页仍独立置底。 */
@@ -39,7 +43,7 @@ const props = withDefaults(defineProps<{
   expandedRowKeys?: string[];
   /** 当前高亮行标识；缺省不启用行选中，须与 rowKey 配合使用。 */
   currentRowKey?: string;
-}>(), { loading: false, busy: false, headingLevel: "h1", embedded: false, fitHeight: false });
+}>(), { loading: false, busy: false, refreshable: true, headingLevel: "h1", embedded: false, fitHeight: false });
 /** 异步树数据渲染后同步展开与首行高亮；不依赖组件首次挂载时的数据快照。 */
 const tableRef = ref<{ setTreeExpand: (row: Row, expanded: boolean) => void; setCurrentRow: (row?: Row) => void }>();
 watch(() => [props.rows, props.expandedRowKeys, props.currentRowKey, tableRef.value], async () => {
@@ -171,10 +175,10 @@ onBeforeUnmount(() => observer?.disconnect());
           <slot name="titleHelp" />
           <span v-if="total !== undefined" class="management-table-total">{{ t('management.totalRecords', { total }) }}</span>
         </div>
-        <div class="management-toolbar-actions">
+        <div v-if="!readonlyView" class="management-toolbar-actions">
           <slot name="actions" />
           <div class="management-table-tools">
-            <el-tooltip :teleported="!fullscreen" :content="t('management.refresh')"><el-button text :aria-label="t('management.refresh')" :disabled="loading || busy" @click="emit('refresh')"><AppIcon name="refresh" :size="18" /></el-button></el-tooltip>
+            <el-tooltip v-if="refreshable" :teleported="!fullscreen" :content="t('management.refresh')"><el-button text :aria-label="t('management.refresh')" :disabled="loading || busy" @click="emit('refresh')"><AppIcon name="refresh" :size="18" /></el-button></el-tooltip>
             <el-dropdown trigger="click" :teleported="!fullscreen" @command="value => size = value">
               <el-button text :aria-label="t('management.density')"><AppIcon name="density" :size="18" /></el-button>
               <template #dropdown><el-dropdown-menu><el-dropdown-item v-for="value in (['small','default','large'] as const)" :key="value" :command="value" :disabled="size === value">{{ t('management.' + value) }}</el-dropdown-item></el-dropdown-menu></template>

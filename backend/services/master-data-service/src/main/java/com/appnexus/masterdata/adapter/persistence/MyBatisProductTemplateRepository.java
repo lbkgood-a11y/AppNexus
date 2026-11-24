@@ -9,8 +9,9 @@ public final class MyBatisProductTemplateRepository implements ProductTemplateRe
  /** @return 由原用例授权和存储层固定租户条件保护的资源，未开放可配置行范围 */
  @Override public Set<String> enforcedResources(){return Set.of("masterdata.producttemplate", "masterdata.producttemplate.version", "masterdata.producttemplate.item");}
  private final ProductTemplateMapper mapper;
+ private final MasterStatusHistoryMapper statusHistory;
  /** @param mapper 原固定SQL映射，与父聚合共用事务连接 */
- public MyBatisProductTemplateRepository(ProductTemplateMapper mapper){this.mapper=mapper;}
+ public MyBatisProductTemplateRepository(ProductTemplateMapper mapper, MasterStatusHistoryMapper statusHistory){this.mapper=mapper;this.statusHistory=statusHistory;}
  /** {@inheritDoc} */
  public List<Map<String,Object>> versions(String tenant,String template){return ProductStorageValues.stable(mapper.versions(tenant,template));}
  /** {@inheritDoc} */
@@ -48,7 +49,9 @@ public final class MyBatisProductTemplateRepository implements ProductTemplateRe
  /** {@inheritDoc} */
  public int updateTemplate(String name,String actor,String tenant,String template,String code,String purpose,long version){return mapper.updateTemplate(name,actor,tenant,template,code,purpose,version);}
  /** {@inheritDoc} */
- public int setTemplateStatus(boolean enabled,String actor,String tenant,String template,long version){return mapper.setTemplateStatus(enabled,actor,tenant,template,version);}
+ public int setTemplateStatus(boolean enabled,String actor,String tenant,String template,long version){int changed = mapper.setTemplateStatus(enabled,actor,tenant,template,version);
+  if (changed == 1) statusHistory.append(tenant, "ProductTemplate", template, version, enabled, actor);
+  return changed;}
  /** {@inheritDoc} */
  public List<String> retirementOwners(String tenant,String templateVersion){return ProductStorageValues.stable(mapper.retirementOwners(tenant,templateVersion));}
  /** {@inheritDoc} */

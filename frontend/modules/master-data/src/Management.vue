@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import StatusHistoryButton from "./StatusHistoryButton.vue";
 import { validateNavigationPage, GeographyTreeContractError } from "./navigation";
 import WarehouseEditor from "./WarehouseEditor.vue";
 import PartnerEditor from "./PartnerEditor.vue";
@@ -157,17 +158,18 @@ const warehouseEditorMode=ref<"view"|"edit">("edit");
 const warehouseOptions=ref<Record<string,import("./index").DictionaryOption[]>>({});
 const partnerId=ref("");
 /** 审计只取原已授权记录，独立于编辑草稿，不进入写入参数。 */
-const editingAudit=computed(()=>rows.value.find(row=>row.id===editingId.value)?.audit);
+const editingRow=computed(()=>rows.value.find(row=>row.id===editingId.value));
+const editingAudit=computed(()=>editingRow.value?.audit);
 const draft=reactive<MasterDataInput>({code:"",name:"",attributes:{},version:0});
 /** 已有停用单位保留名称，历史未收录值只读保留，禁止作为其他记录的新选择。 */
 const saveOperation=computed(()=>editingId.value?operation.value.update:operation.value.create);
 const canRead=computed(()=>operations.value.includes(operation.value.list));
 const columns=computed<ManagementColumn[]>(()=>[
-  ...(isGeography.value?[{key:"hierarchyCode",label:t("geographyHierarchy.code"),minWidth:230},{key:"parentHierarchyCode",label:t("geographyHierarchy.parentCode"),minWidth:210}]:[]),
+  {key:"status",label:t("masterData.status"),width:110},
   {key:"code",prop:"code",label:t("masterData.code"),minWidth:140},
+  ...(isGeography.value?[{key:"hierarchyCode",label:t("geographyHierarchy.code"),minWidth:230},{key:"parentHierarchyCode",label:t("geographyHierarchy.parentCode"),minWidth:210}]:[]),
   {key:"name",prop:"name",label:t("masterData.name"),minWidth:180},
   ...visibleFields.value.map(key=>({key,label:t((props.kind==="warehouse"?"warehouseProfile.fields.":"masterData.fields.")+key),minWidth:150})),
-  {key:"status",label:t("masterData.status"),width:110},
   {key:"operations",label:t("masterData.actions"),width:260,fixed:"right"}
 ]);
 /** 前后端字段长度、必填和标准代码约束一致；只改善输入体验，不能替代服务端校验。 */
@@ -292,10 +294,11 @@ onMounted(load);
         <template #name="{row}"><el-button v-if="kind==='storage-area'&&embedded" v-operation="operation.list" link type="primary" @click="emit('selected',row)">{{row.name}}</el-button><span v-else>{{isGeography?(row.attributes.displayName||row.name):row.name}}</span></template>
         <template #hierarchyCode="{row}">{{row.attributes.hierarchyCode||row.code}}</template>
         <template #parentHierarchyCode="{row}">{{row.attributes.parentHierarchyCode||'—'}}</template>
-        <template #status="{row}"><el-tag :type="row.enabled?'success':'info'">{{t('masterData.'+(row.enabled?'enabled':'disabled'))}}</el-tag></template>
+        <template #status="{row}"><el-tag class="app-status-tag" :type="row.enabled?'success':'info'">{{t('masterData.'+(row.enabled?'enabled':'disabled'))}}</el-tag></template>
         <template #operations="{row}">
           <el-button v-if="kind==='partner'||kind==='warehouse'||isStorage" v-operation="operation.list" link type="primary" :disabled="busy||loading" @click="edit(row,'view')">{{t('partner.view')}}</el-button>
           <el-button v-operation="operation.update" link type="primary" :disabled="busy||loading" @click="edit(row,'edit')">{{t('masterData.edit')}}</el-button>
+          <StatusHistoryButton :operation="operation.setStatus.replace(/\.setStatus$/, '.readStatusHistory')" :load="(page,size)=>api.statusHistory(kind,row.id,page,size)" :error-text="errorText" />
           <el-button v-operation="operation.setStatus" link :type="row.enabled?'danger':'primary'" :disabled="busy||loading" @click="toggle(row)">{{t('masterData.'+(row.enabled?'disable':'enable'))}}</el-button>
         </template>
         <template #pagination><AppPagination v-model:current-page="page" v-model:page-size="size" :total="total" :disabled="loading||busy" @current-change="load" @size-change="search" /></template>
@@ -305,7 +308,27 @@ onMounted(load);
         <template v-if="isGeography" #title>
           <span class="info-hint-title">{{t('masterData.'+(editingId?'edit':'create'))+' · '+title}}<span @pointerdown.stop><InfoHint :content="t('masterData.codeHint')" /></span></span>
         </template>
-        <el-form class="business-border-label-form" ref="form" :model="draft" :rules="rules" label-position="top" @submit.prevent="save">
+        <section v-if="storageReadonly" class="readonly-detail-section">
+          <dl class="detail-field-grid">
+            <div class="detail-readonly-field">
+              <dt>{{t(kind==='storage-area'?'storageHierarchy.warehouse':'storageHierarchy.area')}}</dt>
+              <dd>{{storageParent?.name || '—'}} · {{draft.attributes.parentCode || '—'}}</dd>
+            </div>
+            <div class="detail-readonly-field">
+              <dt>{{t('masterData.code')}}</dt>
+              <dd>{{draft.code || '—'}}</dd>
+            </div>
+            <div class="detail-readonly-field">
+              <dt>{{t('masterData.name')}}</dt>
+              <dd>{{draft.name || '—'}}</dd>
+            </div>
+            <div v-for="field in visibleFields" :key="field" class="detail-readonly-field">
+              <dt>{{t('masterData.fields.'+field)}}</dt>
+              <dd>{{field==='areaType' && draft.attributes[field] ? t('storageHierarchy.types.'+draft.attributes[field]) : draft.attributes[field] || '—'}}</dd>
+            </div>
+          </dl>
+        </section>
+        <el-form v-else class="business-border-label-form" ref="form" :model="draft" :rules="rules" label-position="top" @submit.prevent="save">
           <el-form-item v-if="isStorage" :label="t(kind==='storage-area'?'storageHierarchy.warehouse':'storageHierarchy.area')"><span>{{storageParent?.name}} · {{draft.attributes.parentCode}}</span></el-form-item>
           <el-form-item v-if="isGeography" :label="t('geographyHierarchy.parentCode')" prop="attributes.parentCode">
             <el-tree-select :key="parentRevision" v-model="draft.attributes.parentCode" :cache-data="parentCache" lazy :load="loadParents" :props="{label:'label',isLeaf:'leaf',disabled:'disabled'}" node-key="code" check-strictly :disabled="busy||storageReadonly" style="width:100%" @change="changeParent" />
@@ -323,6 +346,7 @@ onMounted(load);
               </el-popover></template>
             </el-input>
           </el-form-item>
+          <el-form-item v-if="editingRow" :label="t('masterData.status')"><el-tag class="app-status-tag" :type="editingRow.enabled?'success':'info'">{{t(editingRow.enabled?'masterData.enabled':'masterData.disabled')}}</el-tag></el-form-item>
           <el-form-item :label="t('masterData.name')" prop="name"><el-input v-model="draft.name" maxlength="200" :disabled="busy||storageReadonly" /></el-form-item>
           <el-form-item v-for="field in visibleFields" :key="field" :label="t('masterData.fields.'+field)" :prop="'attributes.'+field">
             <span v-if="isGeography&&field==='countryCode'">{{draft.attributes[field]||'—'}}</span>
@@ -331,7 +355,7 @@ onMounted(load);
           </el-form-item>
         </el-form>
         <RecordAuditDetails v-if="editingId && editingAudit" :audit="editingAudit" />
-        <template #footer><el-button :disabled="busy" @click="open=false">{{t('masterData.cancel')}}</el-button><el-button v-if="!storageReadonly" v-operation="saveOperation" type="primary" :loading="busy" :disabled="isGeography&&!draft.attributes.parentCode" @click="save">{{t('masterData.save')}}</el-button></template>
+        <template v-if="!storageReadonly" #footer><el-button :disabled="busy" @click="open=false">{{t('masterData.cancel')}}</el-button><el-button v-if="!storageReadonly" v-operation="saveOperation" type="primary" :loading="busy" :disabled="isGeography&&!draft.attributes.parentCode" @click="save">{{t('masterData.save')}}</el-button></template>
       </ManagedDialog>
     </template>
   </component>

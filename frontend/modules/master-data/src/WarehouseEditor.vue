@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import StatusHistoryButton from "./StatusHistoryButton.vue";
 import {computed,onMounted,onBeforeUnmount,reactive,ref} from "vue";
 import {onBeforeRouteLeave} from "vue-router";
 import {useI18n} from "vue-i18n";
@@ -77,18 +78,19 @@ onBeforeUnmount(()=>window.removeEventListener("beforeunload",beforeUnload));
 <template>
  <div class="warehouse-editor" v-loading="loading">
   <WarehouseMapPicker v-if="mapOpen&&canEdit&&!busy&&!loading" :configuration="api.warehouseMapConfig" :longitude="draft.attributes.longitude??''" :latitude="draft.attributes.latitude??''" @select="applyMapPoint" @close="mapOpen=false" />
-  <FloatingError :title="error"><el-button :disabled="busy||loading" @click="reload">{{t('masterData.retry')}}</el-button></FloatingError>
+  <FloatingError :title="error"><el-button v-if="props.mode!=='view'" :disabled="busy||loading" @click="reload">{{t('masterData.retry')}}</el-button></FloatingError>
   <TabbedDetailTemplate master-data>
-   <template #header><PageHeader :title="id?(draft.name||t('masterData.warehouse')):t('warehouseProfile.new')"><template #meta><el-tag v-if="props.mode==='view'" type="info">{{t('partner.view')}}</el-tag><el-tag v-if="record" :type="record.enabled?'success':'info'">{{t('masterData.'+(record.enabled?'enabled':'disabled'))}}</el-tag></template><template #actions><el-button :disabled="busy||loading" @click="back">{{t('partner.back')}}</el-button><el-button v-if="props.mode!=='view'" v-operation="operation" type="primary" :loading="busy" :disabled="!canEdit||!dirty||loading" @click="save">{{t('masterData.save')}}</el-button></template></PageHeader></template>
+   <template #header><PageHeader :title="id?(draft.name||t('masterData.warehouse')):t('warehouseProfile.new')"><template #meta><el-tag v-if="props.mode==='view'" type="info">{{t('partner.view')}}</el-tag><el-tag v-if="draft.code" effect="plain">{{draft.code}}</el-tag><el-tag class="app-status-tag" v-if="record" :type="record.enabled?'success':'info'">{{t('masterData.'+(record.enabled?'enabled':'disabled'))}}</el-tag></template><template #actions><el-button :disabled="busy||loading" @click="back">{{t('partner.back')}}</el-button><el-button v-if="props.mode!=='view'" v-operation="operation" type="primary" :loading="busy" :disabled="!canEdit||!dirty||loading" @click="save">{{t('masterData.save')}}</el-button></template><template v-if="id&&record" #trailing><StatusHistoryButton operation="Warehouse.readStatusHistory" :load="(page,size)=>api.statusHistory('warehouse',id,page,size)" :error-text="errorText" /></template></PageHeader></template>
    <template #content>
-    <LoadErrorResult v-if="loadIssue" :issue="loadIssue"><template #retry><el-button :disabled="busy||loading" @click="reload">{{t('masterData.retry')}}</el-button></template></LoadErrorResult>
+    <LoadErrorResult v-if="loadIssue" :issue="loadIssue"><template v-if="props.mode!=='view'" #retry><el-button :disabled="busy||loading" @click="reload">{{t('masterData.retry')}}</el-button></template></LoadErrorResult>
     <el-result v-else-if="!loading&&!canRead" icon="warning" :title="t('masterData.noPermission')" />
     <el-form v-else-if="!loading&&!failed" ref="form" :model="draft" :rules="rules" label-position="top" :disabled="busy" class="detail-profile-form detail-border-label-form" @submit.prevent="save">
      <el-card v-for="(fields,group) in warehouseGroups" :key="group" shadow="never" class="detail-section" :body-style="!expanded[group]?{padding:'0'}:undefined">
-      <template #header><div class="detail-section-heading"><h2>{{t('warehouseProfile.'+group)}}</h2><el-button text :aria-label="t(expanded[group]?'partner.collapse':'partner.expand')" :title="t(expanded[group]?'partner.collapse':'partner.expand')" :aria-expanded="expanded[group]" :aria-controls="'warehouse-'+group" @click="expanded[group]=!expanded[group]"><AppIcon :name="expanded[group]?'arrowUp':'arrowDown'" :size="18" /></el-button></div></template>
-      <div v-show="expanded[group]" :id="'warehouse-'+group" class="detail-field-grid">
+      <template #header><div class="detail-section-heading"><h2>{{t('warehouseProfile.'+group)}}</h2><el-button v-if="props.mode!=='view'" text :aria-label="t(expanded[group]?'partner.collapse':'partner.expand')" :title="t(expanded[group]?'partner.collapse':'partner.expand')" :aria-expanded="expanded[group]" :aria-controls="'warehouse-'+group" @click="expanded[group]=!expanded[group]"><AppIcon :name="expanded[group]?'arrowUp':'arrowDown'" :size="18" /></el-button></div></template>
+      <div v-show="props.mode==='view'||expanded[group]" :id="'warehouse-'+group" class="detail-field-grid">
        <template v-if="group==='basic'">
         <el-form-item v-if="canEdit&&!id" :label="t('masterData.code')" prop="code"><el-input v-model="draft.code" maxlength="64" /></el-form-item><div v-else class="detail-readonly-field"><span>{{t('masterData.code')}}</span><el-tooltip :content="draft.code"><strong class="warehouse-code" tabindex="0">{{draft.code||'—'}}</strong></el-tooltip></div>
+        <div v-if="record" class="detail-readonly-field"><span>{{t('masterData.status')}}</span><el-tag class="app-status-tag" :type="record.enabled?'success':'info'">{{t(record.enabled?'masterData.enabled':'masterData.disabled')}}</el-tag></div>
         <el-form-item v-if="canEdit" :label="t('masterData.name')" prop="name"><el-input v-model="draft.name" maxlength="200" /></el-form-item><div v-else class="detail-readonly-field"><span>{{t('masterData.name')}}</span><strong>{{draft.name||'—'}}</strong></div>
         <el-form-item v-if="canEdit" :label="t('partner.organization')" prop="organizationId">
          <el-select v-model="draft.organizationId" filterable>
@@ -97,7 +99,6 @@ onBeforeUnmount(()=>window.removeEventListener("beforeunload",beforeUnload));
          </el-select>
         </el-form-item>
         <div v-else class="detail-readonly-field"><span>{{t('partner.organization')}}</span><strong>{{record?.organizationName || referenceName(draft.organizationId, organizations, item => item.name, t('referenceName.unavailable'))}}</strong></div>
-        <div class="detail-readonly-field"><span>{{t('masterData.status')}}</span><strong>{{record?t('masterData.'+(record.enabled?'enabled':'disabled')):t('masterData.enabled')}}</strong></div>
        </template>
        <template v-for="field in fields" :key="field">
         <el-form-item v-if="canEdit&&!fieldMode(field)" :label="label(field)" :prop="'attributes.'+field" :class="{'detail-field-wide':wideFields.includes(field)}">

@@ -414,7 +414,7 @@ watch(
           t("workflow.backToFlows")
         }}</el-button
         ><strong>{{ model.name || t("workflow.untitled") }}</strong
-        ><el-tag :type="dirty ? 'warning' : 'info'">{{
+        ><el-tag class="app-status-tag" :type="dirty ? 'warning' : 'info'">{{
           t(
             dirty
               ? "workflow.unsaved"

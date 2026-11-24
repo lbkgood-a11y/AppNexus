@@ -163,12 +163,36 @@ public interface ProductStructureRepository {
   * @return 原固定投影或受影响行数；写入失败必须由用例整笔回滚
   */
  int createSku(String id,String tenant,String product,String specification,String code,String creator,String updater);
+
+ /** 保存同一事务中新建货号的已校验计量，调用方持有父商品写许可。 */
+ /** 保存原货号的批次模板绑定，校验已发布用途并同时维护修改审计。 */
+ int updateSkuBatchTemplate(String tenant,String product,String sku,long version,String templateVersion,String actor);
+ /** 使用父商品写许可与货号版本更新专属计量及修改审计。 */
+ int updateSkuMeasurement(String tenant,String product,String sku,long version,String configuration,String actor);
+ /** 保存同一事务中新建货号的已校验计量，调用方持有父商品写许可。 */
+ int initializeSkuMeasurement(String tenant,String product,String sku,String configuration);
  /** unitPrecision固定存取；父CAS、结构正文及审计参与同一用例事务。
   * @param tenant 可信租户UUID文本，必填；不能客户端指定
   * @param unit 当前租户单位UUID，按原形式校验
   * @return 原固定投影或受影响行数；写入失败必须由用例整笔回滚
   */
  Integer unitPrecision(String tenant,String unit);
+ /** 以原商品写许可绑定可用的普通货号模板；随后执行父版本和审计。 */
+ int updateSkuAttributeTemplate(String tenant,String product,String template);
+ /** 绑定可信商品下的已发布规格轴版本。 */
+ int updateSpecificationTemplate(String tenant,String product,String template);
+ /** 从父商品已授权范围读取其确认的规格轴。 */
+ List<Map<String,Object>> specificationTemplateFields(String tenant,String product,String template,Predicate access);
+ /** 在创建事务内固定规格的模板与值。 */
+ int initializeSpecificationValues(String tenant,String product,String specification,String template,String values);
+ /** 读取 SPU 确认模板和匹配该模板的货号值。 */
+ List<Map<String,Object>> skuAttributeBinding(String tenant,String product,String sku,Predicate access);
+ /** 读取经商品范围校验的普通货号模板字段及选项，用于业务校验及页面。 */
+ List<Map<String,Object>> skuAttributeFields(String tenant,String product,String sku,String template,Predicate access);
+ /** 以原货号版本保存普通属性和模板，修改人取自认证上下文。 */
+ int updateSkuAttributes(String tenant,String product,String sku,long version,String template,String values,String actor);
+ /** 根据可信父商品读取范围取得属于当前货号的批次字段，禁止按客户端传入模板查询。 */
+ List<Map<String,Object>> skuBatchFields(String tenant,String product,String sku,String template,Predicate access);
  /** 在父商品锁和版本保护下替换计量配置。 */
  int saveMeasurement(String tenant,String product,String configuration);
  /** 查询是否存在可用的组内直连换算。 */

@@ -1,11 +1,81 @@
 package com.appnexus.bulkwarehousing.bootstrap;
 
+import com.appnexus.bulkwarehousing.api.inboundexecution.OpenInboundReceiptUseCase;
+import com.appnexus.bulkwarehousing.application.inboundexecution.OpenInboundReceiptService;
+
+import com.appnexus.bulkwarehousing.api.inboundexecution.CreateInboundTaskUseCase;
+import com.appnexus.bulkwarehousing.application.inboundexecution.CreateInboundTaskService;
+import com.appnexus.bulkwarehousing.adapter.persistence.inboundexecution.InboundTaskRegistrationMapper;
+import com.appnexus.bulkwarehousing.adapter.persistence.inboundexecution.MyBatisInboundTaskRegistrationStore;
+import com.appnexus.bulkwarehousing.adapter.web.inboundexecution.InboundTaskRegistrationController;
+
+import com.appnexus.bulkwarehousing.api.inboundexecution.ReadInboundDocumentsUseCase;
+import com.appnexus.bulkwarehousing.application.inboundexecution.ReadInboundDocumentsService;
+import com.appnexus.bulkwarehousing.adapter.persistence.inboundexecution.InboundDocumentMapper;
+import com.appnexus.bulkwarehousing.adapter.persistence.inboundexecution.MyBatisInboundDocumentQueries;
+import com.appnexus.bulkwarehousing.adapter.web.inboundexecution.InboundDocumentQueryController;
+import com.appnexus.contracts.data.TransactionalBusinessEvents;
+import com.appnexus.bulkwarehousing.application.inboundexecution.ApplyInboundBatchQualityService;
+import com.appnexus.bulkwarehousing.adapter.persistence.inboundexecution.InboundBatchQualityMapper;
+import com.appnexus.bulkwarehousing.adapter.persistence.inboundexecution.MyBatisInboundBatchQualityProjection;
+import com.appnexus.bulkwarehousing.api.inboundexecution.GroundWeighingUseCase;
+import com.appnexus.bulkwarehousing.application.inboundexecution.GroundWeighingService;
+import com.appnexus.bulkwarehousing.adapter.persistence.inboundexecution.GroundWeighingMapper;
+import com.appnexus.bulkwarehousing.adapter.persistence.inboundexecution.MyBatisGroundWeighingRepository;
+import com.appnexus.bulkwarehousing.adapter.web.inboundexecution.GroundWeighingController;
+import com.appnexus.bulkwarehousing.adapter.integration.inboundexecution.InboundTaskDeclaration;
+import com.appnexus.bulkwarehousing.adapter.integration.inboundexecution.AttachmentSteelInspectionEvidenceAdapter;
+import com.appnexus.bulkwarehousing.api.inboundexecution.InspectInboundSteelUseCase;
+import com.appnexus.bulkwarehousing.application.inboundexecution.InspectInboundSteelService;
+import com.appnexus.platform.configuration.AttachmentRecords;
+import com.appnexus.bulkwarehousing.api.inboundexecution.ConfirmSteelMeasurementUseCase;
+import com.appnexus.bulkwarehousing.application.inboundexecution.ConfirmSteelMeasurementService;
+import com.appnexus.bulkwarehousing.adapter.persistence.inboundexecution.SteelMeasurementMapper;
+import com.appnexus.bulkwarehousing.adapter.persistence.inboundexecution.MyBatisSteelMeasurementRepository;
+import com.appnexus.bulkwarehousing.api.inboundexecution.CreateSteelReceiptDraftUseCase;
+import com.appnexus.bulkwarehousing.application.inboundexecution.CreateSteelReceiptDraftService;
+import com.appnexus.bulkwarehousing.api.inboundexecution.ReadInboundWorkbenchDetailUseCase;
+import com.appnexus.bulkwarehousing.application.inboundexecution.ReadInboundWorkbenchDetailService;
+import com.appnexus.bulkwarehousing.adapter.persistence.inboundexecution.InboundWorkbenchDetailMapper;
+import com.appnexus.bulkwarehousing.adapter.persistence.inboundexecution.MyBatisInboundWorkbenchDetailQueries;
+import com.appnexus.bulkwarehousing.adapter.integration.inboundexecution.InboundReceiptOrderDeclaration;
+import com.appnexus.bulkwarehousing.adapter.persistence.inboundexecution.InboundReceiptOrderMapper;
+import com.appnexus.bulkwarehousing.adapter.persistence.inboundexecution.MyBatisInboundReceiptOrderRepository;
+import com.appnexus.bulkwarehousing.adapter.web.inboundexecution.InboundReceiptOrderController;
+import com.appnexus.bulkwarehousing.api.inboundexecution.CreateBulkReceiptDraftUseCase;
+import com.appnexus.bulkwarehousing.application.inboundexecution.CreateBulkReceiptDraftService;
+import com.appnexus.bulkwarehousing.adapter.persistence.inboundexecution.MyBatisBulkReceiptPostingRepository;
+import com.appnexus.bulkwarehousing.adapter.persistence.inboundexecution.ReceiptPostingMapper;
+import com.appnexus.bulkwarehousing.api.inboundexecution.PostInboundReceiptUseCase;
+import com.appnexus.bulkwarehousing.application.inboundexecution.PostInboundReceiptService;
+import com.appnexus.bulkwarehousing.api.inboundexecution.ReverseInboundReceiptUseCase;
+import com.appnexus.bulkwarehousing.application.inboundexecution.ReverseInboundReceiptService;
+import com.appnexus.bulkwarehousing.adapter.integration.inboundexecution.InboundMeteringOrderDeclaration;
+import com.appnexus.bulkwarehousing.adapter.persistence.inboundexecution.InboundMeteringOrderMapper;
+import com.appnexus.bulkwarehousing.adapter.persistence.inboundexecution.MyBatisInboundMeteringOrderRepository;
+import com.appnexus.bulkwarehousing.adapter.web.inboundexecution.InboundMeteringOrderController;
+import com.appnexus.bulkwarehousing.api.inboundexecution.RegisterExternalMeasurementUseCase;
+import com.appnexus.bulkwarehousing.application.inboundexecution.RegisterExternalMeasurementService;
+import com.appnexus.bulkwarehousing.adapter.integration.inboundexecution.InboundQualityOrderDeclaration;
+import com.appnexus.bulkwarehousing.adapter.persistence.inboundexecution.InboundQualityOrderMapper;
+import com.appnexus.bulkwarehousing.adapter.persistence.inboundexecution.MyBatisInboundQualityOrderRepository;
+import com.appnexus.bulkwarehousing.adapter.web.inboundexecution.InboundQualityOrderController;
+import com.appnexus.bulkwarehousing.api.inboundexecution.RegisterInboundSampleUseCase;
+import com.appnexus.bulkwarehousing.application.inboundexecution.RegisterInboundSampleService;
+import com.appnexus.bulkwarehousing.application.inboundexecution.DecideInboundQualityService;
+import com.appnexus.bulkwarehousing.application.inboundexecution.InboundQualityOrderRepository;
+import com.appnexus.bulkwarehousing.api.inboundexecution.DecideInboundQualityUseCase;
+import com.appnexus.bulkwarehousing.adapter.persistence.inboundexecution.InboundWorkbenchMapper;
+import com.appnexus.bulkwarehousing.adapter.persistence.inboundexecution.MyBatisInboundWorkbenchQueries;
+import com.appnexus.bulkwarehousing.adapter.web.inboundexecution.InboundWorkbenchController;
+import com.appnexus.bulkwarehousing.api.inboundexecution.ReadInboundWorkbenchUseCase;
+import com.appnexus.bulkwarehousing.application.inboundexecution.ReadInboundWorkbenchService;
+import com.appnexus.platform.authorization.ScopedWriteGate;
 import com.appnexus.bulkwarehousing.adapter.integration.MasterDataInboundReceiptReferences;
 import com.appnexus.bulkwarehousing.adapter.integration.InboundReceivingDeclaration;
 import com.appnexus.bulkwarehousing.adapter.persistence.InboundReceivingMapper;
 import com.appnexus.bulkwarehousing.adapter.web.InboundReceivingController;
 import com.appnexus.bulkwarehousing.api.InboundReceiving;
-import com.appnexus.bulkwarehousing.api.InboundDisposition;
 import com.appnexus.bulkwarehousing.api.InboundOperations;
 import com.appnexus.bulkwarehousing.adapter.persistence.MyBatisInboundReceivingStore;
 import com.appnexus.bulkwarehousing.application.InboundReceivingService;
@@ -16,24 +86,8 @@ import com.appnexus.bulkwarehousing.application.ResolveInboundReceiptReferences;
 import com.appnexus.masterdata.api.masterdata.MasterDataManagement;
 import com.appnexus.masterdata.api.product.ProductStructureManagement;
 import com.appnexus.masterdata.api.product.UnitConversions;
-import com.appnexus.bulkwarehousing.api.OutboundOperations;
-import com.appnexus.bulkwarehousing.api.OutboundStock;
-import com.appnexus.bulkwarehousing.application.OutboundStockService;
-import com.appnexus.bulkwarehousing.adapter.integration.OutboundStockDeclaration;
-import com.appnexus.bulkwarehousing.adapter.persistence.OutboundStockMapper;
-import com.appnexus.bulkwarehousing.adapter.persistence.MyBatisOutboundStockStore;
-import com.appnexus.bulkwarehousing.adapter.web.OutboundStockController;
-import com.appnexus.bulkwarehousing.api.CoilOutbound;
-import com.appnexus.bulkwarehousing.application.CoilOutboundService;
-import com.appnexus.bulkwarehousing.adapter.integration.CoilOutboundDeclaration;
-import com.appnexus.bulkwarehousing.adapter.persistence.CoilOutboundMapper;
-import com.appnexus.bulkwarehousing.adapter.persistence.MyBatisCoilOutboundStore;
+import com.appnexus.bulkwarehousing.adapter.web.WarehouseQueryController;
 import com.appnexus.masterdata.api.product.ProductCatalogManagement;
-import com.appnexus.bulkwarehousing.api.CoilTitleTransfer;
-import com.appnexus.bulkwarehousing.application.CoilTitleTransferService;
-import com.appnexus.bulkwarehousing.adapter.integration.CoilTitleDeclaration;
-import com.appnexus.bulkwarehousing.adapter.persistence.CoilTitleMapper;
-import com.appnexus.bulkwarehousing.adapter.persistence.MyBatisCoilTitleStore;
 import com.appnexus.bulkwarehousing.api.WarehouseBalances;
 import com.appnexus.bulkwarehousing.application.WarehouseBalanceService;
 import com.appnexus.bulkwarehousing.adapter.integration.WarehouseStockBalanceDeclaration;
@@ -48,102 +102,245 @@ import org.springframework.transaction.support.TransactionTemplate;
 /** 大宗仓储的进程内装配，复用同一组合应用中的主数据服务。 */
 @Configuration(proxyBeanMethods = false)
 public class BulkWarehousingConfiguration {
-  /** @param stock 正式库存用例 @return 第一方出仓库存入口 */
-  @Bean public OutboundStockController outboundStockController(OutboundStock stock,CoilOutbound coils,CoilTitleTransfer titles,WarehouseBalances balances) {
-    return new OutboundStockController(stock,coils,titles,balances);
+  /** @param access 统一权限 @param mapper 固定分岗查询 @param gate 公共事务许可 @param manager 同库事务 @return 独立单据读用例 */
+  @Bean ReadInboundDocumentsUseCase readInboundDocuments(AccessPlanning access,InboundDocumentMapper mapper,
+      ScopedWriteGate gate,PlatformTransactionManager manager) {
+    return new ReadInboundDocumentsService(access,new MyBatisInboundDocumentQueries(mapper,gate,manager));
   }
 
-  /** @return 出仓库存唯一对象声明 */
-  @Bean public BusinessObjects.Provider outboundStockDeclaration() {
-    return new OutboundStockDeclaration(OutboundOperations.STOCK,"出仓库存","Outbound stock");
+  /** @param documents 已授权单据读取 @return 第一方分岗列表及详情 */
+  @Bean InboundDocumentQueryController inboundDocumentQueryController(ReadInboundDocumentsUseCase documents) {
+    return new InboundDocumentQueryController(documents);
+  }
+  /**
+   * @param mapper 地磅和监卸 SQL
+   * @param manager 主库事务
+   * @param gate 公共操作许可
+   * @param access 统一操作与数据计划
+   * @return 草稿毛重、监卸和皮重命令
+   */
+  @Bean public GroundWeighingService groundWeighing(GroundWeighingMapper mapper,
+      PlatformTransactionManager manager, ScopedWriteGate gate, AccessPlanning access) {
+    return new GroundWeighingService(access,new MyBatisGroundWeighingRepository(mapper,gate,manager));
   }
 
-  /** @return 库存限制唯一对象声明 */
-  @Bean public BusinessObjects.Provider stockRestrictionDeclaration() {
-    return new OutboundStockDeclaration(OutboundOperations.RESTRICTION,"库存限制","Stock restriction");
+  /** @param weighing 受控地磅与监卸业务 @return 独立岗位接口 */
+  @Bean public GroundWeighingController groundWeighingController(GroundWeighingUseCase weighing) {
+    return new GroundWeighingController(weighing);
+  }
+  /** @param operations 固定调度授权 @param gate 统一事务许可 @param mapper 定向质量库存 SQL @return 同库 Outbox 消费者 */
+  @Bean public ApplyInboundBatchQualityService applyInboundBatchQuality(BusinessObjects.ScheduledOperations operations,
+      ScopedWriteGate gate, InboundBatchQualityMapper mapper) {
+    return new ApplyInboundBatchQualityService(operations, gate, new MyBatisInboundBatchQualityProjection(mapper));
+  }
+  /** @return 入库单唯一声明 */
+  @Bean public InboundReceiptOrderDeclaration inboundReceiptOrderDeclaration() {
+    return new InboundReceiptOrderDeclaration();
   }
 
-  /** @return 整卷出仓对象声明 */
-  @Bean public BusinessObjects.Provider coilOutboundDeclaration() {
-    return new CoilOutboundDeclaration();
+  /**
+   * @param mapper 入库草稿固定 SQL
+   * @param manager 组合应用同一事务
+   * @param access 统一权限计划
+   * @param gate 公共事务许可
+   * @param references 仓储授权引用与单位换算用例
+   * @param source 可信千克单位检查
+   * @return 已装配的入库草稿用例
+   */
+  @Bean public CreateBulkReceiptDraftService createBulkReceiptDraft(InboundReceiptOrderMapper mapper,
+      PlatformTransactionManager manager, AccessPlanning access, ScopedWriteGate gate,
+      InboundReceiptReferences references, MasterDataInboundReceiptReferences source) {
+    return new CreateBulkReceiptDraftService(access, new MyBatisInboundReceiptOrderRepository(mapper, gate, manager),
+        references, source);
   }
 
-  /** @param inbound 共用库存锁 @param mapper 出仓 SQL @param coils 库内栅栏 @param manager 数据源事务
-   * @return 共用的库存存储及事务 */
-  @Bean public MyBatisOutboundStockStore outboundStockStore(InboundReceivingMapper inbound,OutboundStockMapper mapper,
-      CoilOutboundMapper coils,PlatformTransactionManager manager) {
-    return new MyBatisOutboundStockStore(inbound,mapper,coils,manager);
+  /**
+   * @param mapper 固定过账 SQL
+   * @param manager 组合应用共用事务管理器
+   * @param gate MyBatis 事务许可
+   * @return 过账、冲红和幂等回执共用的仓储
+   */
+  @Bean public MyBatisBulkReceiptPostingRepository receiptPostingRepository(ReceiptPostingMapper mapper,
+      PlatformTransactionManager manager, ScopedWriteGate gate) {
+    return new MyBatisBulkReceiptPostingRepository(mapper, gate, manager);
   }
 
-  /** @param store 实物存储 @param source 主数据公开读取 @param access 统一权限计划 @return 公共库存门禁 */
-  @Bean public OutboundStockService outboundStock(MyBatisOutboundStockStore store,
-      MasterDataInboundReceiptReferences source,AccessPlanning access,com.appnexus.platform.authorization.ScopedWriteGate writes) {
-    return new OutboundStockService(store,source,access,writes);
+  /** @param access 公共授权 @param repository 过账仓储 @param source 主数据核验 @return 合格散货过账用例 */
+  @Bean public PostInboundReceiptService postInboundReceipt(AccessPlanning access,
+      MyBatisBulkReceiptPostingRepository repository, MasterDataInboundReceiptReferences source,
+      TransactionalBusinessEvents events) {
+    return new PostInboundReceiptService(access, repository, repository, source, events);
   }
 
-  /** @param mapper 额度持久化 @param store 共用库存事务 @param gate 库存门禁
-   * @param source 主数据公开读取 @param access 统一权限计划 @return 整卷出仓用例 */
-  @Bean public CoilOutboundService coilOutbound(CoilOutboundMapper mapper,CoilTitleMapper titles,MyBatisOutboundStockStore store,
-      OutboundStockService gate,MasterDataInboundReceiptReferences source,AccessPlanning access,
-      com.appnexus.platform.authorization.ScopedWriteGate writes) {
-    return new CoilOutboundService(new MyBatisCoilOutboundStore(mapper,titles),store,gate,source,access,writes);
+  /** @param access 公共授权 @param repository 逆向库存仓储 @return 受控冲红用例 */
+  @Bean public ReverseInboundReceiptService reverseInboundReceipt(AccessPlanning access,
+      MyBatisBulkReceiptPostingRepository repository) {
+    return new ReverseInboundReceiptService(access, repository, repository);
   }
 
-  /** @return 过户唯一对象声明 */
-  @Bean public BusinessObjects.Provider coilTitleDeclaration() { return new CoilTitleDeclaration(); }
+  /** @param mapper 草稿 SQL @param manager 主库事务 @param access 公共授权 @param gate 公共许可 @param references 引用 @param source 千克验证 @return 钢铁草稿 */
+  @Bean public CreateSteelReceiptDraftService createSteelReceiptDraft(InboundReceiptOrderMapper mapper,
+      PlatformTransactionManager manager,AccessPlanning access,ScopedWriteGate gate,
+      InboundReceiptReferences references,MasterDataInboundReceiptReferences source) {
+    return new CreateSteelReceiptDraftService(access,new MyBatisInboundReceiptOrderRepository(mapper,gate,manager),references,source);
+  }
 
-  /** @param mapper 货权存储 @param outbound 出仓仓级锁 @param stock 库存事务 @param gate 货权事实
-   * @param source 原主数据入口 @param access 统一权限 @return 整卷过户业务 */
-  @Bean public CoilTitleTransferService coilTitleTransfer(CoilTitleMapper mapper,CoilOutboundMapper outbound,
-      MyBatisOutboundStockStore stock,OutboundStockService gate,MasterDataInboundReceiptReferences source,
-      AccessPlanning access,com.appnexus.platform.authorization.ScopedWriteGate writes) {
-    return new CoilTitleTransferService(new MyBatisCoilTitleStore(mapper),stock,
-        new MyBatisCoilOutboundStore(outbound,mapper),gate,source,access,writes);
+  /** @param drafts 散货草稿 @param posting 过账 @param reversal 冲红 @param steelDrafts 钢铁草稿 @return 独立入库命令入口 */
+  @Bean OpenInboundReceiptUseCase openInboundReceipt(AccessPlanning access,InboundReceiptOrderMapper mapper,
+      ScopedWriteGate gate,PlatformTransactionManager manager) {
+    return new OpenInboundReceiptService(access,new MyBatisInboundReceiptOrderRepository(mapper,gate,manager));
+  }
+
+  @Bean public InboundReceiptOrderController inboundReceiptOrderController(CreateBulkReceiptDraftUseCase drafts,
+      PostInboundReceiptUseCase posting, ReverseInboundReceiptUseCase reversal,CreateSteelReceiptDraftUseCase steelDrafts,
+      OpenInboundReceiptUseCase opening) {
+    return new InboundReceiptOrderController(drafts, posting, reversal,steelDrafts,opening);
+  }
+  /** @return 计量单唯一对象声明 */
+  @Bean public InboundMeteringOrderDeclaration inboundMeteringOrderDeclaration() {
+    return new InboundMeteringOrderDeclaration();
+  }
+
+  /**
+   * @param mapper 外部计量固定 SQL
+   * @param manager 组合应用事务
+   * @param access 统一权限计划
+   * @param gate 公共事务许可
+   * @return 外部计量确认用例
+   */
+  @Bean public RegisterExternalMeasurementService registerExternalMeasurement(InboundMeteringOrderMapper mapper,
+      PlatformTransactionManager manager, AccessPlanning access, ScopedWriteGate gate) {
+    return new RegisterExternalMeasurementService(access, new MyBatisInboundMeteringOrderRepository(mapper, gate, manager));
+  }
+
+  /** @param access 统一授权 @param mapper 双计量 SQL @param tickets 票据 @param gate 公共许可 @param manager 主库事务 @return 钢铁计量 */
+  @Bean public ConfirmSteelMeasurementService confirmSteelMeasurement(AccessPlanning access,SteelMeasurementMapper mapper,
+      GroundWeighingMapper tickets,ScopedWriteGate gate,PlatformTransactionManager manager) {
+    return new ConfirmSteelMeasurementService(access,new MyBatisSteelMeasurementRepository(mapper,tickets,gate,manager));
+  }
+
+  /** @param useCase 外部凭证登记 @param steel 钢铁双计量 @return 独立计量入口 */
+  @Bean public InboundMeteringOrderController inboundMeteringOrderController(RegisterExternalMeasurementUseCase useCase,
+      ConfirmSteelMeasurementUseCase steel) {
+    return new InboundMeteringOrderController(useCase,steel);
+  }
+  /** @return 入库质检单的唯一对象声明 */
+  @Bean public InboundQualityOrderDeclaration inboundQualityOrderDeclaration() {
+    return new InboundQualityOrderDeclaration();
+  }
+
+  /**
+   * @param mapper 质检登记与判定的固定 SQL
+   * @param manager 组合应用事务管理器
+   * @param gate 绑定事务的公共操作许可
+   * @return 共享锁、存储与审计的质检仓储
+   */
+  @Bean public InboundQualityOrderRepository inboundQualityOrderRepository(InboundQualityOrderMapper mapper,
+      PlatformTransactionManager manager, ScopedWriteGate gate) {
+    return new MyBatisInboundQualityOrderRepository(mapper, gate, manager);
+  }
+
+  /** @param access 统一权限计划 @param repository 质检仓储 @return 采样与复检用例 */
+  @Bean public RegisterInboundSampleService registerInboundSample(AccessPlanning access,
+      InboundQualityOrderRepository repository) {
+    return new RegisterInboundSampleService(access, repository);
+  }
+
+  /** @param access 统一权限计划 @param repository 质检仓储 @return 实验室判定用例 */
+  @Bean public DecideInboundQualityService decideInboundQuality(AccessPlanning access,
+      InboundQualityOrderRepository repository, TransactionalBusinessEvents events) {
+    return new DecideInboundQualityService(access, repository, events);
+  }
+
+  /** @param access 统一权限计划 @param repository 质检仓储 @param attachments 可用附件公开契约 @return 钢铁核验用例 */
+  @Bean public InspectInboundSteelService inspectInboundSteel(AccessPlanning access,
+      InboundQualityOrderRepository repository, AttachmentRecords attachments) {
+    return new InspectInboundSteelService(access, repository, new AttachmentSteelInspectionEvidenceAdapter(attachments));
+  }
+
+  /** @param samples 采样用例 @param decisions 判定用例 @param steel 实物和质保书核验 @return 独立质检命令入口 */
+  @Bean public InboundQualityOrderController inboundQualityOrderController(RegisterInboundSampleUseCase samples,
+      DecideInboundQualityUseCase decisions, InspectInboundSteelUseCase steel) {
+    return new InboundQualityOrderController(samples, decisions, steel);
+  }
+  /** @return 入库作业及队列操作的唯一声明 */
+  @Bean CreateInboundTaskUseCase createInboundTask(AccessPlanning access, InboundTaskRegistrationMapper mapper,
+      com.appnexus.platform.authorization.FieldProtection fields,ScopedWriteGate gate,PlatformTransactionManager manager) {
+    return new CreateInboundTaskService(access,fields,new MyBatisInboundTaskRegistrationStore(mapper,gate,manager));
+  }
+
+  @Bean InboundTaskRegistrationController inboundTaskRegistrationController(CreateInboundTaskUseCase useCase) {
+    return new InboundTaskRegistrationController(useCase);
+  }
+
+  @Bean public InboundTaskDeclaration inboundTaskDeclaration() {
+    return new InboundTaskDeclaration();
+  }
+
+  /**
+   * @param mapper 定向队列 SQL
+   * @param manager 组合应用事务管理器
+   * @param access 统一操作及范围计划
+   * @param gate 查询事务的公共许可
+   * @return 工作台队列读取用例与实际数据范围执行器
+   */
+  @Bean public ReadInboundWorkbenchService inboundWorkbench(InboundWorkbenchMapper mapper,
+      PlatformTransactionManager manager, AccessPlanning access, ScopedWriteGate gate) {
+    return new ReadInboundWorkbenchService(access, new MyBatisInboundWorkbenchQueries(mapper, gate, manager));
+  }
+
+  /** @param access 统一操作计划 @param fields 字段保护 @param mapper 固定查询 @param gate 公共许可 @param manager 主库事务 @return 详情聚合 */
+  @Bean public ReadInboundWorkbenchDetailService inboundWorkbenchDetails(AccessPlanning access,
+      com.appnexus.platform.authorization.FieldProtection fields,InboundWorkbenchDetailMapper mapper,
+      ScopedWriteGate gate,PlatformTransactionManager manager) {
+    return new ReadInboundWorkbenchDetailService(access,fields,new MyBatisInboundWorkbenchDetailQueries(mapper,gate,manager));
+  }
+
+  /** @param useCase 授权队列 @param detail 授权详情 @return 第一方工作台只读入口 */
+  @Bean public InboundWorkbenchController inboundWorkbenchController(ReadInboundWorkbenchUseCase useCase,
+      ReadInboundWorkbenchDetailUseCase detail) {
+    return new InboundWorkbenchController(useCase,detail);
+  }
+  /** @param balances 授权仓储读取用例 @return 入仓通知与库存总览查询入口 */
+  @Bean public WarehouseQueryController warehouseQueryController(WarehouseBalances balances) {
+    return new WarehouseQueryController(balances);
   }
 
   /** @return 在库货权余额资源唯一声明 */
   @Bean public BusinessObjects.Provider warehouseStockBalanceDeclaration() { return new WarehouseStockBalanceDeclaration(); }
 
-  /** @param mapper 两类余额 SQL @param stock 库存身份锁 @param source 复用主数据范围
-   * @param access 统一权限 @return 余额及追溯查询 */
-  @Bean public WarehouseBalanceService warehouseBalances(WarehouseBalanceMapper mapper,MyBatisOutboundStockStore stock,
-      MasterDataInboundReceiptReferences source,com.appnexus.masterdata.api.masterdata.MasterDataReferenceNames names,
-      AccessPlanning access,com.appnexus.platform.authorization.ScopedWriteGate operations) {
-    return new WarehouseBalanceService(new MyBatisWarehouseBalanceStore(mapper),stock,source,names::load,access,operations);
+  /** @param mapper 仓储查询 SQL @param manager 组合应用的事务管理器
+   * @param names 公共主数据名称读取
+   * @param fields 平台统一字段保护 @param access 统一权限 @param operations 公共操作许可 @return 入仓通知与库存总览查询 */
+  @Bean public WarehouseBalanceService warehouseBalances(WarehouseBalanceMapper mapper,PlatformTransactionManager manager,
+      com.appnexus.masterdata.api.masterdata.MasterDataReferenceNames names,
+      AccessPlanning access,com.appnexus.platform.authorization.ScopedWriteGate operations,
+      com.appnexus.platform.authorization.FieldProtection fields) {
+    return new WarehouseBalanceService(new MyBatisWarehouseBalanceStore(mapper,manager),names::load,access,operations,fields);
   }
 
   /** @param receiving 受控入仓用例 @return 第一方命令控制器 */
-  @Bean public InboundReceivingController inboundReceivingController(InboundReceiving receiving, InboundDisposition disposition) {
-    return new InboundReceivingController(receiving,disposition);
+  @Bean public InboundReceivingController inboundReceivingController(InboundReceiving receiving) {
+    return new InboundReceivingController(receiving);
   }
 
   /** @return 入仓履约唯一对象声明 */
   @Bean public BusinessObjects.Provider inboundReceivingDeclaration() {
-    return new InboundReceivingDeclaration(InboundOperations.OBJECT,"入仓履约","Inbound fulfillment");
-  }
-
-  /** @return 独立货权登记对象声明 */
-  @Bean public BusinessObjects.Provider inboundTitleDeclaration() {
-    return new InboundReceivingDeclaration(InboundOperations.REGISTER_TITLE.object(),"入仓货权登记","Inbound title registration");
-  }
-
-  /** @return 独立质量放行对象声明 */
-  @Bean public BusinessObjects.Provider inboundQualityDeclaration() {
-    return new InboundReceivingDeclaration(InboundOperations.RELEASE_QUALITY.object(),"入仓质量放行","Inbound quality release");
+    return new InboundReceivingDeclaration(InboundOperations.OBJECT,"入仓通知单","Inbound notice");
   }
 
   /**
    * @param mapper 仓储固定 SQL
    * @param manager 同一数据源事务管理器
    * @param source 主数据集成适配器
-   * @param references 已验证的进仓引用入口
    * @param access 平台统一权限计划
-   * @return 入仓签发、接管和实收用例
+   * @param fields 平台统一司机字段保护
+   * @return 入仓通知签发用例
    */
   @Bean public InboundReceivingService inboundReceiving(InboundReceivingMapper mapper, PlatformTransactionManager manager,
-      MasterDataInboundReceiptReferences source, InboundReceiptReferences references, AccessPlanning access,
-      com.appnexus.platform.authorization.ScopedWriteGate writes) {
-    return new InboundReceivingService(new MyBatisInboundReceivingStore(mapper,manager),source,references,access,writes);
+      MasterDataInboundReceiptReferences source, AccessPlanning access,
+      com.appnexus.platform.authorization.ScopedWriteGate writes,com.appnexus.platform.authorization.FieldProtection fields) {
+    return new InboundReceivingService(new MyBatisInboundReceivingStore(mapper,manager),source,access,writes,fields);
   }
 
   /** @return 受治理的主数据出站适配器 */

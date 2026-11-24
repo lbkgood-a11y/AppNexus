@@ -8,6 +8,11 @@
   </parent>
   <artifactId>platform-persistence-adapter</artifactId>
   <dependencies>
+    <!-- PDF 格式解析及主动内容检测。 -->
+    <dependency><groupId>org.apache.pdfbox</groupId><artifactId>pdfbox</artifactId><version>3.0.8</version></dependency>
+    <!-- 附件使用 S3 和 OBS 官方 Java 客户端访问部署侧私有桶。 -->
+    <dependency><groupId>software.amazon.awssdk</groupId><artifactId>s3</artifactId><version>2.31.78</version></dependency>
+    <dependency><groupId>com.huaweicloud</groupId><artifactId>esdk-obs-java</artifactId><version>3.24.12</version></dependency>
     <!-- 历史Java迁移复用Flyway连接，不改变事务所有权或迁移资源。 -->
     <dependency><groupId>com.appnexus</groupId><artifactId>mybatis-migration</artifactId><version>${project.version}</version></dependency>
     <!-- 固定Mapper的中立范围元数据，不引入平台持久化或其他业务实现。 -->

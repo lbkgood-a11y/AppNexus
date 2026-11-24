@@ -37,7 +37,7 @@ public interface ProductCatalogMapper {
  int renameUnit(@Param("p0") Object p0,@Param("p1") Object p1,@Param("p2") Object p2,@Param("p3") Object p3,@Param("p4") Object p4,@Param("p5") Object p5,@Param("p6") Object p6,@Param("p7") Object p7);
 
  /** 固定业务语句3；准入、参数规则、聚合锁及事务由原用例负责，所有值绑定。 */
- @Update("UPDATE md_product_unit SET enabled=#{p0},version=version+1,updated_by=UUID_TO_BIN(#{p1}),updated_at=CURRENT_TIMESTAMP(6) WHERE tenant_id=UUID_TO_BIN(#{p2}) AND id=UUID_TO_BIN(#{p3}) AND version=#{p4}")
+ @Update("UPDATE md_product_unit SET enabled=#{p0},version=version+1,updated_by=UUID_TO_BIN(#{p1}),updated_at=CURRENT_TIMESTAMP(6) WHERE tenant_id=UUID_TO_BIN(#{p2}) AND id=UUID_TO_BIN(#{p3}) AND version=#{p4} AND enabled<>#{p0}")
  @com.appnexus.persistence.mybatis.GuardedScope(tenant="p2",serviceOperation="masterdata.productunit:set_status",serviceKeys={"p3"})
  int setUnitStatus(@Param("p0") Object p0,@Param("p1") Object p1,@Param("p2") Object p2,@Param("p3") Object p3,@Param("p4") Object p4);
 
@@ -52,7 +52,7 @@ public interface ProductCatalogMapper {
  int moveCategory(@Param("p0") Object p0,@Param("p1") Object p1,@Param("p2") Object p2,@Param("p3") Object p3,@Param("p4") Object p4,@Param("p5") Object p5);
 
  /** 固定业务语句6；准入、参数规则、聚合锁及事务由原用例负责，所有值绑定。 */
- @Update("UPDATE md_product_category SET enabled=#{p0},version=version+1,updated_by=UUID_TO_BIN(#{p1}),updated_at=CURRENT_TIMESTAMP(6) WHERE tenant_id=UUID_TO_BIN(#{p2}) AND id=UUID_TO_BIN(#{p3}) AND version=#{p4}")
+ @Update("UPDATE md_product_category SET enabled=#{p0},version=version+1,updated_by=UUID_TO_BIN(#{p1}),updated_at=CURRENT_TIMESTAMP(6) WHERE tenant_id=UUID_TO_BIN(#{p2}) AND id=UUID_TO_BIN(#{p3}) AND version=#{p4} AND enabled<>#{p0}")
  @com.appnexus.persistence.mybatis.GuardedScope(tenant="p2",serviceOperation="masterdata.productcategory:set_status",serviceKeys={"p3"})
  int setCategoryStatus(@Param("p0") Object p0,@Param("p1") Object p1,@Param("p2") Object p2,@Param("p3") Object p3,@Param("p4") Object p4);
 
@@ -80,7 +80,7 @@ public interface ProductCatalogMapper {
 
  /** 固定业务语句12；准入、参数规则、聚合锁及事务由原用例负责，所有值绑定。 */
  @com.appnexus.persistence.mybatis.GuardedScope(tenant="p2",catalogPublication="masterdata.productcategory:publish")
- @Insert("INSERT INTO md_product_category_config_item(id,tenant_id,config_id,purpose,template_version_id,template_item_id,attribute_id,attribute_revision_id,data_type,created_by,updated_by) SELECT UUID_TO_BIN(UUID()),b.tenant_id,b.config_id,b.purpose,b.template_version_id,i.id,i.attribute_id,i.attribute_revision_id,i.data_type,UUID_TO_BIN(#{p0}),UUID_TO_BIN(#{p1}) FROM md_product_category_template b JOIN md_product_template_item i ON i.tenant_id=b.tenant_id AND i.template_version_id=b.template_version_id WHERE b.tenant_id=UUID_TO_BIN(#{p2}) AND b.config_id=UUID_TO_BIN(#{p3})")
+ @Insert("INSERT INTO md_product_category_config_item(id,tenant_id,config_id,purpose,template_version_id,template_item_id,attribute_id,attribute_revision_id,data_type,created_by,updated_by) SELECT UUID_TO_BIN(UUID()),b.tenant_id,b.config_id,b.purpose,b.template_version_id,i.id,i.attribute_id,i.attribute_revision_id,i.data_type,UUID_TO_BIN(#{p0}),UUID_TO_BIN(#{p1}) FROM md_product_category_template b JOIN md_product_template_item i ON i.tenant_id=b.tenant_id AND i.template_version_id=b.template_version_id WHERE b.tenant_id=UUID_TO_BIN(#{p2}) AND b.config_id=UUID_TO_BIN(#{p3}) AND b.purpose IN ('BASIC','QUALITY','EXTENSION')")
  int freezeConfigurationItem(@Param("p0") Object p0,@Param("p1") Object p1,@Param("p2") Object p2,@Param("p3") Object p3);
 
  /** 固定业务语句13；准入、参数规则、聚合锁及事务由原用例负责，所有值绑定。 */

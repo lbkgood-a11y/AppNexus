@@ -100,6 +100,20 @@ class CodingCapabilityTest extends DatabaseTestSupport {
     assertThatThrownBy(()->coding.configurations(outsider,"BusinessPartner")).hasMessage("CODING_ACCESS_DENIED");
     var current=subjects.memberRoles(roleContext,member);subjects.replaceMemberRoles(roleContext,member,current.authorityVersion(),Set.of(),"撤销录入角色");
     assertThatThrownBy(()->coding.issue(outsider,"BusinessPartner","purchase")).hasMessage("CODING_ACCESS_DENIED");
+    // 入仓通知只为本单编号发号；上游业务单号保留人工录入。
+    objects.grant(platform,"BulkInboundReceipt",tenant.toString(),true);
+    var noticeRule=new Rule(List.of(new Segment("TEXT","IN",0),new Segment("SEQUENCE","",6)),"NEVER","UTC");
+    coding.saveRule(manager,"inboundRule",new CodingManagement.RuleInput(-1,"入仓通知编码规则",noticeRule));
+    coding.save(manager,"BulkInboundReceipt","notice",
+        new CodingManagement.Input(-1,"noticeNo","入仓通知单号",true,"inboundRule",1));
+    mvc.perform(get("/api/business-objects/BulkInboundReceipt/coding-options")
+        .param("field","noticeNo").cookie(cookie)).andExpect(status().isOk())
+        .andExpect(jsonPath("$[0].encoderKey").value("notice"));
+    var noticeCommand=new Context(tenant.toString(),owner.toString(),UUID.randomUUID().toString());
+    assertThat(coding.issue(noticeCommand,"BulkInboundReceipt","notice")).isEqualTo("IN000001");
+    assertThat(coding.issue(noticeCommand,"BulkInboundReceipt","notice")).isEqualTo("IN000001");
+    assertThatThrownBy(()->coding.options(manager,"BulkInboundReceipt","appointmentNo")).hasMessage("CODING_UNAVAILABLE");
+    assertThatThrownBy(()->coding.issue(outsider,"BulkInboundReceipt","notice")).hasMessage("CODING_ACCESS_DENIED");
   }
   private UUID account(UUID admin){UUID id=UUID.randomUUID();administration.createUser(admin,id,"coding-"+id,"编码能力验收",passwords.encode("isolated-coding-test"));return id;}
 }

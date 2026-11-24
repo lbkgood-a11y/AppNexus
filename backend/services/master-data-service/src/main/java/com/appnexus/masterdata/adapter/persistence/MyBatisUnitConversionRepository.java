@@ -11,8 +11,9 @@ import org.springframework.dao.DataIntegrityViolationException;
 /** 单位换算固定 SQL 适配；租户条件、两端锁、CAS 及四审计保持原协议，技术冲突在此转换。 */
 public final class MyBatisUnitConversionRepository implements UnitConversionRepository {
   private final UnitConversionMapper mapper;
+ private final MasterStatusHistoryMapper statusHistory;
   /** @param mapper 与用例事务共享SqlSession的固定Mapper，禁止独立提交 */
-  public MyBatisUnitConversionRepository(UnitConversionMapper mapper) { this.mapper = java.util.Objects.requireNonNull(mapper); }
+  public MyBatisUnitConversionRepository(UnitConversionMapper mapper, MasterStatusHistoryMapper statusHistory) { this.mapper = java.util.Objects.requireNonNull(mapper);this.statusHistory=statusHistory; }
   /** {@inheritDoc} */
   @Override public List<Map<String, Object>> list(String tenant) {
     return mapper.list(tenantBytes(tenant));
@@ -40,7 +41,9 @@ public final class MyBatisUnitConversionRepository implements UnitConversionRepo
   }
   /** {@inheritDoc} */
   @Override public int status(String tenant,String id,boolean enabled,long version,String actor) {
-    try{return mapper.status(enabled,actor,tenantBytes(tenant),id,version);}
+    try{int changed = mapper.status(enabled,actor,tenantBytes(tenant),id,version);
+  if (changed == 1) statusHistory.append(tenant, "ProductUnit.conversion", id, version, enabled, actor);
+  return changed;}
     catch(DataIntegrityViolationException error){throw new Rejection(409,"PRODUCT_CONVERSION_CONFLICT");}
   }
   /** {@inheritDoc} */

@@ -31,4 +31,20 @@ public final class ProductMeasurement {
      * @param packaging 当前包装列表，空集合表示无包装规则
      */
     public record Change(Long version, List<Unit> units, List<Packaging> packaging) {}
+
+    /**
+     * 修改已有货号的计价单位和包装，库存单位保持当前生效值。
+     * @param version 父商品当前版本，必填
+     * @param rowVersion 货号当前版本，必填
+     * @param measurement 替换后的完整货号计量，必填
+     */
+    public record SkuChange(Long version, Long rowVersion, SkuConfiguration measurement) {}
+
+    /**
+     * 货号生效计量；创建时允许选择库存单位，编辑时保持已登记货号的库存单位稳定。
+     * @param inventoryUnitId 正式库存单位 UUID，必填且须启用
+     * @param pricingUnitId 计价单位 UUID，必填；不同于库存单位时须有有效正向换算
+     * @param packaging 货号包装档位，最多 200 项，空集合表示没有专属包装
+     */
+    public record SkuConfiguration(String inventoryUnitId,String pricingUnitId,List<Packaging> packaging) {}
 }

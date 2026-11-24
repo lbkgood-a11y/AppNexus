@@ -9,6 +9,8 @@ import type { ProductApi, ProductMeasurement, ProductOption } from "./product";
 const props = defineProps<{
   id: string;
   readonly: boolean;
+  /** 显式查看模式隐藏重试及换算操作，缺省保留原计量面板交互。 */
+  readonlyView?: boolean;
   baseUnitName?: string;
   api: ProductApi;
   errorText: (error: unknown) => string;
@@ -87,9 +89,9 @@ onMounted(load);
 
 <template>
   <div v-loading="loading" class="detail-profile-form">
-    <FloatingError :title="error"><el-button v-operation="'Product.readMeasurement'" @click="load">{{ t("masterData.retry") }}</el-button></FloatingError>
+    <FloatingError :title="error"><el-button v-if="!readonlyView" v-operation="'Product.readMeasurement'" @click="load">{{ t("masterData.retry") }}</el-button></FloatingError>
     <template v-if="current">
-      <el-descriptions :column="1" border>
+      <el-descriptions :column="1" :border="!readonlyView">
         <el-descriptions-item :label="t('productV1.baseUnitId')">{{ baseUnitName ?? "—" }}</el-descriptions-item>
       </el-descriptions>
       <el-form class="business-border-label-form detail-profile-form" label-position="top" :disabled="readonly || saving" @submit.prevent="save">
@@ -120,7 +122,7 @@ onMounted(load);
           <el-button v-operation="'Product.saveMeasurement'" type="primary" :loading="saving" @click="save">{{ t("masterData.save") }}</el-button>
         </div>
       </el-form>
-      <el-form v-if="current.configuration.packaging.length" inline @submit.prevent="calculate">
+      <el-form v-if="!readonlyView && current.configuration.packaging.length" inline @submit.prevent="calculate">
         <el-form-item :label="t('productMeasurement.packaging')"><el-select v-model="code" class="measurement-packaging-select" @change="result=''"><el-option v-for="pack in current.configuration.packaging" :key="pack.code" :value="pack.code" :label="pack.name"/></el-select></el-form-item>
         <el-form-item :label="t('productConversion.quantity')"><el-input v-model="quantity" maxlength="31" @input="result=''"/></el-form-item>
         <el-button v-operation="'Product.calculatePackaging'" :loading="saving" :disabled="!code" @click="calculate">{{ t("productConversion.calculate") }}</el-button>

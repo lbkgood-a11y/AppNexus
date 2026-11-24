@@ -22,7 +22,8 @@ public final class ProductCatalogService implements com.appnexus.masterdata.api.
   private final ScopedWriteGate writes;
   private final AccessAuthorization access;
   private final ProductCatalogTransaction tx;
-  private static final Set<String> PURPOSES=Set.of("BASIC","SPEC","QUALITY","EXTENSION");
+  private static final List<String> TEMPLATE_SLOTS=List.of("BASIC","SPEC","QUALITY","EXTENSION","SKU","BATCH");
+  private static final Set<String> PRODUCT_SLOTS=Set.of("BASIC","SPEC","QUALITY","EXTENSION");
 
   /** 商品目录用例装配。
    * @param access 权威租户功能授权公开端口
@@ -174,24 +175,30 @@ public final class ProductCatalogService implements com.appnexus.masterdata.api.
 
   /**
    * 发布四槽完整配置，固定已发布版本并检查用途及稳定属性重复。
-   * @param c 可信上下文 @param id 分类UUID @param input 四槽齐全，SPEC必须NULL，version为分类CAS
+   * @param c 可信上下文 @param id 分类UUID @param input 四个既有槽必传，SKU及BATCH是下游默认模板的可选槽，version为类目CAS
    * @return 固定发布记录；任何校验失败连同新版本与绑定全部回滚
    */
   public Configuration publish(VerifiedTenantContext c,String id,Publish input){
     require(c,"productcategory","publish");uuid(id);
-    if(input==null||input.templates()==null||!input.templates().keySet().equals(PURPOSES)||input.serviceUnitRequired()==null||input.version()<0)throw invalid("PRODUCT_CONFIG_SLOTS_INVALID");
+    if(input==null||input.templates()==null||input.serviceUnitRequired()==null||input.version()<0
+        ||!input.templates().keySet().containsAll(PRODUCT_SLOTS)
+        ||!TEMPLATE_SLOTS.containsAll(input.templates().keySet())){
+      throw invalid("PRODUCT_CONFIG_SLOTS_INVALID");
+    }
     return integrity(()->tx.required(()->{
       lockTree(c);var all=readTree(c);var category=all.get(id);
       if(category==null||category.version()!=input.version())throw changed();
       if(!category.enabled())throw invalid("PRODUCT_CATEGORY_DISABLED");
       var selected=new LinkedHashMap<String,String>();var attributes=new HashSet<String>();
-      for(String purpose:List.of("BASIC","SPEC","QUALITY","EXTENSION")){
+      for(String purpose:TEMPLATE_SLOTS){
         String versionId=input.templates().get(purpose);if(versionId==null)continue;uuid(versionId);
         var versions=statements.publishedTemplate(tenant(c),versionId);
         if(versions.size()!=1||!"PUBLISHED".equals(versions.getFirst().get("state"))||!purpose.equals(versions.getFirst().get("purpose"))||!Boolean.TRUE.equals(versions.getFirst().get("enabled")))throw invalid("PRODUCT_TEMPLATE_NOT_PUBLISHED");
         var items=statements.templateAttributes(tenant(c),versionId);
         if(items.isEmpty())throw invalid("PRODUCT_TEMPLATE_EMPTY");
-        for(String attribute:items)if(!attributes.add(attribute))throw invalid("PRODUCT_CONFIG_ATTRIBUTE_DUPLICATED");
+        if(Set.of("BASIC","QUALITY","EXTENSION").contains(purpose)){
+          for(String attribute:items)if(!attributes.add(attribute))throw invalid("PRODUCT_CONFIG_ATTRIBUTE_DUPLICATED");
+        }
         selected.put(purpose,versionId);
       }
       long revision=statements.nextConfigurationRevision(tenant(c),id);

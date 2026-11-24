@@ -183,18 +183,32 @@ class MenuManagementTest extends DatabaseTestSupport {
   assertThat(warehousing.titleZh()).isEqualTo("仓储管理");
   assertThat(warehousing.titleEn()).isEqualTo("Warehouse management");
   assertThat(ownerItems.stream().filter(item->products.id().equals(item.parentId())).map(MenuManagement.Menu::component))
-    .containsExactly("master-data/product","master-data/product-sku","master-data/product-category","master-data/product-unit","master-data/product-attribute","master-data/product-template");
+    .containsExactly("master-data/product-category","master-data/product","master-data/product-sku","master-data/product-unit","master-data/product-attribute","master-data/product-template");
   assertThat(ownerItems.stream().filter(item->warehouses.id().equals(item.parentId())).map(MenuManagement.Menu::component))
     .containsExactly("master-data/warehouse","master-data/storage");
   assertThat(ownerItems.stream().filter(item->warehousing.id().equals(item.parentId()) && item.component()!=null)
       .map(MenuManagement.Menu::component))
-    .containsExactly("warehousing/inventory-overview","warehousing/coil-title","warehousing/coil-flow","warehousing/return-transit");
-  assertWarehouseDocuments(ownerItems,warehousing,"inbound",
-      "inbound-notices","inbound-entries","inbound-receipts","inbound-titles","inbound-quality");
-  assertWarehouseDocuments(ownerItems,warehousing,"title-control","title-transfers","stock-restrictions");
-  assertWarehouseDocuments(ownerItems,warehousing,"outbound",
-      "outbound-notices","pickup-authorizations","outbound-trips","outbound-confirmations","handover-reversals");
-  assertWarehouseDocuments(ownerItems,warehousing,"returns","return-dispatches","return-confirmations");
+    .containsExactly("warehousing/inventory-overview");
+  assertWarehouseDocuments(ownerItems,warehousing,"inbound","inbound-notices","inbound-workbench",
+      "inbound-quality-orders","inbound-metering-orders","inbound-receipt-orders");
+  assertThat(jdbc.queryForList("SELECT code FROM access_permission WHERE code LIKE 'warehousing.%'",String.class))
+      .containsExactlyInAnyOrder("warehousing.inbound:issue","warehousing.inbound:update","warehousing.coil.stockbalance:read",
+          "warehousing.coil.stockbalance:read_overview","warehousing.inboundtask:read_workbench_queue",
+          "warehousing.inboundquality:register_sample","warehousing.inboundquality:decide_quality",
+          "warehousing.inboundmetering:register_external","warehousing.receipt:create_bulk_draft","warehousing.receipt:post",
+          "warehousing.receipt:reverse","warehousing.inboundmetering:record_gross",
+          "warehousing.inboundmetering:record_tare","warehousing.inboundtask:confirm_unloading",
+          "warehousing.inboundquality:inspect_steel","warehousing.inboundmetering:confirm_steel",
+          "warehousing.receipt:create_steel_draft","warehousing.inboundtask:read_workbench_detail",
+          "warehousing.inboundtask:read_workbench_identity","warehousing.inboundquality:read_workbench_quality",
+          "warehousing.inboundmetering:read_workbench_meter","warehousing.receipt:read_workbench_receipt",
+          "warehousing.inboundtask:create_from_notice","warehousing.receipt:open_draft",
+          "warehousing.inboundquality:list_documents","warehousing.inboundquality:read_document",
+          "warehousing.inboundmetering:list_documents","warehousing.inboundmetering:read_document",
+          "warehousing.receipt:list_documents","warehousing.receipt:read_document");
+  assertThat(ownerItems).noneMatch(item->item.component()!=null && item.component().startsWith("warehousing/")
+      && !java.util.Set.of("warehousing/inventory-overview","warehousing/inbound-notices","warehousing/inbound-workbench",
+          "warehousing/inbound-quality-orders","warehousing/inbound-metering-orders","warehousing/inbound-receipt-orders").contains(item.component()));
   assertThat(navigation.current(account,tenant.id(),member,1).items()).extracting(MenuManagement.Menu::id)
     .doesNotContain(products.id(),warehouses.id(),warehousing.id());
   // 待办及本人单据入口可存在；不能把公共导航存在误判为获得组织或配置管理权。

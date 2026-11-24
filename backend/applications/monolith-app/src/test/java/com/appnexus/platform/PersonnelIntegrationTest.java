@@ -164,12 +164,20 @@ class PersonnelIntegrationTest extends DatabaseTestSupport {
     var body=tools.jackson.databind.json.JsonMapper.builder().build().readTree(response.getContentAsString());
     assertThat(body.path("person").path("id").asText()).isEqualToIgnoringCase(id);
     assertThat(body.path("audit").path("createdBy").asText()).isEqualToIgnoringCase(f.admin().accountId().toString());
+    var listRequest=org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get("/api/master-data/person");
+    var list=mvc.perform(listRequest.cookie(cookie).param("keyword","HTTP-PERSON")).andReturn().getResponse();
+    assertThat(list.getStatus()).isEqualTo(200);
+    var row=tools.jackson.databind.json.JsonMapper.builder().build().readTree(list.getContentAsString()).path("rows").path(0);
+    assertThat(row.path("id").asText()).isEqualToIgnoringCase(id);
+    assertThat(row.path("attributes").path("employmentStatus").asText()).isEqualTo("ACTIVE");
+    assertThat(row.path("employmentStatusName").asText()).isNotBlank().isNotEqualTo("ACTIVE");
     assertThat(mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get("/api/master-data/person/options").cookie(cookie)).andReturn().getResponse().getStatus()).isEqualTo(200);
     String input="{\"code\":\"HTTP-PERSON\",\"name\":\"篡改测试\",\"attributes\":{},\"version\":0}";
     assertThat(mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put("/api/master-data/person/"+id).cookie(cookie).contentType("application/json").content(input)).andReturn().getResponse().getStatus()).isEqualTo(403);
     assertThat(personnel.read(f.admin(),id).person().name()).isEqualTo("测试业务人员");
     var ordinary=mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/bff/tenants/current").with(authenticated(f.user().accountId().toString(),0)).with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf()).contentType("application/json").content("{\"tenantId\":\""+f.user().tenantId()+"\"}" )).andReturn().getResponse().getCookie("JSESSIONID");
     assertThat(mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get("/api/master-data/person/"+id).cookie(ordinary)).andReturn().getResponse().getStatus()).isEqualTo(403);
+    assertThat(mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get("/api/master-data/person").cookie(ordinary)).andReturn().getResponse().getStatus()).isEqualTo(403);
     assertThat(mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get("/api/master-data/person/"+id)).andReturn().getResponse().getStatus()).isEqualTo(401);
   }
   /** 组织页选择人员而非账号；任职和负责人经公开契约投影到关联账号，不修改账号本身的组织。 */

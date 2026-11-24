@@ -52,7 +52,7 @@ onBeforeUnmount(() => { password.value = ""; code.value = ""; secret.value = "";
     <FloatingError v-if="error" :title="error" scope="error" type="error" :closable="false" show-icon />
     <el-button v-if="!status" :disabled="busy" @click="load">{{ t("account.retry") }}</el-button>
     <template v-if="status">
-      <el-tag :type="status.enabled ? 'success' : 'info'">{{ t(status.enabled ? "account.enabled" : "account.mfaNotEnabled") }}</el-tag>
+      <el-tag class="app-status-tag" :type="status.enabled ? 'success' : 'info'">{{ t(status.enabled ? "account.enabled" : "account.mfaNotEnabled") }}</el-tag>
       <el-alert v-if="!status.available" :title="t('account.mfaUnavailable')" type="warning" :closable="false" />
       <el-alert v-if="status.steppedUp" :title="t('account.mfaStepUpSaved')" type="success" :closable="false" />
       <template v-if="recovery.length">

@@ -24,12 +24,16 @@ import org.springframework.web.context.request.*;
 public final class TenantSqlInterceptor implements Interceptor {
     private final com.appnexus.platform.authorization.ScopedWriteGate scopedWrites;
     private final org.springframework.beans.factory.ObjectProvider<com.appnexus.platform.authorization.AccessAuthorization> authorization;
+    private final org.springframework.beans.factory.ObjectProvider<com.appnexus.platform.audit.RecordAuditActor> auditActor;
     /** @param scopedWrites 与当前事务绑定的标准记录许可
-     * @param authorization 平台查询权限执行器，延迟解析以避免持久化装配循环 */
+     * @param authorization 平台查询权限执行器，延迟解析以避免持久化装配循环
+     * @param auditActor 当前可信认证账号来源 */
     public TenantSqlInterceptor(com.appnexus.platform.authorization.ScopedWriteGate scopedWrites,
-        org.springframework.beans.factory.ObjectProvider<com.appnexus.platform.authorization.AccessAuthorization> authorization){
+        org.springframework.beans.factory.ObjectProvider<com.appnexus.platform.authorization.AccessAuthorization> authorization,
+        org.springframework.beans.factory.ObjectProvider<com.appnexus.platform.audit.RecordAuditActor> auditActor){
         this.scopedWrites=scopedWrites;
         this.authorization=authorization;
+        this.auditActor=auditActor;
     }
     private void verifyScope(Class<?> mapper,String id,BoundSql sql,boolean select){
         String name=id.substring(id.lastIndexOf('.')+1);
@@ -46,7 +50,14 @@ public final class TenantSqlInterceptor implements Interceptor {
         if(!guard.when().isEmpty()&&!guard.whenValue().equals(String.valueOf(parameters.getValue(guard.when()))))return;
         if(!guard.platformActor().isEmpty()){
             String path=guard.platformActor();
-            if(!select||!guard.tenant().isEmpty()||guard.platformPermission().isEmpty()
+            var trustedActor = guard.platformUpdate() ? auditActor.getIfAvailable() : null;
+            boolean writeAllowed=guard.platformUpdate() && !select
+                && sql.getSql().stripLeading().toUpperCase(Locale.ROOT).startsWith("UPDATE ")
+                && org.springframework.transaction.support.TransactionSynchronizationManager.isActualTransactionActive()
+                && !org.springframework.transaction.support.TransactionSynchronizationManager.isCurrentTransactionReadOnly()
+                && trustedActor!=null
+                && scopeTenant(parameters.getValue(path)).equals(trustedActor.accountId());
+            if((!select&&!writeAllowed)||!guard.tenant().isEmpty()||guard.platformPermission().isEmpty()
                 ||sql.getParameterMappings().stream().noneMatch(param->param.getProperty().equals(path)))
                 throw new SecurityException("PLATFORM_SQL_PERMISSION_REQUIRED");
             var actor=scopeTenant(parameters.getValue(path));

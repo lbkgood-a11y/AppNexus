@@ -193,6 +193,11 @@
 .app-managed-dialog .el-dialog__body :is(.management-form-actions,.actions) { border-top:1px solid var(--el-border-color-lighter); margin-top:16px; padding-top:12px; display:flex; justify-content:flex-end; flex-wrap:wrap; gap:8px; }
 .app-managed-dialog .el-dialog__body :is(.management-form-actions,.actions) .el-button + .el-button { margin-inline-start:0; }
 
+/* 业务状态共用 Element Plus 浅色语义标签，圆角随主题，标签高度继承所在场景的组件尺寸。 */
+.el-tag.app-status-tag {
+ border-radius:var(--el-border-radius-round);
+}
+
 /* 普通业务表单和公共查询区共用恒显边框标签。查询只处理有标签的直接输入控件，
    保留无标签的组合条件、开关和操作按钮的原排布。
    data-form-style="special" 可在表单或特殊字段显式退出。保持原列布局及校验模型；
@@ -205,6 +210,10 @@
 :is(.search-panel__content,.query-border-label-form) .el-form-item:not([data-form-style="special"], [data-form-style="special"] *):has(> .el-form-item__content > :is(.el-input,.el-select,.el-textarea,.el-date-editor)) > .el-form-item__label {
  position:absolute;z-index:1;top:0;left:9px;height:auto;line-height:16px;max-width:calc(100% - 18px);
  margin:0;padding:0 4px;font-size:12px;font-weight:400;background:var(--el-bg-color);color:var(--el-text-color-regular);
+}
+/* 步进器按钮自带 z-index:1。标签置于按钮上边缘之上，保持表单行高和控件位置。 */
+.business-border-label-form:not([data-form-style="special"]) .el-form-item:not([data-form-style="special"]):has(.el-input-number) > .el-form-item__label {
+ z-index:2;
 }
 .business-border-label-form .el-form-item:has(.el-input,.el-select,.el-textarea,.el-date-editor) > .el-form-item__content {margin-left:0!important;min-height:36px;}
 .business-border-label-form :is(.el-input__wrapper,.el-select__wrapper) {min-height:36px;box-sizing:border-box;}

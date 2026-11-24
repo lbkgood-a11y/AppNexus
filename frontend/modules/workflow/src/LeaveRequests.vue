@@ -30,9 +30,8 @@ const { t,locale } = useI18n();
 const actions=ref<Awaited<ReturnType<LeaveApi['actions']>>>([]);
 const submitAction=computed(()=>actions.value.find(a=>a.operationId==='LeaveRequest.submit'&&a.operationCode==='submit'));
 const printAction=computed(()=>actions.value.find(a=>a.operationId==='LeaveRequest.print'&&a.allowed));
-const detailPrintAction=computed(()=>actions.value.find(a=>a.operationId==='LeaveRequest.detail.print'&&a.allowed));
 /** 列表和详情别名进入同一业务打印入口，预览只使用后端返回的受控输出标识。 */
-async function printDocument(id:string,detail=false){busy.value=true;error.value='';try{const output=await props.api.print(id,detail?'LeaveRequest.detail.print':'LeaveRequest.print');emit('printOutput',output.id);}catch(e){await setErrorFeedback(error, props.errorText(e));}finally{busy.value=false;}}
+async function printDocument(id:string){busy.value=true;error.value='';try{const output=await props.api.print(id,'LeaveRequest.print');emit('printOutput',output.id);}catch(e){await setErrorFeedback(error, props.errorText(e));}finally{busy.value=false;}}
 const route = useRoute(),
   router = useRouter();
 const rows = ref<Row[]>([]),
@@ -97,6 +96,7 @@ const paged = computed(() =>
   filtered.value.slice((page.value - 1) * size.value, page.value * size.value),
 );
 const columns = computed<ManagementColumn[]>(() => [
+  { key: "state", label: t("workflow.state"), minWidth: 120 },
   { key: "id", prop: "id", label: t("leavePoc.id"), minWidth: 220 },
   { key: "leave_type", label: t("leavePoc.type"), minWidth: 110 },
   {
@@ -112,7 +112,6 @@ const columns = computed<ManagementColumn[]>(() => [
     minWidth: 120,
   },
   { key: "days", label: t("leavePoc.days"), width: 90 },
-  { key: "state", label: t("workflow.state"), minWidth: 120 },
   {
     key: "operations",
     label: t("workflow.operations"),
@@ -274,7 +273,7 @@ onMounted(async () => {
           ><span class="leave-days">{{ row.days }}</span></template
         >
         <template #state="{ row }"
-          ><el-tag>{{ t("leavePoc.states." + row.state) }}</el-tag></template
+          ><el-tag class="app-status-tag">{{ t("leavePoc.states." + row.state) }}</el-tag></template
         >
         <template #operations="{ row }">
           <el-button v-operation="'LeaveRequest.print'" v-if="printAction" link :disabled="busy" @click="printDocument(row.id)">{{locale.startsWith('zh')?printAction.nameZh:printAction.nameEn}}</el-button>
@@ -365,33 +364,30 @@ onMounted(async () => {
     :title="t('leavePoc.detail')"
     width="min(720px, calc(100vw - 32px))"
   >
-    <el-descriptions v-if="selected" :column="1" border>
-      <el-descriptions-item v-if="actionAvailability.length" :label="t('businessObject.actionAvailability')"><el-tag v-for="a in actionAvailability" :key="a.operationId" :type="a.allowed?'success':'info'">{{a.operationId}}：{{t('businessObject.availability.'+a.reasonCode)}}</el-tag></el-descriptions-item>
-      <el-descriptions-item v-if="detailPrintAction" :label="t('businessObject.operations')"><el-button v-operation="'LeaveRequest.print'" :loading="busy" @click="printDocument(selected.id,true)">{{locale.startsWith('zh')?detailPrintAction.nameZh:detailPrintAction.nameEn}}</el-button></el-descriptions-item>
-      <el-descriptions-item :label="t('leavePoc.id')">{{
+    <section class="readonly-detail-section" v-if="selected"><dl class="detail-field-grid">
+      <div class="detail-readonly-field" v-if="actionAvailability.length"><dt>{{ t('businessObject.actionAvailability') }}</dt><dd><el-tag v-for="a in actionAvailability" :key="a.operationId" :type="a.allowed?'success':'info'">{{a.operationId}}：{{t('businessObject.availability.'+a.reasonCode)}}</el-tag></dd></div>
+      <div class="detail-readonly-field"><dt>{{ t('leavePoc.id') }}</dt><dd>{{
         selected.id
-      }}</el-descriptions-item>
-      <el-descriptions-item :label="t('leavePoc.type')">{{
+      }}</dd></div>
+      <div class="detail-readonly-field"><dt>{{ t('leavePoc.type') }}</dt><dd>{{
         t("leavePoc.types." + selected.leave_type)
-      }}</el-descriptions-item>
-      <el-descriptions-item :label="t('leavePoc.start')">{{
+      }}</dd></div>
+      <div class="detail-readonly-field"><dt>{{ t('leavePoc.start') }}</dt><dd>{{
         selected.start_date
-      }}</el-descriptions-item>
-      <el-descriptions-item :label="t('leavePoc.end')">{{
+      }}</dd></div>
+      <div class="detail-readonly-field"><dt>{{ t('leavePoc.end') }}</dt><dd>{{
         selected.end_date
-      }}</el-descriptions-item>
-      <el-descriptions-item :label="t('leavePoc.days')">{{
+      }}</dd></div>
+      <div class="detail-readonly-field"><dt>{{ t('leavePoc.days') }}</dt><dd>{{
         selected.days
-      }}</el-descriptions-item>
-      <el-descriptions-item :label="t('workflow.state')">{{
+      }}</dd></div>
+      <div class="detail-readonly-field"><dt>{{ t('workflow.state') }}</dt><dd>{{
         t("leavePoc.states." + selected.state)
-      }}</el-descriptions-item>
-      <el-descriptions-item :label="t('leavePoc.reason')"
-        ><span class="leave-reason">{{
+      }}</dd></div>
+      <div class="detail-readonly-field detail-field-wide"><dt>{{ t('leavePoc.reason') }}</dt><dd><span class="leave-reason">{{
           selected.reason
-        }}</span></el-descriptions-item
-      >
-    </el-descriptions>
+        }}</span></dd></div>
+    </dl></section>
   </ManagedDialog>
 </template>
 
