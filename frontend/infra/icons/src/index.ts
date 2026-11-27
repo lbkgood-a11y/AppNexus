@@ -18,13 +18,22 @@ import Sun from "~icons/ri/sun-line";
 import Moon from "~icons/ri/moon-line";
 import Monitor from "~icons/ri/computer-line";
 import Globe from "~icons/ri/global-line";
+import ArrowLeft from "~icons/ri/arrow-left-line";
 import ArrowRight from "~icons/ri/arrow-right-line";
 import Shield from "~icons/ri/shield-check-line";
 import Home from "~icons/ri/home-4-line";
 import Settings from "~icons/ri/settings-3-line";
+import FileDownload from "~icons/ri/file-download-line";
+import PdfFile from "~icons/ri/file-pdf-2-line";
+import SpreadsheetFile from "~icons/ri/file-excel-2-line";
+import ImageFile from "~icons/ri/image-2-line";
+import FileUpload from "~icons/ri/upload-cloud-2-line";
 import Search from "~icons/ri/search-line";
 import Logout from "~icons/ri/logout-circle-r-line";
 import Organization from "~icons/ri/organization-chart";
+import Document from "~icons/ri/file-list-3-line";
+import Play from "~icons/ri/play-line";
+import Target from "~icons/ri/focus-3-line";
 import Refresh from "~icons/ri/refresh-line";
 import Density from "~icons/ri/line-height";
 import Fullscreen from "~icons/ri/fullscreen-line";
@@ -46,9 +55,10 @@ import AlignVerticalCenter from "~icons/ri/align-item-vertical-center-line";
 /** 平台语义图标映射；统一采用 Remix Icon 线性图标，由构建插件按需生成本地 SVG，不请求外部图标服务。 */
 export const platformIcons = {
   history: History, information: Information, edit: Edit, delete: Delete, folderAdd: FolderAdd, collapsePanel: CollapsePanel, expandPanel: ExpandPanel, folder: Folder, layers: Layers, user: User, lock: Lock, sun: Sun, moon: Moon, monitor: Monitor,
-  globe: Globe, arrowRight: ArrowRight, shield: Shield, home: Home,
-  settings: Settings, search: Search, logout: Logout, organization: Organization,
-  refresh: Refresh, density: Density, fullscreen: Fullscreen, fullscreenExit: FullscreenExit,
+  globe: Globe, arrowLeft: ArrowLeft, arrowRight: ArrowRight, shield: Shield, home: Home,
+  settings: Settings, fileDownload: FileDownload, fileUpload: FileUpload, pdfFile: PdfFile,
+  spreadsheetFile: SpreadsheetFile, imageFile: ImageFile, search: Search, logout: Logout, organization: Organization,
+  document: Document, play: Play, target: Target, refresh: Refresh, density: Density, fullscreen: Fullscreen, fullscreenExit: FullscreenExit,
   arrowUp: ArrowUp, arrowDown: ArrowDown, pin: Pin, drag: Drag, add: Add, check: Check,
   close: Close,
   alignLeft: AlignLeft, alignRight: AlignRight, alignTop: AlignTop, alignBottom: AlignBottom,

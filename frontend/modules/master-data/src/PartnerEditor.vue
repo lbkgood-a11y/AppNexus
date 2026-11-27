@@ -42,6 +42,11 @@ const booleanFields=["listed","taxAccount","basicAccount","isDefault"];
 function snapshot(){return JSON.stringify({code:draft.code,name:draft.name,attributes:draft.attributes,organizationId:draft.organizationId,contacts:details.contacts.map(({id,values})=>({id,values})),bankAccounts:details.bankAccounts.map(({id,values})=>({id,values}))});}
 const dirty=computed(()=>snapshot()!==baseline.value);
 const columns=computed<ManagementColumn[]>(()=>[...partnerSections[tab.value].filter(key=>!hidden(resourceFor(tab.value),key)).map(key=>({key,label:label(key),minWidth:key==="address"||key==="accountNumber"?200:140})),...(props.mode==="view"?[]:[{key:"operations",label:t("masterData.actions"),width:160,fixed:"right"} as const])]);
+/** 明细列全部使用插槽；下载与页面复用同一展示函数，只接收已脱敏的明细响应。 */
+const detailExcelExport = computed(() => ({
+  columns: Object.fromEntries(partnerSections[tab.value].map(field =>
+    [field, (row: Readonly<PartnerDetail>) => detailText(row, field)])),
+}));
 /** 标签按固定字段契约翻译，不将截图示例值或未接入选项作为默认业务资料。 */
 function label(key:string){return t("partner.fields."+key);}
 /** 启用项可新选；历史停用或未知值只显示原值，不能给其他记录新选。 */
@@ -57,6 +62,10 @@ const detailRules=computed<FormRules>(()=>{
 });
 /** 缺省与 0 区别展示；布尔值带文本，日期保持业务日期，不转 UTC 时间。 */
 function display(value:string|undefined,key:string,resolved?:string){if(!value)return "—";if(resolved)return resolved;if(booleanFields.includes(key))return t(value==="true"?"partner.yes":"partner.no");if(key==="partnerType")return (value==="BOTH"?["CUSTOMER","SUPPLIER"]:value.split(",")).map(v=>optionName("partnerType",v)).join(" / ");return ["countryRegion","registeredPlace"].includes(key)?(geographyPath(geographyNodes.value,value).map(n=>n.name).join("-")||value):optionName(key,value);}
+/** @return 带字典名称和已授权投影的明细单元格文本。 */
+function detailText(row: Readonly<PartnerDetail>, field: string) {
+  return display(row.values[field], field, row[`${field}Name`]);
+}
 /** 成功读取后才替换草稿；刷新需用户确认，读取失败保留输入并停止写入。 */
 function accept(row:MasterDataRow){record.value=row;draft.organizationId=row.organizationId??"";fieldRestrictions.value=row.fieldRestrictions??fieldRestrictions.value;draft.code=row.code;draft.name=row.name;draft.version=row.version;draft.attributes=Object.fromEntries([...partnerBasic,...partnerAdditional].map(key=>[key,row.attributes[key]??""]));details.contacts=structuredClone(row.contacts??[]);details.bankAccounts=structuredClone(row.bankAccounts??[]);baseline.value=snapshot();}
 async function load(){loading.value=true;failed.value=false;loadIssue.value=undefined;try{allowed.value=await props.api.operations();dictionaryOptions.value=await props.api.partnerOptions();const dataAccess=await props.api.partnerAccess(canEdit.value?(id.value?"update":"create"):"read");organizations.value=dataAccess.organizations;fieldRestrictions.value=dataAccess.fieldRestrictions;geographyNodes.value=await props.api.geographyDirectory("partner");if(id.value)accept(await props.api.readPartner(id.value));else baseline.value=snapshot();}catch(e){failed.value=true;if((e as {response?:{status:number}})?.response?.status===403){record.value=undefined;allowed.value=[];draft.name="";draft.code="";draft.attributes={};details.contacts=[];details.bankAccounts=[];}await presentLoadError(error,loadIssue,props.errorText(e),true,(e as {response?:{status?:number}})?.response?.status===403);}finally{loading.value=false;}}
@@ -97,8 +106,8 @@ onBeforeUnmount(()=>window.removeEventListener("beforeunload",beforeUnload));
 <template>
  <div class="partner-editor" v-loading="loading">
   <FloatingError :title="error"><el-button v-if="props.mode!=='view'" :disabled="loading||busy" @click="reload">{{t('masterData.retry')}}</el-button></FloatingError>
-  <TabbedDetailTemplate master-data>
-   <template #header><PageHeader :title="id?(draft.name||t('masterData.partner')):t('partner.new')"><template #meta><el-tag v-if="props.mode==='view'" type="info">{{t('partner.view')}}</el-tag><el-tag v-if="draft.code" effect="plain">{{draft.code}}</el-tag><el-tag class="app-status-tag" v-if="record" :type="record.enabled?'success':'info'">{{t('masterData.'+(record.enabled?'enabled':'disabled'))}}</el-tag></template><template #actions><el-button :disabled="busy" @click="back">{{t('partner.back')}}</el-button><el-button v-if="props.mode!=='view'" v-operation="operation" type="primary" :loading="busy" :disabled="!canEdit||!dirty||loading||dialog" @click="save">{{t('masterData.save')}}</el-button></template><template v-if="id&&record" #trailing><StatusHistoryButton operation="BusinessPartner.readStatusHistory" :load="(page,size)=>api.statusHistory('partner',id,page,size)" :error-text="errorText" /></template></PageHeader></template>
+  <TabbedDetailTemplate master-data system-last>
+   <template #header><PageHeader :back-label="t('partner.back')" @back="back" :back-disabled="busy" :title="id?(draft.name||t('masterData.partner')):t('partner.new')"><template #meta><el-tag v-if="props.mode==='view'" type="info">{{t('partner.view')}}</el-tag><el-tag v-if="draft.code" effect="plain">{{draft.code}}</el-tag><el-tag class="app-status-tag" v-if="record" :type="record.enabled?'success':'info'">{{t('masterData.'+(record.enabled?'enabled':'disabled'))}}</el-tag></template><template #actions><template v-if="id&&record"><StatusHistoryButton operation="BusinessPartner.readStatusHistory" :load="(page,size)=>api.statusHistory('partner',id,page,size)" :error-text="errorText" /></template><el-button v-if="props.mode!=='view'" v-operation="operation" type="primary" :loading="busy" :disabled="!canEdit||!dirty||loading||dialog" @click="save">{{t('masterData.save')}}</el-button></template></PageHeader></template>
    <template #content>
     <LoadErrorResult v-if="loadIssue" :issue="loadIssue"><template v-if="props.mode!=='view'" #retry><el-button :disabled="busy||loading" @click="reload">{{t('masterData.retry')}}</el-button></template></LoadErrorResult>
     <el-form v-else-if="!failed" ref="form" :model="draft" :rules="rules" label-position="top" :disabled="busy||loading" class="detail-profile-form detail-border-label-form" @submit.prevent="save">
@@ -130,10 +139,10 @@ onBeforeUnmount(()=>window.removeEventListener("beforeunload",beforeUnload));
    <template #system><h2 class="detail-section-title">{{t('partner.system')}}</h2><RecordAuditDetails :audit="record?.audit ?? {createdBy:null,createdAt:null,updatedBy:null,updatedAt:null}" :pending="!id" inline /></template>
    <template #tabs>
     <el-tabs v-model="tab"><el-tab-pane v-for="(_,section) in partnerSections" :key="section" :name="section" :label="t('partner.'+section)" /></el-tabs>
-    <ManagementTable :key="tab" :title="t('partner.'+tab)" :rows="details[tab]" :columns="columns" :readonly-view="props.mode==='view'" :loading="loading" :busy="busy" heading-level="h2" embedded @refresh="reload">
+    <ManagementTable :key="tab" :title="t('partner.'+tab)" :rows="details[tab]" :columns="columns" :excel-export="detailExcelExport" :readonly-view="props.mode==='view'" :loading="loading" :busy="busy" heading-level="h2" embedded @refresh="reload">
      <template v-if="props.mode!=='view'" #titleHelp><InfoHint :content="t('partner.atomicHint')" /></template>
      <template v-if="props.mode!=='view'" #actions><el-button v-operation="operation" type="primary" :disabled="!canEdit||busy||loading||restrictedDetail||details[tab].length>=100" @click="editDetail()">{{t('partner.add')}}</el-button></template>
-     <template v-for="field in partnerSections[tab]" :key="field" #[field]="{row}">{{display(row.values[field],field,row[`${field}Name`])}}</template>
+     <template v-for="field in partnerSections[tab]" :key="field" #[field]="{row}">{{detailText(row,field)}}</template>
      <template v-if="props.mode!=='view'" #operations="{row}"><el-button v-operation="operation" link type="primary" :disabled="!canEdit||busy||loading" @click="editDetail(details[tab].indexOf(row))">{{t('masterData.edit')}}</el-button><el-button v-operation="operation" link type="danger" :disabled="!canEdit||busy||loading||restrictedDetail" @click="removeDetail(details[tab].indexOf(row))">{{t('partner.remove')}}</el-button></template>
     </ManagementTable>
    </template>

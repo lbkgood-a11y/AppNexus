@@ -2,6 +2,7 @@
 html .vxe-table {
   --vxe-ui-font-color: var(--el-text-color-primary);
   --vxe-ui-table-font-color: var(--el-text-color-primary);
+  --vxe-ui-table-header-font-color: var(--el-text-color-primary);
   --vxe-ui-table-header-background-color: var(--el-fill-color-light);
   --vxe-ui-table-body-background-color: var(--el-bg-color);
   --vxe-ui-table-border-color: var(--el-border-color-lighter);

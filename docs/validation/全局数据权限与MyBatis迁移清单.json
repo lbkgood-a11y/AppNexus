@@ -1,10 +1,10 @@
 {
   "scope": "全部自有生产 Java；历史迁移及底层连接单列，不构成豁免；入口含未登记旧 Controller",
   "summary": {
-    "databaseFiles": 94,
+    "databaseFiles": 108,
     "jdbcTemplateFiles": 0,
-    "mapperFiles": 82,
-    "controllerFiles": 62,
+    "mapperFiles": 96,
+    "controllerFiles": 75,
     "legacyOperationBindings": 0
   },
   "files": [
@@ -54,6 +54,138 @@
     },
     {
       "path": "backend/services/bulk-warehousing-service/src/main/java/com/appnexus/bulkwarehousing/adapter/persistence/WarehouseBalanceMapper.java",
+      "jdbcTemplate": false,
+      "mapper": true,
+      "historicalMigration": false,
+      "accessPlanning": false,
+      "rowExecution": false,
+      "fieldProtection": false,
+      "functionalAuthorization": false,
+      "status": "未验证：文本线索，须沿真实入口、上层用例和事务核对"
+    },
+    {
+      "path": "backend/services/bulk-warehousing-service/src/main/java/com/appnexus/bulkwarehousing/adapter/persistence/inboundexecution/CommodityTemplateMapper.java",
+      "jdbcTemplate": false,
+      "mapper": true,
+      "historicalMigration": false,
+      "accessPlanning": false,
+      "rowExecution": false,
+      "fieldProtection": false,
+      "functionalAuthorization": false,
+      "status": "未验证：文本线索，须沿真实入口、上层用例和事务核对"
+    },
+    {
+      "path": "backend/services/bulk-warehousing-service/src/main/java/com/appnexus/bulkwarehousing/adapter/persistence/inboundexecution/GroundWeighingMapper.java",
+      "jdbcTemplate": false,
+      "mapper": true,
+      "historicalMigration": false,
+      "accessPlanning": false,
+      "rowExecution": false,
+      "fieldProtection": false,
+      "functionalAuthorization": false,
+      "status": "未验证：文本线索，须沿真实入口、上层用例和事务核对"
+    },
+    {
+      "path": "backend/services/bulk-warehousing-service/src/main/java/com/appnexus/bulkwarehousing/adapter/persistence/inboundexecution/InboundBatchQualityMapper.java",
+      "jdbcTemplate": false,
+      "mapper": true,
+      "historicalMigration": false,
+      "accessPlanning": false,
+      "rowExecution": false,
+      "fieldProtection": false,
+      "functionalAuthorization": false,
+      "status": "未验证：文本线索，须沿真实入口、上层用例和事务核对"
+    },
+    {
+      "path": "backend/services/bulk-warehousing-service/src/main/java/com/appnexus/bulkwarehousing/adapter/persistence/inboundexecution/InboundDocumentMapper.java",
+      "jdbcTemplate": false,
+      "mapper": true,
+      "historicalMigration": false,
+      "accessPlanning": false,
+      "rowExecution": false,
+      "fieldProtection": false,
+      "functionalAuthorization": false,
+      "status": "未验证：文本线索，须沿真实入口、上层用例和事务核对"
+    },
+    {
+      "path": "backend/services/bulk-warehousing-service/src/main/java/com/appnexus/bulkwarehousing/adapter/persistence/inboundexecution/InboundMeteringOrderMapper.java",
+      "jdbcTemplate": false,
+      "mapper": true,
+      "historicalMigration": false,
+      "accessPlanning": false,
+      "rowExecution": false,
+      "fieldProtection": false,
+      "functionalAuthorization": false,
+      "status": "未验证：文本线索，须沿真实入口、上层用例和事务核对"
+    },
+    {
+      "path": "backend/services/bulk-warehousing-service/src/main/java/com/appnexus/bulkwarehousing/adapter/persistence/inboundexecution/InboundQualityOrderMapper.java",
+      "jdbcTemplate": false,
+      "mapper": true,
+      "historicalMigration": false,
+      "accessPlanning": false,
+      "rowExecution": false,
+      "fieldProtection": false,
+      "functionalAuthorization": false,
+      "status": "未验证：文本线索，须沿真实入口、上层用例和事务核对"
+    },
+    {
+      "path": "backend/services/bulk-warehousing-service/src/main/java/com/appnexus/bulkwarehousing/adapter/persistence/inboundexecution/InboundReceiptOrderMapper.java",
+      "jdbcTemplate": false,
+      "mapper": true,
+      "historicalMigration": false,
+      "accessPlanning": false,
+      "rowExecution": false,
+      "fieldProtection": false,
+      "functionalAuthorization": false,
+      "status": "未验证：文本线索，须沿真实入口、上层用例和事务核对"
+    },
+    {
+      "path": "backend/services/bulk-warehousing-service/src/main/java/com/appnexus/bulkwarehousing/adapter/persistence/inboundexecution/InboundTaskRegistrationMapper.java",
+      "jdbcTemplate": false,
+      "mapper": true,
+      "historicalMigration": false,
+      "accessPlanning": false,
+      "rowExecution": false,
+      "fieldProtection": false,
+      "functionalAuthorization": false,
+      "status": "未验证：文本线索，须沿真实入口、上层用例和事务核对"
+    },
+    {
+      "path": "backend/services/bulk-warehousing-service/src/main/java/com/appnexus/bulkwarehousing/adapter/persistence/inboundexecution/InboundWorkbenchDetailMapper.java",
+      "jdbcTemplate": false,
+      "mapper": true,
+      "historicalMigration": false,
+      "accessPlanning": false,
+      "rowExecution": false,
+      "fieldProtection": false,
+      "functionalAuthorization": false,
+      "status": "未验证：文本线索，须沿真实入口、上层用例和事务核对"
+    },
+    {
+      "path": "backend/services/bulk-warehousing-service/src/main/java/com/appnexus/bulkwarehousing/adapter/persistence/inboundexecution/InboundWorkbenchMapper.java",
+      "jdbcTemplate": false,
+      "mapper": true,
+      "historicalMigration": false,
+      "accessPlanning": false,
+      "rowExecution": false,
+      "fieldProtection": false,
+      "functionalAuthorization": false,
+      "status": "未验证：文本线索，须沿真实入口、上层用例和事务核对"
+    },
+    {
+      "path": "backend/services/bulk-warehousing-service/src/main/java/com/appnexus/bulkwarehousing/adapter/persistence/inboundexecution/ReceiptPostingMapper.java",
+      "jdbcTemplate": false,
+      "mapper": true,
+      "historicalMigration": false,
+      "accessPlanning": false,
+      "rowExecution": false,
+      "fieldProtection": false,
+      "functionalAuthorization": false,
+      "status": "未验证：文本线索，须沿真实入口、上层用例和事务核对"
+    },
+    {
+      "path": "backend/services/bulk-warehousing-service/src/main/java/com/appnexus/bulkwarehousing/adapter/persistence/inboundexecution/SteelMeasurementMapper.java",
       "jdbcTemplate": false,
       "mapper": true,
       "historicalMigration": false,
@@ -328,6 +460,116 @@
       "status": "未验证：文本线索，须沿真实入口、上层用例和事务核对"
     },
     {
+      "path": "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/adapter/persistence/organization/LegacyWorkflowDirectoryMapper.java",
+      "jdbcTemplate": false,
+      "mapper": true,
+      "historicalMigration": false,
+      "accessPlanning": false,
+      "rowExecution": false,
+      "fieldProtection": false,
+      "functionalAuthorization": false,
+      "status": "未验证：文本线索，须沿真实入口、上层用例和事务核对"
+    },
+    {
+      "path": "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/adapter/persistence/organization/OrganizationDeletionGuardMapper.java",
+      "jdbcTemplate": false,
+      "mapper": true,
+      "historicalMigration": false,
+      "accessPlanning": false,
+      "rowExecution": false,
+      "fieldProtection": false,
+      "functionalAuthorization": false,
+      "status": "未验证：文本线索，须沿真实入口、上层用例和事务核对"
+    },
+    {
+      "path": "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/adapter/persistence/organization/OrganizationDomainMapper.java",
+      "jdbcTemplate": false,
+      "mapper": true,
+      "historicalMigration": false,
+      "accessPlanning": false,
+      "rowExecution": true,
+      "fieldProtection": false,
+      "functionalAuthorization": false,
+      "status": "未验证：文本线索，须沿真实入口、上层用例和事务核对"
+    },
+    {
+      "path": "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/adapter/persistence/organization/OrganizationSummaryMapper.java",
+      "jdbcTemplate": false,
+      "mapper": true,
+      "historicalMigration": false,
+      "accessPlanning": false,
+      "rowExecution": false,
+      "fieldProtection": false,
+      "functionalAuthorization": false,
+      "status": "未验证：文本线索，须沿真实入口、上层用例和事务核对"
+    },
+    {
+      "path": "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/adapter/persistence/organization/OrganizationUnitMapper.java",
+      "jdbcTemplate": false,
+      "mapper": true,
+      "historicalMigration": false,
+      "accessPlanning": false,
+      "rowExecution": true,
+      "fieldProtection": false,
+      "functionalAuthorization": false,
+      "status": "未验证：文本线索，须沿真实入口、上层用例和事务核对"
+    },
+    {
+      "path": "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/adapter/persistence/organization/PersonnelDirectoryMapper.java",
+      "jdbcTemplate": false,
+      "mapper": true,
+      "historicalMigration": false,
+      "accessPlanning": false,
+      "rowExecution": false,
+      "fieldProtection": false,
+      "functionalAuthorization": false,
+      "status": "未验证：文本线索，须沿真实入口、上层用例和事务核对"
+    },
+    {
+      "path": "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/adapter/persistence/personnel/PersonRecordMapper.java",
+      "jdbcTemplate": false,
+      "mapper": true,
+      "historicalMigration": false,
+      "accessPlanning": false,
+      "rowExecution": true,
+      "fieldProtection": false,
+      "functionalAuthorization": false,
+      "status": "未验证：文本线索，须沿真实入口、上层用例和事务核对"
+    },
+    {
+      "path": "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/adapter/persistence/personnel/PersonnelExecutionMapper.java",
+      "jdbcTemplate": false,
+      "mapper": true,
+      "historicalMigration": false,
+      "accessPlanning": false,
+      "rowExecution": false,
+      "fieldProtection": false,
+      "functionalAuthorization": false,
+      "status": "未验证：文本线索，须沿真实入口、上层用例和事务核对"
+    },
+    {
+      "path": "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/adapter/persistence/personnel/PersonnelIdentityMapper.java",
+      "jdbcTemplate": false,
+      "mapper": true,
+      "historicalMigration": false,
+      "accessPlanning": false,
+      "rowExecution": false,
+      "fieldProtection": false,
+      "functionalAuthorization": false,
+      "status": "未验证：文本线索，须沿真实入口、上层用例和事务核对"
+    },
+    {
+      "path": "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/adapter/persistence/personnel/PersonnelMapper.java",
+      "jdbcTemplate": false,
+      "mapper": true,
+      "historicalMigration": false,
+      "accessPlanning": false,
+      "rowExecution": true,
+      "fieldProtection": false,
+      "functionalAuthorization": false,
+      "status": "未验证：文本线索，须沿真实入口、上层用例和事务核对"
+    },
+    {
       "path": "backend/services/master-data-service/src/main/java/db/migration/V111__product_single_writer_cutover.java",
       "jdbcTemplate": false,
       "mapper": false,
@@ -472,6 +714,28 @@
     },
     {
       "path": "backend/services/platform-service/adapters/persistence/src/main/java/com/appnexus/platform/persistence/capability/CapabilityDirectoryMapper.java",
+      "jdbcTemplate": false,
+      "mapper": true,
+      "historicalMigration": false,
+      "accessPlanning": false,
+      "rowExecution": false,
+      "fieldProtection": false,
+      "functionalAuthorization": false,
+      "status": "未验证：文本线索，须沿真实入口、上层用例和事务核对"
+    },
+    {
+      "path": "backend/services/platform-service/adapters/persistence/src/main/java/com/appnexus/platform/persistence/configuration/AttachmentPolicyMapper.java",
+      "jdbcTemplate": false,
+      "mapper": true,
+      "historicalMigration": false,
+      "accessPlanning": false,
+      "rowExecution": false,
+      "fieldProtection": false,
+      "functionalAuthorization": false,
+      "status": "未验证：文本线索，须沿真实入口、上层用例和事务核对"
+    },
+    {
+      "path": "backend/services/platform-service/adapters/persistence/src/main/java/com/appnexus/platform/persistence/configuration/AttachmentRecordMapper.java",
       "jdbcTemplate": false,
       "mapper": true,
       "historicalMigration": false,
@@ -658,105 +922,6 @@
       "status": "未验证：文本线索，须沿真实入口、上层用例和事务核对"
     },
     {
-      "path": "backend/services/platform-service/adapters/persistence/src/main/java/com/appnexus/platform/persistence/organization/OrganizationDomainMapper.java",
-      "jdbcTemplate": false,
-      "mapper": true,
-      "historicalMigration": false,
-      "accessPlanning": false,
-      "rowExecution": true,
-      "fieldProtection": false,
-      "functionalAuthorization": false,
-      "status": "未验证：文本线索，须沿真实入口、上层用例和事务核对"
-    },
-    {
-      "path": "backend/services/platform-service/adapters/persistence/src/main/java/com/appnexus/platform/persistence/organization/OrganizationMembershipMapper.java",
-      "jdbcTemplate": false,
-      "mapper": true,
-      "historicalMigration": false,
-      "accessPlanning": false,
-      "rowExecution": false,
-      "fieldProtection": false,
-      "functionalAuthorization": false,
-      "status": "未验证：文本线索，须沿真实入口、上层用例和事务核对"
-    },
-    {
-      "path": "backend/services/platform-service/adapters/persistence/src/main/java/com/appnexus/platform/persistence/organization/OrganizationSummaryMapper.java",
-      "jdbcTemplate": false,
-      "mapper": true,
-      "historicalMigration": false,
-      "accessPlanning": false,
-      "rowExecution": false,
-      "fieldProtection": false,
-      "functionalAuthorization": false,
-      "status": "未验证：文本线索，须沿真实入口、上层用例和事务核对"
-    },
-    {
-      "path": "backend/services/platform-service/adapters/persistence/src/main/java/com/appnexus/platform/persistence/organization/OrganizationUnitMapper.java",
-      "jdbcTemplate": false,
-      "mapper": true,
-      "historicalMigration": false,
-      "accessPlanning": false,
-      "rowExecution": true,
-      "fieldProtection": false,
-      "functionalAuthorization": false,
-      "status": "未验证：文本线索，须沿真实入口、上层用例和事务核对"
-    },
-    {
-      "path": "backend/services/platform-service/adapters/persistence/src/main/java/com/appnexus/platform/persistence/organization/PersonnelDirectoryMapper.java",
-      "jdbcTemplate": false,
-      "mapper": true,
-      "historicalMigration": false,
-      "accessPlanning": false,
-      "rowExecution": false,
-      "fieldProtection": false,
-      "functionalAuthorization": false,
-      "status": "未验证：文本线索，须沿真实入口、上层用例和事务核对"
-    },
-    {
-      "path": "backend/services/platform-service/adapters/persistence/src/main/java/com/appnexus/platform/persistence/organization/personnel/PersonRecordMapper.java",
-      "jdbcTemplate": false,
-      "mapper": true,
-      "historicalMigration": false,
-      "accessPlanning": false,
-      "rowExecution": true,
-      "fieldProtection": false,
-      "functionalAuthorization": false,
-      "status": "未验证：文本线索，须沿真实入口、上层用例和事务核对"
-    },
-    {
-      "path": "backend/services/platform-service/adapters/persistence/src/main/java/com/appnexus/platform/persistence/organization/personnel/PersonnelExecutionMapper.java",
-      "jdbcTemplate": false,
-      "mapper": true,
-      "historicalMigration": false,
-      "accessPlanning": false,
-      "rowExecution": false,
-      "fieldProtection": false,
-      "functionalAuthorization": false,
-      "status": "未验证：文本线索，须沿真实入口、上层用例和事务核对"
-    },
-    {
-      "path": "backend/services/platform-service/adapters/persistence/src/main/java/com/appnexus/platform/persistence/organization/personnel/PersonnelIdentityMapper.java",
-      "jdbcTemplate": false,
-      "mapper": true,
-      "historicalMigration": false,
-      "accessPlanning": false,
-      "rowExecution": false,
-      "fieldProtection": false,
-      "functionalAuthorization": false,
-      "status": "未验证：文本线索，须沿真实入口、上层用例和事务核对"
-    },
-    {
-      "path": "backend/services/platform-service/adapters/persistence/src/main/java/com/appnexus/platform/persistence/organization/personnel/PersonnelMapper.java",
-      "jdbcTemplate": false,
-      "mapper": true,
-      "historicalMigration": false,
-      "accessPlanning": false,
-      "rowExecution": true,
-      "fieldProtection": false,
-      "functionalAuthorization": false,
-      "status": "未验证：文本线索，须沿真实入口、上层用例和事务核对"
-    },
-    {
       "path": "backend/services/platform-service/adapters/persistence/src/main/java/com/appnexus/platform/persistence/platformscope/AccountSessionRevocationMapper.java",
       "jdbcTemplate": false,
       "mapper": true,
@@ -769,17 +934,6 @@
     },
     {
       "path": "backend/services/platform-service/adapters/persistence/src/main/java/com/appnexus/platform/persistence/platformscope/AdministrationMapper.java",
-      "jdbcTemplate": false,
-      "mapper": true,
-      "historicalMigration": false,
-      "accessPlanning": false,
-      "rowExecution": false,
-      "fieldProtection": false,
-      "functionalAuthorization": false,
-      "status": "未验证：文本线索，须沿真实入口、上层用例和事务核对"
-    },
-    {
-      "path": "backend/services/platform-service/adapters/persistence/src/main/java/com/appnexus/platform/persistence/platformscope/AuthorityEventMapper.java",
       "jdbcTemplate": false,
       "mapper": true,
       "historicalMigration": false,
@@ -1110,6 +1264,10 @@
         {
           "line": 25,
           "declaration": "@PostMapping(\"/api/bulk-inbound-receipts:issue\")"
+        },
+        {
+          "line": 33,
+          "declaration": "@PutMapping(\"/api/bulk-inbound-notices/{id}\")"
         }
       ],
       "status": "未验证：逐接口关联唯一对象、操作、管理域、准入、行范围、字段、执行器与正反向证据；方法注解可跨行，不能按单行认定缺失"
@@ -1128,6 +1286,248 @@
         {
           "line": 83,
           "declaration": "@GetMapping(\"/api/bulk-warehouse-documents/INBOUND_NOTICE/{documentNo}\")"
+        }
+      ],
+      "status": "未验证：逐接口关联唯一对象、操作、管理域、准入、行范围、字段、执行器与正反向证据；方法注解可跨行，不能按单行认定缺失"
+    },
+    {
+      "path": "backend/services/bulk-warehousing-service/src/main/java/com/appnexus/bulkwarehousing/adapter/web/inboundexecution/CommodityTemplateController.java",
+      "endpoints": [
+        {
+          "line": 16,
+          "declaration": "@RequestMapping(CommodityTemplates.PATH)"
+        },
+        {
+          "line": 22,
+          "declaration": "@GetMapping"
+        },
+        {
+          "line": 30,
+          "declaration": "@PostMapping"
+        },
+        {
+          "line": 34,
+          "declaration": "@PutMapping(\"/{id}\")"
+        },
+        {
+          "line": 40,
+          "declaration": "@PostMapping(\"/{id}:publish\")"
+        }
+      ],
+      "status": "未验证：逐接口关联唯一对象、操作、管理域、准入、行范围、字段、执行器与正反向证据；方法注解可跨行，不能按单行认定缺失"
+    },
+    {
+      "path": "backend/services/bulk-warehousing-service/src/main/java/com/appnexus/bulkwarehousing/adapter/web/inboundexecution/GroundWeighingController.java",
+      "endpoints": [
+        {
+          "line": 37,
+          "declaration": "@PostMapping(\"/api/bulk-inbound-metering-orders:record-gross\")"
+        },
+        {
+          "line": 46,
+          "declaration": "@PostMapping(\"/api/bulk-inbound-tasks/{id}:confirm-unloading\")"
+        },
+        {
+          "line": 55,
+          "declaration": "@PostMapping(\"/api/bulk-inbound-metering-orders:record-tare\")"
+        }
+      ],
+      "status": "未验证：逐接口关联唯一对象、操作、管理域、准入、行范围、字段、执行器与正反向证据；方法注解可跨行，不能按单行认定缺失"
+    },
+    {
+      "path": "backend/services/bulk-warehousing-service/src/main/java/com/appnexus/bulkwarehousing/adapter/web/inboundexecution/InboundDocumentQueryController.java",
+      "endpoints": [
+        {
+          "line": 36,
+          "declaration": "@GetMapping(\"/api/bulk-inbound-quality-orders\")"
+        },
+        {
+          "line": 49,
+          "declaration": "@GetMapping(\"/api/bulk-inbound-quality-orders/{id}\")"
+        },
+        {
+          "line": 62,
+          "declaration": "@GetMapping(\"/api/bulk-inbound-metering-orders\")"
+        },
+        {
+          "line": 75,
+          "declaration": "@GetMapping(\"/api/bulk-inbound-metering-orders/{id}\")"
+        },
+        {
+          "line": 89,
+          "declaration": "@GetMapping(\"/api/bulk-inbound-receipt-orders\")"
+        },
+        {
+          "line": 102,
+          "declaration": "@GetMapping(\"/api/bulk-inbound-receipt-orders/{id}\")"
+        },
+        {
+          "line": 110,
+          "declaration": "@GetMapping(\"/api/bulk-inbound-quality-orders:register-sample\")"
+        },
+        {
+          "line": 118,
+          "declaration": "@GetMapping(\"/api/bulk-inbound-quality-orders:inspect-steel\")"
+        },
+        {
+          "line": 126,
+          "declaration": "@GetMapping(\"/api/bulk-inbound-metering-orders:record-gross\")"
+        },
+        {
+          "line": 134,
+          "declaration": "@GetMapping(\"/api/bulk-inbound-metering-orders:register-external\")"
+        },
+        {
+          "line": 142,
+          "declaration": "@GetMapping(\"/api/bulk-inbound-metering-orders:confirm-steel\")"
+        },
+        {
+          "line": 150,
+          "declaration": "@GetMapping(\"/api/bulk-inbound-receipt-orders:create-bulk-draft\")"
+        },
+        {
+          "line": 158,
+          "declaration": "@GetMapping(\"/api/bulk-inbound-receipt-orders:create-steel-draft\")"
+        },
+        {
+          "line": 166,
+          "declaration": "@GetMapping(\"/api/bulk-inbound-quality-orders/{id}:decide\")"
+        }
+      ],
+      "status": "未验证：逐接口关联唯一对象、操作、管理域、准入、行范围、字段、执行器与正反向证据；方法注解可跨行，不能按单行认定缺失"
+    },
+    {
+      "path": "backend/services/bulk-warehousing-service/src/main/java/com/appnexus/bulkwarehousing/adapter/web/inboundexecution/InboundMeteringOrderController.java",
+      "endpoints": [
+        {
+          "line": 41,
+          "declaration": "@PostMapping(\"/api/bulk-inbound-metering-orders:register-external\")"
+        },
+        {
+          "line": 58,
+          "declaration": "@PostMapping(\"/api/bulk-inbound-metering-orders:confirm-steel\")"
+        }
+      ],
+      "status": "未验证：逐接口关联唯一对象、操作、管理域、准入、行范围、字段、执行器与正反向证据；方法注解可跨行，不能按单行认定缺失"
+    },
+    {
+      "path": "backend/services/bulk-warehousing-service/src/main/java/com/appnexus/bulkwarehousing/adapter/web/inboundexecution/InboundQualityOrderController.java",
+      "endpoints": [
+        {
+          "line": 50,
+          "declaration": "@PostMapping(\"/api/bulk-inbound-quality-orders:register-sample\")"
+        },
+        {
+          "line": 66,
+          "declaration": "@PostMapping(\"/api/bulk-inbound-quality-orders/{id}:decide\")"
+        },
+        {
+          "line": 79,
+          "declaration": "@PostMapping(\"/api/bulk-inbound-quality-orders:inspect-steel\")"
+        }
+      ],
+      "status": "未验证：逐接口关联唯一对象、操作、管理域、准入、行范围、字段、执行器与正反向证据；方法注解可跨行，不能按单行认定缺失"
+    },
+    {
+      "path": "backend/services/bulk-warehousing-service/src/main/java/com/appnexus/bulkwarehousing/adapter/web/inboundexecution/InboundReceiptOrderController.java",
+      "endpoints": [
+        {
+          "line": 46,
+          "declaration": "@PostMapping(OpenInboundReceiptUseCase.PATH)"
+        },
+        {
+          "line": 76,
+          "declaration": "@PostMapping(\"/api/bulk-inbound-receipt-orders:create-bulk-draft\")"
+        },
+        {
+          "line": 99,
+          "declaration": "@PostMapping(\"/api/bulk-inbound-receipt-orders/{id}:post\")"
+        },
+        {
+          "line": 121,
+          "declaration": "@PostMapping(\"/api/bulk-inbound-receipt-orders/{id}:reverse\")"
+        },
+        {
+          "line": 137,
+          "declaration": "@PostMapping(\"/api/bulk-inbound-receipt-orders:create-steel-draft\")"
+        }
+      ],
+      "status": "未验证：逐接口关联唯一对象、操作、管理域、准入、行范围、字段、执行器与正反向证据；方法注解可跨行，不能按单行认定缺失"
+    },
+    {
+      "path": "backend/services/bulk-warehousing-service/src/main/java/com/appnexus/bulkwarehousing/adapter/web/inboundexecution/InboundSiteCommandController.java",
+      "endpoints": [
+        {
+          "line": 15,
+          "declaration": "@RequestMapping(InboundSiteCommands.ROOT)"
+        },
+        {
+          "line": 21,
+          "declaration": "@PostMapping(\"/gate\")"
+        },
+        {
+          "line": 26,
+          "declaration": "@PostMapping(\"/call\")"
+        },
+        {
+          "line": 31,
+          "declaration": "@PostMapping(\"/print\")"
+        },
+        {
+          "line": 36,
+          "declaration": "@GetMapping(\"/{commandId}\")"
+        }
+      ],
+      "status": "未验证：逐接口关联唯一对象、操作、管理域、准入、行范围、字段、执行器与正反向证据；方法注解可跨行，不能按单行认定缺失"
+    },
+    {
+      "path": "backend/services/bulk-warehousing-service/src/main/java/com/appnexus/bulkwarehousing/adapter/web/inboundexecution/InboundTaskRegistrationController.java",
+      "endpoints": [
+        {
+          "line": 25,
+          "declaration": "@GetMapping(CreateInboundTaskUseCase.PATH)"
+        },
+        {
+          "line": 37,
+          "declaration": "@PostMapping(CreateInboundTaskUseCase.PATH)"
+        }
+      ],
+      "status": "未验证：逐接口关联唯一对象、操作、管理域、准入、行范围、字段、执行器与正反向证据；方法注解可跨行，不能按单行认定缺失"
+    },
+    {
+      "path": "backend/services/bulk-warehousing-service/src/main/java/com/appnexus/bulkwarehousing/adapter/web/inboundexecution/InboundWorkbenchController.java",
+      "endpoints": [
+        {
+          "line": 31,
+          "declaration": "@GetMapping(ReadInboundSiteTelemetry.PATH)"
+        },
+        {
+          "line": 48,
+          "declaration": "@GetMapping(ReadInboundWorkbenchUseCase.PATH)"
+        },
+        {
+          "line": 68,
+          "declaration": "@GetMapping(ReadInboundWorkbenchUseCase.LIST_PATH)"
+        },
+        {
+          "line": 82,
+          "declaration": "@GetMapping(\"/api/bulk-inbound-workbench/tasks/{id}\")"
+        },
+        {
+          "line": 92,
+          "declaration": "@GetMapping(\"/api/bulk-inbound-workbench/tasks/{id}/identity\")"
+        },
+        {
+          "line": 99,
+          "declaration": "@GetMapping(\"/api/bulk-inbound-workbench/tasks/{id}/quality\")"
+        },
+        {
+          "line": 106,
+          "declaration": "@GetMapping(\"/api/bulk-inbound-workbench/tasks/{id}/metering\")"
+        },
+        {
+          "line": 113,
+          "declaration": "@GetMapping(\"/api/bulk-inbound-workbench/tasks/{id}/receipt\")"
         }
       ],
       "status": "未验证：逐接口关联唯一对象、操作、管理域、准入、行范围、字段、执行器与正反向证据；方法注解可跨行，不能按单行认定缺失"
@@ -1370,28 +1770,236 @@
       "path": "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/adapter/web/masterdata/WarehouseController.java",
       "endpoints": [
         {
-          "line": 14,
+          "line": 18,
           "declaration": "@RequestMapping(\"/api/master-data/warehouse\")"
         },
         {
-          "line": 20,
+          "line": 24,
           "declaration": "@GetMapping(\"/field-restrictions\")"
         },
         {
-          "line": 35,
+          "line": 39,
           "declaration": "@GetMapping(\"\")"
         },
         {
-          "line": 39,
+          "line": 43,
           "declaration": "@PostMapping(\"\")"
         },
         {
-          "line": 43,
+          "line": 47,
           "declaration": "@PutMapping(\"/{id}\")"
         },
         {
-          "line": 47,
+          "line": 51,
           "declaration": "@PutMapping(\"/{id}/status\")"
+        },
+        {
+          "line": 65,
+          "declaration": "@GetMapping(\"/login-selection\")"
+        },
+        {
+          "line": 79,
+          "declaration": "@PutMapping(\"/login-selection\")"
+        }
+      ],
+      "status": "未验证：逐接口关联唯一对象、操作、管理域、准入、行范围、字段、执行器与正反向证据；方法注解可跨行，不能按单行认定缺失"
+    },
+    {
+      "path": "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/adapter/web/organization/OrganizationController.java",
+      "endpoints": [
+        {
+          "line": 14,
+          "declaration": "@RequestMapping(\"/api/organization\")"
+        },
+        {
+          "line": 26,
+          "declaration": "@GetMapping(\"/units\")"
+        },
+        {
+          "line": 32,
+          "declaration": "@PostMapping(\"/units\")"
+        },
+        {
+          "line": 45,
+          "declaration": "@PutMapping(\"/units/{id}\")"
+        },
+        {
+          "line": 52,
+          "declaration": "@DeleteMapping(\"/units/{id}\")"
+        }
+      ],
+      "status": "未验证：逐接口关联唯一对象、操作、管理域、准入、行范围、字段、执行器与正反向证据；方法注解可跨行，不能按单行认定缺失"
+    },
+    {
+      "path": "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/adapter/web/organization/OrganizationDomainController.java",
+      "endpoints": [
+        {
+          "line": 8,
+          "declaration": "@RestController @EndpointPolicy(EndpointPolicy.Domain.TENANT_BUSINESS) @RequestMapping(\"/api/organization/domain\") public class OrganizationDomainController {"
+        },
+        {
+          "line": 17,
+          "declaration": "@GetMapping(\"/types\") List<?> types(){return domain.types();} @com.appnexus.contracts.operation.OperationBinding(id=\"OrganizationType.create\", reference=true, enforceDeclaredPermission=true)"
+        },
+        {
+          "line": 18,
+          "declaration": "@PostMapping(\"/types\") ResponseEntity<?> createType(@RequestBody TypeInput i){return ResponseEntity.status(201).body(domain.createType(code(i.code()),name(i.name())));} @com.appnexus.contracts.operation.OperationBinding(id=\"OrganizationType.update\", reference=true, enforceDeclaredPermission=true)"
+        },
+        {
+          "line": 19,
+          "declaration": "@PutMapping(\"/types/{id}\") Object updateType(@PathVariable UUID id,@RequestBody TypeInput i){return domain.updateType(id,name(i.name()),required(i.enabled()),required(i.version()));}"
+        },
+        {
+          "line": 25,
+          "declaration": "@GetMapping(\"/units\") List<?> units(){return domain.units();} @com.appnexus.contracts.operation.OperationBinding(id=\"OrganizationUnit.create\",reference=true, enforceDeclaredPermission=true)"
+        },
+        {
+          "line": 26,
+          "declaration": "@PostMapping(\"/units\") ResponseEntity<?> createUnit(@RequestBody UnitInput i){return ResponseEntity.status(201).body(domain.createUnit(code(i.code()),Objects.requireNonNull(i.typeId()),i.parentId(),name(i.name())));} @com.appnexus.contracts.operation.OperationBinding(id=\"OrganizationUnit.update\",reference=true, enforceDeclaredPermission=true)"
+        },
+        {
+          "line": 27,
+          "declaration": "@PutMapping(\"/units/{id}\") Object updateUnit(@PathVariable UUID id,@RequestBody UnitInput i){return domain.updateUnit(id,name(i.name()),required(i.enabled()),required(i.version()));} @com.appnexus.contracts.operation.OperationBinding(id=\"OrganizationUnit.move\",reference=true, enforceDeclaredPermission=true)"
+        },
+        {
+          "line": 28,
+          "declaration": "@PostMapping(\"/units/{id}/move\") Object move(@PathVariable UUID id,@RequestBody MoveInput i){return domain.moveUnit(id,i.parentId(),i.version());} @com.appnexus.contracts.operation.OperationBinding(id=\"OrganizationUnit.inspectImpact\",reference=true, enforceDeclaredPermission=true)"
+        },
+        {
+          "line": 29,
+          "declaration": "@GetMapping(\"/units/{id}/impact\") Object impact(@PathVariable UUID id){return domain.impact(id);}"
+        },
+        {
+          "line": 38,
+          "declaration": "@GetMapping(\"/relations\") List<?> relations(){return domain.relations();} @com.appnexus.contracts.operation.OperationBinding(id=\"OrganizationRelation.create\", reference=true, enforceDeclaredPermission=true)"
+        },
+        {
+          "line": 39,
+          "declaration": "@PostMapping(\"/relations\") ResponseEntity<?> createRelation(@RequestBody RelationInput i){return ResponseEntity.status(201).body(domain.createRelation(code(i.relationType()),Objects.requireNonNull(i.sourceId()),Objects.requireNonNull(i.targetId())));} @com.appnexus.contracts.operation.OperationBinding(id=\"OrganizationRelation.delete\", reference=true, enforceDeclaredPermission=true)"
+        },
+        {
+          "line": 40,
+          "declaration": "@DeleteMapping(\"/relations/{id}\") void deleteRelation(@PathVariable UUID id,@RequestParam long version){domain.deleteRelation(id,version);}"
+        },
+        {
+          "line": 47,
+          "declaration": "@GetMapping(\"/positions\") List<?> positions(){return domain.positions();} @com.appnexus.contracts.operation.OperationBinding(id=\"Position.create\", reference=true, enforceDeclaredPermission=true)"
+        },
+        {
+          "line": 48,
+          "declaration": "@PostMapping(\"/positions\") ResponseEntity<?> createPosition(@RequestBody PositionInput i){return ResponseEntity.status(201).body(domain.createPosition(Objects.requireNonNull(i.organizationId()),code(i.code()),name(i.name())));} @com.appnexus.contracts.operation.OperationBinding(id=\"Position.update\", reference=true, enforceDeclaredPermission=true)"
+        },
+        {
+          "line": 49,
+          "declaration": "@PutMapping(\"/positions/{id}\") Object updatePosition(@PathVariable UUID id,@RequestBody PositionInput i){return domain.updatePosition(id,name(i.name()),required(i.enabled()),required(i.version()));}"
+        },
+        {
+          "line": 57,
+          "declaration": "@GetMapping(\"/assignments\") List<?> assignments(){return domain.assignments();} @com.appnexus.contracts.operation.OperationBinding(id=\"PositionAssignment.create\", reference=true, enforceDeclaredPermission=true)"
+        },
+        {
+          "line": 58,
+          "declaration": "@PostMapping(\"/assignments\") ResponseEntity<?> createAssignment(@RequestBody AssignmentInput i){return ResponseEntity.status(201).body(domain.createAssignment(Objects.requireNonNull(i.personId()),Objects.requireNonNull(i.positionId()),Objects.requireNonNull(i.startsAt()),i.endsAt()));} @com.appnexus.contracts.operation.OperationBinding(id=\"PositionAssignment.update\", reference=true, enforceDeclaredPermission=true)"
+        },
+        {
+          "line": 59,
+          "declaration": "@PutMapping(\"/assignments/{id}\") Object updateAssignment(@PathVariable UUID id,@RequestBody AssignmentInput i){return domain.updateAssignment(id,i.endsAt(),required(i.enabled()),required(i.version()));}"
+        },
+        {
+          "line": 65,
+          "declaration": "@GetMapping(\"/leaders\") List<?> leaders(){return domain.leaders();} @com.appnexus.contracts.operation.OperationBinding(id=\"OrganizationUnit.setLeader\", reference=true, enforceDeclaredPermission=true)"
+        },
+        {
+          "line": 66,
+          "declaration": "@PutMapping(\"/leaders\") void leader(@RequestBody LeaderInput i){domain.setLeader(Objects.requireNonNull(i.organizationId()),Objects.requireNonNull(i.assignmentId()),i.selected());}"
+        },
+        {
+          "line": 69,
+          "declaration": "@GetMapping(\"/persons\") List<?> persons(){return domain.persons();}"
+        }
+      ],
+      "status": "未验证：逐接口关联唯一对象、操作、管理域、准入、行范围、字段、执行器与正反向证据；方法注解可跨行，不能按单行认定缺失"
+    },
+    {
+      "path": "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/adapter/web/organization/OrganizationSummaryController.java",
+      "endpoints": [
+        {
+          "line": 20,
+          "declaration": "@GetMapping(\"/api/organization/summaries\")"
+        }
+      ],
+      "status": "未验证：逐接口关联唯一对象、操作、管理域、准入、行范围、字段、执行器与正反向证据；方法注解可跨行，不能按单行认定缺失"
+    },
+    {
+      "path": "backend/services/master-data-service/src/main/java/com/appnexus/masterdata/adapter/web/organization/PersonController.java",
+      "endpoints": [
+        {
+          "line": 17,
+          "declaration": "@RequestMapping(\"/api/master-data/person\")"
+        },
+        {
+          "line": 32,
+          "declaration": "@GetMapping(\"\")"
+        },
+        {
+          "line": 36,
+          "declaration": "@GetMapping(\"/field-restrictions\")"
+        },
+        {
+          "line": 40,
+          "declaration": "@PostMapping(\"\")"
+        },
+        {
+          "line": 44,
+          "declaration": "@PutMapping(\"/{id}\")"
+        },
+        {
+          "line": 48,
+          "declaration": "@PutMapping(\"/{id}/status\")"
+        },
+        {
+          "line": 76,
+          "declaration": "@GetMapping(\"/{id}\")"
+        },
+        {
+          "line": 81,
+          "declaration": "@GetMapping(\"/options\")"
+        },
+        {
+          "line": 86,
+          "declaration": "@PostMapping(\"/{id}/details/{section}\")"
+        },
+        {
+          "line": 91,
+          "declaration": "@PutMapping(\"/{id}/details/{section}/{detailId}\")"
+        },
+        {
+          "line": 96,
+          "declaration": "@DeleteMapping(\"/{id}/details/{section}/{detailId}\")"
+        },
+        {
+          "line": 101,
+          "declaration": "@PostMapping(\"/{id}/users\")"
+        },
+        {
+          "line": 106,
+          "declaration": "@PutMapping(\"/{id}/users/{assignmentId}\")"
+        },
+        {
+          "line": 111,
+          "declaration": "@DeleteMapping(\"/{id}/users/{assignmentId}\")"
+        },
+        {
+          "line": 116,
+          "declaration": "@GetMapping(\"/my-identities\") public Object myIdentities(HttpServletRequest r){return personnel.identities(context(r));}"
+        },
+        {
+          "line": 119,
+          "declaration": "@GetMapping(\"/identity\") public Object currentIdentity(HttpServletRequest r){var c=context(r);var session=r.getSession(false);if(session==null||!c.tenantId().toString().equals(session.getAttribute(\"appnexus.personTenant\")))return org.springframework.http.ResponseEntity.noContent().build();String person=(String)session.getAttribute(\"appnexus.person\"),organization=(String)session.getAttribute(\"appnexus.personOrganization\");if(person==null||organization==null||!personnel.canRepresent(c,person,organization)){session.removeAttribute(\"appnexus.person\");session.removeAttribute(\"appnexus.personOrganization\");session.removeAttribute(\"appnexus.personTenant\");return org.springframework.http.ResponseEntity.noContent().build();}return new com.appnexus.masterdata.organization.PersonnelData.IdentitySelection(person,organization);}"
+        },
+        {
+          "line": 122,
+          "declaration": "@PostMapping(\"/identity\") public Object selectIdentity(HttpServletRequest r,@RequestBody com.appnexus.masterdata.organization.PersonnelData.IdentitySelection input){"
         }
       ],
       "status": "未验证：逐接口关联唯一对象、操作、管理域、准入、行范围、字段、执行器与正反向证据；方法注解可跨行，不能按单行认定缺失"
@@ -1818,11 +2426,11 @@
       "path": "backend/services/platform-service/adapters/app-api/src/main/java/com/appnexus/platform/appapi/administration/SecurityLogController.java",
       "endpoints": [
         {
-          "line": 11,
+          "line": 12,
           "declaration": "@RequestMapping(\"/bff/account/security-logs\")"
         },
         {
-          "line": 22,
+          "line": 23,
           "declaration": "@GetMapping"
         }
       ],
@@ -1842,12 +2450,34 @@
       "path": "backend/services/platform-service/adapters/app-api/src/main/java/com/appnexus/platform/appapi/configuration/AmapProxyController.java",
       "endpoints": [
         {
-          "line": 46,
+          "line": 47,
           "declaration": "@GetMapping(PREFIX+\"/configuration\")"
         },
         {
-          "line": 62,
+          "line": 63,
           "declaration": "@GetMapping(PREFIX+\"/**\")"
+        }
+      ],
+      "status": "未验证：逐接口关联唯一对象、操作、管理域、准入、行范围、字段、执行器与正反向证据；方法注解可跨行，不能按单行认定缺失"
+    },
+    {
+      "path": "backend/services/platform-service/adapters/app-api/src/main/java/com/appnexus/platform/appapi/configuration/AttachmentController.java",
+      "endpoints": [
+        {
+          "line": 24,
+          "declaration": "@RequestMapping(\"/api/configuration/attachments\")"
+        },
+        {
+          "line": 38,
+          "declaration": "@GetMapping(\"/rules\")"
+        },
+        {
+          "line": 46,
+          "declaration": "@GetMapping"
+        },
+        {
+          "line": 60,
+          "declaration": "@PostMapping(consumes = MediaType.APPLICATION_OCTET_STREAM_VALUE)"
         }
       ],
       "status": "未验证：逐接口关联唯一对象、操作、管理域、准入、行范围、字段、执行器与正反向证据；方法注解可跨行，不能按单行认定缺失"
@@ -1856,44 +2486,44 @@
       "path": "backend/services/platform-service/adapters/app-api/src/main/java/com/appnexus/platform/appapi/configuration/DictionaryManagementController.java",
       "endpoints": [
         {
-          "line": 18,
+          "line": 19,
           "declaration": "@RequestMapping(\"/api/configuration/dictionaries\")"
         },
         {
-          "line": 37,
+          "line": 38,
           "declaration": "@GetMapping ResponseEntity<List<DictionaryManagement.Dictionary>> list(Authentication a,HttpServletRequest r){return ok(()->dictionaries.dictionaries(context(a,r)));}"
         },
         {
-          "line": 40,
-          "declaration": "@EndpointOperation(\"configuration.dictionary:create\") @PostMapping ResponseEntity<DictionaryManagement.Dictionary> create(Authentication a,HttpServletRequest r,@RequestBody DictionaryCreate input){return ok(()->dictionaries.createDictionary(context(a,r),Objects.requireNonNull(input).command()));}"
+          "line": 41,
+          "declaration": "@PostMapping ResponseEntity<DictionaryManagement.Dictionary> create(Authentication a,HttpServletRequest r,@RequestBody DictionaryCreate input){return ok(()->dictionaries.createDictionary(context(a,r),Objects.requireNonNull(input).command()));}"
         },
         {
-          "line": 43,
-          "declaration": "@EndpointOperation(\"configuration.dictionary:update\") @PutMapping(\"/{dictionaryId}\") ResponseEntity<DictionaryManagement.Dictionary> update(Authentication a,HttpServletRequest r,@PathVariable UUID dictionaryId,@RequestBody DictionaryUpdate input){return ok(()->dictionaries.updateDictionary(context(a,r),dictionaryId,Objects.requireNonNull(input).command()));}"
+          "line": 44,
+          "declaration": "@PutMapping(\"/{dictionaryId}\") ResponseEntity<DictionaryManagement.Dictionary> update(Authentication a,HttpServletRequest r,@PathVariable UUID dictionaryId,@RequestBody DictionaryUpdate input){return ok(()->dictionaries.updateDictionary(context(a,r),dictionaryId,Objects.requireNonNull(input).command()));}"
         },
         {
-          "line": 46,
-          "declaration": "@EndpointOperation(\"configuration.dictionary:delete\") @DeleteMapping(\"/{dictionaryId}\") ResponseEntity<Void> delete(Authentication a,HttpServletRequest r,@PathVariable UUID dictionaryId,@RequestParam long version){return empty(()->dictionaries.deleteDictionary(context(a,r),dictionaryId,version));}"
+          "line": 47,
+          "declaration": "@DeleteMapping(\"/{dictionaryId}\") ResponseEntity<Void> delete(Authentication a,HttpServletRequest r,@PathVariable UUID dictionaryId,@RequestParam long version){return empty(()->dictionaries.deleteDictionary(context(a,r),dictionaryId,version));}"
         },
         {
-          "line": 50,
+          "line": 51,
           "declaration": "@GetMapping(\"/{dictionaryId}/items\") ResponseEntity<List<DictionaryManagement.Item>> items(Authentication a,HttpServletRequest r,@PathVariable UUID dictionaryId){return ok(()->dictionaries.items(context(a,r),dictionaryId));}"
         },
         {
-          "line": 53,
-          "declaration": "@EndpointOperation(\"configuration.dictionary:read\") @GetMapping(\"/lookup/{code}\") ResponseEntity<List<DictionaryManagement.Item>> lookup(Authentication a,HttpServletRequest r,@PathVariable String code){return ResponseEntity.ok().cacheControl(org.springframework.http.CacheControl.noStore()).body(dictionaries.enabledItems(context(a,r),code));}"
+          "line": 54,
+          "declaration": "@GetMapping(\"/lookup/{code}\") ResponseEntity<List<DictionaryManagement.Item>> lookup(Authentication a,HttpServletRequest r,@PathVariable String code){return ResponseEntity.ok().cacheControl(org.springframework.http.CacheControl.noStore()).body(dictionaries.enabledItems(context(a,r),code));}"
         },
         {
-          "line": 57,
-          "declaration": "@EndpointOperation(\"configuration.dictionary:item_create\") @PostMapping(\"/{dictionaryId}/items\") ResponseEntity<DictionaryManagement.Item> createItem(Authentication a,HttpServletRequest r,@PathVariable UUID dictionaryId,@RequestBody ItemCreate input){return ok(()->dictionaries.createItem(context(a,r),dictionaryId,Objects.requireNonNull(input).command()));}"
+          "line": 58,
+          "declaration": "@PostMapping(\"/{dictionaryId}/items\") ResponseEntity<DictionaryManagement.Item> createItem(Authentication a,HttpServletRequest r,@PathVariable UUID dictionaryId,@RequestBody ItemCreate input){return ok(()->dictionaries.createItem(context(a,r),dictionaryId,Objects.requireNonNull(input).command()));}"
         },
         {
-          "line": 60,
-          "declaration": "@EndpointOperation(\"configuration.dictionary:item_update\") @PutMapping(\"/{dictionaryId}/items/{itemId}\") ResponseEntity<DictionaryManagement.Item> updateItem(Authentication a,HttpServletRequest r,@PathVariable UUID dictionaryId,@PathVariable UUID itemId,@RequestBody ItemUpdate input){return ok(()->dictionaries.updateItem(context(a,r),dictionaryId,itemId,Objects.requireNonNull(input).command()));}"
+          "line": 61,
+          "declaration": "@PutMapping(\"/{dictionaryId}/items/{itemId}\") ResponseEntity<DictionaryManagement.Item> updateItem(Authentication a,HttpServletRequest r,@PathVariable UUID dictionaryId,@PathVariable UUID itemId,@RequestBody ItemUpdate input){return ok(()->dictionaries.updateItem(context(a,r),dictionaryId,itemId,Objects.requireNonNull(input).command()));}"
         },
         {
-          "line": 63,
-          "declaration": "@EndpointOperation(\"configuration.dictionary:item_delete\") @DeleteMapping(\"/{dictionaryId}/items/{itemId}\") ResponseEntity<Void> deleteItem(Authentication a,HttpServletRequest r,@PathVariable UUID dictionaryId,@PathVariable UUID itemId,@RequestParam long version){return empty(()->dictionaries.deleteItem(context(a,r),dictionaryId,itemId,version));}"
+          "line": 64,
+          "declaration": "@DeleteMapping(\"/{dictionaryId}/items/{itemId}\") ResponseEntity<Void> deleteItem(Authentication a,HttpServletRequest r,@PathVariable UUID dictionaryId,@PathVariable UUID itemId,@RequestParam long version){return empty(()->dictionaries.deleteItem(context(a,r),dictionaryId,itemId,version));}"
         }
       ],
       "status": "未验证：逐接口关联唯一对象、操作、管理域、准入、行范围、字段、执行器与正反向证据；方法注解可跨行，不能按单行认定缺失"
@@ -1902,7 +2532,7 @@
       "path": "backend/services/platform-service/adapters/app-api/src/main/java/com/appnexus/platform/appapi/configuration/NavigationController.java",
       "endpoints": [
         {
-          "line": 22,
+          "line": 23,
           "declaration": "@GetMapping(\"/bff/navigation\")"
         }
       ],
@@ -1912,16 +2542,16 @@
       "path": "backend/services/platform-service/adapters/app-api/src/main/java/com/appnexus/platform/appapi/configuration/TenantParameterController.java",
       "endpoints": [
         {
-          "line": 14,
+          "line": 15,
           "declaration": "@RequestMapping(\"/api/configuration/parameters\")"
         },
         {
-          "line": 23,
+          "line": 24,
           "declaration": "@GetMapping ResponseEntity<List<TenantParameters.Parameter>> list(HttpServletRequest request){return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(parameters.list(context(request)));}"
         },
         {
-          "line": 27,
-          "declaration": "@EndpointOperation(\"configuration.parameter:save\") @PutMapping(\"/{key}\")"
+          "line": 28,
+          "declaration": "@PutMapping(\"/{key}\")"
         }
       ],
       "status": "未验证：逐接口关联唯一对象、操作、管理域、准入、行范围、字段、执行器与正反向证据；方法注解可跨行，不能按单行认定缺失"
@@ -1951,244 +2581,18 @@
       "status": "未验证：逐接口关联唯一对象、操作、管理域、准入、行范围、字段、执行器与正反向证据；方法注解可跨行，不能按单行认定缺失"
     },
     {
-      "path": "backend/services/platform-service/adapters/app-api/src/main/java/com/appnexus/platform/appapi/organization/OrganizationController.java",
-      "endpoints": [
-        {
-          "line": 14,
-          "declaration": "@RequestMapping(\"/api/organization\")"
-        },
-        {
-          "line": 27,
-          "declaration": "@EndpointOperation(\"organization.unit:read\") @GetMapping(\"/units\")"
-        },
-        {
-          "line": 33,
-          "declaration": "@EndpointOperation(\"organization.unit:create\") @PostMapping(\"/units\")"
-        },
-        {
-          "line": 49,
-          "declaration": "@EndpointOperation(\"organization.unit:update\") @PutMapping(\"/units/{id}\")"
-        },
-        {
-          "line": 56,
-          "declaration": "@EndpointOperation(\"organization.unit:delete\") @DeleteMapping(\"/units/{id}\")"
-        }
-      ],
-      "status": "未验证：逐接口关联唯一对象、操作、管理域、准入、行范围、字段、执行器与正反向证据；方法注解可跨行，不能按单行认定缺失"
-    },
-    {
-      "path": "backend/services/platform-service/adapters/app-api/src/main/java/com/appnexus/platform/appapi/organization/OrganizationDomainController.java",
-      "endpoints": [
-        {
-          "line": 8,
-          "declaration": "@RestController @EndpointPolicy(EndpointPolicy.Domain.TENANT_BUSINESS) @RequestMapping(\"/api/organization/domain\") public class OrganizationDomainController {"
-        },
-        {
-          "line": 17,
-          "declaration": "@GetMapping(\"/types\") List<?> types(){return domain.types();} @com.appnexus.contracts.operation.OperationBinding(id=\"OrganizationType.create\", reference=true)"
-        },
-        {
-          "line": 18,
-          "declaration": "@EndpointOperation(\"organization.unit:create\") @PostMapping(\"/types\") ResponseEntity<?> createType(@RequestBody TypeInput i){return ResponseEntity.status(201).body(domain.createType(code(i.code()),name(i.name())));} @com.appnexus.contracts.operation.OperationBinding(id=\"OrganizationType.update\", reference=true)"
-        },
-        {
-          "line": 19,
-          "declaration": "@EndpointOperation(\"organization.unit:update\") @PutMapping(\"/types/{id}\") Object updateType(@PathVariable UUID id,@RequestBody TypeInput i){return domain.updateType(id,name(i.name()),required(i.enabled()),required(i.version()));}"
-        },
-        {
-          "line": 25,
-          "declaration": "@GetMapping(\"/units\") List<?> units(){return domain.units();} @com.appnexus.contracts.operation.OperationBinding(id=\"OrganizationUnit.create\",reference=true)"
-        },
-        {
-          "line": 26,
-          "declaration": "@EndpointOperation(\"organization.unit:create\") @PostMapping(\"/units\") ResponseEntity<?> createUnit(@RequestBody UnitInput i){return ResponseEntity.status(201).body(domain.createUnit(code(i.code()),Objects.requireNonNull(i.typeId()),i.parentId(),name(i.name())));} @com.appnexus.contracts.operation.OperationBinding(id=\"OrganizationUnit.update\",reference=true)"
-        },
-        {
-          "line": 27,
-          "declaration": "@EndpointOperation(\"organization.unit:update\") @PutMapping(\"/units/{id}\") Object updateUnit(@PathVariable UUID id,@RequestBody UnitInput i){return domain.updateUnit(id,name(i.name()),required(i.enabled()),required(i.version()));} @com.appnexus.contracts.operation.OperationBinding(id=\"OrganizationUnit.move\",reference=true)"
-        },
-        {
-          "line": 28,
-          "declaration": "@EndpointOperation(\"organization.unit:update\") @PostMapping(\"/units/{id}/move\") Object move(@PathVariable UUID id,@RequestBody MoveInput i){return domain.moveUnit(id,i.parentId(),i.version());} @com.appnexus.contracts.operation.OperationBinding(id=\"OrganizationUnit.inspectImpact\",reference=true)"
-        },
-        {
-          "line": 29,
-          "declaration": "@EndpointOperation(\"organization.unit:read\") @GetMapping(\"/units/{id}/impact\") Object impact(@PathVariable UUID id){return domain.impact(id);}"
-        },
-        {
-          "line": 38,
-          "declaration": "@GetMapping(\"/relations\") List<?> relations(){return domain.relations();} @com.appnexus.contracts.operation.OperationBinding(id=\"OrganizationRelation.create\", reference=true)"
-        },
-        {
-          "line": 39,
-          "declaration": "@EndpointOperation(\"organization.unit:create\") @PostMapping(\"/relations\") ResponseEntity<?> createRelation(@RequestBody RelationInput i){return ResponseEntity.status(201).body(domain.createRelation(code(i.relationType()),Objects.requireNonNull(i.sourceId()),Objects.requireNonNull(i.targetId())));} @com.appnexus.contracts.operation.OperationBinding(id=\"OrganizationRelation.delete\", reference=true)"
-        },
-        {
-          "line": 40,
-          "declaration": "@EndpointOperation(\"organization.unit:delete\") @DeleteMapping(\"/relations/{id}\") void deleteRelation(@PathVariable UUID id,@RequestParam long version){domain.deleteRelation(id,version);}"
-        },
-        {
-          "line": 47,
-          "declaration": "@GetMapping(\"/positions\") List<?> positions(){return domain.positions();} @com.appnexus.contracts.operation.OperationBinding(id=\"Position.create\", reference=true)"
-        },
-        {
-          "line": 48,
-          "declaration": "@EndpointOperation(\"organization.unit:create\") @PostMapping(\"/positions\") ResponseEntity<?> createPosition(@RequestBody PositionInput i){return ResponseEntity.status(201).body(domain.createPosition(Objects.requireNonNull(i.organizationId()),code(i.code()),name(i.name())));} @com.appnexus.contracts.operation.OperationBinding(id=\"Position.update\", reference=true)"
-        },
-        {
-          "line": 49,
-          "declaration": "@EndpointOperation(\"organization.unit:update\") @PutMapping(\"/positions/{id}\") Object updatePosition(@PathVariable UUID id,@RequestBody PositionInput i){return domain.updatePosition(id,name(i.name()),required(i.enabled()),required(i.version()));}"
-        },
-        {
-          "line": 57,
-          "declaration": "@GetMapping(\"/assignments\") List<?> assignments(){return domain.assignments();} @com.appnexus.contracts.operation.OperationBinding(id=\"PositionAssignment.create\", reference=true)"
-        },
-        {
-          "line": 58,
-          "declaration": "@EndpointOperation(\"organization.unit:create\") @PostMapping(\"/assignments\") ResponseEntity<?> createAssignment(@RequestBody AssignmentInput i){return ResponseEntity.status(201).body(domain.createAssignment(Objects.requireNonNull(i.personId()),Objects.requireNonNull(i.positionId()),Objects.requireNonNull(i.startsAt()),i.endsAt()));} @com.appnexus.contracts.operation.OperationBinding(id=\"PositionAssignment.update\", reference=true)"
-        },
-        {
-          "line": 59,
-          "declaration": "@EndpointOperation(\"organization.unit:update\") @PutMapping(\"/assignments/{id}\") Object updateAssignment(@PathVariable UUID id,@RequestBody AssignmentInput i){return domain.updateAssignment(id,i.endsAt(),required(i.enabled()),required(i.version()));}"
-        },
-        {
-          "line": 65,
-          "declaration": "@GetMapping(\"/leaders\") List<?> leaders(){return domain.leaders();} @com.appnexus.contracts.operation.OperationBinding(id=\"OrganizationUnit.setLeader\", reference=true)"
-        },
-        {
-          "line": 66,
-          "declaration": "@EndpointOperation(\"organization.unit:update\") @PutMapping(\"/leaders\") void leader(@RequestBody LeaderInput i){domain.setLeader(Objects.requireNonNull(i.organizationId()),Objects.requireNonNull(i.assignmentId()),i.selected());}"
-        },
-        {
-          "line": 69,
-          "declaration": "@EndpointOperation(\"organization.unit:read\") @GetMapping(\"/persons\") List<?> persons(){return domain.persons();}"
-        }
-      ],
-      "status": "未验证：逐接口关联唯一对象、操作、管理域、准入、行范围、字段、执行器与正反向证据；方法注解可跨行，不能按单行认定缺失"
-    },
-    {
-      "path": "backend/services/platform-service/adapters/app-api/src/main/java/com/appnexus/platform/appapi/organization/OrganizationGrantController.java",
-      "endpoints": [
-        {
-          "line": 14,
-          "declaration": "@RequestMapping(\"/api/organization/grants\")"
-        },
-        {
-          "line": 25,
-          "declaration": "@EndpointOperation(\"organization.permission:grant\") @GetMapping(\"/members\")"
-        },
-        {
-          "line": 32,
-          "declaration": "@EndpointOperation(\"organization.permission:grant\") @GetMapping(\"/{memberId}\")"
-        },
-        {
-          "line": 40,
-          "declaration": "@EndpointOperation(\"organization.permission:grant\") @PostMapping"
-        },
-        {
-          "line": 51,
-          "declaration": "@EndpointOperation(\"organization.permission:grant\") @DeleteMapping(\"/{memberId}/{capability}\")"
-        }
-      ],
-      "status": "未验证：逐接口关联唯一对象、操作、管理域、准入、行范围、字段、执行器与正反向证据；方法注解可跨行，不能按单行认定缺失"
-    },
-    {
-      "path": "backend/services/platform-service/adapters/app-api/src/main/java/com/appnexus/platform/appapi/organization/OrganizationSummaryController.java",
-      "endpoints": [
-        {
-          "line": 20,
-          "declaration": "@EndpointOperation(\"organization.unit:read\") @GetMapping(\"/api/organization/summaries\")"
-        }
-      ],
-      "status": "未验证：逐接口关联唯一对象、操作、管理域、准入、行范围、字段、执行器与正反向证据；方法注解可跨行，不能按单行认定缺失"
-    },
-    {
-      "path": "backend/services/platform-service/adapters/app-api/src/main/java/com/appnexus/platform/appapi/organization/PersonController.java",
-      "endpoints": [
-        {
-          "line": 17,
-          "declaration": "@RequestMapping(\"/api/master-data/person\")"
-        },
-        {
-          "line": 32,
-          "declaration": "@GetMapping(\"\")"
-        },
-        {
-          "line": 36,
-          "declaration": "@GetMapping(\"/field-restrictions\")"
-        },
-        {
-          "line": 40,
-          "declaration": "@PostMapping(\"\")"
-        },
-        {
-          "line": 44,
-          "declaration": "@PutMapping(\"/{id}\")"
-        },
-        {
-          "line": 48,
-          "declaration": "@PutMapping(\"/{id}/status\")"
-        },
-        {
-          "line": 76,
-          "declaration": "@GetMapping(\"/{id}\")"
-        },
-        {
-          "line": 81,
-          "declaration": "@GetMapping(\"/options\")"
-        },
-        {
-          "line": 86,
-          "declaration": "@PostMapping(\"/{id}/details/{section}\")"
-        },
-        {
-          "line": 91,
-          "declaration": "@PutMapping(\"/{id}/details/{section}/{detailId}\")"
-        },
-        {
-          "line": 96,
-          "declaration": "@DeleteMapping(\"/{id}/details/{section}/{detailId}\")"
-        },
-        {
-          "line": 101,
-          "declaration": "@PostMapping(\"/{id}/users\")"
-        },
-        {
-          "line": 106,
-          "declaration": "@PutMapping(\"/{id}/users/{assignmentId}\")"
-        },
-        {
-          "line": 111,
-          "declaration": "@DeleteMapping(\"/{id}/users/{assignmentId}\")"
-        },
-        {
-          "line": 116,
-          "declaration": "@GetMapping(\"/my-identities\") public Object myIdentities(HttpServletRequest r){return personnel.identities(context(r));}"
-        },
-        {
-          "line": 119,
-          "declaration": "@GetMapping(\"/identity\") public Object currentIdentity(HttpServletRequest r){var c=context(r);var session=r.getSession(false);if(session==null||!c.tenantId().toString().equals(session.getAttribute(\"appnexus.personTenant\")))return org.springframework.http.ResponseEntity.noContent().build();String person=(String)session.getAttribute(\"appnexus.person\"),organization=(String)session.getAttribute(\"appnexus.personOrganization\");if(person==null||organization==null||!personnel.canRepresent(c,person,organization)){session.removeAttribute(\"appnexus.person\");session.removeAttribute(\"appnexus.personOrganization\");session.removeAttribute(\"appnexus.personTenant\");return org.springframework.http.ResponseEntity.noContent().build();}return new com.appnexus.platform.organization.PersonnelData.IdentitySelection(person,organization);}"
-        },
-        {
-          "line": 122,
-          "declaration": "@PostMapping(\"/identity\") public Object selectIdentity(HttpServletRequest r,@RequestBody com.appnexus.platform.organization.PersonnelData.IdentitySelection input){"
-        }
-      ],
-      "status": "未验证：逐接口关联唯一对象、操作、管理域、准入、行范围、字段、执行器与正反向证据；方法注解可跨行，不能按单行认定缺失"
-    },
-    {
       "path": "backend/services/platform-service/adapters/partner-api/src/main/java/com/appnexus/platform/partnerapi/administration/PartnerReferenceController.java",
       "endpoints": [
         {
-          "line": 12,
+          "line": 13,
           "declaration": "@RequestMapping(\"/v1/dictionary-item-references\")"
         },
         {
-          "line": 19,
+          "line": 20,
           "declaration": "@PostMapping public ResponseEntity<PartnerReferences.Reference> create(@RequestHeader(\"Idempotency-Key\") String key,@RequestBody PartnerReferences.Creation input,BearerTokenAuthentication auth){try{var result=references.create(context(auth),key,input);return ResponseEntity.created(java.net.URI.create(\"/v1/dictionary-item-references/\"+result.id())).cacheControl(CacheControl.noStore()).body(result);}catch(PartnerReferences.Rejection rejected){throw problem(rejected);}}"
         },
         {
-          "line": 22,
+          "line": 23,
           "declaration": "@GetMapping(\"/{id}\") public ResponseEntity<PartnerReferences.Reference> get(@PathVariable UUID id,BearerTokenAuthentication auth){try{return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(references.get(context(auth),id));}catch(PartnerReferences.Rejection rejected){throw problem(rejected);}}"
         }
       ],
@@ -2198,11 +2602,11 @@
       "path": "backend/services/platform-service/adapters/partner-api/src/main/java/com/appnexus/platform/partnerapi/configuration/PartnerDictionaryController.java",
       "endpoints": [
         {
-          "line": 10,
+          "line": 11,
           "declaration": "@RequestMapping(\"/v1/dictionaries\")"
         },
         {
-          "line": 17,
+          "line": 18,
           "declaration": "@GetMapping(\"/{code}/items\") public ResponseEntity<PartnerDictionaryQueries.Page> items(@PathVariable String code,@RequestParam(defaultValue=\"1\") int page,@RequestParam(defaultValue=\"20\") int pageSize,BearerTokenAuthentication auth){"
         }
       ],
@@ -2246,12 +2650,12 @@
       "path": "backend/services/platform-service/adapters/platform-api/src/main/java/com/appnexus/platform/managementapi/administration/AuditQueryController.java",
       "endpoints": [
         {
-          "line": 21,
+          "line": 22,
           "declaration": "@GetMapping(\"/bff/platform/audits\")"
         },
         {
-          "line": 27,
-          "declaration": "@EndpointOperation(\"organization.permission:grant\") @GetMapping(\"/api/audits\")"
+          "line": 28,
+          "declaration": "@GetMapping(\"/api/audits\")"
         }
       ],
       "status": "未验证：逐接口关联唯一对象、操作、管理域、准入、行范围、字段、执行器与正反向证据；方法注解可跨行，不能按单行认定缺失"
@@ -2260,124 +2664,154 @@
       "path": "backend/services/platform-service/adapters/platform-api/src/main/java/com/appnexus/platform/managementapi/administration/AuthorizationManagementController.java",
       "endpoints": [
         {
-          "line": 37,
-          "declaration": "@EndpointOperation(\"access.tenant.role:grant\") @GetMapping(\"/api/access/member-options\")"
+          "line": 38,
+          "declaration": "@GetMapping(\"/api/access/member-options\")"
         },
         {
-          "line": 53,
-          "declaration": "@EndpointOperation(\"access.role:grant\") @GetMapping(\"/bff/platform/authorization-navigation\") ResponseEntity<List<NavigationQuery.AuthorizationNode>> platformNavigation(Authentication a){return ok(()->{subjectRoles.accountRoles(actor(a),actor(a));return navigation.authorizationCatalog(MenuManagement.Scope.PLATFORM);});}"
+          "line": 54,
+          "declaration": "@GetMapping(\"/bff/platform/authorization-navigation\") ResponseEntity<List<NavigationQuery.AuthorizationNode>> platformNavigation(Authentication a){return ok(()->{subjectRoles.accountRoles(actor(a),actor(a));return navigation.authorizationCatalog(MenuManagement.Scope.PLATFORM);});}"
         },
         {
-          "line": 56,
-          "declaration": "@EndpointOperation(\"access.tenant.role:grant\") @GetMapping(\"/api/access/authorization-navigation\") ResponseEntity<List<NavigationQuery.AuthorizationNode>> tenantNavigation(Authentication a,HttpServletRequest r){return ok(()->{var c=tenant(a,r);subjectRoles.memberRoles(c,c.actorMemberId());return navigation.authorizationCatalog(MenuManagement.Scope.TENANT);});}"
+          "line": 57,
+          "declaration": "@GetMapping(\"/api/access/authorization-navigation\") ResponseEntity<List<NavigationQuery.AuthorizationNode>> tenantNavigation(Authentication a,HttpServletRequest r){return ok(()->{var c=tenant(a,r);subjectRoles.memberRoles(c,c.actorMemberId());return navigation.authorizationCatalog(MenuManagement.Scope.TENANT);});}"
         },
         {
-          "line": 59,
-          "declaration": "@EndpointOperation(\"access.role:grant\") @GetMapping(\"/bff/platform/permissions\") ResponseEntity<List<PermissionCatalog.Permission>> platformPermissionCatalog(Authentication a,@RequestParam(defaultValue=\"PLATFORM\") PermissionCatalog.ScopeType scopeType){return ok(()->{subjectRoles.accountRoles(actor(a),actor(a));return permissions.list(scopeType,true);});}"
+          "line": 60,
+          "declaration": "@GetMapping(\"/bff/platform/permissions\") ResponseEntity<List<PermissionCatalog.Permission>> platformPermissionCatalog(Authentication a,@RequestParam(defaultValue=\"PLATFORM\") PermissionCatalog.ScopeType scopeType){return ok(()->{subjectRoles.accountRoles(actor(a),actor(a));return permissions.list(scopeType,true);});}"
+        },
+        {
+          "line": 63,
+          "declaration": "@GetMapping(\"/bff/platform/authorization-reconciliation\") ResponseEntity<LegacyAuthorizationReconciliation.Report> reconciliation(Authentication a,@RequestParam(defaultValue=\"1\") int page,@RequestParam(defaultValue=\"50\") int size){return ok(()->reconciliation.report(actor(a),page,size));}"
+        },
+        {
+          "line": 66,
+          "declaration": "@GetMapping(\"/bff/platform/field-policy-metadata\") ResponseEntity<List<FieldSecurity.Descriptor>> platformFields(Authentication a,@RequestParam(defaultValue=\"PLATFORM\") PermissionCatalog.ScopeType scopeType){return ok(()->{subjectRoles.accountRoles(actor(a),actor(a));return fieldCatalog.list(scopeType);});}"
+        },
+        {
+          "line": 69,
+          "declaration": "@GetMapping(\"/api/access/field-policy-metadata\") ResponseEntity<List<FieldSecurity.Descriptor>> tenantFields(Authentication a,HttpServletRequest r){return ok(()->{var c=tenant(a,r);subjectRoles.memberRoles(c,c.actorMemberId());return fieldCatalog.list(PermissionCatalog.ScopeType.TENANT);});}"
+        },
+        {
+          "line": 72,
+          "declaration": "@GetMapping(\"/bff/platform/data-policy-metadata\") ResponseEntity<List<DataPolicyMetadataCatalog.ScopeSupport>> platformDataPolicyMetadata(Authentication a,@RequestParam(defaultValue=\"PLATFORM\") PermissionCatalog.ScopeType scopeType){return ok(()->{subjectRoles.accountRoles(actor(a),actor(a));return dataPolicyMetadata.list(scopeType);});}"
+        },
+        {
+          "line": 76,
+          "declaration": "@GetMapping(\"/bff/platform/users/{account}/effective-permissions\") ResponseEntity<List<EffectiveAuthorizationQuery.Explanation>> platformEffectivePermissions(Authentication a,@PathVariable UUID account){return ok(()->{subjectRoles.accountRoles(actor(a),account);return effectiveAuthorizations.platformAccount(account);});}"
+        },
+        {
+          "line": 82,
+          "declaration": "@GetMapping(\"/bff/platform/roles/{role}/permissions\") ResponseEntity<RolePermissionManagement.AuthorizationAssignment> platformPermissions(Authentication a,@PathVariable UUID role){return ok(()->rolePermissions.getAuthorization(platform(a),role));}"
+        },
+        {
+          "line": 85,
+          "declaration": "@PutMapping(\"/bff/platform/roles/{role}/permissions\") ResponseEntity<RolePermissionManagement.AuthorizationAssignment> replacePlatformPermissions(Authentication a,@PathVariable UUID role,@RequestBody AuthorizationReplace input){return ok(()->checkedAuthorization(platform(a),role,input.version(),input.ids(),input.dataPolicies(),input.fieldPolicies(),input.reason(),input.dataAccessVersion(),input.objectScopes()));}"
+        },
+        {
+          "line": 88,
+          "declaration": "@GetMapping(\"/bff/platform/users/{account}/roles\") ResponseEntity<SubjectRoleManagement.Assignment> accountRoles(Authentication a,@PathVariable UUID account){return ok(()->subjectRoles.accountRoles(actor(a),account));}"
+        },
+        {
+          "line": 91,
+          "declaration": "@PutMapping(\"/bff/platform/users/{account}/roles\") ResponseEntity<SubjectRoleManagement.Assignment> replaceAccountRoles(Authentication a,@PathVariable UUID account,@RequestBody Replace input){return ok(()->subjectRoles.replaceAccountRoles(actor(a),account,input.version(),input.ids(),input.reason()));}"
+        },
+        {
+          "line": 96,
+          "declaration": "@GetMapping(\"/bff/platform/tenants/{tenant}/roles/{role}/permissions\") ResponseEntity<RolePermissionManagement.AuthorizationAssignment> managedPermissions(Authentication a,@PathVariable UUID tenant,@PathVariable UUID role){return ok(()->rolePermissions.getAuthorization(managed(a,tenant),role));}"
+        },
+        {
+          "line": 99,
+          "declaration": "@PutMapping(\"/bff/platform/tenants/{tenant}/roles/{role}/permissions\") ResponseEntity<RolePermissionManagement.AuthorizationAssignment> replaceManagedPermissions(Authentication a,@PathVariable UUID tenant,@PathVariable UUID role,@RequestBody AuthorizationReplace input){return ok(()->checkedAuthorization(managed(a,tenant),role,input.version(),input.ids(),input.dataPolicies(),input.fieldPolicies(),input.reason(),input.dataAccessVersion(),input.objectScopes()));}"
+        },
+        {
+          "line": 103,
+          "declaration": "@GetMapping(\"/bff/platform/tenants/{tenant}/members/{member}/roles\") ResponseEntity<SubjectRoleManagement.Assignment> managedMemberRoles(Authentication a,@PathVariable UUID tenant,@PathVariable UUID member){return ok(()->subjectRoles.memberRoles(managed(a,tenant),member));}"
+        },
+        {
+          "line": 106,
+          "declaration": "@PutMapping(\"/bff/platform/tenants/{tenant}/members/{member}/roles\") ResponseEntity<SubjectRoleManagement.Assignment> replaceManagedMemberRoles(Authentication a,@PathVariable UUID tenant,@PathVariable UUID member,@RequestBody Replace input){return ok(()->subjectRoles.replaceMemberRoles(managed(a,tenant),member,input.version(),input.ids(),input.reason()));}"
+        },
+        {
+          "line": 109,
+          "declaration": "@GetMapping(\"/bff/platform/tenants/{tenant}/members/{member}/effective-permissions\") ResponseEntity<List<EffectiveAuthorizationQuery.Explanation>> managedEffectivePermissions(Authentication a,@PathVariable UUID tenant,@PathVariable UUID member){return ok(()->{subjectRoles.memberRoles(managed(a,tenant),member);return effectiveAuthorizations.tenantMember(tenant,member);});}"
+        },
+        {
+          "line": 114,
+          "declaration": "@GetMapping(\"/api/access/roles/{role}/permissions\") ResponseEntity<RolePermissionManagement.AuthorizationAssignment> tenantPermissions(Authentication a,HttpServletRequest r,@PathVariable UUID role){return ok(()->rolePermissions.getAuthorization(tenant(a,r),role));}"
+        },
+        {
+          "line": 117,
+          "declaration": "@PutMapping(\"/api/access/roles/{role}/permissions\") ResponseEntity<RolePermissionManagement.AuthorizationAssignment> replaceTenantPermissions(Authentication a,HttpServletRequest r,@PathVariable UUID role,@RequestBody AuthorizationReplace input){return ok(()->checkedAuthorization(tenant(a,r),role,input.version(),input.ids(),input.dataPolicies(),input.fieldPolicies(),input.reason(),input.dataAccessVersion(),input.objectScopes()));}"
+        },
+        {
+          "line": 120,
+          "declaration": "@GetMapping(\"/api/access/members/{member}/roles\") ResponseEntity<SubjectRoleManagement.Assignment> memberRoles(Authentication a,HttpServletRequest r,@PathVariable UUID member){return ok(()->subjectRoles.memberRoles(tenant(a,r),member));}"
+        },
+        {
+          "line": 123,
+          "declaration": "@PutMapping(\"/api/access/members/{member}/roles\") ResponseEntity<SubjectRoleManagement.Assignment> replaceMemberRoles(Authentication a,HttpServletRequest r,@PathVariable UUID member,@RequestBody Replace input){return ok(()->subjectRoles.replaceMemberRoles(tenant(a,r),member,input.version(),input.ids(),input.reason()));}"
+        },
+        {
+          "line": 126,
+          "declaration": "@GetMapping(\"/api/access/permissions\") ResponseEntity<List<PermissionCatalog.Permission>> tenantPermissionCatalog(Authentication a,HttpServletRequest r){return ok(()->{var context=tenant(a,r);subjectRoles.memberRoles(context,context.actorMemberId());return permissions.list(PermissionCatalog.ScopeType.TENANT,true);});}"
+        },
+        {
+          "line": 137,
+          "declaration": "@GetMapping(\"/api/access/data-policy-metadata\")"
+        },
+        {
+          "line": 162,
+          "declaration": "@GetMapping(\"/api/access/effective-permissions\") ResponseEntity<List<EffectiveAuthorizationQuery.Explanation>> tenantEffectivePermissions(Authentication a,HttpServletRequest r){return ok(()->{var context=tenant(a,r);subjectRoles.memberRoles(context,context.actorMemberId());return effectiveAuthorizations.tenantMember(context.tenantId(),context.actorMemberId());});}"
+        },
+        {
+          "line": 170,
+          "declaration": "@GetMapping(\"/api/access/members/{member}/effective-permissions\")"
+        },
+        {
+          "line": 178,
+          "declaration": "@GetMapping(\"/api/access/members/{member}/authorizations\")"
+        },
+        {
+          "line": 182,
+          "declaration": "@PutMapping(\"/api/access/members/{member}/authorizations\")"
+        },
+        {
+          "line": 186,
+          "declaration": "@GetMapping(\"/bff/platform/tenants/{tenant}/members/{member}/authorizations\")"
+        },
+        {
+          "line": 190,
+          "declaration": "@PutMapping(\"/bff/platform/tenants/{tenant}/members/{member}/authorizations\")"
+        }
+      ],
+      "status": "未验证：逐接口关联唯一对象、操作、管理域、准入、行范围、字段、执行器与正反向证据；方法注解可跨行，不能按单行认定缺失"
+    },
+    {
+      "path": "backend/services/platform-service/adapters/platform-api/src/main/java/com/appnexus/platform/managementapi/administration/EventWorkbenchController.java",
+      "endpoints": [
+        {
+          "line": 19,
+          "declaration": "@RequestMapping(\"/bff/platform\")"
+        },
+        {
+          "line": 31,
+          "declaration": "@GetMapping(\"/events\")"
+        },
+        {
+          "line": 49,
+          "declaration": "@GetMapping(\"/events/{eventId}\")"
         },
         {
           "line": 62,
-          "declaration": "@EndpointOperation(\"access.role:grant\") @GetMapping(\"/bff/platform/authorization-reconciliation\") ResponseEntity<LegacyAuthorizationReconciliation.Report> reconciliation(Authentication a,@RequestParam(defaultValue=\"1\") int page,@RequestParam(defaultValue=\"50\") int size){return ok(()->reconciliation.report(actor(a),page,size));}"
+          "declaration": "@GetMapping(\"/event-subscriptions\")"
         },
         {
-          "line": 65,
-          "declaration": "@EndpointOperation(\"access.role:grant\") @GetMapping(\"/bff/platform/field-policy-metadata\") ResponseEntity<List<FieldSecurity.Descriptor>> platformFields(Authentication a,@RequestParam(defaultValue=\"PLATFORM\") PermissionCatalog.ScopeType scopeType){return ok(()->{subjectRoles.accountRoles(actor(a),actor(a));return fieldCatalog.list(scopeType);});}"
+          "line": 76,
+          "declaration": "@PutMapping(\"/event-subscriptions/{type}/{consumer}/state\")"
         },
         {
-          "line": 68,
-          "declaration": "@EndpointOperation(\"access.tenant.role:grant\") @GetMapping(\"/api/access/field-policy-metadata\") ResponseEntity<List<FieldSecurity.Descriptor>> tenantFields(Authentication a,HttpServletRequest r){return ok(()->{var c=tenant(a,r);subjectRoles.memberRoles(c,c.actorMemberId());return fieldCatalog.list(PermissionCatalog.ScopeType.TENANT);});}"
-        },
-        {
-          "line": 71,
-          "declaration": "@EndpointOperation(\"access.role:grant\") @GetMapping(\"/bff/platform/data-policy-metadata\") ResponseEntity<List<DataPolicyMetadataCatalog.ScopeSupport>> platformDataPolicyMetadata(Authentication a,@RequestParam(defaultValue=\"PLATFORM\") PermissionCatalog.ScopeType scopeType){return ok(()->{subjectRoles.accountRoles(actor(a),actor(a));return dataPolicyMetadata.list(scopeType);});}"
-        },
-        {
-          "line": 75,
-          "declaration": "@EndpointOperation(\"access.role:grant\") @GetMapping(\"/bff/platform/users/{account}/effective-permissions\") ResponseEntity<List<EffectiveAuthorizationQuery.Explanation>> platformEffectivePermissions(Authentication a,@PathVariable UUID account){return ok(()->{subjectRoles.accountRoles(actor(a),account);return effectiveAuthorizations.platformAccount(account);});}"
-        },
-        {
-          "line": 81,
-          "declaration": "@EndpointOperation(\"access.role:grant\") @GetMapping(\"/bff/platform/roles/{role}/permissions\") ResponseEntity<RolePermissionManagement.AuthorizationAssignment> platformPermissions(Authentication a,@PathVariable UUID role){return ok(()->rolePermissions.getAuthorization(platform(a),role));}"
-        },
-        {
-          "line": 84,
-          "declaration": "@EndpointOperation(\"access.role:grant\") @PutMapping(\"/bff/platform/roles/{role}/permissions\") ResponseEntity<RolePermissionManagement.AuthorizationAssignment> replacePlatformPermissions(Authentication a,@PathVariable UUID role,@RequestBody AuthorizationReplace input){return ok(()->checkedAuthorization(platform(a),role,input.version(),input.ids(),input.dataPolicies(),input.fieldPolicies(),input.reason(),input.dataAccessVersion()));}"
-        },
-        {
-          "line": 87,
-          "declaration": "@EndpointOperation(\"access.role:grant\") @GetMapping(\"/bff/platform/users/{account}/roles\") ResponseEntity<SubjectRoleManagement.Assignment> accountRoles(Authentication a,@PathVariable UUID account){return ok(()->subjectRoles.accountRoles(actor(a),account));}"
-        },
-        {
-          "line": 90,
-          "declaration": "@EndpointOperation(\"access.role:grant\") @PutMapping(\"/bff/platform/users/{account}/roles\") ResponseEntity<SubjectRoleManagement.Assignment> replaceAccountRoles(Authentication a,@PathVariable UUID account,@RequestBody Replace input){return ok(()->subjectRoles.replaceAccountRoles(actor(a),account,input.version(),input.ids(),input.reason()));}"
-        },
-        {
-          "line": 95,
-          "declaration": "@EndpointOperation(value=\"access.tenant.role:grant\",platformPermission=\"tenant.role:grant\") @GetMapping(\"/bff/platform/tenants/{tenant}/roles/{role}/permissions\") ResponseEntity<RolePermissionManagement.AuthorizationAssignment> managedPermissions(Authentication a,@PathVariable UUID tenant,@PathVariable UUID role){return ok(()->rolePermissions.getAuthorization(managed(a,tenant),role));}"
-        },
-        {
-          "line": 98,
-          "declaration": "@EndpointOperation(value=\"access.tenant.role:grant\",platformPermission=\"tenant.role:grant\") @PutMapping(\"/bff/platform/tenants/{tenant}/roles/{role}/permissions\") ResponseEntity<RolePermissionManagement.AuthorizationAssignment> replaceManagedPermissions(Authentication a,@PathVariable UUID tenant,@PathVariable UUID role,@RequestBody AuthorizationReplace input){return ok(()->checkedAuthorization(managed(a,tenant),role,input.version(),input.ids(),input.dataPolicies(),input.fieldPolicies(),input.reason(),input.dataAccessVersion()));}"
-        },
-        {
-          "line": 102,
-          "declaration": "@EndpointOperation(value=\"access.tenant.role:grant\",platformPermission=\"tenant.role:grant\") @GetMapping(\"/bff/platform/tenants/{tenant}/members/{member}/roles\") ResponseEntity<SubjectRoleManagement.Assignment> managedMemberRoles(Authentication a,@PathVariable UUID tenant,@PathVariable UUID member){return ok(()->subjectRoles.memberRoles(managed(a,tenant),member));}"
-        },
-        {
-          "line": 105,
-          "declaration": "@EndpointOperation(value=\"access.tenant.role:grant\",platformPermission=\"tenant.role:grant\") @PutMapping(\"/bff/platform/tenants/{tenant}/members/{member}/roles\") ResponseEntity<SubjectRoleManagement.Assignment> replaceManagedMemberRoles(Authentication a,@PathVariable UUID tenant,@PathVariable UUID member,@RequestBody Replace input){return ok(()->subjectRoles.replaceMemberRoles(managed(a,tenant),member,input.version(),input.ids(),input.reason()));}"
-        },
-        {
-          "line": 108,
-          "declaration": "@EndpointOperation(value=\"access.tenant.role:grant\",platformPermission=\"tenant.role:grant\") @GetMapping(\"/bff/platform/tenants/{tenant}/members/{member}/effective-permissions\") ResponseEntity<List<EffectiveAuthorizationQuery.Explanation>> managedEffectivePermissions(Authentication a,@PathVariable UUID tenant,@PathVariable UUID member){return ok(()->{subjectRoles.memberRoles(managed(a,tenant),member);return effectiveAuthorizations.tenantMember(tenant,member);});}"
-        },
-        {
-          "line": 113,
-          "declaration": "@EndpointOperation(\"access.tenant.role:grant\") @GetMapping(\"/api/access/roles/{role}/permissions\") ResponseEntity<RolePermissionManagement.AuthorizationAssignment> tenantPermissions(Authentication a,HttpServletRequest r,@PathVariable UUID role){return ok(()->rolePermissions.getAuthorization(tenant(a,r),role));}"
-        },
-        {
-          "line": 116,
-          "declaration": "@EndpointOperation(\"access.tenant.role:grant\") @PutMapping(\"/api/access/roles/{role}/permissions\") ResponseEntity<RolePermissionManagement.AuthorizationAssignment> replaceTenantPermissions(Authentication a,HttpServletRequest r,@PathVariable UUID role,@RequestBody AuthorizationReplace input){return ok(()->checkedAuthorization(tenant(a,r),role,input.version(),input.ids(),input.dataPolicies(),input.fieldPolicies(),input.reason(),input.dataAccessVersion()));}"
-        },
-        {
-          "line": 119,
-          "declaration": "@EndpointOperation(\"access.tenant.role:grant\") @GetMapping(\"/api/access/members/{member}/roles\") ResponseEntity<SubjectRoleManagement.Assignment> memberRoles(Authentication a,HttpServletRequest r,@PathVariable UUID member){return ok(()->subjectRoles.memberRoles(tenant(a,r),member));}"
-        },
-        {
-          "line": 122,
-          "declaration": "@EndpointOperation(\"access.tenant.role:grant\") @PutMapping(\"/api/access/members/{member}/roles\") ResponseEntity<SubjectRoleManagement.Assignment> replaceMemberRoles(Authentication a,HttpServletRequest r,@PathVariable UUID member,@RequestBody Replace input){return ok(()->subjectRoles.replaceMemberRoles(tenant(a,r),member,input.version(),input.ids(),input.reason()));}"
-        },
-        {
-          "line": 125,
-          "declaration": "@EndpointOperation(\"access.tenant.role:grant\") @GetMapping(\"/api/access/permissions\") ResponseEntity<List<PermissionCatalog.Permission>> tenantPermissionCatalog(Authentication a,HttpServletRequest r){return ok(()->{var context=tenant(a,r);subjectRoles.memberRoles(context,context.actorMemberId());return permissions.list(PermissionCatalog.ScopeType.TENANT,true);});}"
-        },
-        {
-          "line": 136,
-          "declaration": "@EndpointOperation(\"access.tenant.role:grant\") @GetMapping(\"/api/access/data-policy-metadata\")"
-        },
-        {
-          "line": 161,
-          "declaration": "@EndpointOperation(\"access.tenant.role:grant\") @GetMapping(\"/api/access/effective-permissions\") ResponseEntity<List<EffectiveAuthorizationQuery.Explanation>> tenantEffectivePermissions(Authentication a,HttpServletRequest r){return ok(()->{var context=tenant(a,r);subjectRoles.memberRoles(context,context.actorMemberId());return effectiveAuthorizations.tenantMember(context.tenantId(),context.actorMemberId());});}"
-        },
-        {
-          "line": 169,
-          "declaration": "@EndpointOperation(\"access.tenant.role:grant\") @GetMapping(\"/api/access/members/{member}/effective-permissions\")"
-        },
-        {
-          "line": 177,
-          "declaration": "@EndpointOperation(\"access.tenant.role:grant\") @GetMapping(\"/api/access/members/{member}/authorizations\")"
-        },
-        {
-          "line": 181,
-          "declaration": "@EndpointOperation(\"access.tenant.role:grant\") @PutMapping(\"/api/access/members/{member}/authorizations\")"
-        },
-        {
-          "line": 185,
-          "declaration": "@EndpointOperation(value=\"access.tenant.role:grant\",platformPermission=\"tenant.role:grant\") @GetMapping(\"/bff/platform/tenants/{tenant}/members/{member}/authorizations\")"
-        },
-        {
-          "line": 189,
-          "declaration": "@EndpointOperation(value=\"access.tenant.role:grant\",platformPermission=\"tenant.role:grant\") @PutMapping(\"/bff/platform/tenants/{tenant}/members/{member}/authorizations\")"
+          "line": 99,
+          "declaration": "@PostMapping(\"/event-deliveries/{deliveryId}/retry\")"
         }
       ],
       "status": "未验证：逐接口关联唯一对象、操作、管理域、准入、行范围、字段、执行器与正反向证据；方法注解可跨行，不能按单行认定缺失"
@@ -2386,24 +2820,24 @@
       "path": "backend/services/platform-service/adapters/platform-api/src/main/java/com/appnexus/platform/managementapi/administration/IntegrationClientController.java",
       "endpoints": [
         {
-          "line": 12,
+          "line": 13,
           "declaration": "@RequestMapping(\"/bff/platform\")"
         },
         {
-          "line": 25,
+          "line": 26,
           "declaration": "@GetMapping(\"/tenants/{tenant}/clients\")"
         },
         {
-          "line": 29,
-          "declaration": "@EndpointOperation(\"integration.client:create\") @PostMapping(\"/tenants/{tenant}/clients\")"
+          "line": 30,
+          "declaration": "@PostMapping(\"/tenants/{tenant}/clients\")"
         },
         {
-          "line": 35,
-          "declaration": "@EndpointOperation(\"integration.client:update\") @PutMapping(\"/clients/{id}\")"
+          "line": 36,
+          "declaration": "@PutMapping(\"/clients/{id}\")"
         },
         {
-          "line": 39,
-          "declaration": "@EndpointOperation(\"integration.client:rotate_secret\") @PostMapping(\"/clients/{id}/secret-rotation\")"
+          "line": 40,
+          "declaration": "@PostMapping(\"/clients/{id}/secret-rotation\")"
         }
       ],
       "status": "未验证：逐接口关联唯一对象、操作、管理域、准入、行范围、字段、执行器与正反向证据；方法注解可跨行，不能按单行认定缺失"
@@ -2412,64 +2846,64 @@
       "path": "backend/services/platform-service/adapters/platform-api/src/main/java/com/appnexus/platform/managementapi/administration/PlatformAdministrationController.java",
       "endpoints": [
         {
-          "line": 15,
+          "line": 16,
           "declaration": "@RequestMapping(\"/bff/platform\")"
         },
         {
-          "line": 42,
+          "line": 43,
           "declaration": "@GetMapping(\"/users\")"
         },
         {
-          "line": 48,
-          "declaration": "@EndpointOperation(\"identity.account:create\") @PostMapping(\"/users\")"
+          "line": 49,
+          "declaration": "@PostMapping(\"/users\")"
         },
         {
-          "line": 58,
-          "declaration": "@EndpointOperation(\"identity.account:update\") @PutMapping(\"/users/{id}\")"
+          "line": 55,
+          "declaration": "@PutMapping(\"/users/{id}\")"
         },
         {
-          "line": 64,
-          "declaration": "@EndpointOperation(\"identity.account:enable\") @PutMapping(\"/users/{id}/state\")"
+          "line": 61,
+          "declaration": "@PutMapping(\"/users/{id}/state\")"
         },
         {
-          "line": 70,
-          "declaration": "@EndpointOperation(\"identity.account:revoke_sessions\") @PostMapping(\"/users/{id}/revoke-sessions\")"
+          "line": 67,
+          "declaration": "@PostMapping(\"/users/{id}/revoke-sessions\")"
         },
         {
-          "line": 77,
-          "declaration": "@EndpointOperation(\"identity.account:reset_password\") @PostMapping(\"/users/{id}/password-recovery\")"
+          "line": 73,
+          "declaration": "@PostMapping(\"/users/{id}/password-recovery\")"
         },
         {
-          "line": 85,
+          "line": 80,
           "declaration": "@GetMapping(\"/tenants\")"
         },
         {
-          "line": 91,
-          "declaration": "@EndpointOperation(\"tenant:create\") @PostMapping(\"/tenants\")"
+          "line": 86,
+          "declaration": "@PostMapping(\"/tenants\")"
         },
         {
-          "line": 97,
-          "declaration": "@EndpointOperation(\"tenant:update\") @PutMapping(\"/tenants/{id}\")"
+          "line": 92,
+          "declaration": "@PutMapping(\"/tenants/{id}\")"
         },
         {
-          "line": 103,
-          "declaration": "@EndpointOperation(\"tenant:enable\") @PutMapping(\"/tenants/{id}/state\")"
+          "line": 98,
+          "declaration": "@PutMapping(\"/tenants/{id}/state\")"
         },
         {
-          "line": 110,
+          "line": 105,
           "declaration": "@GetMapping(\"/tenants/{tenant}/members\")"
         },
         {
-          "line": 116,
-          "declaration": "@EndpointOperation(\"tenant.member:create\") @PostMapping(\"/tenants/{tenant}/members\")"
+          "line": 111,
+          "declaration": "@PostMapping(\"/tenants/{tenant}/members\")"
         },
         {
-          "line": 122,
-          "declaration": "@EndpointOperation(\"tenant.member:enable\") @PutMapping(\"/tenants/{tenant}/members/{member}/state\")"
+          "line": 117,
+          "declaration": "@PutMapping(\"/tenants/{tenant}/members/{member}/state\")"
         },
         {
-          "line": 128,
-          "declaration": "@EndpointOperation(\"tenant.member:remove\") @DeleteMapping(\"/tenants/{tenant}/members/{member}\")"
+          "line": 123,
+          "declaration": "@DeleteMapping(\"/tenants/{tenant}/members/{member}\")"
         }
       ],
       "status": "未验证：逐接口关联唯一对象、操作、管理域、准入、行范围、字段、执行器与正反向证据；方法注解可跨行，不能按单行认定缺失"
@@ -2478,28 +2912,28 @@
       "path": "backend/services/platform-service/adapters/platform-api/src/main/java/com/appnexus/platform/managementapi/administration/PolicyTemplateController.java",
       "endpoints": [
         {
-          "line": 26,
-          "declaration": "@EndpointOperation(\"access.role:grant\") @GetMapping(\"/bff/platform/roles/{role}/policy-templates\")"
+          "line": 27,
+          "declaration": "@GetMapping(\"/bff/platform/roles/{role}/policy-templates\")"
         },
         {
-          "line": 30,
-          "declaration": "@EndpointOperation(\"access.role:grant\") @PostMapping(\"/bff/platform/roles/{role}/policy-templates\")"
+          "line": 31,
+          "declaration": "@PostMapping(\"/bff/platform/roles/{role}/policy-templates\")"
         },
         {
-          "line": 34,
-          "declaration": "@EndpointOperation(\"access.role:grant\") @PostMapping(\"/bff/platform/roles/{role}/policy-template-application\")"
+          "line": 35,
+          "declaration": "@PostMapping(\"/bff/platform/roles/{role}/policy-template-application\")"
         },
         {
-          "line": 38,
-          "declaration": "@EndpointOperation(\"access.tenant.role:grant\") @GetMapping(\"/api/access/roles/{role}/policy-templates\")"
+          "line": 39,
+          "declaration": "@GetMapping(\"/api/access/roles/{role}/policy-templates\")"
         },
         {
-          "line": 42,
-          "declaration": "@EndpointOperation(\"access.tenant.role:grant\") @PostMapping(\"/api/access/roles/{role}/policy-templates\")"
+          "line": 43,
+          "declaration": "@PostMapping(\"/api/access/roles/{role}/policy-templates\")"
         },
         {
-          "line": 46,
-          "declaration": "@EndpointOperation(\"access.tenant.role:grant\") @PostMapping(\"/api/access/roles/{role}/policy-template-application\")"
+          "line": 47,
+          "declaration": "@PostMapping(\"/api/access/roles/{role}/policy-template-application\")"
         }
       ],
       "status": "未验证：逐接口关联唯一对象、操作、管理域、准入、行范围、字段、执行器与正反向证据；方法注解可跨行，不能按单行认定缺失"
@@ -2508,64 +2942,64 @@
       "path": "backend/services/platform-service/adapters/platform-api/src/main/java/com/appnexus/platform/managementapi/administration/RoleManagementController.java",
       "endpoints": [
         {
-          "line": 43,
+          "line": 44,
           "declaration": "@GetMapping(\"/bff/platform/roles\") ResponseEntity<RoleManagement.Page> platformList(Authentication a,@RequestParam(defaultValue=\"\") String query,@RequestParam(required=false) RoleManagement.Status status,@RequestParam(required=false) RoleManagement.RoleType roleType,@RequestParam(defaultValue=\"1\") int page,@RequestParam(defaultValue=\"20\") int pageSize){return ok(()->roles.list(platform(a),new RoleManagement.Query(query,status,roleType,page,pageSize)));}"
         },
         {
-          "line": 46,
-          "declaration": "@EndpointOperation(\"access.role:create\") @PostMapping(\"/bff/platform/roles\") ResponseEntity<RoleManagement.Role> platformCreate(Authentication a,@RequestBody Create input){return ok(()->roles.create(platform(a),Objects.requireNonNull(input).command()));}"
+          "line": 47,
+          "declaration": "@PostMapping(\"/bff/platform/roles\") ResponseEntity<RoleManagement.Role> platformCreate(Authentication a,@RequestBody Create input){return ok(()->roles.create(platform(a),Objects.requireNonNull(input).command()));}"
         },
         {
-          "line": 49,
-          "declaration": "@EndpointOperation(\"access.role:update\") @PutMapping(\"/bff/platform/roles/{id}\") ResponseEntity<RoleManagement.Role> platformUpdate(Authentication a,@PathVariable UUID id,@RequestBody Update input){return ok(()->roles.update(platform(a),id,Objects.requireNonNull(input).command()));}"
+          "line": 50,
+          "declaration": "@PutMapping(\"/bff/platform/roles/{id}\") ResponseEntity<RoleManagement.Role> platformUpdate(Authentication a,@PathVariable UUID id,@RequestBody Update input){return ok(()->roles.update(platform(a),id,Objects.requireNonNull(input).command()));}"
         },
         {
-          "line": 52,
-          "declaration": "@EndpointOperation(\"access.role:enable\") @PatchMapping(\"/bff/platform/roles/{id}/status\") ResponseEntity<RoleManagement.Role> platformStatus(Authentication a,@PathVariable UUID id,@RequestBody StatusChange input){return ok(()->roles.changeStatus(platform(a),id,input.version(),input.status(),input.reason()));}"
+          "line": 53,
+          "declaration": "@PatchMapping(\"/bff/platform/roles/{id}/status\") ResponseEntity<RoleManagement.Role> platformStatus(Authentication a,@PathVariable UUID id,@RequestBody StatusChange input){return ok(()->roles.changeStatus(platform(a),id,input.version(),input.status(),input.reason()));}"
         },
         {
-          "line": 55,
-          "declaration": "@EndpointOperation(\"access.role:delete\") @PostMapping(\"/bff/platform/roles/{id}/delete\") ResponseEntity<Void> platformDelete(Authentication a,@PathVariable UUID id,@RequestBody Delete input){return empty(()->roles.delete(platform(a),id,input.version(),input.confirmationCode(),input.reason()));}"
+          "line": 56,
+          "declaration": "@PostMapping(\"/bff/platform/roles/{id}/delete\") ResponseEntity<Void> platformDelete(Authentication a,@PathVariable UUID id,@RequestBody Delete input){return empty(()->roles.delete(platform(a),id,input.version(),input.confirmationCode(),input.reason()));}"
         },
         {
-          "line": 62,
+          "line": 63,
           "declaration": "@GetMapping(\"/bff/platform/tenants/{tenant}/roles\") ResponseEntity<RoleManagement.Page> managedList(Authentication a,@PathVariable UUID tenant,@RequestParam(defaultValue=\"\") String query,@RequestParam(required=false) RoleManagement.Status status,@RequestParam(required=false) RoleManagement.RoleType roleType,@RequestParam(defaultValue=\"1\") int page,@RequestParam(defaultValue=\"20\") int pageSize){return ok(()->roles.list(managed(a,tenant),new RoleManagement.Query(query,status,roleType,page,pageSize)));}"
         },
         {
-          "line": 65,
-          "declaration": "@EndpointOperation(value=\"access.tenant.role:create\",platformPermission=\"tenant.role:create\") @PostMapping(\"/bff/platform/tenants/{tenant}/roles\") ResponseEntity<RoleManagement.Role> managedCreate(Authentication a,@PathVariable UUID tenant,@RequestBody Create input){return ok(()->roles.create(managed(a,tenant),Objects.requireNonNull(input).command()));}"
+          "line": 66,
+          "declaration": "@PostMapping(\"/bff/platform/tenants/{tenant}/roles\") ResponseEntity<RoleManagement.Role> managedCreate(Authentication a,@PathVariable UUID tenant,@RequestBody Create input){return ok(()->roles.create(managed(a,tenant),Objects.requireNonNull(input).command()));}"
         },
         {
-          "line": 68,
-          "declaration": "@EndpointOperation(value=\"access.tenant.role:update\",platformPermission=\"tenant.role:update\") @PutMapping(\"/bff/platform/tenants/{tenant}/roles/{id}\") ResponseEntity<RoleManagement.Role> managedUpdate(Authentication a,@PathVariable UUID tenant,@PathVariable UUID id,@RequestBody Update input){return ok(()->roles.update(managed(a,tenant),id,Objects.requireNonNull(input).command()));}"
+          "line": 69,
+          "declaration": "@PutMapping(\"/bff/platform/tenants/{tenant}/roles/{id}\") ResponseEntity<RoleManagement.Role> managedUpdate(Authentication a,@PathVariable UUID tenant,@PathVariable UUID id,@RequestBody Update input){return ok(()->roles.update(managed(a,tenant),id,Objects.requireNonNull(input).command()));}"
         },
         {
-          "line": 71,
-          "declaration": "@EndpointOperation(value=\"access.tenant.role:update\",platformPermission=\"tenant.role:update\") @PatchMapping(\"/bff/platform/tenants/{tenant}/roles/{id}/status\") ResponseEntity<RoleManagement.Role> managedStatus(Authentication a,@PathVariable UUID tenant,@PathVariable UUID id,@RequestBody StatusChange input){return ok(()->roles.changeStatus(managed(a,tenant),id,input.version(),input.status(),input.reason()));}"
+          "line": 72,
+          "declaration": "@PatchMapping(\"/bff/platform/tenants/{tenant}/roles/{id}/status\") ResponseEntity<RoleManagement.Role> managedStatus(Authentication a,@PathVariable UUID tenant,@PathVariable UUID id,@RequestBody StatusChange input){return ok(()->roles.changeStatus(managed(a,tenant),id,input.version(),input.status(),input.reason()));}"
         },
         {
-          "line": 74,
-          "declaration": "@EndpointOperation(value=\"access.tenant.role:delete\",platformPermission=\"tenant.role:delete\") @PostMapping(\"/bff/platform/tenants/{tenant}/roles/{id}/delete\") ResponseEntity<Void> managedDelete(Authentication a,@PathVariable UUID tenant,@PathVariable UUID id,@RequestBody Delete input){return empty(()->roles.delete(managed(a,tenant),id,input.version(),input.confirmationCode(),input.reason()));}"
+          "line": 75,
+          "declaration": "@PostMapping(\"/bff/platform/tenants/{tenant}/roles/{id}/delete\") ResponseEntity<Void> managedDelete(Authentication a,@PathVariable UUID tenant,@PathVariable UUID id,@RequestBody Delete input){return empty(()->roles.delete(managed(a,tenant),id,input.version(),input.confirmationCode(),input.reason()));}"
         },
         {
-          "line": 80,
+          "line": 81,
           "declaration": "@GetMapping(\"/api/access/roles\") ResponseEntity<RoleManagement.Page> tenantList(Authentication a,HttpServletRequest r,@RequestParam(defaultValue=\"\") String query,@RequestParam(required=false) RoleManagement.Status status,@RequestParam(required=false) RoleManagement.RoleType roleType,@RequestParam(defaultValue=\"1\") int page,@RequestParam(defaultValue=\"20\") int pageSize){return ok(()->roles.list(tenant(a,r),new RoleManagement.Query(query,status,roleType,page,pageSize)));}"
         },
         {
-          "line": 83,
-          "declaration": "@EndpointOperation(\"access.tenant.role:create\") @PostMapping(\"/api/access/roles\") ResponseEntity<RoleManagement.Role> tenantCreate(Authentication a,HttpServletRequest r,@RequestBody Create input){return ok(()->roles.create(tenant(a,r),Objects.requireNonNull(input).command()));}"
+          "line": 84,
+          "declaration": "@PostMapping(\"/api/access/roles\") ResponseEntity<RoleManagement.Role> tenantCreate(Authentication a,HttpServletRequest r,@RequestBody Create input){return ok(()->roles.create(tenant(a,r),Objects.requireNonNull(input).command()));}"
         },
         {
-          "line": 86,
-          "declaration": "@EndpointOperation(\"access.tenant.role:update\") @PutMapping(\"/api/access/roles/{id}\") ResponseEntity<RoleManagement.Role> tenantUpdate(Authentication a,HttpServletRequest r,@PathVariable UUID id,@RequestBody Update input){return ok(()->roles.update(tenant(a,r),id,Objects.requireNonNull(input).command()));}"
+          "line": 87,
+          "declaration": "@PutMapping(\"/api/access/roles/{id}\") ResponseEntity<RoleManagement.Role> tenantUpdate(Authentication a,HttpServletRequest r,@PathVariable UUID id,@RequestBody Update input){return ok(()->roles.update(tenant(a,r),id,Objects.requireNonNull(input).command()));}"
         },
         {
-          "line": 89,
-          "declaration": "@EndpointOperation(\"access.tenant.role:update\") @PatchMapping(\"/api/access/roles/{id}/status\") ResponseEntity<RoleManagement.Role> tenantStatus(Authentication a,HttpServletRequest r,@PathVariable UUID id,@RequestBody StatusChange input){return ok(()->roles.changeStatus(tenant(a,r),id,input.version(),input.status(),input.reason()));}"
+          "line": 90,
+          "declaration": "@PatchMapping(\"/api/access/roles/{id}/status\") ResponseEntity<RoleManagement.Role> tenantStatus(Authentication a,HttpServletRequest r,@PathVariable UUID id,@RequestBody StatusChange input){return ok(()->roles.changeStatus(tenant(a,r),id,input.version(),input.status(),input.reason()));}"
         },
         {
-          "line": 92,
-          "declaration": "@EndpointOperation(\"access.tenant.role:delete\") @PostMapping(\"/api/access/roles/{id}/delete\") ResponseEntity<Void> tenantDelete(Authentication a,HttpServletRequest r,@PathVariable UUID id,@RequestBody Delete input){return empty(()->roles.delete(tenant(a,r),id,input.version(),input.confirmationCode(),input.reason()));}"
+          "line": 93,
+          "declaration": "@PostMapping(\"/api/access/roles/{id}/delete\") ResponseEntity<Void> tenantDelete(Authentication a,HttpServletRequest r,@PathVariable UUID id,@RequestBody Delete input){return empty(()->roles.delete(tenant(a,r),id,input.version(),input.confirmationCode(),input.reason()));}"
         }
       ],
       "status": "未验证：逐接口关联唯一对象、操作、管理域、准入、行范围、字段、执行器与正反向证据；方法注解可跨行，不能按单行认定缺失"
@@ -2574,16 +3008,16 @@
       "path": "backend/services/platform-service/adapters/platform-api/src/main/java/com/appnexus/platform/managementapi/administration/TaskManagementController.java",
       "endpoints": [
         {
-          "line": 12,
+          "line": 13,
           "declaration": "@RequestMapping(\"/bff/platform/tasks\")"
         },
         {
-          "line": 20,
+          "line": 22,
           "declaration": "@GetMapping public ResponseEntity<List<TaskManagement.Task>> list(Authentication auth){try{return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(tasks.list(UUID.fromString(auth.getName())));}catch(SecurityException denied){throw denied();}}"
         },
         {
-          "line": 23,
-          "declaration": "@EndpointOperation(\"platform.task:retry\") @PostMapping(\"/{id}/retry\")"
+          "line": 26,
+          "declaration": "@PostMapping(\"/{id}/retry\")"
         }
       ],
       "status": "未验证：逐接口关联唯一对象、操作、管理域、准入、行范围、字段、执行器与正反向证据；方法注解可跨行，不能按单行认定缺失"
@@ -2592,19 +3026,19 @@
       "path": "backend/services/platform-service/adapters/platform-api/src/main/java/com/appnexus/platform/managementapi/administration/TenantInvitationController.java",
       "endpoints": [
         {
-          "line": 24,
+          "line": 25,
           "declaration": "@GetMapping(\"/bff/platform/tenants/{tenant}/invitations\")"
         },
         {
-          "line": 28,
-          "declaration": "@EndpointOperation(\"tenant.invitation:create\") @PostMapping(\"/bff/platform/tenants/{tenant}/invitations\")"
+          "line": 29,
+          "declaration": "@PostMapping(\"/bff/platform/tenants/{tenant}/invitations\")"
         },
         {
-          "line": 32,
-          "declaration": "@EndpointOperation(\"tenant.invitation:revoke\") @DeleteMapping(\"/bff/platform/tenants/{tenant}/invitations/{id}\")"
+          "line": 33,
+          "declaration": "@DeleteMapping(\"/bff/platform/tenants/{tenant}/invitations/{id}\")"
         },
         {
-          "line": 36,
+          "line": 37,
           "declaration": "@PostMapping(\"/bff/account/tenant-invitations/acceptance\")"
         }
       ],
@@ -2677,35 +3111,77 @@
       "status": "未验证：逐接口关联唯一对象、操作、管理域、准入、行范围、字段、执行器与正反向证据；方法注解可跨行，不能按单行认定缺失"
     },
     {
-      "path": "backend/services/platform-service/adapters/platform-api/src/main/java/com/appnexus/platform/managementapi/configuration/MenuManagementController.java",
+      "path": "backend/services/platform-service/adapters/platform-api/src/main/java/com/appnexus/platform/managementapi/businessobject/PlatformObjectCommandController.java",
       "endpoints": [
         {
-          "line": 15,
-          "declaration": "@RequestMapping(\"/bff/platform/menus\")"
+          "line": 36,
+          "declaration": "@PostMapping(\"/bff/platform/business-object-executions\")"
+        }
+      ],
+      "status": "未验证：逐接口关联唯一对象、操作、管理域、准入、行范围、字段、执行器与正反向证据；方法注解可跨行，不能按单行认定缺失"
+    },
+    {
+      "path": "backend/services/platform-service/adapters/platform-api/src/main/java/com/appnexus/platform/managementapi/configuration/AttachmentLedgerController.java",
+      "endpoints": [
+        {
+          "line": 19,
+          "declaration": "@RequestMapping(\"/bff/platform/attachments\")"
         },
         {
-          "line": 45,
-          "declaration": "@EndpointOperation(\"configuration.menu:read\") @GetMapping(\"/features\")"
+          "line": 31,
+          "declaration": "@GetMapping"
+        }
+      ],
+      "status": "未验证：逐接口关联唯一对象、操作、管理域、准入、行范围、字段、执行器与正反向证据；方法注解可跨行，不能按单行认定缺失"
+    },
+    {
+      "path": "backend/services/platform-service/adapters/platform-api/src/main/java/com/appnexus/platform/managementapi/configuration/AttachmentPolicyController.java",
+      "endpoints": [
+        {
+          "line": 19,
+          "declaration": "@RequestMapping(\"/bff/platform/attachment-policies\")"
         },
         {
-          "line": 53,
-          "declaration": "@EndpointOperation(\"configuration.menu:read\") @GetMapping(\"/pages\")"
-        },
-        {
-          "line": 58,
+          "line": 34,
           "declaration": "@GetMapping"
         },
         {
-          "line": 62,
-          "declaration": "@EndpointOperation(\"configuration.menu:create\") @PostMapping"
+          "line": 42,
+          "declaration": "@PutMapping(\"/{typeKey}\")"
+        }
+      ],
+      "status": "未验证：逐接口关联唯一对象、操作、管理域、准入、行范围、字段、执行器与正反向证据；方法注解可跨行，不能按单行认定缺失"
+    },
+    {
+      "path": "backend/services/platform-service/adapters/platform-api/src/main/java/com/appnexus/platform/managementapi/configuration/MenuManagementController.java",
+      "endpoints": [
+        {
+          "line": 17,
+          "declaration": "@RequestMapping(\"/bff/platform/menus\")"
         },
         {
-          "line": 66,
-          "declaration": "@EndpointOperation(\"configuration.menu:update\") @PutMapping(\"/{id}\")"
+          "line": 68,
+          "declaration": "@GetMapping(\"/features\")"
         },
         {
-          "line": 70,
-          "declaration": "@EndpointOperation(\"configuration.menu:delete\") @DeleteMapping(\"/{id}\")"
+          "line": 79,
+          "declaration": "@GetMapping(\"/pages\")"
+        },
+        {
+          "line": 90,
+          "declaration": "@GetMapping"
+        },
+        {
+          "line": 97,
+          "declaration": "@PostMapping"
+        },
+        {
+          "line": 104,
+          "declaration": "@PutMapping(\"/{id}\")"
+        },
+        {
+          "line": 112,
+          "declaration": "@DeleteMapping(\"/{id}\")"
         }
       ],
       "status": "未验证：逐接口关联唯一对象、操作、管理域、准入、行范围、字段、执行器与正反向证据；方法注解可跨行，不能按单行认定缺失"
@@ -2714,11 +3190,11 @@
       "path": "backend/services/platform-service/adapters/platform-api/src/main/java/com/appnexus/platform/managementapi/operation/OperationCatalogController.java",
       "endpoints": [
         {
-          "line": 18,
+          "line": 25,
           "declaration": "@GetMapping(\"/bff/platform/object-catalog\")"
         },
         {
-          "line": 28,
+          "line": 38,
           "declaration": "@GetMapping(\"/bff/platform/operation-catalog\")"
         }
       ],
@@ -2728,11 +3204,11 @@
       "path": "backend/services/platform-service/adapters/platform-api/src/main/java/com/appnexus/platform/managementapi/operation/OperationDiagnosticsController.java",
       "endpoints": [
         {
-          "line": 42,
+          "line": 68,
           "declaration": "@GetMapping(\"/bff/platform/users/{account}/operation-diagnostics\")"
         },
         {
-          "line": 46,
+          "line": 79,
           "declaration": "@GetMapping(\"/api/access/members/{member}/operation-diagnostics\")"
         }
       ],
@@ -2742,19 +3218,19 @@
       "path": "backend/services/platform-service/adapters/security/src/main/java/com/appnexus/platform/security/AccountSessionsController.java",
       "endpoints": [
         {
-          "line": 17,
+          "line": 18,
           "declaration": "@RequestMapping(\"/bff/account/sessions\")"
         },
         {
-          "line": 41,
+          "line": 42,
           "declaration": "@GetMapping"
         },
         {
-          "line": 64,
+          "line": 65,
           "declaration": "@DeleteMapping(\"/{handle}\")"
         },
         {
-          "line": 85,
+          "line": 86,
           "declaration": "@PostMapping(\"/revoke-others\")"
         }
       ],
@@ -2764,19 +3240,19 @@
       "path": "backend/services/platform-service/adapters/security/src/main/java/com/appnexus/platform/security/AccountSettingsController.java",
       "endpoints": [
         {
-          "line": 17,
+          "line": 18,
           "declaration": "@RequestMapping(\"/bff/account\")"
         },
         {
-          "line": 36,
+          "line": 37,
           "declaration": "@GetMapping"
         },
         {
-          "line": 47,
+          "line": 48,
           "declaration": "@PatchMapping"
         },
         {
-          "line": 78,
+          "line": 79,
           "declaration": "@PostMapping(\"/password\")"
         }
       ],
@@ -2786,7 +3262,7 @@
       "path": "backend/services/platform-service/adapters/security/src/main/java/com/appnexus/platform/security/LoginCsrfController.java",
       "endpoints": [
         {
-          "line": 10,
+          "line": 11,
           "declaration": "@GetMapping(\"/login/csrf\")"
         }
       ],
@@ -2796,27 +3272,27 @@
       "path": "backend/services/platform-service/adapters/security/src/main/java/com/appnexus/platform/security/MfaController.java",
       "endpoints": [
         {
-          "line": 19,
+          "line": 20,
           "declaration": "@RequestMapping(\"/bff/account/mfa\")"
         },
         {
-          "line": 44,
+          "line": 45,
           "declaration": "@GetMapping"
         },
         {
-          "line": 52,
+          "line": 53,
           "declaration": "@PostMapping(\"/enrollment\")"
         },
         {
-          "line": 58,
+          "line": 59,
           "declaration": "@PostMapping(\"/activation\")"
         },
         {
-          "line": 70,
+          "line": 71,
           "declaration": "@PostMapping(\"/step-up\")"
         },
         {
-          "line": 79,
+          "line": 80,
           "declaration": "@PostMapping(\"/disable\")"
         }
       ],
@@ -2826,11 +3302,11 @@
       "path": "backend/services/platform-service/adapters/security/src/main/java/com/appnexus/platform/security/NativeTenantContextController.java",
       "endpoints": [
         {
-          "line": 19,
+          "line": 20,
           "declaration": "@GetMapping(\"/api/tenants\")"
         },
         {
-          "line": 29,
+          "line": 30,
           "declaration": "@PostMapping(\"/api/tenant-context\")"
         }
       ],
@@ -2840,15 +3316,15 @@
       "path": "backend/services/platform-service/adapters/security/src/main/java/com/appnexus/platform/security/PasswordRecoveryController.java",
       "endpoints": [
         {
-          "line": 11,
+          "line": 12,
           "declaration": "@RequestMapping(\"/login/recovery\")"
         },
         {
-          "line": 25,
+          "line": 26,
           "declaration": "@PostMapping"
         },
         {
-          "line": 34,
+          "line": 35,
           "declaration": "@PostMapping(\"/completion\")"
         }
       ],
@@ -2858,15 +3334,15 @@
       "path": "backend/services/platform-service/adapters/security/src/main/java/com/appnexus/platform/security/SessionController.java",
       "endpoints": [
         {
-          "line": 12,
+          "line": 13,
           "declaration": "@RequestMapping(\"/bff\")"
         },
         {
-          "line": 21,
+          "line": 22,
           "declaration": "@GetMapping(\"/session\")"
         },
         {
-          "line": 30,
+          "line": 31,
           "declaration": "@GetMapping(\"/csrf\")"
         }
       ],
@@ -2876,19 +3352,19 @@
       "path": "backend/services/platform-service/adapters/security/src/main/java/com/appnexus/platform/security/TenantContextController.java",
       "endpoints": [
         {
-          "line": 12,
+          "line": 13,
           "declaration": "@RequestMapping(\"/bff/tenants\")"
         },
         {
-          "line": 24,
+          "line": 29,
           "declaration": "@GetMapping"
         },
         {
-          "line": 37,
+          "line": 42,
           "declaration": "@GetMapping(\"/current\")"
         },
         {
-          "line": 61,
+          "line": 66,
           "declaration": "@PostMapping(\"/current\")"
         }
       ],
@@ -2898,7 +3374,7 @@
       "path": "backend/services/platform-service/adapters/security/src/main/java/com/appnexus/platform/security/WorkspaceContextController.java",
       "endpoints": [
         {
-          "line": 11,
+          "line": 12,
           "declaration": "@GetMapping(\"/api/workspace/context\")"
         }
       ],

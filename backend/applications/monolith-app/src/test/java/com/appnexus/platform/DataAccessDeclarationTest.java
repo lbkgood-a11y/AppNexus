@@ -13,8 +13,12 @@ class DataAccessDeclarationTest {
         var root=DataAccessCatalog.fromObjects(List.of(object)).list(PermissionCatalog.ScopeType.TENANT).getFirst();
         var provider=root;
         assertThatThrownBy(()->new DataAccessCatalog(List.of(provider,provider))).isInstanceOf(IllegalStateException.class);
-        var invalid=new DataAccessDeclaration.Descriptor(root.objectType(),1,root.scope(),root.resources(),List.of(new DataAccessDeclaration.Operation("BusinessPartner.list","masterdata.partner:read",Set.of(DataScopeAuthorization.ScopeType.SELF))));
-        assertThatThrownBy(()->new DataAccessCatalog(List.of(invalid))).isInstanceOf(IllegalStateException.class);
+        for(var retired:List.of(DataScopeAuthorization.ScopeType.SELF,DataScopeAuthorization.ScopeType.ORGANIZATION,
+                DataScopeAuthorization.ScopeType.ORGANIZATION_SUBTREE)){
+            var invalid=new DataAccessDeclaration.Descriptor(root.objectType(),1,root.scope(),root.resources(),
+                List.of(new DataAccessDeclaration.Operation("BusinessPartner.list","masterdata.partner:read",Set.of(retired))));
+            assertThatThrownBy(()->new DataAccessCatalog(List.of(invalid))).isInstanceOf(IllegalStateException.class);
+        }
         var sql=new DataAccessDeclaration.Descriptor(root.objectType(),1,root.scope(),List.of(new DataAccessDeclaration.Resource("md_partner WHERE 1=1","","客商","Partner",List.of())),root.operations());
         assertThatThrownBy(()->new DataAccessCatalog(List.of(sql))).isInstanceOf(IllegalStateException.class);
     }
@@ -24,7 +28,9 @@ class DataAccessDeclarationTest {
         var projection=DataAccessCatalog.fromObjects(List.of(()->object)).list(PermissionCatalog.ScopeType.TENANT).getFirst();
         assertThat(projection.objectType()).isEqualTo(object.objectType());
         assertThat(projection.version()).isEqualTo(object.version());
-        assertThat(projection.operations()).hasSize(4);
+        assertThat(projection.operations()).hasSize(object.dataAccess().operationScopes().size());
+        assertThat(projection.operations()).allSatisfy(operation->assertThat(operation.scopes())
+            .containsExactlyInAnyOrder(DataScopeAuthorization.ScopeType.ALL,DataScopeAuthorization.ScopeType.RULES));
         for(var operation:object.operations())assertThat(projection.operations()).anySatisfy(value->{assertThat(value.operationId()).isEqualTo(operation.operationId());assertThat(value.permissionCode()).isEqualTo(operation.permissionCode());});
         assertThatThrownBy(()->DataAccessCatalog.fromObjects(List.of(()->object,()->object))).isInstanceOf(IllegalStateException.class);
         var invalid=new com.appnexus.contracts.businessobject.BusinessObjects.DataAccess("TENANT",object.dataAccess().resources(),Map.of("unknown",Set.of("ALL")));
@@ -37,7 +43,7 @@ class DataAccessDeclarationTest {
     }
     /** 历史字段键和模式保留，自动响应绑定失配必须在启动阶段拒绝，不能漏保护。 */
     @Test void migratedFieldsAndResponseBindingsAreValidated(){
-        var catalog=DataAccessCatalog.fromObjects(List.of(new com.appnexus.platform.security.AccountDeclaration(),new com.appnexus.platform.security.TenantMemberDeclaration(),new com.appnexus.platform.security.PersonDirectoryDeclaration()));
+        var catalog=DataAccessCatalog.fromObjects(List.of(new com.appnexus.platform.security.AccountDeclaration(),new com.appnexus.platform.security.TenantMemberDeclaration(),new com.appnexus.masterdata.adapter.web.organization.PersonDirectoryDeclaration()));
         assertThat(catalog.fields(PermissionCatalog.ScopeType.PLATFORM)).extracting(f->f.resource()+":"+f.field()).containsExactlyInAnyOrder("identity.account:email","identity.account:phoneNumber","identity.member:displayName");
         assertThat(catalog.fields(PermissionCatalog.ScopeType.TENANT)).extracting(f->f.resource()+":"+f.field()).containsExactly("organization.member:displayName");
         var executor=new com.appnexus.platform.persistence.platformscope.MyBatisFieldProtection(null,catalog);

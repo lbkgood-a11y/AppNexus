@@ -38,6 +38,12 @@ export interface InboundWorkbenchDetail {
 
 /** 业务模块只消费类型化端口，应用层负责会话、CSRF 和 HTTP。 */
 export interface InboundWorkbenchApi {
+  /** 获取同车次最新的只读现场采集快照。 */
+  site: (id: string) => Promise<InboundSiteReading>;
+  siteCommand: (task: string, action: SiteCommandAction, id: string, retry: boolean) => Promise<SiteCommandStatus>;
+  siteCommandStatus: (task: string, id: string) => Promise<SiteCommandStatus>;
+  labMetrics: import("./inboundDocuments").InboundDocumentsApi["labMetrics"];
+  attachmentOptions: import("./inboundDocuments").InboundDocumentsApi["attachmentOptions"];
   /** 复用质检和计量专用入口，以当前作业版本提交钢铁核验、双计量或化验。 */
   executeDocument(kind: "quality" | "metering", path: string, input: Record<string, unknown>): Promise<unknown>;
   queue(stage: WorkbenchStage | undefined, cursor?: string, unopened?: boolean): Promise<InboundQueuePage>;
@@ -53,6 +59,28 @@ export interface InboundWorkbenchApi {
     outcome: UnloadingOutcome; extraDeductionKg: string }): Promise<unknown>;
 }
 
+/** 固定现场动作和当前服务端回执。 */
+export type SiteCommandAction = "gate" | "call" | "print";
+export interface SiteCommandStatus {
+  commandId: string;
+  taskId: string;
+  state: "PENDING" | "SUCCEEDED" | "FAILED" | "TIMED_OUT";
+  sentAt: string;
+  acknowledgedAt?: string;
+  simulated: boolean;
+}
+
+/** 稳定状态来自采集源，空态与过期数据不携带读数或图片。 */
+export interface InboundSiteReading {
+  state: "LIVE" | "STALE" | "UNAVAILABLE";
+  simulated: boolean;
+  station?: string;
+  kg?: string;
+  stable?: boolean;
+  observedAt?: string;
+  capture?: string;
+}
+
 /** 人工复核的磅票，仅供提交独立命令，重量为正，单位千克。 */
 export interface WeighTicket {
   station: string;
@@ -63,3 +91,18 @@ export interface WeighTicket {
 export type UnloadingOutcome = "ACCEPTED" | "ACCEPTED_WITH_DEDUCTION" | "RETURN";
 export type WorkbenchNumberOperation = "BulkInboundQualityOrder.register_sample"
   | "BulkInboundMeteringOrder.register_external" | "BulkInboundMeteringOrder.record_gross";
+
+/** 空磅票用于独立录入，避免复用上一张单据的证据。 */
+export function newWeighTicket(): WeighTicket {
+  return { station: "", ticketNo: "", observedAt: "", kg: "" };
+}
+
+/** 物理重量以千克十进制文本传输，允许 DECIMAL(18,4) 正值。 */
+export function normalizedWeighTicket(input: WeighTicket): WeighTicket | undefined {
+  const station = input.station.trim();
+  const ticketNo = input.ticketNo.trim();
+  const kg = input.kg.trim();
+  if (!station || !ticketNo || station.length > 64 || ticketNo.length > 96
+    || !/^\d{1,14}(\.\d{1,4})?$/.test(kg) || !/[1-9]/.test(kg) || !Number.isFinite(Date.parse(input.observedAt))) return;
+  return { station, ticketNo, kg, observedAt: new Date(input.observedAt).toISOString() };
+}

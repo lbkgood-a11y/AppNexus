@@ -24,7 +24,7 @@ class UnifiedAuditTest extends DatabaseTestSupport {
     @Autowired MyBatisPlatformAdministration administration;
     @Autowired com.appnexus.platform.persistence.organization.OrganizationAdministratorBootstrap bootstrap;
 
-    @Autowired com.appnexus.platform.organization.PersonnelDirectory directory;
+    @Autowired com.appnexus.masterdata.organization.PersonnelDirectory directory;
     @Autowired MockMvc mvc;
 
     /** 经真实会话和响应组装验证平台审计契约，集成客户端标识即使形似账号也不查名。 */
@@ -85,8 +85,8 @@ class UnifiedAuditTest extends DatabaseTestSupport {
         try{
             assertThat(target(audit.platform(UUID.fromString(platform),tenant,1,20))).isNull();
             assertThat(target(audit.tenant(current,1,20))).isEqualToIgnoringCase(target.toString());
-            assertThat(jdbc.update("INSERT INTO access_role_field_security(role_id,resource_type,field_code,display_mode) "+
-                "SELECT role_id,'audit.tenant','target','HIDDEN' FROM access_member_role WHERE tenant_id=UUID_TO_BIN(?) AND member_id=UUID_TO_BIN(?)",
+            assertThat(jdbc.update("INSERT INTO access_role_field_security(role_id,resource_type,field_code,display_mode,tenant_id) "+
+                "SELECT role_id,'audit.tenant','target','HIDDEN',tenant_id FROM access_member_role WHERE tenant_id=UUID_TO_BIN(?) AND member_id=UUID_TO_BIN(?)",
                 tenant.toString(),member.toString())).isPositive();
             assertThat(target(audit.tenant(current,1,20))).isNull();
         }finally{

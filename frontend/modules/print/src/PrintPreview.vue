@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { createPrintId } from "./identifier";
 import { setErrorFeedback } from "@appnexus/ui";
 import { FloatingError } from "@appnexus/ui";
 import { nextTick,onBeforeUnmount, onMounted, ref } from "vue";
@@ -13,7 +14,7 @@ import {outputStage} from './outputStage';
 const props=defineProps<{api:PrintApi;outputId:string;errorText:(error:unknown)=>string}>();
 const emit=defineEmits<{close:[];confirmed:[]}>();
 const {t}=useI18n();const request=ref<PrintRow>(),devices=ref<PrintRow[]>([]),device=ref(""),url=ref(""),busy=ref(false),error=ref("");
-let disposed=false,timer:ReturnType<typeof setTimeout>|undefined;const confirmationKey=crypto.randomUUID();
+let disposed=false,timer:ReturnType<typeof setTimeout>|undefined;const confirmationKey=createPrintId();
 const pages=ref<HTMLCanvasElement[]>([]),pageCount=ref(0),rendered=ref(false);
 GlobalWorkerOptions.workerSrc=pdfWorkerUrl;
 /** 内嵌浏览器可能不带原生 PDF 插件，使用本地 PDF.js 渲染真实文件，仅渲染页面，不装配 PDF 脚本执行器。 */

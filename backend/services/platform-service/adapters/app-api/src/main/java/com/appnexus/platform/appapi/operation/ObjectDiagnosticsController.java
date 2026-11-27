@@ -1,6 +1,6 @@
 package com.appnexus.platform.appapi.operation;
 import com.appnexus.contracts.operation.ObjectDiagnostics;
-import com.appnexus.platform.security.EndpointPolicy;
+import com.appnexus.contracts.operation.EndpointPolicy;
 import com.appnexus.platform.tenant.VerifiedTenantContext;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.*;

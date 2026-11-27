@@ -103,7 +103,7 @@
 /* 嵌入工作区的表格即使经过业务包装层，也不重复生成卡片边界。 */
 .business-workspace__data .management-table:not(.is-fullscreen) > div.management-table-surface { border:0; padding:0; }
 /* 工作区已提供边框和内容边距；包含默认 el-card 表格时同样取消双层留白，最大化保留独立表面。 */
-:is(.business-workspace__data,.tree-list-template__data,.template-data) .management-table:not(.is-fullscreen) > .management-table-surface { border:0; padding:0; }
+:is(.business-workspace__data,.tree-list-template__data,.template-data,.attachment-presentation .attachment-list) .management-table:not(.is-fullscreen) > .management-table-surface { border:0; padding:0; }
 :is(.business-workspace__data,.tree-list-template__data,.template-data) .management-table:not(.is-fullscreen) > .management-table-surface > .el-card__body { padding:0; }
 
 /* 异常消息沿用 Element Plus 的定位和消息栈。表面与文字使用主题变量，错误色集中在图标。 */

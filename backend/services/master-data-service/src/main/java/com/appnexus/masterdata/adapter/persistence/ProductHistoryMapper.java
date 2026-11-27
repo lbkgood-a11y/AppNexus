@@ -4,7 +4,6 @@ import java.util.Map;
 import org.apache.ibatis.annotations.*;
 import com.appnexus.persistence.mybatis.TenantAggregateScoped;
 import com.appnexus.persistence.mybatis.GuardedScope;
-import com.appnexus.persistence.mybatis.ScopedSql;
 import com.appnexus.platform.authorization.RowAccessControl;
 /**
  * 商品追加历史固定Mapper；业务快照授权、父CAS和历史在同一事务完成，不保存预检Token。
@@ -53,10 +52,9 @@ public interface ProductHistoryMapper {
    private HistorySql() {}
 
    private static String conditions(Map<String,Object> parameters){
-     var access=(RowAccessControl.Predicate)parameters.get("access");
      return " FROM md_product_v1_change WHERE tenant_id=#{__verifiedTenant} AND product_id=UUID_TO_BIN(#{product})"
          +" AND EXISTS (SELECT 1 FROM md_product_v1 WHERE tenant_id=#{__verifiedTenant} AND id=UUID_TO_BIN(#{product})"
-         +ScopedSql.bind(access.sql(),access.parameters(),"access")+")";
+         +" /*appnexus-bind:access*/ "+")";
    }
 
    /** @param parameters 固定 Mapper 参数 @return 使用同一父范围条件的分页 SQL */

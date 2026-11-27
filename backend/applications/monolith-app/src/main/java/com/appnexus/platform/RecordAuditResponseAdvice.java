@@ -5,7 +5,7 @@ import com.appnexus.contracts.operation.ReferenceNames;
 import com.appnexus.contracts.operation.ResponseReferenceNames;
 import com.appnexus.masterdata.api.masterdata.MasterDataReferenceNames;
 import com.appnexus.contracts.operation.RecordAuditSource;
-import com.appnexus.platform.organization.PersonnelDirectory;
+import com.appnexus.masterdata.organization.PersonnelDirectory;
 import com.appnexus.platform.tenant.VerifiedTenantContext;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.*;
@@ -31,7 +31,7 @@ public final class RecordAuditResponseAdvice implements ResponseBodyAdvice<Objec
     private final PersonnelDirectory directory;
     private final HttpServletRequest request;
     private final MasterDataReferenceNames masterNames;
-    private final com.appnexus.platform.organization.PersonManagement people;
+    private final com.appnexus.masterdata.organization.PersonManagement people;
     private final com.appnexus.platform.configuration.BusinessValueCatalog dictionaries;
     private final com.appnexus.platform.configuration.GeographyCatalog geography;
     private final com.appnexus.platform.authorization.AccessAuthorization authorization;
@@ -41,7 +41,7 @@ public final class RecordAuditResponseAdvice implements ResponseBodyAdvice<Objec
      * @param request 仅读取安全链上下文及受控路由变量 */
     public RecordAuditResponseAdvice(com.appnexus.platform.persistence.AuditProjectionMapper mapper,PersonnelDirectory directory,HttpServletRequest request,com.appnexus.platform.authorization.AccessAuthorization authorization,MasterDataReferenceNames masterNames,
         com.appnexus.platform.configuration.BusinessValueCatalog dictionaries,
-        com.appnexus.platform.configuration.GeographyCatalog geography,com.appnexus.platform.organization.PersonManagement people){
+        com.appnexus.platform.configuration.GeographyCatalog geography,com.appnexus.masterdata.organization.PersonManagement people){
         this.mapper=mapper;
         this.directory=directory;
         this.request=request;
@@ -167,7 +167,7 @@ public final class RecordAuditResponseAdvice implements ResponseBodyAdvice<Objec
         var result=new HashMap<ReferenceNames.Key,String>();
         if(!persons.isEmpty()){
             try{people.names(context,persons).forEach((id,name)->result.put(new ReferenceNames.Key("person",id),name));}
-            catch(com.appnexus.platform.organization.PersonData.Rejection denied){if(denied.status!=403)throw denied;}
+            catch(com.appnexus.masterdata.organization.PersonData.Rejection denied){if(denied.status!=403)throw denied;}
         }
         if(!master.isEmpty())result.putAll(masterNames.load(context,master));
         if(!dictionary.isEmpty())dictionaries.names(context.tenantId(),dictionary).forEach((key,name)->

@@ -1,6 +1,6 @@
 package com.appnexus.platform;
 
-import com.appnexus.platform.localization.ExchangeEvidence;
+import com.appnexus.masterdata.domain.currency.ExchangeEvidence;
 import java.math.*;
 import java.time.*;
 import java.util.UUID;

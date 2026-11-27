@@ -63,6 +63,12 @@ public final class MasterDataService implements com.appnexus.masterdata.api.mast
   /** 只读当前客商或商品字典；由原对象读取权限复核，不授予字典维护能力。 */
   public Object dictionaryOptions(VerifiedTenantContext c,Kind kind){require(c,kind,"read");return dictionaries.options(c.tenantId(),BusinessValueCatalog.PARTNER);}
 
+  /** 登录选仓使用独立权限和行范围，禁止借用仓库档案读取权。 */
+  @Override public List<LoginWarehouse> loginWarehouses(VerifiedTenantContext context, UUID warehouseId){
+    require(context,Kind.WAREHOUSE,"select_login");
+    return transaction.execute(()->relations.loginWarehouses(context,warehouseId),null);
+  }
+
   /** 仓库读取权限仅允许查询本租户分类，不授予字典维护权限。 */
   @Override public Object warehouseOrganizations(VerifiedTenantContext c,String action){
     if(!Set.of("create","update").contains(action))throw invalid();

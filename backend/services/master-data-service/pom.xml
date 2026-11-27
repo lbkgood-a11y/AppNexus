@@ -5,6 +5,9 @@
   <parent><groupId>com.appnexus</groupId><artifactId>services</artifactId><version>0.1.0-SNAPSHOT</version></parent>
   <artifactId>master-data-service</artifactId>
   <dependencies>
+    <!-- 人员用例沿用平台公开的组织、人员及授权契约。 -->
+    <dependency><groupId>com.appnexus</groupId><artifactId>master-data-organization-contracts</artifactId><version>${project.version}</version></dependency>
+    <dependency><groupId>com.appnexus</groupId><artifactId>platform-authorization</artifactId><version>${project.version}</version></dependency>
     <!-- 历史Java迁移复用Flyway连接，不改变事务所有权或迁移资源。 -->
     <dependency><groupId>com.appnexus</groupId><artifactId>mybatis-migration</artifactId><version>${project.version}</version></dependency>
     <!-- 沿用全仓MyBatis版本；存储通过宿主SqlSession和Spring事务执行。 -->

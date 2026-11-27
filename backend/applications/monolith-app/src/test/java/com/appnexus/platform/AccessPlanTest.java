@@ -11,7 +11,7 @@ import static org.mockito.Mockito.*;
 class AccessPlanTest {
     @Test void resourceAndOperationMustMatchAndMissingFunctionCannotResolveRows(){
         var authorization=mock(AccessAuthorization.class);var scopes=mock(DataScopeAuthorization.class);
-        var planning=new TransactionalAccessPlanning(authorization,scopes,DataAccessCatalog.fromObjects(List.of(new com.appnexus.platform.security.OrganizationUnitDeclaration())),mock(FieldProtection.class));
+        var planning=new TransactionalAccessPlanning(authorization,scopes,DataAccessCatalog.fromObjects(List.of(new com.appnexus.masterdata.adapter.web.organization.OrganizationUnitDeclaration())),mock(FieldProtection.class));
         var subject=AccessAuthorization.Subject.tenant(UUID.randomUUID(),UUID.randomUUID(),UUID.randomUUID());
         assertThatThrownBy(()->planning.plan(subject,"organization.unit:read","organization.unit")).isInstanceOf(SecurityException.class);
         verifyNoInteractions(scopes);

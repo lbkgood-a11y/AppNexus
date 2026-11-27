@@ -12,6 +12,17 @@ import org.apache.ibatis.annotations.*;
 public interface MasterReadMapper {
     /** 可信查询输入，不接收SQL、列名或权限计划自报；分页及范围已由原用例校验。 */
     record Query(String tenant,MasterData.Kind kind,String keyword,Boolean enabled,String id,String parent,List<String> aliases,List<String> codes,RowAccessControl.Predicate access,int size,int offset){public Query{aliases=List.copyOf(aliases);codes=codes==null?null:List.copyOf(codes);}}
+    /** 仅投影选仓所需字段，绑定当前租户、启用状态及选仓专用行范围。 */
+    @com.appnexus.persistence.mybatis.GuardedScope(predicate="access",resource="masterdata.warehouse",tenant="tenant",actions="select_login")
+    @Select({"<script>",
+        "SELECT BIN_TO_UUID(id) id,code,name FROM md_warehouse WHERE tenant_id=UUID_TO_BIN(#{tenant}) AND enabled=TRUE",
+        "<if test='id != null'>AND id=UUID_TO_BIN(#{id})</if>",
+        "/*appnexus-bind:access*/ ORDER BY code,id</script>"})
+    @ConstructorArgs({@Arg(column="id",javaType=String.class),
+        @Arg(column="code",javaType=String.class),@Arg(column="name",javaType=String.class)})
+    List<com.appnexus.masterdata.api.masterdata.MasterDataManagement.LoginWarehouse> loginWarehouses(
+        @Param("tenant") String tenant,@Param("id") String id,@Param("access") RowAccessControl.Predicate access);
+
     /** 固定目录列表；详情字段和子表只在父记录授权后读取。 */
     @com.appnexus.persistence.mybatis.GuardedScope(predicate="query.access",resource="masterdata.partner",tenant="query.tenant",when="query.kind",whenValue="PARTNER")
     @com.appnexus.persistence.mybatis.GuardedScope(predicate="query.access",resource="masterdata.warehouse",tenant="query.tenant",when="query.kind",actions={"read"},whenValue="WAREHOUSE")
@@ -45,8 +56,7 @@ public interface MasterReadMapper {
             if(q.id()!=null)sql+=" AND id=UUID_TO_BIN(#{query.id})";
             if(q.codes()!=null)sql+=q.codes().isEmpty()?" AND 1=0":" AND code IN "+placeholders("codes",q.codes().size());
             if(q.kind()==MasterData.Kind.PARTNER||isStorage(q.kind())){
-                var access=Objects.requireNonNull(q.access(),"Row access predicate required");
-                String condition=com.appnexus.persistence.mybatis.ScopedSql.bind(access.sql(),access.parameters(),"query.access");
+                String condition=" /*appnexus-bind:query.access*/ ";
                 // 子记录关联以同租户不可变编码定位根仓库；列表、统计、直查和写入使用同一谓词。
                 if(q.kind()==MasterData.Kind.STORAGE_AREA)
                     sql+=" AND EXISTS (SELECT 1 FROM md_warehouse w WHERE w.tenant_id=md_storage_area.tenant_id AND w.code=md_storage_area.parent_code"+condition+")";

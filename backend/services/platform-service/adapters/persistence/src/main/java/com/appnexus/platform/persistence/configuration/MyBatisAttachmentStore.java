@@ -19,10 +19,11 @@ import org.springframework.transaction.support.TransactionTemplate;
 @Repository
 class MyBatisAttachmentStore implements AttachmentStore, DataAccessExecutor {
     /** @return 由本适配器绑定统一权限并执行固定 SQL 的实际资源 */
-    @Override public Set<String> enforcedResources() { return Set.of("configuration.attachment", "configuration.attachmentledger"); }
+    @Override public Set<String> enforcedResources() { return Set.of("configuration.attachment"); }
 
     private static final String READ = "configuration.attachment:read";
     private static final String UPLOAD = "configuration.attachment:upload";
+    private static final String LEDGER = "configuration.attachment:ledger";
     private final AttachmentRecordMapper mapper;
     private final AccessAuthorization authorization;
     private final ScopedWriteGate gate;
@@ -47,11 +48,20 @@ class MyBatisAttachmentStore implements AttachmentStore, DataAccessExecutor {
 
     /** {@inheritDoc} */
     @Override
-    public Page ledger(UUID actor, Filter filter, int offset, int limit) {
-        var query = new AttachmentRecordMapper.Query(text(filter.tenantId()), filter.businessId(),
+    public Page ledger(Owner owner, Filter filter, int offset, int limit) {
+        var query = new AttachmentRecordMapper.Query(filter.businessId(),
                 filter.fileName(), filter.typeKey(), text(filter.createdBy()), filter.from(), filter.until());
-        return transactions.execute(status -> new Page(mapper.ledger(actor.toString(), query, offset, limit),
-                mapper.ledgerCount(actor.toString(), query)));
+        String tenant = owner.tenantId().toString();
+        String actor = owner.accountId().toString();
+        return scoped(owner, LEDGER, List.of(actor), () -> new Page(mapper.ledger(tenant, actor, query, offset, limit),
+                mapper.ledgerCount(tenant, actor, query)));
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public Item findAvailableInLedger(Owner owner, UUID id) {
+        return scoped(owner, LEDGER, id.toString(), () -> mapper.findAvailableInLedger(
+                owner.tenantId().toString(), owner.accountId().toString(), id.toString()));
     }
 
     /** {@inheritDoc} */
@@ -99,10 +109,15 @@ class MyBatisAttachmentStore implements AttachmentStore, DataAccessExecutor {
     }
 
     private <T> T scoped(Owner owner, String permission, String target, Supplier<T> action) {
+        return scoped(owner, permission, List.of(owner.accountId().toString(), target), action);
+    }
+
+    /** 以操作要求的固定键申请租户 SQL 许可，列表与总数共用事务和授权范围。 */
+    private <T> T scoped(Owner owner, String permission, List<String> keys, Supplier<T> action) {
         var subject = AccessAuthorization.Subject.tenant(owner.accountId(), owner.tenantId(), owner.memberId());
         return transactions.execute(status -> {
             gate.authorizeServiceOperation(owner.tenantId(), permission,
-                    List.of(owner.accountId().toString(), target), () -> authorization.hasPermission(subject, permission));
+                    keys, () -> authorization.hasPermission(subject, permission));
             return action.get();
         });
     }

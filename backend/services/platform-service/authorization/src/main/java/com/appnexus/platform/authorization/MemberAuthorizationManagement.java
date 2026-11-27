@@ -2,6 +2,7 @@ package com.appnexus.platform.authorization;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
@@ -15,9 +16,21 @@ public interface MemberAuthorizationManagement {
      * @param expiresAt 到期 UTC 时间；NULL 为长期，过期分支不参与权限判定
      * @param inheritDataScope true 表示持续继承角色当前数据范围；false 表示使用成员自定义范围
      * @param roleVersion 本次编辑读取的角色版本；保存时用于并发校验
+     * @param objectScopes 成员自定义的对象默认范围；空映射清除，NULL 表示旧逐操作保存
+     * @param inheritedPermissionIds 服务端计算的默认范围来源；保存时不采用客户端值
      */
     record Grant(UUID roleId, Set<UUID> permissionIds, Set<RolePermissionManagement.DataPolicy> dataPolicies,
-                 Instant expiresAt, long roleVersion, boolean inheritDataScope) {
+                 Instant expiresAt, long roleVersion, boolean inheritDataScope,
+                 Map<String,RolePermissionManagement.ObjectScope> objectScopes, Set<UUID> inheritedPermissionIds) {
+        public Grant {
+            objectScopes = objectScopes == null ? null : Map.copyOf(objectScopes);
+            inheritedPermissionIds = inheritedPermissionIds == null ? Set.of() : Set.copyOf(inheritedPermissionIds);
+        }
+        /** 旧的完整操作快照保持原分支模式。 */
+        public Grant(UUID roleId, Set<UUID> permissionIds, Set<RolePermissionManagement.DataPolicy> dataPolicies,
+                     Instant expiresAt, long roleVersion, boolean inheritDataScope) {
+            this(roleId, permissionIds, dataPolicies, expiresAt, roleVersion, inheritDataScope, null, Set.of());
+        }
         /** 旧调用保持自定义语义，避免将已有独立范围隐式转换为继承。 */
         public Grant(UUID roleId, Set<UUID> permissionIds, Set<RolePermissionManagement.DataPolicy> dataPolicies,
                      Instant expiresAt, long roleVersion) {

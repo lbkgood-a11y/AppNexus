@@ -30,16 +30,41 @@ export function buildNavigationMenus(items: MenuNode[]): NavigationMenu[] {
       if(item.type==="DIRECTORY"&&!children.length)return [];
       return [{path:item.type==="EXTERNAL"?item.externalUrl!:item.type==="DIRECTORY"?`/navigation/${item.id}`:item.path!,
         name:item.type==="EXTERNAL"?item.externalUrl!:`Navigation_${item.id}`,
-        meta:{title:{"zh-CN":item.titleZh,zh:item.titleZh,en:item.titleEn},icon:menuIcon(item),rank:item.sortOrder,
+        meta:{title:{"zh-CN":item.titleZh,zh:item.titleZh,en:item.titleEn},icon:navigationIcon(item),rank:item.sortOrder,
           showLink:true,showParent:true,navigation:true},
         ...(item.type==="DIRECTORY"?{children}:{})}];
     });
   return visit(null,new Set());
 }
 
-/** 未配置图标时按菜单职责提供本地默认图标，保证新旧目录、页面及外链都有可识别标识。 */
-function menuIcon(item: MenuNode): string {
-  return item.icon?.trim() || (item.type === "DIRECTORY" ? "ri/menu-line" : item.type === "EXTERNAL" ? "ri/links-fill" : "ri/file-info-line");
+// 具体职责排在领域前面，避免同一领域的库存、权限、配置统一显示成目录图标。
+const navigationIconThemes = [
+  [/attachment|附件/i, "ri/attachment-line"],
+  [/inventory|库存/i, "ri/archive-line"],
+  [/event|事件/i, "ri/history-line"],
+  [/authorization|permission|授权|权限/i, "ri/shield-keyhole-line"],
+  [/roles?|角色/i, "ri/group-line"],
+  [/user|personnel|account|人员|账号/i, "ri/user-settings-line"],
+  [/organization|组织/i, "ri/organization-chart"],
+  [/print|打印/i, "ri/printer-line"],
+  [/workflow|工作流|审批/i, "ri/flow-chart"],
+  [/dictionar|字典/i, "ri/book-2-line"],
+  [/inbound|入仓/i, "ri/folder-line"],
+  [/warehouse|warehousing|仓储|仓库/i, "ri/store-2-line"],
+  [/product|商品/i, "ri/shopping-bag-3-line"],
+  [/master.?data|主数据/i, "ri/database-2-line"],
+  [/configuration|settings|配置|设置/i, "ri/settings-3-line"],
+  [/document|单据/i, "ri/file-list-line"]
+] as const;
+
+/** 解析菜单和路由共同使用的图标。显式配置优先，空值时按职责或入口类型回退到本地图标。 */
+export function navigationIcon(item: MenuNode): string {
+  const configured = item.icon?.trim();
+  if (configured) return configured;
+  if (item.type === "EXTERNAL") return "ri/links-fill";
+  const topic = [item.component, item.code, item.titleZh, item.titleEn].join(" ");
+  const match = navigationIconThemes.find(([pattern]) => pattern.test(topic));
+  return match?.[1] ?? (item.type === "DIRECTORY" ? "ri/menu-line" : "ri/file-info-line");
 }
 
 /** 使用与服务端 code 排序相同的字符序，避免浏览器语言改变同值排序。 */

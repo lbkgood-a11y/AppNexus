@@ -26,6 +26,21 @@ public final class ReadInboundWorkbenchService implements ReadInboundWorkbenchUs
     }
 
     /** {@inheritDoc} */
+    @Override public TaskPage listTasks(VerifiedTenantContext context, String number, TaskStatus status, UUID afterId, int limit) {
+        var exactNumber = number == null || number.isBlank() ? null : number.strip();
+        if (limit < 1 || limit > 100 || (exactNumber != null && exactNumber.length() > 64)) {
+            throw new Rejection(400, "INBOUND_TASK_LIST_FILTER_INVALID");
+        }
+        var subject = new Subject(context.accountId(), context.tenantId(), context.memberId(),
+                context.personId(), context.organizationId());
+        var plan = access.plan(subject, LIST_PERMISSION, RESOURCE);
+        if (!plan.tenantWide()) {
+            throw new Rejection(403, "INBOUND_TASK_LIST_ACCESS_DENIED");
+        }
+        return queries.listTasks(plan, exactNumber, status, afterId, limit);
+    }
+
+    /** {@inheritDoc} */
     @Override public QueuePage queue(VerifiedTenantContext context, Stage stage, UUID afterId, int limit, boolean unopened) {
         if (limit < 1 || limit > 100) {
             throw new Rejection(400, "INBOUND_QUEUE_LIMIT_INVALID");

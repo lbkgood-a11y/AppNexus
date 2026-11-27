@@ -5,7 +5,7 @@ import { router } from "@/router";
 import { usePermissionStoreHook } from "@/store/modules/permission";
 import { useMultiTagsStoreHook } from "@/store/modules/multiTags";
 import { currentTenant } from "@/utils/tenantContext";
-import { buildNavigationMenus, safeNavigationUrl } from "./navigationModel";
+import { buildNavigationMenus, navigationIcon, safeNavigationUrl } from "./navigationModel";
 
 /** 显式构建内注册表；不接受路径模糊匹配、远程组件或服务端脚本。 */
 const pages = {
@@ -13,6 +13,8 @@ const pages = {
   "master-data/partner": {path:"/master-data/partner",name:"MasterDataBusinessPartner",component:()=>import("@/views/master-data/partner.vue")},
   "master-data/storage": {path:"/master-data/storage",name:"MasterDataStorage",component:()=>import("@/views/master-data/storage.vue")},
   "warehousing/inbound-notices": {path:"/warehousing/inbound-notices",name:"WarehousingInboundNotices",component:()=>import("@/views/warehousing/documents.vue")},
+  "warehousing/inbound-tasks": {path:"/warehousing/inbound-tasks",name:"WarehousingInboundTasks",
+    component:()=>import("@/views/warehousing/inbound-tasks.vue")},
   "warehousing/inbound-workbench": {path:"/warehousing/inbound-workbench",name:"WarehousingInboundWorkbench",
     component:()=>import("@/views/warehousing/inbound-workbench.vue")},
   "warehousing/inbound-quality-orders": { path: "/warehousing/inbound-quality-orders", name: "WarehousingInboundQualityOrders",
@@ -22,6 +24,8 @@ const pages = {
   "warehousing/inbound-receipt-orders": { path: "/warehousing/inbound-receipt-orders", name: "WarehousingInboundReceiptOrders",
     component: () => import("@/views/warehousing/inbound-receipt-orders.vue") },
   "warehousing/inventory-overview": {path:"/warehousing/inventory-overview",name:"WarehousingInventoryOverview",component:()=>import("@/views/warehousing/inventory-overview.vue")},
+  "warehousing/personnel-authorization": { path: "/warehousing/personnel-authorization", name: "WarehousePersonnelAuthorization",
+    component: () => import("@/views/warehousing/personnel-authorization.vue") },
   "master-data/warehouse": {path:"/master-data/warehouse",name:"MasterDataWarehouse",component:()=>import("@/views/master-data/warehouse.vue")},
   "master-data/country-region": {path:"/master-data/country-region",name:"MasterDataCountryRegion",component:()=>import("@/views/master-data/country-region.vue")},
   "master-data/subdivision": {path:"/master-data/subdivision",name:"MasterDataSubdivision",component:()=>import("@/views/master-data/subdivision.vue")},
@@ -31,6 +35,8 @@ const pages = {
   "master-data/product-unit": {path:"/master-data/product-unit",name:"MasterDataProductUnit",component:()=>import("@/views/master-data/product-unit.vue")},
   "master-data/product-attribute": {path:"/master-data/product-attribute",name:"MasterDataProductAttribute",component:()=>import("@/views/master-data/product-attribute.vue")},
   "master-data/product-template": {path:"/master-data/product-template",name:"MasterDataProductTemplate",component:()=>import("@/views/master-data/product-template.vue")},
+  "warehousing/inbound-templates": {path:"/warehousing/inbound-templates",name:"WarehousingInboundTemplates",
+    component:()=>import("@/views/warehousing/inbound-templates.vue")},
 
   "platform/business-objects": {path:"/platform/business-objects",name:"PlatformBusinessObjectManagement",component:()=>import("@/views/platform/business-objects.vue")},
   "configuration/coding-rules": {path:"/configuration/coding-rules",name:"CodingRules",component:()=>import("@/views/configuration/coding-rules.vue")},
@@ -42,9 +48,9 @@ const pages = {
   "platform/tenants": {path:"/platform/tenants",name:"PlatformTenantManagement",component:()=>import("@/views/platform/tenants.vue")},
   "platform/users": {path:"/platform/users",name:"PlatformUserManagement",component:()=>import("@/views/platform/users.vue")},
   "platform/features": {path:"/platform/features",name:"PlatformFeatureCatalog",component:()=>import("@/views/platform/features.vue")},
-  "platform/attachment-policies": {path:"/platform/attachment-policies",name:"AttachmentPolicies",component:()=>import("@/views/platform/attachment-policies.vue")},
+  "configuration/attachment-policies": {path:"/configuration/attachment-policies",name:"AttachmentPolicies",component:()=>import("@/views/configuration/attachment-policies.vue")},
   "platform/events": {path:"/platform/events",name:"EventWorkbench",component:()=>import("@/views/platform/events.vue")},
-  "platform/attachments": {path:"/platform/attachments",name:"AttachmentLedger",component:()=>import("@/views/platform/attachments.vue")},
+  "configuration/attachments": {path:"/configuration/attachments",name:"AttachmentLedger",component:()=>import("@/views/configuration/attachments.vue")},
   "platform/menus": {path:"/platform/menus",name:"PlatformMenuManagement",component:()=>import("@/views/platform/menus.vue")},
   "platform/roles": {path:"/platform/roles",name:"PlatformRoleManagement",component:()=>import("@/views/platform/roles.vue")},
   "platform/authorization": {path:"/platform/authorization",name:"PlatformAuthorizationCenter",component:()=>import("@/views/platform/authorization.vue")},
@@ -96,7 +102,10 @@ export function loadNavigation(force=false):Promise<void> {
       const page=pages[item.component as keyof typeof pages];
       if(!page||page.path!==item.path||paths.has(page.path))throw new Error("Unregistered or duplicate navigation page");
       paths.add(page.path);
-      routes.push({...page,meta:{title:{"zh-CN":item.titleZh,zh:item.titleZh,en:item.titleEn},icon:item.icon,showLink:item.visible,navigation:true}});
+      // 仓储页面的查询参数可定位单据，整个业务工作区只占一个平台标签。
+      const warehouseWorkspace = page.path.startsWith("/warehousing/");
+      routes.push({...page,meta:{title:{"zh-CN":item.titleZh,zh:item.titleZh,en:item.titleEn},icon:navigationIcon(item),showLink:item.visible,navigation:true,
+        ...(warehouseWorkspace ? {dynamicLevel:1,reuseOnQueryChange:true} : {})}});
     }
     const menus=buildNavigationMenus(snapshot.items);
     const bindNames=(items:typeof menus)=>items.forEach(item=>{
@@ -122,7 +131,18 @@ export function loadNavigation(force=false):Promise<void> {
     store.navigationReady=true;
     store.cachePageList=[];
     const tags=useMultiTagsStoreHook();
-    tags.handleTags("equal",tags.multiTags.filter(tag=>!tag.path||(!isBusinessPath(tag.path)&&!tag.path.startsWith("/navigation/"))||paths.has(tag.path)).map(tag=>{const current=routes.find(route=>route.path===tag.path);return current?{...tag,meta:current.meta}:tag;}));
+    const registered = new Map(routes.map(route => [route.path, route.meta]));
+    const restoredWorkspacePaths = new Set<string>();
+    const restoredTags = tags.multiTags
+      .filter(tag => !tag.path || (!isBusinessPath(tag.path) && !tag.path.startsWith("/navigation/")) || paths.has(tag.path))
+      .filter(tag => {
+        if (registered.get(tag.path)?.dynamicLevel !== 1) return true;
+        if (restoredWorkspacePaths.has(tag.path)) return false;
+        restoredWorkspacePaths.add(tag.path);
+        return true;
+      })
+      .map(tag => registered.has(tag.path) ? { ...tag, meta: registered.get(tag.path) } : tag);
+    tags.handleTags("equal", restoredTags);
     signature=nextSignature;
     addPathMatch();
   })();

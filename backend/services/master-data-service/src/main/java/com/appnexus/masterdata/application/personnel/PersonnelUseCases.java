@@ -1,0 +1,18 @@
+package com.appnexus.masterdata.application.personnel;
+import com.appnexus.masterdata.organization.PersonManagement;
+import com.appnexus.masterdata.organization.PersonnelDirectory;
+import com.appnexus.masterdata.organization.PersonnelExecution;
+import com.appnexus.masterdata.organization.PersonnelManagement;
+import com.appnexus.masterdata.organization.port.personnel.*;
+import com.appnexus.platform.authorization.AccessAuthorization;
+import com.appnexus.platform.authorization.FieldProtection;
+import com.appnexus.platform.authorization.DataAccessCatalog;
+import com.appnexus.platform.configuration.BusinessValueCatalog;
+/** 无框架人员用例装配入口；外部模块不导入internal实现。 */
+public final class PersonnelUseCases {
+ private PersonnelUseCases(){}
+ /** @param records 人员记录输出端口 @param access 权威授权 @param transaction 完整用例事务 @param dictionaries 字典公开契约 @param protection 统一字段执行器 @param catalog 声明目录 @return 人员基础管理用例 */
+ public static PersonManagement persons(PersonRepository records,AccessAuthorization access,PersonnelTransaction transaction,BusinessValueCatalog dictionaries,FieldProtection protection,DataAccessCatalog catalog){return new PersonDataService(records,access,transaction,dictionaries,protection,catalog);}
+ /** @param access 权威授权 @param directory 组织公开目录 @param transaction 完整用例事务 @param dictionaries 字典公开契约 @param records 人员明细存储 @param content 固定明细编解码 @param identities 权威可代表身份 @param protection 统一字段执行器 @param catalog 声明目录 @return 人员明细及关联管理用例 */
+ public static PersonnelManagement personnel(AccessAuthorization access,PersonnelDirectory directory,PersonnelTransaction transaction,BusinessValueCatalog dictionaries,PersonnelRepository records,PersonnelContent content,PersonnelExecution identities,FieldProtection protection,DataAccessCatalog catalog){return new PersonnelService(access,directory,transaction,dictionaries,records,content,identities,protection,catalog);}
+}

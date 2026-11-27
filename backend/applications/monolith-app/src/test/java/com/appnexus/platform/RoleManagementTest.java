@@ -34,7 +34,7 @@ class RoleManagementTest extends DatabaseTestSupport {
  @Autowired AccessAuthorization authorization;
  @Autowired SubjectRoleManagement subjectRoles;
  @Autowired DataScopeAuthorization dataScopes;
- @Autowired com.appnexus.platform.organization.port.OrganizationUnitRepository organizationUnits;
+ @Autowired com.appnexus.masterdata.organization.port.OrganizationUnitRepository organizationUnits;
  @Autowired EffectiveAuthorizationQuery effectiveAuthorizations;
  @Autowired com.appnexus.platform.authorization.MemberAuthorizationManagement memberAuthorizations;
  @Autowired com.appnexus.platform.authorization.LegacyAuthorizationReconciliation reconciliation;
@@ -262,7 +262,7 @@ class RoleManagementTest extends DatabaseTestSupport {
   org.springframework.web.context.request.RequestContextHolder.setRequestAttributes(
       new org.springframework.web.context.request.ServletRequestAttributes(request));
   try {
-   assertThat(organizationUnits.findAll()).extracting(com.appnexus.platform.organization.OrganizationUnit::id)
+   assertThat(organizationUnits.findAll()).extracting(com.appnexus.masterdata.organization.OrganizationUnit::id)
        .containsExactlyInAnyOrder(root,tree,descendant);
   }finally{
    org.springframework.web.context.request.RequestContextHolder.setRequestAttributes(original);

@@ -20,7 +20,7 @@ public interface AttachmentRecords {
     /** 已验证的租户与当前账号。 */
     record Owner(UUID tenantId, UUID accountId, UUID memberId) {}
 
-    /** 对外资料投影，存储路径只在授权的管理查询中返回。 */
+    /** 附件资料投影，存储路径仅用于服务端定位原件。 */
     record Item(String id, String tenantId, String businessId, String fileName, long sizeBytes,
                 String mediaType, String storagePath, String status, String createdBy, Instant createdAt,
                 String updatedBy, Instant updatedAt) {}
@@ -31,12 +31,23 @@ public interface AttachmentRecords {
     /** @return 当前账号在关联 ID 下的可用附件，offset 从零开始 */
     Page list(Owner owner, String businessId, int offset, int limit);
 
-    /** 平台台账筛选，只收窄权威台账范围。时间使用 UTC，结束时间为排除边界。 */
-    record Filter(UUID tenantId, String businessId, String fileName, String typeKey,
+    /** 租户台账筛选。时间使用 UTC，结束时间为排除边界。 */
+    record Filter(String businessId, String fileName, String typeKey,
                   UUID createdBy, Instant from, Instant until) {}
 
-    /** @return 已获平台台账授权的分页资料 */
-    Page ledger(UUID actor, Filter filter, int offset, int limit);
+    /** @return 当前租户已获台账授权的分页资料 */
+    Page ledger(Owner owner, Filter filter, int offset, int limit);
+
+    /** 私有原件及响应元数据。调用方负责关闭原件流。 */
+    record Download(String fileName, long sizeBytes, InputStream stream) {}
+
+    /**
+     * 读取当前租户台账中的可用原件。
+     * @param owner 已认证的租户主体
+     * @param id 台账中的附件 UUID
+     * @return 私有原件，附件不存在或尚不可用时返回空
+     */
+    Download download(Owner owner, UUID id);
 
     /**
      * 验证并上传一份附件，完成记录写入后才返回。

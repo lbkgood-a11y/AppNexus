@@ -76,7 +76,8 @@ class MasterDataMySqlTest {
       var dataCatalog=com.appnexus.platform.authorization.DataAccessCatalog.fromObjects(List.of(new BusinessPartnerDeclaration()));
       // 固定 Mapper 使用同一数据源，事务仍与原授权及审计写入保持一致。
       var factory=new org.mybatis.spring.SqlSessionFactoryBean();factory.setDataSource(source);
-      var config=new org.apache.ibatis.session.Configuration();config.setLocalCacheScope(org.apache.ibatis.session.LocalCacheScope.STATEMENT);config.setCacheEnabled(false);config.setCallSettersOnNulls(true);
+      var config=new org.apache.ibatis.session.Configuration();config.setLocalCacheScope(org.apache.ibatis.session.LocalCacheScope.STATEMENT);config.setCacheEnabled(false);
+      config.setDefaultScriptingLanguage(com.appnexus.platform.persistence.ScopedQueryLanguageDriver.class);config.setCallSettersOnNulls(true);
       for(Class<?> type:List.of(com.appnexus.masterdata.adapter.persistence.MasterStatusHistoryMapper.class,com.appnexus.masterdata.adapter.persistence.MasterRecordMapper.class,com.appnexus.masterdata.adapter.persistence.MasterReadMapper.class,com.appnexus.masterdata.adapter.persistence.GeographyMapper.class,com.appnexus.masterdata.adapter.persistence.StorageHierarchyMapper.class,com.appnexus.masterdata.adapter.persistence.PartnerDetailMapper.class))config.addMapper(type);
       factory.setConfiguration(config);var session=new org.mybatis.spring.SqlSessionTemplate(factory.getObject());
       var records=session.getMapper(com.appnexus.masterdata.adapter.persistence.MasterRecordMapper.class);var reads=session.getMapper(com.appnexus.masterdata.adapter.persistence.MasterReadMapper.class);var geography=session.getMapper(com.appnexus.masterdata.adapter.persistence.GeographyMapper.class);var storage=session.getMapper(com.appnexus.masterdata.adapter.persistence.StorageHierarchyMapper.class);var details=session.getMapper(com.appnexus.masterdata.adapter.persistence.PartnerDetailMapper.class);

@@ -145,8 +145,8 @@ watch(() => currentTenant.value?.tenantId, load);
         </el-form>
       </template>
     </TreeListTemplate>
-    <ManagedDialog :model-value="!!auditRow" :title="t('tenantParameterEditor.audit')" width="min(640px, calc(100vw - 32px))" @update:model-value="value => { if (!value) auditRow = undefined; }">
-      <RecordAuditDetails v-if="auditRow?.audit" :audit="auditRow.audit" />
+    <ManagedDialog :model-value="!!auditRow" :title="t('tenantParameterEditor.audit')" :width="520" @update:model-value="value => { if (!value) auditRow = undefined; }">
+      <RecordAuditDetails v-if="auditRow?.audit" :audit="auditRow.audit" dialog />
     </ManagedDialog>
   </div>
 </template>

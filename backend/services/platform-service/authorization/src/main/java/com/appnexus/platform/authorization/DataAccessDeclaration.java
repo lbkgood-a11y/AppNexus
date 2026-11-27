@@ -14,7 +14,7 @@ public final class DataAccessDeclaration {
      * 操作引用及实际支持的行范围。
      * @param operationId 已登记的对象操作标识
      * @param permissionCode 已登记的功能权限码，必须属于主资源
-     * @param scopes 已执行的范围类型；空集合表示不配置行范围，DENY/SELF 不隐式猜测语义
+     * @param scopes 已执行且可配置的 ALL 或 RULES；空集合表示不配置行范围
      */
     public record Operation(String operationId,String permissionCode,Set<DataScopeAuthorization.ScopeType> scopes) {
         public Operation { scopes=Set.copyOf(scopes); }

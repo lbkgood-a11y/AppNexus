@@ -485,6 +485,11 @@ account:
     MFA_FAILED: Second-factor authentication failed
     REFRESH_TOKEN_REPLAY: Refresh token replay detected; device authorization revoked
 management:
+  excelExport: Export to Excel
+  exportCurrentPageExcel: Export this page
+  exportSelectedRowsExcel: Export selected rows
+  selectExportRow: Select row {row} for export
+  excelExportFailed: Could not export this page to Excel. Try again.
   queryFor: "{name} search"
   queryConditions: Search filters
   refresh: Refresh
@@ -950,6 +955,17 @@ roleManagement:
     ROLE_DATA_CONFLICT: The role constraints changed.
     INVALID_ROLE_INPUT: The role fields are invalid.
 authorizationCenter:
+  scopeSources:
+    ROLE_DEFAULT: Role object default
+    ROLE_OVERRIDE: Role operation override
+    MEMBER_DEFAULT: Member object default
+    MEMBER_OVERRIDE: Member operation override
+  createObjectOverride: Add operation override
+  objectDefault: Object default scope
+  clearObjectDefault: Clear default scope
+  inheritsObjectDefault: Inherits object default
+  setObjectDefault: Set as object default
+  restoreObjectDefault: Restore inheritance
   rules:
     parameter: Parameter source
     parameters:
@@ -1788,7 +1804,8 @@ businessWorkflow:
   removeConfirm: Remove this step and its independent condition, if any? Publishing affects new submissions.
 businessObject:
   capabilityOverview: Shared capabilities
-  capabilityOverviewHint: Capabilities come from the business object contract. Bind published workflows, print scenes or coding rules without redefining fields or operations.
+  capabilityOverviewHint: View capabilities that can be linked to workflows, print scenes, or coding rules. Expand an interaction contract to see direct business capabilities.
+  noConfigurableCapabilities: This object has no configurable shared capabilities
   contractReference: Contract reference
   configureCapability: Configure binding
   partnerOperations:
@@ -1842,6 +1859,8 @@ businessObject:
   noCodingDeclaration: "This object declares no coding fields"
   catalogBoundary: Browse registered business objects, their operations, data access declarations, and connected capabilities.
   category: Object category
+  allCategories: All categories
+  allStatuses: All statuses
   categories:
     MASTER_DATA: Master data
     TRANSACTION: Transaction
@@ -1942,7 +1961,7 @@ businessObject:
   enableEntry: Enable entry
   disableEntry: Disable entry
   controlReason: Enter a reason (1–200 characters, no sensitive data)
-  pageRelations: Page operation relationships
+  pageRelations: Connected page entries
   addPageRelation: Add page relationship
   savePageRelations: Save page relationships
   pageRelationHint: Link integrated page operations to compatible actions. Removed links block new page commands without affecting existing workflow results.
@@ -2772,6 +2791,14 @@ inboundNotice: {"driverName": "Driver name", "driverPhone": "Contact phone", "dr
 attachments:
   policies: Attachment policies
   ledger: Attachments
+  upload: Upload attachment
+  download: Download
+  downloadFailed: Could not download the attachment. Try again.
+  uploadTenant: Current tenant
+  preview: Preview
+  previewFailed: Could not preview the attachment. Try again.
+  previewUnsupported: Preview is unavailable for this format. Download the file to open it.
+  closeUpload: Close
   type: File type
   extensions: Extensions
   enabled: Enabled
@@ -2800,6 +2827,89 @@ attachments:
     FAILED: Write failed
 
 eventWorkbench:
+  noDeliveries: No deliveries recorded
+  overview: Event overview
+  systemInfo: System information
+  technicalDetails: Technical details
+  recordedAt: Event recorded at
+  eventScope: Scope
+  platformScope: Platform event
+  tenantScope: Tenant event
+  unknownEvent: Unnamed event type
+  unknownConsumer: Unnamed subscription
+  unknownExecutor: Unnamed executor
+  unknownFailure: Execution failed. See technical details.
+  typeCode: Event type code
+  consumerCode: Consumer code
+  executorCode: Executor identifier
+  deliveryId: Delivery identifier
+  failureCode: Failure code
+  eventNames:
+    INBOUND_RECEIPT_POSTED: Inbound receipt posted
+    INBOUND_QUALITY_DECIDED: Inbound quality decision recorded
+    AUTHORITY_INVALIDATED: Authority change applied
+    INTEGRATION_AUTHORITY_CHANGED: Integration client authority changed
+  consumerNames:
+    inbound-batch-quality: Inbound batch quality
+    authority-invalidation: Authority change receipt
+  executorNames:
+    inbound-batch-quality: Batch quality updater
+    authority-invalidation: Authority event handler
+  failureNames:
+    PERMANENT: Manual intervention required
+    TRANSIENT: Temporary execution failure
+    LEASE_EXPIRED: Execution timed out
+    LEGACY_RECEIPT_MISSING: Historical receipt missing, reconciliation required
+    LEGACY_UNMAPPED: Historical delivery unmapped, reconciliation required
+  subscriptionReason: Enter the reason for changing the subscription state
+  subscriptionReasonLength: The change reason must be 1–200 characters
+  subscriptionAudit: Subscription state audit
+  topology: Event production and consumption
+  readMessages: View messages of this type
+  allEvents: All events
+  allStatuses: All statuses
+  searchTypes: Search event types
+  collapseTopology: Collapse delivery chain
+  expandTopology: Expand delivery chain
+  records: Event records
+  eventGroups:
+    INBOUND_RECEIPT_POSTED: Warehouse management
+    INBOUND_QUALITY_DECIDED: Warehouse management
+    AUTHORITY_INVALIDATED: Permission management
+    INTEGRATION_AUTHORITY_CHANGED: Permission management
+  refreshTopology: Refresh subscriptions
+  noSubscriptions: No registered subscriptions
+  producer: Producer operation
+  subscription: Subscription
+  executor: Executor
+  expectedEffect: Expected business effect
+  unknownEffect: No declared effect
+  pause: Pause execution
+  resume: Resume execution
+  paused: Paused
+  active: Enabled
+  subscriptionSaved: Subscription state saved
+  pauseBehavior: New deliveries still queue while paused. Workers stop taking new deliveries and may finish ones already claimed.
+  filterDelivery: Filter timeline by consumer
+  postReceipt: Post inbound receipt
+  decideQuality: Decide inbound quality
+  batchQualityProjection: Update inbound batch quality projection
+  authorityChanges: Change authority configuration
+  integrationChanges: Change integration client authority
+  authorityReceipt: Record authority event consumption receipt
+  refreshDetail: Refresh details
+  lifecycle: Event lifecycle
+  historyLimit: Shows up to 200 recent attempts and recorded creation milestones. Older details may be unavailable.
+  noHistory: No lifecycle records
+  recorded: Event recorded
+  deliveryCreated: Delivery created
+  attemptStarted: Consumption attempt started
+  attemptSucceeded: Consumption succeeded
+  attemptSummary: "{consumer} · Attempt {number}"
+  retryWaiting: Waiting for automatic retry
+  FAILED: Consumption failed
+  LEASE_EXPIRED: Execution lease expired
+  ALREADY_CONSUMED: Consumption already recorded
   title: Event workbench
   eventId: Event ID
   tenant: Tenant ID
@@ -2811,18 +2921,30 @@ eventWorkbench:
   updatedBy: Updated by
   search: Search
   progress: Delivery progress
+  deliveryResult: Delivery results
+  deliveryCounts:
+    done: "{count} succeeded"
+    manual: "{count} need intervention"
+    pending: "{count} pending"
+    processing: "{count} processing"
   counts: "{done} done · {manual} manual · {pending} pending · {processing} processing"
   detail: Event details
   subject: Subject reference
   consumer: Consumer
   attempts: Attempts this cycle
+  attemptRatio: Round / total
+  deliveryActions: Actions
+  deliveryDetails: View details
+  collapseDeliveryDetails: Hide details
+  consumedBy: Consumed by
+  consumedAt: Consumption time
   totalAttempts: Total attempts
   nextAt: Next attempt
-  failure: Failure code
+  failure: Failure reason
   retry: Retry delivery
   reason: Enter the reason for this retry
   reasonLength: Enter a reason of 1–200 characters
-  retried: Retry queued
+  retried: Delivery queued again. Refresh details to see the outcome.
   deliveries: Consumer deliveries
   history: Recent attempts
   attemptNo: Attempt no.
@@ -2830,3 +2952,9 @@ eventWorkbench:
   PROCESSING: Processing
   DONE: Done
   MANUAL: Manual
+
+loginWarehouse:
+  title: Select login warehouse
+  empty: No enabled warehouse is available
+  confirm: Confirm warehouse
+  authorizePersonnel: Warehouse personnel authorization

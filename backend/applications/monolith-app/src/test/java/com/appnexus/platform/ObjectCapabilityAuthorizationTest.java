@@ -52,7 +52,7 @@ class ObjectCapabilityAuthorizationTest extends WorkflowDatabaseTestSupport {
     assertDenied(()->platform.authorizeRecord(context,leave,"print",printSnapshot));
     assertThatThrownBy(()->permissions.replaceAuthorization(roleContext,role.id(),role.version(),ids,Set.of(),"缺少范围的配置必须拒绝")).isInstanceOf(RuntimeException.class);
     // 模拟历史不完整授权，验证运行时也失败关闭；生产配置入口不能创建这种状态。
-    for(UUID permission:ids)jdbc.update("INSERT INTO access_role_permission(role_id,permission_id,scope_type,granted_by) VALUES(UUID_TO_BIN(?),UUID_TO_BIN(?),'TENANT',UUID_TO_BIN(?))",role.id().toString(),permission.toString(),admin.toString());
+    for(UUID permission:ids)jdbc.update("INSERT INTO access_role_permission(role_id,permission_id,scope_type,granted_by,tenant_id) SELECT id,UUID_TO_BIN(?),'TENANT',UUID_TO_BIN(?),tenant_id FROM access_role WHERE id=UUID_TO_BIN(?)",permission.toString(),admin.toString(),role.id().toString());
     var noScope=permissions.getAuthorization(roleContext,role.id());
     assertThat(platform.operationAllowed(context,"LeaveRequest.print","leave.request:print")).isTrue();
     assertDenied(()->platform.authorizeRecord(context,leave,"print",printSnapshot));

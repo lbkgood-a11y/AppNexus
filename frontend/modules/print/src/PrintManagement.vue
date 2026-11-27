@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { createPrintId } from "./identifier";
 import { ManagementTable, VxeTable, VxeColumn } from "@appnexus/ui";
 import { setErrorFeedback } from "@appnexus/ui";
 import { FloatingError } from "@appnexus/ui";
@@ -52,7 +53,7 @@ async function createTemplate(code?:string){
   editing.value=undefined;tab.value="templates";
   const selected=selectDesignContract(contracts.value,code??templateForm.value.dataContract)!;
   startMode.value=selected.code==="warehouse.outbound.v1"?"outbound":"blank";
-  templateForm.value={code:"print_"+crypto.randomUUID(),name:"",category:"A4",dataContract:selected.code,scope:{},template:createBlankTemplate(),revision:-1};templateOpen.value=true;
+  templateForm.value={code:"print_"+createPrintId(),name:"",category:"A4",dataContract:selected.code,scope:{},template:createBlankTemplate(),revision:-1};templateOpen.value=true;
 }
 /** 契约保存同步父级目录，并让下一步直接使用新建契约，不必刷新整个应用。 */
 function contractsChanged(values:DesignContract[],code:string){contracts.value=values;templateForm.value.dataContract=code;}

@@ -2,6 +2,7 @@ package com.appnexus.bulkwarehousing.adapter.persistence.inboundexecution;
 
 import com.appnexus.bulkwarehousing.api.inboundexecution.ReadInboundDocumentsUseCase.Creation;
 import com.appnexus.bulkwarehousing.api.inboundexecution.ReadInboundDocumentsUseCase.TaskOption;
+import com.appnexus.bulkwarehousing.api.inboundexecution.ReadInboundDocumentsUseCase.LabMetricOption;
 import java.util.List;
 
 import com.appnexus.bulkwarehousing.api.inboundexecution.ReadInboundDocumentsUseCase.Kind;
@@ -22,6 +23,7 @@ public final class MyBatisInboundDocumentQueries implements InboundDocumentQueri
     private final InboundDocumentMapper mapper;
     private final ScopedWriteGate gate;
     private final TransactionTemplate transaction;
+    private final tools.jackson.databind.json.JsonMapper json=tools.jackson.databind.json.JsonMapper.builder().build();
 
     /** @param mapper 固定 SQL @param gate 公共事务许可 @param manager 组合应用主库事务 */
     public MyBatisInboundDocumentQueries(InboundDocumentMapper mapper,ScopedWriteGate gate,PlatformTransactionManager manager) {
@@ -75,7 +77,19 @@ public final class MyBatisInboundDocumentQueries implements InboundDocumentQueri
                 case LPN -> mapper.optionsLPN(tenant, pattern);
             };
             return rows.stream().map(row -> new TaskOption(UUID.fromString(row.taskId()), row.taskNo(),
-                    row.taskVersion(), creation.kind() == Kind.RECEIPT ? row.meteringVersion() : null)).toList();
+                    row.taskVersion(), creation.kind() == Kind.RECEIPT ? row.meteringVersion() : null,
+                    creation.kind() == Kind.RECEIPT ? UUID.fromString(row.noticeId()) : null)).toList();
+        });
+    }
+
+    /** {@inheritDoc} */
+    @Override public List<LabMetricOption> labMetrics(AccessPlan plan,UUID id) {
+        return transaction.execute(status->{
+            String snapshot=mapper.labMetrics(bind(plan),id.toString());
+            if(snapshot==null)return List.of();
+            return json.readTree(snapshot).properties().stream()
+                    .map(row->new LabMetricOption(row.getKey(),row.getValue().path("unit").asText()))
+                    .sorted(java.util.Comparator.comparing(LabMetricOption::code)).toList();
         });
     }
 

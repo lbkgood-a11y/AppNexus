@@ -32,7 +32,7 @@ public final class DataAccessCatalog {
                 var fields=new HashSet<String>();
                 for(var f:r.fields())if(f.field()==null||!f.field().matches("[a-z][A-Za-z0-9]*")||!fields.add(f.field())||f.nameZh()==null||f.nameZh().isBlank()||f.nameEn()==null||f.nameEn().isBlank()||f.kind()==null||f.modes().isEmpty())throw invalid();
             }
-            for(var op:d.operations())if(op.operationId()==null||!op.operationId().startsWith(d.objectType()+".")||!operations.add(op.operationId())||op.permissionCode()==null||!op.permissionCode().startsWith(root+":")||op.scopes().contains(DataScopeAuthorization.ScopeType.DENY)||op.scopes().contains(DataScopeAuthorization.ScopeType.SELF))throw invalid();
+            for(var op:d.operations())if(op.operationId()==null||!op.operationId().startsWith(d.objectType()+".")||!operations.add(op.operationId())||op.permissionCode()==null||!op.permissionCode().startsWith(root+":")||op.scopes().stream().anyMatch(scope->!scope.configurable()))throw invalid();
             result.add(d);
         }
         descriptors=List.copyOf(result);

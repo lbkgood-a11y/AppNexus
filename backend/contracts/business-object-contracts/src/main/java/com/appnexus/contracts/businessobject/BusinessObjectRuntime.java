@@ -87,8 +87,11 @@ public interface BusinessObjectRuntime {
    * @param version 实际读取的非负依据版本
    * @param organizationId 真实记录归属，用于流程路由；无归属时为空且工作流驱动拒绝
    * @param values 授权后的对象字段，公共执行器按能力再次投影
+   * @param recordId 实际重读的记录 UUID；指定记录范围必填，旧全量执行端口可省略
    */
-  record Snapshot(long version, String organizationId, Map<String, ?> values) {
+  record Snapshot(long version, String organizationId, Map<String, ?> values, String recordId) {
+    /** 兼容既有快照生产者；无记录键时不能命中指定记录授权。 */
+    public Snapshot(long version,String organizationId,Map<String,?> values){this(version,organizationId,values,null);}
     public Snapshot { values = Map.copyOf(values); }
   }
 

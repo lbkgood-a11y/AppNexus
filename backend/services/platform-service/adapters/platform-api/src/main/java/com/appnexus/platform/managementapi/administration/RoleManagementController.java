@@ -1,4 +1,5 @@
 package com.appnexus.platform.managementapi.administration;
+import com.appnexus.contracts.operation.EndpointPolicy;
 import com.appnexus.platform.security.*;
 
 import com.appnexus.platform.authorization.RoleManagement;
@@ -38,58 +39,58 @@ public class RoleManagementController {
     /** 操作契约关联下方真实接口；仅供展示与一致性校验，主体、权限及业务约束仍由原用例执行。 */
 
 
- @com.appnexus.contracts.operation.OperationBinding(id="PlatformRole.list", reference=true)
- @EndpointOperation("access.role:read") @com.appnexus.contracts.operation.RecordAuditSource(table="access_role",tenant=false,path="items")
+ @com.appnexus.contracts.operation.OperationBinding(id="PlatformRole.list", reference=true, enforceDeclaredPermission=true)
+  @com.appnexus.contracts.operation.RecordAuditSource(table="access_role",tenant=false,path="items")
  @GetMapping("/bff/platform/roles") ResponseEntity<RoleManagement.Page> platformList(Authentication a,@RequestParam(defaultValue="") String query,@RequestParam(required=false) RoleManagement.Status status,@RequestParam(required=false) RoleManagement.RoleType roleType,@RequestParam(defaultValue="1") int page,@RequestParam(defaultValue="20") int pageSize){return ok(()->roles.list(platform(a),new RoleManagement.Query(query,status,roleType,page,pageSize)));}
     /** 操作契约关联下方真实接口；仅供展示与一致性校验，主体、权限及业务约束仍由原用例执行。 */
-    @com.appnexus.contracts.operation.OperationBinding(id="PlatformRole.create", reference=true)
- @EndpointOperation("access.role:create") @PostMapping("/bff/platform/roles") ResponseEntity<RoleManagement.Role> platformCreate(Authentication a,@RequestBody Create input){return ok(()->roles.create(platform(a),Objects.requireNonNull(input).command()));}
+    @com.appnexus.contracts.operation.OperationBinding(id="PlatformRole.create", reference=true, enforceDeclaredPermission=true)
+  @PostMapping("/bff/platform/roles") ResponseEntity<RoleManagement.Role> platformCreate(Authentication a,@RequestBody Create input){return ok(()->roles.create(platform(a),Objects.requireNonNull(input).command()));}
     /** 操作契约关联下方真实接口；仅供展示与一致性校验，主体、权限及业务约束仍由原用例执行。 */
-    @com.appnexus.contracts.operation.OperationBinding(id="PlatformRole.update", reference=true)
- @EndpointOperation("access.role:update") @PutMapping("/bff/platform/roles/{id}") ResponseEntity<RoleManagement.Role> platformUpdate(Authentication a,@PathVariable UUID id,@RequestBody Update input){return ok(()->roles.update(platform(a),id,Objects.requireNonNull(input).command()));}
+    @com.appnexus.contracts.operation.OperationBinding(id="PlatformRole.update", reference=true, enforceDeclaredPermission=true)
+  @PutMapping("/bff/platform/roles/{id}") ResponseEntity<RoleManagement.Role> platformUpdate(Authentication a,@PathVariable UUID id,@RequestBody Update input){return ok(()->roles.update(platform(a),id,Objects.requireNonNull(input).command()));}
     /** 操作契约关联下方真实接口；仅供展示与一致性校验，主体、权限及业务约束仍由原用例执行。 */
-    @com.appnexus.contracts.operation.OperationBinding(id="PlatformRole.setStatus", reference=true)
- @EndpointOperation("access.role:enable") @PatchMapping("/bff/platform/roles/{id}/status") ResponseEntity<RoleManagement.Role> platformStatus(Authentication a,@PathVariable UUID id,@RequestBody StatusChange input){return ok(()->roles.changeStatus(platform(a),id,input.version(),input.status(),input.reason()));}
+    @com.appnexus.contracts.operation.OperationBinding(id="PlatformRole.setStatus", reference=true, enforceDeclaredPermission=true)
+  @PatchMapping("/bff/platform/roles/{id}/status") ResponseEntity<RoleManagement.Role> platformStatus(Authentication a,@PathVariable UUID id,@RequestBody StatusChange input){return ok(()->roles.changeStatus(platform(a),id,input.version(),input.status(),input.reason()));}
     /** 操作契约关联下方真实接口；仅供展示与一致性校验，主体、权限及业务约束仍由原用例执行。 */
-    @com.appnexus.contracts.operation.OperationBinding(id="PlatformRole.delete", reference=true)
- @EndpointOperation("access.role:delete") @PostMapping("/bff/platform/roles/{id}/delete") ResponseEntity<Void> platformDelete(Authentication a,@PathVariable UUID id,@RequestBody Delete input){return empty(()->roles.delete(platform(a),id,input.version(),input.confirmationCode(),input.reason()));}
+    @com.appnexus.contracts.operation.OperationBinding(id="PlatformRole.delete", reference=true, enforceDeclaredPermission=true)
+  @PostMapping("/bff/platform/roles/{id}/delete") ResponseEntity<Void> platformDelete(Authentication a,@PathVariable UUID id,@RequestBody Delete input){return empty(()->roles.delete(platform(a),id,input.version(),input.confirmationCode(),input.reason()));}
 
     /** 操作契约关联下方真实接口；仅供展示与一致性校验，主体、权限及业务约束仍由原用例执行。 */
 
 
- @com.appnexus.contracts.operation.OperationBinding(id="TenantRole.listManaged", reference=true)
- @EndpointOperation(value="access.tenant.role:read",platformPermission="tenant.role:read") @com.appnexus.contracts.operation.RecordAuditSource(table="access_role",path="items",managedTenant="tenant")
+ @com.appnexus.contracts.operation.OperationBinding(id="TenantRole.listManaged", reference=true, enforceDeclaredPermission=true)
+  @com.appnexus.contracts.operation.RecordAuditSource(table="access_role",path="items",managedTenant="tenant")
  @GetMapping("/bff/platform/tenants/{tenant}/roles") ResponseEntity<RoleManagement.Page> managedList(Authentication a,@PathVariable UUID tenant,@RequestParam(defaultValue="") String query,@RequestParam(required=false) RoleManagement.Status status,@RequestParam(required=false) RoleManagement.RoleType roleType,@RequestParam(defaultValue="1") int page,@RequestParam(defaultValue="20") int pageSize){return ok(()->roles.list(managed(a,tenant),new RoleManagement.Query(query,status,roleType,page,pageSize)));}
     /** 操作契约关联下方真实接口；仅供展示与一致性校验，主体、权限及业务约束仍由原用例执行。 */
-    @com.appnexus.contracts.operation.OperationBinding(id="TenantRole.createManaged", reference=true)
- @EndpointOperation(value="access.tenant.role:create",platformPermission="tenant.role:create") @PostMapping("/bff/platform/tenants/{tenant}/roles") ResponseEntity<RoleManagement.Role> managedCreate(Authentication a,@PathVariable UUID tenant,@RequestBody Create input){return ok(()->roles.create(managed(a,tenant),Objects.requireNonNull(input).command()));}
+    @com.appnexus.contracts.operation.OperationBinding(id="TenantRole.createManaged", reference=true, enforceDeclaredPermission=true)
+  @PostMapping("/bff/platform/tenants/{tenant}/roles") ResponseEntity<RoleManagement.Role> managedCreate(Authentication a,@PathVariable UUID tenant,@RequestBody Create input){return ok(()->roles.create(managed(a,tenant),Objects.requireNonNull(input).command()));}
     /** 操作契约关联下方真实接口；仅供展示与一致性校验，主体、权限及业务约束仍由原用例执行。 */
-    @com.appnexus.contracts.operation.OperationBinding(id="TenantRole.updateManaged", reference=true)
- @EndpointOperation(value="access.tenant.role:update",platformPermission="tenant.role:update") @PutMapping("/bff/platform/tenants/{tenant}/roles/{id}") ResponseEntity<RoleManagement.Role> managedUpdate(Authentication a,@PathVariable UUID tenant,@PathVariable UUID id,@RequestBody Update input){return ok(()->roles.update(managed(a,tenant),id,Objects.requireNonNull(input).command()));}
+    @com.appnexus.contracts.operation.OperationBinding(id="TenantRole.updateManaged", reference=true, enforceDeclaredPermission=true)
+  @PutMapping("/bff/platform/tenants/{tenant}/roles/{id}") ResponseEntity<RoleManagement.Role> managedUpdate(Authentication a,@PathVariable UUID tenant,@PathVariable UUID id,@RequestBody Update input){return ok(()->roles.update(managed(a,tenant),id,Objects.requireNonNull(input).command()));}
     /** 操作契约关联下方真实接口；仅供展示与一致性校验，主体、权限及业务约束仍由原用例执行。 */
-    @com.appnexus.contracts.operation.OperationBinding(id="TenantRole.setStatusManaged", reference=true)
- @EndpointOperation(value="access.tenant.role:update",platformPermission="tenant.role:update") @PatchMapping("/bff/platform/tenants/{tenant}/roles/{id}/status") ResponseEntity<RoleManagement.Role> managedStatus(Authentication a,@PathVariable UUID tenant,@PathVariable UUID id,@RequestBody StatusChange input){return ok(()->roles.changeStatus(managed(a,tenant),id,input.version(),input.status(),input.reason()));}
+    @com.appnexus.contracts.operation.OperationBinding(id="TenantRole.setStatusManaged", reference=true, enforceDeclaredPermission=true)
+  @PatchMapping("/bff/platform/tenants/{tenant}/roles/{id}/status") ResponseEntity<RoleManagement.Role> managedStatus(Authentication a,@PathVariable UUID tenant,@PathVariable UUID id,@RequestBody StatusChange input){return ok(()->roles.changeStatus(managed(a,tenant),id,input.version(),input.status(),input.reason()));}
     /** 操作契约关联下方真实接口；仅供展示与一致性校验，主体、权限及业务约束仍由原用例执行。 */
-    @com.appnexus.contracts.operation.OperationBinding(id="TenantRole.deleteManaged", reference=true)
- @EndpointOperation(value="access.tenant.role:delete",platformPermission="tenant.role:delete") @PostMapping("/bff/platform/tenants/{tenant}/roles/{id}/delete") ResponseEntity<Void> managedDelete(Authentication a,@PathVariable UUID tenant,@PathVariable UUID id,@RequestBody Delete input){return empty(()->roles.delete(managed(a,tenant),id,input.version(),input.confirmationCode(),input.reason()));}
+    @com.appnexus.contracts.operation.OperationBinding(id="TenantRole.deleteManaged", reference=true, enforceDeclaredPermission=true)
+  @PostMapping("/bff/platform/tenants/{tenant}/roles/{id}/delete") ResponseEntity<Void> managedDelete(Authentication a,@PathVariable UUID tenant,@PathVariable UUID id,@RequestBody Delete input){return empty(()->roles.delete(managed(a,tenant),id,input.version(),input.confirmationCode(),input.reason()));}
 
     /** 操作契约关联下方真实接口；仅供展示与一致性校验，主体、权限及业务约束仍由原用例执行。 */
 
-    @com.appnexus.contracts.operation.OperationBinding(id="TenantRole.list", reference=true)
- @EndpointOperation("access.tenant.role:read") @com.appnexus.contracts.operation.RecordAuditSource(table="access_role",path="items")
+    @com.appnexus.contracts.operation.OperationBinding(id="TenantRole.list", reference=true, enforceDeclaredPermission=true)
+  @com.appnexus.contracts.operation.RecordAuditSource(table="access_role",path="items")
  @GetMapping("/api/access/roles") ResponseEntity<RoleManagement.Page> tenantList(Authentication a,HttpServletRequest r,@RequestParam(defaultValue="") String query,@RequestParam(required=false) RoleManagement.Status status,@RequestParam(required=false) RoleManagement.RoleType roleType,@RequestParam(defaultValue="1") int page,@RequestParam(defaultValue="20") int pageSize){return ok(()->roles.list(tenant(a,r),new RoleManagement.Query(query,status,roleType,page,pageSize)));}
     /** 操作契约关联下方真实接口；仅供展示与一致性校验，主体、权限及业务约束仍由原用例执行。 */
-    @com.appnexus.contracts.operation.OperationBinding(id="TenantRole.create", reference=true)
- @EndpointOperation("access.tenant.role:create") @PostMapping("/api/access/roles") ResponseEntity<RoleManagement.Role> tenantCreate(Authentication a,HttpServletRequest r,@RequestBody Create input){return ok(()->roles.create(tenant(a,r),Objects.requireNonNull(input).command()));}
+    @com.appnexus.contracts.operation.OperationBinding(id="TenantRole.create", reference=true, enforceDeclaredPermission=true)
+  @PostMapping("/api/access/roles") ResponseEntity<RoleManagement.Role> tenantCreate(Authentication a,HttpServletRequest r,@RequestBody Create input){return ok(()->roles.create(tenant(a,r),Objects.requireNonNull(input).command()));}
     /** 操作契约关联下方真实接口；仅供展示与一致性校验，主体、权限及业务约束仍由原用例执行。 */
-    @com.appnexus.contracts.operation.OperationBinding(id="TenantRole.update", reference=true)
- @EndpointOperation("access.tenant.role:update") @PutMapping("/api/access/roles/{id}") ResponseEntity<RoleManagement.Role> tenantUpdate(Authentication a,HttpServletRequest r,@PathVariable UUID id,@RequestBody Update input){return ok(()->roles.update(tenant(a,r),id,Objects.requireNonNull(input).command()));}
+    @com.appnexus.contracts.operation.OperationBinding(id="TenantRole.update", reference=true, enforceDeclaredPermission=true)
+  @PutMapping("/api/access/roles/{id}") ResponseEntity<RoleManagement.Role> tenantUpdate(Authentication a,HttpServletRequest r,@PathVariable UUID id,@RequestBody Update input){return ok(()->roles.update(tenant(a,r),id,Objects.requireNonNull(input).command()));}
     /** 操作契约关联下方真实接口；仅供展示与一致性校验，主体、权限及业务约束仍由原用例执行。 */
-    @com.appnexus.contracts.operation.OperationBinding(id="TenantRole.setStatus", reference=true)
- @EndpointOperation("access.tenant.role:update") @PatchMapping("/api/access/roles/{id}/status") ResponseEntity<RoleManagement.Role> tenantStatus(Authentication a,HttpServletRequest r,@PathVariable UUID id,@RequestBody StatusChange input){return ok(()->roles.changeStatus(tenant(a,r),id,input.version(),input.status(),input.reason()));}
+    @com.appnexus.contracts.operation.OperationBinding(id="TenantRole.setStatus", reference=true, enforceDeclaredPermission=true)
+  @PatchMapping("/api/access/roles/{id}/status") ResponseEntity<RoleManagement.Role> tenantStatus(Authentication a,HttpServletRequest r,@PathVariable UUID id,@RequestBody StatusChange input){return ok(()->roles.changeStatus(tenant(a,r),id,input.version(),input.status(),input.reason()));}
     /** 操作契约关联下方真实接口；仅供展示与一致性校验，主体、权限及业务约束仍由原用例执行。 */
-    @com.appnexus.contracts.operation.OperationBinding(id="TenantRole.delete", reference=true)
- @EndpointOperation("access.tenant.role:delete") @PostMapping("/api/access/roles/{id}/delete") ResponseEntity<Void> tenantDelete(Authentication a,HttpServletRequest r,@PathVariable UUID id,@RequestBody Delete input){return empty(()->roles.delete(tenant(a,r),id,input.version(),input.confirmationCode(),input.reason()));}
+    @com.appnexus.contracts.operation.OperationBinding(id="TenantRole.delete", reference=true, enforceDeclaredPermission=true)
+  @PostMapping("/api/access/roles/{id}/delete") ResponseEntity<Void> tenantDelete(Authentication a,HttpServletRequest r,@PathVariable UUID id,@RequestBody Delete input){return empty(()->roles.delete(tenant(a,r),id,input.version(),input.confirmationCode(),input.reason()));}
 
     private RoleManagement.Context platform(Authentication a){return new RoleManagement.Context(actor(a),null,null);}
     private RoleManagement.Context managed(Authentication a,UUID tenant){return new RoleManagement.Context(actor(a),Objects.requireNonNull(tenant),null);}

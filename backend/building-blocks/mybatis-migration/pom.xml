@@ -1,8 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- 仅历史迁移连接适配，不含业务表、权限算法或运行期SQL入口。 -->
 <project xmlns="http://maven.apache.org/POM/4.0.0">
- <modelVersion>4.0.0</modelVersion>
- <parent><groupId>com.appnexus</groupId><artifactId>building-blocks</artifactId><version>0.1.0-SNAPSHOT</version></parent>
- <artifactId>mybatis-migration</artifactId>
- <dependencies><dependency><groupId>org.mybatis</groupId><artifactId>mybatis</artifactId><version>3.5.19</version></dependency></dependencies>
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.appnexus</groupId>
+        <artifactId>building-blocks</artifactId>
+        <version>0.1.0-SNAPSHOT</version>
+    </parent>
+    <artifactId>mybatis-migration</artifactId>
+    <dependencies>
+        <dependency>
+            <groupId>org.mybatis</groupId>
+            <artifactId>mybatis</artifactId>
+            <version>3.5.19</version>
+        </dependency>
+    </dependencies>
 </project>

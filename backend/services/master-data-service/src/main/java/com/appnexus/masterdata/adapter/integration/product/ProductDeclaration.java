@@ -68,7 +68,7 @@ public final class ProductDeclaration implements BusinessObjects.Provider {
       operation("createOrganizations","查询新增商品归属组织","Read create product organizations","masterdata.product:create","GET","/api/master-data/product/organizations/create",List.of("master-data/product")),
       operation("updateOrganizations","查询修改商品归属组织","Read update product organizations","masterdata.product:update","GET","/api/master-data/product/organizations/update",List.of("master-data/product")));
   var scopes=new TreeMap<String,Set<String>>();
-  operations.forEach(op->scopes.put(op.operationCode(),Set.of("ALL","ORGANIZATION","ORGANIZATION_SUBTREE")));
+  operations.forEach(op->scopes.put(op.operationCode(),Set.of("ALL")));
   if(approvalEnabled){
    var withApproval=new ArrayList<>(operations);
    withApproval.addAll(List.of(
@@ -81,7 +81,7 @@ public final class ProductDeclaration implements BusinessObjects.Provider {
   var scopedPermissions=Set.of("masterdata.product:read","masterdata.product:create","masterdata.product:update","masterdata.product:set_status");
   for(var operation:operations)if(scopedPermissions.contains(operation.permissionCode())){
    scopedOperations.add(operation.operationCode());
-   scopes.put(operation.operationCode(),Set.of("ALL","ORGANIZATION","ORGANIZATION_SUBTREE","RULES"));
+   scopes.put(operation.operationCode(),Set.of("ALL","RULES"));
   }
   return new Descriptor("Product","商品档案","Products","master-data",7,Category.MASTER_DATA,List.of(),operations,
    new DataAccess("TENANT",List.of(new DataResource("masterdata.product","","商品档案","Products",List.of())),scopes,

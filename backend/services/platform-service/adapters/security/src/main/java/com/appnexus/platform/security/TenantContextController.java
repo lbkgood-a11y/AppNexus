@@ -1,4 +1,5 @@
 package com.appnexus.platform.security;
+import com.appnexus.contracts.operation.EndpointPolicy;
 import com.appnexus.platform.tenant.TenantAccess;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.*;
@@ -18,7 +19,11 @@ public class TenantContextController {
     /** 宿主会话上下文键；仅供受信HTTP适配器读取，不接受请求体覆盖。 */
     public static final String VERSION="appnexus.tenantVersion";
     private final TenantAccess access;
-    public TenantContextController(TenantAccess access) { this.access=access; }
+    private final com.appnexus.platform.tenant.TenantRequestIdentity identity;
+    public TenantContextController(TenantAccess access, com.appnexus.platform.tenant.TenantRequestIdentity identity) {
+        this.access = access;
+        this.identity = identity;
+    }
     /** 当前可访问租户；不提供跨账号查询参数。 */
     @com.appnexus.contracts.operation.OperationBinding(id="TenantMember.availableTenants", reference=true, eligibility=com.appnexus.contracts.operation.OperationBinding.Eligibility.SELF)
     @GetMapping
@@ -72,7 +77,7 @@ public class TenantContextController {
         if(!m.tenantId().toString().equals(previous)||!m.memberId().toString().equals(session.getAttribute(MEMBER))||version<1) {
             // 同一租户中的成员身份变化也必须轮换会话并推进版本，旧页面请求不能沿用原上下文。
             request.changeSessionId();
-            session.removeAttribute("appnexus.person");session.removeAttribute("appnexus.personOrganization");session.removeAttribute("appnexus.personTenant");
+            identity.reset(request);
             session.setAttribute(TENANT,m.tenantId().toString());session.setAttribute(MEMBER,m.memberId().toString());
             session.setAttribute(VERSION,version+1);
         }

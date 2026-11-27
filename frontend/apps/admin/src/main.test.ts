@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ORGANIZATION_RESOURCE } from "@appnexus/organization";
+import { ORGANIZATION_RESOURCE } from "@appnexus/master-data/organization";
 import { createTenantSession } from "@appnexus/security";
 
 describe("admin assembly", () => {

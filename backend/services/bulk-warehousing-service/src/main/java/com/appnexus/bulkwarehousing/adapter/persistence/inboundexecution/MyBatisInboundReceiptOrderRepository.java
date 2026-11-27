@@ -2,6 +2,10 @@ package com.appnexus.bulkwarehousing.adapter.persistence.inboundexecution;
 
 import com.appnexus.bulkwarehousing.api.InboundReceiptReferences;
 import com.appnexus.bulkwarehousing.application.inboundexecution.InboundReceiptOrderRepository;
+import com.appnexus.bulkwarehousing.domain.inboundexecution.ReceiptQualityDeduction.Formula;
+import com.appnexus.bulkwarehousing.domain.inboundexecution.UnloadingFact;
+import java.math.BigDecimal;
+import java.util.LinkedHashMap;
 import com.appnexus.contracts.businessobject.BusinessObjects.Rejection;
 import com.appnexus.platform.authorization.AccessPlan;
 import com.appnexus.platform.authorization.ScopedWriteGate;
@@ -48,9 +52,24 @@ public final class MyBatisInboundReceiptOrderRepository implements InboundReceip
         if (row == null) return null;
         var notice = mapper.lockNotice(key, row.noticeId());
         if (notice == null) return null;
-        boolean eligible = !row.extraDeduction() && mapper.eligibleTemplate(key, row.templateId()) != null;
+        var policy = mapper.eligibleTemplate(key, row.templateId());
+        boolean qualified = policy != null && "QUALIFIED_AND_UNLOADED".equals(policy.qualityStrategy());
+        boolean eligible = policy != null && !"RETURN".equals(row.unload()) && (qualified || row.siteKg().signum()==0);
+        Formula formula = null;
+        UnloadingFact unloading = new UnloadingFact(UnloadingFact.Disposition.NOT_REQUIRED, null, BigDecimal.ZERO);
+        if (qualified) {
+            try {
+                formula = json.readValue(policy.formula(), Formula.class);
+                unloading = new UnloadingFact(row.unload()==null ? UnloadingFact.Disposition.UNCONFIRMED
+                        : UnloadingFact.Disposition.valueOf(row.unload()),
+                        row.evidence()==null ? null : UUID.fromString(row.evidence()), row.siteKg());
+            } catch (RuntimeException invalid) {
+                eligible = false;
+            }
+        }
         return new Task(row.rowVersion(), row.status(), UUID.fromString(row.noticeId()),
-                UUID.fromString(notice.warehouseId()), UUID.fromString(notice.ownerId()), notice.status(), eligible);
+                UUID.fromString(notice.warehouseId()), UUID.fromString(notice.ownerId()), notice.status(), eligible,
+                policy==null ? null : policy.qualityStrategy(), formula, policy==null ? null : policy.formula(), unloading);
     }
 
     /** {@inheritDoc} */
@@ -65,14 +84,27 @@ public final class MyBatisInboundReceiptOrderRepository implements InboundReceip
     /** {@inheritDoc} */
     @Override public Sample lockSample(UUID tenant, UUID task) {
         var row = mapper.lockSample(bytes(tenant), task.toString());
-        return row == null ? null : new Sample(UUID.fromString(row.id()), row.version(), row.sampled(), row.decision());
+        if (row == null) return null;
+        var values = new LinkedHashMap<String,BigDecimal>();
+        if (row.snapshot()!=null) {
+            var snapshot = json.readTree(row.snapshot());
+            snapshot.path("metrics").properties().forEach(entry -> {
+                String unit = snapshot.path("rules").path(entry.getKey()).path("unit").asText();
+                if (entry.getValue().isNumber() && ("pct".equals(unit) || "%".equals(unit))) {
+                    values.put(entry.getKey(),entry.getValue().decimalValue());
+                }
+            });
+        }
+        return new Sample(UUID.fromString(row.id()), row.version(), row.sampled(), row.decision(), row.snapshot(),
+                Map.copyOf(values));
     }
 
     /** {@inheritDoc} */
     @Override public Meter lockMeter(UUID tenant, UUID task) {
         var row = mapper.lockMeter(bytes(tenant), task.toString());
         return row == null || row.physicalNetKg() == null ? null
-                : new Meter(UUID.fromString(row.id()), row.rowVersion(), row.physicalNetKg(), row.method());
+                : new Meter(UUID.fromString(row.id()), row.rowVersion(), row.physicalNetKg(), row.method(),
+                    row.tareQualityId()==null ? null : UUID.fromString(row.tareQualityId()));
     }
 
     /** {@inheritDoc} */
@@ -96,16 +128,26 @@ public final class MyBatisInboundReceiptOrderRepository implements InboundReceip
     @Override public void insertDraft(UUID tenant, UUID actor, Draft draft, boolean existing) {
         var key = bytes(tenant);
         var use = draft.references();
-        var draftSnapshot = json.writeValueAsString(Map.of("method", draft.method(), "qualityState",
+        var snapshot = new LinkedHashMap<String,Object>(Map.of("method", draft.method(), "qualityState",
                 draft.qualityState(), "physicalNetKg", draft.netKg(), "quantityEvidence", use.quantity()));
+        var deduction = draft.deduction();
+        if (draft.formulaSnapshot()!=null) {
+            snapshot.put("deductionFormula",json.readTree(draft.formulaSnapshot()));
+            snapshot.put("quality",json.readTree(draft.qualitySnapshot()));
+            snapshot.put("deduction",deduction);
+            snapshot.put("rounding","HALF_UP");
+            snapshot.put("unloadingEvidenceId",draft.unloadingEvidenceId());
+        }
+        var draftSnapshot = json.writeValueAsString(snapshot);
         saveHeader(key, actor.toString(), existing, new InboundReceiptOrderMapper.HeaderInsert(draft.id().toString(),
                 draft.taskId().toString(), draft.noticeId().toString(), draft.meteringId().toString(),
-                draft.qualityId().toString(), draft.receiptNo(), draft.qualityState(), draft.netKg(), draft.netKg(), draftSnapshot,
+                draft.qualityId().toString(), draft.receiptNo(), draft.qualityState(), draft.netKg(),
+                deduction.accountingKg(),deduction.totalKg(),draftSnapshot,
                 draft.replacesReceiptId() == null ? null : draft.replacesReceiptId().toString()));
         mapper.insertLine(key, actor.toString(), new InboundReceiptOrderMapper.LineInsert(draft.lineId().toString(),
                 draft.id().toString(), draft.noticeId().toString(), draft.noticeLineId().toString(),
                 use.position().locationId(), draft.batchNo(), use.quantity().baseUnitId(), use.quantity().baseQuantity(),
-                draft.netKg(), json.writeValueAsString(use),null,null,null));
+                deduction.accountingKg(), json.writeValueAsString(use),null,null,null));
     }
 
     /** {@inheritDoc} */
@@ -120,7 +162,7 @@ public final class MyBatisInboundReceiptOrderRepository implements InboundReceip
         var key=bytes(tenant);String account=actor.toString();
         saveHeader(key,account,existing,new InboundReceiptOrderMapper.HeaderInsert(draft.id().toString(),
                 draft.taskId().toString(),draft.noticeId().toString(),draft.meteringId().toString(),draft.qualityId().toString(),
-                draft.number(),"QUALIFIED",draft.physicalKg(),draft.accountingKg(),
+                draft.number(),"QUALIFIED",draft.physicalKg(),draft.accountingKg(),BigDecimal.ZERO,
                 json.writeValueAsString(Map.of("method",draft.method(),"qualityState","QUALIFIED","granularity","LPN")),null));
         for(var line:draft.lines()) {
             var ref=line.references();

@@ -13,11 +13,18 @@
 .page-header__breadcrumb { margin-bottom: 12px; }
 .page-header__main, .page-header__title-row, .page-header__actions, .template-toolbar, .template-pagination { display: flex; align-items: center; }
 .page-header__main { justify-content: space-between; gap: 24px; }
+/* 返回入口随标题区排列，右侧操作独立换行并维持对齐。 */
+.page-header__identity { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.page-header__back { flex: none; }
+.page-header__back .el-button { width: 36px; padding: 0; }
 .page-header__copy { min-width: 0; }
+.page-header h1 { overflow-wrap: anywhere; }
 .page-header__title-row { gap: 8px; }
 .page-header h1 { margin: 0; color: var(--color-text-primary); font-size: 22px; line-height: 1.4; font-weight: 600; }
 .page-header p { margin: 6px 0 0; color: var(--color-text-secondary); line-height: 1.6; }
-.page-header__actions { flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+.page-header__actions { margin-inline-start: auto; min-width: 0; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+.page-header__actions:empty { display: none; }
+.page-header__actions .el-button + .el-button { margin-inline-start: 0; }
 .template-search > .el-card__body { padding: 14px 20px; }
 .template-data > .el-card__body { display: flex; flex-direction: column; }
 .template-toolbar { justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
@@ -69,6 +76,7 @@
   .business-workspace__context { align-items: flex-start; flex-direction: column; }
   .business-workspace__search, .business-workspace__data { padding: 16px; }
   .page-header__main { align-items: flex-start; flex-direction: column; gap: 12px; }
+  .page-header__identity { max-width: 100%; }
   .page-header__actions { width: 100%; justify-content: flex-end; }
   .split-detail-template__layout, .detail-form-template__layout { grid-template-columns: minmax(0, 1fr); }
   .split-detail-template.is-unified .split-detail-template__layout { grid-template-columns: minmax(0, 1fr); }
@@ -249,8 +257,8 @@
 .master-data-detail .detail-section > .el-card__header {padding:10px 16px;}
 .master-data-detail .detail-section > .el-card__body {padding:16px;}
 .master-data-detail .detail-section-heading {display:flex;align-items:center;justify-content:space-between;min-height:24px;gap:8px;}
-.master-data-detail :is(.detail-section-heading h2,.detail-section-title) {display:flex;align-items:center;gap:8px;margin:0;font-size:15px;font-weight:600;color:var(--el-text-color-primary);}
-.master-data-detail :is(.detail-section-heading h2,.detail-section-title)::before {content:'';width:3px;height:16px;flex:none;border-radius:var(--el-border-radius-small);background:var(--el-color-primary);}
+.master-data-detail :is(.detail-section-heading h2,.detail-section-title), .detail-system .detail-section-title {display:flex;align-items:center;gap:8px;margin:0;font-size:15px;font-weight:600;color:var(--el-text-color-primary);}
+.master-data-detail :is(.detail-section-heading h2,.detail-section-title)::before, .detail-system .detail-section-title::before {content:'';width:3px;height:16px;flex:none;border-radius:var(--el-border-radius-small);background:var(--el-color-primary);}
 .master-data-detail .detail-section-heading > .el-button {min-height:28px;padding:4px;}
 .master-data-detail .detail-identity-layout {display:grid;grid-template-columns:80px minmax(0,1fr);gap:24px;align-items:start;}
 .master-data-detail .detail-identity-mark {display:flex;justify-content:center;padding-top:4px;}
@@ -262,9 +270,9 @@
 .master-data-detail .detail-field-wide {grid-column:span 2;}
 /* 只读编码按字段宽度单行省略，完整值由调用处的 Element Plus Tooltip 提供，不截断业务数据。 */
 .master-data-detail .detail-code-value {display:block;min-width:0;max-width:100%;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;padding:0 10px;border-radius:var(--el-border-radius-base);background:var(--el-color-primary-light-9);color:var(--el-color-primary);}
-.master-data-detail .detail-system {background:color-mix(in srgb,var(--el-bg-color) 96%,var(--el-color-primary) 4%);}
-.master-data-detail .detail-system > .el-card__body {padding:12px 16px;}
-.master-data-detail .detail-audit-grid {display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;margin-top:14px;}
+:is(.master-data-detail, .event-detail-body) .detail-system {background:color-mix(in srgb,var(--el-bg-color) 96%,var(--el-color-primary) 4%);}
+:is(.master-data-detail, .event-detail-body) .detail-system > .el-card__body {padding:12px 16px;}
+:is(.master-data-detail, .detail-system) .detail-audit-grid {display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;margin-top:14px;}
 /* 系统信息的标签和值同行，各模式共用；窄屏时仅长值自然折行。 */
 .detail-audit-list,.detail-audit-grid {margin:0;}
 .detail-audit-list {display:grid;gap:8px;}
@@ -276,16 +284,21 @@
 .master-data-detail .tabbed-detail-template__tabs > .el-card__body {padding:0 12px 12px;}
 .master-data-detail .tabbed-detail-template__tabs > .el-card__body > .el-tabs > .el-tabs__header {margin:0 0 8px;}
 .master-data-detail .tabbed-detail-template__tabs .management-table {border:0;}
+/* 明细页签由外层卡片提供边界和留白；嵌入表格不再绘制第二层表面。 */
+.master-data-detail .tabbed-detail-template__tabs .management-table:not(.is-fullscreen) > div.management-table-surface {
+ border:0;border-radius:0;padding:0;
+}
 @media(max-width:1100px){
- .master-data-detail .detail-field-grid,.master-data-detail .detail-audit-grid {grid-template-columns:repeat(2,minmax(0,1fr));}
+ .master-data-detail .detail-field-grid,:is(.master-data-detail, .detail-system) .detail-audit-grid {grid-template-columns:repeat(2,minmax(0,1fr));}
  .master-data-detail .detail-identity-layout {grid-template-columns:64px minmax(0,1fr);gap:16px;}
 }
 @media(max-width:600px){
  .master-data-detail > .page-header {position:static;}
  .master-data-detail .page-header__main {gap:8px;}
  .master-data-detail .page-header__actions {width:100%;}
- .master-data-detail .page-header__actions .el-button {min-height:44px;}
- .master-data-detail .detail-field-grid,.master-data-detail .detail-audit-grid {grid-template-columns:minmax(0,1fr);}
+ .page-header__back .el-button {width:44px;min-height:44px;}
+ .page-header__actions .el-button {min-height:44px;}
+ .master-data-detail .detail-field-grid,:is(.master-data-detail, .detail-system) .detail-audit-grid {grid-template-columns:minmax(0,1fr);}
  .master-data-detail .detail-field-wide {grid-column:auto;}
  .master-data-detail .detail-identity-layout {grid-template-columns:minmax(0,1fr);gap:12px;}
  .master-data-detail .detail-identity-mark {justify-content:flex-start;}
@@ -306,8 +319,8 @@
 .master-data-detail .detail-section > .el-card__body {padding:10px 12px 2px;}
 .master-data-detail .detail-field-grid .el-form-item {margin-bottom:10px;}
 .master-data-detail .detail-field-grid .el-form-item__label {line-height:18px;padding-bottom:2px;}
-.master-data-detail .detail-system > .el-card__body {padding:8px 12px;}
-.master-data-detail .detail-audit-grid {margin-top:8px;gap:8px 16px;}
+:is(.master-data-detail, .event-detail-body) .detail-system > .el-card__body {padding:8px 12px;}
+:is(.master-data-detail, .detail-system) .detail-audit-grid {margin-top:8px;gap:8px 16px;}
 .master-data-detail .tabbed-detail-template__tabs > .el-card__body {overflow:visible;}
 .master-data-detail .management-table:not(.is-fullscreen),
 .master-data-detail .management-table:not(.is-fullscreen) .management-table-region {flex:none;height:auto;min-height:0;overflow:visible;}
@@ -475,4 +488,14 @@
 @media(pointer:coarse) {
  .tree-list-template__tree .el-tree-node__content { height:auto;min-height:44px; }
  .tree-list-template .tree-list-template__toggle { flex-basis:44px;width:44px;height:44px; }
+}
+
+/* 手机端的定高树表为右侧内容保留剩余高度，分类仍通过标准树区滚动。 */
+@media (max-width: 760px) {
+  .viewport-page-host .tree-list-template.is-height-constrained .tree-list-template__layout {
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+  .viewport-page-host .tree-list-template.is-height-constrained .tree-list-template__aside {
+    max-height: min(24dvh, 9rem);
+  }
 }

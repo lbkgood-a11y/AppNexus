@@ -69,7 +69,8 @@ class TypePlacementRulesTest {
             "com.appnexus.platform.managementapi..", "com.appnexus.platform.partnerapi..")
         .should().dependOnClassesThat().resideInAnyPackage(
             "org.springframework.jdbc..", "java.sql..", "javax.sql..", "..adapter.persistence..",
-            "com.appnexus.platform.persistence..", "com.appnexus.platform.organization.internal..")
+            "com.appnexus.platform.persistence..", "com.appnexus.masterdata.application.personnel..",
+            "com.appnexus.masterdata.domain.personnel..")
         .check(classes);
   }
 
@@ -77,9 +78,9 @@ class TypePlacementRulesTest {
   @Test
   void migratedPersonnelAndProductUseCasesRemainIndependentOfTechnology() {
     for (String name : Set.of(
-        "com.appnexus.platform.organization.internal.application.personnel.PersonDataService",
-        "com.appnexus.platform.organization.internal.application.personnel.PersonnelService",
-        "com.appnexus.platform.organization.internal.domain.personnel.PersonnelSchema",
+        "com.appnexus.masterdata.application.personnel.PersonDataService",
+        "com.appnexus.masterdata.application.personnel.PersonnelService",
+        "com.appnexus.masterdata.domain.personnel.PersonnelSchema",
         "com.appnexus.masterdata.application.product.ProductImageService",
         "com.appnexus.masterdata.application.product.ProductTemplateService",
         "com.appnexus.masterdata.application.product.ProductAttributeService",

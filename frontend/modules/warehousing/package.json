@@ -9,6 +9,7 @@
     "./inbound-documents": "./src/InboundDocumentWorkspace.vue",
     "./inbound-documents-types": "./src/inboundDocuments.ts",
     "./inbound-workbench-types": "./src/inboundWorkbench.ts",
+    "./inbound-tasks": "./src/InboundTaskWorkspace.vue",
     "./flow-types": "./src/flow.ts"
   },
   "dependencies": {

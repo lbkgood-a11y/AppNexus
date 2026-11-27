@@ -1,6 +1,6 @@
-import { issueObjectCode, listCodingOptions } from "./objectExecution";
+import { executeObjectCommand, issueObjectCode, listCodingOptions } from "./objectExecution";
 import { http } from "@/utils/http";
-import type { MasterDataApi, MasterDataKind } from "@appnexus/master-data";
+import { masterDataOperations, type MasterDataApi, type MasterDataKind } from "@appnexus/master-data";
 /** 固定主数据路径，租户与操作者只由服务端会话确定。 */
 const path=(kind:MasterDataKind,id?:string)=>"/api/master-data/"+kind+(id?"/"+encodeURIComponent(id):"");
 /** 写入使用当前会话 CSRF；版本防覆盖，重复编码防重复创建，不自动重放写请求。 */
@@ -28,6 +28,17 @@ export const masterDataApi:MasterDataApi={
   create:(kind,input)=>mutate("post",path(kind),input),
   update:(kind,id,input)=>mutate("put",path(kind,id),input),
   statusHistory:(kind,id,page,size)=>http.request("get",path(kind,id)+"/status-history",{params:{page,size}}),
-  setStatus:(kind,id,input)=>mutate("put",path(kind,id)+"/status",input)
+  /** 客商启停复用对象命令。依据版本和原命令版本同时传递，服务端仍在原事务核对范围、版本和历史。 */
+  async setStatus(kind,id,input) {
+    if (kind !== "partner") return mutate("put",path(kind,id)+"/status",input);
+    await executeObjectCommand("/api/business-object-executions", {
+      objectType: "BusinessPartner",
+      operationCode: "setStatus",
+      operationId: masterDataOperations.partner.setStatus,
+      objectId: id,
+      basisVersion: input.version,
+      command: input
+    });
+  }
 };
 

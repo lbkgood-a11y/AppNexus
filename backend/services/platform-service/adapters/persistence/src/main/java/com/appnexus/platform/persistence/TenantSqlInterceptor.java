@@ -66,6 +66,10 @@ public final class TenantSqlInterceptor implements Interceptor {
                 throw new SecurityException("PLATFORM_SQL_PERMISSION_REQUIRED");
             return;
         }
+        if(!guard.ownerRead().isEmpty()){
+            verifyOwnerRead(guard,sql,parameters,select);
+            return;
+        }
         String binding=guard.predicate();
         boolean readFallback=!guard.readFallback().isEmpty();
         if(readFallback){
@@ -108,7 +112,12 @@ public final class TenantSqlInterceptor implements Interceptor {
                         throw new SecurityException("SCOPED_WRITE_PLAN_REQUIRED");
                     keys.add(key);
                 }
-                scopedWrites.requireServiceOperation(tenant,guard.serviceOperation(),keys);
+                if (guard.serviceRead()) {
+                    if (!select) throw new SecurityException("SCOPED_SQL_PLAN_REQUIRED");
+                    scopedWrites.requireServiceRead(tenant,guard.serviceOperation(),keys);
+                } else {
+                    scopedWrites.requireServiceOperation(tenant,guard.serviceOperation(),keys);
+                }
                 return;
             }
             if(!guard.catalogPublication().isEmpty()){
@@ -154,6 +163,25 @@ public final class TenantSqlInterceptor implements Interceptor {
         return UUID.fromString(String.valueOf(value));
     }
 
+    /** 本人读取只能消费当前认证请求的账号与本人数据，禁止仅凭自行构造的 Mapper 参数查询。 */
+    private void verifyOwnerRead(GuardedScope guard,BoundSql sql,org.apache.ibatis.reflection.MetaObject parameters,boolean select){
+        String path=guard.ownerRead();
+        if(!select||!(parameters.getValue(path) instanceof ScopedSql.OwnerPredicate owner)
+            ||!(RequestContextHolder.getRequestAttributes() instanceof ServletRequestAttributes request)
+            ||!(request.getRequest().getAttribute(VerifiedTenantContext.class.getName()) instanceof VerifiedTenantContext context)
+            ||!sameScopeTenant(parameters.getValue(guard.tenant()),context.tenantId())
+            ||!context.accountId().toString().equals(owner.account())
+            ||(owner.personColumn()!=null&&!Objects.equals(Objects.toString(context.personId(),null),owner.person()))
+            ||!sql.getSql().contains(ScopedSql.fragment(owner.sql()))
+            ||sql.getParameterMappings().stream().noneMatch(mapping->mapping.getProperty().equals(guard.tenant())))
+            throw new SecurityException("SCOPED_SQL_OWNER_REQUIRED");
+        for(int i=0;i<owner.parameters().size();i++){
+            String expected=path+".parameters["+i+"]";
+            if(sql.getParameterMappings().stream().noneMatch(mapping->mapping.getProperty().equals(expected)))
+                throw new SecurityException("SCOPED_SQL_BINDING_REQUIRED");
+        }
+    }
+
     private boolean sameScopeTenant(Object parameter,UUID expected){
         if(expected==null)return false;
         if(parameter instanceof byte[] bytes)return Arrays.equals(bytes,java.nio.ByteBuffer.allocate(16)
@@ -181,6 +209,9 @@ public final class TenantSqlInterceptor implements Interceptor {
         Class<?> mapper=Class.forName(namespace);
         var declaration=mapper.getAnnotation(TenantScoped.class);
         var aggregate=mapper.getAnnotation(TenantAggregateScoped.class);
+        // 未展开的范围位置表明当前会话未装配公共查询驱动，避免把它当普通 SQL 注释执行。
+        if(handler.getBoundSql().getSql().contains("/*appnexus-bind:"))
+            throw new SecurityException("SCOPED_SQL_BINDING_REQUIRED");
         verifyScope(mapper,statement.getId(),handler.getBoundSql(),
             statement.getSqlCommandType()==org.apache.ibatis.mapping.SqlCommandType.SELECT);
         var sql=handler.getBoundSql().getSql();

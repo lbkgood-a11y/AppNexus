@@ -125,12 +125,27 @@ class OutboxLeaseRepositoryTest {
     @Test
     void consumerIdempotencyIsEnforcedByEventAndHandler() throws SQLException {
         UUID eventId = UUID.randomUUID();
+        UUID tenantId = UUID.randomUUID();
+        try (var connection = dataSource.getConnection();
+                var statement = connection.prepareStatement("""
+                    INSERT INTO outbox_event(event_id, scope, tenant_id, event_type, contract_version,
+                        aggregate_type, aggregate_id, aggregate_version, occurred_at, payload)
+                    VALUES (?, 'TENANT', ?, 'PermissionChanged', 1, 'Permission', ?, 1, CURRENT_TIMESTAMP(6), JSON_OBJECT())
+                    """)) {
+            statement.setString(1, eventId.toString());
+            statement.setString(2, tenantId.toString());
+            statement.setString(3, UUID.randomUUID().toString());
+            statement.executeUpdate();
+        }
         try (var connection = dataSource.getConnection();
                 var statement = connection.prepareStatement(
-                        "INSERT INTO event_consumption(event_id, handler_id) VALUES (?, ?)")) {
-            statement.setString(1, eventId.toString());
-            statement.setString(2, "permission-cache-invalidator");
-            statement.executeUpdate();
+                        """
+                        INSERT INTO event_consumption(event_id, handler_id, tenant_id)
+                        SELECT event_id, ?, tenant_id FROM outbox_event WHERE event_id=?
+                        """)) {
+            statement.setString(1, "permission-cache-invalidator");
+            statement.setString(2, eventId.toString());
+            assertThat(statement.executeUpdate()).isEqualTo(1);
             assertThatThrownBy(statement::executeUpdate).isInstanceOf(SQLException.class);
         }
     }

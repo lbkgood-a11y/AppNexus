@@ -1,4 +1,5 @@
 package com.appnexus.platform.managementapi.administration;
+import com.appnexus.contracts.operation.EndpointPolicy;
 import com.appnexus.platform.authorization.PolicyTemplates;
 import com.appnexus.platform.security.*;
 
@@ -22,28 +23,28 @@ public class PolicyTemplateController {
     public record Apply(UUID templateId,long version,String reason){}
     /** 操作契约关联下方真实接口；仅供展示与一致性校验，主体、权限及业务约束仍由原用例执行。 */
 
- @com.appnexus.contracts.operation.OperationBinding(id="AuthorizationTemplate.listPlatform", reference=true)
- @EndpointOperation("access.role:grant") @GetMapping("/bff/platform/roles/{role}/policy-templates")
+ @com.appnexus.contracts.operation.OperationBinding(id="AuthorizationTemplate.listPlatform", reference=true, enforceDeclaredPermission=true)
+  @GetMapping("/bff/platform/roles/{role}/policy-templates")
     ResponseEntity<List<PolicyTemplates.View>> platformList(Authentication auth,@PathVariable UUID role){return ok(()->templates.list(new RoleManagement.Context(UUID.fromString(auth.getName()),null,null),role));}
     /** 操作契约关联下方真实接口；仅供展示与一致性校验，主体、权限及业务约束仍由原用例执行。 */
-    @com.appnexus.contracts.operation.OperationBinding(id="AuthorizationTemplate.savePlatform", reference=true)
- @EndpointOperation("access.role:grant") @PostMapping("/bff/platform/roles/{role}/policy-templates")
+    @com.appnexus.contracts.operation.OperationBinding(id="AuthorizationTemplate.savePlatform", reference=true, enforceDeclaredPermission=true)
+  @PostMapping("/bff/platform/roles/{role}/policy-templates")
     ResponseEntity<PolicyTemplates.View> platformSave(Authentication auth,@PathVariable UUID role,@RequestBody Save input){return ok(()->templates.save(new RoleManagement.Context(UUID.fromString(auth.getName()),null,null),role,input.name()));}
     /** 操作契约关联下方真实接口；仅供展示与一致性校验，主体、权限及业务约束仍由原用例执行。 */
-    @com.appnexus.contracts.operation.OperationBinding(id="AuthorizationTemplate.applyPlatform", reference=true)
- @EndpointOperation("access.role:grant") @PostMapping("/bff/platform/roles/{role}/policy-template-application")
+    @com.appnexus.contracts.operation.OperationBinding(id="AuthorizationTemplate.applyPlatform", reference=true, enforceDeclaredPermission=true)
+  @PostMapping("/bff/platform/roles/{role}/policy-template-application")
     ResponseEntity<RolePermissionManagement.AuthorizationAssignment> platformApply(Authentication auth,@PathVariable UUID role,@RequestBody Apply input){return ok(()->templates.apply(new RoleManagement.Context(UUID.fromString(auth.getName()),null,null),role,input.templateId(),input.version(),input.reason()));}
     /** 操作契约关联下方真实接口；仅供展示与一致性校验，主体、权限及业务约束仍由原用例执行。 */
-    @com.appnexus.contracts.operation.OperationBinding(id="AuthorizationTemplate.listTenant", reference=true)
- @EndpointOperation("access.tenant.role:grant") @GetMapping("/api/access/roles/{role}/policy-templates")
+    @com.appnexus.contracts.operation.OperationBinding(id="AuthorizationTemplate.listTenant", reference=true, enforceDeclaredPermission=true)
+  @GetMapping("/api/access/roles/{role}/policy-templates")
     ResponseEntity<List<PolicyTemplates.View>> tenantList(HttpServletRequest request,@PathVariable UUID role){return ok(()->templates.list(context(request),role));}
     /** 操作契约关联下方真实接口；仅供展示与一致性校验，主体、权限及业务约束仍由原用例执行。 */
-    @com.appnexus.contracts.operation.OperationBinding(id="AuthorizationTemplate.saveTenant", reference=true)
- @EndpointOperation("access.tenant.role:grant") @PostMapping("/api/access/roles/{role}/policy-templates")
+    @com.appnexus.contracts.operation.OperationBinding(id="AuthorizationTemplate.saveTenant", reference=true, enforceDeclaredPermission=true)
+  @PostMapping("/api/access/roles/{role}/policy-templates")
     ResponseEntity<PolicyTemplates.View> tenantSave(HttpServletRequest request,@PathVariable UUID role,@RequestBody Save input){return ok(()->templates.save(context(request),role,input.name()));}
     /** 操作契约关联下方真实接口；仅供展示与一致性校验，主体、权限及业务约束仍由原用例执行。 */
-    @com.appnexus.contracts.operation.OperationBinding(id="AuthorizationTemplate.applyTenant", reference=true)
- @EndpointOperation("access.tenant.role:grant") @PostMapping("/api/access/roles/{role}/policy-template-application")
+    @com.appnexus.contracts.operation.OperationBinding(id="AuthorizationTemplate.applyTenant", reference=true, enforceDeclaredPermission=true)
+  @PostMapping("/api/access/roles/{role}/policy-template-application")
     ResponseEntity<RolePermissionManagement.AuthorizationAssignment> tenantApply(HttpServletRequest request,@PathVariable UUID role,@RequestBody Apply input){return ok(()->templates.apply(context(request),role,input.templateId(),input.version(),input.reason()));}
     private RoleManagement.Context context(HttpServletRequest request){if(!(request.getAttribute(VerifiedTenantContext.class.getName()) instanceof VerifiedTenantContext value))throw AccountSettingsController.problem(HttpStatus.CONFLICT,"TENANT_REQUIRED","请选择有效租户");return new RoleManagement.Context(value.accountId(),value.tenantId(),value.memberId());}
     /** 错误按稳定契约映射，不能将无权操作或版本冲突暴露为内部异常。 */

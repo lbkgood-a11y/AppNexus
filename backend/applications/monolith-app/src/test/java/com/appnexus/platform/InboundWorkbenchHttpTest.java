@@ -30,7 +30,8 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
 /** 用真实会话、授权配置、Mapper 和 MySQL 验证作业队列及计数的边界。 */
-@SpringBootTest(webEnvironment=SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest(webEnvironment=SpringBootTest.WebEnvironment.RANDOM_PORT,
+    properties="app.inbound.site.command-directory=")
 @AutoConfigureMockMvc
 @ActiveProfiles("local")
 class InboundWorkbenchHttpTest extends DatabaseTestSupport {
@@ -49,6 +50,83 @@ class InboundWorkbenchHttpTest extends DatabaseTestSupport {
     @Autowired ScheduledOperations scheduled;
     @Autowired List<TransactionalBusinessEvents.Consumer> consumers;
     @org.springframework.boot.test.web.server.LocalServerPort int httpPort;
+
+    /** 在真实授权与数据库路径验证历史作业、租户隔离、精确搜索及撤权。 */
+    @Test
+    void taskListIncludesHistoryAndRequiresItsOwnTenantGrant() throws Exception {
+        String path = "/api/bulk-inbound-tasks";
+        administration.initializeAdministrator("admin-test");
+        UUID admin = UUID.fromString(jdbc.queryForObject(
+                "SELECT BIN_TO_UUID(id) FROM identity_account WHERE username='admin-test'", String.class));
+        UUID reader = account();
+        UUID owner = account();
+        UUID tenant = administration.createTenant(admin, UUID.randomUUID(), "作业台账测试", owner).id();
+        UUID foreign = UUID.randomUUID();
+        jdbc.update("INSERT INTO platform_tenant(id,name) VALUES(UUID_TO_BIN(?),'隔离作业台账测试')", foreign.toString());
+        administration.addMember(admin, tenant, reader);
+        UUID member = UUID.fromString(jdbc.queryForObject("""
+                SELECT BIN_TO_UUID(id) FROM tenant_member WHERE tenant_id=UUID_TO_BIN(?) AND account_id=UUID_TO_BIN(?)
+                """, String.class, tenant.toString(), reader.toString()));
+        String historical = seed(tenant, "WAIT_QUALITY", "ISSUED");
+        jdbc.update("""
+                UPDATE bw_inbound_task SET status='RECEIVED',queue_stage=NULL,stage_started_at=NULL
+                WHERE tenant_id=UUID_TO_BIN(?) AND id=UUID_TO_BIN(?)
+                """, tenant.toString(), historical);
+        String returnPending = seed(tenant, "WAIT_TARE", "ISSUED");
+        jdbc.update("""
+                UPDATE bw_inbound_task SET status='RETURN_PENDING'
+                WHERE tenant_id=UUID_TO_BIN(?) AND id=UUID_TO_BIN(?)
+                """, tenant.toString(), returnPending);
+        String foreignTask = seed(foreign, "WAIT_QUALITY", "ISSUED");
+        var selected = mvc.perform(post("/bff/tenants/current").with(authenticated(reader.toString(), 0))
+                .with(csrf()).contentType("application/json").content("{\"tenantId\":\"" + tenant + "\"}"))
+                .andExpect(status().isOk()).andReturn().getResponse().getCookie("JSESSIONID");
+        assertThat(selected).isNotNull();
+        mvc.perform(get(path).cookie(selected)).andExpect(status().isForbidden());
+
+        var context = new RoleManagement.Context(admin, tenant, null);
+        var role = roles.create(context, new RoleManagement.Create("task_" + id().replace("-", ""),
+                "台账测试角色", null, 100));
+        UUID permission = UUID.fromString(jdbc.queryForObject(
+                "SELECT BIN_TO_UUID(id) FROM access_permission WHERE code=?", String.class, RESOURCE + ":read_task_list"));
+        var granted = permissions.replaceAuthorization(context, role.id(), role.version(), Set.of(permission),
+                Set.of(new RolePermissionManagement.DataPolicy(permission, DataScopeAuthorization.ScopeType.ALL,
+                        RESOURCE, Set.of())), "台账集成验证");
+        var links = subjects.memberRoles(context, member);
+        subjects.replaceMemberRoles(context, member, links.authorityVersion(), Set.of(role.id()), "测试台账读取");
+        mvc.perform(get(path).cookie(selected).param("number", historical))
+                .andExpect(status().isOk()).andExpect(header().string("Cache-Control", "no-store"))
+                .andExpect(jsonPath("$.rows.length()").value(1))
+                .andExpect(jsonPath("$.rows[0].number").value(historical))
+                .andExpect(jsonPath("$.rows[0].status").value("RECEIVED"))
+                .andExpect(jsonPath("$.rows[0].vehiclePlate").doesNotExist());
+        mvc.perform(get(path).cookie(selected).param("number", foreignTask))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.rows.length()").value(0));
+        mvc.perform(get(path).cookie(selected).param("limit", "1"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.nextAfterId").isString());
+        mvc.perform(get(path).cookie(selected).param("limit", "101")).andExpect(status().isBadRequest());
+        mvc.perform(get(path).cookie(selected).param("status", "RECEIVED").param("limit", "1"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.rows.length()").value(1))
+                .andExpect(jsonPath("$.rows[0].number").value(historical))
+                .andExpect(jsonPath("$.nextAfterId").isEmpty());
+        mvc.perform(get(path).cookie(selected).param("number", historical).param("status", "ARRIVED"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.rows.length()").value(0));
+        mvc.perform(get(path).cookie(selected).param("status", "RETURN_PENDING"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.rows.length()").value(1))
+                .andExpect(jsonPath("$.rows[0].number").value(returnPending));
+        mvc.perform(get(path).cookie(selected).param("status", "INVALID")).andExpect(status().isBadRequest());
+        String browserScript = System.getProperty("inbound.task.ledger.browser.script");
+        if (browserScript != null) {
+            var ownerSession = mvc.perform(post("/bff/tenants/current").with(authenticated(owner.toString(), 0))
+                    .with(csrf()).contentType("application/json").content("{\"tenantId\":\"" + tenant + "\"}"))
+                    .andExpect(status().isOk()).andReturn().getResponse().getCookie("JSESSIONID");
+            assertThat(ownerSession).isNotNull();
+            runBrowserScript(browserScript, ownerSession, selected);
+        }
+        permissions.replaceAuthorization(context, role.id(), granted.roleVersion(), Set.of(), Set.of(), "撤销台账读取");
+        mvc.perform(get(path).cookie(selected).param("status", "RECEIVED")).andExpect(status().isForbidden());
+        mvc.perform(get(path).cookie(selected)).andExpect(status().isForbidden());
+    }
 
     @Test
     void appliesRealTenantGrantAndReturnsOnlyQueueFields() throws Exception {
@@ -144,7 +222,84 @@ class InboundWorkbenchHttpTest extends DatabaseTestSupport {
         }
         mvc.perform(get("/api/bulk-inbound-quality-orders/" + foreignQuality).cookie(session))
                 .andExpect(status().isNotFound());
-        var browserScript = System.getProperty("inbound.documents.browser.script");
+        mvc.perform(get("/api/bulk-commodity-templates").cookie(lab)).andExpect(status().isForbidden());
+        mvc.perform(get("/api/bulk-commodity-templates").cookie(session)).andExpect(status().isOk())
+                .andExpect(jsonPath("$.rows[0].audit.createdAt").isString());
+        runBrowserScript(System.getProperty("inbound.documents.browser.script"),session,lab);
+        String commandScript=System.getProperty("inbound.site.commands.browser.script");
+        if(commandScript!=null) {
+            String pending=jdbc.queryForObject("""
+                    SELECT BIN_TO_UUID(t.id) FROM bw_inbound_task t JOIN bw_inbound_notice n ON n.tenant_id=t.tenant_id AND n.id=t.notice_id
+                    WHERE n.tenant_id=UUID_TO_BIN(?) AND n.notice_no='ARR-E2E' AND t.status='WORKING'
+                    """,String.class,tenant.toString());
+            mvc.perform(post("/api/bulk-inbound-workbench/tasks/"+pending+"/site-commands/gate").cookie(lab).with(csrf())
+                    .contentType("application/json").content("{\"commandId\":\""+id()+"\",\"retry\":false}"))
+                    .andExpect(status().isForbidden());
+            runBrowserScript(commandScript,session,lab);
+        }
+        String siteScript=System.getProperty("inbound.site.browser.script");
+        if(siteScript!=null) {
+            var siteTask=id();
+            jdbc.update("""
+                    INSERT INTO bw_inbound_task(tenant_id,id,task_no,notice_id,template_id,vehicle_identity_type,
+                      status,queue_stage,stage_started_at)
+                    SELECT tenant_id,UUID_TO_BIN(?),'SITE-NONBLIND-QA',notice_id,template_id,'OTHER',
+                      'WORKING','WAIT_QUALITY',CURRENT_TIMESTAMP(6)
+                    FROM bw_inbound_task WHERE tenant_id=UUID_TO_BIN(?) AND task_no='T-STEEL'
+                    """,siteTask,tenant.toString());
+            mvc.perform(get("/api/bulk-inbound-workbench/tasks/"+siteTask+"/site").cookie(lab))
+                    .andExpect(status().isForbidden());
+            runBrowserScript(siteScript,session,lab);
+            assertThat(jdbc.queryForObject("""
+                    SELECT COUNT(*) FROM platform_attachment WHERE tenant_id=UUID_TO_BIN(?) AND business_id=? AND upload_status='AVAILABLE'
+                    """,Long.class,tenant.toString(),"inbound-task:"+siteTask)).isEqualTo(2L);
+        }
+        String receivingScript=System.getProperty("inbound.receiving.browser.script");
+        if(receivingScript!=null) {
+            prepareCrossUnitNotice(session,tenant);
+            runBrowserScript(receivingScript,session,lab);
+            assertThat(jdbc.queryForObject("""
+                    SELECT s.inbound_quantity FROM bw_stock_receipt s JOIN bw_receipt_order_line l
+                      ON l.tenant_id=s.tenant_id AND l.id=s.receipt_id
+                    JOIN bw_inbound_notice n ON n.tenant_id=l.tenant_id AND n.id=l.notice_id
+                    WHERE n.tenant_id=UUID_TO_BIN(?) AND n.notice_no='CROSS-UNIT-UI' AND s.reversed_at IS NULL
+                    """,java.math.BigDecimal.class,tenant.toString())).isEqualByComparingTo("1.2500");
+        }
+    }
+
+    /** 隔离浏览器验收使用千克至吨的批准测试直连规则及已签发通知。 */
+    private void prepareCrossUnitNotice(Cookie session,UUID tenant) throws Exception {
+        String t=tenant.toString(), tonne=id(), product=id(), notice=id(), line=id();
+        var existing=jdbc.queryForMap("""
+                SELECT BIN_TO_UUID(warehouse_id) warehouse,BIN_TO_UUID(owner_id) owner
+                FROM bw_inbound_notice WHERE tenant_id=UUID_TO_BIN(?) AND notice_no='ARR-E2E'
+                """,t);
+        String kilogram=jdbc.queryForObject("""
+                SELECT BIN_TO_UUID(id) FROM md_product_unit WHERE tenant_id=UUID_TO_BIN(?) AND code='KILOGRAM'
+                """,String.class,t);
+        jdbc.update("""
+                INSERT INTO md_product_unit(id,tenant_id,code,name,dimension_code,precision_scale)
+                VALUES(UUID_TO_BIN(?),UUID_TO_BIN(?),'QA-TONNE','测试吨','MASS',4)
+                """,tonne,t);
+        jdbc.update("""
+                INSERT INTO md_product_unit_conversion(id,tenant_id,source_unit_id,target_unit_id,factor)
+                VALUES(UUID_TO_BIN(?),UUID_TO_BIN(?),UUID_TO_BIN(?),UUID_TO_BIN(?),0.001)
+                """,id(),t,kilogram,tonne);
+        jdbc.update("""
+                INSERT INTO md_product_v1(id,tenant_id,code,name,status,product_form,specification_mode,structure_state,base_unit_id)
+                VALUES(UUID_TO_BIN(?),UUID_TO_BIN(?),'QA-CROSSED','验收跨单位散货','ENABLED','PHYSICAL','NONE','COMPLETE',UUID_TO_BIN(?))
+                """,product,t,tonne);
+        mvc.perform(post("/api/bulk-inbound-receipts:issue").cookie(session).with(csrf()).contentType("application/json")
+                .content("""
+                        {"id":"%s","warehouseId":"%s","ownerPartnerId":"%s","noticeNo":"CROSS-UNIT-UI",
+                         "lines":[{"id":"%s","item":{"productId":"%s","identityId":"%s","kind":"PRODUCT","productVersion":0},
+                          "baseUnitId":"%s","limit":20}]}
+                        """.formatted(notice,existing.get("warehouse"),existing.get("owner"),line,product,product,tonne)))
+                .andExpect(status().isNoContent());
+    }
+
+    /** 验收凭证仅进入隔离浏览器进程标准输入。 */
+    private void runBrowserScript(String browserScript,Cookie session,Cookie lab) throws Exception {
         if (browserScript != null) {
             // 验收浏览器使用同一隔离数据库及真实会话，凭证只经进程标准输入短暂传送。
             var evidence = java.nio.file.Files.createTempFile("inbound-document-browser-", ".log");
@@ -523,7 +678,7 @@ class InboundWorkbenchHttpTest extends DatabaseTestSupport {
                 """, String.class,t,replacement)).isEqualTo(receipt);
         verifyAsyncQuality(owner, t, task, replacement, pendingSample);
         verifyQualityFreeze(owner, t, task, draft);
-        verifyGroundWeighing(reader, owner, t, task);
+        verifyGroundWeighing(reader, owner, t, task, draft);
     }
 
     private void verifyAsyncQuality(Cookie owner, String tenant, String task, String receipt, String sample) throws Exception {
@@ -639,23 +794,44 @@ class InboundWorkbenchHttpTest extends DatabaseTestSupport {
                 """,Long.class,tenant,task)).isEqualTo(1L);
     }
 
-    private void verifyGroundWeighing(Cookie reader, Cookie owner, String tenant, String sourceTask) throws Exception {
-        String template=id(), task=id(), returned=id();
+    private void verifyGroundWeighing(Cookie reader, Cookie owner, String tenant, String sourceTask, String draft) throws Exception {
+        String template=id(), task=id(), returned=id(), notice=id(), receiptLine=id();
+        String sourceLine=com.jayway.jsonpath.JsonPath.read(draft,"$.noticeLineId");
+        // 扣重验收使用独立通知额度，避免影响后续钢铁额度失败用例。
+        jdbc.update("""
+                INSERT INTO bw_inbound_notice(tenant_id,id,notice_no,warehouse_id,owner_id,flow_version,status)
+                SELECT n.tenant_id,UUID_TO_BIN(?),'DEDUCTION-QA',n.warehouse_id,n.owner_id,n.flow_version,'ISSUED'
+                FROM bw_inbound_notice n JOIN bw_inbound_task t ON t.tenant_id=n.tenant_id AND t.notice_id=n.id
+                WHERE t.tenant_id=UUID_TO_BIN(?) AND t.id=UUID_TO_BIN(?)
+                """,notice,tenant,sourceTask);
+        jdbc.update("""
+                INSERT INTO bw_inbound_notice_line(tenant_id,id,notice_id,product_id,identity_kind,identity_id,
+                  product_version,base_unit_id,approved_quantity)
+                SELECT tenant_id,UUID_TO_BIN(?),UUID_TO_BIN(?),product_id,identity_kind,identity_id,
+                  product_version,base_unit_id,1000
+                FROM bw_inbound_notice_line WHERE tenant_id=UUID_TO_BIN(?) AND id=UUID_TO_BIN(?)
+                """,receiptLine,notice,tenant,sourceLine);
         jdbc.update("""
                 INSERT INTO bw_commodity_template(tenant_id,id,template_code,version,status,metering_strategy,
                   quality_gate_strategy,deduction_strategy,stock_granularity,definition)
-                VALUES(UUID_TO_BIN(?),UUID_TO_BIN(?),'GROUND',1,'PUBLISHED','SCALE','QUALIFIED_AND_UNLOADED','ZERO','BULK',
-                  JSON_OBJECT('qualityMetrics',JSON_OBJECT('moisture',JSON_OBJECT('unit','pct',
-                    'minimum',0,'maximum',100,'acceptMinimum',0,'acceptMaximum',14))))
+                VALUES(UUID_TO_BIN(?),UUID_TO_BIN(?),'GROUND',1,'PUBLISHED','SCALE','QUALIFIED_AND_UNLOADED','QUALITY_LINEAR','BULK',
+                  '{"qualityMetrics":{"moisture":{"unit":"pct","minimum":0,"maximum":100,"acceptMinimum":0,"acceptMaximum":14},
+                      "impurity":{"unit":"pct","minimum":0,"maximum":100,"acceptMinimum":0,"acceptMaximum":3}},
+                    "deductionFormula":{"version":"QA-1","moisture":{"metric":"moisture","baseline":10,"multiplier":1},
+                      "impurity":{"metric":"impurity","baseline":1,"multiplier":1}}}')
                 """,tenant,template);
         for(String target : List.of(task,returned)) {
             jdbc.update("""
                     INSERT INTO bw_inbound_task(tenant_id,id,task_no,notice_id,template_id,vehicle_identity_type,status)
-                    SELECT tenant_id,UUID_TO_BIN(?),?,notice_id,UUID_TO_BIN(?),'OTHER','ARRIVED'
-                    FROM bw_inbound_task WHERE tenant_id=UUID_TO_BIN(?) AND id=UUID_TO_BIN(?)
-                    """,target,target,template,tenant,sourceTask);
+                    VALUES(UUID_TO_BIN(?),UUID_TO_BIN(?),?,UUID_TO_BIN(?),UUID_TO_BIN(?),'OTHER','ARRIVED')
+                    """,tenant,target,target,notice,template);
         }
         String root="/api/bulk-inbound-metering-orders:";
+        String opened=mvc.perform(post("/api/bulk-inbound-receipt-orders:open-draft").cookie(owner).with(csrf())
+                        .contentType("application/json").content("{\"taskId\":\""+task+"\",\"taskVersion\":0}"))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+        String openedReceipt = com.jayway.jsonpath.JsonPath.read(opened,"$.receiptId");
+        String openedNumber = com.jayway.jsonpath.JsonPath.read(opened,"$.receiptNo");
         mvc.perform(get(root+"record-gross").cookie(owner).param("taskNo", task))
                 .andExpect(status().isOk()).andExpect(jsonPath("$[0].taskId").value(task))
                 .andExpect(jsonPath("$[0].taskVersion").value(0));
@@ -678,7 +854,7 @@ class InboundWorkbenchHttpTest extends DatabaseTestSupport {
                         .contentType("application/json").content(sample(task,2,"Q-GROUND","S-GROUND",null)))
                 .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
         String quality = com.jayway.jsonpath.JsonPath.read(sampleBody,"$.qualityId");
-        String lab="{\"taskId\":\""+task+"\",\"taskVersion\":3,\"qualityRowVersion\":0,\"metrics\":{\"moisture\":11.5}}";
+        String lab="{\"taskId\":\""+task+"\",\"taskVersion\":3,\"qualityRowVersion\":0,\"metrics\":{\"moisture\":11.5,\"impurity\":2}}";
         mvc.perform(post("/api/bulk-inbound-quality-orders/"+quality+":decide").cookie(owner).with(csrf())
                         .contentType("application/json").content(lab)).andExpect(status().isOk());
         String ready=tare.replace("\"taskVersion\":1","\"taskVersion\":4");
@@ -690,6 +866,38 @@ class InboundWorkbenchHttpTest extends DatabaseTestSupport {
         assertThat(jdbc.queryForObject("""
                 SELECT unload_deduction_kg FROM bw_inbound_task WHERE tenant_id=UUID_TO_BIN(?) AND id=UUID_TO_BIN(?)
                 """,java.math.BigDecimal.class,tenant,task)).isEqualByComparingTo("1.50");
+
+        String completed = mvc.perform(post("/api/bulk-inbound-receipt-orders:create-bulk-draft").cookie(owner).with(csrf())
+                        .contentType("application/json").content(draft.replace(sourceTask,task)
+                                .replace("\"taskVersion\":4","\"taskVersion\":5")
+                                .replace("\"meteringVersion\":0","\"meteringVersion\":1")
+                                .replace(sourceLine,receiptLine).replace("RT-001",openedNumber)))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.receiptId").value(openedReceipt))
+                .andExpect(jsonPath("$.receiptVersion").value(1)).andReturn().getResponse().getContentAsString();
+        String receipt = com.jayway.jsonpath.JsonPath.read(completed,"$.receiptId");
+        mvc.perform(get("/api/bulk-inbound-receipt-orders/"+receipt).cookie(owner)).andExpect(status().isOk())
+                .andExpect(jsonPath("$.physicalNetKg").value("70.0000"))
+                .andExpect(jsonPath("$.deductionKg").value("3.2500"))
+                .andExpect(jsonPath("$.accountingKg").value("66.7500"));
+        String formulaSql="""
+                UPDATE bw_commodity_template SET definition=JSON_SET(definition,'$.deductionFormula.moisture.multiplier',?)
+                WHERE tenant_id=UUID_TO_BIN(?) AND id=UUID_TO_BIN(?)
+                """;
+        jdbc.update(formulaSql,2,tenant,template);
+        mvc.perform(post("/api/bulk-inbound-receipt-orders/"+receipt+":post").cookie(owner).with(csrf())
+                .header("Idempotency-Key","post-deduction").contentType("application/json")
+                .content("{\"taskId\":\""+task+"\",\"taskVersion\":6,\"receiptVersion\":1}"))
+                .andExpect(status().isConflict()).andExpect(jsonPath("$.code").value("INBOUND_RECEIPT_POSTABLE_DRAFT_REQUIRED"));
+        jdbc.update(formulaSql,1,tenant,template);
+        mvc.perform(post("/api/bulk-inbound-receipt-orders/"+receipt+":post").cookie(owner).with(csrf())
+                .header("Idempotency-Key","post-deduction").contentType("application/json")
+                .content("{\"taskId\":\""+task+"\",\"taskVersion\":6,\"receiptVersion\":1}"))
+                .andExpect(status().isOk());
+        assertThat(jdbc.queryForObject("""
+                SELECT s.inbound_quantity FROM bw_stock_receipt s JOIN bw_receipt_order_line l
+                  ON l.tenant_id=s.tenant_id AND l.id=s.receipt_id
+                WHERE l.tenant_id=UUID_TO_BIN(?) AND l.receipt_order_id=UUID_TO_BIN(?)
+                """,java.math.BigDecimal.class,tenant,receipt)).isEqualByComparingTo("66.7500");
 
         mvc.perform(post(root+"record-gross").cookie(owner).with(csrf()).contentType("application/json")
                         .content(gross.replace(task,returned).replace("M-GROSS","M-RETURN").replace("GROSS-FIRST","GROSS-RETURN")))
@@ -742,9 +950,12 @@ class InboundWorkbenchHttpTest extends DatabaseTestSupport {
         mvc.perform(post(path).cookie(inspector).with(csrf()).contentType("application/json")
                         .content(input.replace(photo,unrelated))).andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("INBOUND_STEEL_ATTACHMENTS_INVALID"));
-        mvc.perform(post(path).cookie(inspector).with(csrf()).contentType("application/json").content(input))
-                .andExpect(status().isOk()).andExpect(jsonPath("$.decision").value("PASS"))
-                .andExpect(jsonPath("$.taskVersion").value(1));
+        String evidenceScript=System.getProperty("inbound.attachments.browser.script");
+        if(evidenceScript==null) {
+            mvc.perform(post(path).cookie(inspector).with(csrf()).contentType("application/json").content(input))
+                    .andExpect(status().isOk()).andExpect(jsonPath("$.decision").value("PASS"))
+                    .andExpect(jsonPath("$.taskVersion").value(1));
+        } else runBrowserScript(evidenceScript,inspector,reader);
         assertThat(jdbc.queryForObject("""
                 SELECT JSON_UNQUOTE(JSON_EXTRACT(result_snapshot,'$.heatNo'))
                 FROM bw_quality_order WHERE tenant_id=UUID_TO_BIN(?) AND task_id=UUID_TO_BIN(?) AND sampled_at IS NULL
@@ -795,10 +1006,20 @@ class InboundWorkbenchHttpTest extends DatabaseTestSupport {
                 .andExpect(status().isForbidden());
         mvc.perform(post(create).cookie(owner).with(csrf()).contentType("application/json").content(draft.replace("LPN-2","lpn-1")))
                 .andExpect(status().isBadRequest());
-        String response=mvc.perform(post(create).cookie(owner).with(csrf()).contentType("application/json").content(draft))
-                .andExpect(status().isOk()).andExpect(jsonPath("$.taskVersion").value(3))
-                .andReturn().getResponse().getContentAsString();
-        String receipt=com.jayway.jsonpath.JsonPath.read(response,"$.receiptId");
+        String script=System.getProperty("inbound.receipt.lines.browser.script");
+        String receipt;
+        if(script==null) {
+            String response=mvc.perform(post(create).cookie(owner).with(csrf()).contentType("application/json").content(draft))
+                    .andExpect(status().isOk()).andExpect(jsonPath("$.taskVersion").value(3))
+                    .andReturn().getResponse().getContentAsString();
+            receipt=com.jayway.jsonpath.JsonPath.read(response,"$.receiptId");
+        } else {
+            runBrowserScript(script,owner,reader);
+            receipt=jdbc.queryForObject("""
+                    SELECT BIN_TO_UUID(id) FROM bw_receipt_order
+                    WHERE tenant_id=UUID_TO_BIN(?) AND task_id=UUID_TO_BIN(?) AND receipt_no='SR-001'
+                    """,String.class,tenant,task);
+        }
         assertThat(jdbc.queryForObject("""
                 SELECT SUM(accounting_weight_kg) FROM bw_receipt_order_line WHERE tenant_id=UUID_TO_BIN(?)
                   AND receipt_order_id=UUID_TO_BIN(?) AND heat_no='HEAT-01' AND lpn IS NOT NULL
@@ -837,9 +1058,10 @@ class InboundWorkbenchHttpTest extends DatabaseTestSupport {
         jdbc.update("""
                 INSERT INTO platform_attachment(id,tenant_id,business_id,file_name,size_bytes,type_key,media_type,
                   content_sha256,storage_path,upload_status,idempotency_key,created_by)
-                VALUES(UUID_TO_BIN(?),UUID_TO_BIN(?),?,'test-file',10,?,?,UNHEX(SHA2(?,256)),?,'AVAILABLE',
+                VALUES(UUID_TO_BIN(?),UUID_TO_BIN(?),?,?,10,?,?,UNHEX(SHA2(?,256)),?,'AVAILABLE',
                   UUID_TO_BIN(?),UUID_TO_BIN(?))
-                """,attachment,tenant,business,type,media,attachment,attachment,id(),actor.toString());
+                """,attachment,tenant,business,"pdf".equals(type)?"QA-MTC.pdf":"QA-APPEARANCE.png",
+                type,media,attachment,attachment,id(),actor.toString());
     }
 
     private void verifySampling(RoleManagement.Context context, UUID role, long roleVersion, Cookie selected,
@@ -878,6 +1100,7 @@ class InboundWorkbenchHttpTest extends DatabaseTestSupport {
         mvc.perform(post(path).cookie(selected).with(csrf()).contentType("application/json").content(first))
                 .andExpect(status().isConflict());
         String decisionPath = "/api/bulk-inbound-quality-orders/" + quality + ":decide";
+        mvc.perform(get(decisionPath).cookie(selected)).andExpect(status().isForbidden());
         String labInput = "{\"taskId\":\"" + task + "\",\"taskVersion\":1,\"qualityRowVersion\":0,\"metrics\":{\"moisture\":12.5}}";
         mvc.perform(post(decisionPath).cookie(selected).with(csrf()).contentType("application/json").content(labInput))
                 .andExpect(status().isForbidden());
@@ -888,6 +1111,11 @@ class InboundWorkbenchHttpTest extends DatabaseTestSupport {
                                 resource, Set.of()),
                         new RolePermissionManagement.DataPolicy(decidePermission, DataScopeAuthorization.ScopeType.ALL,
                                 resource, Set.of())), "独立判定授权");
+        mvc.perform(get(decisionPath).cookie(selected)).andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].code").value("moisture"))
+                .andExpect(jsonPath("$[0].unit").value("pct"))
+                .andExpect(jsonPath("$[0].acceptMaximum").doesNotExist())
+                .andExpect(jsonPath("$[0].acceptMinimum").doesNotExist());
         mvc.perform(post(decisionPath).cookie(selected).with(csrf()).contentType("application/json")
                         .content(labInput.replace("moisture", "unconfigured")))
                 .andExpect(status().isBadRequest())
@@ -967,6 +1195,135 @@ class InboundWorkbenchHttpTest extends DatabaseTestSupport {
         String prior = priorId == null ? "" : ",\"priorQualityId\":\"" + priorId + "\",\"priorRowVersion\":1";
         return "{\"taskId\":\"" + task + "\",\"taskVersion\":" + version + ",\"qualityNo\":\"" + qualityNo
                 + "\",\"barcode\":\"" + barcode + "\"" + prior + "}";
+    }
+
+    @Autowired com.appnexus.platform.businessobject.BusinessObjectManagement objectConfiguration;
+    @Autowired com.appnexus.printing.application.PrintRuntimeService printRuntime;
+    @Autowired com.appnexus.printing.application.PrintSceneService printScenes;
+    @Autowired com.appnexus.platform.persistence.organization.OrganizationAdministratorBootstrap bootstrap;
+
+    /** 使用真实 MySQL、会话和打印场景验证公共作业票，证明失败不会留下解析、输出或任务。 */
+    @Test void publicTaskSlipUsesAuthorizedConfiguredPrintScene() throws Exception {
+        String contract="warehousing.inbound.task-slip",operation="print_site_ticket",type="BulkInboundTask";
+        UUID owner=account(),limited=account(),tenant=UUID.randomUUID(),foreign=UUID.randomUUID();
+        UUID ownerMember=UUID.randomUUID(),limitedMember=UUID.randomUUID();
+        for(var id:List.of(tenant,foreign))
+            jdbc.update("INSERT INTO platform_tenant(id,name) VALUES(UUID_TO_BIN(?),'作业票验收')",id.toString());
+        for(var pair:java.util.Map.of(owner,ownerMember,limited,limitedMember).entrySet())
+            jdbc.update("INSERT INTO tenant_member(id,tenant_id,account_id) VALUES(UUID_TO_BIN(?),UUID_TO_BIN(?),UUID_TO_BIN(?))",
+                pair.getValue().toString(),tenant.toString(),pair.getKey().toString());
+        bootstrap.initialize(tenant,ownerMember);
+        administration.initializeAdministrator("admin-test");
+        UUID admin=UUID.fromString(jdbc.queryForObject(
+            "SELECT BIN_TO_UUID(id) FROM identity_account WHERE username='admin-test'",String.class));
+        String task=seed(tenant,"WAIT_QUALITY","ISSUED"),foreignTask=seed(foreign,"WAIT_QUALITY","ISSUED"),
+            inactive=seed(tenant,"WAIT_QUALITY","ISSUED");
+        jdbc.update("UPDATE bw_inbound_task SET status='RECEIVED',queue_stage=NULL,stage_started_at=NULL WHERE id=UUID_TO_BIN(?)",inactive);
+        var ownerCookie=ticketSession(owner,tenant);
+        var limitedCookie=ticketSession(limited,tenant);
+        var adminContext=new com.appnexus.contracts.businessobject.BusinessObjects.Context(null,admin.toString(),id());
+        var ownerContext=new com.appnexus.contracts.businessobject.BusinessObjects.Context(tenant.toString(),owner.toString(),id());
+        objectConfiguration.activate(adminContext,type,0,true);
+        objectConfiguration.grant(adminContext,type,tenant.toString(),true);
+        mvc.perform(publicTicket(ownerCookie,task,0,id())).andExpect(status().isConflict())
+            .andExpect(jsonPath("$.code").value("BUSINESS_OBJECT_FLOW_NOT_BOUND"));
+
+        var json=new tools.jackson.databind.ObjectMapper();
+        var designer=new com.appnexus.contracts.printing.PrintContext(tenant.toString(),owner.toString(),id());
+        var draft=printRuntime.saveTemplate(designer,null,new com.appnexus.printing.api.PrintData.TemplateDraft(
+            "task_slip","作业票","A4",contract,json.createObjectNode(),json.readTree("{\"panels\":[]}"),-1));
+        String template=draft.get("id").toString();
+        printRuntime.publish(designer,template,0);
+        var sceneInput=new com.appnexus.printing.api.PrintData.SceneRequest("task_slip","作业票",contract,template,1,true,-1);
+        String scene=printScenes.saveScene(designer,null,sceneInput).getFirst().get("id").toString();
+        var binding=new com.appnexus.contracts.businessobject.BusinessObjects.Binding(id(),"公共作业票",
+            null,0,List.of(),operation,"PRINT",type+"."+operation,"task_slip");
+        objectConfiguration.save(ownerContext,type,-1,List.of(binding));
+        objectConfiguration.publish(ownerContext,type,0);
+
+        mvc.perform(publicTicket(limitedCookie,task,0,id())).andExpect(status().isForbidden());
+        var roleContext=new RoleManagement.Context(admin,tenant,null);
+        var role=roles.create(roleContext,new RoleManagement.Create("slip_"+id().replace("-",""),"作业打印准入验收",null,100));
+        var printOnly=new java.util.LinkedHashSet<UUID>();
+        var plans=new java.util.LinkedHashSet<RolePermissionManagement.DataPolicy>();
+        for(String code:List.of(RESOURCE+":print_site_ticket",RESOURCE+":read_workbench_detail")){
+            UUID permission=UUID.fromString(jdbc.queryForObject(
+                "SELECT BIN_TO_UUID(id) FROM access_permission WHERE code=?",String.class,code));
+            printOnly.add(permission);
+            plans.add(new RolePermissionManagement.DataPolicy(permission,DataScopeAuthorization.ScopeType.ALL,RESOURCE,Set.of()));
+        }
+        permissions.replaceAuthorization(roleContext,role.id(),role.version(),printOnly,plans,"作业票负向权限");
+        var roleState=subjects.memberRoles(roleContext,limitedMember);
+        subjects.replaceMemberRoles(roleContext,limitedMember,roleState.authorityVersion(),Set.of(role.id()),"作业票负向权限");
+        limitedCookie=ticketSession(limited,tenant);
+        mvc.perform(publicTicket(limitedCookie,task,0,id())).andExpect(status().isForbidden())
+            .andExpect(jsonPath("$.code").value("PRINT_ACCESS_DENIED"));
+        mvc.perform(publicTicket(ownerCookie,foreignTask,0,id())).andExpect(status().isNotFound())
+            .andExpect(jsonPath("$.code").value("INBOUND_TASK_NOT_FOUND"));
+        mvc.perform(publicTicket(ownerCookie,inactive,0,id())).andExpect(status().isConflict())
+            .andExpect(jsonPath("$.code").value("INBOUND_SITE_TASK_INACTIVE"));
+        mvc.perform(publicTicket(ownerCookie,task,1,id())).andExpect(status().isConflict())
+            .andExpect(jsonPath("$.code").value("BUSINESS_OBJECT_VERSION_CONFLICT"));
+        assertThat(ticketRows(tenant,"business_object_resolution")).isZero();
+        assertThat(ticketRows(tenant,"print_output_request")).isZero();
+        assertThat(ticketRows(tenant,"print_job")).isZero();
+
+        var lockPlan=jdbc.queryForMap("""
+            EXPLAIN SELECT row_version,status,task_no FROM bw_inbound_task
+            WHERE tenant_id=UUID_TO_BIN(?) AND id=UUID_TO_BIN(?) FOR UPDATE
+            """,tenant.toString(),task);
+        assertThat(lockPlan.get("key")).isEqualTo("PRIMARY");
+        assertThat(((Number)lockPlan.get("rows")).longValue()).isEqualTo(1);
+        String key=id();
+        var response=mvc.perform(publicTicket(ownerCookie,task,0,key)).andExpect(status().isOk())
+            .andExpect(jsonPath("$.output.mode").value("PREVIEW"))
+            .andExpect(jsonPath("$.resolution.sceneCode").value("task_slip")).andReturn().getResponse();
+        var output=json.readTree(response.getContentAsString()).path("output");
+        mvc.perform(publicTicket(ownerCookie,task,0,key)).andExpect(status().isOk())
+            .andExpect(jsonPath("$.output.id").value(output.path("id").asText()));
+        assertThat(ticketRows(tenant,"business_object_resolution")).isEqualTo(1);
+        assertThat(ticketRows(tenant,"print_output_request")).isEqualTo(1);
+        assertThat(ticketRows(tenant,"print_job")).isEqualTo(1);
+        String job=output.path("jobId").asText();
+        assertThat(jdbc.queryForObject("SELECT source_id FROM print_job WHERE id=UUID_TO_BIN(?)",String.class,job)).isEqualTo(task);
+        String snapshot=jdbc.queryForObject("SELECT CAST(data_snapshot AS CHAR) FROM print_job WHERE id=UUID_TO_BIN(?)",String.class,job);
+        assertThat(json.readTree(snapshot)).isEqualTo(json.createObjectNode().put("taskNo",task));
+
+        printScenes.saveScene(designer,scene,new com.appnexus.printing.api.PrintData.SceneRequest(
+            "task_slip","作业票",contract,template,1,false,0));
+        mvc.perform(publicTicket(ownerCookie,task,0,id())).andExpect(status().isConflict())
+            .andExpect(jsonPath("$.code").value("PRINT_SCENE_UNAVAILABLE"));
+        assertThat(ticketRows(tenant,"business_object_resolution")).isEqualTo(1);
+        assertThat(ticketRows(tenant,"print_output_request")).isEqualTo(1);
+        assertThat(ticketRows(tenant,"print_job")).isEqualTo(1);
+        mvc.perform(post("/api/bulk-inbound-workbench/tasks/"+task+"/site-commands/print").cookie(ownerCookie)
+            .with(csrf()).contentType("application/json").content(json.writeValueAsString(java.util.Map.of("commandId",id(),"retry",false))))
+            .andExpect(status().isServiceUnavailable()).andExpect(jsonPath("$.code").value("INBOUND_SITE_CHANNEL_DISABLED"));
+    }
+
+    private Cookie ticketSession(UUID actor,UUID tenant)throws Exception{
+        return mvc.perform(post("/bff/tenants/current").with(authenticated(actor.toString(),0)).with(csrf())
+            .contentType("application/json").content(new tools.jackson.databind.ObjectMapper()
+                .writeValueAsString(java.util.Map.of("tenantId",tenant.toString()))))
+            .andExpect(status().isOk()).andReturn().getResponse().getCookie("JSESSIONID");
+    }
+
+    private org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder publicTicket(
+            Cookie cookie,String task,long version,String key){
+        var input=new com.appnexus.contracts.businessobject.BusinessObjectExecution.Request(
+            "BulkInboundTask",task,"print_site_ticket","BulkInboundTask.print_site_ticket",version);
+        return post("/api/business-object-executions").cookie(cookie).with(csrf()).header("Idempotency-Key",key)
+            .contentType("application/json").content(new tools.jackson.databind.ObjectMapper().writeValueAsString(input));
+    }
+
+    private int ticketRows(UUID tenant,String table){
+        String condition=switch(table){
+            case "business_object_resolution" -> "business_object_resolution WHERE tenant_id=?";
+            case "print_output_request" -> "print_output_request WHERE tenant_id=UUID_TO_BIN(?)";
+            case "print_job" -> "print_job WHERE tenant_id=UUID_TO_BIN(?)";
+            default -> throw new IllegalArgumentException();
+        };
+        return jdbc.queryForObject("SELECT COUNT(*) FROM "+condition,Integer.class,tenant.toString());
     }
 
     private UUID account() {

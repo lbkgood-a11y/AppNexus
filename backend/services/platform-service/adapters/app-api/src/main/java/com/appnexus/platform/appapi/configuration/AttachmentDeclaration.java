@@ -6,13 +6,13 @@ import java.util.List;
 import java.util.Map;
 import org.springframework.stereotype.Component;
 
-/** 附件资料与受控操作的唯一声明，台账使用单独的平台管理权限。 */
+/** 附件资料与受控操作的唯一声明，租户台账使用独立权限。 */
 @Component
 public final class AttachmentDeclaration implements Provider {
     /** @return 附件资料字段、专用操作及本租户数据资源 */
     @Override
     public Descriptor descriptor() {
-        return new Descriptor("ManagedAttachment", "附件资料", "Attachment record", "configuration", 1,
+        return new Descriptor("ManagedAttachment", "附件资料", "Attachment record", "configuration", 3,
                 Category.CONFIGURATION, List.of(
                     new Field("businessId", "业务关联 ID", "Business ID", "TEXT", "", true),
                     new Field("fileName", "附件名称", "File name", "TEXT", "", true),
@@ -24,13 +24,15 @@ public final class AttachmentDeclaration implements Provider {
                             "configuration.attachment:upload"),
                     operation("ManagedAttachment", "upload", "上传附件", "Upload attachment",
                             "configuration.attachment:upload"),
-                    operation("ManagedAttachment", "ledger", "查看全局附件", "View attachment ledger",
-                            "configuration.attachmentledger:read",
-                            new PageOperation("platform/attachments", "/platform/attachments", "查看全局附件",
-                                    "View attachment ledger", "GET", "/bff/platform/attachments"))),
+                    operation("ManagedAttachment", "ledger", "查看租户附件台账", "View tenant attachment ledger",
+                            "configuration.attachment:ledger",
+                            new PageOperation("configuration/attachments", "/configuration/attachments", "查看租户附件台账",
+                                    "View tenant attachment ledger", "GET", "/api/configuration/attachment-ledger")),
+                    operation("ManagedAttachment", "download", "下载台账附件", "Download ledger attachment",
+                            "configuration.attachment:ledger",
+                            new PageOperation("configuration/attachments", "/configuration/attachments", "下载台账附件",
+                                    "Download ledger attachment", "GET", "/api/configuration/attachment-ledger/{id}/download"))),
                 new DataAccess("TENANT", List.of(new DataResource("configuration.attachment", "",
-                        "附件资料", "Attachment records", List.of())), Map.of(), List.of(),
-                        new DataAccess("PLATFORM", List.of(new DataResource("configuration.attachmentledger", "",
-                                "平台附件台账", "Platform attachment ledger", List.of())), Map.of())));
+                        "附件资料", "Attachment records", List.of())), Map.of()));
     }
 }

@@ -20,10 +20,16 @@ public record ObjectRecordMapping(String table,Column tenant,Column id,Column or
   public record Receipt(String table,Column tenant,Column objectId,String version,String instance,String delivery,String result,String completed){
     public Receipt{identifier(table);Objects.requireNonNull(tenant);Objects.requireNonNull(objectId);identifier(version);identifier(instance);identifier(delivery);identifier(result);identifier(completed);}
   }
-  /** 验证全部固定标识并深复制；未知表达式和SQL片段在装配时拒绝。 */
+  /**
+   * 验证全部固定标识并深复制；未知表达式和SQL片段在装配时拒绝。
+   * @param tenant 租户列，缺省使用二进制 UUID 的 tenant_id；存量列名或编码不同须显式覆盖
+   * @param id 对象记录键，缺省使用二进制 UUID 的 id；存量列名或编码不同须显式覆盖
+   */
   public ObjectRecordMapping{
     identifier(table);identifier(version);identifier(state);identifier(instance);identifier(delivery);
-    Objects.requireNonNull(tenant);Objects.requireNonNull(id);Objects.requireNonNull(organization);Objects.requireNonNull(applicant);
+    tenant=tenant==null?new Column("tenant_id",Encoding.BINARY_UUID):tenant;
+    id=id==null?new Column("id",Encoding.BINARY_UUID):id;
+    Objects.requireNonNull(organization);Objects.requireNonNull(applicant);
     fields=Map.copyOf(fields);transitions=Map.copyOf(transitions);
     for(String field:fields.keySet())if(!field.matches("[A-Za-z][A-Za-z0-9]*"))throw new IllegalArgumentException("OBJECT_FIELD_MAPPING_INVALID");
     for(var entry:transitions.entrySet()){

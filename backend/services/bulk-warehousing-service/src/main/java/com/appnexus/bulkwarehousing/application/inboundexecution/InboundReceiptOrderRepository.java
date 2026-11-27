@@ -1,9 +1,13 @@
 package com.appnexus.bulkwarehousing.application.inboundexecution;
 
 import com.appnexus.bulkwarehousing.api.InboundReceiptReferences;
+import com.appnexus.bulkwarehousing.domain.inboundexecution.DeductionCalculator;
+import com.appnexus.bulkwarehousing.domain.inboundexecution.ReceiptQualityDeduction.Formula;
+import com.appnexus.bulkwarehousing.domain.inboundexecution.UnloadingFact;
 import com.appnexus.platform.authorization.AccessPlan;
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.function.Supplier;
 
@@ -11,17 +15,21 @@ import java.util.function.Supplier;
 public interface InboundReceiptOrderRepository {
     /** 已锁作业和来源通知事实。 */
     record Task(long rowVersion, String status, UUID noticeId, UUID warehouseId, UUID ownerId,
-                String noticeStatus, boolean bulkMeteringEnabled) {}
+                String noticeStatus, boolean bulkMeteringEnabled, String qualityStrategy,
+                Formula formula, String formulaSnapshot, UnloadingFact unloading) {}
     /** 已锁通知行商品、单位与剩余额度。 */
     record NoticeLine(InboundReceiptReferences.Item item, UUID baseUnitId, BigDecimal remaining) {}
     /** 已确认计量证据。 */
-    record Meter(UUID id, long rowVersion, BigDecimal physicalNetKg, String method) {}
+    record Meter(UUID id, long rowVersion, BigDecimal physicalNetKg, String method, UUID tareQualityId) {}
     /** 现行采样及判定。 */
-    record Sample(UUID id, int version, boolean sampled, String decision) {}
+    record Sample(UUID id, int version, boolean sampled, String decision, String snapshot,
+                  Map<String,BigDecimal> percentages) {}
     /** 由锁内事实和授权主数据生成的入库草稿。 */
     record Draft(UUID id, UUID lineId, UUID taskId, UUID noticeId, UUID noticeLineId, UUID meteringId,
                  UUID qualityId, String receiptNo, String batchNo, String qualityState, BigDecimal netKg,
-                 InboundReceiptReferences.Resolved references, UUID replacesReceiptId, String method) {}
+                 InboundReceiptReferences.Resolved references, UUID replacesReceiptId, String method,
+                 DeductionCalculator.Result deduction, String formulaSnapshot, String qualitySnapshot,
+                 UUID unloadingEvidenceId) {}
     /** 当前锁内钢铁计量与合格炉批。 */
     record SteelMeter(UUID id,long version,UUID qualityId,String heatNo,String method,BigDecimal physicalNetKg,
                       BigDecimal theoreticalKg,int packages) {}

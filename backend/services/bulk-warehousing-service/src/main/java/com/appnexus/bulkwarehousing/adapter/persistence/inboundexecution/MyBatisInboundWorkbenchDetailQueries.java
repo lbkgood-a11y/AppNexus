@@ -30,8 +30,10 @@ public final class MyBatisInboundWorkbenchDetailQueries implements InboundWorkbe
     /** {@inheritDoc} */
     @Override public Task task(AccessPlan plan,UUID task) {
         var row=mapper.task(key(plan),task.toString());
-        return row==null?null:new Task(row.version(),row.stage(),row.status(),row.blind(),row.unload());
+        return row==null?null:new Task(row.version(),row.stage(),row.status(),row.blind(),row.unload(),row.taskNo());
     }
+    /** {@inheritDoc} */
+    @Override public Ticket lockTicket(AccessPlan plan,UUID task){return mapper.lockTicket(key(plan),task.toString());}
     /** {@inheritDoc} */
     @Override public Map<String,Object> identity(AccessPlan plan,UUID task){return cleaned(mapper.identity(key(plan),task.toString()));}
     /** {@inheritDoc} */

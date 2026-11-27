@@ -4,10 +4,12 @@ import com.obs.services.ObsClient;
 import com.appnexus.platform.configuration.port.AttachmentBlobStorage;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.time.Duration;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.HexFormat;
@@ -30,9 +32,25 @@ import software.amazon.awssdk.services.s3.S3Configuration;
 final class AttachmentObjectStorage implements AutoCloseable, AttachmentBlobStorage {
     private final Map<UUID, Connection> tenants = new HashMap<>();
     private final Connection legacy;
+    private final Path localRoot;
 
     AttachmentObjectStorage(Environment env) throws IOException {
         String file = env.getProperty("app.attachment.storage.tenant-file", "");
+        String local = env.getProperty("app.attachment.storage.local-directory", "");
+        if (!local.isBlank()) {
+            if (!env.acceptsProfiles(org.springframework.core.env.Profiles.of("local")) || !file.isBlank()
+                    || !env.getProperty("app.attachment.storage.provider", "").isBlank()) {
+                throw new IllegalArgumentException("本机附件目录只在 local 环境独占使用");
+            }
+            Path root = Path.of(local).normalize();
+            if (!root.isAbsolute() || !Files.isDirectory(root,java.nio.file.LinkOption.NOFOLLOW_LINKS)) {
+                throw new IllegalArgumentException("本机附件需要预建的私有绝对目录");
+            }
+            localRoot = root.toRealPath();
+            legacy = null;
+            return;
+        }
+        localRoot = null;
         if (file.isBlank()) {
             legacy = new Connection(key -> env.getProperty("app.attachment.storage." + key, ""), false);
             return;
@@ -66,6 +84,7 @@ final class AttachmentObjectStorage implements AutoCloseable, AttachmentBlobStor
     /** {@inheritDoc} */
     @Override
     public String writePath(UUID tenantId, String attachmentId) {
+        if (localRoot != null) return "attachments/" + tenantId + "/local/" + UUID.fromString(attachmentId);
         Connection connection = legacy == null ? tenants.get(tenantId) : legacy;
         if (connection == null || !connection.configured()) {
             throw new IllegalStateException("当前租户未配置附件存储");
@@ -78,6 +97,34 @@ final class AttachmentObjectStorage implements AutoCloseable, AttachmentBlobStor
     @Override
     public void put(String path, byte[] data, String contentType) {
         String[] parts = path.split("/");
+        if (localRoot != null) {
+            putLocal(parts,data);
+            return;
+        }
+        connection(parts).put(path, data, contentType);
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public InputStream open(String path) {
+        String[] parts = path.split("/");
+        try {
+            if (localRoot != null) {
+                Path target = localPath(parts);
+                if (!target.getParent().toRealPath().equals(target.getParent())
+                        || !Files.isRegularFile(target, LinkOption.NOFOLLOW_LINKS)) {
+                    throw new IOException("本机附件不存在或目录不可用");
+                }
+                return Files.newInputStream(target, LinkOption.NOFOLLOW_LINKS);
+            }
+            return connection(parts).open(path);
+        } catch (IOException | RuntimeException failure) {
+            throw new IllegalStateException("附件原件不可用", failure);
+        }
+    }
+
+    /** 从持久化键定位原连接；读取与写入均拒绝替换历史连接。 */
+    private Connection connection(String[] parts) {
         if (!"attachments".equals(parts[0])) throw new IllegalStateException("附件对象路径无效");
         Connection connection;
         if (legacy != null && parts.length == 3) {
@@ -90,7 +137,38 @@ final class AttachmentObjectStorage implements AutoCloseable, AttachmentBlobStor
         } else {
             throw new IllegalStateException("附件原存储配置不可用");
         }
-        connection.put(path, data, contentType);
+        return connection;
+    }
+
+    /** 仅接受服务端生成的租户和附件 UUID，私有路径从不作为前端资源暴露。 */
+    private void putLocal(String[] parts, byte[] data) {
+        Path target = localPath(parts);
+        Path tenant = target.getParent();
+        try {
+            Files.createDirectories(tenant);
+            if (!tenant.toRealPath().equals(tenant) || Files.isSymbolicLink(target)) {
+                throw new IOException("本机附件目录不可用");
+            }
+            Path staged = Files.createTempFile(tenant,"staged-",".data");
+            try {
+                Files.write(staged,data);
+                Files.move(staged,target,java.nio.file.StandardCopyOption.ATOMIC_MOVE,
+                        java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+            } finally {
+                Files.deleteIfExists(staged);
+            }
+        } catch(IOException ex) {
+            throw new IllegalStateException("本机附件写入失败",ex);
+        }
+    }
+
+    /** 本机对象键的目录和文件名必须是服务端生成的 UUID。 */
+    private Path localPath(String[] parts) {
+        if (parts.length!=4 || !"attachments".equals(parts[0]) || !"local".equals(parts[2])) {
+            throw new IllegalStateException("附件对象路径无效");
+        }
+        Path tenant = localRoot.resolve(UUID.fromString(parts[1]).toString());
+        return tenant.resolve(UUID.fromString(parts[3]).toString());
     }
 
     /** 关闭已装配的厂商客户端。 */
@@ -191,6 +269,13 @@ final class AttachmentObjectStorage implements AutoCloseable, AttachmentBlobStor
             } else {
                 throw new IllegalStateException("附件对象存储未配置");
             }
+        }
+
+        /** @return SDK 的原件响应流，由调用方关闭以归还连接 */
+        InputStream open(String path) {
+            if (s3 != null) return s3.getObject(builder -> builder.bucket(bucket).key(path));
+            if (obs != null) return obs.getObject(bucket, path).getObjectContent();
+            throw new IllegalStateException("附件对象存储未配置");
         }
 
         /** 容器停止时关闭底层连接池。 */

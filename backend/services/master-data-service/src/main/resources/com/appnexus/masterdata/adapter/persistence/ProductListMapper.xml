@@ -16,8 +16,7 @@
   <!-- 列表和COUNT共用完整条件；业务筛选使用固定列和运算；授权仅绑定公共执行器产出的谓词。 -->
   <sql id="conditions">
     WHERE tenant_id=#{__verifiedTenant}
-    <bind name="productAccessSql" value="@com.appnexus.persistence.mybatis.ScopedSql@bind(query.access.sql(), query.access.parameters(), &quot;query.access&quot;)"/>
-    ${productAccessSql}
+    /*appnexus-bind:query.access*/
     AND LOCATE(#{query.name},name)&gt;0 AND LOCATE(#{query.code},code)&gt;0
     <if test="query.keyword != ''"> AND (LOCATE(#{query.keyword},code)&gt;0 OR LOCATE(#{query.keyword},name)&gt;0)</if>
     AND draft_archived_at IS <choose><when test="query.archived">NOT NULL</when><otherwise>NULL</otherwise></choose>

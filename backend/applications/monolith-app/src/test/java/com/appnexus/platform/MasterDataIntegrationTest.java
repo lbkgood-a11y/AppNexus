@@ -1,6 +1,6 @@
 package com.appnexus.platform;
-import com.appnexus.platform.organization.PersonManagement;
-import com.appnexus.platform.organization.PersonData;
+import com.appnexus.masterdata.organization.PersonManagement;
+import com.appnexus.masterdata.organization.PersonData;
 import com.appnexus.platform.security.operation.OperationRegistry;
 
 import static org.assertj.core.api.Assertions.*;
@@ -23,7 +23,7 @@ class MasterDataIntegrationTest extends DatabaseTestSupport {
   @Autowired OperationRegistry registry;
   @Autowired org.springframework.core.env.Environment environment;
   @Autowired com.appnexus.platform.authorization.DataAccessCatalog dataAccess;
-  @Autowired com.appnexus.platform.organization.PersonManagement service;
+  @Autowired com.appnexus.masterdata.organization.PersonManagement service;
   @Autowired MasterDataManagement masterData;
   @Autowired com.appnexus.masterdata.api.masterdata.MasterDataReferenceNames referenceNames;
   @Autowired com.appnexus.bulkwarehousing.api.WarehouseBalances balances;
@@ -40,11 +40,11 @@ class MasterDataIntegrationTest extends DatabaseTestSupport {
     bootstrap.initialize(tenant,adminMember);
     var admin=new com.appnexus.platform.tenant.VerifiedTenantContext(adminAccount,tenant,adminMember,1);
     var ordinary=new com.appnexus.platform.tenant.VerifiedTenantContext(ordinaryAccount,tenant,ordinaryMember,1);
-    var input=new com.appnexus.platform.organization.PersonData.Input("STAFF-1","独立测试人员",Map.of(),0);
-    service.create(admin,com.appnexus.platform.organization.PersonData.Kind.PERSON,input);
-    assertThat(service.list(admin,com.appnexus.platform.organization.PersonData.Kind.PERSON,"",null,1,20).total()).isEqualTo(1);
-    assertThatThrownBy(()->service.list(ordinary,com.appnexus.platform.organization.PersonData.Kind.PERSON,"",null,1,20)).hasMessage("MASTER_DATA_DENIED");
-    assertThatThrownBy(()->service.create(ordinary,com.appnexus.platform.organization.PersonData.Kind.PERSON,input)).hasMessage("MASTER_DATA_DENIED");
+    var input=new com.appnexus.masterdata.organization.PersonData.Input("STAFF-1","独立测试人员",Map.of(),0);
+    service.create(admin,com.appnexus.masterdata.organization.PersonData.Kind.PERSON,input);
+    assertThat(service.list(admin,com.appnexus.masterdata.organization.PersonData.Kind.PERSON,"",null,1,20).total()).isEqualTo(1);
+    assertThatThrownBy(()->service.list(ordinary,com.appnexus.masterdata.organization.PersonData.Kind.PERSON,"",null,1,20)).hasMessage("MASTER_DATA_DENIED");
+    assertThatThrownBy(()->service.create(ordinary,com.appnexus.masterdata.organization.PersonData.Kind.PERSON,input)).hasMessage("MASTER_DATA_DENIED");
     for(var kind:List.of(Kind.COUNTRY_REGION,Kind.SUBDIVISION)){
       assertThat(masterData.geographyTree(admin,kind,"",1,20)).isNotNull();
       assertThatThrownBy(()->masterData.geographyTree(ordinary,kind,"",1,20)).hasMessage("MASTER_DATA_DENIED");
@@ -56,7 +56,7 @@ class MasterDataIntegrationTest extends DatabaseTestSupport {
       assertThatThrownBy(()->masterData.create(ordinary,kind,null)).hasMessage("MASTER_DATA_DENIED");
     }
     jdbc.update("DELETE FROM access_member_role WHERE tenant_id=UUID_TO_BIN(?) AND member_id=UUID_TO_BIN(?)",tenant.toString(),adminMember.toString());
-    assertThatThrownBy(()->service.list(admin,com.appnexus.platform.organization.PersonData.Kind.PERSON,"",null,1,20)).hasMessage("MASTER_DATA_DENIED");
+    assertThatThrownBy(()->service.list(admin,com.appnexus.masterdata.organization.PersonData.Kind.PERSON,"",null,1,20)).hasMessage("MASTER_DATA_DENIED");
   }
   /** 批量目录保留同一权限准入，并对一批多个真实引用限定租户。 */
   @Test void referenceNamesBatchIsTenantAndPermissionScoped(){
@@ -210,7 +210,7 @@ class MasterDataIntegrationTest extends DatabaseTestSupport {
     var scope = com.appnexus.platform.authorization.PermissionCatalog.ScopeType.TENANT;
     var tenant = dataAccess.list(scope).stream()
         .filter(descriptor -> Set.of("ProductCategory","ProductUnit","ProductAttribute","ProductTemplate",
-            "OrganizationType","OrganizationRelation","Position","TenantParameter","BusinessDictionary","TenantRole","OrganizationAuthorization")
+            "OrganizationType","OrganizationRelation","Position","TenantParameter","BusinessDictionary","TenantRole")
             .contains(descriptor.objectType())).toList();
     assertThat(tenant).hasSize(11).allSatisfy(descriptor -> assertThat(descriptor.operations()).isEmpty());
     assertThat(tenant.stream().flatMap(descriptor -> descriptor.resources().stream())

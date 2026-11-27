@@ -6,7 +6,7 @@ import PartnerEditor from "./PartnerEditor.vue";
 import { computed, onMounted, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules, type LoadFunction, type TreeInstance } from "element-plus";
-import { BusinessWorkspace, TreeListTemplate, ManagementTable, ManagedDialog, RecordAuditDetails, AppPagination, InfoHint, FloatingError, LoadErrorResult, presentLoadError, setErrorFeedback, type LoadIssue, type ManagementColumn } from "@appnexus/ui";
+import { BusinessWorkspace, TreeListTemplate, ManagementTable, ManagedDialog, RecordAuditDetails, AppPagination, InfoHint, FloatingError, LoadErrorResult, presentLoadError, setErrorFeedback, type LoadIssue, type ManagementColumn, type ManagementTableExcelExport } from "@appnexus/ui";
 import { masterDataFields, masterDataOperations, type MasterDataApi, type MasterDataKind, type MasterDataRow, type MasterDataInput } from "./index";
 
 /** 主数据档案复用现有工作区、表格和弹窗；表单差异来自固定字段契约，不构建平行 UI 体系。 */
@@ -164,6 +164,27 @@ const draft=reactive<MasterDataInput>({code:"",name:"",attributes:{},version:0})
 /** 已有停用单位保留名称，历史未收录值只读保留，禁止作为其他记录的新选择。 */
 const saveOperation=computed(()=>editingId.value?operation.value.update:operation.value.create);
 const canRead=computed(()=>operations.value.includes(operation.value.list));
+const partnerPageLoaded = ref(false);
+/** 列表和文件复用客商展示值，避免用未格式化的字典编码替换名称。 */
+function partnerFieldText(row: Readonly<MasterDataRow>, field: string): string {
+  const value = row.attributes[field];
+  return row[`${field}Name`] || (field === "partnerType" && value
+    ? (value === "BOTH" ? ["CUSTOMER", "SUPPLIER"] : value.split(","))
+        .map(code => partnerOptions.value.find(option => option.value === code)?.name ?? code).join(" / ")
+    : value || "—");
+}
+/** 客商自定义列复用当前页展示值；未成功查询时不导出保留在界面中的旧响应。 */
+const partnerExport = computed<false | ManagementTableExcelExport<MasterDataRow> | undefined>(() => {
+  if (props.kind !== "partner") return undefined;
+  if (!partnerPageLoaded.value) return false;
+  return { columns: {
+    ...Object.fromEntries(visibleFields.value.map(field =>
+      [field, (row: Readonly<MasterDataRow>) => partnerFieldText(row, field)])),
+    code: (row: Readonly<MasterDataRow>) => row.code,
+    name: (row: Readonly<MasterDataRow>) => row.name,
+    status: (row: Readonly<MasterDataRow>) => t(row.enabled ? "masterData.enabled" : "masterData.disabled"),
+  } };
+});
 const columns=computed<ManagementColumn[]>(()=>[
   {key:"status",label:t("masterData.status"),width:110},
   {key:"code",prop:"code",label:t("masterData.code"),minWidth:140},
@@ -188,6 +209,7 @@ const rules=computed<FormRules>(()=>{
 /** 查询失败保留上次行数据并显示原区域故障状态；重新获取实时准入，避免撤权后继续展示旧资料。 */
 async function load(){
   if(loading.value||busy.value)return;
+  partnerPageLoaded.value=false;
   loading.value=true;loadIssue.value=undefined;
   try{
     operations.value=await props.api.operations();ready.value=true;
@@ -196,8 +218,10 @@ async function load(){
     if(props.kind==="warehouse")warehouseOptions.value=await props.api.warehouseOptions();
     if(isStorage.value&&!props.storageParent?.code){rows.value=[];total.value=0;return;}
     if(props.kind==="partner")partnerFieldRestrictions.value=(await props.api.partnerAccess()).fieldRestrictions;
-    const result=await props.api.list(props.kind,{keyword:keyword.value,enabled:status.value==="all"?undefined:status.value==="enabled",page:page.value,size:size.value,...(isGeography.value?{scope:treeScope.value}:isStorage.value?{scope:props.storageParent?.code}:{})});
+    const query={keyword:keyword.value,enabled:status.value==="all"?undefined:status.value==="enabled",page:page.value,size:size.value,...(isGeography.value?{scope:treeScope.value}:isStorage.value?{scope:props.storageParent?.code}:{})};
+    const result=await props.api.list(props.kind,query);
     rows.value=result.rows;total.value=result.total;
+    if(props.kind==="partner")partnerPageLoaded.value=true;
     if(isGeography.value)geographyTreeReady.value=true;
   }catch(e){
     // 撤权拒绝时清除已有正文，避免仍展示之前获准读取的敏感档案；网络故障保留原列表以便核实结果。
@@ -284,13 +308,13 @@ onMounted(load);
       <FloatingError :title="error"><el-button :disabled="busy||loading" @click="retry">{{t('masterData.retry')}}</el-button></FloatingError>
       <LoadErrorResult v-if="loadIssue" :issue="loadIssue"><template #retry><el-button :disabled="busy||loading" @click="retry">{{t('masterData.retry')}}</el-button></template></LoadErrorResult>
       <el-result v-else-if="ready&&!canRead" icon="warning" :title="t('masterData.noPermission')" />
-      <ManagementTable v-else :title="title" :rows="rows" :columns="columns" :total="total" :loading="loading" :busy="busy" :empty-text="t('masterData.empty')" embedded @refresh="load">
+      <ManagementTable v-else :title="title" :rows="rows" :columns="columns" :excel-export="partnerExport" :total="total" :loading="loading" :busy="busy" :empty-text="t('masterData.empty')" embedded @refresh="load">
         <template #titleHelp>
           <InfoHint :content="t('masterData.scopeHint')" />
           <InfoHint v-if="kind==='country-region'" :content="t('masterData.countryHint')" />
         </template>
         <template #actions><el-button v-operation="operation.create" type="primary" :disabled="loading||busy||(isStorage&&(!storageParent?.code||!storageParent.enabled))" @click="edit()">{{t('masterData.create')}}</el-button></template>
-        <template v-for="field in visibleFields" :key="field" #[field]="{row}">{{row[`${field}Name`] || (kind==='warehouse'?(warehouseOptions[field]?.find(option=>option.value===row.attributes[field])?.name||row.attributes[field]||'—'):field==='partnerType'?(row.attributes[field]==='BOTH'?['CUSTOMER','SUPPLIER']:row.attributes[field].split(',')).map((value:string)=>partnerOptions.find(option=>option.value===value)?.name??value).join(' / '):field==='subdivisionType'?subdivisionTypeLabel(row.attributes[field]):field==='areaType'?(row.attributes[field]?t('storageHierarchy.types.'+row.attributes[field]):'—'):row.attributes[field]||'—')}}</template>
+        <template v-for="field in visibleFields" :key="field" #[field]="{row}">{{row[`${field}Name`] || (kind==='warehouse'?(warehouseOptions[field]?.find(option=>option.value===row.attributes[field])?.name||row.attributes[field]||'—'):kind==='partner'?partnerFieldText(row,field):field==='subdivisionType'?subdivisionTypeLabel(row.attributes[field]):field==='areaType'?(row.attributes[field]?t('storageHierarchy.types.'+row.attributes[field]):'—'):row.attributes[field]||'—')}}</template>
         <template #name="{row}"><el-button v-if="kind==='storage-area'&&embedded" v-operation="operation.list" link type="primary" @click="emit('selected',row)">{{row.name}}</el-button><span v-else>{{isGeography?(row.attributes.displayName||row.name):row.name}}</span></template>
         <template #hierarchyCode="{row}">{{row.attributes.hierarchyCode||row.code}}</template>
         <template #parentHierarchyCode="{row}">{{row.attributes.parentHierarchyCode||'—'}}</template>

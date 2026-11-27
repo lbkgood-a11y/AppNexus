@@ -16,8 +16,7 @@ class RowAccessControlTest {
         assertThat(control.organizationRange(null).all()).isFalse();
         assertThat(control.organizationRange(null).ids()).isEmpty();
         assertThat(control.organizationRange(plan(DataScopeAuthorization.ScopeType.ALL,Set.of())).all()).isTrue();
-        assertThat(control.organizationRange(plan(DataScopeAuthorization.ScopeType.ORGANIZATION,Set.of(id))).ids()).containsExactly(id.toString());
-        for(var type:List.of(DataScopeAuthorization.ScopeType.DENY,DataScopeAuthorization.ScopeType.SELF,DataScopeAuthorization.ScopeType.ORGANIZATION_SUBTREE,DataScopeAuthorization.ScopeType.RULES)){
+        for(var type:List.of(DataScopeAuthorization.ScopeType.DENY,DataScopeAuthorization.ScopeType.SELF,DataScopeAuthorization.ScopeType.ORGANIZATION,DataScopeAuthorization.ScopeType.ORGANIZATION_SUBTREE,DataScopeAuthorization.ScopeType.RULES)){
             var range=control.organizationRange(plan(type,Set.of(id)));
             assertThat(range.all()).isFalse();assertThat(range.ids()).isEmpty();
         }
@@ -44,17 +43,12 @@ class RowAccessControlTest {
         assertThat(control.organizationPredicate(unresolved, "organization_id").sql()).isEqualTo(" AND 1=0");
     }
 
-    @Test void organizationPredicateBindsStableValuesAndSupportsAnotherObjectMapping() {
-        UUID a = UUID.fromString("00000000-0000-0000-0000-000000000001");
-        UUID b = UUID.fromString("00000000-0000-0000-0000-000000000002");
-        var scoped = plan(DataScopeAuthorization.ScopeType.ORGANIZATION, Set.of(b, a));
-        var predicate = control.organizationPredicate(scoped, "d.document_organization_id");
-        assertThat(predicate.sql()).isEqualTo(" AND d.document_organization_id IN (UUID_TO_BIN(?),UUID_TO_BIN(?))");
-        assertThat(predicate.parameters()).containsExactly(a.toString(), b.toString());
-        assertThat(control.allowsOrganization(scoped, a)).isTrue();
-        assertThat(control.allowsOrganization(scoped, UUID.randomUUID())).isFalse();
-        assertThat(control.allowsOrganization(scoped, null)).isFalse();
-        assertThatThrownBy(() -> predicate.parameters().clear()).isInstanceOf(UnsupportedOperationException.class);
+    /** 退役组织集合即使随可信计划传入，也不会编译为授权条件。 */
+    @Test void retiredOrganizationSetCannotAuthorizeRows() {
+        UUID organization=UUID.randomUUID();
+        var scoped=plan(DataScopeAuthorization.ScopeType.ORGANIZATION,Set.of(organization));
+        assertThat(control.organizationPredicate(scoped,"d.document_organization_id").sql()).isEqualTo(" AND 1=0");
+        assertThat(control.allowsOrganization(scoped,organization)).isFalse();
     }
 
     @Test void allOnlyOmitsAdditionalPredicateAndInvalidColumnsAreRejected() {
@@ -67,6 +61,22 @@ class RowAccessControlTest {
             assertThatThrownBy(() -> control.organizationPredicate(all, invalid)).isInstanceOf(IllegalArgumentException.class);
         }
         assertThatThrownBy(() -> control.organizationPredicate(all, null)).isInstanceOf(IllegalArgumentException.class);
+    }
+
+    /** 相同记录键不能跳过同分支上的字段条件，只有完整命中的分支才能授权。 */
+    @Test void recordOnlyScopeNeverDropsConditions(){
+        UUID record=UUID.randomUUID(),other=UUID.randomUUID();
+        var base=plan(DataScopeAuthorization.ScopeType.RULES,Set.of());
+        var conditional=new DataGrantRules.Rule(DataGrantRules.SubjectType.ROLE_MEMBERS,Set.of(),Set.of(record),
+            List.of(new DataGrantRules.Condition("code",DataGrantRules.Operator.EQ,List.of("A"))),false);
+        var exact=new DataGrantRules.Rule(DataGrantRules.SubjectType.ROLE_MEMBERS,Set.of(),Set.of(other),List.of(),false);
+        var access=new AccessPlan(base.subject(),base.permissionCode(),base.resource(),
+            new DataScopeAuthorization.DataScope(DataScopeAuthorization.ScopeType.RULES,Set.of(),List.of(conditional,exact)),
+            Map.of(),Instant.now());
+        assertThat(control.allowsRecordId(access,record)).isFalse();
+        assertThat(control.allowsRecordId(access,other)).isTrue();
+        assertThat(control.allowsRecordId(access,UUID.randomUUID())).isFalse();
+        assertThat(control.allowsRecordId(access,null)).isFalse();
     }
 
     /** 组合不能把指定记录和条件错误地取并集，也不能按未声明字段或其他资源编译。 */

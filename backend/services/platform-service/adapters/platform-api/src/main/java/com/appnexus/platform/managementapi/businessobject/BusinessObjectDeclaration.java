@@ -39,6 +39,7 @@ public final class BusinessObjectDeclaration implements Provider {
                         new PageOperation("business-objects/index", "/business-objects/workbench", "业务对象配置：保存", "Save document configuration", "PUT", "/api/business-objects/{type}/configuration")),
                 operation("BusinessObject", "publish", "业务对象配置：发布", "Publish document configuration", "business.object.configuration:manage",
                         new PageOperation("business-objects/index", "/business-objects/workbench", "业务对象配置：发布", "Publish document configuration", "POST", "/api/business-objects/{type}/configuration:publish")),
+                com.appnexus.contracts.businessobject.DedicatedOperations.operation("BusinessObject", "executePlatformCommand", "分发平台对象命令", "Dispatch platform object command", ""),
                 com.appnexus.contracts.businessobject.DedicatedOperations.operation("BusinessObject", "inspectOperation", "诊断对象操作", "Inspect object operation", ""),
                 com.appnexus.contracts.businessobject.DedicatedOperations.operation("BusinessObject", "resolveIntegration", "集成对象解析", "Resolve integration object", ""),
                 com.appnexus.contracts.businessobject.DedicatedOperations.operation("BusinessObject", "contracts", "读取交互契约", "Read interaction contracts", "business.object.catalog:manage"),

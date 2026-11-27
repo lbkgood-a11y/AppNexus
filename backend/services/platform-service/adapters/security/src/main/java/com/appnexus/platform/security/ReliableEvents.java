@@ -52,6 +52,41 @@ public class ReliableEvents implements TransactionalBusinessEvents {
         return Collections.unmodifiableMap(registrations);
     }
 
+    /** @return 按当前发布注册生成的拓扑，兼容权限分派也在此列出 */
+    public List<TaskManagement.Subscription> subscriptionCatalog(Map<String,Map<String,Object>> states) {
+        var rows=new ArrayList<TaskManagement.Subscription>();
+        for(var type:AUTHORITY_TYPES.stream().sorted().toList()) {
+            String producer=type.equals("AUTHORITY_INVALIDATED")?"authorityChanges":"integrationChanges";
+            rows.add(new TaskManagement.Subscription(type,AUTHORITY_CONSUMER,producer,
+                AuthorityEventWorker.class.getSimpleName(),"authorityReceipt",false,false,Map.of()));
+        }
+        subscriptions.forEach((type,handlers)->handlers.forEach((consumer,handler)->{
+            String producer=switch(type) {
+                case INBOUND_RECEIPT_POSTED -> "postReceipt";
+                case INBOUND_QUALITY_DECIDED -> "decideQuality";
+            };
+            String effect=consumer.equals("inbound-batch-quality")?"batchQualityProjection":"";
+            var state=new HashMap<>(states.getOrDefault(subscriptionId(type.name(),consumer).toString(),Map.of()));
+            boolean paused=state.remove("paused") instanceof Number value && value.intValue()==1;
+            rows.add(new TaskManagement.Subscription(type.name(),consumer,producer,
+                org.springframework.util.ClassUtils.getUserClass(handler).getSimpleName(),effect,
+                paused,true,state));
+        }));
+        return List.copyOf(rows);
+    }
+
+    /** @return 类型与消费者的稳定审计目标 UUID；权限事件不开放执行开关 */
+    public Optional<UUID> manageableSubscription(String type,String consumer) {
+        return subscriptions.entrySet().stream()
+            .filter(entry->entry.getKey().name().equals(type) && entry.getValue().containsKey(consumer))
+            .map(entry->subscriptionId(type,consumer)).findFirst();
+    }
+
+    private static UUID subscriptionId(String type,String consumer) {
+        return UUID.nameUUIDFromBytes(("appnexus:event-subscription:"+type+"/"+consumer)
+            .getBytes(java.nio.charset.StandardCharsets.UTF_8));
+    }
+
     /** 已领取的投递以及数据库返回的事件引用，累计序号和租约共同标记本次执行。 */
     public record Event(UUID id,UUID tenant,String type,String aggregate,int attempts,String lease,
                         UUID deliveryId,String consumer,int sequence) {}
@@ -178,6 +213,20 @@ public class ReliableEvents implements TransactionalBusinessEvents {
     public boolean retryDelivery(UUID id,UUID actor) {
         authorizeRetry(actor,id.toString());
         return mapper.retry(WORKER_SCOPE,id.toString(),actor.toString())==1;
+    }
+
+    /** 复核平台任务读取权限，签发仅供当前只读事务和可信账号使用的订阅状态查询许可。 */
+    public void authorizeSubscriptionRead(UUID actor) {
+        String permission="platform.task:read";
+        gate.authorizeServiceRead(PLATFORM,permission,List.of(actor.toString()),
+            ()->access.hasPermission(AccessAuthorization.Subject.platform(actor),permission));
+    }
+
+    /** 绑定可信操作者、平台管理域和稳定订阅目标，供同事务状态及审计 SQL 使用。 */
+    public void authorizeSubscriptionState(UUID actor,String target) {
+        String permission="platform.task:subscription_state";
+        gate.authorizeServiceOperation(PLATFORM,permission,List.of(actor.toString(),target),
+            ()->access.hasPermission(AccessAuthorization.Subject.platform(actor),permission));
     }
 
     private void authorizeRetry(UUID actor,String id) {

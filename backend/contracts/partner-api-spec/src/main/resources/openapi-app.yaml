@@ -1820,6 +1820,144 @@ paths:
             '*/*':
               schema:
                 $ref: '#/components/schemas/OpenedInboundReceipt'
+  /api/bulk-commodity-templates:
+    get:
+      tags:
+      - commodity-template-controller
+      operationId: listCommodityTemplates
+      parameters:
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 1
+      - name: pageSize
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 20
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/CommodityTemplatePage'
+    post:
+      tags:
+      - commodity-template-controller
+      operationId: createCommodityTemplate
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CommodityTemplateDraft'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/CommodityTemplateVersion'
+  /api/bulk-commodity-templates/{id}:
+    put:
+      tags:
+      - commodity-template-controller
+      operationId: updateCommodityTemplate
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CommodityTemplateEdit'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/CommodityTemplateVersion'
+  /api/bulk-commodity-templates/{id}:publish:
+    post:
+      tags:
+      - commodity-template-controller
+      operationId: publishCommodityTemplate
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CommodityTemplatePublication'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/CommodityTemplateVersion'
+  /api/bulk-inbound-tasks:
+    get:
+      tags:
+      - inbound-workbench-controller
+      operationId: inboundTaskList
+      parameters:
+      - name: number
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: status
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - ARRIVED
+          - WORKING
+          - READY_TO_RECEIVE
+          - RECEIVED
+          - RETURN_PENDING
+          - RETURNED
+          - CORRECTION_REQUIRED
+      - name: afterId
+        in: query
+        required: false
+        schema:
+          type: string
+          format: uuid
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 20
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/TaskPage'
   /api/bulk-inbound-workbench/queue:
     get:
       tags:
@@ -1901,6 +2039,26 @@ paths:
               schema:
                 $ref: '#/components/schemas/Registered'
   /api/bulk-inbound-quality-orders/{id}:decide:
+    get:
+      tags:
+      - inbound-document-query-controller
+      operationId: labMetrics
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/LabMetricOption'
     post:
       tags:
       - inbound-quality-order-controller
@@ -2250,6 +2408,125 @@ paths:
             '*/*':
               schema:
                 $ref: '#/components/schemas/SteelMeasurement'
+  /api/bulk-inbound-workbench/tasks/{id}/site-commands/gate:
+    post:
+      tags:
+      - inbound-site-command-controller
+      operationId: gateInboundSiteCommand
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InboundSiteCommandRequest'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/InboundSiteCommandStatus'
+  /api/bulk-inbound-workbench/tasks/{id}/site-commands/call:
+    post:
+      tags:
+      - inbound-site-command-controller
+      operationId: callInboundSiteCommand
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InboundSiteCommandRequest'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/InboundSiteCommandStatus'
+  /api/bulk-inbound-workbench/tasks/{id}/site-commands/print:
+    post:
+      tags:
+      - inbound-site-command-controller
+      operationId: printInboundSiteCommand
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InboundSiteCommandRequest'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/InboundSiteCommandStatus'
+  /api/bulk-inbound-workbench/tasks/{id}/site-commands/{commandId}:
+    get:
+      tags:
+      - inbound-site-command-controller
+      operationId: inboundSiteCommandStatus
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: commandId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/InboundSiteCommandStatus'
+  /api/bulk-inbound-workbench/tasks/{id}/site:
+    get:
+      tags:
+      - inbound-workbench-controller
+      operationId: inboundSiteReading
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/InboundSiteReading'
   /api/bulk-inbound-workbench/tasks/{id}:
     get:
       tags:
@@ -2351,6 +2628,166 @@ paths:
                 additionalProperties: {}
 components:
   schemas:
+    InboundSiteCommandRequest:
+      type: object
+      properties:
+        commandId:
+          type: string
+          format: uuid
+        retry:
+          type: boolean
+    InboundSiteCommandStatus:
+      type: object
+      properties:
+        commandId:
+          type: string
+          format: uuid
+        taskId:
+          type: string
+          format: uuid
+        action:
+          type: string
+          enum:
+          - RAISE_GATE
+          - CALL_NUMBER
+          - PRINT_TASK_SLIP
+        state:
+          type: string
+        sentAt:
+          type: string
+          format: date-time
+        acknowledgedAt:
+          type: string
+          format: date-time
+        simulated:
+          type: boolean
+    InboundSiteReading:
+      type: object
+      properties:
+        state:
+          type: string
+        simulated:
+          type: boolean
+        station:
+          type: string
+        kg:
+          type: string
+        stable:
+          type: boolean
+        observedAt:
+          type: string
+          format: date-time
+        capture:
+          type: string
+    CommodityTemplateDraft:
+      type: object
+      properties:
+        code:
+          type: string
+        version:
+          type: integer
+          format: int32
+        profile:
+          type: string
+          enum:
+          - QUALITY_DEDUCTION
+          - SAMPLED_BULK
+          - STEEL_LPN
+        definition:
+          $ref: '#/components/schemas/CommodityTemplateDefinition'
+    CommodityTemplateDefinition:
+      type: object
+      properties:
+        noticeProductIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+        qualityMetrics:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/TemplateMetric'
+        deductionFormula:
+          $ref: '#/components/schemas/TemplateDeductionFormula'
+        maxVarianceRatio:
+          type: number
+        requireBothWeights:
+          type: boolean
+    CommodityTemplateVersion:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        status:
+          type: string
+        rowVersion:
+          type: integer
+          format: int64
+        draft:
+          $ref: '#/components/schemas/CommodityTemplateDraft'
+    CommodityTemplatePage:
+      type: object
+      properties:
+        rows:
+          type: array
+          items:
+            $ref: '#/components/schemas/CommodityTemplateVersion'
+        total:
+          type: integer
+          format: int64
+    CommodityTemplatePublication:
+      type: object
+      properties:
+        rowVersion:
+          type: integer
+          format: int64
+    CommodityTemplateEdit:
+      type: object
+      properties:
+        rowVersion:
+          type: integer
+          format: int64
+        draft:
+          $ref: '#/components/schemas/CommodityTemplateDraft'
+    TemplateMetric:
+      type: object
+      properties:
+        unit:
+          type: string
+        minimum:
+          type: number
+        maximum:
+          type: number
+        acceptMinimum:
+          type: number
+        acceptMaximum:
+          type: number
+    TemplateDeductionFormula:
+      type: object
+      properties:
+        version:
+          type: string
+        moisture:
+          $ref: '#/components/schemas/TemplateDeductionRule'
+        impurity:
+          $ref: '#/components/schemas/TemplateDeductionRule'
+    TemplateDeductionRule:
+      type: object
+      properties:
+        metric:
+          type: string
+        baseline:
+          type: number
+        multiplier:
+          type: number
+    LabMetricOption:
+      type: object
+      properties:
+        code:
+          type: string
+        unit:
+          type: string
     OpenInboundReceiptRequest:
       type: object
       properties:
@@ -2447,6 +2884,9 @@ components:
         meteringVersion:
           type: integer
           format: int64
+        noticeId:
+          type: string
+          format: uuid
     InboundDocumentPage:
       type: object
       properties:
@@ -2918,6 +3358,52 @@ components:
         taskVersion:
           type: integer
           format: int64
+    TaskAudit:
+      type: object
+      properties:
+        createdBy:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedBy:
+          type: string
+        updatedAt:
+          type: string
+          format: date-time
+    TaskPage:
+      type: object
+      properties:
+        rows:
+          type: array
+          items:
+            $ref: '#/components/schemas/TaskRow'
+        nextAfterId:
+          type: string
+          format: uuid
+    TaskRow:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        number:
+          type: string
+        status:
+          type: string
+        stage:
+          type: string
+          enum:
+          - WAIT_QUALITY
+          - WAIT_GROSS
+          - UNLOADING
+          - WAIT_TARE
+          - WAIT_RECEIPT
+        arrivedAt:
+          type: string
+          format: date-time
+        audit:
+          $ref: '#/components/schemas/TaskAudit'
     QueueItem:
       type: object
       properties:

@@ -17,6 +17,8 @@ public @interface GuardedScope {
 
     /** 权限谓词的固定参数路径；读与锁必填。 */
     String predicate() default "";
+    /** 自助读取的本人谓词路径，必须与可信请求账号、租户和已选人员一致。 */
+    String ownerRead() default "";
     /** 只读投影可消费原读取谓词；没有读取谓词时必须有同父记录的原写入许可。 */
     String readFallback() default "";
     /** 共用语句中用于区分业务对象的参数，缺省对所有调用执行。 */
@@ -50,6 +52,8 @@ public @interface GuardedScope {
     String catalogPublication() default "";
     /** 专用技术操作权限，要求原认证主体及目标键由平台绑定。 */
     String serviceOperation() default "";
+    /** 只读技术操作权限仅适用于查询，禁止消费为写入许可。 */
+    boolean serviceRead() default false;
     /** 技术操作固定参数路径，顺序与出具许可一致。 */
     String[] serviceKeys() default {};
 }

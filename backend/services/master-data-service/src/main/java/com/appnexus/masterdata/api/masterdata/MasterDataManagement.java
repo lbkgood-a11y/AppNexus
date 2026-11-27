@@ -17,6 +17,16 @@ public interface MasterDataManagement {
   */
  StoragePosition resolveStoragePosition(VerifiedTenantContext c, StoragePosition expected);
 
+ /** 当前成员可选择的仓库摘要，仅包含登录选仓所需字段。 */
+ record LoginWarehouse(String id, String code, String name) {}
+
+ /**
+  * @param context 服务端可信租户成员
+  * @param warehouseId 指定仓库 UUID，空值读取候选
+  * @return 当前登录选仓范围内的启用仓库
+  */
+ List<LoginWarehouse> loginWarehouses(VerifiedTenantContext context, UUID warehouseId);
+
  /** 主数据公开操作；沿用可信主体、功能权限、数据范围及原子事务约束。 */
  /** @param c 当前可信请求 @param action 固定读取、新增或修改动作 @return 对应组织候选和字段限制 */
  Object partnerAccess(VerifiedTenantContext c,String action);

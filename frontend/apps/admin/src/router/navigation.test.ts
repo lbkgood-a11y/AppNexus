@@ -54,4 +54,19 @@ describe("navigation lifecycle",()=>{
     state.get.mockResolvedValueOnce({tenantId:null,contextVersion:0,items:[task]});await loadNavigation(true);
     expect(canVisitBusinessPath(task.path)).toBe(true);expect(canVisitBusinessPath(designer.path)).toBe(false);
   });
+  it("restores one tag per warehousing workspace while preserving other cached tabs", async () => {
+    const receipt = {...page, id:"receipt", component:"warehousing/inbound-receipt-orders",
+      path:"/warehousing/inbound-receipt-orders"};
+    const notice = {...page, id:"notice", component:"warehousing/inbound-notices", path:"/warehousing/inbound-notices"};
+    const other = {path:"/account/profile"};
+    state.tags=[{path:receipt.path},other,{path:receipt.path,query:{document:"old"}},
+      {path:notice.path,query:{number:"notice-1"}},{path:notice.path}];
+    state.get.mockResolvedValueOnce({tenantId:null,contextVersion:0,items:[receipt,notice]});
+
+    await loadNavigation();
+
+    expect(state.tags.map(tag=>tag.path)).toEqual([receipt.path,other.path,notice.path]);
+    expect(state.tags[2].query).toEqual({number:"notice-1"});
+    expect(state.tags[0].meta).toMatchObject({dynamicLevel:1,reuseOnQueryChange:true});
+  });
 });

@@ -24,6 +24,7 @@ final class MapperFixtures {
       var config = new Configuration();
       config.setLocalCacheScope(LocalCacheScope.STATEMENT);
       config.setCacheEnabled(false);
+      config.setDefaultScriptingLanguage(com.appnexus.platform.persistence.ScopedQueryLanguageDriver.class);
       config.setCallSettersOnNulls(true);
       config.addMapper(type);
       var factory = new SqlSessionFactoryBean();

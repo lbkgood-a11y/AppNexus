@@ -19,7 +19,7 @@ public interface ProductAccessMapper {
      */
     @com.appnexus.persistence.mybatis.GuardedScope(predicate="access",resource="masterdata.product",tenant="__verifiedTenant")
     @Select({"<script>","SELECT BIN_TO_UUID(organization_id) organizationId,id FROM md_product_v1 WHERE tenant_id=#{__verifiedTenant} AND id=UUID_TO_BIN(#{id})",
-        "<bind name='accessSql' value='@com.appnexus.persistence.mybatis.ScopedSql@bind(access.sql(), access.parameters(), &quot;access&quot;)'/> ${accessSql}",
+        " /*appnexus-bind:access*/",
         "<if test='lock'> FOR UPDATE</if>","</script>"})
     List<Map<String,Object>> authorized(@Param("__verifiedTenant") byte[] tenant,@Param("id") String id,@Param("access") Predicate access,@Param("lock") boolean lock);
 }

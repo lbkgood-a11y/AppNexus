@@ -128,7 +128,9 @@ watch(locale, value => {
     <footer class="dictionary-grid-pagination"><AppPagination size="small" v-model:current-page="page" v-model:page-size="pageSize" :page-sizes="[10,20,50,100]" :total="rows.length" layout="total, sizes, prev, pager, next" background /></footer>
   </section>
   </Teleport>
-  <ManagedDialog v-model="auditOpen" :title="t('recordAudit.title')"><RecordAuditDetails v-if="selectedAudit" :audit="selectedAudit" /></ManagedDialog>
+  <ManagedDialog v-model="auditOpen" :title="t('recordAudit.title')" :width="520">
+    <RecordAuditDetails v-if="selectedAudit" :audit="selectedAudit" dialog />
+  </ManagedDialog>
 </template>
 <style>
 /* 全屏弹窗仅承载同一表格，不产生额外实例或重复请求。 */

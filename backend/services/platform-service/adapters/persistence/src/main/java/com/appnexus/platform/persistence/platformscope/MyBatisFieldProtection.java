@@ -24,7 +24,8 @@ public final class MyBatisFieldProtection implements FieldProtection,DataAccessD
             if(resource.responseType().isEmpty())continue;
             try{
                 var type=Class.forName(resource.responseType(),false,getClass().getClassLoader());
-                if(!type.isRecord()||!type.getName().startsWith("com.appnexus.platform.")||resource.fields().isEmpty())throw new IllegalStateException("DATA_FIELD_RESPONSE_TYPE_INVALID:"+resource.resource());
+                // 响应类型来自代码中的对象声明，业务模块和平台均可声明自有记录。
+                if(!type.isRecord()||!type.getName().startsWith("com.appnexus.")||resource.fields().isEmpty())throw new IllegalStateException("DATA_FIELD_RESPONSE_TYPE_INVALID:"+resource.resource());
                 for(var field:resource.fields())if(Arrays.stream(type.getRecordComponents()).noneMatch(c->c.getName().equals(field.field())&&c.getType()==String.class))throw new IllegalStateException("DATA_FIELD_RESPONSE_COMPONENT_INVALID:"+resource.resource()+":"+field.field());
                 if(result.putIfAbsent(type,new Binding(scope,resource))!=null)throw new IllegalStateException("DATA_FIELD_RESPONSE_BINDING_DUPLICATE:"+resource.resource());
             }catch(ClassNotFoundException error){throw new IllegalStateException("DATA_FIELD_RESPONSE_TYPE_MISSING:"+resource.resource(),error);}

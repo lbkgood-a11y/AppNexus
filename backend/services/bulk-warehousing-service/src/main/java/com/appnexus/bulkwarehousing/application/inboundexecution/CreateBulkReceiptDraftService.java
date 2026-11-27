@@ -5,7 +5,8 @@ import com.appnexus.bulkwarehousing.api.inboundexecution.CreateBulkReceiptDraftU
 import com.appnexus.bulkwarehousing.application.InboundReferenceSource;
 import com.appnexus.bulkwarehousing.domain.inboundexecution.QualityGateStrategy;
 import com.appnexus.bulkwarehousing.domain.inboundexecution.TemplateQualityGate;
-import com.appnexus.bulkwarehousing.domain.inboundexecution.UnloadingFact;
+import com.appnexus.bulkwarehousing.domain.inboundexecution.DeductionCalculator;
+import com.appnexus.bulkwarehousing.domain.inboundexecution.ReceiptQualityDeduction;
 import com.appnexus.contracts.businessobject.BusinessObjects.DataAccessExecutor;
 import com.appnexus.contracts.businessobject.BusinessObjects.Rejection;
 import com.appnexus.platform.authorization.AccessAuthorization.Subject;
@@ -70,16 +71,17 @@ public final class CreateBulkReceiptDraftService implements CreateBulkReceiptDra
             }
             var line = repository.lockNoticeLine(tenant, task.noticeId(), command.noticeLineId());
             if (line == null) throw new Rejection(404, "INBOUND_NOTICE_LINE_NOT_FOUND");
-            var sample = Optional.ofNullable(repository.lockSample(tenant, command.taskId()))
+            var current = repository.lockSample(tenant, command.taskId());
+            var sample = Optional.ofNullable(current)
                     .map(value -> new QualityGateStrategy.QualityFact(value.id(), value.version(), value.sampled(),
                             "PASS".equals(value.decision()), "FAIL".equals(value.decision()), false, false));
-            var gate = new TemplateQualityGate(TemplateQualityGate.Mode.SAMPLED).evaluate(
-                    QualityGateStrategy.Point.CREATE_RECEIPT, sample,
-                    new UnloadingFact(UnloadingFact.Disposition.NOT_REQUIRED, null, BigDecimal.ZERO));
+            var gate = new TemplateQualityGate(TemplateQualityGate.Mode.valueOf(task.qualityStrategy())).evaluate(
+                    QualityGateStrategy.Point.CREATE_RECEIPT, sample, task.unloading());
             if (gate.outcome() == QualityGateStrategy.Outcome.BLOCK) throw new Rejection(409, gate.reasonCode());
             var meter = repository.lockMeter(tenant, command.taskId());
             if (meter == null || meter.rowVersion() != command.meteringVersion()) throw conflict();
-            var resolved = resolve(context, command, task, line, meter.physicalNetKg());
+            var deduction = calculateDeduction(task, current, meter);
+            var resolved = resolve(context, command, task, line, deduction.accountingKg());
             String qualityState = gate.outcome() == QualityGateStrategy.Outcome.ACCEPT_PENDING_LAB ? "PENDING_LAB" : "QUALIFIED";
             var opened = repository.lockActiveDraft(tenant, command.taskId());
             if (opened != null && (!opened.collecting() || !opened.number().equals(command.receiptNo()))) throw conflict();
@@ -87,10 +89,29 @@ public final class CreateBulkReceiptDraftService implements CreateBulkReceiptDra
             repository.insertDraft(tenant, actor, new InboundReceiptOrderRepository.Draft(id, UUID.randomUUID(),
                     command.taskId(), task.noticeId(), command.noticeLineId(), meter.id(),
                     gate.qualityId().orElseThrow(), command.receiptNo(), command.batchNo(), qualityState,
-                    meter.physicalNetKg(), resolved, command.replacesReceiptId(), meter.method()),opened != null);
+                    meter.physicalNetKg(), resolved, command.replacesReceiptId(), meter.method(),
+                    deduction,task.formulaSnapshot(),current.snapshot(),task.unloading().evidenceId()),opened != null);
             if (repository.advanceTask(tenant, actor, command.taskId(), task.rowVersion()) != 1) throw conflict();
             return new BulkReceiptDraft(id, opened == null ? 0 : opened.version()+1, task.rowVersion() + 1, qualityState);
         });
+    }
+
+    private static DeductionCalculator.Result calculateDeduction(InboundReceiptOrderRepository.Task task,
+            InboundReceiptOrderRepository.Sample sample, InboundReceiptOrderRepository.Meter meter) {
+        if (task.formula()==null && "SAMPLED".equals(task.qualityStrategy())) {
+            return new DeductionCalculator.Result(BigDecimal.ZERO,BigDecimal.ZERO,BigDecimal.ZERO,
+                    BigDecimal.ZERO,meter.physicalNetKg());
+        }
+        if (!"SCALE_DIFFERENCE".equals(meter.method()) || sample==null || sample.snapshot()==null
+                || !sample.id().equals(meter.tareQualityId())) {
+            throw new Rejection(409,"INBOUND_RECEIPT_DEDUCTION_EVIDENCE_REQUIRED");
+        }
+        try {
+            return ReceiptQualityDeduction.calculate(meter.physicalNetKg(), sample.percentages(),
+                    task.formula(), task.unloading().extraDeductionKg());
+        } catch (IllegalArgumentException | ArithmeticException invalid) {
+            throw new Rejection(409,"INBOUND_RECEIPT_DEDUCTION_INVALID");
+        }
     }
 
     private InboundReceiptReferences.Resolved resolve(VerifiedTenantContext context, Command command,

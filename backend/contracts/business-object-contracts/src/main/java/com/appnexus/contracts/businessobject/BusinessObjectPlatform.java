@@ -10,6 +10,8 @@ public interface BusinessObjectPlatform {
   boolean active(BusinessObjects.Context context);
   /** 通用能力复核当前有效成员的对象操作权限；宿主未接通时默认拒绝，不借用配置管理权。 */
   default boolean operationAllowed(BusinessObjects.Context context,String operationId,String permissionCode){return false;}
+  /** 平台直达命令单独验证真实管理身份及原平台操作权限，不借用租户成员授权。 */
+  default boolean platformCommandAllowed(BusinessObjects.Context context,String permissionCode){return false;}
   /**
    * 对真实对象快照执行统一行范围和字段保护，必须在专业能力及业务写入之前调用。
    * @param context 可信主体，禁止使用快照中的账号构造授权主体

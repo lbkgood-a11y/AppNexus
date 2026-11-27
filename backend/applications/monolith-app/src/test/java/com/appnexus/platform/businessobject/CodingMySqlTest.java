@@ -36,7 +36,7 @@ class CodingMySqlTest {
     jdbc.update("INSERT INTO business_object_code_counter(tenant_id,object_type,encoder_key,period_key,sequence_value) VALUES(UUID_TO_BIN(?),'TestDocument','legacy','ALL',41)",LEGACY_TENANT);
     new ResourceDatabasePopulator(new ClassPathResource("db/migration/V126__independent_coding_rules.sql")).execute(source);}
   @BeforeEach void setup(){
-    var declaration=new CodingDeclaration().descriptor();
+    var declaration=new CodingDeclaration(()->null).descriptor();
     var descriptor=new Descriptor("TestDocument","测试单据","Test document","test",1,Category.TRANSACTION,List.of(),List.of(new Operation("create","新增","Create","test:create","TestDocument.create",null,List.of(),new InteractionContract("TestDocument.create",1,"TestDocument","create","新增","Create",InteractionContract.Trigger.USER_ACTION,List.of(new InteractionContract.Capability(InteractionContract.Service.BUSINESS,InteractionContract.Completion.SYNCHRONOUS,"TestDocument.create","",List.of(),Set.of(),"test.document.create",1))))),null,List.of(new CodingField("code","create",64)));
     var objects=org.mockito.Mockito.mock(BusinessObjectManagement.class);
     service=com.appnexus.platform.persistence.businessobject.BusinessObjectPersistence.coding(codingMapper(),new DataSourceTransactionManager(source),new BusinessObjectPlatform(){

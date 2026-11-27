@@ -16,6 +16,7 @@ public class MyBatisExecutionConfiguration {
         return configuration->{
             configuration.setLocalCacheScope(LocalCacheScope.STATEMENT);
             configuration.setCacheEnabled(false);
+            configuration.setDefaultScriptingLanguage(ScopedQueryLanguageDriver.class);
             // Map响应必须保留已选择但为NULL的字段，保持原JDBC响应契约；字段隐藏由FieldProtection独立执行。
             configuration.setCallSettersOnNulls(true);
         };

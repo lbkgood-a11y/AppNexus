@@ -16,8 +16,11 @@ const props=withDefaults(defineProps<{
   pending?: boolean;
   /** 主数据详情系统卡片内嵌时为 true，默认 false，使用独立的审计清单。 */
   inline?: boolean;
-}>(),{pending:false,inline:false});
+  /** 独立审计弹窗使用带边框的描述列表，默认 false。 */
+  dialog?: boolean;
+}>(),{pending:false,inline:false,dialog:false});
 const { t, locale } = useI18n();
+const auditKeys = ["createdBy", "createdAt", "updatedBy", "updatedAt"] as const;
 /** 已授权的账号名缺失时区分未记录与不可解析，不回退到账号标识。 */
 function actor(value: string | null, name?: string | null) {
   if (props.pending) return "—";
@@ -30,12 +33,23 @@ function time(value: string | null) {
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? t("recordAudit.unknown") : new Intl.DateTimeFormat(locale.value, { dateStyle: "medium", timeStyle: "medium" }).format(date);
 }
+
+/** 两种布局共用已授权字段及缺省值的展示逻辑。 */
+function auditValue(key: (typeof auditKeys)[number]) {
+  if (key === "createdAt" || key === "updatedAt") return time(props.audit[key]);
+  return actor(props.audit[key], key === "createdBy" ? props.audit.createdByName : props.audit.updatedByName);
+}
 </script>
 <template>
-  <dl :class="inline ? 'detail-audit-grid' : 'detail-audit-list'">
-    <div v-for="key in ['createdBy','createdAt','updatedBy','updatedAt'] as const" :key="key" class="detail-audit-item">
-      <dt>{{ t('recordAudit.'+key) }}</dt>
-      <dd>{{ key.endsWith('At') ? time(audit[key]) : actor(audit[key], key==='createdBy' ? audit.createdByName : audit.updatedByName) }}</dd>
+  <el-descriptions v-if="dialog" :column="1" border>
+    <el-descriptions-item v-for="key in auditKeys" :key="key" :label="t('recordAudit.' + key)" :label-width="160">
+      {{ auditValue(key) }}
+    </el-descriptions-item>
+  </el-descriptions>
+  <dl v-else :class="inline ? 'detail-audit-grid' : 'detail-audit-list'">
+    <div v-for="key in auditKeys" :key="key" class="detail-audit-item">
+      <dt>{{ t('recordAudit.' + key) }}</dt>
+      <dd>{{ auditValue(key) }}</dd>
     </div>
   </dl>
 </template>

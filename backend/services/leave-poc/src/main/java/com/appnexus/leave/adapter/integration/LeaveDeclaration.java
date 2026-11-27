@@ -44,7 +44,7 @@ public final class LeaveDeclaration implements BusinessObjects.Provider {
         new com.appnexus.contracts.businessobject.BusinessObjects.DataResource("leave.request","","请假请求","Leave requests",List.of(
           protectedField("days","天数","Days",false),protectedField("requiresHr","人事审批条件","HR condition",false),protectedField("documentNumber","单据标识","Document number",true),
           protectedField("startDate","开始日期","Start date",true),protectedField("endDate","结束日期","End date",true),protectedField("state","状态","State",true)))),
-        Map.of("submit",Set.of("ALL","ORGANIZATION","ORGANIZATION_SUBTREE"),"print",Set.of("ALL","ORGANIZATION","ORGANIZATION_SUBTREE"))));
+        Map.of("submit",Set.of("ALL"),"print",Set.of("ALL"))));
   }
   private static com.appnexus.contracts.businessobject.BusinessObjects.DataField protectedField(String key,String zh,String en,boolean text){
     return new com.appnexus.contracts.businessobject.BusinessObjects.DataField(key,zh,en,"TEXT",text?Set.of("READ_ONLY","MASKED","HIDDEN"):Set.of("READ_ONLY","HIDDEN"));

@@ -14,4 +14,9 @@ public class MyBatisTenantAccess implements TenantAccess {
         return mapper.available(accountId.toString()).stream().map(row -> new Membership(
             UUID.fromString((String)row.get("tenant_id")),UUID.fromString((String)row.get("member_id")),(String)row.get("name"))).toList();
     }
+    @Override
+    public List<MemberOption> memberOptions(UUID tenantId) {
+        return mapper.members(tenantId.toString()).stream().map(row -> new MemberOption(
+            UUID.fromString((String) row.get("member_id")), (String) row.get("display_name"))).toList();
+    }
 }

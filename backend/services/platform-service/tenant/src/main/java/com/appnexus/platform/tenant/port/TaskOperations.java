@@ -12,6 +12,10 @@ public interface TaskOperations {
  com.appnexus.platform.tenant.TaskManagement.EventPage events(UUID actor,com.appnexus.platform.tenant.TaskManagement.EventFilter filter);
  /** 使用同一数据库快照读取事件详情。 */
  Optional<com.appnexus.platform.tenant.TaskManagement.EventDetails> event(UUID actor,UUID id);
+ /** 读取活跃注册与执行开关。 */
+ List<com.appnexus.platform.tenant.TaskManagement.Subscription> subscriptions(UUID actor);
+ /** 同事务保存开关及操作审计。 */
+ boolean setSubscriptionPaused(UUID actor,String type,String consumer,boolean paused,String reason);
  /** 恢复单一投递并写管理审计。 */
  boolean retryDeliveryAndAudit(UUID actor,UUID delivery,String reason);
 }

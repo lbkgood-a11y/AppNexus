@@ -109,13 +109,13 @@ public interface IntegrationClientMapper {
  List<Map<String,Object>> statement12(@Param("p0") Object p0);
 
  /**
-  * statement13 为原IntegrationClients固定SQL，准入、事务、锁及业务规则仍由原用例执行。
-  * @param p0 原调用第1个绑定值，来自原已校验业务参数；不可作为SQL标识符
-  * @param p1 原调用第2个绑定值，来自原已校验业务参数；不可作为SQL标识符
-  * @param p2 原调用第3个绑定值，来自原已校验业务参数；不可作为SQL标识符
-  * @return 原查询结果或写入行数；失败传播并回滚原业务事务
+  * 在集成客户端变更事务中追加审计，租户归属取自数据库中的客户端绑定。
+  * @param p0 已通过准入校验的操作账号 UUID
+  * @param p1 本次变更的客户端注册标识
+  * @param p2 用例指定的审计动作编码
+  * @return 写入行数，失败时由调用方回滚事务
   */
- @Insert("INSERT INTO integration_client_audit(actor_id,client_id,action) VALUES(UUID_TO_BIN(#{p0}),#{p1},#{p2})")
+ @Insert("INSERT INTO integration_client_audit(actor_id,client_id,action,tenant_id) VALUES(UUID_TO_BIN(#{p0}),#{p1},#{p2},(SELECT tenant_id FROM integration_client WHERE id=#{p1}))")
  int statement13(@Param("p0") Object p0,@Param("p1") Object p1,@Param("p2") Object p2);
 
  /** @param tenant 已验证租户UUID @return 最多100条客户端摘要，不含密钥 */

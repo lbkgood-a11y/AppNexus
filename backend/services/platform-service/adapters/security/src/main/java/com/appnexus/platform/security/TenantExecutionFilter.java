@@ -1,6 +1,5 @@
 package com.appnexus.platform.security;
 import com.appnexus.platform.tenant.*;
-import com.appnexus.platform.authorization.*;
 import jakarta.servlet.*;
 import jakarta.servlet.http.*;
 import java.io.IOException;
@@ -13,13 +12,9 @@ import org.springframework.web.filter.OncePerRequestFilter;
 public final class TenantExecutionFilter extends OncePerRequestFilter {
     static final String ATTRIBUTE = VerifiedTenantContext.class.getName();
     private final TenantAccess access;
-    private com.appnexus.platform.organization.PersonnelExecution personnel;
-    /** 注入公开人员身份端口，不直接读取主数据业务表。 */
-    public TenantExecutionFilter(TenantAccess access,OrganizationAuthorization authorization,com.appnexus.platform.organization.PersonnelExecution personnel){this(access,authorization);this.personnel=personnel;}
-    private final OrganizationAuthorization organizationAuthorization;
-    public TenantExecutionFilter(TenantAccess access, OrganizationAuthorization organizationAuthorization) {
-        this.access = access; this.organizationAuthorization=organizationAuthorization;
-    }
+    private final TenantRequestIdentity identity;
+    /** 业务身份由组合层的请求扩展处理。 */
+    public TenantExecutionFilter(TenantAccess access,TenantRequestIdentity identity){this.access=access;this.identity=identity;}
     @Override protected boolean shouldNotFilter(HttpServletRequest request) {
         String path=request.getRequestURI().substring(request.getContextPath().length());
         return !path.startsWith("/api/")||path.equals("/api/tenants")||path.equals("/api/tenant-context");
@@ -78,44 +73,16 @@ public final class TenantExecutionFilter extends OncePerRequestFilter {
             if((expected!=null && !expected.equals(Long.toString(version))) || (version>1 && writing && expected==null)) {
                 reject(response,409,"TENANT_CONTEXT_CHANGED"); return;
             }
-            String selectedPerson=session==null?null:(String)session.getAttribute("appnexus.person");
-            String selectedOrganization=session==null?null:(String)session.getAttribute("appnexus.personOrganization");
-            String selectedTenant=session==null?null:(String)session.getAttribute("appnexus.personTenant");
-            String path=request.getRequestURI().substring(request.getContextPath().length());
-            // 租户切换使旧人员选择失效；管理接口仍能修复关系，业务接口必须显式选择有效人员。
-            if(!m.tenantId().toString().equals(selectedTenant)){selectedPerson=null;selectedOrganization=null;}
-            // 原生 Bearer 没有 Cookie 会话，只接收选择意图并经同一公开端口复核，不能直接信任请求头。
-            if(auth instanceof org.springframework.security.oauth2.server.resource.authentication.BearerTokenAuthentication){selectedPerson=request.getHeader("X-Person-Id");selectedOrganization=request.getHeader("X-Person-Organization");}
-            try{if(selectedPerson!=null)UUID.fromString(selectedPerson);if(selectedOrganization!=null)UUID.fromString(selectedOrganization);}catch(IllegalArgumentException invalid){reject(response,400,"PERSON_CONTEXT_INVALID");return;}
-            boolean validSelection=selectedPerson!=null&&selectedOrganization!=null&&personnel!=null&&personnel.allowed(m.tenantId(),m.memberId(),UUID.fromString(selectedPerson),UUID.fromString(selectedOrganization));
-            String expectedPerson=request.getHeader("X-Person-Id"),expectedOrganization=request.getHeader("X-Person-Organization");
-            if(path.startsWith("/api/leave-poc")&&validSelection&&((expectedPerson!=null&&!expectedPerson.equalsIgnoreCase(selectedPerson))||(expectedOrganization!=null&&!expectedOrganization.equalsIgnoreCase(selectedOrganization)))){reject(response,409,"PERSON_CONTEXT_CHANGED");return;}
-            if((path.startsWith("/api/leave-poc")||(writing&&path.startsWith("/api/workflow/tasks/")))&&!validSelection){reject(response,409,"PERSON_CONTEXT_REQUIRED");return;}
-            if(!validSelection){selectedPerson=null;selectedOrganization=null;}
-            var context=new VerifiedTenantContext(accountId,m.tenantId(),m.memberId(),version,
-                selectedPerson==null?null:UUID.fromString(selectedPerson),selectedOrganization==null?null:UUID.fromString(selectedOrganization));
+            var base = new VerifiedTenantContext(accountId, m.tenantId(), m.memberId(), version);
+            var context = identity.resolve(request, response, base,
+                auth instanceof org.springframework.security.oauth2.server.resource.authentication.BearerTokenAuthentication);
+            if (context == null) return;
             request.setAttribute(ATTRIBUTE,context);
             // 工作流只接收公开契约，租户与操作者均来自上述可信会话，浏览器无权覆盖。
-            request.setAttribute(com.appnexus.contracts.workflow.WorkflowContext.class.getName(),new com.appnexus.contracts.workflow.WorkflowContext(m.tenantId().toString(),accountId.toString(),java.util.UUID.randomUUID().toString(),selectedPerson,selectedOrganization));
+            request.setAttribute(com.appnexus.contracts.workflow.WorkflowContext.class.getName(),new com.appnexus.contracts.workflow.WorkflowContext(m.tenantId().toString(),accountId.toString(),java.util.UUID.randomUUID().toString(),java.util.Objects.toString(context.personId(),null),java.util.Objects.toString(context.organizationId(),null)));
             // 打印服务使用独立公开契约；请求结束清理，避免容器线程复用泄漏租户。
             request.setAttribute(com.appnexus.contracts.printing.PrintContext.class.getName(),new com.appnexus.contracts.printing.PrintContext(m.tenantId().toString(),accountId.toString(),java.util.UUID.randomUUID().toString()));
             response.setHeader("X-Tenant-Context-Version",Long.toString(version));
-            if(request.getRequestURI().startsWith(request.getContextPath()+"/api/organization/units") ||
-               request.getRequestURI().startsWith(request.getContextPath()+"/api/organization/domain")) {
-                var action=request.getMethod();
-                var capability=switch(action) {
-                    case "GET","HEAD" -> OrganizationCapability.READ;
-                    // 移动组织是已存在对象的修改，不能因为采用命令 POST 就误要求创建权限。
-                    case "POST" -> request.getRequestURI().matches(".*/domain/units/[^/]+/move")?OrganizationCapability.UPDATE:OrganizationCapability.CREATE;
-                    case "PATCH","PUT" -> OrganizationCapability.UPDATE;
-                    case "DELETE" -> OrganizationCapability.DELETE;
-                    default -> null;
-                };
-                if(capability==null) { reject(response,405,"METHOD_NOT_ALLOWED"); return; }
-                if(!organizationAuthorization.allows(context.tenantId(),context.memberId(),capability)) {
-                    reject(response,403,"OPERATION_NOT_AUTHORIZED"); return;
-                }
-            }
             chain.doFilter(request,response);
         } catch (org.springframework.dao.DataAccessException unavailable) {
             if (response.isCommitted()) throw unavailable;

@@ -1,6 +1,7 @@
 package com.appnexus.bulkwarehousing.application.inboundexecution;
 
 import com.appnexus.bulkwarehousing.api.inboundexecution.ReadInboundDocumentsUseCase;
+import com.appnexus.bulkwarehousing.api.inboundexecution.DecideInboundQualityUseCase;
 import com.appnexus.contracts.businessobject.BusinessObjects.Rejection;
 import com.appnexus.platform.authorization.AccessAuthorization.Subject;
 import com.appnexus.platform.authorization.AccessPlan;
@@ -45,6 +46,13 @@ public final class ReadInboundDocumentsService implements ReadInboundDocumentsUs
         String prefix = taskNo == null ? "" : taskNo.strip();
         if (prefix.length() > 64) throw new Rejection(400, "INBOUND_DOCUMENT_FILTER_INVALID");
         return queries.taskOptions(plan, creation, prefix);
+    }
+
+    /** {@inheritDoc} */
+    @Override public List<LabMetricOption> labMetrics(VerifiedTenantContext context,UUID id) {
+        var result=queries.labMetrics(required(context,Kind.QUALITY,DecideInboundQualityUseCase.PERMISSION),id);
+        if(result.isEmpty())throw new Rejection(404,"INBOUND_LAB_FIELDS_UNAVAILABLE");
+        return result;
     }
 
     private AccessPlan required(VerifiedTenantContext context, Kind kind, String permission) {

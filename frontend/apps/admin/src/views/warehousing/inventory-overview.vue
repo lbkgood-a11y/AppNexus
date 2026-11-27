@@ -13,4 +13,6 @@ const api: InventoryOverviewApi = {
 };
 </script>
 
-<template><InventoryOverview :api="api" :error-text="requestErrorMessage" /></template>
+<template>
+  <InventoryOverview :api="api" :error-text="requestErrorMessage" />
+</template>

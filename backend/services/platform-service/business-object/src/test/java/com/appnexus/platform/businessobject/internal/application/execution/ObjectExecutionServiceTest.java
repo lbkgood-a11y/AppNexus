@@ -104,4 +104,40 @@ class ObjectExecutionServiceTest {
     assertThatThrownBy(()->executor.execute(context,new BusinessObjectExecution.Request("ApiOnly","record","edit","ApiOnly.edit",0))).hasMessage("BUSINESS_OBJECT_OPERATION_API_ONLY");
     verifyNoInteractions(runtime,bindings,driver,platform);
   }
+
+  /** 命令登记未装配或操作不在固定输入表时，禁止退回记录能力或调用用例。 */
+  @Test void declaredCommandWithoutRuntimeFailsClosed(){
+    Provider declaration=new Provider(){
+      public Descriptor descriptor(){return provider.descriptor();}
+      public Set<String> commandOperations(){return Set.of("print");}
+    };
+    var executor=new ObjectExecutionService(List.of(declaration),List.of(),bindings,transaction,platform);
+    var command=new BusinessObjectExecution.Request("Example","record","print","Example.print",2,Map.of());
+    assertThatThrownBy(()->executor.execute(context,command)).hasMessage("BUSINESS_OBJECT_COMMAND_UNAVAILABLE");
+    assertThatThrownBy(()->executor.execute(context,request)).hasMessage("BUSINESS_OBJECT_COMMAND_UNAVAILABLE");
+    verifyNoInteractions(runtime,bindings,driver,platform);
+  }
+
+
+  /** 平台命令只能由独立入口消费，租户上下文和缺失平台运行端口均不得进入权限或业务用例。 */
+  @Test void platformCommandRejectsWrongPrincipalAndMissingRuntime(){
+    var command=mock(BusinessObjectCommandRuntime.class);
+    var declaration=new Provider(){
+      public Descriptor descriptor(){return provider.descriptor();}
+      public Set<String> commandOperations(){return Set.of("print");}
+      public BusinessObjectCommandRuntime commandRuntime(){return command;}
+    };
+    var executor=new ObjectExecutionService(List.of(declaration),List.of(),bindings,transaction,platform);
+    var input=new BusinessObjectExecution.Request("Example","record","print","Example.print",2,Map.of());
+    when(command.platformOperation("print")).thenReturn(true);
+    when(command.inputTypes()).thenReturn(Map.of("print",Object.class));
+    assertThatThrownBy(()->executor.execute(context,input)).hasMessage("BUSINESS_OBJECT_COMMAND_UNAVAILABLE");
+    assertThatThrownBy(()->executor.executePlatform(context,input)).hasMessage("BUSINESS_OBJECT_ACCESS_DENIED");
+    when(command.inputTypes()).thenReturn(Map.of());
+    var administrator=new Context(null,"actor","request");
+    assertThatThrownBy(()->executor.executePlatform(administrator,input)).hasMessage("BUSINESS_OBJECT_COMMAND_UNAVAILABLE");
+    verify(command,never()).execute(any(),any(),any());
+    verifyNoInteractions(platform,bindings,driver,runtime);
+  }
+
 }

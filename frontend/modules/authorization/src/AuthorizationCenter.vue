@@ -14,17 +14,18 @@ import {menuPermissionTree} from "./menuPermissionView";
 import type {AuthorizationMenu} from "./index";
 import MemberGrantEditor from "./MemberGrantEditor.vue";
 import DataGrantRuleEditor from "./DataGrantRuleEditor.vue";
-import {incompleteDataPolicy,persistedScope,scopeChoices,shownScope,type ScopeChoice} from "./dataGrantDraft";
+import {incompleteDataPolicy,objectDefaultPolicy,persistedScope,scopeChoices,shownScope,type ScopeChoice} from "./dataGrantDraft";
 const scopeDraft=ref<Record<string,"RULES"|"RECORDS">>({});
 import {applyFieldPolicyBatch} from "./fieldPolicyDraft";
 import RoleUsers from "./RoleUsers.vue";
 import SubjectAuthorization from "./SubjectAuthorization.vue";
 import PolicyTemplateActions from "./PolicyTemplateActions.vue";
 import type { SubjectAuthorizationApi,FieldDescriptor,FieldPolicy } from "./index";
-import type {AuthorizationCenterApi,DataPolicy,DataScopeType,PermissionItem,RoleItem,RoleManagementApi,ScopeSupport,AuthorizationOption} from "./index";
+import type {AuthorizationCenterApi,AuthorizationAssignment,DataPolicy,ObjectScope,PermissionItem,RoleItem,RoleManagementApi,ScopeSupport,AuthorizationOption} from "./index";
 const conditionOptions=ref<DataConditionOptions>({});
-const props=defineProps<{roleApi:RoleManagementApi;api:AuthorizationCenterApi;subjectApi:SubjectAuthorizationApi;errorText:(error:unknown)=>string}>();
-const activeTab=ref("permissions"), editorTab=ref("functions"), query=ref(""), onlySelected=ref(false), ready=ref(false), baseline=ref<string|null>(null);
+/** initialTab 决定默认页签。memberDataOnly 固定使用成员数据权限工作区，读写均由既有接口复核。 */
+const props=defineProps<{roleApi:RoleManagementApi;api:AuthorizationCenterApi;subjectApi:SubjectAuthorizationApi;initialTab?:"memberData";memberDataOnly?:boolean;pageTitle?:string;errorText:(error:unknown)=>string}>();
+const activeTab=ref<string>((props.memberDataOnly||props.initialTab==="memberData")&&props.subjectApi.grants?"memberData":"permissions"), editorTab=ref("functions"), query=ref(""), onlySelected=ref(false), ready=ref(false), baseline=ref<string|null>(null);
 const grantMembers=ref<import("./index").AuthorizationOption[]>([]);
 const declarations=ref<import("./index").DataAccessDeclaration[]>([]);
 const menus=ref<AuthorizationMenu[]>([]),functionView=ref("menus");
@@ -64,6 +65,40 @@ defineExpose({canLeave});
 const {t,locale,te}=useI18n();
 /** 已知资源显示业务名称，未知资源保留稳定标识，不猜测领域含义。 */
 function resourceLabel(resource:string){const declared=declarations.value.flatMap(d=>d.resources).find(r=>r.resource===resource);if(declared)return locale.value.startsWith('zh')?declared.nameZh:declared.nameEn;const key='authorizationCenter.resourceNames.'+resource.replaceAll('.','_');return te(key)?t(key):resource;}const roles=ref<RoleItem[]>([]),permissions=ref<PermissionItem[]>([]),metadata=ref<ScopeSupport[]>([]),organizations=ref<AuthorizationOption[]>([]);const roleId=ref(""),selected=ref<string[]>([]),policies=ref<Record<string,DataPolicy>>({}),version=ref(0),reason=ref(""),loading=ref(false),saving=ref(false),error=ref("");
+const objectScopes = ref<Record<string, ObjectScope>>({});
+function canSetObjectScope(resource: string) {
+  return declarations.value.some(object => object.scope === "TENANT" && object.resources[0]?.resource === resource);
+}
+/** 复制已编辑的操作范围作为对象默认，保留全部显式覆盖，继承由管理员明确选择。 */
+function setObjectScope(item: PermissionItem) {
+  const policy = policies.value[item.id];
+  if (!policy || !canSetObjectScope(policy.resourceType)) return;
+  objectScopes.value[policy.resourceType] = {
+    scopeType: policy.scopeType,
+    rules: JSON.parse(JSON.stringify(policy.rules ?? []))
+  };
+}
+/** 拷贝生效的默认规则到操作覆盖，编辑时不改变其他继承操作。 */
+function createOverride(item: PermissionItem) {
+  const policy = defaultFor(item);
+  if (policy) policies.value[item.id] = JSON.parse(JSON.stringify(policy));
+}
+function defaultFor(item: PermissionItem): DataPolicy | undefined {
+  return objectDefaultPolicy(item.id, supports(item.id), objectScopes.value);
+}
+/** 恢复继承会移除显式覆盖。保存时服务端校验对象规则对目标操作仍然适用。 */
+function restoreInheritance(item: PermissionItem) {
+  if (!defaultFor(item)) return;
+  delete policies.value[item.id];
+  delete scopeDraft.value[item.id];
+}
+function applyAssignment(value: AuthorizationAssignment) {
+  objectScopes.value = { ...(value.objectScopes ?? {}) };
+  const inherited = new Set(value.inheritedPermissionIds ?? []);
+  policies.value = Object.fromEntries(value.dataPolicies
+    .filter(item => !inherited.has(item.permissionId))
+    .map(item => [item.permissionId, { ...item, organizationIds: [...item.organizationIds] }]));
+}
 /** 保存确认显示读取时的继承成员人数；实际授权仍由后端复核。 */
 const inheritingMemberCount=ref(0),dataAccessVersion=ref<string>();
 const selectedRole=computed(()=>roles.value.find(item=>item.id===roleId.value));
@@ -89,9 +124,14 @@ const grouped=computed(()=>Object.entries(permissions.value.filter(item=>(editor
 const menuTree=computed(()=>menuPermissionTree(menus.value,grouped.value.flatMap(([,items])=>items),locale.value.startsWith('zh'),t('authorizationCenter.unlinkedPermissions')));
 function toggleMenu(ids:string[],enabled:boolean){ids.forEach(id=>toggle(id,enabled));}
 /** 稳定比较完整草稿；字段顺序和组织选择顺序不构成授权变化。 */
-function snapshot(){return JSON.stringify({ids:[...selected.value].sort(),fields:[...fieldPolicies.value].sort((a,b)=>(a.resource+a.field).localeCompare(b.resource+b.field)),policies:Object.values(policies.value).map(item=>({...item,organizationIds:[...item.organizationIds].sort()})).sort((a,b)=>a.permissionId.localeCompare(b.permissionId))});}
+function snapshot(){return JSON.stringify({ids:[...selected.value].sort(),objectScopes:Object.entries(objectScopes.value).sort(([left],[right])=>left.localeCompare(right)),fields:[...fieldPolicies.value].sort((a,b)=>(a.resource+a.field).localeCompare(b.resource+b.field)),policies:Object.values(policies.value).map(item=>({...item,organizationIds:[...item.organizationIds].sort()})).sort((a,b)=>a.permissionId.localeCompare(b.permissionId))});}
 const changed=computed(()=>baseline.value!==null&&snapshot()!==baseline.value);
-const incompleteCount=computed(()=>selected.value.filter(id=>supports(id).length&&incompleteDataPolicy(policies.value[id],conditionDimensions(declarations.value,policies.value[id]?.resourceType,permissions.value.find(item=>item.id===id)?.code))).length);
+const incompleteCount = computed(() => selected.value.filter(id => {
+  if (!supports(id).length) return false;
+  const item = permissions.value.find(entry => entry.id === id);
+  const policy = policies.value[id] ?? (item ? defaultFor(item) : undefined);
+  return incompleteDataPolicy(policy, conditionDimensions(declarations.value, policy?.resourceType, item?.code));
+}).length);
 /**
  * 资源批选只改变当前筛选结果；不自动授予 ALL，也不推断数据范围。
  * @param items 当前资源下筛选后可见的权限，禁用权限不参与批量变更。
@@ -99,8 +139,8 @@ const incompleteCount=computed(()=>selected.value.filter(id=>supports(id).length
  */
 function toggleGroup(items:PermissionItem[],enabled:boolean){items.filter(item=>item.enabled).forEach(item=>toggle(item.id,enabled));}
 async function confirmDiscard(){if(!changed.value&&!reason.value.trim())return true;try{await ElMessageBox.confirm(t("authorizationCenter.discard"),t("authorizationCenter.title"),{confirmButtonText:t("authorizationCenter.discardAction"),cancelButtonText:t("organization.cancel"),type:"warning"});return true;}catch{return false;}}
-async function selectRole(id:string){if(saving.value||id===roleId.value||!(await memberEditor.value?.canLeave()??true)||!(await roleUsersEditor.value?.canLeave()??true)||!(await confirmDiscard()))return;roleId.value=id;await loadAssignment();}
-function supports(id:string){return metadata.value.filter(item=>item.permissionId===id)}function label(item:PermissionItem){return locale.value.startsWith("zh")?item.nameZh:item.nameEn}function needsOrganizations(type?:DataScopeType){return type==="ORGANIZATION"||type==="ORGANIZATION_SUBTREE"}
+async function selectRole(id:string){if(saving.value||id===roleId.value||!(await memberEditor.value?.canLeave()??true)||!(await roleUsersEditor.value?.canLeave()??true)||!(await confirmDiscard()))return;roleId.value=id;if(!props.memberDataOnly)await loadAssignment();}
+function supports(id:string){return metadata.value.filter(item=>item.permissionId===id)}function label(item:PermissionItem){return locale.value.startsWith("zh")?item.nameZh:item.nameEn}
 function toggle(id:string,enabled:boolean){if(enabled){if(!selected.value.includes(id))selected.value.push(id);}else{selected.value=selected.value.filter(value=>value!==id);delete policies.value[id];}}
 function scopeChanged(permissionId:string,choice:ScopeChoice){
  const type=persistedScope(choice),support=supports(permissionId).find(item=>item.scopeType===type);if(!support)return;
@@ -124,27 +164,28 @@ watch(error, (message, _previous, onCleanup) => {
   ]));
   onCleanup(release);
 });
-async function loadAssignment(){if(!roleId.value)return;const request=++requestVersion;loading.value=true;ready.value=false;error.value="";baseline.value=null;fieldSelection.value=[];fieldPolicies.value=[];selected.value=[];policies.value={};scopeDraft.value={};reason.value="";try{const value=await props.api.assignment(roleId.value);if(request!==requestVersion)return;inheritingMemberCount.value=value.inheritingMemberCount??0;dataAccessVersion.value=value.dataAccessVersion;selected.value=[...value.permissionIds];policies.value=Object.fromEntries(value.dataPolicies.map(item=>[item.permissionId,{...item,organizationIds:[...item.organizationIds]}]));version.value=value.roleVersion;fieldPolicies.value=[...(value.fieldPolicies??[])];baseline.value=snapshot();ready.value=true;}catch(cause){if(request===requestVersion)await setErrorFeedback(error, props.errorText(cause));}finally{if(request===requestVersion)loading.value=false;}}
+async function loadAssignment(){if(!roleId.value)return;const request=++requestVersion;loading.value=true;ready.value=false;error.value="";baseline.value=null;fieldSelection.value=[];fieldPolicies.value=[];selected.value=[];policies.value={};objectScopes.value={};scopeDraft.value={};reason.value="";try{const value=await props.api.assignment(roleId.value);if(request!==requestVersion)return;inheritingMemberCount.value=value.inheritingMemberCount??0;dataAccessVersion.value=value.dataAccessVersion;selected.value=[...value.permissionIds];applyAssignment(value);version.value=value.roleVersion;fieldPolicies.value=[...(value.fieldPolicies??[])];baseline.value=snapshot();ready.value=true;}catch(cause){if(request===requestVersion)await setErrorFeedback(error, props.errorText(cause));}finally{if(request===requestVersion)loading.value=false;}}
 /** 读取完整角色目录，避免超过每页 100 条后无法找到目标角色。 */
 async function loadRoles(){const result:RoleItem[]=[];for(let page=1;;page++){const value=await props.roleApi.list({query:"",status:"ENABLED",page,pageSize:100});result.push(...value.items);if(result.length>=value.total)return result;if(!value.items.length)throw new Error(t("authorizationCenter.roleListChanged"));}}
-async function load(){if(saving.value||!(await roleUsersEditor.value?.canLeave()??true)||!(await confirmDiscard()))return;loading.value=true;ready.value=false;error.value="";try{const [catalog,items,support,orgs,fields,navigation,declared,values]=await Promise.all([loadRoles(),props.api.permissions(),props.api.metadata(),props.api.organizationOptions?.()??Promise.resolve([]),props.api.fields(),props.api.menus(),props.api.declarations?.()??Promise.resolve([]),props.api.conditionOptions?.()??Promise.resolve({})]);declarations.value=declared;conditionOptions.value=values;
+async function load(){if(saving.value||!(await roleUsersEditor.value?.canLeave()??true)||!(await confirmDiscard()))return;loading.value=true;ready.value=false;error.value="";try{if(props.memberDataOnly){roles.value=await loadRoles();roleId.value=roles.value.some(role=>role.id===roleId.value)?roleId.value:(roles.value[0]?.id??"");return;}const [catalog,items,support,orgs,fields,navigation,declared,values]=await Promise.all([loadRoles(),props.api.permissions(),props.api.metadata(),props.api.organizationOptions?.()??Promise.resolve([]),props.api.fields(),props.api.menus(),props.api.declarations?.()??Promise.resolve([]),props.api.conditionOptions?.()??Promise.resolve({})]);declarations.value=declared;conditionOptions.value=values;
 if(declared.some(d=>d.dimensions?.length)){const all:import("./index").AuthorizationOption[]=[];for(let page=1;;page++){const batch=await props.subjectApi.subjects(page,"");all.push(...batch.items);if(all.length>=batch.total)break;if(!batch.items.length)throw new Error(t("authorizationCenter.roleListChanged"));}grantMembers.value=all;}
-menus.value=navigation;fieldCatalog.value=fields;roles.value=catalog;permissions.value=items;metadata.value=support;organizations.value=orgs;roleId.value=catalog.some(item=>item.id===roleId.value)?roleId.value:(catalog[0]?.id??"");if(roleId.value)await loadAssignment();else{baseline.value=null;fieldSelection.value=[];fieldPolicies.value=[];selected.value=[];policies.value={};reason.value="";}}catch(cause){await setErrorFeedback(error, props.errorText(cause));}finally{loading.value=false;}}
+menus.value=navigation;fieldCatalog.value=fields;roles.value=catalog;permissions.value=items;metadata.value=support;organizations.value=orgs;roleId.value=catalog.some(item=>item.id===roleId.value)?roleId.value:(catalog[0]?.id??"");if(roleId.value)await loadAssignment();else{baseline.value=null;fieldSelection.value=[];fieldPolicies.value=[];selected.value=[];policies.value={};objectScopes.value={};reason.value="";}}catch(cause){await setErrorFeedback(error, props.errorText(cause));}finally{loading.value=false;}}
 const invalid=computed(()=>!ready.value||loading.value||!changed.value||incompleteCount.value>0||!reason.value.trim());
 /** 完整授权覆盖写影响全部角色成员；失败后要求重读版本，禁止盲目重试。 */
-async function save(){if(!roleId.value||invalid.value||saving.value)return;saving.value=true;error.value="";try{await ElMessageBox.confirm(t("authorizationCenter.roleReplaceWarning",{name:selectedRole.value?.name,count:inheritingMemberCount.value}),t("authorizationCenter.summary"),{confirmButtonText:t("organization.save"),cancelButtonText:t("organization.cancel"),type:"warning"});}catch{saving.value=false;return;}try{const value=await props.api.replace(roleId.value,{ids:[...selected.value],dataPolicies:Object.values(policies.value),fieldPolicies:fieldPolicies.value,dataAccessVersion:dataAccessVersion.value,version:version.value,reason:reason.value.trim()});inheritingMemberCount.value=value.inheritingMemberCount??0;dataAccessVersion.value=value.dataAccessVersion;selected.value=[...value.permissionIds];policies.value=Object.fromEntries(value.dataPolicies.map(item=>[item.permissionId,{...item,organizationIds:[...item.organizationIds]}]));version.value=value.roleVersion;fieldPolicies.value=[...(value.fieldPolicies??[])];baseline.value=snapshot();reason.value="";ElMessage.success(t("authorizationCenter.saved"));}catch(cause){await setErrorFeedback(error, props.errorText(cause));ready.value=false;}finally{saving.value=false;}}
+async function save(){if(!roleId.value||invalid.value||saving.value)return;saving.value=true;error.value="";try{await ElMessageBox.confirm(t("authorizationCenter.roleReplaceWarning",{name:selectedRole.value?.name,count:inheritingMemberCount.value}),t("authorizationCenter.summary"),{confirmButtonText:t("organization.save"),cancelButtonText:t("organization.cancel"),type:"warning"});}catch{saving.value=false;return;}try{const value=await props.api.replace(roleId.value,{ids:[...selected.value],dataPolicies:Object.values(policies.value),objectScopes:objectScopes.value,fieldPolicies:fieldPolicies.value,dataAccessVersion:dataAccessVersion.value,version:version.value,reason:reason.value.trim()});inheritingMemberCount.value=value.inheritingMemberCount??0;dataAccessVersion.value=value.dataAccessVersion;selected.value=[...value.permissionIds];applyAssignment(value);version.value=value.roleVersion;fieldPolicies.value=[...(value.fieldPolicies??[])];baseline.value=snapshot();reason.value="";ElMessage.success(t("authorizationCenter.saved"));}catch(cause){await setErrorFeedback(error, props.errorText(cause));ready.value=false;}finally{saving.value=false;}}
 onBeforeUnmount(()=>{++requestVersion;});
 onMounted(load);
 </script>
 <template>
-  <BusinessWorkspace class="main-content" v-bind="$attrs" :title="t('authorizationCenter.title')" :description="t('authorizationCenter.description')">
+  <BusinessWorkspace class="main-content" v-bind="$attrs" :title="pageTitle ?? t('authorizationCenter.title')"
+    :description="memberDataOnly ? undefined : t('authorizationCenter.description')">
     <template #data>
       <TreeListTemplate v-model:collapsed="treeCollapsed" :tree-label="t('authorizationCenter.roles')" embedded class="authorization-workspace">
         <template #treeHeader>
           <!-- 主体角色入口归入角色栏标题，复用既有弹框及草稿关闭保护。 -->
           <div class="role-heading">
             <strong>{{ t('authorizationCenter.roles') }}</strong>
-            <el-tooltip :content="t('authorizationCenter.subjectRoles')">
+            <el-tooltip v-if="!memberDataOnly" :content="t('authorizationCenter.subjectRoles')">
               <el-button text :aria-label="t('authorizationCenter.subjectRoles')" @click="subjectsVisible=true"><AppIcon name="user" :size="18" /></el-button>
             </el-tooltip>
           </div>
@@ -165,7 +206,7 @@ onMounted(load);
         </template>
         <template #table>
           <div class="authorization-content" :class="{'is-role-users':activeTab==='roleUsers','is-role-editor':isRoleTab||activeTab==='memberData','is-field-editor':activeTab==='security'}">
-      <el-tabs v-model="activeTab">
+      <el-tabs v-if="!memberDataOnly" v-model="activeTab">
         <el-tab-pane :label="t('authorizationCenter.permissions')" name="permissions" />
         <el-tab-pane v-if="metadata.length" :label="t('authorizationCenter.roleDefaultData')" name="data" />
         <el-tab-pane :label="t('authorizationCenter.fieldSecurity')" name="security" />
@@ -176,10 +217,10 @@ onMounted(load);
         <ul><li v-for="item in invalidPermissions" :key="item.id">{{ item.name }}（{{ item.code }}）：{{ t('invalidPermissionCleanup.reason') }}</li></ul>
         <el-button :disabled="!ready || saving" @click="removeInvalidPermissions">{{ t('invalidPermissionCleanup.remove') }}</el-button>
       </el-alert>
-      <RoleUsers v-show="activeTab==='roleUsers'" ref="roleUsersEditor" :role-id="roleId" :role-name="selectedRole?.name??''" :active="activeTab==='roleUsers'" :api="subjectApi" :error-text="errorText" />
+      <RoleUsers v-if="!memberDataOnly" v-show="activeTab==='roleUsers'" ref="roleUsersEditor" :role-id="roleId" :role-name="selectedRole?.name??''" :active="activeTab==='roleUsers'" :api="subjectApi" :error-text="errorText" />
 
       <MemberGrantEditor :role-id="roleId" :role-name="selectedRole?.name??''" :active="activeTab==='memberData'" ref="memberEditor" v-if="subjectApi.grants" v-show="activeTab === 'memberData'" :api="subjectApi" :role-api="roleApi" :authorization-api="api" :error-text="errorText" />
-      <div v-show="isRoleTab" v-loading="loading" class="authorization-grid">
+      <div v-if="!memberDataOnly" v-show="isRoleTab" v-loading="loading" class="authorization-grid">
         <section class="authorization-pane permission-pane">
           <div class="editor-heading"><h2>{{ t(activeTab==='permissions'?'authorizationCenter.permissions':activeTab==='data'?'authorizationCenter.roleDefaultData':'authorizationCenter.fieldSecurity') }}<InfoHint v-if="editorTab==='security'" :content="t('authorizationCenter.fieldSecurityHint')" /><InfoHint v-if="editorTab === 'data'" :content="t('authorizationCenter.dataPolicyHint')" /><InfoHint v-if="editorTab==='functions'" :content="t('authorizationCenter.menuFunctionHint')" /></h2><el-tag class="app-status-tag" v-if="changed" type="warning">{{t('authorizationCenter.unsavedChanges')}}</el-tag></div>
           <template v-if="editorTab === 'security'">
@@ -219,18 +260,29 @@ onMounted(load);
             <template v-if="editorTab === 'functions' || items.some(item => selected.includes(item.id) && supports(item.id).length)">
               <div class="permission-group-heading"><h3>{{ resourceLabel(resource) }}</h3>
               <el-checkbox v-if="editorTab === 'functions'" :disabled="!ready || saving" :model-value="items.filter(item => item.enabled).length > 0 && items.filter(item => item.enabled).every(item => selected.includes(item.id))" :indeterminate="items.some(item => selected.includes(item.id)) && !items.filter(item => item.enabled).every(item => selected.includes(item.id))" @change="value => toggleGroup(items,Boolean(value))">{{ t('authorizationCenter.selectResource') }}</el-checkbox></div>
+              <div v-if="editorTab === 'data' && objectScopes[resource]" class="permission-group-heading">
+                <span>{{ t('authorizationCenter.objectDefault') }} · {{ t('authorizationCenter.scopes.' + objectScopes[resource].scopeType) }}</span>
+                <el-button link :disabled="!ready || saving" @click="delete objectScopes[resource]">{{ t('authorizationCenter.clearObjectDefault') }}</el-button>
+              </div>
               <div class="permission-items" :class="{'permission-items-functions':editorTab==='functions'}">
               <template v-for="item in items" :key="item.id">
                 <div v-if="editorTab === 'functions' || (selected.includes(item.id) && supports(item.id).length)" class="permission-row" :class="{ 'function-row': editorTab === 'functions' }">
                   <el-checkbox v-if="editorTab === 'functions'" :disabled="!ready || saving || !item.enabled" :model-value="selected.includes(item.id)" @change="value => toggle(item.id,Boolean(value))"><strong>{{ label(item) }}</strong><span>{{ item.code }}</span></el-checkbox>
                   <div v-else><strong>{{ label(item) }}</strong><div class="permission-code">{{ item.code }}</div></div>
                   <template v-if="editorTab === 'data'">
-                    <el-select :model-value="shownScope(policies[item.id],scopeDraft[item.id])" :aria-label="label(item) + ' · ' + t('authorizationCenter.selectScope')" :disabled="!ready || saving" :placeholder="t('authorizationCenter.selectScope')" @change="value => scopeChanged(item.id,value as ScopeChoice)">
+                    <el-select :model-value="shownScope(policies[item.id] ?? defaultFor(item),scopeDraft[item.id])" :aria-label="label(item) + ' · ' + t('authorizationCenter.selectScope')" :disabled="!ready || saving" :placeholder="t('authorizationCenter.selectScope')" @change="value => scopeChanged(item.id,value as ScopeChoice)">
                       <el-option v-for="choice in scopeChoices(supports(item.id),item.code,!!conditionDimensions(declarations,item.resource,item.code).length)" :key="choice" :label="t('authorizationCenter.scopes.'+choice)" :value="choice" />
                     </el-select>
-                    <el-select v-if="needsOrganizations(policies[item.id]?.scopeType)" v-model="policies[item.id].organizationIds" :aria-label="label(item) + ' · ' + t('authorizationCenter.selectOrganizations')" :disabled="!ready || saving" multiple filterable :placeholder="t('authorizationCenter.selectOrganizations')">
-                      <el-option v-for="organization in organizations" :key="organization.id" :label="organization.name" :value="organization.id" />
-                    </el-select>
+                    <div v-if="canSetObjectScope(item.resource)">
+                      <template v-if="!policies[item.id] && defaultFor(item)">
+                        <el-tag type="info">{{ t('authorizationCenter.inheritsObjectDefault') }}</el-tag>
+                        <el-button link type="primary" :disabled="!ready || saving" @click="createOverride(item)">{{ t('authorizationCenter.createObjectOverride') }}</el-button>
+                      </template>
+                      <template v-if="policies[item.id]">
+                        <el-button link type="primary" :disabled="!ready || saving || incompleteDataPolicy(policies[item.id], conditionDimensions(declarations,item.resource,item.code))" @click="setObjectScope(item)">{{ t('authorizationCenter.setObjectDefault') }}</el-button>
+                        <el-button v-if="defaultFor(item)" link type="primary" :disabled="!ready || saving" @click="restoreInheritance(item)">{{ t('authorizationCenter.restoreObjectDefault') }}</el-button>
+                      </template>
+                    </div>
                     <DataGrantRuleEditor :record-only="shownScope(policies[item.id],scopeDraft[item.id])==='RECORDS'" :allow-records="!item.code.endsWith(':create')" :resource="item.resource" :record-search="api.recordSearch" :error-text="errorText" v-if="policies[item.id]?.scopeType==='RULES'" :model-value="policies[item.id].rules??[]" :dimensions="conditionDimensions(declarations,item.resource,item.code)" :condition-options="conditionOptions" :organizations="organizations" :members="grantMembers" :disabled="!ready||saving" @update:model-value="value=>policies[item.id].rules=value" />
                   </template>
                 </div>

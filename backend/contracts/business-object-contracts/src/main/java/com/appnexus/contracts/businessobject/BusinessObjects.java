@@ -213,6 +213,15 @@ public final class BusinessObjects {
   /** 业务代码提供声明；平台激活和租户授权独立维护。 */
   public interface Provider {
     Descriptor descriptor();
+    /** @return 对象明确开放的类型化命令操作编码；专用入口无需声明 */
+    default Set<String> commandOperations(){return Set.of();}
+    /**
+     * @param operation 同一 Provider 声明且已接通的命令操作
+     * @return 租户命令的既有功能准入权限，多个值取任一；专用入口继续使用原声明和用例
+     */
+    default Set<String> commandPermissions(Operation operation){return Set.of(operation.permissionCode());}
+    /** @return 对象唯一命令运行端口；装配必须覆盖全部明确声明的编码 */
+    default BusinessObjectCommandRuntime commandRuntime(){return null;}
     /** 对象只接入一次运行端口，所有通用能力复用；纯目录声明不伪造执行实现。 */
     default BusinessObjectRuntime runtime() { return this instanceof BusinessObjectRuntime runtime ? runtime : null; }
   }

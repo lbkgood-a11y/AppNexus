@@ -10,6 +10,16 @@ import org.springframework.stereotype.Component;
 /** 客商唯一业务对象声明：身份、操作、页面、交互和数据权限集中在同一Descriptor；Controller只引用操作。 */
 @Component
 public final class BusinessPartnerDeclaration implements BusinessObjects.Provider {
+    private java.util.function.Supplier<BusinessPartnerCommandRuntime> commands=()->null;
+
+    /** @param commands 复用原用例的真实客商命令端口 */
+    @org.springframework.beans.factory.annotation.Autowired
+    public void commandRuntime(org.springframework.beans.factory.ObjectProvider<BusinessPartnerCommandRuntime> commands){
+        this.commands=commands::getIfAvailable;
+    }
+    @Override public Set<String> commandOperations(){return Set.of("list","create","update","readStatusHistory","setStatus");}
+    @Override public BusinessObjectCommandRuntime commandRuntime(){return commands.get();}
+
     /** 客商主档稳定资源标识，必须与既有功能权限资源一致。 */
     public static final String ROOT="masterdata.partner";
     /** 联系人字段资源，行权限继承主档，不产生平行功能授权。 */
@@ -27,7 +37,7 @@ public final class BusinessPartnerDeclaration implements BusinessObjects.Provide
             new DataResource(ROOT,"","客商主档","Business partner",fields(MasterData.Kind.PARTNER.fields)),
             new DataResource(CONTACT,ROOT,"客商联系人","Partner contacts",fields(PartnerRules.CONTACT)),
             new DataResource(BANK,ROOT,"客商银行账户","Partner bank accounts",fields(PartnerRules.BANK))),
-            operations.stream().collect(java.util.stream.Collectors.toMap(Operation::operationCode,op->Set.of("ALL","ORGANIZATION","ORGANIZATION_SUBTREE","RULES"))),
+            operations.stream().collect(java.util.stream.Collectors.toMap(Operation::operationCode,op->Set.of("ALL","RULES"))),
             List.of(new DataDimension("code","客商编码","Partner code","TEXT",Set.of("EQ","IN"),"TEXT","",Set.of("list")),
                 new DataDimension("name","客商名称","Partner name","TEXT",Set.of("EQ","IN"),"TEXT","",Set.of("list")),
                 new DataDimension("organizationId","归属组织","Owning organization","UUID",Set.of("EQ","IN"),"ORGANIZATION","",Set.of("list","create","update","setStatus"),
@@ -37,13 +47,13 @@ public final class BusinessPartnerDeclaration implements BusinessObjects.Provide
                 new DataDimension("partnerType","客商类型","Partner type","TEXT",Set.of("EQ","IN"),"DICTIONARY",
                     com.appnexus.platform.configuration.BusinessValueCatalog.PARTNER.get("partnerType"),Set.of("list"))))
             .withStandardCrud("organizationId",Set.of("list","create","update","setStatus"));
-        return new Descriptor("BusinessPartner","客商管理","Business partners","master-data",6,Category.MASTER_DATA,List.of(),operations,dataAccess,List.of(new CodingField("code","create",64)));
+        // 浏览器只保存 list 已完成授权和脱敏的当前页展示值，无单独的服务端导出操作。
+        return new Descriptor("BusinessPartner","客商管理","Business partners","master-data",8,Category.MASTER_DATA,List.of(),operations,dataAccess,List.of(new CodingField("code","create",64)));
     }
-    /** 仅声明已实现的直接业务能力，不提供未接通审批或打印入口；契约字段为空，不复制敏感业务正文。 */
+    /** 类型化公共命令与原专用入口共用操作标识；记录快照驱动由独立能力声明控制。 */
     private static Operation operation(String code,String zh,String en,String action,String method,String path){
         String id="BusinessPartner."+code;
-        var interaction=new InteractionContract(id,1,"BusinessPartner",code,zh,en,InteractionContract.Trigger.USER_ACTION,
-            List.of(new InteractionContract.Capability(InteractionContract.Service.BUSINESS,InteractionContract.Completion.SYNCHRONOUS,id,"",List.of(),Set.of(),"masterdata.partner."+code,1)));
+        var interaction=new InteractionContract(id,1,"BusinessPartner",code,zh,en,InteractionContract.Trigger.USER_ACTION,List.of());
         return new Operation(code,zh,en,ROOT+":"+action,id,
             new PageOperation("master-data/partner","/master-data/partner","客商管理","Business partners",method,"/api/master-data/partner"+path),List.of(),interaction);
     }

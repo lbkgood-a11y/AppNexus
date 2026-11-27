@@ -1,8 +1,8 @@
 import { http } from "@/utils/http";
-import type { DeviceDraft, PrintApi, TemplateDraft } from "@appnexus/print";
+import { createPrintId, type DeviceDraft, type PrintApi, type TemplateDraft } from "@appnexus/print";
 const base="/api/printing",id=encodeURIComponent;
 /** 写操作统一获取 CSRF 并使用一次性幂等 UUID；网络错误不自动重放打印。 */
-async function write<T>(method:"post"|"put",path:string,data:unknown,requestId:string=crypto.randomUUID()):Promise<T>{
+async function write<T>(method:"post"|"put",path:string,data:unknown,requestId:string=createPrintId()):Promise<T>{
   const csrf=await http.request<{token:string;headerName:string}>("get","/bff/csrf");
   return http.request<T>(method,base+path,{data,headers:{[csrf.headerName]:csrf.token,"Idempotency-Key":requestId}});
 }

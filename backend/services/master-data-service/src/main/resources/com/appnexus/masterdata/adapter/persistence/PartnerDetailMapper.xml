@@ -3,12 +3,12 @@
 <mapper namespace="com.appnexus.masterdata.adapter.persistence.PartnerDetailMapper">
 <select id="read" resultType="map"><choose>
 <when test="bank">SELECT BIN_TO_UUID(id) id,tax_account taxAccount,basic_account basicAccount,is_default isDefault,bank_name bankName,account_number accountNumber,account_alias accountAlias,currency currency,cnaps cnaps,swift_code swiftCode,remarks remarks,BIN_TO_UUID(created_by) creator,created_at,BIN_TO_UUID(updated_by) updater,updated_at FROM md_partner_bank_account WHERE tenant_id=UUID_TO_BIN(#{tenant}) AND partner_id=UUID_TO_BIN(#{parent}) AND deleted=FALSE
-<if test="access != null"><bind name="rangeSql" value="@com.appnexus.persistence.mybatis.ScopedSql@bind(access.sql(), access.parameters(), &quot;access&quot;)"/>
-AND EXISTS (SELECT 1 FROM md_partner WHERE tenant_id=UUID_TO_BIN(#{tenant}) AND id=UUID_TO_BIN(#{parent}) ${rangeSql})</if>
+<if test="access != null">
+AND EXISTS (SELECT 1 FROM md_partner WHERE tenant_id=UUID_TO_BIN(#{tenant}) AND id=UUID_TO_BIN(#{parent}) /*appnexus-bind:access*/)</if>
 ORDER BY created_at,id</when>
 <otherwise>SELECT BIN_TO_UUID(id) id,contact_type contactType,contact_name contactName,phone phone,address address,is_default isDefault,email email,remarks remarks,BIN_TO_UUID(created_by) creator,created_at,BIN_TO_UUID(updated_by) updater,updated_at FROM md_partner_contact WHERE tenant_id=UUID_TO_BIN(#{tenant}) AND partner_id=UUID_TO_BIN(#{parent}) AND deleted=FALSE
-<if test="access != null"><bind name="rangeSql" value="@com.appnexus.persistence.mybatis.ScopedSql@bind(access.sql(), access.parameters(), &quot;access&quot;)"/>
-AND EXISTS (SELECT 1 FROM md_partner WHERE tenant_id=UUID_TO_BIN(#{tenant}) AND id=UUID_TO_BIN(#{parent}) ${rangeSql})</if>
+<if test="access != null">
+AND EXISTS (SELECT 1 FROM md_partner WHERE tenant_id=UUID_TO_BIN(#{tenant}) AND id=UUID_TO_BIN(#{parent}) /*appnexus-bind:access*/)</if>
 ORDER BY created_at,id</otherwise>
 </choose></select>
 <insert id="create"><choose>

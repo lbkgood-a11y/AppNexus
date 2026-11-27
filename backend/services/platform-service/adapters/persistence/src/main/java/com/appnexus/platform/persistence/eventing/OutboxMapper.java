@@ -8,7 +8,7 @@ import org.apache.ibatis.annotations.*;
 
 /** Outbox 事实、投递租约及原子消费回执的固定 SQL。调用方负责事务和平台准入。 */
 @Mapper
-@PlatformScoped(tables={"SKIP","platform_outbox","platform_event_delivery","platform_event_delivery_attempt","platform_event_consumption"})
+@PlatformScoped(tables={"SKIP","platform_outbox","platform_event_delivery","platform_event_delivery_attempt","platform_event_consumption","platform_event_subscription_state"})
 public interface OutboxMapper {
     String LEGACY = """
         CASE o.event_type
@@ -37,9 +37,32 @@ public interface OutboxMapper {
         FROM platform_event_delivery d STRAIGHT_JOIN platform_outbox o ON o.id=d.event_id AND o.tenant_id=d.tenant_id
         WHERE UUID_TO_BIN(#{scope})=0x00000000000000000000000000000000 AND #{key}='queue'
           AND d.claim_at<=CURRENT_TIMESTAMP(6)
+          AND NOT EXISTS (SELECT 1 FROM platform_event_subscription_state s
+              WHERE s.event_type=o.event_type AND s.consumer_id=d.consumer_id AND s.paused=TRUE)
         ORDER BY d.claim_at,d.id LIMIT 1 FOR UPDATE OF d SKIP LOCKED
         """)
     List<Map<String,Object>> claimable(@Param("scope") String scope,@Param("key") String key);
+
+    /** 平台管理读模型，仅返回状态和数据库审计元数据。 */
+    @GuardedScope(tenant="scope",serviceOperation="platform.task:read",serviceKeys={"actor"},serviceRead=true)
+    @Select("""
+        SELECT BIN_TO_UUID(id) id,IF(paused,1,0) paused,
+          BIN_TO_UUID(created_by) createdBy,created_at createdAt,BIN_TO_UUID(updated_by) updatedBy,updated_at updatedAt
+        FROM platform_event_subscription_state WHERE UUID_TO_BIN(#{scope})=0x00000000000000000000000000000000
+          AND UUID_TO_BIN(#{actor}) IS NOT NULL
+        """)
+    List<Map<String,Object>> subscriptionStates(@Param("scope") String scope,@Param("actor") String actor);
+
+    /** 同一订阅按唯一键串行更新，创建者和创建时间保留首次状态记录。 */
+    @GuardedScope(tenant="scope",serviceOperation="platform.task:subscription_state",serviceKeys={"actor","id"})
+    @Insert("""
+        INSERT INTO platform_event_subscription_state(id,event_type,consumer_id,paused,created_by,updated_by)
+        SELECT UUID_TO_BIN(#{id}),#{type},#{consumer},#{paused},UUID_TO_BIN(#{actor}),UUID_TO_BIN(#{actor})
+        WHERE UUID_TO_BIN(#{scope})=0x00000000000000000000000000000000
+        ON DUPLICATE KEY UPDATE paused=#{paused},updated_by=UUID_TO_BIN(#{actor}),updated_at=CURRENT_TIMESTAMP(6)
+        """)
+    int setSubscriptionState(@Param("scope") String scope,@Param("actor") String actor,@Param("id") String id,
+        @Param("type") String type,@Param("consumer") String consumer,@Param("paused") boolean paused);
 
     /** 持有投递行锁时分配 30 秒租约并推进累计领取序号。 */
     @GuardedScope(tenant="scope",serviceOperation="system.platform.task:process",serviceKeys={"id"})
@@ -50,9 +73,9 @@ public interface OutboxMapper {
         """)
     int claim(@Param("scope") String scope,@Param("id") String id,@Param("lease") String lease);
 
-    /** 在领取事务内记录当前累计序号。 */
+    /** 在领取事务内记录当前累计序号，从父投递读取实际租户范围。 */
     @GuardedScope(tenant="scope",serviceOperation="system.platform.task:process",serviceKeys={"id"})
-    @Insert("INSERT INTO platform_event_delivery_attempt(delivery_id,attempt_no,outcome) SELECT UUID_TO_BIN(#{id}),#{sequence},'PROCESSING' WHERE UUID_TO_BIN(#{scope})=0x00000000000000000000000000000000")
+    @Insert("INSERT INTO platform_event_delivery_attempt(delivery_id,attempt_no,outcome,tenant_id) SELECT id,#{sequence},'PROCESSING',tenant_id FROM platform_event_delivery WHERE id=UUID_TO_BIN(#{id}) AND UUID_TO_BIN(#{scope})=0x00000000000000000000000000000000")
     int startAttempt(@Param("scope") String scope,@Param("id") String id,@Param("sequence") int sequence);
 
     /** 更新仍在途的执行记录，回填前缺失的历史尝试不补造。 */

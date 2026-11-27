@@ -1,6 +1,6 @@
 import {describe,it,expect} from "vitest";
 import type {MenuNode} from "@appnexus/configuration";
-import {buildNavigationMenus,safeNavigationUrl} from "./navigationModel";
+import {buildNavigationMenus,navigationIcon,safeNavigationUrl} from "./navigationModel";
 
 /** 验证过滤不破坏排序、隐藏祖先及外链边界，不依赖浏览器身份或模拟 Token。 */
 describe("navigation composition",()=>{
@@ -32,5 +32,11 @@ describe("navigation composition",()=>{
     expect(menus.find(item=>item.name==="Navigation_root")?.children?.[0].meta.icon).toBe("ri/file-info-line");
     expect(menus.find(item=>item.path==="https://example.com")?.meta.icon).toBe("ri/links-fill");
     expect(menus.find(item=>item.name==="Navigation_custom")?.meta.icon).toBe("ri/flow-chart");
+  });
+  it("uses a specific business theme before a broader menu group",()=>{
+    expect(navigationIcon(node("attachments",{component:"configuration/attachments"}))).toBe("ri/attachment-line");
+    expect(navigationIcon(node("stock",{component:"warehousing/inventory-overview"}))).toBe("ri/archive-line");
+    expect(navigationIcon(node("inbound",{type:"DIRECTORY",code:"builtin.navigation.warehousing.inbound"}))).toBe("ri/folder-line");
+    expect(navigationIcon(node("event-log",{titleZh:"事件记录",icon:" ri/flow-chart "}))).toBe("ri/flow-chart");
   });
 });

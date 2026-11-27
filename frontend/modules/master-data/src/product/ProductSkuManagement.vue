@@ -91,7 +91,7 @@ const createNotice = computed(() => {
 });
 const allRows=computed<Record<string,any>[]>(()=>(structure.value?.skus??[]).map(k=>({...k,specification:specs.value.get(k.specificationId)})));
 const detail = computed(() => allRows.value.find(row => row.id === detailId.value));
-const detailActions = ref<HTMLElement>();
+const detailHeader = ref<InstanceType<typeof PageHeader>>();
 const attributeDialog=ref(false);
 const attributeInput=ref<Record<string,string|string[]>>({});
 const attributeView=ref<SkuAttributeConfiguration>();
@@ -221,7 +221,7 @@ async function openDetail(id: string, event: MouseEvent) {
  detailTrigger = event.currentTarget as HTMLElement;
  detailId.value = id;
  await nextTick();
- detailActions.value?.querySelector("button")?.focus();
+ detailHeader.value?.focusBack();
 }
 
 async function closeDetail() {
@@ -543,15 +543,12 @@ onMounted(loadOperations);
 <ManagedDialog v-model="structureOpen" :title="t('productSku.specifications')"><ProductStructure v-if="structureOpen&&product" :key="product.id+':'+structure?.version" :id="product.id" :version="structure?.version??product.version" :readonly="!writeAllowed" :api="api" :fields="specFields" :error-text="errorText" @changed="structureChanged"/></ManagedDialog>
 <TabbedDetailTemplate v-if="detail" master-data>
  <template #header>
-  <PageHeader :title="t('productSku.detail')">
+  <PageHeader ref="detailHeader" :back-label="t('productV1.back')" @back="closeDetail" :title="t('productSku.detail')">
    <template #meta>
     <el-tag effect="plain">{{detail.code}}</el-tag>
     <el-tag class="app-status-tag" :type="detail.enabled?'success':'info'">{{t(detail.enabled?'masterData.enabled':'masterData.disabled')}}</el-tag>
    </template>
-   <template #actions>
-    <div ref="detailActions"><el-button @click="closeDetail">{{t('productV1.back')}}</el-button></div>
-   </template>
-   <template v-if="product" #trailing>
+   <template v-if="product" #actions>
     <ProductHistoryButton :id="product.id" :api="api" :error-text="errorText" :subject="{collection:'skus',id:detail.id}" />
    </template>
   </PageHeader>

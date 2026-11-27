@@ -12,7 +12,7 @@ import org.apache.ibatis.annotations.*;
 @TenantAggregateScoped(requireTenantMatch=true,
         tables={"bw_inbound_task","bw_commodity_template","bw_inbound_notice","bw_quality_order",
                 "bw_metering_order","bw_receipt_order","bw_receipt_order_line","bw_stock_receipt"},
-        statements={"task","identity","quality","metering","receipt","lines"})
+        statements={"task","lockTicket","identity","quality","metering","receipt","lines"})
 public interface InboundWorkbenchDetailMapper {
     String DETAIL=ReadInboundWorkbenchDetailUseCase.DETAIL,IDENTITY=ReadInboundWorkbenchDetailUseCase.IDENTITY,
             QUALITY=ReadInboundWorkbenchDetailUseCase.QUALITY,METER=ReadInboundWorkbenchDetailUseCase.METER,
@@ -27,13 +27,22 @@ public interface InboundWorkbenchDetailMapper {
             """;
 
     /** 基础作业每次重读盲检标记。 */
-    record TaskRow(long version,String stage,String status,boolean blind,String unload) {}
+    record TaskRow(long version,String stage,String status,boolean blind,String unload,String taskNo) {}
 
     /** @param tenant 可信租户 @param task 作业 UUID @return 最小作业基础字段 */
     @GuardedScope(tenant="__verifiedTenant",operationPermissions=DETAIL)
-    @Select("SELECT t.row_version version,t.queue_stage stage,t.status,"+BLIND+" blind,t.unload_disposition unload "+
+    @Select("SELECT t.row_version version,t.queue_stage stage,t.status,"+BLIND+" blind,t.unload_disposition unload,t.task_no taskNo "+
             TASK+" WHERE t.tenant_id=#{__verifiedTenant} AND t.id=UUID_TO_BIN(#{task})")
     TaskRow task(@Param("__verifiedTenant") byte[] tenant,@Param("task") String task);
+
+    /** @param tenant 已验证租户 @param task 作业 UUID @return 锁定作业票快照，直到公共输出提交 */
+    @GuardedScope(tenant="__verifiedTenant",operationPermissions=com.appnexus.bulkwarehousing.api.inboundexecution.InboundSiteCommands.PRINT)
+    @Select("""
+            SELECT row_version AS version,status,task_no AS taskNo FROM bw_inbound_task
+            WHERE tenant_id=#{__verifiedTenant} AND id=UUID_TO_BIN(#{task}) FOR UPDATE
+            """)
+    com.appnexus.bulkwarehousing.application.inboundexecution.InboundWorkbenchDetailQueries.Ticket lockTicket(
+        @Param("__verifiedTenant") byte[] tenant,@Param("task") String task);
 
     /** 身份与源司机仅在非盲检阶段选择，返回之前仍须做字段保护。 */
     @GuardedScope(tenant="__verifiedTenant",operationPermissions=IDENTITY)

@@ -1,6 +1,7 @@
 package com.appnexus.platform;
 
-import com.appnexus.platform.security.EndpointOperation;
+import com.appnexus.contracts.operation.OperationBinding;
+import com.appnexus.platform.security.operation.OperationRegistry;
 import java.util.*;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,6 +22,7 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 class AllOperationAuthorizationTest extends DatabaseTestSupport {
     @Autowired MockMvc mvc;
     @Autowired JdbcTemplate jdbc;
+    @Autowired OperationRegistry operations;
     @Autowired RequestMappingHandlerMapping requestMappingHandlerMapping;
     /** 确认旧能力协议已从真实 MVC 路由表移除，不接受编译残留或兼容回退。 */
     @Test void retiredCapabilityEndpointsAreAbsent(){
@@ -33,10 +35,10 @@ class AllOperationAuthorizationTest extends DatabaseTestSupport {
         jdbc.update("INSERT INTO platform_administrator(account_id) VALUES(UUID_TO_BIN(?))",account);
         int checked=0;
         for(var entry:requestMappingHandlerMapping.getHandlerMethods().entrySet()){
-            var operation=entry.getValue().getMethodAnnotation(EndpointOperation.class);
-            if(operation==null)continue;
+            var permission=declaredEndpointPermission(entry.getValue());
+            if(permission.isEmpty())continue;
             for(String path:entry.getKey().getPatternValues())if(path.startsWith("/bff/platform/")){
-                String required=operation.platformPermission().isBlank()?operation.value():operation.platformPermission();
+                String required=permission.orElseThrow();
                 assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM access_permission WHERE code=? AND enabled=TRUE AND scope_type='PLATFORM'",Integer.class,required)).as(path+" -> "+required).isEqualTo(1);
                 String resolved=path.replace("{capability}","READ").replaceAll("\\{[^}]+}",UUID.randomUUID().toString());
                 for(var method:entry.getKey().getMethodsCondition().getMethods()){
@@ -65,6 +67,16 @@ class AllOperationAuthorizationTest extends DatabaseTestSupport {
     }
     /** 当前有效成员没有业务操作时，所有登记租户端点逐一拒绝，不能以成员资格代替功能权限。 */
     @Test void everyTenantBusinessOperationDeniesMemberWithoutPermission()throws Exception{
+        assertThat(checkUnprivilegedTenantEndpoints("/api/")).isGreaterThan(35);
+    }
+    /** 组织类型的三个真实入口应使用声明权限，且拒绝只有租户成员资格的账号。 */
+    @Test void organizationTypeOperationsDenyMemberWithoutDeclaredPermission()throws Exception{
+        assertThat(checkUnprivilegedTenantEndpoints("/api/organization/domain/types")).isEqualTo(3);
+    }
+    /** @param prefix 待检查的真实租户路由前缀
+     * @return 实际发起并确认拒绝的请求数
+     */
+    private int checkUnprivilegedTenantEndpoints(String prefix)throws Exception{
         String account=UUID.randomUUID().toString(),tenant=UUID.randomUUID().toString(),member=UUID.randomUUID().toString();
         jdbc.update("INSERT INTO identity_account(id,username,display_name,password_hash) VALUES(UUID_TO_BIN(?),?,'Tenant operations','unused')",account,"tenant-operation-"+account);
         jdbc.update("INSERT INTO platform_tenant(id,name) VALUES(UUID_TO_BIN(?),'Operation tenant')",tenant);
@@ -73,19 +85,30 @@ class AllOperationAuthorizationTest extends DatabaseTestSupport {
             .andReturn().getResponse();
         assertThat(selected.getStatus()).isEqualTo(200);var cookie=selected.getCookie("JSESSIONID");int checked=0;
         for(var entry:requestMappingHandlerMapping.getHandlerMethods().entrySet()){
-            var operation=entry.getValue().getMethodAnnotation(EndpointOperation.class);if(operation==null)continue;
-            for(String path:entry.getKey().getPatternValues())if(path.startsWith("/api/")){
-                assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM access_permission WHERE code=? AND enabled=TRUE AND scope_type='TENANT'",Integer.class,operation.value())).as(path).isEqualTo(1);
+            var declared=declaredEndpointPermission(entry.getValue());
+            if(declared.isEmpty())continue;
+            String permission=declared.orElseThrow();
+            for(String path:entry.getKey().getPatternValues())if(path.startsWith(prefix)){
+                assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM access_permission WHERE code=? AND enabled=TRUE AND scope_type='TENANT'",Integer.class,permission)).as(path).isEqualTo(1);
                 String resolved=path.replace("{capability}","READ").replaceAll("\\{[^}]+}",UUID.randomUUID().toString());
                 for(var method:entry.getKey().getMethodsCondition().getMethods()){
-                    var response=mvc.perform(request(org.springframework.http.HttpMethod.valueOf(method.name()),resolved).cookie(cookie).with(csrf()).contentType("application/json").content("{}"))
+                    var response=mvc.perform(request(org.springframework.http.HttpMethod.valueOf(method.name()),resolved).cookie(cookie).with(csrf()).contentType(entry.getKey().getConsumesCondition().getConsumableMediaTypes()
+                            .stream().findFirst().orElse(org.springframework.http.MediaType.APPLICATION_JSON)).content("{}"))
                         .andReturn().getResponse();
                     assertThat(response.getStatus()).as(method+" "+path+": "+response.getContentAsString()).isEqualTo(403);checked++;
                 }
             }
         }
-        assertThat(checked).isGreaterThan(35);
+        return checked;
     }
+    /** 读取 MVC 引用与目录共同登记的前置权限。 */
+    private Optional<String> declaredEndpointPermission(org.springframework.web.method.HandlerMethod handler) {
+        return Arrays.stream(handler.getMethod().getAnnotationsByType(OperationBinding.class))
+            .filter(OperationBinding::enforceDeclaredPermission).findFirst()
+            .map(binding->operations.all().stream().filter(value->value.id().equals(binding.id()))
+                .findFirst().orElseThrow().permissions().getFirst());
+    }
+
     /** 拆分后的强制下线不隐式授予账号编辑或重置密码，撤权后下一请求立即拒绝。 */
     @Test void narrowAccountOperationDoesNotGrantOtherSensitiveActions()throws Exception{
         String actor=UUID.randomUUID().toString(),target=UUID.randomUUID().toString(),role=UUID.randomUUID().toString();

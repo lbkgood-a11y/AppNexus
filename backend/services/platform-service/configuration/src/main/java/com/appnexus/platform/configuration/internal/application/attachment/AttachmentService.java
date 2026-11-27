@@ -47,7 +47,7 @@ public final class AttachmentService implements AttachmentRecords {
 
     /** {@inheritDoc} */
     @Override
-    public Page ledger(UUID actor, Filter filter, int offset, int limit) {
+    public Page ledger(Owner owner, Filter filter, int offset, int limit) {
         if (filter.businessId() != null) validateBusiness(filter.businessId());
         if (filter.fileName() != null && filter.fileName().codePointCount(0, filter.fileName().length()) > 255) {
             throw new IllegalArgumentException("附件名称筛选最多 255 个字符");
@@ -56,7 +56,15 @@ public final class AttachmentService implements AttachmentRecords {
             throw new IllegalArgumentException("附件上传时间范围无效");
         }
         validatePage(offset, limit);
-        return records.ledger(actor, filter, offset, limit);
+        var result = records.ledger(owner, filter, offset, limit);
+        return new Page(result.rows().stream().map(AttachmentService::tenantView).toList(), result.total());
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public Download download(Owner owner, UUID id) {
+        Item item = records.findAvailableInLedger(owner, id);
+        return item == null ? null : new Download(item.fileName(), item.sizeBytes(), storage.open(item.storagePath()));
     }
 
     /** {@inheritDoc} */

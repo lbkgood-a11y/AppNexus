@@ -69,6 +69,16 @@ const columns = computed(() => [
   { key: "component", prop: "component", label: t("featureCatalog.component"), minWidth: 220 },
   { key: "gate", label: t("featureCatalog.gate"), minWidth: 160 }
 ]);
+type FeatureRow = (typeof rows.value)[number];
+/** 树节点的下载列与界面共用本地化展示，当前展开范围由公共表格决定。 */
+const featureExcelExport = {
+  columns: {
+    title: (row: Readonly<FeatureRow>) => row.type === "scope" ? t("menuManagement.scopes." + row.title) : row.title,
+    category: (row: Readonly<FeatureRow>) => "category" in row && row.category ? t("businessObject.categories." + row.category) : "—",
+    type: (row: Readonly<FeatureRow>) => t("featureCatalog.types." + row.type),
+    gate: (row: Readonly<FeatureRow>) => "gate" in row && row.gate ? t("featureCatalog.gates." + row.gate) : "—",
+  },
+};
 /** 刷新失败清除旧数据，避免将失效的权限快照继续展示为当前结果。 */
 async function refresh() {
   if (loading.value) return;
@@ -101,12 +111,12 @@ onMounted(refresh);
       </el-form>
     </template>
     <template #data>
-      <ManagementTable embedded :title="t('featureCatalog.title')" :rows="rows" :columns="columns" :loading="loading" row-key="id" :expanded-row-keys="expandedKeys" :current-row-key="rows[0]?.id" @refresh="refresh" @expand-change="updateExpansion"><template #titleHelp><InfoHint :content="t('featureCatalog.hint')" /></template>
+      <ManagementTable embedded :title="t('featureCatalog.title')" :rows="rows" :columns="columns" :excel-export="featureExcelExport" :loading="loading" row-key="id" :expanded-row-keys="expandedKeys" :current-row-key="rows[0]?.id" @refresh="refresh" @expand-change="updateExpansion"><template #titleHelp><InfoHint :content="t('featureCatalog.hint')" /></template>
         <template #actions><el-button text :title="t('featureCatalog.expand')" :aria-label="t('featureCatalog.expand')" @click="expandAll(true)"><AppIcon name="arrowDown" :size="18" /></el-button><el-button text :title="t('featureCatalog.collapse')" :aria-label="t('featureCatalog.collapse')" @click="expandAll(false)"><AppIcon name="arrowUp" :size="18" /></el-button></template>
-        <template #title="{row}">{{ row.type === 'scope' ? t('menuManagement.scopes.' + row.title) : row.title }}</template>
-        <template #category="{row}">{{ row.category ? t('businessObject.categories.'+row.category) : '—' }}</template>
-        <template #type="{row}"><el-tag :type="row.type === 'operation' ? 'warning' : row.type === 'scope' ? 'primary' : 'info'">{{ t('featureCatalog.types.' + row.type) }}</el-tag></template>
-        <template #gate="{row}">{{ row.gate ? t('featureCatalog.gates.' + row.gate) : '—' }}</template>
+        <template #title="{row}">{{ featureExcelExport.columns.title(row) }}</template>
+        <template #category="{row}">{{ featureExcelExport.columns.category(row) }}</template>
+        <template #type="{row}"><el-tag :type="row.type === 'operation' ? 'warning' : row.type === 'scope' ? 'primary' : 'info'">{{ featureExcelExport.columns.type(row) }}</el-tag></template>
+        <template #gate="{row}">{{ featureExcelExport.columns.gate(row) }}</template>
       </ManagementTable>
     </template>
   </BusinessWorkspace>

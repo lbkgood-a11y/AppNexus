@@ -15,6 +15,18 @@ public interface TaskAuditMapper {
  @Insert("INSERT INTO platform_administration_audit(actor_account_id,action,target_id,tenant_id) VALUES(UUID_TO_BIN(#{p0}),'OUTBOX_RETRIED',UUID_TO_BIN(#{p1}),NULL)")
  int statement1(@Param("p0") Object p0,@Param("p1") Object p1);
 
+ /** 订阅开关的管理审计，原因和状态更新在同一事务。 */
+ @GuardedScope(tenant="scope",serviceOperation="platform.task:subscription_state",serviceKeys={"actor","id"})
+ @Insert("""
+     INSERT INTO platform_administration_audit(actor_account_id,action,target_id,tenant_id,operation_reason,
+       created_by,created_at,updated_by,updated_at)
+     SELECT UUID_TO_BIN(#{actor}),IF(#{paused},'EVENT_SUBSCRIPTION_PAUSED','EVENT_SUBSCRIPTION_RESUMED'),
+       UUID_TO_BIN(#{id}),NULL,#{reason},UUID_TO_BIN(#{actor}),CURRENT_TIMESTAMP(6),UUID_TO_BIN(#{actor}),CURRENT_TIMESTAMP(6)
+     WHERE UUID_TO_BIN(#{scope})=0x00000000000000000000000000000000
+     """)
+ int subscriptionStateChanged(@Param("scope") String scope,@Param("actor") String actor,@Param("id") String id,
+     @Param("paused") boolean paused,@Param("reason") String reason);
+
  /** 单投递人工恢复审计，原因由应用校验且与状态更新同事务写入。 */
  @GuardedScope(tenant="scope",serviceOperation="platform.task:retry",serviceKeys={"actor","delivery"})
  @Insert("""

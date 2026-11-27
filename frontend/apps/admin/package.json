@@ -16,7 +16,6 @@
     "@appnexus/icons": "workspace:*",
     "@appnexus/localization": "workspace:*",
     "@appnexus/master-data": "workspace:*",
-    "@appnexus/organization": "workspace:*",
     "@appnexus/print": "workspace:*",
     "@appnexus/security": "workspace:*",
     "@appnexus/tenant": "workspace:*",

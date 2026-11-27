@@ -25,6 +25,12 @@ public interface ReadInboundDocumentsUseCase {
     /** 同一授权筛选范围内的分页记录。 */
     record InboundDocumentPage(List<Map<String,Object>> rows, long total) {}
 
+    /** 化验录入仅获得指标代码和单位。 */
+    record LabMetricOption(String code, String unit) {}
+
+    /** @return 现行待判定样品的输入项目，省略合格区间 */
+    List<LabMetricOption> labMetrics(VerifiedTenantContext context, UUID id);
+
     /** 对应已有新建命令及其权限，由接口固定。 */
     enum Creation {
         SAMPLE(Kind.QUALITY, RegisterInboundSampleUseCase.PERMISSION),
@@ -45,7 +51,7 @@ public interface ReadInboundDocumentsUseCase {
     }
 
     /** 作业编号和并发版本，计量版本仅用于接续入库草稿，不包含运输身份。 */
-    record TaskOption(UUID taskId, String taskNo, long taskVersion, Long meteringVersion) {}
+    record TaskOption(UUID taskId, String taskNo, long taskVersion, Long meteringVersion, UUID noticeId) {}
 
     /**
      * @param context 可信租户主体

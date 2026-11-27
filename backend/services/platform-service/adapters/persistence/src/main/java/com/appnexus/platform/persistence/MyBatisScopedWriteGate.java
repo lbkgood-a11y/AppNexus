@@ -38,6 +38,18 @@ public final class MyBatisScopedWriteGate implements ScopedWriteGate {
         if(grants==null||!grants.contains(new Grant(tenant,null,permission,CatalogPublication.INSTANCE)))throw denied();
     }
 
+    @Override public void authorizeServiceRead(UUID tenant,String permission,List<String> keys,java.util.function.BooleanSupplier allowed){
+        if(tenant==null||keys.isEmpty()||keys.stream().anyMatch(key->key==null||key.isBlank())||!allowed.getAsBoolean())throw denied();
+        add(new Grant(tenant,null,permission,new ServiceReadBinding(List.copyOf(keys))),true);
+    }
+
+    @Override public void requireServiceRead(UUID tenant,String permission,List<String> keys){
+        var grants=grants();
+        if(grants==null||!grants.contains(new Grant(tenant,null,permission,new ServiceReadBinding(keys))))throw denied();
+    }
+
+    private record ServiceReadBinding(List<String> keys) {}
+
     @Override public void authorizeServiceOperation(UUID tenant,String permission,List<String> keys,java.util.function.BooleanSupplier allowed){
         if(tenant==null||keys.isEmpty()||keys.stream().anyMatch(key->key==null||key.isBlank())||!allowed.getAsBoolean())throw denied();
         add(new Grant(tenant,null,permission,new ServiceBinding(keys)));
@@ -71,9 +83,14 @@ public final class MyBatisScopedWriteGate implements ScopedWriteGate {
     }
 
     private void add(Grant grant){
+        add(grant,false);
+    }
+
+    /** 只读许可和写许可使用不同绑定类型；仅前者允许在只读事务签发。 */
+    private void add(Grant grant,boolean readOnlyAllowed){
         if(!TransactionSynchronizationManager.isActualTransactionActive()
             ||!TransactionSynchronizationManager.isSynchronizationActive()
-            ||TransactionSynchronizationManager.isCurrentTransactionReadOnly())throw denied();
+            ||(!readOnlyAllowed&&TransactionSynchronizationManager.isCurrentTransactionReadOnly()))throw denied();
         var grants=grants();
         if(grants==null){
             var current=new HashSet<Grant>();

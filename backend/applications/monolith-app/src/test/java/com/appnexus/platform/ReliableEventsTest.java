@@ -90,6 +90,61 @@ class ReliableEventsTest extends DatabaseTestSupport {
                 String.class, eventId.toString())).isEqualTo("PENDING");
     }
 
+    /** 真实注册、授权、CSRF、暂停领取、恢复领取和管理审计使用同一组 Spring/MySQL 入口。 */
+    @Test void subscriptionStateControlsOnlyItsOwnDelivery() throws Exception {
+        administration.initializeAdministrator("admin-test");
+        String admin = jdbc.queryForObject(
+            "SELECT BIN_TO_UUID(id) FROM identity_account WHERE username='admin-test'", String.class);
+        String catalog = "/bff/platform/event-subscriptions";
+        String path = catalog + "/INBOUND_RECEIPT_POSTED/inbound-batch-quality/state";
+        String pause = """
+            {"paused":true,"reason":"维护质检投影"}
+            """;
+        String resume = """
+            {"paused":false,"reason":"恢复质检投影"}
+            """;
+        mvc.perform(get(catalog)).andExpect(status().isUnauthorized());
+        mvc.perform(put(path).contentType("application/json").content(pause).with(authenticated(admin, 0)))
+            .andExpect(status().isForbidden());
+        mvc.perform(put(catalog + "/AUTHORITY_INVALIDATED/authority-invalidation/state")
+                .contentType("application/json").content(pause).with(authenticated(admin, 0)).with(csrf()))
+            .andExpect(status().isNotFound());
+        mvc.perform(put(path).contentType("application/json").content(pause).with(authenticated(admin, 0)).with(csrf()))
+            .andExpect(status().isNoContent());
+        var tenant = UUID.randomUUID();
+        var tx = new TransactionTemplate(manager);
+        var type = com.appnexus.contracts.data.TransactionalBusinessEvents.Type.INBOUND_RECEIPT_POSTED;
+        UUID paused;
+        try {
+            mvc.perform(get(catalog).with(authenticated(admin, 0))).andExpect(status().isOk())
+                .andExpect(jsonPath("$[?(@.type == 'INBOUND_RECEIPT_POSTED' && @.consumer == 'inbound-batch-quality' && @.paused == true)]").isNotEmpty())
+                .andExpect(jsonPath("$[?(@.type == 'INBOUND_QUALITY_DECIDED' && @.paused == false)]").isNotEmpty());
+            paused = tx.execute(status -> events.publish(tenant,type,UUID.randomUUID()));
+            var unrelated = claim(publish());
+            assertThat(events.consume(unrelated,unrelated.consumer(),unrelated.tenant(),()->{})).isTrue();
+            jdbc.update("UPDATE platform_event_delivery SET available_at=CURRENT_TIMESTAMP(6) WHERE event_id=UUID_TO_BIN(?)",
+                paused.toString());
+            var sibling = events.claim().orElseThrow();
+            assertThat(sibling.id()).isEqualTo(paused);
+            assertThat(sibling.consumer()).isEqualTo("test-second");
+            assertThat(events.consume(sibling,sibling.consumer(),tenant,()->{})).isTrue();
+            assertThat(jdbc.queryForObject("""
+                SELECT status FROM platform_event_delivery WHERE event_id=UUID_TO_BIN(?) AND consumer_id='inbound-batch-quality'
+                """,String.class,paused.toString())).isEqualTo("PENDING");
+        } finally {
+            mvc.perform(put(path).contentType("application/json").content(resume).with(authenticated(admin, 0)).with(csrf()))
+                .andExpect(status().isNoContent());
+        }
+
+        var restored = claim(paused);
+        assertThat(restored.consumer()).isEqualTo("inbound-batch-quality");
+        assertThat(events.consume(restored,restored.consumer(),tenant,()->{})).isTrue();
+        assertThat(jdbc.queryForList("""
+            SELECT operation_reason FROM platform_administration_audit
+            WHERE action IN ('EVENT_SUBSCRIPTION_PAUSED','EVENT_SUBSCRIPTION_RESUMED')
+            """,String.class)).contains("维护质检投影","恢复质检投影");
+    }
+
     @Test void rollbackCannotPublishAndOutsideTransactionIsRejected(){
         UUID id=UUID.randomUUID();
         new TransactionTemplate(manager).executeWithoutResult(status->{events.publish(id,"AUTHORITY_INVALIDATED",id.toString());status.setRollbackOnly();});

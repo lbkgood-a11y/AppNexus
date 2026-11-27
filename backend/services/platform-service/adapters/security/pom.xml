@@ -22,11 +22,6 @@
     <dependency><groupId>com.appnexus</groupId><artifactId>platform-configuration</artifactId><version>${project.version}</version></dependency>
     <dependency>
       <groupId>com.appnexus</groupId>
-      <artifactId>platform-organization</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>com.appnexus</groupId>
       <artifactId>platform-authorization</artifactId>
       <version>${project.version}</version>
     </dependency>

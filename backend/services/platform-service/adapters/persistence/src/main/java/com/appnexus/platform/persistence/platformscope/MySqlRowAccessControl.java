@@ -22,7 +22,6 @@ public final class MySqlRowAccessControl implements RowAccessControl {
         if(!plan.resource().equals(mapping.resource()))throw new SecurityException("ROW_ACCESS_RESOURCE_MISMATCH");
         if(plan.rows().type()!=ScopeType.RULES)return organizationPredicate(plan,mapping.organization().column());
         var branches=new ArrayList<String>();var parameters=new ArrayList<String>();
-        if(!plan.rows().organizationIds().isEmpty())branches.add(in(mapping.organization(),plan.rows().organizationIds().stream().sorted().map(UUID::toString).toList(),parameters));
         for(var rule:plan.rows().rules()) {
             var terms=new ArrayList<String>();
             if(rule.allRecords())return new Predicate("",List.of());
@@ -53,18 +52,12 @@ public final class MySqlRowAccessControl implements RowAccessControl {
         }
         if (plan == null) return new Predicate(" AND 1=0", List.of());
         if (plan.rows().type() == ScopeType.ALL) return new Predicate("", List.of());
-        if (plan.rows().type() != ScopeType.ORGANIZATION || plan.rows().organizationIds().isEmpty()) {
-            return new Predicate(" AND 1=0", List.of());
-        }
-        var parameters = plan.rows().organizationIds().stream().sorted().map(UUID::toString).toList();
-        return new Predicate(" AND " + organizationColumn + " IN ("
-                + String.join(",", Collections.nCopies(parameters.size(), "UUID_TO_BIN(?)")) + ")", parameters);
+        return new Predicate(" AND 1=0", List.of());
     }
 
     @Override
     public boolean allowsOrganization(AccessPlan plan, UUID organizationId) {
         return plan != null && organizationId != null
-                && (plan.rows().type() == ScopeType.ALL
-                || plan.rows().type() == ScopeType.ORGANIZATION && plan.rows().organizationIds().contains(organizationId));
+                && plan.rows().type() == ScopeType.ALL;
     }
 }

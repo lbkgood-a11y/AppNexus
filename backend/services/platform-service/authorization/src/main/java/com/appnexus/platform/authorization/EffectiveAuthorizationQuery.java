@@ -13,10 +13,20 @@ public interface EffectiveAuthorizationQuery {
      * @param effective 该角色分支是否形成完整有效授权
      * @param inactiveReason 未生效稳定原因；有效时为空
      * @param scopeType 数据范围类型；无数据范围要求时为空
+     * @param scopeSource 分支范围配置来源，无策略时为空
      * @param organizationIds 组织范围值
      */
     record Source(UUID roleId,String roleName,boolean effective,String inactiveReason,
-                  DataScopeAuthorization.ScopeType scopeType,Set<UUID> organizationIds) {}
+                  DataScopeAuthorization.ScopeType scopeType,Set<UUID> organizationIds, ScopeSource scopeSource) {
+        /** 兼容不提供配置来源的内部调用。 */
+        public Source(UUID roleId,String roleName,boolean effective,String inactiveReason,
+                      DataScopeAuthorization.ScopeType scopeType,Set<UUID> organizationIds) {
+            this(roleId,roleName,effective,inactiveReason,scopeType,organizationIds,null);
+        }
+    }
+
+    /** 数据范围属于哪个分支，以及由对象默认还是操作覆盖决定。 */
+    enum ScopeSource { ROLE_DEFAULT, ROLE_OVERRIDE, MEMBER_DEFAULT, MEMBER_OVERRIDE }
     /** @param permissionCode 稳定权限码 @param effective 至少一个完整来源分支有效 @param sources 全部角色来源 */
     record Explanation(String permissionCode,boolean effective,List<Source> sources) {}
 

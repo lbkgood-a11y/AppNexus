@@ -27,14 +27,23 @@ public class BusinessObjectConfiguration {
       BusinessObjectBindings bindings,PlatformTransactionManager manager,BusinessObjectPlatform platform,
       ObjectProvider<com.appnexus.contracts.workflow.WorkflowStarter> workflows,
       ObjectProvider<com.appnexus.contracts.printing.BusinessPrinting> printing) {
+    var json=tools.jackson.databind.json.JsonMapper.builder()
+        .enable(tools.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+        .disable(tools.jackson.databind.DeserializationFeature.ACCEPT_FLOAT_AS_INT)
+        .disable(tools.jackson.databind.MapperFeature.ALLOW_COERCION_OF_SCALARS).build();
     return com.appnexus.platform.businessobject.BusinessObjectUseCases.execution(providers,bindings,
         new com.appnexus.platform.persistence.businessobject.configuration.SpringConfigurationTransaction(manager),platform,
-        workflows::getIfAvailable,printing::getIfAvailable);
+        workflows::getIfAvailable,printing::getIfAvailable,(input,type)->{
+          try{return json.convertValue(input,type);}
+          catch(IllegalArgumentException|tools.jackson.core.JacksonException error){
+            throw new BusinessObjects.Rejection(400,"BUSINESS_OBJECT_COMMAND_INVALID");
+          }
+        });
   }
   /** 编码器元数据与执行器均由当前业务对象模块装配，不引入另一套应用入口。 */
-  @Bean public CodingDeclaration codingDeclaration(){return new CodingDeclaration();}
+  @Bean public CodingDeclaration codingDeclaration(ObjectProvider<CodingManagement> service){return new CodingDeclaration(service::getObject);}
   /** 独立编码规则通过同一对象目录注册，不建立平行权限模型。 */
-  @Bean public com.appnexus.platform.appapi.businessobject.CodingRuleDeclaration codingRuleDeclaration(){return new com.appnexus.platform.appapi.businessobject.CodingRuleDeclaration();}
+  @Bean public com.appnexus.platform.appapi.businessobject.CodingRuleDeclaration codingRuleDeclaration(ObjectProvider<CodingManagement> service){return new com.appnexus.platform.appapi.businessobject.CodingRuleDeclaration(service::getObject);}
   /** 发号公开端口同时支持同进程业务接入和 HTTP 协助录入。 */
   @Bean public CodingManagement codingService(com.appnexus.platform.persistence.businessobject.coding.CodingMapper mapper,PlatformTransactionManager manager,BusinessObjectPlatform platform,List<BusinessObjects.Provider> providers,BusinessObjectManagement objects){return com.appnexus.platform.persistence.businessobject.BusinessObjectPersistence.coding(mapper,manager,platform,providers,objects);}
   /** HTTP 写请求继续使用宿主 CSRF 防护。 */

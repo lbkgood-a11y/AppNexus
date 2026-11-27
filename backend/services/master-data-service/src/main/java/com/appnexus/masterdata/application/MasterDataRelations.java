@@ -8,6 +8,9 @@ import java.util.Map;
 public interface MasterDataRelations {
   /** 已授权分页与详情查询；page 为1至1000000，size 为1至100，id/scope 只缩小当前租户范围。 */
   Page list(VerifiedTenantContext context,Kind kind,String keyword,Boolean enabled,int page,int size,String id,String scope);
+  /** 按独立登录选仓权限和当前租户读取启用仓库摘要。 */
+  java.util.List<com.appnexus.masterdata.api.masterdata.MasterDataManagement.LoginWarehouse> loginWarehouses(
+      VerifiedTenantContext context, java.util.UUID warehouseId);
   /** 读取当前租户地理摘要，不读取账号目录或其他租户。 */
   Object geographyCatalog(VerifiedTenantContext context);
   /** 读取租户地理树；parent 为空读取洲，分页单位为当前层节点。 */

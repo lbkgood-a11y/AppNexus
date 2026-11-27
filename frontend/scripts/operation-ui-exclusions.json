@@ -1,4 +1,20 @@
 [
+  {
+    "key": "[\"frontend/apps/admin/src/views/platform/events.vue\",\"el-button\",\"topologyExpanded = !topologyExpanded\",null,null,\"\"]",
+    "reason": "仅在当前页面展开或收起已授权的链路展示，不发起请求，也不改变查询或订阅状态。"
+  },
+  {
+    "key": "[\"frontend/apps/admin/src/views/configuration/attachments.vue\",\"el-button\",\"openUpload(business)\",null,null,\"{{ t('attachments.upload') }}\"]",
+    "reason": "仅打开统一附件弹窗并带入当前业务 ID，按钮显隐来自当前租户 ManagedAttachment.upload 决策，列表、规则和上传分别由实际接口执行统一准入。"
+  },
+  {
+    "key": "[\"frontend/apps/admin/src/views/configuration/attachments.vue\",\"el-button\",\"closeUpload\",null,null,\"{{ t('attachments.closeUpload') }}\"]",
+    "reason": "底部关闭按钮只关闭附件弹窗。上传进行时禁用，不发起业务请求。"
+  },
+  {
+    "key": "[\"frontend/infra/ui/src/PageHeader.vue\",\"el-button\",\"emit('back')\",null,null,\"\"]",
+    "reason": "详情页返回图标仅委托调用页处理导航及未保存提示，不提交业务操作。"
+  },
 {
   "key": "[\"frontend/apps/admin/src/views/warehousing/documents.vue\",\"el-button\",\"backToList\",null,null,\"{{ t(\\\"partner.back\\\") }}\"]",
   "reason": "返回通知列表只改变本地路由，列表读取继续由原统一操作授权。"
@@ -360,7 +376,7 @@
     "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
   },
   {
-    "key": "[\"frontend/modules/business-object/src/BusinessObjectManagement.vue\",\"el-button\",\"query='';applied='';page=1\",null,null,\"{{t('businessObject.reset')}}\"]",
+    "key": "[\"frontend/modules/business-object/src/BusinessObjectManagement.vue\",\"el-button\",\"resetFilters\",null,null,\"{{t('businessObject.reset')}}\"]",
     "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
   },
   {
@@ -388,15 +404,15 @@
     "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
   },
   {
-    "key": "[\"frontend/modules/organization/src/Management.vue\",\"el-button\",\"selectedTypeId = units.find(item => item.id === positionOrganizationId(row.positionId))?.typeId || ''; selectedUnitId = positionOrganizationId(row.positionId); workspaceView = 'structure'\",null,null,\"item.id === positionOrganizationId(row.positionId))?.typeId || ''; selectedUnitId = positionOrganizationId(row.positionId); workspaceView = 'structure'\\\">{{ labelUnit(positionOrganizationId(row.positionId)) }}\"]",
+    "key": "[\"frontend/modules/master-data/src/organization/Management.vue\",\"el-button\",\"selectedTypeId = units.find(item => item.id === positionOrganizationId(row.positionId))?.typeId || ''; selectedUnitId = positionOrganizationId(row.positionId); workspaceView = 'structure'\",null,null,\"item.id === positionOrganizationId(row.positionId))?.typeId || ''; selectedUnitId = positionOrganizationId(row.positionId); workspaceView = 'structure'\\\">{{ labelUnit(positionOrganizationId(row.positionId)) }}\"]",
     "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
   },
   {
-    "key": "[\"frontend/modules/organization/src/Management.vue\",\"el-button\",\"selectType(row.id); workspaceView = 'structure'\",null,null,\"{{ unitCount(row.id) }}\"]",
+    "key": "[\"frontend/modules/master-data/src/organization/Management.vue\",\"el-button\",\"selectType(row.id); workspaceView = 'structure'\",null,null,\"{{ unitCount(row.id) }}\"]",
     "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
   },
   {
-    "key": "[\"frontend/modules/organization/src/Management.vue\",\"el-button\",\"dialog = ''\",null,null,\"{{ t(\\\"organization.cancel\\\") }}\"]",
+    "key": "[\"frontend/modules/master-data/src/organization/Management.vue\",\"el-button\",\"dialog = ''\",null,null,\"{{ t(\\\"organization.cancel\\\") }}\"]",
     "reason": "界面导航、关闭、复制、草稿编辑或公共组件事件委托；无独立业务授权写入"
   },
   {
@@ -812,23 +828,19 @@
     "reason": "仅重置筛选并读取、显式重新读取，或关闭未提交的本地草稿；不调用业务写接口，读取由后端独立鉴权。"
   },
   {
-    "key": "[\"frontend/modules/organization/src/personnel/PersonnelEditor.vue\",\"el-button\",\"reload\",null,null,\"{{t('personnel.retry')}}\"]",
+    "key": "[\"frontend/modules/master-data/src/organization/personnel/PersonnelEditor.vue\",\"el-button\",\"reload\",null,null,\"{{t('personnel.retry')}}\"]",
     "reason": "只读重载，存在草稿时确认放弃；不会提交保存，读取仍由后端鉴权。"
   },
   {
-    "key": "[\"frontend/modules/organization/src/personnel/PersonnelEditor.vue\",\"el-button\",\"back\",null,null,\"{{t('personnel.back')}}\"]",
-    "reason": "返回列表；未保存时确认丢弃本地草稿，不调用业务写接口。"
-  },
-  {
-    "key": "[\"frontend/modules/organization/src/personnel/PersonnelEditor.vue\",\"el-button\",\"dialog=false\",null,null,\"{{t('masterData.cancel')}}\"]",
+    "key": "[\"frontend/modules/master-data/src/organization/personnel/PersonnelEditor.vue\",\"el-button\",\"dialog=false\",null,null,\"{{t('masterData.cancel')}}\"]",
     "reason": "关闭本地明细或关联草稿，不调用写接口。"
   },
   {
-    "key": "[\"frontend/modules/organization/src/personnel/PersonnelManagement.vue\",\"el-button\",\"reset\",null,null,\"{{t('masterData.reset')}}\"]",
+    "key": "[\"frontend/modules/master-data/src/organization/personnel/PersonnelManagement.vue\",\"el-button\",\"reset\",null,null,\"{{t('masterData.reset')}}\"]",
     "reason": "清空本地筛选并重新读取；无业务写入。"
   },
   {
-    "key": "[\"frontend/modules/organization/src/personnel/PersonnelManagement.vue\",\"el-button\",\"load\",null,null,\"{{t('personnel.retry')}}\"]",
+    "key": "[\"frontend/modules/master-data/src/organization/personnel/PersonnelManagement.vue\",\"el-button\",\"load\",null,null,\"{{t('personnel.retry')}}\"]",
     "reason": "只读重新加载，API 执行权限复核；不自动重放写请求。"
   },
   {
@@ -844,16 +856,12 @@
     "reason": "只读展示当前字典条目授权响应中的 audit；无 API 调用及业务副作用，切换数据清空详情"
   },
   {
-    "key": "[\"frontend/modules/organization/src/personnel/PersonnelEditor.vue\",\"el-button\",\"detailsExpanded=!detailsExpanded\",null,null,\"\"]",
+    "key": "[\"frontend/modules/master-data/src/organization/personnel/PersonnelEditor.vue\",\"el-button\",\"detailsExpanded=!detailsExpanded\",null,null,\"\"]",
     "reason": "仅通过 v-show 折叠详细资料，不卸载表单、不改变字段、不触发请求；无业务写入，保存仍校验同一完整表单。"
   },
   {
     "key": "[\"frontend/modules/master-data/src/PartnerEditor.vue\",\"el-button\",\"reload\",null,null,\"{{t('masterData.retry')}}\"]",
     "reason": "主动重新读取已授权档案，未保存时确认；无业务写入"
-  },
-  {
-    "key": "[\"frontend/modules/master-data/src/PartnerEditor.vue\",\"el-button\",\"back\",null,null,\"{{t('partner.back')}}\"]",
-    "reason": "仅返回列表，离开前确认草稿；无业务写入"
   },
   {
     "key": "[\"frontend/modules/master-data/src/PartnerEditor.vue\",\"el-button\",\"expanded=!expanded\",null,null,\"\"]",
@@ -870,10 +878,6 @@
   {
     "key": "[\"frontend/modules/master-data/src/WarehouseEditor.vue\",\"el-button\",\"reload\",null,null,\"{{t('masterData.retry')}}\"]",
     "reason": "确认草稿后只读重新获取原权限下的仓库及字典；不重放写入。"
-  },
-  {
-    "key": "[\"frontend/modules/master-data/src/WarehouseEditor.vue\",\"el-button\",\"back\",null,null,\"{{t('partner.back')}}\"]",
-    "reason": "确认未保存草稿后返回列表；无服务端写入。"
   },
   {
     "key": "[\"frontend/modules/master-data/src/WarehouseEditor.vue\",\"el-button\",\"expanded[group]=!expanded[group]\",null,null,\"\"]",
@@ -928,10 +932,6 @@
     "reason": "只关闭当前本地配置表单，不调用API、不发布配置、不修改业务记录；保存按钮单独绑定真实操作。"
   },
   {
-    "key": "[\"frontend/modules/master-data/src/product/ProductEditor.vue\",\"el-button\",\"close\",null,null,\"{{t('productV1.back')}}\"]",
-    "reason": "确认放弃本地未保存输入后返回列表，不调用业务写接口。"
-  },
-  {
     "key": "[\"frontend/modules/master-data/src/product/ProductEditor.vue\",\"el-button\",\"cancelMigration\",null,null,\"{{t('masterData.cancel')}}\"]",
     "reason": "仅取消本地迁移草稿并读取当前商品，不执行迁移，不推进版本。"
   },
@@ -980,7 +980,7 @@
     "reason": "左侧角色导航只切换授权编辑上下文，已有草稿须确认，未执行授权写入。"
   },
   {
-    "key": "[\"frontend/modules/business-object/src/BusinessObjectManagement.vue\",\"el-button\",null,\"applied=query;page=1\",null,\"{{t('administration.search')}}\"]",
+    "key": "[\"frontend/modules/business-object/src/BusinessObjectManagement.vue\",\"el-button\",null,\"applyFilters\",null,\"{{t('administration.search')}}\"]",
     "reason": "对象目录查询只在本地按已授权加载的对象列表过滤并重置分页，不发送额外API请求；实际目录读取由BusinessObject.catalog/tenantCatalog控制。"
   },
   {
@@ -1018,10 +1018,6 @@
   {
     "key": "[\"frontend/modules/master-data/src/product/ProductSkuManagement.vue\",\"el-button\",\"reset\",null,null,\"{{t('masterData.reset')}}\"]",
     "reason": "仅清空当前商品明细的本地货号、规格及状态过滤和页码，不发起接口请求、不改变商品/SKU；读取与写入继续使用既有Product操作。"
-  },
-  {
-    "key": "[\"frontend/modules/master-data/src/product/ProductSkuManagement.vue\",\"el-button\",\"closeDetail\",null,null,\"{{t('productV1.back')}}\"]",
-    "reason": "仅关闭当前只读明细并恢复列表焦点，不发起请求或修改记录。"
   },
   {
     "key": "[\"frontend/modules/business-object/src/CodingRuleManagement.vue\",\"el-button\",\"dialog=false\",null,null,\"{{t('coding.cancel')}}\"]",
@@ -1100,15 +1096,67 @@
     "reason": "提交本地已加载工作流列表的关键词过滤并重置页码，不发起工作流命令或保存配置。"
   },
   {
-    "key": "[\"frontend/apps/admin/src/views/warehousing/inbound-notice-workspace.vue\",\"el-button\",\"emit('cancel')\",null,null,\"{{ t(\\\"partner.back\\\") }}\"]",
-    "reason": "仅返回入仓通知查询界面，不提交或写入单据。"
-  },
-  {
     "key": "[\"frontend/apps/admin/src/views/warehousing/inbound-notice-workspace.vue\",\"el-button\",\"lineDialog = false\",null,null,\"{{ t('masterData.cancel') }}\"]",
     "reason": "仅关闭明细编辑弹窗，放弃本次未应用的草稿修改。"
   },
   {
     "key": "[\"frontend/apps/admin/src/views/warehousing/documents.vue\",\"el-button\",\"resetDocumentQuery\",null,null,\"{{ t(\\\"masterData.reset\\\") }}\"]",
     "reason": "仅清空页面查询条件、地址单号和本地结果，不写入业务数据。"
+  },
+  {
+    "key": "[\"frontend/apps/admin/src/components/TenantSwitch/LoginWarehouse.vue\",\"el-button\",\"open = false\",null,null,\"{{ t(\\\"organization.cancel\\\") }}\"]",
+    "reason": "仅关闭选仓弹窗，不读取或切换登录仓库。"
+  },
+  {
+    "key": "[\"frontend/apps/admin/src/views/warehousing/inbound-notice-workspace.vue\",\"el-button\",\"taskDialog = false\",null,null,\"{{ text(\\\"关闭\\\", \\\"Close\\\") }}\"]",
+    "reason": "仅关闭作业任务草稿弹窗，不创建任务。"
+  },
+  {
+    "key": "[\"frontend/apps/admin/src/views/warehousing/inbound-templates.vue\",\"el-button\",\"dialog=false\",null,null,\"{{ text(\\\"关闭\\\",\\\"Close\\\") }}\"]",
+    "reason": "仅关闭入库模板弹窗，不保存或发布模板。"
+  },
+  {
+    "key": "[\"frontend/modules/warehousing/src/InboundDocumentWorkspace.vue\",\"el-button\",\"action = undefined\",null,null,\"{{ label(\\\"取消\\\", \\\"Cancel\\\") }}\"]",
+    "reason": "仅清理未提交的单据动作对话框状态。"
+  },
+  {
+    "key": "[\"frontend/modules/warehousing/src/InboundReceiptLineEditor.vue\",\"el-button\",\"lines.splice(index,1)\",null,null,\"{{ label(\\\"移除\\\", \\\"Remove\\\") }}\"]",
+    "reason": "仅移除浏览器中的未提交收货明细输入行，不删除持久记录。"
+  },
+  {
+    "key": "[\"frontend/modules/warehousing/src/InboundWorkbench.vue\",\"el-button\",\"action = undefined\",null,null,\"{{ label(\\\"cancel\\\") }}\"]",
+    "reason": "采样、外部计量、磅单和卸车共用取消表达式，只退出本地表单，不提交作业操作。"
+  },
+  {
+    "key": "[\"frontend/modules/authorization/src/AuthorizationCenter.vue\",\"el-button\",\"delete objectScopes[resource]\",null,null,\"{{ t('authorizationCenter.clearObjectDefault') }}\"]",
+    "reason": "清除对象默认范围草稿，保存前不调用后端。"
+  },
+  {
+    "key": "[\"frontend/modules/authorization/src/AuthorizationCenter.vue\",\"el-button\",\"createOverride(item)\",null,null,\"{{ t('authorizationCenter.createObjectOverride') }}\"]",
+    "reason": "复制默认范围到操作覆盖草稿，保存前不调用后端。"
+  },
+  {
+    "key": "[\"frontend/modules/authorization/src/AuthorizationCenter.vue\",\"el-button\",\"setObjectScope(item)\",null,null,\"{{ t('authorizationCenter.setObjectDefault') }}\"]",
+    "reason": "将已编辑的策略复制为对象默认草稿，保存前不调用后端。"
+  },
+  {
+    "key": "[\"frontend/modules/authorization/src/AuthorizationCenter.vue\",\"el-button\",\"restoreInheritance(item)\",null,null,\"{{ t('authorizationCenter.restoreObjectDefault') }}\"]",
+    "reason": "移除操作覆盖草稿，仍须通过既有授权保存接口。"
+  },
+  {
+    "key": "[\"frontend/modules/authorization/src/MemberGrantEditor.vue\",\"el-button\",\"removeMemberDefault(item.resource)\",null,null,\"{{ t('authorizationCenter.clearObjectDefault') }}\"]",
+    "reason": "仅编辑成员分支范围草稿，保存时经过现有成员授权操作。"
+  },
+  {
+    "key": "[\"frontend/modules/authorization/src/MemberGrantEditor.vue\",\"el-button\",\"setMemberDefault(item.id)\",null,null,\"{{ t('authorizationCenter.setObjectDefault') }}\"]",
+    "reason": "仅编辑成员分支范围草稿，保存时经过现有成员授权操作。"
+  },
+  {
+    "key": "[\"frontend/modules/authorization/src/MemberGrantEditor.vue\",\"el-button\",\"restoreMemberDefault(item.id)\",null,null,\"{{ t('authorizationCenter.restoreObjectDefault') }}\"]",
+    "reason": "仅编辑成员分支范围草稿，保存时经过现有成员授权操作。"
+  },
+  {
+    "key": "[\"frontend/modules/authorization/src/MemberGrantEditor.vue\",\"el-button\",\"addMemberOverride(item.id)\",null,null,\"{{ t('authorizationCenter.createObjectOverride') }}\"]",
+    "reason": "仅编辑成员分支范围草稿，保存时经过现有成员授权操作。"
   }
 ]

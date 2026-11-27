@@ -31,14 +31,6 @@ public final class OperationRegistry implements com.appnexus.platform.configurat
  /** 汇总所有模块明确声明及业务 Provider，不根据页面名猜测分类；漏登记阻止启动。 */
  public List<ObjectDefinition> objects(){
   var definitions=new TreeMap<String,ObjectDefinition>();
-  var declarations=new HashSet<java.lang.reflect.AnnotatedElement>();
-  mappings.getHandlerMethods().values().forEach(handler->{
-   java.lang.reflect.AnnotatedElement element=handler.getMethod();
-   var object=handler.getMethodAnnotation(com.appnexus.contracts.operation.BusinessObjectType.class);
-   if(object==null){element=handler.getBeanType();object=org.springframework.core.annotation.AnnotatedElementUtils.findMergedAnnotation(handler.getBeanType(),com.appnexus.contracts.operation.BusinessObjectType.class);}
-   if(object!=null&&!declarations.add(element))return;
-   if(object!=null){var value=new ObjectDefinition(object.code(),object.nameZh(),object.nameEn(),object.category().name(),object.module(),false,List.of());var old=definitions.putIfAbsent(value.code(),value);if(old!=null)throw new IllegalStateException("对象存在重复定义："+value.code());}
-  });
   for(var provider:providers){var d=provider.descriptor();var value=new ObjectDefinition(d.objectType(),d.nameZh(),d.nameEn(),d.category().name(),d.module(),true,List.of());if(definitions.putIfAbsent(value.code(),value)!=null)throw new IllegalStateException("对象存在重复权威定义："+value.code());}
   var operations=all();for(var operation:operations)if(!definitions.containsKey(operation.objectType()))throw new IllegalStateException("操作所属对象未登记："+operation.id());
   return definitions.values().stream().map(value->new ObjectDefinition(value.code(),value.nameZh(),value.nameEn(),value.category(),value.module(),value.configurable(),operations.stream().filter(operation->operation.objectType().equals(value.code())).toList())).toList();
@@ -47,6 +39,12 @@ public final class OperationRegistry implements com.appnexus.platform.configurat
  @Override public List<String> permissions(String page){if(page==null)return List.of();return all().stream().filter(item->item.pages().contains(page)).flatMap(item->item.permissions().stream()).flatMap(group->Arrays.stream(group.split("&"))).distinct().sorted().toList();}
  private static String route(com.appnexus.contracts.businessobject.BusinessObjects.PageOperation page){
   return page.method()+" "+page.apiPath();
+ }
+ private static Set<String> declaredRoutes(com.appnexus.contracts.businessobject.BusinessObjects.Operation operation){
+  var declared=new HashSet<String>();
+  if(operation.pageOperation()!=null)declared.add(route(operation.pageOperation()));
+  operation.aliases().forEach(alias->declared.add(route(alias.pageOperation())));
+  return declared;
  }
  private static Definition withEndpoints(Definition value,List<String> endpoints){
   return new Definition(value.id(),value.objectType(),value.operationCode(),value.pages(),value.nameZh(),
@@ -60,34 +58,34 @@ public final class OperationRegistry implements com.appnexus.platform.configurat
    for(var binding:handler.getMethod().getAnnotationsByType(OperationBinding.class)){
     var endpoints=new TreeSet<String>();
     for(var path:mapping.getPatternValues())for(var method:mapping.getMethodsCondition().getMethods())endpoints.add(method.name()+" "+path);
-    var permissions=List.of(binding.permissions());
-    // 平台代管使用独立平台权限，不把租户权限作为可择一的替代来源。
-    var endpoint=handler.getMethodAnnotation(com.appnexus.platform.security.EndpointOperation.class);
-    if(endpoint!=null){
-     if(!permissions.isEmpty())throw new IllegalStateException("接口权限已由 EndpointOperation 声明，禁止重复："+binding.id());
-     boolean managed=endpoints.stream().anyMatch(value->value.contains(" /bff/"))&&!endpoint.platformPermission().isBlank();permissions=List.of(managed?endpoint.platformPermission():endpoint.value());}
-    var value=new Definition(binding.id(),binding.objectType(),binding.operationCode(),List.of(binding.pages()),binding.nameZh(),binding.nameEn(),permissions,binding.policy(),List.copyOf(endpoints),binding.eligibility());
-    if(binding.reference()){
-     if(!binding.objectType().isEmpty()||!binding.operationCode().isEmpty()||!binding.nameZh().isEmpty()||!binding.nameEn().isEmpty()||binding.pages().length>0||binding.permissions().length>0)throw new IllegalStateException("引用操作禁止重复声明："+binding.id());
-     var matches=providers.stream().flatMap(provider->provider.descriptor().operations().stream().filter(operation->operation.operationId().equals(binding.id())).map(operation->Map.entry(provider.descriptor(),operation))).toList();
-     if(matches.size()!=1)throw new IllegalStateException("操作引用不存在或不唯一："+binding.id());
-     var descriptor=matches.getFirst().getKey();var operation=matches.getFirst().getValue();var pages=new TreeSet<String>();
-     if(operation.pageOperation()!=null)pages.add(operation.pageOperation().pageKey());operation.aliases().forEach(alias->pages.add(alias.pageOperation().pageKey()));
-     value=new Definition(operation.operationId(),descriptor.objectType(),operation.operationCode(),List.copyOf(pages),operation.nameZh(),operation.nameEn(),operation.permissionCode().isBlank()?List.of():List.of(operation.permissionCode()),"业务对象归属、版本和操作状态由原业务用例复核",List.copyOf(endpoints),binding.eligibility());
+    if(!binding.reference())throw new IllegalStateException("HTTP 入口必须引用对象操作："+binding.id());
+    if(binding.enforceDeclaredPermission() && (handler.getMethod().getAnnotationsByType(OperationBinding.class).length!=1
+      || binding.eligibility()!=OperationBinding.Eligibility.PERMISSION || endpoints.isEmpty()
+      || (!endpoints.stream().allMatch(route->route.contains(" /api/"))
+          && !endpoints.stream().allMatch(route->route.contains(" /bff/platform/")))))
+     throw new IllegalStateException("对象权限门禁需要单一管理域的操作引用："+binding.id());
+    var matches=providers.stream().flatMap(provider->provider.descriptor().operations().stream().filter(operation->operation.operationId().equals(binding.id())).map(operation->Map.entry(provider.descriptor(),operation))).toList();
+    if(matches.size()!=1)throw new IllegalStateException("操作引用不存在或不唯一："+binding.id());
+    var descriptor=matches.getFirst().getKey();var operation=matches.getFirst().getValue();var pages=new TreeSet<String>();
+    if(operation.pageOperation()!=null)pages.add(operation.pageOperation().pageKey());operation.aliases().forEach(alias->pages.add(alias.pageOperation().pageKey()));
+    if(binding.enforceDeclaredPermission()){
+     // 一次操作只进入一个路由管理域。对象的行和字段资源域可与管理操作的域不同。
+     if(!operation.permissionCode().matches("[a-z][a-z0-9.]*:[a-z][a-z0-9_]*"))
+      throw new IllegalStateException("对象权限门禁需要单一权限码："+binding.id());
+     var declared=declaredRoutes(operation);
+     // 无页面的专用操作由 MVC 映射提供路由；有页面的操作还必须匹配声明的入口。
+     if(!declared.isEmpty()&&!declared.containsAll(endpoints))
+      throw new IllegalStateException("对象权限门禁的 API 未在对象声明登记："+binding.id());
     }
+    var value=new Definition(operation.operationId(),descriptor.objectType(),operation.operationCode(),List.copyOf(pages),operation.nameZh(),operation.nameEn(),operation.permissionCode().isBlank()?List.of():List.of(operation.permissionCode()),"业务对象归属、版本和操作状态由原业务用例复核",List.copyOf(endpoints),binding.eligibility());
     var prior=result.putIfAbsent(value.id(),value);
     if(prior!=null&&!prior.equals(value)){
-     if(!binding.reference() || !withEndpoints(prior,value.endpoints()).equals(value))
+     if(!withEndpoints(prior,value.endpoints()).equals(value))
       throw new IllegalStateException("重复操作契约："+value.id());
-     var operation=providers.stream().flatMap(provider->provider.descriptor().operations().stream())
-       .filter(entry->entry.operationId().equals(binding.id())).findFirst().orElseThrow();
-     var declared=new HashSet<String>();
-     if(operation.pageOperation()!=null)declared.add(route(operation.pageOperation()));
-     operation.aliases().forEach(alias->declared.add(route(alias.pageOperation())));
      var combined=new TreeSet<>(prior.endpoints());
      combined.addAll(value.endpoints());
      // 仅合并 Provider 明确登记的同一操作入口，避免新路由隐式复用已有权限。
-     if(!declared.containsAll(combined))throw new IllegalStateException("重复操作契约："+value.id());
+     if(!declaredRoutes(operation).containsAll(combined))throw new IllegalStateException("重复操作契约："+value.id());
      result.put(value.id(),withEndpoints(value,List.copyOf(combined)));
     }
    }

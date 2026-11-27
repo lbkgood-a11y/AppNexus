@@ -80,6 +80,15 @@ export const useMultiTagsStore = defineStore("pure-multiTags", {
             if (isBoolean(tagVal?.meta?.showLink) && !tagVal?.meta?.showLink)
               return;
             const tagPath = tagVal.path;
+            const dynamicLevel = tagVal?.meta?.dynamicLevel ?? -1;
+            const firstAtPath = this.multiTags.findIndex(tag => tag.path === tagPath);
+            if (dynamicLevel === 1 && firstAtPath !== -1) {
+              // 单标签工作区保留原位置并更新入口，同时清理缓存里旧版遗留的同路径标签。
+              this.multiTags.splice(firstAtPath, 1, tagVal);
+              this.multiTags = this.multiTags.filter((tag, index) => tag.path !== tagPath || index === firstAtPath);
+              this.tagsCache(this.multiTags);
+              return;
+            }
             const tagHasExits = this.multiTags.some(tag => {
               return (
                 tag.path === tagPath &&
@@ -91,7 +100,6 @@ export const useMultiTagsStore = defineStore("pure-multiTags", {
             if (tagHasExits) return;
 
             // 动态路由可打开的最大数量
-            const dynamicLevel = tagVal?.meta?.dynamicLevel ?? -1;
             if (dynamicLevel > 0) {
               if (
                 this.multiTags.filter(e => e?.path === tagPath).length >=

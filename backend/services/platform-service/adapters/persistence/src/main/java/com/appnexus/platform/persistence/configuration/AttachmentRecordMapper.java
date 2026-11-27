@@ -7,7 +7,7 @@ import com.appnexus.persistence.mybatis.PlatformScoped;
 import java.util.List;
 import org.apache.ibatis.annotations.*;
 
-/** 附件记录固定 SQL。普通查询强制绑定可信租户和本人，平台台账使用独立准入。 */
+/** 附件固定 SQL。业务查询绑定本人，台账以独立权限在可信租户内查询。 */
 @Mapper
 @PlatformScoped(tables = "platform_attachment")
 interface AttachmentRecordMapper {
@@ -22,13 +22,12 @@ interface AttachmentRecordMapper {
           AND business_id = #{business} AND upload_status = 'AVAILABLE'
         """;
     /** 适配端查询参数，UUID 使用规范字符串以匹配 MySQL UUID_TO_BIN。 */
-    record Query(String tenantId, String businessId, String fileName, String typeKey,
+    record Query(String businessId, String fileName, String typeKey,
                  String createdBy, Instant from, Instant until) {}
 
     String LEDGER = """
-        FROM platform_attachment WHERE UUID_TO_BIN(#{platformActor}) IS NOT NULL
-          AND (#{filter.tenantId,jdbcType=VARCHAR} IS NULL
-            OR tenant_id = UUID_TO_BIN(#{filter.tenantId,jdbcType=VARCHAR}))
+        FROM platform_attachment WHERE tenant_id = UUID_TO_BIN(#{tenant})
+          AND UUID_TO_BIN(#{actor}) IS NOT NULL
           AND (#{filter.businessId,jdbcType=VARCHAR} IS NULL OR business_id = #{filter.businessId,jdbcType=VARCHAR})
           AND (#{filter.fileName,jdbcType=VARCHAR} IS NULL OR LOCATE(#{filter.fileName,jdbcType=VARCHAR}, file_name) > 0)
           AND (#{filter.typeKey,jdbcType=VARCHAR} IS NULL OR type_key = #{filter.typeKey,jdbcType=VARCHAR})
@@ -50,16 +49,24 @@ interface AttachmentRecordMapper {
     @GuardedScope(tenant = "tenant", serviceOperation = "configuration.attachment:read", serviceKeys = {"actor", "business"})
     long count(@Param("tenant") String tenant, @Param("actor") String actor, @Param("business") String business);
 
-    /** @return 仅供平台管理准入调用的筛选分页 */
+    /** @return 仅供租户台账准入调用的筛选分页 */
     @Select("SELECT " + COLUMNS + LEDGER + ORDER)
-    @GuardedScope(platformActor = "platformActor", platformPermission = "configuration.attachmentledger:read")
-    List<Item> ledger(@Param("platformActor") String platformActor, @Param("filter") Query filter,
+    @GuardedScope(tenant = "tenant", serviceOperation = "configuration.attachment:ledger", serviceKeys = {"actor"})
+    List<Item> ledger(@Param("tenant") String tenant, @Param("actor") String actor, @Param("filter") Query filter,
                       @Param("offset") int offset, @Param("limit") int limit);
 
-    /** @return 与平台台账使用同一筛选的记录数 */
+    /** @return 与租户台账使用同一租户及筛选的记录数 */
     @Select("SELECT COUNT(*) " + LEDGER)
-    @GuardedScope(platformActor = "platformActor", platformPermission = "configuration.attachmentledger:read")
-    long ledgerCount(@Param("platformActor") String platformActor, @Param("filter") Query filter);
+    @GuardedScope(tenant = "tenant", serviceOperation = "configuration.attachment:ledger", serviceKeys = {"actor"})
+    long ledgerCount(@Param("tenant") String tenant, @Param("actor") String actor, @Param("filter") Query filter);
+
+    /** @return 与台账使用同一租户门禁的指定可用附件 */
+    @Select("SELECT " + COLUMNS + """
+        FROM platform_attachment WHERE tenant_id = UUID_TO_BIN(#{tenant}) AND UUID_TO_BIN(#{actor}) IS NOT NULL
+          AND id = UUID_TO_BIN(#{id}) AND upload_status = 'AVAILABLE'
+        """)
+    @GuardedScope(tenant = "tenant", serviceOperation = "configuration.attachment:ledger", serviceKeys = {"actor", "id"})
+    Item findAvailableInLedger(@Param("tenant") String tenant, @Param("actor") String actor, @Param("id") String id);
 
     /** @return 当前主体的幂等请求记录 */
     @Select("SELECT " + COLUMNS + """

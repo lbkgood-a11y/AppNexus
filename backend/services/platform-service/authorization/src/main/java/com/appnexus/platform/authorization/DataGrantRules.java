@@ -68,7 +68,7 @@ public final class DataGrantRules {
         return switch(rule.subjectType()) {
             case ROLE_MEMBERS -> true;
             case MEMBER -> rule.subjectIds().contains(memberId);
-            case ORGANIZATION -> organizationIds!=null&&!Collections.disjoint(organizationIds,rule.subjectIds());
+            case ORGANIZATION -> false;
         };
     }
     /** 本次执行跨角色合并最多100条规则及10000个记录/条件值；超限拒绝，不静默丢弃授权。 */

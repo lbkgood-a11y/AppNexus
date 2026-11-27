@@ -26,6 +26,19 @@ public final class TaskManagementService implements TaskManagement {
   return operations.event(actor,eventId);
  }
  /** {@inheritDoc} */
+ @Override public List<Subscription> subscriptions(UUID actor) {
+  require(actor);
+  return operations.subscriptions(actor);
+ }
+ /** {@inheritDoc} */
+ @Override public void setSubscriptionPaused(UUID actor,String type,String consumer,boolean paused,String reason) {
+  require(actor);
+  if(reason==null || reason.isBlank() || reason.strip().length()>200)
+   throw new IllegalArgumentException("操作原因须为 1–200 字符");
+  if(!operations.setSubscriptionPaused(actor,type,consumer,paused,reason.strip()))
+   throw new NoSuchElementException("SUBSCRIPTION_NOT_MANAGEABLE");
+ }
+ /** {@inheritDoc} */
  @Override public void retryDelivery(UUID actor,UUID deliveryId,String reason) {
   require(actor);
   if(reason==null || reason.isBlank() || reason.strip().length()>200)

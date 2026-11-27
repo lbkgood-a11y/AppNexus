@@ -43,7 +43,7 @@ public final class ProductRuntime implements BusinessObjectRuntime {
     var row=records.load(trusted,objectId,true,readScope(trusted,operation));long current=((Number)row.get("version")).longValue();
     if(current!=basisVersion)throw new BusinessObjects.Rejection(409,"BUSINESS_OBJECT_VERSION_CONFLICT");
     // Product当前没有声明通用事实字段；只返回服务器归属和版本，原文不绕过公共字段投影。
-    return new Snapshot(current,(String)row.get("organizationId"),Map.of());
+    return new Snapshot(current,(String)row.get("organizationId"),Map.of(),(String)row.get("id"));
   }
 
   @Override public Result execute(BusinessObjects.Context context,String objectType,String objectId,String operation,long basisVersion,Map<String,?> values){

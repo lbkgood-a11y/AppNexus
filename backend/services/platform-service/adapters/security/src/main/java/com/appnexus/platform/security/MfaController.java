@@ -1,4 +1,5 @@
 package com.appnexus.platform.security;
+import com.appnexus.contracts.operation.EndpointPolicy;
 import com.appnexus.platform.audit.port.SecurityLogRepository;
 import com.appnexus.platform.identity.port.AccountRepository;
 

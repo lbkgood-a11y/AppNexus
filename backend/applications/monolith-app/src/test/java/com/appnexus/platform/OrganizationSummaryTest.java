@@ -1,7 +1,7 @@
 package com.appnexus.platform;
 
 import com.appnexus.platform.authorization.*;
-import com.appnexus.platform.persistence.organization.ScopedOrganizationSummary;
+import com.appnexus.masterdata.adapter.persistence.organization.ScopedOrganizationSummary;
 import java.util.*;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,9 +16,9 @@ import static org.mockito.Mockito.*;
 @ActiveProfiles("local")
 class OrganizationSummaryTest extends DatabaseTestSupport {
     @Autowired JdbcTemplate jdbc;
-    @Autowired com.appnexus.platform.persistence.organization.OrganizationSummaryMapper summaryMapper;
-    @Autowired com.appnexus.platform.persistence.organization.OrganizationDomainMapper domainMapper;
-    @Autowired com.appnexus.platform.organization.PersonnelCatalog persons;
+    @Autowired com.appnexus.masterdata.adapter.persistence.organization.OrganizationSummaryMapper summaryMapper;
+    @Autowired com.appnexus.masterdata.adapter.persistence.organization.OrganizationDomainMapper domainMapper;
+    @Autowired com.appnexus.masterdata.organization.PersonnelCatalog persons;
     @Autowired RowAccessControl rows;
     @Autowired ScopedWriteGate writes;
     /** 真实领域入口不可借已登记的平面仓储执行器绕过数据范围；read和update使用不同策略。 */
@@ -36,9 +36,9 @@ class OrganizationSummaryTest extends DatabaseTestSupport {
         request.setAttribute(com.appnexus.platform.tenant.VerifiedTenantContext.class.getName(),new com.appnexus.platform.tenant.VerifiedTenantContext(subject.accountId(),tenant,subject.memberId(),1));
         org.springframework.web.context.request.RequestContextHolder.setRequestAttributes(new org.springframework.web.context.request.ServletRequestAttributes(request));
         var planning=mock(AccessPlanning.class);
-        var service=new com.appnexus.platform.persistence.organization.MyBatisOrganizationDomain(domainMapper,persons,planning,rows,writes);
+        var service=new com.appnexus.masterdata.adapter.persistence.organization.MyBatisOrganizationDomain(domainMapper,persons,planning,rows,writes);
         when(planning.plan(eq(subject),anyString(),eq("organization.unit"))).thenAnswer(call->new AccessPlan(subject,call.getArgument(1),"organization.unit",new DataScopeAuthorization.DataScope(DataScopeAuthorization.ScopeType.ORGANIZATION,Set.of(allowed)),Map.of(),java.time.Instant.now()));
-        assertThat(service.units()).extracting(com.appnexus.platform.organization.OrganizationStructure.Unit::id).containsExactly(allowed);
+        assertThat(service.units()).extracting(com.appnexus.masterdata.organization.OrganizationStructure.Unit::id).containsExactly(allowed);
         assertThatThrownBy(()->service.impact(hidden)).isInstanceOf(SecurityException.class);
         assertThatThrownBy(()->service.updateUnit(hidden,"stolen",true,0)).isInstanceOf(SecurityException.class);
         assertThatThrownBy(()->service.moveUnit(allowed,hidden,0)).isInstanceOf(SecurityException.class);
@@ -81,10 +81,10 @@ class OrganizationSummaryTest extends DatabaseTestSupport {
         var planning=mock(AccessPlanning.class);
         var scope=new DataScopeAuthorization.DataScope(DataScopeAuthorization.ScopeType.ORGANIZATION,Set.of(allowed,second));
         when(planning.plan(eq(subject),anyString(),eq("organization.unit"))).thenAnswer(call->new AccessPlan(subject,call.getArgument(1),"organization.unit",scope,Map.of(),java.time.Instant.now()));
-        var service=new com.appnexus.platform.persistence.organization.MyBatisOrganizationDomain(domainMapper,persons,planning,rows,writes);
-        assertThat(service.positions()).extracting(com.appnexus.platform.organization.OrganizationStructure.Position::id).containsExactly(visiblePosition);
-        assertThat(service.assignments()).extracting(com.appnexus.platform.organization.OrganizationStructure.Assignment::id).containsExactly(visibleAssignment);
-        assertThat(service.relations()).extracting(com.appnexus.platform.organization.OrganizationStructure.Relation::id).containsExactly(visibleRelation);
+        var service=new com.appnexus.masterdata.adapter.persistence.organization.MyBatisOrganizationDomain(domainMapper,persons,planning,rows,writes);
+        assertThat(service.positions()).extracting(com.appnexus.masterdata.organization.OrganizationStructure.Position::id).containsExactly(visiblePosition);
+        assertThat(service.assignments()).extracting(com.appnexus.masterdata.organization.OrganizationStructure.Assignment::id).containsExactly(visibleAssignment);
+        assertThat(service.relations()).extracting(com.appnexus.masterdata.organization.OrganizationStructure.Relation::id).containsExactly(visibleRelation);
         assertThatThrownBy(()->service.deleteRelation(hiddenRelation,0)).isInstanceOf(NoSuchElementException.class);
         assertThatThrownBy(()->service.updatePosition(hiddenPosition,"Denied",true,0)).isInstanceOf(NoSuchElementException.class);
         assertThatThrownBy(()->service.updateAssignment(hiddenAssignment,null,false,0)).isInstanceOf(NoSuchElementException.class);

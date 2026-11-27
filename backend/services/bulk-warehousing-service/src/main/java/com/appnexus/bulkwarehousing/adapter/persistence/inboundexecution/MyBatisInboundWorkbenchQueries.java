@@ -2,6 +2,7 @@ package com.appnexus.bulkwarehousing.adapter.persistence.inboundexecution;
 
 import com.appnexus.bulkwarehousing.api.inboundexecution.ReadInboundWorkbenchUseCase.*;
 import com.appnexus.bulkwarehousing.application.inboundexecution.InboundWorkbenchQueries;
+import com.appnexus.bulkwarehousing.api.inboundexecution.ReadInboundWorkbenchUseCase.TaskStatus;
 import com.appnexus.platform.authorization.AccessPlan;
 import com.appnexus.platform.authorization.ScopedWriteGate;
 import java.nio.ByteBuffer;
@@ -26,6 +27,24 @@ public final class MyBatisInboundWorkbenchQueries implements InboundWorkbenchQue
         transaction = new TransactionTemplate(manager);
         // 公共操作许可拒绝只读标志；此路径只执行固定 SELECT。
         transaction.setIsolationLevel(TransactionDefinition.ISOLATION_REPEATABLE_READ);
+    }
+
+    /** {@inheritDoc} */
+    @Override public TaskPage listTasks(AccessPlan plan, String number, TaskStatus taskStatus, UUID afterId, int limit) {
+        return transaction.execute(status -> {
+            gate.authorizeOperation(plan);
+            var tenant = plan.subject().tenantId();
+            byte[] tenantBytes = ByteBuffer.allocate(16).putLong(tenant.getMostSignificantBits())
+                    .putLong(tenant.getLeastSignificantBits()).array();
+            var result = mapper.listTasks(tenantBytes, number, taskStatus,
+                    afterId == null ? null : afterId.toString(), limit + 1);
+            var rows = result.stream().limit(limit).map(row -> new TaskRow(UUID.fromString(row.id()), row.number(),
+                    row.status(), row.stage() == null ? null : Stage.valueOf(row.stage()),
+                    row.arrivedAt() == null ? null : row.arrivedAt().toInstant(),
+                    new TaskAudit(row.createdBy(), row.createdAt() == null ? null : row.createdAt().toInstant(),
+                            row.updatedBy(), row.updatedAt() == null ? null : row.updatedAt().toInstant()))).toList();
+            return new TaskPage(rows, result.size() > limit ? rows.getLast().id() : null);
+        });
     }
 
     /** {@inheritDoc} */

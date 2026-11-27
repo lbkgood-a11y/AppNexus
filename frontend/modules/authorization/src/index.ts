@@ -18,7 +18,9 @@ export interface FieldPolicy {resource:string;field:string;mode:"HIDDEN"|"MASKED
 /** 仅列出后端已接通执行的字段，缺少目录的能力不得由前端编造。 */
 export interface FieldDescriptor {resource:string;field:string;nameZh:string;nameEn:string;kind:"EMAIL"|"PHONE"|"PERSON_NAME"|"IDENTIFIER"|"BANK_ACCOUNT"|"TEXT";modes:FieldPolicy["mode"][]}
 /** 角色完整配置；inheritingMemberCount 为当前有效继承成员数（人），缺省0，仅作影响提示。 */
-export interface AuthorizationAssignment{permissionIds:string[];dataPolicies:DataPolicy[];roleVersion:number;fieldPolicies?:FieldPolicy[];inheritingMemberCount?:number;dataAccessVersion?:string}
+/** 对象默认范围以主资源键映射，生效操作从服务端授权快照读取。 */
+export type ObjectScope = Pick<DataPolicy, "scopeType" | "rules">;
+export interface AuthorizationAssignment{permissionIds:string[];dataPolicies:DataPolicy[];roleVersion:number;fieldPolicies?:FieldPolicy[];inheritingMemberCount?:number;dataAccessVersion?:string;objectScopes?:Record<string,ObjectScope>;inheritedPermissionIds?:string[]}
 export interface AuthorizationOption{id:string;name:string}
 /** 记录候选查询复用业务受控列表；不授予额外读取权，回调只返回配置所需标识与标签。 */
 export interface DataRecordSearch {
@@ -44,12 +46,12 @@ export type DataConditionParameter="CURRENT_ACCOUNT"|"CURRENT_PERSON"|"CURRENT_O
 export interface DataGrantRule{subjectType:"ROLE_MEMBERS"|"MEMBER"|"ORGANIZATION";subjectIds:string[];recordIds:string[];conditions:{field:string;operator:"EQ"|"IN";values:string[];parameter?:DataConditionParameter|null}[];allRecords:boolean}
 /** 已声明字典的候选；禁用项只用于回显原策略。 */
 export type DataConditionOptions=Record<string,{value:string;name:string;enabled:boolean}[]>;
-export interface DataAccessDeclaration{objectType:string;version:number;operations?:{operationId:string;permissionCode:string}[];dimensions?:DataDimension[];resources:{resource:string;parentResource:string;nameZh:string;nameEn:string;fields:FieldDescriptor[]}[]}
-export interface AuthorizationCenterApi{recordSearch?:DataRecordSearch;conditionOptions?:()=>Promise<DataConditionOptions>;declarations?:()=>Promise<DataAccessDeclaration[]>;templates?:{list:(role:string)=>Promise<PolicyTemplate[]>;save:(role:string,name:string)=>Promise<PolicyTemplate>;apply:(role:string,template:string,version:number,reason:string)=>Promise<AuthorizationAssignment>};menus:()=>Promise<AuthorizationMenu[]>;permissions:()=>Promise<PermissionItem[]>;metadata:()=>Promise<ScopeSupport[]>;fields:()=>Promise<FieldDescriptor[]>;assignment:(roleId:string)=>Promise<AuthorizationAssignment>;replace:(roleId:string,input:{ids:string[];dataPolicies:DataPolicy[];fieldPolicies:FieldPolicy[];version:number;reason:string;dataAccessVersion?:string})=>Promise<AuthorizationAssignment>;organizationOptions?:()=>Promise<AuthorizationOption[]>}
+export interface DataAccessDeclaration{objectType:string;scope?:"TENANT"|"PLATFORM";version:number;operations?:{operationId:string;permissionCode:string}[];dimensions?:DataDimension[];resources:{resource:string;parentResource:string;nameZh:string;nameEn:string;fields:FieldDescriptor[]}[]}
+export interface AuthorizationCenterApi{recordSearch?:DataRecordSearch;conditionOptions?:()=>Promise<DataConditionOptions>;declarations?:()=>Promise<DataAccessDeclaration[]>;templates?:{list:(role:string)=>Promise<PolicyTemplate[]>;save:(role:string,name:string)=>Promise<PolicyTemplate>;apply:(role:string,template:string,version:number,reason:string)=>Promise<AuthorizationAssignment>};menus:()=>Promise<AuthorizationMenu[]>;permissions:()=>Promise<PermissionItem[]>;metadata:()=>Promise<ScopeSupport[]>;fields:()=>Promise<FieldDescriptor[]>;assignment:(roleId:string)=>Promise<AuthorizationAssignment>;replace:(roleId:string,input:{ids:string[];dataPolicies:DataPolicy[];fieldPolicies:FieldPolicy[];version:number;reason:string;dataAccessVersion?:string;objectScopes?:Record<string,ObjectScope>})=>Promise<AuthorizationAssignment>;organizationOptions?:()=>Promise<AuthorizationOption[]>}
 
 /** 成员角色分支；功能持续跟随角色，expiresAt 为 UTC ISO 时间或 null（长期）。 */
 /** 成员范围模式：true 持续继承角色；false 使用独立配置；修改须显式保存。 */
-export interface MemberGrant {inheritDataScope:boolean;roleId:string;permissionIds:string[];dataPolicies:DataPolicy[];expiresAt:string|null;roleVersion:number}
+export interface MemberGrant {inheritDataScope:boolean;roleId:string;permissionIds:string[];dataPolicies:DataPolicy[];expiresAt:string|null;roleVersion:number;objectScopes?:Record<string,ObjectScope>;inheritedPermissionIds?:string[]}
 export interface MemberGrantAssignment {grants:MemberGrant[];authorityVersion:number}
 /** 成员范围配置端口；版本属于成员全部授权，冲突后必须重新读取。 */
 export interface MemberGrantApi {get:(member:string)=>Promise<MemberGrantAssignment>;replace:(member:string,input:{grant:MemberGrant;version:number;reason:string})=>Promise<MemberGrantAssignment>}
@@ -59,7 +61,7 @@ export interface AuthorizationSubject { id: string; name: string; detail?: strin
 /** 主体完整角色快照；authorityVersion 必须原样回传，冲突后须重新读取。 */
 export interface SubjectAssignment { roleIds: string[]; authorityVersion: number }
 /** 单个角色的权限贡献；解释仅供排错，不能作为业务放行凭据。 */
-export interface PermissionSource { roleId: string; roleName: string; effective: boolean; inactiveReason: string | null; scopeType: DataScopeType | "DENY" | null; organizationIds: string[] }
+export interface PermissionSource { roleId: string; roleName: string; effective: boolean; inactiveReason: string | null; scopeType: DataScopeType | "DENY" | null; organizationIds: string[]; scopeSource?: "ROLE_DEFAULT"|"ROLE_OVERRIDE"|"MEMBER_DEFAULT"|"MEMBER_OVERRIDE"|null }
 /** 同一权限的全部角色来源，effective 表示至少一个完整分支生效。 */
 export interface EffectivePermission { permissionCode: string; effective: boolean; sources: PermissionSource[] }
 /** 主体页签端口；分页单位为条，应用适配器负责真实目录、CSRF 和可信管理域。 */

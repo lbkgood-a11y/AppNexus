@@ -37,6 +37,14 @@ public final class BusinessObjectUseCases {
     return new com.appnexus.platform.businessobject.internal.application.execution.ObjectExecutionService(providers,
         com.appnexus.platform.businessobject.internal.application.execution.StandardCapabilityDrivers.create(providers,workflows,printing),bindings,transaction,platform);
   }
+  /** @param decoder 宿主严格解码器；仅对已登记操作绑定输入 @return 兼容记录与类型化命令的公共入口 */
+  public static BusinessObjectExecution execution(List<BusinessObjects.Provider> providers,BusinessObjectBindings bindings,
+      ConfigurationTransaction transaction,BusinessObjectPlatform platform,Supplier<com.appnexus.contracts.workflow.WorkflowStarter> workflows,
+      Supplier<com.appnexus.contracts.printing.BusinessPrinting> printing,BusinessObjectCommandRuntime.Decoder decoder) {
+    return new com.appnexus.platform.businessobject.internal.application.execution.ObjectExecutionService(providers,
+        com.appnexus.platform.businessobject.internal.application.execution.StandardCapabilityDrivers.create(providers,workflows,printing),bindings,transaction,platform,decoder);
+  }
+
   /**
    * 组装配置用例；端口必须由受信任宿主提供，不自行创建技术实现。
    * @param store 固定配置存储端口，与 transaction 共用数据源

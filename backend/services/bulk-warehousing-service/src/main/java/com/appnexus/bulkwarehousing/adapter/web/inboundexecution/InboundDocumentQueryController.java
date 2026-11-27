@@ -162,6 +162,14 @@ public final class InboundDocumentQueryController {
         return noStore(documents.taskOptions(context(request), Creation.LPN, taskNo));
     }
 
+    /** @return 不含放行区间的当前化验项目 */
+    @GetMapping("/api/bulk-inbound-quality-orders/{id}:decide")
+    @OperationBinding(id="BulkInboundQualityOrder.decide_quality",reference=true)
+    public ResponseEntity<List<ReadInboundDocumentsUseCase.LabMetricOption>> labMetrics(
+            HttpServletRequest request,@PathVariable UUID id) {
+        return noStore(documents.labMetrics(context(request),id));
+    }
+
     private static VerifiedTenantContext context(HttpServletRequest request) {
         if(request.getAttribute(VerifiedTenantContext.class.getName()) instanceof VerifiedTenantContext context)return context;
         throw new Rejection(403,"INBOUND_DOCUMENT_ACCESS_DENIED");

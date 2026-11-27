@@ -16,15 +16,17 @@ public class MyBatisMemberAuthorizationManagement implements MemberAuthorization
     private final MemberAuthorizationMapper mapper;
     private final com.appnexus.platform.configuration.BusinessValueCatalog businessValues;
     private final DataAccessCatalog catalog;
+    private final ScopedWriteGate sqlGate;
 
     public MyBatisMemberAuthorizationManagement(SubjectRoleManagement subjects,RolePermissionManagement roles,
-            SubjectRoleMapper subjectMapper,RolePermissionMapper roleMapper,MemberAuthorizationMapper mapper,DataAccessCatalog catalog,com.appnexus.platform.configuration.BusinessValueCatalog businessValues) {
+            SubjectRoleMapper subjectMapper,RolePermissionMapper roleMapper,MemberAuthorizationMapper mapper,DataAccessCatalog catalog,com.appnexus.platform.configuration.BusinessValueCatalog businessValues,ScopedWriteGate sqlGate) {
+        this.sqlGate=sqlGate;
         this.businessValues=businessValues;this.catalog=catalog;this.subjects=subjects;this.roles=roles;this.subjectMapper=subjectMapper;this.roleMapper=roleMapper;this.mapper=mapper;
     }
 
     @Override @Transactional public Assignment get(RoleManagement.Context context,UUID memberId) {
         var assignment=subjects.memberRoles(context,memberId);
-        return read(context.tenantId(),memberId,assignment.authorityVersion());
+        return read(context,memberId,assignment.authorityVersion());
     }
 
     @Override @Transactional public Assignment replace(RoleManagement.Context context,UUID memberId,Grant grant,long expectedVersion,String reason) {
@@ -42,36 +44,48 @@ public class MyBatisMemberAuthorizationManagement implements MemberAuthorization
         for(var policy:grant.inheritDataScope()?Set.<RolePermissionManagement.DataPolicy>of():grant.dataPolicies()) {
             Objects.requireNonNull(policy);Objects.requireNonNull(policy.permissionId());Objects.requireNonNull(policy.scopeType());Objects.requireNonNull(policy.organizationIds());
             if(!required.contains(policy.permissionId())||policies.putIfAbsent(policy.permissionId(),policy)!=null)throw new IllegalArgumentException("数据策略必须唯一对应本分支已选权限");
-            if(!roleMapper.supportsPolicy(policy.permissionId().toString(),policy.scopeType().name(),policy.resourceType())||!supported(policy)||!catalog.supports((String)roleMapper.permissionDetail("TENANT",policy.permissionId().toString()).get("code"),policy.resourceType(),policy.scopeType()))throw error("DATA_SCOPE_UNSUPPORTED","范围尚未支持执行");
-            DataGrantPolicySupport.validate(context.tenantId(),(String)roleMapper.permissionDetail("TENANT",policy.permissionId().toString()).get("code"),policy,catalog,roleMapper,businessValues);
-            boolean organization=policy.scopeType()==DataScopeAuthorization.ScopeType.ORGANIZATION||policy.scopeType()==DataScopeAuthorization.ScopeType.ORGANIZATION_SUBTREE;
-            if(organization) {
-                if(policy.organizationIds().isEmpty()||policy.organizationIds().size()>500||roleMapper.validOrganizations(tenant,strings(policy.organizationIds()))!=policy.organizationIds().size())throw error("DATA_SCOPE_VALUE_INVALID","组织不存在或不属于当前租户");
-            } else if(!policy.organizationIds().isEmpty())throw new IllegalArgumentException("非组织范围不能携带组织值");
+            DataGrantPolicySupport.validateOperationPolicy(
+                    context.tenantId(), policy, catalog, roleMapper, businessValues);
         }
-        if(!grant.inheritDataScope()&&!policies.keySet().equals(required))throw error("DATA_SCOPE_REQUIRED","请完成全部已选权限的数据范围");
-        var before=read(context.tenantId(),memberId,expectedVersion);
+        var before = read(context, memberId, expectedVersion);
+        var current = before.grants().stream().filter(branch -> branch.roleId().equals(grant.roleId()))
+                .findFirst().orElseThrow(() -> error("AUTHORIZATION_NOT_FOUND", "成员授权分支不存在"));
+        var previous = current.inheritDataScope() ? Map.<String,RolePermissionManagement.ObjectScope>of()
+                : current.objectScopes();
+        var defaults = grant.inheritDataScope() ? Map.<String,RolePermissionManagement.ObjectScope>of()
+                : grant.objectScopes() == null ? previous : grant.objectScopes();
+        if (!grant.inheritDataScope()) {
+            var overrides = Set.copyOf(policies.values());
+            if (grant.objectScopes() != null && !defaults.equals(previous)) {
+                DataGrantPolicySupport.validateObjectDefaults(context, required, defaults, previous, catalog, roleMapper, businessValues);
+            }
+            var covered = new HashSet<>(policies.keySet());
+            if (grant.objectScopes() != null) {
+                covered.addAll(DataGrantPolicySupport.inheritedPolicies(context, required, overrides, defaults,
+                        true, catalog, roleMapper, businessValues).keySet());
+            }
+            if (!covered.equals(required)) throw error("DATA_SCOPE_REQUIRED", "请完成全部已选权限的数据范围");
+        }
+        // 已核对成员管理权、成员版本、目标角色和角色版本，自定义范围只可写入本分支。
+        sqlGate.authorizeServiceOperation(context.tenantId(), "access.member:scope_write",
+                List.of(member, roleId), () -> true);
         mapper.clear(tenant,member,roleId);
         for(UUID permission:grant.permissionIds()) {
             var policy=policies.get(permission);
             mapper.permission(tenant,member,roleId,permission.toString(),policy==null?null:policy.scopeType().name(),policy==null?null:policy.resourceType());
             if(policy!=null&&policy.scopeType()==DataScopeAuthorization.ScopeType.RULES)mapper.rules(tenant,member,roleId,permission.toString(),DataGrantPolicySupport.encode(policy.rules()),context.actorAccountId().toString());
-            if(policy!=null)for(UUID organization:policy.organizationIds())mapper.organization(tenant,member,roleId,permission.toString(),organization.toString());
         }
-        mapper.update(tenant,member,roleId,role.roleVersion(),grant.expiresAt()==null?null:java.sql.Timestamp.from(grant.expiresAt()),grant.inheritDataScope(),context.actorAccountId().toString());
+        mapper.update(tenant,member,roleId,role.roleVersion(),grant.expiresAt()==null?null:java.sql.Timestamp.from(grant.expiresAt()),grant.inheritDataScope(),context.actorAccountId().toString(), DataGrantPolicySupport.encodeObjectScopes(defaults));
         if(subjectMapper.bumpMember(tenant,member,expectedVersion)!=1)throw error("AUTHORITY_VERSION_CONFLICT","成员授权版本冲突");
-        var result=read(context.tenantId(),memberId,expectedVersion+1);
+        var result=read(context,memberId,expectedVersion+1);
         subjectMapper.audit("TENANT",tenant,context.actorAccountId().toString(),"MEMBER_ROLES_REPLACED","MEMBER",member,reason.trim(),json(before),json(result));
         return result;
     }
 
-    /** 历史组织 SELF 不能继续保存；创建操作仅可使用明确可执行的 ALL。 */
-    private boolean supported(RolePermissionManagement.DataPolicy policy) {
-        return policy.scopeType()!=DataScopeAuthorization.ScopeType.DENY
-            && !("organization.unit".equals(policy.resourceType())&&policy.scopeType()==DataScopeAuthorization.ScopeType.SELF);
-    }
-
-    private Assignment read(UUID tenant,UUID member,long version) {
+    private Assignment read(RoleManagement.Context context,UUID member,long version) {
+        UUID tenant = context.tenantId();
+        // 调用者在同一事务中已通过 memberRoles 锁定并复核目标成员。
+        sqlGate.authorizeServiceRead(tenant, "access.member:scope_read", List.of(member.toString()), () -> true);
         var grouped=new LinkedHashMap<UUID,List<Map<String,Object>>>();
         for(var row:mapper.list(tenant.toString(),member.toString()))grouped.computeIfAbsent(UUID.fromString((String)row.get("role_id")),ignored->new ArrayList<>()).add(row);
         var grants=new ArrayList<Grant>();
@@ -100,7 +114,12 @@ public class MyBatisMemberAuthorizationManagement implements MemberAuthorization
                     policies.put(id,new RolePermissionManagement.DataPolicy(id,DataScopeAuthorization.ScopeType.valueOf((String)row.get("scope_type")),(String)row.get("resource_type"),Set.copyOf(organizations),DataGrantPolicySupport.decode(row.get("rules_json"))));
                 }
             }
-            grants.add(new Grant(entry.getKey(),Set.copyOf(permissions),Set.copyOf(policies.values()),instant,((Number)first.get("role_version")).longValue(),inherit));
+            var defaults = DataGrantPolicySupport.decodeObjectScopes(first.get("object_scope_defaults"));
+            var inherited = DataGrantPolicySupport.inheritedPolicies(context, permissions, Set.copyOf(policies.values()),
+                    defaults, false, catalog, roleMapper, businessValues);
+            policies.putAll(inherited);
+            grants.add(new Grant(entry.getKey(),Set.copyOf(permissions),Set.copyOf(policies.values()),instant,
+                    ((Number)first.get("role_version")).longValue(),inherit,defaults,inherited.keySet()));
         }
         return new Assignment(List.copyOf(grants),version);
     }
@@ -112,7 +131,10 @@ public class MyBatisMemberAuthorizationManagement implements MemberAuthorization
             var snapshot=new LinkedHashMap<String,Object>();
             snapshot.put("roleId",grant.roleId());snapshot.put("roleVersion",grant.roleVersion());
             snapshot.put("inheritDataScope",grant.inheritDataScope());snapshot.put("expiresAt",grant.expiresAt()==null?null:grant.expiresAt().toString());
-            snapshot.put("permissions",grant.permissionIds());snapshot.put("policies",grant.dataPolicies());return snapshot;
+            snapshot.put("permissions",grant.permissionIds());snapshot.put("policies",grant.dataPolicies());
+            snapshot.put("objectScopes",grant.objectScopes());
+            snapshot.put("inheritedPermissionIds",grant.inheritedPermissionIds());
+            return snapshot;
         }).toList();
         try{return new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(Map.of("version",assignment.authorityVersion(),"grants",grants));}
         catch(Exception e){throw new IllegalStateException("AUTHORIZATION_AUDIT_FAILED",e);}

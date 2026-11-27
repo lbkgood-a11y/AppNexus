@@ -15,13 +15,15 @@ public final class PlatformTaskDeclaration implements Provider {
     public Descriptor descriptor() {
         var access = new DataAccess("PLATFORM", List.of(
                 new DataResource(TaskManagement.RESOURCE, "", "平台任务", "Platform tasks", List.of())), Map.of());
-        return new Descriptor("PlatformTask", "平台任务", "Platform task", "platform", 3,
+        return new Descriptor("PlatformTask", "平台任务", "Platform task", "platform", 4,
                 Category.LEDGER, List.of(), List.of(
                         operation("list", "查询平台任务", "List platform tasks", "platform.task:read"),
                         operation("retry", "重试平台任务", "Retry platform task", "platform.task:retry"),
                         operation("listEvents", "查询平台事件", "List platform events", "platform.task:read"),
                         operation("readEvent", "查看事件投递", "Read event deliveries", "platform.task:read"),
                         operation("retryDelivery", "重试事件投递", "Retry event delivery", "platform.task:retry"),
+                        operation("listSubscriptions", "查看事件订阅", "Read event subscriptions", "platform.task:read"),
+                        operation("setSubscriptionState", "管理订阅执行状态", "Manage subscription execution", "platform.task:subscription_state"),
                         scheduledProcessing()), access);
     }
 

@@ -6,6 +6,10 @@ import com.appnexus.masterdata.api.masterdata.MasterDataManagement;
 import com.appnexus.contracts.operation.*;
 import com.appnexus.platform.tenant.VerifiedTenantContext;
 import jakarta.servlet.http.*;
+import java.util.List;
+import java.util.UUID;
+import org.springframework.http.CacheControl;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import static com.appnexus.masterdata.api.masterdata.MasterData.*;
 
@@ -46,6 +50,48 @@ public final class WarehouseController {
   @OperationBinding(id="Warehouse.setStatus", reference=true)
   @PutMapping("/{id}/status")
   public void setStatus(HttpServletRequest r,@PathVariable String id,@RequestBody Status input) {service.setStatus(context(r),Kind.WAREHOUSE,id,input);}
+
+  private static final String LOGIN_WAREHOUSE = WarehouseController.class.getName()+".loginWarehouse";
+
+  /** @param warehouseId 待选择的启用仓库 UUID，必填 */
+  public record LoginWarehouseSelection(UUID warehouseId) {}
+
+  /** @param options 当前成员实时授权的候选 @param current 当前会话中仍有效的选仓，可为空 */
+  public record LoginWarehouseView(List<MasterDataManagement.LoginWarehouse> options,
+                                   MasterDataManagement.LoginWarehouse current) {}
+
+  /** 读取登录候选和当前仓库，停用、撤权及身份切换后不返回旧选择。 */
+  @OperationBinding(id="Warehouse.selectLogin", reference=true)
+  @GetMapping("/login-selection")
+  public ResponseEntity<LoginWarehouseView> loginSelection(HttpServletRequest request){
+    var context=context(request);
+    var options=service.loginWarehouses(context,null);
+    var session=request.getSession(false);
+    Object stored=session==null?null:session.getAttribute(LOGIN_WAREHOUSE);
+    var current=options.stream()
+        .filter(option->selectionKey(context,UUID.fromString(option.id())).equals(stored))
+        .findFirst().orElse(null);
+    return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(new LoginWarehouseView(options,current));
+  }
+
+  /** 通过 Cookie/CSRF 入口保存本次会话选择；每次提交均重新核验功能、行范围和仓库状态。 */
+  @OperationBinding(id="Warehouse.selectLogin", reference=true)
+  @PutMapping("/login-selection")
+  public ResponseEntity<MasterDataManagement.LoginWarehouse> selectLoginWarehouse(HttpServletRequest request,
+      @RequestBody LoginWarehouseSelection selection){
+    var context=context(request);
+    if(selection.warehouseId()==null)throw new Rejection(400,"MASTER_DATA_INVALID");
+    var warehouse=service.loginWarehouses(context,selection.warehouseId()).stream().findFirst()
+        .orElseThrow(()->new Rejection(403,"MASTER_DATA_DENIED"));
+    // 会话选择绑定可信租户、成员和身份版本；迟到请求只会写入旧上下文的值。
+    request.getSession().setAttribute(LOGIN_WAREHOUSE,selectionKey(context,selection.warehouseId()));
+    return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(warehouse);
+  }
+
+  private static String selectionKey(VerifiedTenantContext context,UUID warehouseId){
+    return context.tenantId()+":"+context.memberId()+":"+context.version()+":"+context.personId()+":"
+        +context.organizationId()+":"+warehouseId;
+  }
 
   /** 仅信任安全过滤器写入的上下文；响应禁止缓存含个人或合作方信息的档案。 */
   private VerifiedTenantContext context(HttpServletRequest r){

@@ -51,7 +51,6 @@ public interface ProductStructureMapper {
  /** 通过货号绑定取得固定批次字段，SQL 同时复核可信父商品记录范围。 */
  @com.appnexus.persistence.mybatis.GuardedScope(predicate="access",resource="masterdata.product",tenant="tenant",actions="read")
  @Select({"<script>",
-     "<bind name=\"rangeSql\" value=\"@com.appnexus.persistence.mybatis.ScopedSql@bind(access.sql(), access.parameters(), &quot;access&quot;)\"/>",
      """
      SELECT BIN_TO_UUID(i.id) itemId,r.name,i.data_type data_type,i.required_flag requiredFlag,
        BIN_TO_UUID(i.attribute_revision_id) revision,r.numeric_scale numeric_scale,
@@ -62,7 +61,7 @@ public interface ProductStructureMapper {
      WHERE k.tenant_id=UUID_TO_BIN(#{tenant}) AND k.product_id=UUID_TO_BIN(#{product}) AND k.id=UUID_TO_BIN(#{sku})
        AND k.batch_template_version_id=UUID_TO_BIN(#{template})
        AND EXISTS (SELECT 1 FROM md_product_v1 WHERE tenant_id=UUID_TO_BIN(#{tenant})
-           AND id=UUID_TO_BIN(#{product}) ${rangeSql})
+           AND id=UUID_TO_BIN(#{product}) /*appnexus-bind:access*/)
      ORDER BY i.sort_order,i.id
      ""","</script>"})
  List<Map<String,Object>> skuBatchFields(@Param("tenant") String tenant,@Param("product") String product,
@@ -98,14 +97,13 @@ public interface ProductStructureMapper {
  /** 货号只能使用 SPU 确认版本。不同版本的值留待重新维护。 */
  @com.appnexus.persistence.mybatis.GuardedScope(predicate="access",resource="masterdata.product",tenant="tenant",actions="read")
  @Select({"<script>",
-     "<bind name=\"rangeSql\" value=\"@com.appnexus.persistence.mybatis.ScopedSql@bind(access.sql(), access.parameters(), &quot;access&quot;)\"/>",
      """
      SELECT k.version rowVersion,CAST(CASE WHEN k.attribute_template_version_id=p.sku_attribute_template_version_id THEN k.attribute_values END AS CHAR) attributeValues,
        BIN_TO_UUID(p.sku_attribute_template_version_id) templateVersionId
      FROM md_product_sku k JOIN md_product_v1 p ON p.tenant_id=k.tenant_id AND p.id=k.product_id
      WHERE k.tenant_id=UUID_TO_BIN(#{tenant}) AND k.product_id=UUID_TO_BIN(#{product}) AND k.id=UUID_TO_BIN(#{sku})
        AND EXISTS (SELECT 1 FROM md_product_v1 WHERE tenant_id=UUID_TO_BIN(#{tenant})
-           AND id=UUID_TO_BIN(#{product}) ${rangeSql})
+           AND id=UUID_TO_BIN(#{product}) /*appnexus-bind:access*/)
      ""","</script>"})
  List<Map<String,Object>> skuAttributeBinding(@Param("tenant") String tenant,@Param("product") String product,
      @Param("sku") String sku,@Param("access") Predicate access);
@@ -113,7 +111,6 @@ public interface ProductStructureMapper {
  /** 模板项连接同修订选项，父商品授权范围及模板绑定都在 SQL 中复核。 */
  @com.appnexus.persistence.mybatis.GuardedScope(predicate="access",resource="masterdata.product",tenant="tenant",actions="read")
  @Select({"<script>",
-     "<bind name=\"rangeSql\" value=\"@com.appnexus.persistence.mybatis.ScopedSql@bind(access.sql(), access.parameters(), &quot;access&quot;)\"/>",
      """
      SELECT BIN_TO_UUID(i.id) itemId,BIN_TO_UUID(i.attribute_id) attributeId,r.name,
        i.data_type data_type,i.required_flag requiredFlag,i.allow_custom allow_custom,
@@ -131,7 +128,7 @@ public interface ProductStructureMapper {
      WHERE k.tenant_id=UUID_TO_BIN(#{tenant}) AND k.product_id=UUID_TO_BIN(#{product}) AND k.id=UUID_TO_BIN(#{sku})
        AND v.id=UUID_TO_BIN(#{template}) AND v.purpose='SKU'
        AND EXISTS (SELECT 1 FROM md_product_v1 WHERE tenant_id=UUID_TO_BIN(#{tenant})
-           AND id=UUID_TO_BIN(#{product}) ${rangeSql})
+           AND id=UUID_TO_BIN(#{product}) /*appnexus-bind:access*/)
      ORDER BY i.sort_order,i.id,o.sort_order,o.id
      ""","</script>"})
  List<Map<String,Object>> skuAttributeFields(@Param("tenant") String tenant,@Param("product") String product,
@@ -140,7 +137,6 @@ public interface ProductStructureMapper {
  /** 模板项连接同修订选项，父商品授权范围及模板绑定都在 SQL 中复核。 */
  @com.appnexus.persistence.mybatis.GuardedScope(predicate="access",resource="masterdata.product",tenant="tenant",actions="read")
  @Select({"<script>",
-     "<bind name=\"rangeSql\" value=\"@com.appnexus.persistence.mybatis.ScopedSql@bind(access.sql(), access.parameters(), &quot;access&quot;)\"/>",
      """
      SELECT BIN_TO_UUID(i.id) itemId,BIN_TO_UUID(i.attribute_id) attributeId,r.name,
        i.data_type data_type,i.required_flag requiredFlag,i.allow_custom allow_custom,
@@ -158,7 +154,7 @@ public interface ProductStructureMapper {
      WHERE p.tenant_id=UUID_TO_BIN(#{tenant}) AND p.id=UUID_TO_BIN(#{product})
        AND v.id=UUID_TO_BIN(#{template}) AND v.purpose='SPEC'
        AND EXISTS (SELECT 1 FROM md_product_v1 WHERE tenant_id=UUID_TO_BIN(#{tenant})
-           AND id=UUID_TO_BIN(#{product}) ${rangeSql})
+           AND id=UUID_TO_BIN(#{product}) /*appnexus-bind:access*/)
      ORDER BY i.sort_order,i.id,o.sort_order,o.id
      ""","</script>"})
  List<Map<String,Object>> specificationTemplateFields(@Param("tenant") String tenant,@Param("product") String product,
@@ -193,17 +189,17 @@ public interface ProductStructureMapper {
 
  /** 固定业务语句1；准入、参数规则、聚合锁及事务由原用例负责，所有值绑定。 */
  @com.appnexus.persistence.mybatis.GuardedScope(predicate="access",resource="masterdata.product",tenant="p0",actions="read")
- @Select({"<script>","<bind name=\"rangeSql\" value=\"@com.appnexus.persistence.mybatis.ScopedSql@bind(access.sql(), access.parameters(), &quot;access&quot;)\"/>","SELECT BIN_TO_UUID(s.id) id,s.name,s.description,s.mode,s.enabled,s.version,s.retired_at retiredAt,CAST(s.template_values AS CHAR) templateValues,(s.enabled AND s.retired_at IS NULL AND p.status='ENABLED') effective FROM md_product_specification s JOIN md_product_v1 p ON p.tenant_id=s.tenant_id AND p.id=s.product_id WHERE s.tenant_id=UUID_TO_BIN(#{p0}) AND s.product_id=UUID_TO_BIN(#{p1}) AND EXISTS (SELECT 1 FROM md_product_v1 WHERE tenant_id=UUID_TO_BIN(#{p0}) AND id=UUID_TO_BIN(#{p1}) ${rangeSql}) ORDER BY s.created_at,s.id","</script>"})
+ @Select({"<script>","SELECT BIN_TO_UUID(s.id) id,s.name,s.description,s.mode,s.enabled,s.version,s.retired_at retiredAt,CAST(s.template_values AS CHAR) templateValues,(s.enabled AND s.retired_at IS NULL AND p.status='ENABLED') effective FROM md_product_specification s JOIN md_product_v1 p ON p.tenant_id=s.tenant_id AND p.id=s.product_id WHERE s.tenant_id=UUID_TO_BIN(#{p0}) AND s.product_id=UUID_TO_BIN(#{p1}) AND EXISTS (SELECT 1 FROM md_product_v1 WHERE tenant_id=UUID_TO_BIN(#{p0}) AND id=UUID_TO_BIN(#{p1}) /*appnexus-bind:access*/) ORDER BY s.created_at,s.id","</script>"})
  List<Map<String,Object>> specifications(@Param("p0") Object p0,@Param("p1") Object p1,@Param("access") Predicate access);
 
  /** 固定业务语句2；准入、参数规则、聚合锁及事务由原用例负责，所有值绑定。 */
  @com.appnexus.persistence.mybatis.GuardedScope(predicate="access",resource="masterdata.product",tenant="p0",actions="read")
- @Select({"<script>","<bind name=\"rangeSql\" value=\"@com.appnexus.persistence.mybatis.ScopedSql@bind(access.sql(), access.parameters(), &quot;access&quot;)\"/>","SELECT BIN_TO_UUID(k.id) id,BIN_TO_UUID(k.specification_id) specificationId,k.code,k.enabled,k.version,BIN_TO_UUID(k.batch_template_version_id) batchTemplateVersionId,CAST(k.measurement_config AS CHAR) measurementConfig,(k.enabled AND s.enabled AND s.retired_at IS NULL AND p.status='ENABLED') effective FROM md_product_sku k JOIN md_product_specification s ON s.tenant_id=k.tenant_id AND s.id=k.specification_id JOIN md_product_v1 p ON p.tenant_id=k.tenant_id AND p.id=k.product_id WHERE k.tenant_id=UUID_TO_BIN(#{p0}) AND k.product_id=UUID_TO_BIN(#{p1}) AND EXISTS (SELECT 1 FROM md_product_v1 WHERE tenant_id=UUID_TO_BIN(#{p0}) AND id=UUID_TO_BIN(#{p1}) ${rangeSql}) ORDER BY k.code","</script>"})
+ @Select({"<script>","SELECT BIN_TO_UUID(k.id) id,BIN_TO_UUID(k.specification_id) specificationId,k.code,k.enabled,k.version,BIN_TO_UUID(k.batch_template_version_id) batchTemplateVersionId,CAST(k.measurement_config AS CHAR) measurementConfig,(k.enabled AND s.enabled AND s.retired_at IS NULL AND p.status='ENABLED') effective FROM md_product_sku k JOIN md_product_specification s ON s.tenant_id=k.tenant_id AND s.id=k.specification_id JOIN md_product_v1 p ON p.tenant_id=k.tenant_id AND p.id=k.product_id WHERE k.tenant_id=UUID_TO_BIN(#{p0}) AND k.product_id=UUID_TO_BIN(#{p1}) AND EXISTS (SELECT 1 FROM md_product_v1 WHERE tenant_id=UUID_TO_BIN(#{p0}) AND id=UUID_TO_BIN(#{p1}) /*appnexus-bind:access*/) ORDER BY k.code","</script>"})
  List<Map<String,Object>> skus(@Param("p0") Object p0,@Param("p1") Object p1,@Param("access") Predicate access);
 
  /** 固定业务语句3；准入、参数规则、聚合锁及事务由原用例负责，所有值绑定。 */
  @com.appnexus.persistence.mybatis.GuardedScope(predicate="access",resource="masterdata.product",tenant="p0",actions="read")
- @Select({"<script>","<bind name=\"rangeSql\" value=\"@com.appnexus.persistence.mybatis.ScopedSql@bind(access.sql(), access.parameters(), &quot;access&quot;)\"/>","SELECT BIN_TO_UUID(c.id) id,BIN_TO_UUID(c.component_product_id) componentId,p.code,p.name,CAST(c.quantity AS CHAR) quantity,c.component_version componentVersion,c.enabled,c.version,(c.enabled AND p.status='ENABLED' AND p.version=c.component_version AND EXISTS(SELECT 1 FROM md_product_v1 owner WHERE owner.tenant_id=c.tenant_id AND owner.id=c.product_id AND owner.status='ENABLED')) effective FROM md_product_component c JOIN md_product_v1 p ON p.tenant_id=c.tenant_id AND p.id=c.component_product_id WHERE c.tenant_id=UUID_TO_BIN(#{p0}) AND c.product_id=UUID_TO_BIN(#{p1}) AND EXISTS (SELECT 1 FROM md_product_v1 WHERE tenant_id=UUID_TO_BIN(#{p0}) AND id=UUID_TO_BIN(#{p1}) ${rangeSql}) ORDER BY p.code","</script>"})
+ @Select({"<script>","SELECT BIN_TO_UUID(c.id) id,BIN_TO_UUID(c.component_product_id) componentId,p.code,p.name,CAST(c.quantity AS CHAR) quantity,c.component_version componentVersion,c.enabled,c.version,(c.enabled AND p.status='ENABLED' AND p.version=c.component_version AND EXISTS(SELECT 1 FROM md_product_v1 owner WHERE owner.tenant_id=c.tenant_id AND owner.id=c.product_id AND owner.status='ENABLED')) effective FROM md_product_component c JOIN md_product_v1 p ON p.tenant_id=c.tenant_id AND p.id=c.component_product_id WHERE c.tenant_id=UUID_TO_BIN(#{p0}) AND c.product_id=UUID_TO_BIN(#{p1}) AND EXISTS (SELECT 1 FROM md_product_v1 WHERE tenant_id=UUID_TO_BIN(#{p0}) AND id=UUID_TO_BIN(#{p1}) /*appnexus-bind:access*/) ORDER BY p.code","</script>"})
  List<Map<String,Object>> components(@Param("p0") Object p0,@Param("p1") Object p1,@Param("access") Predicate access);
 
  /** 固定业务语句4；准入、参数规则、聚合锁及事务由原用例负责，所有值绑定。 */
@@ -244,12 +240,12 @@ public interface ProductStructureMapper {
 
  /** 固定业务语句12；准入、参数规则、聚合锁及事务由原用例负责，所有值绑定。 */
  @com.appnexus.persistence.mybatis.GuardedScope(predicate="access",resource="masterdata.product",tenant="p0",actions="read")
- @Select({"<script>","<bind name=\"rangeSql\" value=\"@com.appnexus.persistence.mybatis.ScopedSql@bind(access.sql(), access.parameters(), &quot;access&quot;)\"/>","SELECT BIN_TO_UUID(v.id) id,BIN_TO_UUID(v.template_item_id) templateItemId,r.name,v.value_type dataType,u.code unitCode,v.text_value textValue,CAST(v.date_value AS CHAR) dateValue,CAST(v.integer_value AS CHAR) integerValue,CAST(v.decimal_value AS CHAR) decimalValue,v.boolean_value booleanValue,BIN_TO_UUID(v.option_id) optionId FROM md_product_spec_value v JOIN md_product_attribute_revision r ON r.tenant_id=v.tenant_id AND r.id=v.attribute_revision_id LEFT JOIN md_product_unit u ON u.tenant_id=r.tenant_id AND u.id=r.unit_id WHERE v.tenant_id=UUID_TO_BIN(#{p0}) AND v.specification_id=UUID_TO_BIN(#{p1}) AND EXISTS (SELECT 1 FROM md_product_specification sp WHERE sp.tenant_id=v.tenant_id AND sp.id=v.specification_id AND sp.product_id=UUID_TO_BIN(#{product})) AND EXISTS (SELECT 1 FROM md_product_v1 WHERE tenant_id=UUID_TO_BIN(#{p0}) AND id=UUID_TO_BIN(#{product}) ${rangeSql}) ORDER BY v.id","</script>"})
+ @Select({"<script>","SELECT BIN_TO_UUID(v.id) id,BIN_TO_UUID(v.template_item_id) templateItemId,r.name,v.value_type dataType,u.code unitCode,v.text_value textValue,CAST(v.date_value AS CHAR) dateValue,CAST(v.integer_value AS CHAR) integerValue,CAST(v.decimal_value AS CHAR) decimalValue,v.boolean_value booleanValue,BIN_TO_UUID(v.option_id) optionId FROM md_product_spec_value v JOIN md_product_attribute_revision r ON r.tenant_id=v.tenant_id AND r.id=v.attribute_revision_id LEFT JOIN md_product_unit u ON u.tenant_id=r.tenant_id AND u.id=r.unit_id WHERE v.tenant_id=UUID_TO_BIN(#{p0}) AND v.specification_id=UUID_TO_BIN(#{p1}) AND EXISTS (SELECT 1 FROM md_product_specification sp WHERE sp.tenant_id=v.tenant_id AND sp.id=v.specification_id AND sp.product_id=UUID_TO_BIN(#{product})) AND EXISTS (SELECT 1 FROM md_product_v1 WHERE tenant_id=UUID_TO_BIN(#{p0}) AND id=UUID_TO_BIN(#{product}) /*appnexus-bind:access*/) ORDER BY v.id","</script>"})
  List<Map<String,Object>> specificationValues(@Param("p0") Object p0,@Param("p1") Object p1,@Param("product") String product,@Param("access") Predicate access);
 
  /** 固定业务语句13；准入、参数规则、聚合锁及事务由原用例负责，所有值绑定。 */
  @com.appnexus.persistence.mybatis.GuardedScope(predicate="access",resource="masterdata.product",tenant="p0",actions="read")
- @Select({"<script>","<bind name=\"rangeSql\" value=\"@com.appnexus.persistence.mybatis.ScopedSql@bind(access.sql(), access.parameters(), &quot;access&quot;)\"/>","SELECT BIN_TO_UUID(ch.option_id) optionId,COALESCE(o.label,ch.custom_text) label,ch.custom_text customText FROM md_product_spec_choice ch LEFT JOIN md_product_attribute_option o ON o.tenant_id=ch.tenant_id AND o.id=ch.option_id WHERE ch.tenant_id=UUID_TO_BIN(#{p0}) AND ch.value_id=UUID_TO_BIN(#{p1}) AND EXISTS (SELECT 1 FROM md_product_spec_value val JOIN md_product_specification sp ON sp.tenant_id=val.tenant_id AND sp.id=val.specification_id WHERE val.tenant_id=ch.tenant_id AND val.id=ch.value_id AND sp.product_id=UUID_TO_BIN(#{product})) AND EXISTS (SELECT 1 FROM md_product_v1 WHERE tenant_id=UUID_TO_BIN(#{p0}) AND id=UUID_TO_BIN(#{product}) ${rangeSql}) ORDER BY ch.id","</script>"})
+ @Select({"<script>","SELECT BIN_TO_UUID(ch.option_id) optionId,COALESCE(o.label,ch.custom_text) label,ch.custom_text customText FROM md_product_spec_choice ch LEFT JOIN md_product_attribute_option o ON o.tenant_id=ch.tenant_id AND o.id=ch.option_id WHERE ch.tenant_id=UUID_TO_BIN(#{p0}) AND ch.value_id=UUID_TO_BIN(#{p1}) AND EXISTS (SELECT 1 FROM md_product_spec_value val JOIN md_product_specification sp ON sp.tenant_id=val.tenant_id AND sp.id=val.specification_id WHERE val.tenant_id=ch.tenant_id AND val.id=ch.value_id AND sp.product_id=UUID_TO_BIN(#{product})) AND EXISTS (SELECT 1 FROM md_product_v1 WHERE tenant_id=UUID_TO_BIN(#{p0}) AND id=UUID_TO_BIN(#{product}) /*appnexus-bind:access*/) ORDER BY ch.id","</script>"})
  List<Map<String,Object>> customChoices(@Param("p0") Object p0,@Param("p1") Object p1,@Param("product") String product,@Param("access") Predicate access);
 
  /** 固定业务语句14；准入、参数规则、聚合锁及事务由原用例负责，所有值绑定。 */
@@ -309,7 +305,7 @@ public interface ProductStructureMapper {
  /** 已授权主商品父行状态，不通过子记录ID扩大范围。 */
  @com.appnexus.persistence.mybatis.GuardedScope(predicate="access",resource="masterdata.product",tenant="tenant",actions={"read","manage_structure"})
  @com.appnexus.persistence.mybatis.GuardedScope(resource="masterdata.product",tenant="tenant",recordId="id",actions="manage_structure",when="lock",whenValue="true")
- @Select({"<script>","<bind name=\"rangeSql\" value=\"@com.appnexus.persistence.mybatis.ScopedSql@bind(access.sql(), access.parameters(), &quot;access&quot;)\"/>","SELECT product_form,specification_mode,BIN_TO_UUID(category_config_id) configId,BIN_TO_UUID(base_unit_id) unitId,BIN_TO_UUID(sku_attribute_template_version_id) skuAttributeTemplateVersionId,BIN_TO_UUID(specification_template_version_id) specificationTemplateVersionId,status,draft_archived_at archived,structure_state structure,version,CAST(measurement_config AS CHAR) measurementConfig FROM md_product_v1 WHERE tenant_id=UUID_TO_BIN(#{tenant}) AND id=UUID_TO_BIN(#{id}) ${rangeSql}","<if test='lock'> FOR UPDATE</if>","</script>"}) List<Map<String,Object>> parent(@Param("tenant") String tenant,@Param("id") String id,@Param("lock") boolean lock,@Param("access") Predicate access);
+ @Select({"<script>","SELECT product_form,specification_mode,BIN_TO_UUID(category_config_id) configId,BIN_TO_UUID(base_unit_id) unitId,BIN_TO_UUID(sku_attribute_template_version_id) skuAttributeTemplateVersionId,BIN_TO_UUID(specification_template_version_id) specificationTemplateVersionId,status,draft_archived_at archived,structure_state structure,version,CAST(measurement_config AS CHAR) measurementConfig FROM md_product_v1 WHERE tenant_id=UUID_TO_BIN(#{tenant}) AND id=UUID_TO_BIN(#{id}) /*appnexus-bind:access*/","<if test='lock'> FOR UPDATE</if>","</script>"}) List<Map<String,Object>> parent(@Param("tenant") String tenant,@Param("id") String id,@Param("lock") boolean lock,@Param("access") Predicate access);
  /** 固定子表审计投影，表名仅由构建内三类choose选择。 */
  @Select({"<script>","SELECT BIN_TO_UUID(created_by) createdBy,created_at createdAt,BIN_TO_UUID(updated_by) updatedBy,updated_at updatedAt FROM <choose><when test=\"table == 'md_product_specification'\">md_product_specification</when><when test=\"table == 'md_product_sku'\">md_product_sku</when><otherwise>md_product_component</otherwise></choose> WHERE tenant_id=UUID_TO_BIN(#{tenant}) AND id=UUID_TO_BIN(#{id})","</script>"}) List<Map<String,Object>> audit(@Param("table") String table,@Param("tenant") String tenant,@Param("id") Object id);
 }

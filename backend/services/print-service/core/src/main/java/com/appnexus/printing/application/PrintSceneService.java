@@ -32,7 +32,7 @@ public class PrintSceneService implements com.appnexus.printing.api.PrintSceneMa
   public PrintSceneService(PrintPlatform platform,PrintSceneRuntime runtime,PrintSceneContent content,PrintSceneRepository statements,PrintTransaction transaction){this.statements=statements;this.platform=platform;this.runtime=runtime;this.content=content;this.transaction=transaction;runtime.dataContracts(this::contract,this::validateData);}
 
   /** 返回授权人员可用的场景；只返回元数据，不读取其他人的业务单据。 */
-  public List<Map<String,Object>> scenes(PrintContext c){allow(c,"print.template:read","print.job:submit","print.template:publish");return statements.scenes(c.tenantId());}
+  public List<Map<String,Object>> scenes(PrintContext c){allow(c,SCENE_READ_PERMISSIONS.toArray(String[]::new));return statements.scenes(c.tenantId());}
 
   /**
    * 保存场景配置并校验模板当前发布契约；编码创建后不可修改，配置更新不改变已创建任务。
@@ -90,7 +90,11 @@ public class PrintSceneService implements com.appnexus.printing.api.PrintSceneMa
     var doc=docs.getFirst();var scene=scene(c,doc.get("scene_id").toString());
     var template=statements.publishedTemplate(c.tenantId(),(String)scene.get("template_id"));
     if(template.isEmpty()||!scene.get("data_contract").equals(template.getFirst().get("data_contract")))throw new PrintRejection("PRINT_SCENE_TEMPLATE_INVALID",409);
-    return runtime.submit(c,new com.appnexus.printing.api.PrintData.JobDraft("CONFIGURED_DOCUMENT",id,scene.get("template_id").toString(),d.outputType(),d.deviceId(),d.copies(),content.decode(doc.get("data_json").toString())));
+    var data=content.decode(doc.get("data_json").toString());
+    // 两种 HTTP 入口都须看到同一有效契约；历史模板未冻结架构也不能回退为无约束打印。
+    validateData(data,contract(c,scene.get("data_contract").toString()));
+    return runtime.submit(c,new com.appnexus.printing.api.PrintData.JobDraft(
+        "CONFIGURED_DOCUMENT",id,scene.get("template_id").toString(),d.outputType(),d.deviceId(),d.copies(),data));
   });}
 
   /** 包内外部编排入口：先由 PrintOutputService 验证专用权限，再按场景校验契约；不开放任意模板调用。 */
@@ -105,7 +109,7 @@ public class PrintSceneService implements com.appnexus.printing.api.PrintSceneMa
 
   /** 契约目录可供设计者和录入人员查看；仅提供字段元数据与合成样例。 */
   public List<Map<String,Object>> contracts(PrintContext c){
-    allow(c,"print.template:design","print.job:submit","print.template:publish","print.external:submit","print.template:read");
+    allow(c,CONTRACT_READ_PERMISSIONS.toArray(String[]::new));
     var values=new ArrayList<Map<String,Object>>(PrintDesignCatalog.contracts());
     values.addAll(businessContracts);
     for(String definition:statements.contractDefinitions(c.tenantId())){

@@ -1,12 +1,11 @@
 <script setup lang="ts">
-import { computed, ref, watch, onMounted } from "vue";
+import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import { useRoute } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import InboundNoticeWorkspace from "./inbound-notice-workspace.vue";
 import { AppPagination, PageHeader, TabbedDetailTemplate, RecordAuditDetails, BusinessWorkspace, FloatingError, ManagementTable, type ManagementColumn } from "@appnexus/ui";
 import { coilFlowApi } from "@/api/coilFlow";
 import { masterDataApi } from "@/api/masterData";
-import { useMultiTagsStoreHook } from "@/store/modules/multiTags";
 import { http, requestErrorMessage } from "@/utils/http";
 
 type Row = Record<string, unknown>;
@@ -23,6 +22,7 @@ interface DocumentView {
 // 查询和签发互斥，应用壳属性始终落在当前真实根容器。
 defineOptions({ inheritAttrs: false });
 const route = useRoute();
+const router = useRouter();
 
 const { t, locale } = useI18n();
 const zh = computed(() => !locale.value.startsWith("en"));
@@ -235,11 +235,16 @@ function openNotice(id: string) {
   number.value = id;
 }
 
+/** 兼容旧的通知定位链接，返回后清除定位参数并保留筛选与页码。 */
 function backToList() {
   request++;
   selectedNotice.value = undefined;
   result.value = undefined;
   number.value = appliedFilters.documentNo ?? "";
+  if (typeof route.query.number === "string") {
+    void router.replace({ query: { ...route.query, number: undefined }, hash: route.hash });
+    return;
+  }
   void loadNoticePage(appliedFilters, currentPage.value);
 }
 
@@ -249,18 +254,6 @@ function showIssuedNotice(noticeId: string) {
   editingId.value = undefined;
   openNotice(noticeId);
 }
-
-// 清理旧版本通过 query 生成的同路径重复页签，仅处理当前通知页。
-onMounted(() => {
-  const tags = useMultiTagsStoreHook();
-  let retained = false;
-  tags.handleTags("equal", tags.multiTags.filter(tag => {
-    if (tag.path !== route.path) return true;
-    if (retained) return false;
-    retained = true;
-    return true;
-  }));
-});
 
 watch(() => route.fullPath, () => {
   creating.value = false;
@@ -273,7 +266,7 @@ watch(() => route.fullPath, () => {
   error.value = "";
   if (noticeList.value) {
     number.value = appliedFilters.documentNo ?? "";
-    void loadNoticePage(appliedFilters);
+    void loadNoticePage(appliedFilters, currentPage.value);
     if (!warehouses.value.length) void searchNoticeWarehouses();
     if (!owners.value.length) void searchNoticeOwners();
   }

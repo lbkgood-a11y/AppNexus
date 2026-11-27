@@ -1,5 +1,5 @@
 package com.appnexus.platform;
-import com.appnexus.platform.organization.port.OrganizationUnitRepository;
+import com.appnexus.masterdata.organization.port.OrganizationUnitRepository;
 import java.util.*;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -97,9 +97,9 @@ class TenantSqlIsolationTest extends DatabaseTestSupport {
    context(a);session.clearCache();assertThat(mapper.find(parameters).get("value")).isEqualTo("A-updated");
   } finally {RequestContextHolder.resetRequestAttributes();}
  }
- @org.springframework.beans.factory.annotation.Autowired com.appnexus.platform.organization.port.OrganizationUnitRepository units;
- @org.springframework.beans.factory.annotation.Autowired com.appnexus.platform.organization.OrganizationStructure structure;
- @org.springframework.beans.factory.annotation.Autowired com.appnexus.platform.persistence.organization.OrganizationUnitMapper organizationMapper;
+ @org.springframework.beans.factory.annotation.Autowired com.appnexus.masterdata.organization.port.OrganizationUnitRepository units;
+ @org.springframework.beans.factory.annotation.Autowired com.appnexus.masterdata.organization.OrganizationStructure structure;
+ @org.springframework.beans.factory.annotation.Autowired com.appnexus.masterdata.adapter.persistence.organization.OrganizationUnitMapper organizationMapper;
  @org.springframework.beans.factory.annotation.Autowired com.appnexus.platform.persistence.organization.OrganizationAdministratorBootstrap organizationBootstrap;
  /** 类型树拒绝循环移动和使用中类型停用，证明核心生命周期约束在正式 MySQL 上生效。 */
  @Test void organizationTreePreservesTypeAndCycleInvariants() {
@@ -117,9 +117,9 @@ class TenantSqlIsolationTest extends DatabaseTestSupport {
   jdbc.execute("CREATE TABLE IF NOT EXISTS tenant_organization_unit(tenant_id BINARY(16) NOT NULL,id BINARY(16) NOT NULL,name VARCHAR(100) NOT NULL,created_at TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),PRIMARY KEY(tenant_id,id))");
   UUID a=UUID.randomUUID(),b=UUID.randomUUID(),id=UUID.randomUUID();
   var adminA=authorizedMember(a);var adminB=authorizedMember(b);
-  context(adminA[0],a,adminA[1]); units.create(new com.appnexus.platform.organization.OrganizationUnit(id,"部门甲"));
-  context(adminB[0],b,adminB[1]); units.create(new com.appnexus.platform.organization.OrganizationUnit(id,"部门乙"));
-  context(adminA[0],a,adminA[1]); assertThat(units.findAll()).containsExactly(new com.appnexus.platform.organization.OrganizationUnit(id,"部门甲"));
+  context(adminA[0],a,adminA[1]); units.create(new com.appnexus.masterdata.organization.OrganizationUnit(id,"部门甲"));
+  context(adminB[0],b,adminB[1]); units.create(new com.appnexus.masterdata.organization.OrganizationUnit(id,"部门乙"));
+  context(adminA[0],a,adminA[1]); assertThat(units.findAll()).containsExactly(new com.appnexus.masterdata.organization.OrganizationUnit(id,"部门甲"));
   // 同租户且记录存在，直接 Mapper 调用仍必须持有调用事务的许可。
   byte[] tenantA=java.nio.ByteBuffer.allocate(16).putLong(a.getMostSignificantBits()).putLong(a.getLeastSignificantBits()).array();
   var missingPlan=new com.appnexus.platform.authorization.RowAccessControl.Predicate("",List.of());
@@ -127,11 +127,11 @@ class TenantSqlIsolationTest extends DatabaseTestSupport {
       .hasRootCauseMessage("SCOPED_SQL_PLAN_REQUIRED");
   assertThatThrownBy(()->organizationMapper.rename("越过写入门禁",tenantA,id.toString()))
       .hasRootCauseMessage("SCOPED_WRITE_PLAN_REQUIRED");
-  assertThat(units.findAll()).containsExactly(new com.appnexus.platform.organization.OrganizationUnit(id,"部门甲"));
+  assertThat(units.findAll()).containsExactly(new com.appnexus.masterdata.organization.OrganizationUnit(id,"部门甲"));
   assertThat(units.rename(id,"部门甲-改名")).isTrue();
-  context(adminB[0],b,adminB[1]); assertThat(units.findAll()).containsExactly(new com.appnexus.platform.organization.OrganizationUnit(id,"部门乙"));
+  context(adminB[0],b,adminB[1]); assertThat(units.findAll()).containsExactly(new com.appnexus.masterdata.organization.OrganizationUnit(id,"部门乙"));
   assertThat(units.delete(id)).isTrue();
-  context(adminA[0],a,adminA[1]); assertThat(units.findAll()).containsExactly(new com.appnexus.platform.organization.OrganizationUnit(id,"部门甲-改名"));
+  context(adminA[0],a,adminA[1]); assertThat(units.findAll()).containsExactly(new com.appnexus.masterdata.organization.OrganizationUnit(id,"部门甲-改名"));
   RequestContextHolder.resetRequestAttributes();
  }
  private UUID[] authorizedMember(UUID tenant){

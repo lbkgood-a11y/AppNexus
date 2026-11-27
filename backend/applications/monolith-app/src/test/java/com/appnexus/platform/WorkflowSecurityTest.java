@@ -21,6 +21,7 @@ import org.springframework.test.web.servlet.MockMvc;
 @AutoConfigureMockMvc
 class WorkflowSecurityTest extends WorkflowDatabaseTestSupport {
   @Autowired OperationRegistry operationRegistry;
+  @Autowired com.appnexus.contracts.workflow.WorkflowPlatform workflowPlatform;
  @Autowired MockMvc mvc;
   @Autowired JdbcTemplate jdbc;
 
@@ -54,6 +55,12 @@ class WorkflowSecurityTest extends WorkflowDatabaseTestSupport {
         member,
         tenant,
         account);
+    // 固定账号可以在没有人员档案的情况下通过候选校验，跨租户及其他账号仍拒绝。
+    var context = new com.appnexus.contracts.workflow.WorkflowContext(tenant, account, UUID.randomUUID().toString());
+    org.assertj.core.api.Assertions.assertThat(workflowPlatform.candidate(context, null, "MEMBER", account)).isTrue();
+    org.assertj.core.api.Assertions.assertThat(workflowPlatform.candidate(context, null, "MEMBER", UUID.randomUUID().toString())).isFalse();
+    var foreign = new com.appnexus.contracts.workflow.WorkflowContext(UUID.randomUUID().toString(), account, UUID.randomUUID().toString());
+    org.assertj.core.api.Assertions.assertThat(workflowPlatform.candidate(foreign, null, "MEMBER", account)).isFalse();
     var selected =
         mvc.perform(
                 post("/bff/tenants/current")

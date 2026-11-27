@@ -78,6 +78,14 @@ public final class MyBatisMasterDataRelations implements MasterDataRelations {
     if(mapper.lock(query).size()!=1)throw denied();
     return plan;
   }
+  /** 选仓候选和按 ID 核验使用同一权威范围，停用仓库由固定 SQL 排除。 */
+  @Override public List<com.appnexus.masterdata.api.masterdata.MasterDataManagement.LoginWarehouse> loginWarehouses(
+      VerifiedTenantContext context, UUID warehouseId){
+    var plan=warehousePlan(context,"select_login");
+    return mapper.loginWarehouses(context.tenantId().toString(),warehouseId==null?null:warehouseId.toString(),
+        warehousePredicate(plan,Kind.WAREHOUSE));
+  }
+
   /** 库区库位沿用根仓库的读或维护范围，同时由应用层独立检查自身功能权限。 */
   private AccessPlan warehousePlan(VerifiedTenantContext c,String action){
     var subject=new AccessAuthorization.Subject(c.accountId(),c.tenantId(),c.memberId(),c.personId(),c.organizationId());

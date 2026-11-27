@@ -17,14 +17,13 @@ public class MyBatisPlatformAdministration implements PlatformAdministration, Da
     @Override public Set<String> enforcedResources(){return Set.of(TENANT_RESOURCE);}
     private final com.appnexus.platform.persistence.configuration.MyBatisDictionaryProvisioning dictionaryProvisioning;
     private final AdministrationMapper mapper;
-    private final com.appnexus.platform.organization.PersonnelExecution personnel;
     private final OrganizationAdministratorBootstrap bootstrap;
     private final FieldProtection protection;
     private final AccountSessionRevocationMapper revocations;
     private final org.springframework.context.ApplicationEventPublisher events;
     public MyBatisPlatformAdministration(com.appnexus.platform.persistence.configuration.MyBatisDictionaryProvisioning dictionaryProvisioning,AdministrationMapper mapper,OrganizationAdministratorBootstrap bootstrap,FieldProtection protection,
-            AccountSessionRevocationMapper revocations,com.appnexus.platform.organization.PersonnelExecution personnel,org.springframework.context.ApplicationEventPublisher events) {
-        this.dictionaryProvisioning=dictionaryProvisioning;this.mapper=mapper; this.bootstrap=bootstrap;this.protection=protection;this.revocations=revocations;this.personnel=personnel;this.events=events;
+            AccountSessionRevocationMapper revocations,org.springframework.context.ApplicationEventPublisher events) {
+        this.dictionaryProvisioning=dictionaryProvisioning;this.mapper=mapper; this.bootstrap=bootstrap;this.protection=protection;this.revocations=revocations;this.events=events;
     }
     public boolean isAdministrator(UUID actor) { return mapper.administrator(actor.toString()); }
     /**
@@ -159,11 +158,11 @@ public class MyBatisPlatformAdministration implements PlatformAdministration, Da
         if(previous==null)throw new IllegalArgumentException("Member unavailable");
         if(mapper.manages(tenant.toString(),member.toString())&&mapper.activeManagerCount(tenant.toString())<=1)
             throw new IllegalArgumentException("Last active administrator cannot be removed");
-        personnel.unlinkMember(tenant,member,actor);
         mapper.revokeMember(tenant.toString(),member.toString());
         mapper.revokeMemberRoles(tenant.toString(),member.toString());
         mapper.revokeMemberPermissions(tenant.toString(),member.toString());
         if(mapper.removeMember(tenant.toString(),member.toString())!=1)throw new IllegalArgumentException("Member already removed");
+        events.publishEvent(new com.appnexus.platform.tenant.TenantMemberRemoved(tenant, member, actor));
         mapper.audit(actor.toString(),"MEMBER_REMOVED",member.toString(),tenant.toString());
     }
     @Transactional

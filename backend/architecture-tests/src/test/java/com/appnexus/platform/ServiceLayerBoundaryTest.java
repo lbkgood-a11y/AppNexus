@@ -27,8 +27,7 @@ class ServiceLayerBoundaryTest {
         "com.appnexus.platform.persistence.businessobject.configuration.MyBatisConfigurationStore",
         "com.appnexus.platform.persistence.businessobject.coding.MyBatisCodingStore",
         "com.appnexus.platform.persistence.configuration.MyBatisBusinessValueCatalog",
-        "com.appnexus.platform.persistence.organization.MyBatisOrganizationMembership",
-        "com.appnexus.platform.persistence.organization.ScopedOrganizationSummary",
+        "com.appnexus.masterdata.adapter.persistence.organization.ScopedOrganizationSummary",
         "com.appnexus.platform.persistence.platformscope.TransactionalAuthorityEvents",
         "com.appnexus.masterdata.adapter.persistence.MyBatisUnitConversionRepository",
         "com.appnexus.masterdata.adapter.persistence.MyBatisProductRepository",
@@ -52,7 +51,7 @@ class ServiceLayerBoundaryTest {
         .should().dependOnClassesThat().resideInAnyPackage(
             "org.springframework..", "org.apache.ibatis..", "java.sql..", "com.fasterxml.jackson..",
             "tools.jackson..", "com.appnexus.platform.persistence..", "com.appnexus.platform.security..",
-            "com.appnexus.masterdata..", "com.appnexus.platform.organization.personnel..")
+            "com.appnexus.masterdata..", "com.appnexus.masterdata.organization.personnel..")
         .check(classes);
   }
   private final JavaClasses classes = new ClassFileImporter()

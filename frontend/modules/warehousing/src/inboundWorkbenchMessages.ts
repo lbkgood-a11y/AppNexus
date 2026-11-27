@@ -1,8 +1,10 @@
 /** 工作台本地双语文案随应用当前语言切换。 */
 export const workbenchMessages = {
   zh: {
+    allActive:"全部执行中", allStages:"全部阶段", awaitingDraft:"待开单", queueScope:"作业范围", stage:"作业阶段",
+    emptyDraft:"暂无待开单作业", emptyActive:"暂无执行中的入库作业",
     title:"入库工作台", queue:"作业队列", detail:"入库作业", instruments:"现场与风控", refresh:"刷新",
-    more:"加载更多", select:"选择一项作业查看详情", empty:"当前阶段暂无作业", hidden:"暂无可见记录",
+    viewTask:"查看", more:"加载更多", select:"选择一项作业查看详情", empty:"当前阶段暂无作业", hidden:"暂无可见记录",
     blind:"盲检中", sample:"登记采样", retest:"登记复检", external:"登记外部净重", post:"确认过账",
     reverse:"冲红", confirm:"确认", cancel:"取消", postPrompt:"确认按当前有效计量和质检过账？",
     reversePrompt:"确认冲红该入库单并归还通知额度？", success:"操作已提交", quality:"质检", metering:"计量",
@@ -24,8 +26,10 @@ export const workbenchMessages = {
     PASS:"合格", FAIL:"不合格", EXTERNAL_NET:"外部净重", SCALE_DIFFERENCE:"地磅差重", THEORETICAL:"理计"
   },
   en: {
+    allActive:"All active", allStages:"All stages", awaitingDraft:"Awaiting draft", queueScope:"Queue scope", stage:"Stage",
+    emptyDraft:"No tasks awaiting a receipt draft", emptyActive:"No active inbound tasks",
     title:"Inbound workbench", queue:"Work queue", detail:"Inbound task", instruments:"Site and controls", refresh:"Refresh",
-    more:"Load more", select:"Select a task to view its details", empty:"No tasks at this stage", hidden:"No visible records",
+    viewTask:"View", more:"Load more", select:"Select a task to view its details", empty:"No tasks at this stage", hidden:"No visible records",
     blind:"Blind inspection", sample:"Register sample", retest:"Register retest", external:"Register external net weight", post:"Post receipt",
     reverse:"Reverse receipt", confirm:"Confirm", cancel:"Cancel", postPrompt:"Post based on the current metering and quality results?",
     reversePrompt:"Reverse this receipt and restore the notice allowance?", success:"Operation submitted", quality:"Quality", metering:"Metering",

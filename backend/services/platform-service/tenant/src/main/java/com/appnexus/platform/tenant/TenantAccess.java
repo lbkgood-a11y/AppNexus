@@ -11,4 +11,12 @@ public interface TenantAccess {
     List<Membership> available(UUID accountId);
     /** 验证目标成员仍启用且属于指定有效租户；不得仅凭成员 UUID 授权。 */
     boolean isActiveMember(UUID tenantId, UUID memberId);
+    /** 授权中心使用的有效成员摘要，名称仅用于显示。 */
+    record MemberOption(UUID memberId, String displayName) {}
+
+    /**
+     * @param tenantId 经调用侧准入验证的租户
+     * @return 有效租户成员摘要，调用者仍须检查授权管理权限
+     */
+    List<MemberOption> memberOptions(UUID tenantId);
 }

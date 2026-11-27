@@ -38,7 +38,6 @@ type TaskContext = {
   tasks: { id: string; number: string; status: string; stage?: string }[];
   identities: VehicleIdentity[];
 };
-const taskOperation = "BulkInboundTask.create_from_notice";
 const taskDialog = ref(false);
 const taskContext = ref<TaskContext>();
 const taskTemplateId = ref("");
@@ -243,8 +242,8 @@ async function changeProduct(line: LineDraft) {
 }
 /** 查看与编辑共用字段顺序及分组，查看态仅投影授权响应中的可读值。 */
 const readonlyFields=computed(()=>[
-  {key:"status",label:t("masterData.status"),value:header.value.status},
   {key:"noticeNo",label:label("noticeNo"),value:noticeNo.value},
+  {key:"status",label:t("masterData.status"),value:header.value.status},
   {key:"appointmentNo",label:label("appointmentNo"),value:appointmentNo.value||"—"},
   {key:"ownerId",label:t("coilFlow.owner"),value:header.value.ownerName||"—"},
   {key:"warehouseId",label:t("coilFlow.warehouse"),value:header.value.warehouseName||"—"},
@@ -349,10 +348,13 @@ async function submit() {
   <el-form class="inbound-notice-editor" label-position="top" :disabled="pending || !loaded" @submit.prevent="submit">
     <TabbedDetailTemplate master-data system-last>
       <template #header>
-        <PageHeader :title="(props.id ? t('masterData.edit') : t('coilFlow.steps.inbound'))">
+        <PageHeader :back-label='t("partner.back")' @back="emit('cancel')" :back-disabled="pending" :title="props.id ? text('入仓通知单', 'Inbound notice') : t('coilFlow.steps.inbound')">
+          <template v-if="props.id && loaded" #meta>
+            <el-tag effect="plain">{{ noticeNo }}</el-tag>
+            <el-tag class="app-status-tag" type="info">{{ t('inboundNotice.states.' + header.status) }}</el-tag>
+          </template>
           <template #actions>
-            <el-button :disabled="pending" @click="emit('cancel')">{{ t("partner.back") }}</el-button>
-            <el-button v-if="props.readonly && loaded && props.id" v-operation="taskOperation"
+            <el-button v-if="props.readonly && loaded && props.id" v-operation="'BulkInboundTask.create_from_notice'"
               type="primary" @click="openTaskDialog">{{ text("入库车次", "Inbound arrivals") }}</el-button>
             <el-button v-if="!props.readonly" v-operation="operation" type="primary" :loading="pending" :disabled="!valid" native-type="submit">
               {{ t('masterData.save') }}
@@ -362,7 +364,7 @@ async function submit() {
       </template>
       <template #content>
         <FloatingError :title="error" />
-        <div class="detail-profile-form detail-border-label-form">
+        <div v-if="loaded" class="detail-profile-form detail-border-label-form">
           <el-card shadow="never" class="detail-section">
             <template #header>
               <div class="detail-section-heading"><h2>{{ t('partner.basic') }}</h2></div>
@@ -376,8 +378,9 @@ async function submit() {
                   </div>
                 </template>
                 <template v-else>
+                <div v-if="props.id" class="detail-readonly-field"><span>{{ label('noticeNo') }}</span><strong>{{ noticeNo }}</strong></div>
                 <div v-if="props.id" class="detail-readonly-field"><span>{{ t('masterData.status') }}</span><el-tag class="app-status-tag" type="info">{{ t('inboundNotice.states.'+header.status) }}</el-tag></div>
-                <el-form-item :label="label('noticeNo')">
+                <el-form-item v-else :label="label('noticeNo')">
                   <CodingInput :model-value="noticeNo" operation="BulkInboundReceipt.issue" :max-length="64"
                     :placeholder="label('noticeNoPlaceholder')" :disabled="pending || !!props.id"
                     :options="() => listCodingOptions('BulkInboundReceipt', 'noticeNo')"
@@ -415,29 +418,30 @@ async function submit() {
           </el-card>
         </div>
       </template>
-      <template #system>
+      <template v-if="loaded" #system>
         <h2 class="detail-section-title">{{ t('partner.system') }}</h2>
         <RecordAuditDetails :audit="audit" :pending="!props.id" inline />
       </template>
-      <template #tabs>
+      <template v-if="loaded" #tabs>
         <el-tabs model-value="lines">
-          <el-tab-pane name="lines" :label="label('lines')" />
+          <el-tab-pane name="lines" :label="label('lines')">
+            <ManagementTable :readonly-view="props.readonly" :title="label('lines')" :rows="lineRows" :columns="lineColumns" :busy="pending" :refreshable="false" heading-level="h2" embedded>
+              <template v-if="!props.readonly" #actions>
+                <el-button v-operation="operation" type="primary" :disabled="pending || lines.length >= 100" @click="editLine()">
+                  {{ label('addLine') }}
+                </el-button>
+              </template>
+              <template #operations="{ row }">
+                <el-button v-operation="operation" link type="primary" :disabled="pending" @click="editLine(String(row.key))">
+                  {{ t('masterData.edit') }}
+                </el-button>
+                <el-button v-operation="operation" link type="danger" :disabled="pending" @click="removeLine(String(row.key))">
+                  {{ label('removeLine') }}
+                </el-button>
+              </template>
+            </ManagementTable>
+          </el-tab-pane>
         </el-tabs>
-        <ManagementTable :readonly-view="props.readonly" :title="label('lines')" :rows="lineRows" :columns="lineColumns" :busy="pending" :refreshable="false" heading-level="h2" embedded>
-          <template v-if="!props.readonly" #actions>
-            <el-button v-operation="operation" type="primary" :disabled="pending || lines.length >= 100" @click="editLine()">
-              {{ label('addLine') }}
-            </el-button>
-          </template>
-          <template #operations="{ row }">
-            <el-button v-operation="operation" link type="primary" :disabled="pending" @click="editLine(String(row.key))">
-              {{ t('masterData.edit') }}
-            </el-button>
-            <el-button v-operation="operation" link type="danger" :disabled="pending" @click="removeLine(String(row.key))">
-              {{ label('removeLine') }}
-            </el-button>
-          </template>
-        </ManagementTable>
       </template>
     </TabbedDetailTemplate>
     <ManagedDialog v-model="taskDialog" :title="text('入库车次', 'Inbound arrivals')" :busy="taskPending">
@@ -478,7 +482,7 @@ async function submit() {
       </el-table>
       <template #footer>
         <el-button :disabled="taskPending" @click="taskDialog = false">{{ text("关闭", "Close") }}</el-button>
-        <el-button v-operation="taskOperation" type="primary" :disabled="!canSaveTask" :loading="taskPending"
+        <el-button v-operation="'BulkInboundTask.create_from_notice'" type="primary" :disabled="!canSaveTask" :loading="taskPending"
           @click="saveTask">{{ text("创建车次", "Register arrival") }}</el-button>
       </template>
     </ManagedDialog>

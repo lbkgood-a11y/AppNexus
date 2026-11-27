@@ -1,4 +1,5 @@
 package com.appnexus.platform.partnerapi.administration;
+import com.appnexus.contracts.operation.EndpointPolicy;
 import com.appnexus.platform.security.*;
 import com.appnexus.contracts.operation.OperationBinding;
 import com.appnexus.platform.configuration.PartnerReferences;

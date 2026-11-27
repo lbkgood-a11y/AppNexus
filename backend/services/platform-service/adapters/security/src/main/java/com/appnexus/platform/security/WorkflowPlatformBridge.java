@@ -7,7 +7,7 @@ import com.appnexus.platform.tenant.TenantAccess;
 import java.util.*;
 import org.springframework.stereotype.Component;
 
-/** 平台公开契约适配：组织查询显式带租户与有效期，不授予单据数据权，也不读取工作流表。 */
+/** 平台公开契约适配：复核租户成员、账号及统一权限，不授予单据数据权，也不读取工作流表。 */
 @Component
 public final class WorkflowPlatformBridge implements WorkflowPlatform {
   private final AccessAuthorization access;
@@ -15,22 +15,22 @@ public final class WorkflowPlatformBridge implements WorkflowPlatform {
   private final TenantAccess tenants;
   private final CapabilityDirectoryMapper mapper;
   private final org.springframework.beans.factory.ObjectProvider<com.appnexus.platform.authorization.FieldProtection> fields;
-  private final com.appnexus.platform.organization.PersonnelExecution personnel;
+  private final WorkflowRoutingDirectory routing;
 
   /**
    * @param access 统一功能授权端口，逐次核验
    * @param writes 平台同事务执行许可
    * @param tenants 可信有效成员目录，禁止使用客户端成员标识
-   * @param mapper 组织最小目录的固定租户查询
-   * @param personnel 已选择人员及任职验证公开端口
+   * @param mapper 成员与账号最小目录的固定查询
+   * @param routing 服务组合提供的旧流程路由扩展
    * @param fields 延迟统一字段保护，避免对象目录与平台桥接形成初始化循环；不可缺省放行
    */
   public WorkflowPlatformBridge(
-      AccessAuthorization access, TenantAccess tenants, CapabilityDirectoryMapper mapper,com.appnexus.platform.organization.PersonnelExecution personnel,org.springframework.beans.factory.ObjectProvider<com.appnexus.platform.authorization.FieldProtection> fields,com.appnexus.platform.authorization.ScopedWriteGate writes) {
+      AccessAuthorization access, TenantAccess tenants, CapabilityDirectoryMapper mapper,WorkflowRoutingDirectory routing,org.springframework.beans.factory.ObjectProvider<com.appnexus.platform.authorization.FieldProtection> fields,com.appnexus.platform.authorization.ScopedWriteGate writes) {
     this.access = access;
     this.writes = writes;
     this.tenants = tenants;
-    this.mapper = mapper;this.personnel=personnel;this.fields=fields;
+    this.mapper = mapper;this.routing=routing;this.fields=fields;
   }
   /** 绑定可信租户及已通过业务约束的目标键，并复核原操作权限。 */
   @Override public void authorizeRecordWrite(WorkflowContext c,String permission,String... keys){
@@ -54,21 +54,19 @@ public final class WorkflowPlatformBridge implements WorkflowPlatform {
   public Map<String, List<WorkflowPlatform.Option>> configurationOptions(WorkflowContext c) {
     if (!allowed(c, "workflow:read")) throw new SecurityException("WORKFLOW_CONFIGURATION_DENIED");
     // 流程配置人员需要按名称选人；仅开放有效租户成员名称，不授予人员管理或原文读取权限。
-    var members=mapper.members(c.tenantId());
-    var organizations=mapper.organizations(c.tenantId());
-    var positions=mapper.positions(c.tenantId());
-    return Map.of("members", members, "organizations", organizations, "positions", positions);
+    var options = new HashMap<>(routing.options(c.tenantId()));
+    options.put("members", mapper.members(c.tenantId()));
+    return Map.copyOf(options);
   }
 
   /** 当前申请人只能选择自身有效任职组织，组织名称不作为授权凭证。 */
   @Override
   public List<WorkflowPlatform.Option> documentOrganizations(WorkflowContext c) {
     if (!active(c.tenantId(), c.actorId())) throw new SecurityException("WORKFLOW_ORGANIZATION_DENIED");
-    // 只消费已选择人员的组织，禁止合并同账号关联的其他人员身份。
-    if(c.personId()==null||c.organizationId()==null)return List.of();
-    var memberships=tenants.available(UUID.fromString(c.actorId())).stream().filter(m->m.tenantId().toString().equals(c.tenantId())).toList();
-    if(memberships.isEmpty()||!personnel.allowed(UUID.fromString(c.tenantId()),memberships.getFirst().memberId(),UUID.fromString(c.personId()),UUID.fromString(c.organizationId())))return List.of();
-    return mapper.organization(c.tenantId(),c.organizationId());
+    return tenants.available(UUID.fromString(c.actorId())).stream()
+        .filter(member -> member.tenantId().toString().equals(c.tenantId()))
+        .findFirst().map(member -> routing.documentOrganizations(c, member.memberId()))
+        .orElseGet(List::of);
   }
 
   @Override
@@ -96,19 +94,28 @@ public final class WorkflowPlatformBridge implements WorkflowPlatform {
                     permission));
   }
 
-  /** 岗位及负责人按当前人员核验，不把同账号所有人员的任职合并；固定账号节点保持账号语义。 */
-  @Override public boolean candidate(WorkflowContext c,String organization,String kind,String reference){
-    if(c.personId()==null||c.organizationId()==null||!active(c.tenantId(),c.actorId()))return false;
-    var member=tenants.available(UUID.fromString(c.actorId())).stream().filter(m->m.tenantId().toString().equals(c.tenantId())).findFirst();if(member.isEmpty())return false;
-    if(kind.equals("MEMBER"))return c.actorId().equalsIgnoreCase(reference)&&personnel.allowed(UUID.fromString(c.tenantId()),member.get().memberId(),UUID.fromString(c.personId()),UUID.fromString(c.organizationId()));
-    if(!c.organizationId().equalsIgnoreCase(organization))return false;
-    return personnel.routeCandidate(UUID.fromString(c.tenantId()),member.get().memberId(),UUID.fromString(c.personId()),UUID.fromString(organization),kind,reference);
+  /**
+   * 校验办理账号在当前租户的候选资格。固定账号使用有效租户成员身份，
+   * 岗位及负责人规则使用当前人员和业务组织，避免借用同账号其他人员的任职。
+   *
+   * @param c 可信的当前办理身份和租户上下文
+   * @param organization 流程实例所属业务组织
+   * @param kind 候选规则类型
+   * @param reference 固定账号或岗位标识，负责人规则可省略
+   * @return 当前账号是否满足候选规则
+   */
+  @Override
+  public boolean candidate(WorkflowContext c, String organization, String kind, String reference) {
+    if (!active(c.tenantId(), c.actorId())) return false;
+    if ("MEMBER".equals(kind)) return c.actorId().equalsIgnoreCase(reference);
+    return tenants.available(UUID.fromString(c.actorId())).stream()
+        .filter(member -> member.tenantId().toString().equals(c.tenantId()))
+        .anyMatch(member -> routing.candidate(c, member.memberId(), organization, kind, reference));
   }
   @Override
   public List<String> resolve(String tenant, String organization, String kind, String reference) {
     if (kind.equals("MEMBER")) return active(tenant, reference) ? List.of(reference) : List.of();
-    UUID.fromString(tenant);
-    UUID.fromString(organization);
-    return personnel.resolveAccounts(UUID.fromString(tenant),UUID.fromString(organization),kind,reference).stream().filter(a->active(tenant,a)).toList();
+    return routing.resolve(tenant, organization, kind, reference).stream()
+        .filter(account -> active(tenant, account)).toList();
   }
 }

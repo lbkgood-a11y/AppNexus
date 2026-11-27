@@ -39,7 +39,7 @@ class PolicyTemplateTest extends DatabaseTestSupport {
         var context=new RoleManagement.Context(actor,null,null);var source=role(context);var target=role(context);
         var template=templates.save(context,source.id(),"Owned template");
         assertThatThrownBy(()->templates.list(new RoleManagement.Context(UUID.randomUUID(),null,null),target.id())).isInstanceOf(SecurityException.class);
-        jdbc.update("UPDATE access_policy_template SET owner_id=UUID_TO_BIN(?) WHERE id=UUID_TO_BIN(?)",UUID.randomUUID().toString(),template.id().toString());
+        jdbc.update("UPDATE access_policy_template SET tenant_id=UUID_TO_BIN(?) WHERE id=UUID_TO_BIN(?)",UUID.randomUUID().toString(),template.id().toString());
         assertThatThrownBy(()->templates.apply(context,target.id(),template.id(),0,"Cross owner"))
             .isInstanceOf(PolicyTemplates.Rejection.class).hasMessage("INVALID_POLICY_TEMPLATE");
     }

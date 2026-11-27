@@ -68,8 +68,17 @@ import RiRulerLine from "~icons/ri/ruler-line?raw";
 import RiListSettingsLine from "~icons/ri/list-settings-line?raw";
 import RiLayoutGridLine from "~icons/ri/layout-grid-line?raw";
 import RiBarcodeLine from "~icons/ri/barcode-line?raw";
+import RiAttachmentLine from "~icons/ri/attachment-line?raw";
+import RiHistoryLine from "~icons/ri/history-line?raw";
+import RiFolderLine from "~icons/ri/folder-line?raw";
+import RiArchiveLine from "~icons/ri/archive-line?raw";
 
 const icons = [
+  // 附件、事件、入仓目录与库存使用导航配置中的本地 Remix 图标。
+  ["ri/attachment-line", RiAttachmentLine],
+  ["ri/history-line", RiHistoryLine],
+  ["ri/folder-line", RiFolderLine],
+  ["ri/archive-line", RiArchiveLine],
   // 商品明细入口使用后端声明的条码图标，必须离线注册后才能在菜单中渲染。
   ["ri/barcode-line", RiBarcodeLine],
   // 主数据子菜单按业务语义区分，全部注册为本地 Remix Icon，兼容离线导航与图标选择器。

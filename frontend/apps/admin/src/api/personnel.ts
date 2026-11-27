@@ -1,5 +1,5 @@
 import {http} from "@/utils/http";
-import type {PersonnelApi} from "@appnexus/organization";
+import type {PersonnelApi} from "@appnexus/master-data/organization";
 /** 固定已发布人员 HTTP 路径；入口归并不更改已有权限和可信身份契约。 */
 const path=(_kind:"person",id?:string)=>"/api/master-data/person"+(id?"/"+encodeURIComponent(id):"");
 /** 逐次读取 CSRF，保留人员版本校验，不自动重放写入。 */

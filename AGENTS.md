@@ -14,6 +14,8 @@
 
 - 后端类型命名与职责分包必须执行 [后端类型命名与分包规范](docs/development/后端类型命名与分包规范.md)。Controller、Mapper、仓储端口及技术实现按职责命名和落位；禁止沿用混层、技术名称失真或以移动文件代替完整用例迁移。命名、分包、依赖及适用验证不满足时阻断交付。
 
+- 所有自有基础表必须以 `id` 为单列主键，并具备 `created_by`、`created_at`、`updated_by`、`updated_at` 四个审计字段。具有租户归属的记录统一使用 `tenant_id`，纯平台级表无需租户列。首次建表、存量迁移和门禁按 [表主键与租户归属](docs/development/业务服务统一开发规范.md#表主键与租户归属) 执行。
+
 ## 代码注释规范
 
 - 新增或修改的代码必须遵循对应语言的标准注释格式：Java 使用 Javadoc，TypeScript 使用 TSDoc/JSDoc，PowerShell 使用帮助注释，SQL、YAML、Properties 等使用其原生注释语法。

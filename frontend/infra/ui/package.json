@@ -8,7 +8,8 @@
   "dependencies": {
     "@appnexus/icons": "workspace:*",
     "vxe-pc-ui": "^4.21.1",
-    "vxe-table": "^4.23.20"
+    "vxe-table": "^4.23.20",
+    "write-excel-file": "4.1.1"
   },
   "peerDependencies": {
     "element-plus": "^2.13.6",

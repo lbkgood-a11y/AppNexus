@@ -13,7 +13,7 @@ export { default as SplitDetailTemplate } from "./templates/SplitDetailTemplate.
 export { default as TabbedDetailTemplate } from "./templates/TabbedDetailTemplate.vue";
 export { default as CardGridTemplate } from "./templates/CardGridTemplate.vue";
 export { default as DashboardTemplate } from "./templates/DashboardTemplate.vue";
-export type { ManagementColumn } from "./types";
+export type { ManagementColumn, ManagementTableExcelExport } from "./types";
 import "vxe-pc-ui/lib/style.css";
 import "vxe-table/lib/style.css";
 import "./vxe-theme.css";

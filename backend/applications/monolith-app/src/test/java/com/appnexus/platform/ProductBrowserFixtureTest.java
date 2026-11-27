@@ -32,6 +32,86 @@ class ProductBrowserFixtureTest extends DatabaseTestSupport {
  @Autowired com.appnexus.masterdata.application.product.ProductService products;
  @Autowired com.appnexus.masterdata.application.product.ProductAttributeService attributes;
  @Autowired com.appnexus.masterdata.application.product.ProductTemplateService templates;
+
+ /** 客商浏览器验收使用一次性数据库和两个真实权限主体，文件仅保存短期测试会话。 */
+ @org.junit.jupiter.api.condition.EnabledIfSystemProperty(named="test",matches=".*#partnerPageExportBrowserHost.*")
+ @Test void partnerPageExportBrowserHost() throws Exception {
+  var actor=UUID.fromString(jdbc.queryForObject("SELECT BIN_TO_UUID(id) FROM identity_account WHERE username='admin-test'",String.class));
+  browserAdministration.initializeAdministrator("admin-test");
+  var owner=UUID.randomUUID();
+  var reader=UUID.randomUUID();
+  var tenant=UUID.randomUUID();
+  jdbc.update("INSERT INTO platform_tenant(id,name) VALUES(UUID_TO_BIN(?),'客商导出验收')",tenant.toString());
+  var members=new HashMap<UUID,UUID>();
+  for(var account:List.of(owner,reader)){
+   browserAdministration.createUser(actor,account,"qa-"+account,"客商导出验收",
+       partnerBrowserPasswordEncoder.encode(UUID.randomUUID().toString()));
+   var member=UUID.randomUUID();
+   members.put(account,member);
+   jdbc.update("INSERT INTO tenant_member(id,tenant_id,account_id) VALUES(UUID_TO_BIN(?),UUID_TO_BIN(?),UUID_TO_BIN(?))",
+       member.toString(),tenant.toString(),account.toString());
+  }
+  bootstrap.initialize(tenant,members.get(owner));
+  new org.springframework.transaction.support.TransactionTemplate(partnerBrowserTransactions)
+      .executeWithoutResult(status->partnerBrowserDictionary.seed(tenant,actor));
+  UUID type=UUID.randomUUID(),organization=UUID.randomUUID();
+  jdbc.update("INSERT INTO tenant_organization_type(tenant_id,id,code,name) VALUES(UUID_TO_BIN(?),UUID_TO_BIN(?),'QA','验收类型')",tenant.toString(),type.toString());
+  jdbc.update("INSERT INTO tenant_organization_unit(tenant_id,id,code,type_id,name) VALUES(UUID_TO_BIN(?),UUID_TO_BIN(?),'QA',UUID_TO_BIN(?),'验收组织')",tenant.toString(),organization.toString(),type.toString());
+  var context=new VerifiedTenantContext(owner,tenant,members.get(owner),1);
+  for(int i=1;i<=23;i++){
+   String code="QA-EXPORT-%02d".formatted(i);
+   var contacts=List.of(new MasterData.DetailInput(null,Map.of("contactType","BUSINESS","contactName","验收联系人",
+       "phone","13900139000","address","验收地址","isDefault","true")));
+   var banks=List.of(new MasterData.DetailInput(null,Map.of("taxAccount","false","basicAccount","true",
+       "isDefault","true","bankName","验收银行","accountNumber","000012345678","currency","CNY")));
+   partnerBrowserService.create(context,MasterData.Kind.PARTNER,new MasterData.Input(code,code,
+       Map.of("partnerType","CUSTOMER","phone","13800138000"),0,contacts,banks,organization.toString()));
+  }
+  var roleContext=new com.appnexus.platform.authorization.RoleManagement.Context(actor,tenant,null);
+  var readRole=partnerBrowserRoles.create(roleContext,new com.appnexus.platform.authorization.RoleManagement.Create("qa_read","只读验收",null,100));
+  UUID read=UUID.fromString(jdbc.queryForObject("SELECT BIN_TO_UUID(id) FROM access_permission WHERE code='masterdata.partner:read'",String.class));
+  var policy=new com.appnexus.platform.authorization.RolePermissionManagement.DataPolicy(read,
+      com.appnexus.platform.authorization.DataScopeAuthorization.ScopeType.ALL,"masterdata.partner",Set.of());
+  partnerBrowserPermissions.replaceAuthorization(roleContext,readRole.id(),readRole.version(),Set.of(read),Set.of(policy),Set.of(
+      new com.appnexus.platform.authorization.FieldSecurity.Policy("masterdata.partner","phone",
+          com.appnexus.platform.authorization.FieldSecurity.Mode.MASKED),
+      new com.appnexus.platform.authorization.FieldSecurity.Policy("masterdata.partner","legalId",
+          com.appnexus.platform.authorization.FieldSecurity.Mode.HIDDEN),
+      new com.appnexus.platform.authorization.FieldSecurity.Policy("masterdata.partner.contact","phone",
+          com.appnexus.platform.authorization.FieldSecurity.Mode.MASKED),
+      new com.appnexus.platform.authorization.FieldSecurity.Policy("masterdata.partner.bank","accountNumber",
+          com.appnexus.platform.authorization.FieldSecurity.Mode.HIDDEN)),"浏览器只读及字段验收");
+  var assignment=partnerBrowserSubjects.memberRoles(roleContext,members.get(reader));
+  partnerBrowserSubjects.replaceMemberRoles(roleContext,members.get(reader),assignment.authorityVersion(),Set.of(readRole.id()),"浏览器只读验收");
+  var ownerSession=historySession(tenant,owner,members.get(owner));
+  var readerSession=historySession(tenant,reader,members.get(reader));
+  var platformSession=historySession(null,actor,null);
+  var directory=Path.of(System.getProperty("product.qa.dir"));
+  Files.createDirectories(directory);
+  var sessionFile=directory.resolve("partner-session.json");
+  try{
+   var encoder=Base64.getEncoder();
+   var json=new tools.jackson.databind.ObjectMapper();
+   Files.writeString(sessionFile,json.writeValueAsString(Map.of(
+       "owner",encoder.encodeToString(ownerSession.getId().getBytes(java.nio.charset.StandardCharsets.UTF_8)),
+       "reader",encoder.encodeToString(readerSession.getId().getBytes(java.nio.charset.StandardCharsets.UTF_8)),
+       "platform",encoder.encodeToString(platformSession.getId().getBytes(java.nio.charset.StandardCharsets.UTF_8)))));
+   long deadline=System.nanoTime()+java.time.Duration.ofMinutes(8).toNanos();
+   while(System.nanoTime()<deadline&&!Files.exists(directory.resolve("stop")))Thread.sleep(500);
+  }finally{
+   Files.deleteIfExists(sessionFile);
+   sessionRepository.deleteById(ownerSession.getId());
+   sessionRepository.deleteById(readerSession.getId());
+   sessionRepository.deleteById(platformSession.getId());
+  }
+ }
+ @Autowired MasterDataManagement partnerBrowserService;
+ @Autowired com.appnexus.platform.authorization.RoleManagement partnerBrowserRoles;
+ @Autowired com.appnexus.platform.authorization.RolePermissionManagement partnerBrowserPermissions;
+ @Autowired com.appnexus.platform.authorization.SubjectRoleManagement partnerBrowserSubjects;
+ @Autowired org.springframework.security.crypto.password.PasswordEncoder partnerBrowserPasswordEncoder;
+ @Autowired com.appnexus.platform.persistence.configuration.MyBatisDictionaryProvisioning partnerBrowserDictionary;
+ @Autowired org.springframework.transaction.PlatformTransactionManager partnerBrowserTransactions;
  /** 一次性租户中的真实 HTTP 验收，随后保留同一服务器供两个页面的浏览器验证。 */
  @org.junit.jupiter.api.condition.EnabledIfSystemProperty(named="test",matches=".*#measurementBrowserHost.*")
  @Test void measurementBrowserHost() throws Exception {
@@ -145,9 +225,11 @@ class ProductBrowserFixtureTest extends DatabaseTestSupport {
   context.setAuthentication(org.springframework.security.authentication.UsernamePasswordAuthenticationToken.authenticated(principal,null,principal.getAuthorities()));
   session.setAttribute("SPRING_SECURITY_CONTEXT",context);
   session.setAttribute("appnexus.credentialVersion",0L);
-  session.setAttribute("appnexus.tenant",tenant.toString());
-  session.setAttribute("appnexus.member",member.toString());
-  session.setAttribute("appnexus.tenantVersion",1L);
+  if(tenant!=null&&member!=null){
+   session.setAttribute("appnexus.tenant",tenant.toString());
+   session.setAttribute("appnexus.member",member.toString());
+   session.setAttribute("appnexus.tenantVersion",1L);
+  }
   sessionRepository.save(session);
   return session;
  }

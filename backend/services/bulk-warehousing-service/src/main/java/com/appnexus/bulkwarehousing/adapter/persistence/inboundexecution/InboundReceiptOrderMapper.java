@@ -25,22 +25,25 @@ public interface InboundReceiptOrderMapper {
     record ActiveDraftRow(String id, String number, long version, boolean collecting) {}
 
     /** 草稿作业存储投影。 */
-    record TaskRow(long rowVersion, String status, String noticeId, String templateId, boolean extraDeduction) {}
+    record TaskRow(long rowVersion, String status, String noticeId, String templateId, String unload,
+                   String evidence, BigDecimal siteKg) {}
+    /** 可用于散货入库的已发布策略。 */
+    record BulkTemplateRow(String qualityStrategy, String formula) {}
     /** 通知主表锁内投影。 */
     record NoticeRow(String warehouseId, String ownerId, String status) {}
     /** 通知行锁内投影。 */
     record NoticeLineRow(String productId, String identityKind, String identityId, long productVersion,
                          String baseUnitId, BigDecimal remaining) {}
     /** 同作业当前采样投影。 */
-    record SampleRow(String id, int version, boolean sampled, String decision) {}
+    record SampleRow(String id, int version, boolean sampled, String decision, String snapshot) {}
     /** 已确认来源凭证。 */
-    record MeterRow(String id, long rowVersion, BigDecimal physicalNetKg, String method) {}
+    record MeterRow(String id, long rowVersion, BigDecimal physicalNetKg, String method, String tareQualityId) {}
     /** 已确认钢铁双计量和当前 MTC 炉批。 */
     record SteelMeterRow(String id,long version,String qualityId,String heatNo,String method,BigDecimal physicalNetKg,
                          BigDecimal theoreticalKg,int packages) {}
     /** 草稿主表持久化参数。 */
     record HeaderInsert(String id, String taskId, String noticeId, String meteringId, String qualityId,
-                        String number, String qualityState, BigDecimal physicalKg,BigDecimal accountingKg,String snapshot,
+                        String number, String qualityState, BigDecimal physicalKg,BigDecimal accountingKg,BigDecimal deductionKg,String snapshot,
                         String replacesReceiptId) {}
     /** 草稿明细持久化参数。 */
     record LineInsert(String id, String receiptId, String noticeId, String noticeLineId, String locationId,
@@ -51,7 +54,7 @@ public interface InboundReceiptOrderMapper {
     @GuardedScope(tenant="__verifiedTenant", operationPermissions={PERMISSION,STEEL,OPEN})
     @Select("""
             SELECT row_version rowVersion,status,BIN_TO_UUID(notice_id) noticeId,BIN_TO_UUID(template_id) templateId,
-              (COALESCE(unload_deduction_kg,0)>0 OR COALESCE(unload_disposition,'')='RETURN') extraDeduction
+              unload_disposition unload,BIN_TO_UUID(unload_evidence_id) evidence,COALESCE(unload_deduction_kg,0) siteKg
             FROM bw_inbound_task WHERE tenant_id=#{__verifiedTenant} AND id=UUID_TO_BIN(#{task}) FOR UPDATE
             """)
     TaskRow lockTask(@Param("__verifiedTenant") byte[] tenant, @Param("task") String task);
@@ -76,20 +79,26 @@ public interface InboundReceiptOrderMapper {
     NoticeLineRow lockNoticeLine(@Param("__verifiedTenant") byte[] tenant, @Param("notice") String notice,
                                  @Param("line") String line);
 
-    /** 固定采用零扣量、散货外部整单和采样门槛的已发布模板。 */
+    /** 读取散货的零扣量异步或强门槛公式策略，不采用草稿配置。 */
     @GuardedScope(tenant="__verifiedTenant", operationPermissions={PERMISSION,STEEL,OPEN})
     @Select("""
-            SELECT 1 FROM bw_commodity_template WHERE tenant_id=#{__verifiedTenant} AND id=UUID_TO_BIN(#{id})
+            SELECT quality_gate_strategy qualityStrategy,
+              IF(deduction_strategy='QUALITY_LINEAR',CAST(JSON_EXTRACT(definition,'$.deductionFormula') AS CHAR),NULL) formula
+            FROM bw_commodity_template WHERE tenant_id=#{__verifiedTenant} AND id=UUID_TO_BIN(#{id})
               AND status IN ('PUBLISHED','DISABLED')
-              AND metering_strategy IN ('EXTERNAL_NET','SCALE_OR_EXTERNAL','SCALE','SCALE_DIFFERENCE')
-              AND deduction_strategy='ZERO' AND quality_gate_strategy='SAMPLED' AND stock_granularity='BULK' FOR SHARE
+              AND stock_granularity='BULK'
+              AND ((deduction_strategy='ZERO' AND quality_gate_strategy='SAMPLED'
+                AND metering_strategy IN ('EXTERNAL_NET','SCALE_OR_EXTERNAL','SCALE','SCALE_DIFFERENCE'))
+              OR (deduction_strategy='QUALITY_LINEAR' AND quality_gate_strategy='QUALIFIED_AND_UNLOADED'
+                AND metering_strategy IN ('SCALE','SCALE_DIFFERENCE')
+                AND JSON_TYPE(JSON_EXTRACT(definition,'$.deductionFormula'))='OBJECT')) FOR SHARE
             """)
-    Integer eligibleTemplate(@Param("__verifiedTenant") byte[] tenant, @Param("id") String id);
+    BulkTemplateRow eligibleTemplate(@Param("__verifiedTenant") byte[] tenant, @Param("id") String id);
 
     /** 草稿生成时读取实际现行样品和化验结论。 */
     @GuardedScope(tenant="__verifiedTenant", operationPermissions=PERMISSION)
     @Select("""
-            SELECT BIN_TO_UUID(id) id,version,(sampled_at IS NOT NULL) sampled,decision
+            SELECT BIN_TO_UUID(id) id,version,(sampled_at IS NOT NULL) sampled,decision,CAST(result_snapshot AS CHAR) snapshot
             FROM bw_quality_order WHERE tenant_id=#{__verifiedTenant}
               AND active_task_id=UUID_TO_BIN(#{task}) FOR UPDATE
             """)
@@ -98,7 +107,8 @@ public interface InboundReceiptOrderMapper {
     /** 草稿采用已确认的结构化外部凭证，或具有同作业双票据的地磅净重。 */
     @GuardedScope(tenant="__verifiedTenant", operationPermissions=PERMISSION)
     @Select("""
-            SELECT BIN_TO_UUID(m.id) id,m.row_version rowVersion,m.actual_net_kg physicalNetKg,m.method
+            SELECT BIN_TO_UUID(m.id) id,m.row_version rowVersion,m.actual_net_kg physicalNetKg,m.method,
+              BIN_TO_UUID(m.tare_gate_quality_id) tareQualityId
             FROM bw_metering_order m WHERE m.tenant_id=#{__verifiedTenant} AND m.task_id=UUID_TO_BIN(#{task})
               AND m.status='CONFIRMED' AND ((m.method='EXTERNAL_NET' AND m.external_source IS NOT NULL)
                 OR (m.method='SCALE_DIFFERENCE' AND m.actual_net_kg=m.gross_kg-m.tare_kg
@@ -122,7 +132,7 @@ public interface InboundReceiptOrderMapper {
               status,quality_state,physical_net_kg,deduction_kg,accounting_weight_kg,posting_snapshot,created_by,updated_by,replaces_receipt_id)
             VALUES(#{__verifiedTenant},UUID_TO_BIN(#{row.id}),UUID_TO_BIN(#{row.taskId}),UUID_TO_BIN(#{row.noticeId}),
               UUID_TO_BIN(#{row.meteringId}),UUID_TO_BIN(#{row.qualityId}),#{row.number},'DRAFT',#{row.qualityState},
-              #{row.physicalKg,jdbcType=DECIMAL},0,#{row.accountingKg},#{row.snapshot},UUID_TO_BIN(#{actor}),UUID_TO_BIN(#{actor}),
+              #{row.physicalKg,jdbcType=DECIMAL},#{row.deductionKg},#{row.accountingKg},#{row.snapshot},UUID_TO_BIN(#{actor}),UUID_TO_BIN(#{actor}),
               UUID_TO_BIN(#{row.replacesReceiptId,jdbcType=VARCHAR}))
             """)
     void insertHeader(@Param("__verifiedTenant") byte[] tenant, @Param("actor") String actor,
@@ -165,7 +175,7 @@ public interface InboundReceiptOrderMapper {
     @GuardedScope(tenant="__verifiedTenant",operationPermissions={PERMISSION,STEEL})
     @Update("""
             UPDATE bw_receipt_order SET metering_id=UUID_TO_BIN(#{row.meteringId}),quality_id=UUID_TO_BIN(#{row.qualityId}),
-              physical_net_kg=#{row.physicalKg,jdbcType=DECIMAL},accounting_weight_kg=#{row.accountingKg},
+              physical_net_kg=#{row.physicalKg,jdbcType=DECIMAL},accounting_weight_kg=#{row.accountingKg},deduction_kg=#{row.deductionKg},
               quality_state=#{row.qualityState},posting_snapshot=#{row.snapshot},row_version=row_version+1,
               updated_at=CURRENT_TIMESTAMP(6),updated_by=UUID_TO_BIN(#{actor})
             WHERE tenant_id=#{__verifiedTenant} AND id=UUID_TO_BIN(#{row.id}) AND task_id=UUID_TO_BIN(#{row.taskId})

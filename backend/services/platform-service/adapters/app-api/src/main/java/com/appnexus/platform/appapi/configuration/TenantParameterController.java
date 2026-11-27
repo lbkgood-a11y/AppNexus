@@ -1,4 +1,5 @@
 package com.appnexus.platform.appapi.configuration;
+import com.appnexus.contracts.operation.EndpointPolicy;
 import com.appnexus.platform.configuration.TenantParameters;
 import com.appnexus.platform.security.*;
 
@@ -23,8 +24,8 @@ public class TenantParameterController {
  @GetMapping ResponseEntity<List<TenantParameters.Parameter>> list(HttpServletRequest request){return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(parameters.list(context(request)));}
     /** 使用租户参数独立维护权限，不能通过通用配置任意修改安全参数。 */
 
- @com.appnexus.contracts.operation.OperationBinding(id="TenantParameter.save", reference=true)
- @EndpointOperation("configuration.parameter:save") @PutMapping("/{key}")
+ @com.appnexus.contracts.operation.OperationBinding(id="TenantParameter.save", reference=true, enforceDeclaredPermission=true)
+  @PutMapping("/{key}")
     ResponseEntity<TenantParameters.Parameter> save(HttpServletRequest request,@PathVariable String key,@RequestBody Change input){return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(parameters.save(context(request),key,input.value(),input.version()));}
     private VerifiedTenantContext context(HttpServletRequest request){if(!(request.getAttribute(VerifiedTenantContext.class.getName()) instanceof VerifiedTenantContext value))throw AccountSettingsController.problem(HttpStatus.CONFLICT,"TENANT_REQUIRED","请选择有效租户");return value;}
 }

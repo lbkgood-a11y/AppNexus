@@ -29,6 +29,7 @@ class StorageHierarchyIntegrationTest extends DatabaseTestSupport {
   @Autowired OperationRegistry registry;
   @Autowired RolePermissionManagement permissions;
   @Autowired DataPolicyMetadataCatalog metadata;
+  @Autowired MemberAuthorizationManagement memberAuthorizations;
   @Autowired com.appnexus.masterdata.adapter.persistence.MasterRecordMapper records;
   @Autowired com.appnexus.platform.persistence.organization.OrganizationAdministratorBootstrap bootstrap;
 
@@ -69,8 +70,14 @@ class StorageHierarchyIntegrationTest extends DatabaseTestSupport {
     UUID role=UUID.fromString(jdbc.queryForObject("SELECT BIN_TO_UUID(id) FROM access_role WHERE tenant_id=UUID_TO_BIN(?) AND system_key LIKE 'TENANT_ADMIN:%'",String.class,tenant.toString()));
     Map<String,String> visible=storageTree(context,"A"),hidden=storageTree(context,"B");
     var before=permissions.getAuthorization(admin,role);
-    var supported=metadata.list(PermissionCatalog.ScopeType.TENANT).stream().filter(s->s.resourceType().equals("masterdata.warehouse")).toList();
-    assertThat(supported).hasSize(16);
+    var supported=metadata.list(PermissionCatalog.ScopeType.TENANT).stream().filter(s->s.resourceType().equals("masterdata.warehouse") && !s.permissionCode().endsWith(":select_login")).toList();
+    // 元数据只暴露四个主档操作的当前范围；退役范围不得重新出现在目录中。
+    assertThat(supported).extracting(row -> row.permissionCode() + "/" + row.scopeType())
+        .containsExactlyInAnyOrder(
+            "masterdata.warehouse:create/ALL", "masterdata.warehouse:create/RULES",
+            "masterdata.warehouse:read/ALL", "masterdata.warehouse:read/RULES",
+            "masterdata.warehouse:update/ALL", "masterdata.warehouse:update/RULES",
+            "masterdata.warehouse:set_status/ALL", "masterdata.warehouse:set_status/RULES");
     var scoped=supported.stream().filter(s->s.scopeType()==DataScopeAuthorization.ScopeType.RULES&&!s.permissionCode().endsWith(":create"))
         .map(DataPolicyMetadataCatalog.ScopeSupport::permissionId).collect(java.util.stream.Collectors.toSet());
     assertThat(scoped).hasSize(3);
@@ -170,6 +177,66 @@ class StorageHierarchyIntegrationTest extends DatabaseTestSupport {
         .hasMessage("MASTER_DATA_CHANGED");
     service.setStatus(context,Kind.WAREHOUSE,visible.get("warehouse"),new Status(false,1));
     assertThat(service.list(context,Kind.WAREHOUSE,"",false,1,20,visible.get("warehouse")).rows()).extracting(Row::id).containsExactly(visible.get("warehouse"));
+  }
+
+  /** 登录选仓独立授权在真实会话和数据库中执行，拒绝未授予、停用及撤权后的候选。 */
+  @Test void loginWarehouseSelectionUsesEffectiveRecordScope() throws Exception {
+    UUID tenant=UUID.randomUUID(), account=UUID.randomUUID(), member=UUID.randomUUID();
+    jdbc.update("INSERT INTO platform_tenant(id,name) VALUES(UUID_TO_BIN(?),'登录选仓测试')",tenant.toString());
+    DictionaryFixtures.seed(jdbc,tenant,null);
+    jdbc.update("INSERT INTO identity_account(id,username,display_name,password_hash) VALUES(UUID_TO_BIN(?),?,'登录选仓成员','unused')",account.toString(),"login-warehouse-"+account);
+    jdbc.update("INSERT INTO tenant_member(id,tenant_id,account_id) VALUES(UUID_TO_BIN(?),UUID_TO_BIN(?),UUID_TO_BIN(?))",member.toString(),tenant.toString(),account.toString());
+    bootstrap.initialize(tenant,member);
+    var context=new VerifiedTenantContext(account,tenant,member,1);
+    var admin=new RoleManagement.Context(account,tenant,member);
+    UUID role=UUID.fromString(jdbc.queryForObject("SELECT BIN_TO_UUID(id) FROM access_role WHERE tenant_id=UUID_TO_BIN(?) AND system_key LIKE 'TENANT_ADMIN:%'",String.class,tenant.toString()));
+    var allowed=service.create(context,Kind.WAREHOUSE,new Input("LOGIN-A","授权仓库",Map.of(),0)).get("id");
+    var denied=service.create(context,Kind.WAREHOUSE,new Input("LOGIN-B","未授权仓库",Map.of(),0)).get("id");
+    var cookie=mvc.perform(post("/bff/tenants/current").with(authenticated(account.toString(),0)).with(csrf())
+        .contentType("application/json").content("{\"tenantId\":\""+tenant+"\"}"))
+        .andExpect(status().isOk()).andReturn().getResponse().getCookie("JSESSIONID");
+    assertThat(cookie).isNotNull();
+    var endpoint="/api/master-data/warehouse/login-selection";
+    mvc.perform(get(endpoint)).andExpect(status().isUnauthorized());
+    mvc.perform(get(endpoint).cookie(cookie)).andExpect(status().isForbidden());
+
+    var before=permissions.getAuthorization(admin,role);
+    var permission=metadata.list(PermissionCatalog.ScopeType.TENANT).stream()
+        .filter(item->item.permissionCode().equals("masterdata.warehouse:select_login"))
+        .findFirst().orElseThrow().permissionId();
+    var granted=new HashSet<>(before.permissionIds());
+    granted.add(permission);
+    var policies=new HashSet<>(before.dataPolicies());
+    policies.add(new RolePermissionManagement.DataPolicy(permission,DataScopeAuthorization.ScopeType.RULES,
+        "masterdata.warehouse",Set.of(),List.of(new DataGrantRules.Rule(DataGrantRules.SubjectType.ROLE_MEMBERS,Set.of(),
+        Set.of(UUID.fromString(allowed)),List.of(),false))));
+    var defaultPolicies=new HashSet<>(before.dataPolicies());
+    defaultPolicies.add(new RolePermissionManagement.DataPolicy(permission,DataScopeAuthorization.ScopeType.RULES,
+        "masterdata.warehouse",Set.of(),List.of(new DataGrantRules.Rule(DataGrantRules.SubjectType.ROLE_MEMBERS,Set.of(),
+        Set.of(UUID.fromString(denied)),List.of(),false))));
+    var roleGrant=permissions.replaceAuthorization(admin,role,before.roleVersion(),granted,defaultPolicies,"登录选仓角色授权验证");
+    var memberGrant=memberAuthorizations.get(admin,member);
+    memberAuthorizations.replace(admin,member,new MemberAuthorizationManagement.Grant(role,granted,policies,null,
+        roleGrant.roleVersion(),false),memberGrant.authorityVersion(),"按成员分配登录仓库");
+
+    mvc.perform(get(endpoint).cookie(cookie)).andExpect(status().isOk())
+        .andExpect(jsonPath("$.options.length()").value(1)).andExpect(jsonPath("$.options[0].id").value(allowed));
+    mvc.perform(put(endpoint).cookie(cookie).with(csrf()).contentType("application/json")
+        .content("{\"warehouseId\":\""+denied+"\"}")).andExpect(status().isForbidden());
+    mvc.perform(put(endpoint).cookie(cookie).with(csrf()).contentType("application/json")
+        .content("{\"warehouseId\":\""+allowed+"\"}")).andExpect(status().isOk());
+    mvc.perform(get(endpoint).cookie(cookie)).andExpect(status().isOk()).andExpect(jsonPath("$.current.id").value(allowed));
+    mvc.perform(put(endpoint).cookie(cookie).contentType("application/json")
+        .content("{\"warehouseId\":\""+allowed+"\"}")).andExpect(status().isForbidden());
+
+    service.setStatus(context,Kind.WAREHOUSE,allowed,new Status(false,0));
+    mvc.perform(get(endpoint).cookie(cookie)).andExpect(status().isOk())
+        .andExpect(jsonPath("$.options").isEmpty()).andExpect(jsonPath("$.current").doesNotExist());
+    mvc.perform(put(endpoint).cookie(cookie).with(csrf()).contentType("application/json")
+        .content("{\"warehouseId\":\""+allowed+"\"}")).andExpect(status().isForbidden());
+
+    permissions.replaceAuthorization(admin,role,roleGrant.roleVersion(),before.permissionIds(),before.dataPolicies(),"撤销登录选仓权限");
+    mvc.perform(get(endpoint).cookie(cookie)).andExpect(status().isForbidden());
   }
 
   /** 同租户两棵仓储树区分授权记录与未授权记录。 */

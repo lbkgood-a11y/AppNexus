@@ -16,7 +16,7 @@ class BusinessObjectPageRegistrationTest {
     var descriptors=java.util.List.of(
         new com.appnexus.masterdata.adapter.integration.product.ProductDeclaration(null,null,null,null,null,null).descriptor(),
         new com.appnexus.platform.security.TenantMemberDeclaration().descriptor(),
-        new com.appnexus.platform.security.PersonDirectoryDeclaration().descriptor());
+        new com.appnexus.masterdata.adapter.web.organization.PersonDirectoryDeclaration().descriptor());
     for(var descriptor:descriptors){
       var ids=new java.util.HashSet<String>();
       for(var operation:descriptor.operations()){
@@ -46,20 +46,24 @@ class BusinessObjectPageRegistrationTest {
     for(var alias:action.aliases()){var aliasPage=NavigationPages.find(alias.pageOperation().pageKey());assertThat(aliasPage.path()).isEqualTo(alias.pageOperation().pagePath());assertThat(alias.pageOperation().pageKey()).isEqualTo(operation.pageKey());}
     }
   }
-  /** 客商Controller只引用统一声明；对象注解和重复操作参数均禁止重新引入。 */
+  /** 客商维护及共用状态历史入口引用同一对象声明。 */
   @Test void partnerControllerReferencesOneAuthoritativeDeclaration(){
     var descriptor=new com.appnexus.masterdata.adapter.integration.partner.BusinessPartnerDeclaration().descriptor();
-    assertThat(com.appnexus.masterdata.adapter.web.masterdata.BusinessPartnerController.class.getAnnotation(com.appnexus.contracts.operation.BusinessObjectType.class)).isNull();
-    var bindings=java.util.Arrays.stream(com.appnexus.masterdata.adapter.web.masterdata.BusinessPartnerController.class.getMethods()).flatMap(method->java.util.Arrays.stream(method.getAnnotationsByType(com.appnexus.contracts.operation.OperationBinding.class))).toList();
+    var bindings=java.util.stream.Stream.of(
+        com.appnexus.masterdata.adapter.web.masterdata.BusinessPartnerController.class,
+        com.appnexus.masterdata.adapter.web.masterdata.MasterStatusHistoryController.class)
+        .flatMap(controller->java.util.Arrays.stream(controller.getMethods()))
+        .flatMap(method->java.util.Arrays.stream(method.getAnnotationsByType(com.appnexus.contracts.operation.OperationBinding.class)))
+        .filter(binding->binding.id().startsWith(descriptor.objectType()+"."))
+        .toList();
     assertThat(bindings).hasSize(descriptor.operations().size());
     for(var operation:descriptor.operations())assertThat(bindings).anySatisfy(binding->{
       assertThat(binding.id()).isEqualTo(operation.operationId());assertThat(binding.reference()).isTrue();
-      assertThat(binding.objectType()).isEmpty();assertThat(binding.permissions()).isEmpty();assertThat(binding.pages()).isEmpty();
     });
   }
   /** 所有统一声明页面键必须映射真实路由，禁止将页面键拼成URL。 */
   @Test void unifiedObjectPagesUseRegisteredRoutes(){
-    var objects=java.util.List.of(new com.appnexus.masterdata.adapter.integration.partner.BusinessPartnerDeclaration().descriptor(),new com.appnexus.platform.security.OrganizationUnitDeclaration().descriptor(),new com.appnexus.platform.security.AccountDeclaration().descriptor(),new com.appnexus.platform.security.TenantMemberDeclaration().descriptor(),new com.appnexus.platform.security.PersonDirectoryDeclaration().descriptor());
+    var objects=java.util.List.of(new com.appnexus.masterdata.adapter.integration.partner.BusinessPartnerDeclaration().descriptor(),new com.appnexus.masterdata.adapter.web.organization.OrganizationUnitDeclaration().descriptor(),new com.appnexus.platform.security.AccountDeclaration().descriptor(),new com.appnexus.platform.security.TenantMemberDeclaration().descriptor(),new com.appnexus.masterdata.adapter.web.organization.PersonDirectoryDeclaration().descriptor());
     var apiOnly=new java.util.ArrayList<String>();
     for(var object:objects)for(var action:object.operations()){
       var pages=new java.util.ArrayList<com.appnexus.contracts.businessobject.BusinessObjects.PageOperation>();

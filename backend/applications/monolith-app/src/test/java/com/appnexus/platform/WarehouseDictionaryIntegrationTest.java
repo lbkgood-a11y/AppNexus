@@ -38,8 +38,8 @@ class WarehouseDictionaryIntegrationTest extends DatabaseTestSupport {
    assertThat(master.list(c,kind,"",null,1,1,id).rows().getFirst().attributes())
        .containsEntry("phone","13800138000").containsEntry("email","fixture@example.test");
    for(var entry:Map.of("phone","MASKED","email","HIDDEN").entrySet()){
-    int inserted=jdbc.update("INSERT INTO access_role_field_security(role_id,resource_type,field_code,display_mode) "+
-        "SELECT role_id,'masterdata.warehouse',?,? FROM access_member_role WHERE tenant_id=UUID_TO_BIN(?) AND member_id=UUID_TO_BIN(?)",
+    int inserted=jdbc.update("INSERT INTO access_role_field_security(role_id,resource_type,field_code,display_mode,tenant_id) "+
+        "SELECT role_id,'masterdata.warehouse',?,?,tenant_id FROM access_member_role WHERE tenant_id=UUID_TO_BIN(?) AND member_id=UUID_TO_BIN(?)",
         entry.getKey(),entry.getValue(),c.tenantId().toString(),c.memberId().toString());
     assertThat(inserted).isPositive();
    }

@@ -42,5 +42,33 @@ public final class ScopedSql {
         return START+sql.substring(5);
     }
 
+    /**
+     * 自助查询的固定本人范围，支持历史未知人员的记录。
+     * @param accountColumn 对象声明中的申请人列
+     * @param personColumn 对象声明中的人员列；空表示只限定账号
+     * @param account 当前请求的账号文本，生产环境必须匹配认证上下文中的 UUID
+     * @param person 当前已选人员文本，可空；生产环境必须匹配认证上下文中的人员 UUID
+     */
+    public record OwnerPredicate(String accountColumn,String personColumn,String account,String person) {
+        public OwnerPredicate {
+            if (!identifier(accountColumn)||(personColumn!=null&&!identifier(personColumn))
+                ||(personColumn==null&&person!=null)) throw invalid();
+            if(account==null||account.isBlank()||(person!=null&&person.isBlank()))throw invalid();
+        }
+
+        /** @return 本人账号和当前人员的交集条件，保留历史空人员记录 */
+        public String sql(){
+            String accountFilter=" AND "+accountColumn+" = ?";
+            if(personColumn==null)return accountFilter;
+            return accountFilter+" AND "+(person==null
+                ? personColumn+" IS NULL" : "("+personColumn+" = ? OR "+personColumn+" IS NULL)");
+        }
+
+        /** @return 按占位顺序排列的可信身份值 */
+        public List<String> parameters(){return person==null?List.of(account):List.of(account,person);}
+
+        private static boolean identifier(String column){return column!=null&&column.matches("[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)?");}
+    }
+
     private static SecurityException invalid(){return new SecurityException("ROW_ACCESS_BINDING_MISMATCH");}
 }

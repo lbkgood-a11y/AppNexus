@@ -32,6 +32,32 @@ public class TaskOperationsAdapter implements TaskOperations, DataAccessDeclarat
   return Optional.ofNullable(outbox.event(actor.toString(),event)).map(row->new TaskManagement.EventDetails(row,outbox.deliveries(actor.toString(),event),outbox.attempts(actor.toString(),event)));
  }
  /** {@inheritDoc} */
+ @Override @Transactional(readOnly=true)
+ public List<TaskManagement.Subscription> subscriptions(UUID actor) {
+  var states=new HashMap<String,Map<String,Object>>();
+  events.authorizeSubscriptionRead(actor);
+  outbox.subscriptionStates(ReliableEvents.PLATFORM.toString(),actor.toString()).forEach(row->{
+   var fields=new HashMap<>(row);
+   String id=(String)fields.remove("id");
+   states.put(id,fields);
+  });
+  return events.subscriptionCatalog(states);
+ }
+ /** {@inheritDoc} */
+ @Override @Transactional
+ public boolean setSubscriptionPaused(UUID actor,String type,String consumer,boolean paused,String reason) {
+  var id=events.manageableSubscription(type,consumer);
+  if(id.isEmpty()) return false;
+  String target=id.get().toString();
+  String account=actor.toString();
+  String scope=ReliableEvents.PLATFORM.toString();
+  events.authorizeSubscriptionState(actor,target);
+  outbox.setSubscriptionState(scope,account,target,type,consumer,paused);
+  if(audit.subscriptionStateChanged(scope,account,target,paused,reason)!=1)
+   throw new IllegalStateException("订阅状态审计写入失败");
+  return true;
+ }
+ /** {@inheritDoc} */
  @Override @Transactional
  public boolean retryDeliveryAndAudit(UUID actor,UUID delivery,String reason) {
   if(!events.retryDelivery(delivery,actor)) return false;

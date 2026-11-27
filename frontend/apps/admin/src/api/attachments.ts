@@ -2,7 +2,7 @@ import type { RecordAudit } from "@appnexus/ui";
 import { currentTenant } from "@/utils/tenantContext";
 import { http } from "@/utils/http";
 
-/** 附件资料响应。仅平台台账返回存储路径。 */
+/** 附件资料响应，私有对象路径由服务端保留。 */
 export interface AttachmentItem {
   id: string;
   tenantId: string;
@@ -10,7 +10,6 @@ export interface AttachmentItem {
   fileName: string;
   sizeBytes: number;
   mediaType: string;
-  storagePath?: string;
   status: string;
   createdBy: string;
   createdAt: string;
@@ -32,7 +31,6 @@ export interface AttachmentRule {
 /** 工作台服务端筛选，时间以 ISO 8601 传输。 */
 export interface AttachmentFilter {
   businessId?: string;
-  tenantId?: string;
   fileName?: string;
   typeKey?: string;
   createdBy?: string;
@@ -46,7 +44,8 @@ interface AttachmentPage {
 }
 
 const path = "/api/configuration/attachments";
-const policyPath = "/bff/platform/attachment-policies";
+const policyPath = "/api/configuration/attachment-policies";
+const ledgerPath = "/api/configuration/attachment-ledger";
 const csrf = () => http.request<{ token: string; headerName: string }>("get", "/bff/csrf");
 
 /** 复用当前会话、租户版本及 CSRF。上传失败后只由调用方以同一幂等键重试。 */
@@ -74,7 +73,10 @@ export const attachmentsApi = {
     });
   },
   ledger: (params: AttachmentFilter & { offset: number; limit: number }, signal: AbortSignal) =>
-    http.request<AttachmentPage>("get", "/bff/platform/attachments", { params, signal }),
+    http.request<AttachmentPage>("get", ledgerPath, { params, signal }),
+  /** 由本租户台账准入保护，按附件 UUID 获取私有原件。 */
+  download: (id: string) => http.request<Blob>("get",
+    ledgerPath + "/" + encodeURIComponent(id) + "/download", { responseType: "blob" }),
   policies: () => http.request<AttachmentRule[]>("get", policyPath),
   async savePolicy(rule: AttachmentRule) {
     const token = await csrf();

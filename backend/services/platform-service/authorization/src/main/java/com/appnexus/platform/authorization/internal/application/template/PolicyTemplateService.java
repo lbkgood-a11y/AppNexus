@@ -54,8 +54,12 @@ public final class PolicyTemplateService implements PolicyTemplates {
     public RolePermissionManagement.AuthorizationAssignment apply(RoleManagement.Context context,UUID role,UUID template,long version,String reason){return storage.atomic(()->{
         roles.getAuthorization(context,role);
         var value=storage.load(template,owner(context));
-        if(value.dataPolicies().stream().anyMatch(p->!p.resourceType().equals("organization.unit"))&&!Objects.equals(value.dataAccessVersion(),dataAccess.version()))throw invalid();
-        return roles.replaceAuthorization(context,role,version,value.permissionIds(),value.dataPolicies(),value.fieldPolicies(),reason);});
+        if((!value.objectScopes().isEmpty()||value.dataPolicies().stream().anyMatch(p->!p.resourceType().equals("organization.unit")))&&!Objects.equals(value.dataAccessVersion(),dataAccess.version()))throw invalid();
+        var overrides = value.dataPolicies().stream()
+            .filter(policy -> !value.inheritedPermissionIds().contains(policy.permissionId()))
+            .collect(java.util.stream.Collectors.toUnmodifiableSet());
+        return roles.replaceAuthorization(context, role, version, value.permissionIds(), overrides,
+                value.fieldPolicies(), value.objectScopes(), reason);});
     }
     private UUID owner(RoleManagement.Context context){return context.tenantId()==null?new UUID(0,0):context.tenantId();}
     private Rejection invalid(){return new Rejection();}

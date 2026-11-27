@@ -18,20 +18,31 @@ import {pageOperations,selectPageOperation,hasPageOperation} from './pageOperati
 const props = defineProps<{ api: BusinessObjectApi; platform?: boolean; errorText: (e: unknown) => string }>();
 const { t, locale } = useI18n(); const router = useRouter();
 const rows = ref<Awaited<ReturnType<BusinessObjectApi['catalog']>>>([]);
-const loading=ref(false), busy=ref(false), error=ref(""), query=ref(""), applied=ref(""), page=ref(1), size=ref(20);
+const loading=ref(false), busy=ref(false), error=ref(""), page=ref(1), size=ref(20);
+const emptyFilters = {
+  keyword: '',
+  category: undefined as Descriptor['category'] | undefined,
+  state: undefined as 'enabled' | 'disabled' | undefined
+};
+const searchFilters = ref({ ...emptyFilters });
+const appliedFilters = ref({ ...emptyFilters });
+const states = ['enabled', 'disabled'] as const;
 const selected=ref<Descriptor>(), dialog=ref(false), revision=ref(-1), published=ref(0), bindings=ref<Binding[]>([]);
 /** 两个管理域均来自当前对象契约；目录只读展示条件字段和字段限制。 */
 const accessDomains=computed(()=>[selected.value?.dataAccess,selected.value?.dataAccess?.otherDomain].flatMap(domain=>domain?[domain]:[]));
+/** 与授权元数据的公开范围一致；历史组织或人员范围仍由原执行协议处理。 */
 const accessOperations=computed(()=>accessDomains.value.flatMap(domain=>
-  (selected.value?.operations??[]).filter(operation=>domain.operationScopes[operation.operationCode]?.length).map(operation=>({
-    ...operation,scopes:domain.operationScopes[operation.operationCode].flatMap(scope=>{
-      if(scope!=='RULES'||operation.permissionCode.endsWith(':create'))return [scope];
+  (selected.value?.operations??[]).map(operation=>({
+    ...operation,scopes:(domain.operationScopes[operation.operationCode]??[]).flatMap(scope=>{
+      if(scope==='ALL')return [scope];
+      if(scope!=='RULES')return [];
+      if(operation.permissionCode.endsWith(':create'))return [scope];
       const hasConditions=domain.dimensions?.some(field=>!field.operationCodes?.length||field.operationCodes.includes(operation.operationCode));
       return hasConditions?['RECORDS','RULES']:['RECORDS'];
     }),
     guarded:domain.standardCrud?.operations.includes(operation.operationCode)??false,
     scope:domain.scope
-  }))));
+  })).filter(operation=>operation.scopes.length)));
 const scopeResources=computed(()=>accessDomains.value.flatMap(domain=>
   domain.resources.map(resource=>({...resource,scope:domain.scope,
     parent:domain.resources.find(item=>item.resource===resource.parentResource),
@@ -75,16 +86,24 @@ async function controlEntry(operation:string){
   try{reason=(await ElMessageBox.prompt(t('businessObject.controlReason'),t(enabled?'businessObject.enableEntry':'businessObject.disableEntry'),{inputValidator:value=>!!value?.trim()&&value.length<=200, inputErrorMessage:t('businessObject.controlReason'),type:'warning'})).value;}catch{return;}
   await run(async()=>{pageEditor.value=await props.api.controlPage(selected.value!.objectType,pageEditor.value.revision,operation,enabled,reason);ElMessage.success(t('businessObject.saved'));});
 }
-/** 能力概览直接读取同一对象声明及关联，不维护另一套可编辑目录。 */
-const capabilityRows=computed(()=>{
- if(!selected.value)return [];
- const entries=selected.value.operations.flatMap(operation=>operation.interaction.capabilities.map(capability=>({
-  key:operation.operationId+":"+capability.service,operation:locale.value.startsWith("zh")?operation.nameZh:operation.nameEn,
-  service:capability.service,contract:capability.reference,
-  bindings:bindings.value.filter(binding=>binding.operationCode===operation.operationCode&&binding.service===capability.service).length
- })));
- for(const field of selected.value.codingFields??[])entries.push({key:"CODING:"+field.field,operation:field.field,service:"CODING",contract:field.operationCode,bindings:0});
- return entries;
+/** 配置概览仅展示已有配置入口的能力；交互契约展开行展示操作的完整能力声明。 */
+const capabilityRows = computed(() => {
+  if (!selected.value) return [];
+  const operationRows = selected.value.operations.flatMap(operation =>
+    operation.interaction.capabilities
+      .filter(capability => capability.service === 'WORKFLOW' || capability.service === 'PRINT')
+      .map(capability => ({
+        operation: locale.value.startsWith('zh') ? operation.nameZh : operation.nameEn,
+        service: capability.service,
+        contract: capability.reference
+      }))
+  );
+  const codingRows = (selected.value.codingFields ?? []).map(field => ({
+    operation: field.field,
+    service: 'CODING',
+    contract: field.operationCode
+  }));
+  return [...operationRows, ...codingRows];
 });
 const printScenes=ref<Record<string,Awaited<ReturnType<BusinessObjectApi['scenes']>>>>({});
 const operationAction=(d:Descriptor,key:string)=>pageOperations(d).find(a=>a.operationId===key);
@@ -92,8 +111,32 @@ const operationAction=(d:Descriptor,key:string)=>pageOperations(d).find(a=>a.ope
 const bindingForms=new Map<string,FormInstance>();
 function bindForm(id:string,form:unknown){if(form)bindingForms.set(id,form as FormInstance);else bindingForms.delete(id);}
 const bindingRules=computed(()=>({name:[{required:true,whitespace:true,max:100,message:t('businessObject.required'),trigger:'blur'}],operationId:[{required:true,message:t('businessObject.selectPageOperation'),trigger:'change'}],definitionId:[{required:true,message:t('businessObject.required'),trigger:'change'}]}));
+/** 编码声明通过字段键复用业务事实名称；旧契约缺少名称时仍展示字段键。 */
+const codingFieldLabels=computed(()=>new Map(selected.value?.fields.map(field=>[
+  field.key,locale.value.startsWith('zh')?field.nameZh:field.nameEn
+])));
 const name=(d:Descriptor)=>locale.value.startsWith('zh')?d.nameZh:d.nameEn;
-const filtered=computed(()=>rows.value.filter(r=>[r.descriptor.objectType,r.descriptor.module,name(r.descriptor)].some(x=>x.toLowerCase().includes(applied.value.toLowerCase()))));
+const categories = computed(() => [...new Set(rows.value.map(row => row.descriptor.category))].sort());
+/** 仅筛选当前管理域已获准读取的目录；空条件不限，筛选先于分页。 */
+const filtered = computed(() => {
+  const { keyword, category, state } = appliedFilters.value;
+  const normalizedKeyword = keyword.toLowerCase();
+  return rows.value.filter(({ descriptor, enabled }) =>
+    (!category || descriptor.category === category) &&
+    (!state || state === (enabled ? 'enabled' : 'disabled')) &&
+    [descriptor.objectType, descriptor.module, name(descriptor)].some(value =>
+      value.toLowerCase().includes(normalizedKeyword)
+    )
+  );
+});
+function applyFilters() {
+  appliedFilters.value = { ...searchFilters.value };
+  page.value = 1;
+}
+function resetFilters() {
+  searchFilters.value = { ...emptyFilters };
+  applyFilters();
+}
 const paged=computed(()=>filtered.value.slice((page.value-1)*size.value,page.value*size.value));
 const columns=computed<ManagementColumn[]>(()=>[
   {key:'state',label:t('businessObject.state'),width:110}, {key:'objectType',label:t('businessObject.code'),minWidth:180},
@@ -151,7 +194,29 @@ onMounted(async()=>{await load();const type=router.currentRoute.value.query.type
   <div class="management-page">
   <BusinessWorkspace :title="t(platform?'businessObject.platformTitle':'businessObject.title')">
     <template #feedback><FloatingError v-if="error && !dialog" :title="error" scope="error" type="error" :closable="false"><el-button v-operation="platform ? 'BusinessObject.catalog' : 'BusinessObject.tenantCatalog'" text @click="load">{{t('businessObject.refresh')}}</el-button></FloatingError></template>
-    <template #search><div class="management-filter"><el-form inline @submit.prevent="applied=query;page=1"><el-form-item :label="t('businessObject.search')"><el-input v-model="query" clearable /></el-form-item><div class="management-filter-actions"><el-button type="primary" native-type="submit"><AppIcon name="search" :size="16" class="mr-1" />{{t('administration.search')}}</el-button><el-button @click="query='';applied='';page=1"><AppIcon name="refresh" :size="16" class="mr-1" />{{t('businessObject.reset')}}</el-button></div></el-form></div></template>
+    <template #search>
+      <div class="management-filter">
+        <el-form inline @submit.prevent="applyFilters">
+          <el-form-item :label="t('businessObject.search')">
+            <el-input v-model="searchFilters.keyword" clearable />
+          </el-form-item>
+          <el-form-item :label="t('businessObject.category')">
+            <el-select v-model="searchFilters.category" class="object-filter-select" clearable :placeholder="t('businessObject.allCategories')">
+              <el-option v-for="category in categories" :key="category" :label="t('businessObject.categories.' + category)" :value="category" />
+            </el-select>
+          </el-form-item>
+          <el-form-item :label="t('businessObject.state')">
+            <el-select v-model="searchFilters.state" class="object-filter-select" clearable :placeholder="t('businessObject.allStatuses')">
+              <el-option v-for="state in states" :key="state" :label="t('businessObject.' + state)" :value="state" />
+            </el-select>
+          </el-form-item>
+          <div class="management-filter-actions">
+            <el-button type="primary" native-type="submit"><AppIcon name="search" :size="16" class="mr-1" />{{t('administration.search')}}</el-button>
+            <el-button @click="resetFilters"><AppIcon name="refresh" :size="16" class="mr-1" />{{t('businessObject.reset')}}</el-button>
+          </div>
+        </el-form>
+      </div>
+    </template>
     <template #data><ManagementTable :title="t(platform?'businessObject.platformTitle':'businessObject.title')" :rows="paged" :columns="columns" :loading="loading" :busy="busy" embedded @refresh="load">
       <template v-if="platform" #titleHelp><InfoHint :content="t('businessObject.catalogBoundary')" /></template>
       <template #objectType="{row}">{{row.descriptor.objectType}}</template><template #name="{row}">{{name(row.descriptor)}}</template><template #module="{row}">{{row.descriptor.module}}</template><template #version="{row}">{{row.descriptor.version}}</template>
@@ -175,6 +240,9 @@ onMounted(async()=>{await load();const type=router.currentRoute.value.query.type
        <header><h3>{{t('businessObject.codingDeclaration')}}<InfoHint :content="t('businessObject.codingDeclarationHint')" /></h3></header>
        <VxeTable v-if="selected.codingFields?.length" size="small" :min-height="0" :data="selected.codingFields || []" :column-config="{resizable:true}" border="inner">
         <VxeColumn field="field" :title="t('coding.field')" min-width="180" />
+        <VxeColumn :title="t('businessObject.name')" min-width="160">
+          <template #default="{row}">{{ codingFieldLabels.get(row.field) || '—' }}</template>
+        </VxeColumn>
         <VxeColumn :title="t('businessObject.action')" min-width="220"><template #default="{row}">{{selected.objectType}}.{{row.operationCode}}</template></VxeColumn>
         <VxeColumn field="maxLength" :title="t('businessObject.codingMaxLength')" min-width="160" align="right" />
        </VxeTable>
@@ -198,6 +266,7 @@ onMounted(async()=>{await load();const type=router.currentRoute.value.query.type
           </vxe-table>
         </template></vxe-column>
         <vxe-column field="operationCode" :title="t('businessObject.action')"/>
+        <vxe-column :field="locale.startsWith('zh')?'nameZh':'nameEn'" :title="t('businessObject.name')" min-width="160"/>
         <vxe-column field="interaction.code" min-width="200" :title="t('businessObject.interoperationCode')"/>
         <vxe-column field="interaction.version" width="110" :title="t('businessObject.contractVersion')"/>
         <vxe-column :title="t('businessObject.trigger')"><template #default="{row}">{{t('businessObject.triggers.'+row.interaction.trigger)}}</template></vxe-column>
@@ -254,7 +323,7 @@ onMounted(async()=>{await load();const type=router.currentRoute.value.query.type
       </el-tab-pane>
       <el-tab-pane :label="t('businessObject.capabilityOverview')" name="capabilities">
        <header><h3>{{t('businessObject.capabilityOverview')}}<InfoHint :content="t('businessObject.capabilityOverviewHint')" /></h3></header>
-       <vxe-table :data="capabilityRows" border="inner" :column-config="{resizable:true}">
+       <vxe-table v-if="capabilityRows.length" :data="capabilityRows" border="inner" :column-config="{resizable:true}">
         <vxe-column field="operation" :title="t('businessObject.action')" min-width="150" />
         <vxe-column field="service" :title="t('businessObject.service')" min-width="120" />
         <vxe-column field="contract" :title="t('businessObject.contractReference')" min-width="200" />
@@ -262,6 +331,7 @@ onMounted(async()=>{await load();const type=router.currentRoute.value.query.type
          <el-button v-if="!platform" link type="primary" @click="detailTab=row.service==='CODING'?'coding':'configuration'">{{t('businessObject.configureCapability')}}</el-button>
         </template></vxe-column>
        </vxe-table>
+       <el-empty v-else :description="t('businessObject.noConfigurableCapabilities')" />
       </el-tab-pane>
       <el-tab-pane v-if="!platform && selected.codingFields?.length" :label="t('coding.bindingsTitle')" name="coding" lazy>
        <CodingConfiguration :key="selected.objectType" :descriptor="selected" :api="api" :error-text="errorText" />
@@ -350,6 +420,10 @@ onMounted(async()=>{await load();const type=router.currentRoute.value.query.type
   </div>
 </template>
 <style scoped>
+.object-filter-select { width: 150px; max-width: 100%; }
+@media (max-width: 760px) {
+  .object-filter-select { width: 100%; }
+}
 /* 展示分区继承公共Token，不覆盖公共卡片、描述列表及表格内部密度。 */
 .object-contract-sections{container-type:inline-size;display:flex;flex-direction:column;gap:var(--app-section-gap);min-width:0}
 .object-contract-section{flex:none;min-width:0;display:grid;grid-template-columns:minmax(0,1fr);gap:var(--app-section-gap);padding:var(--app-content-padding);border:1px solid var(--el-border-color-lighter);border-radius:var(--el-border-radius-base)}

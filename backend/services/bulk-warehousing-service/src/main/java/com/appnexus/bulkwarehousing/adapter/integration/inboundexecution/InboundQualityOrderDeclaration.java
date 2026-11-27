@@ -23,7 +23,8 @@ public final class InboundQualityOrderDeclaration implements Provider {
                 InboundDocumentPageOperations.QUALITY.entry("GET","/api/bulk-inbound-quality-orders:register-sample"));
         var decide = DedicatedOperations.operation("BulkInboundQualityOrder", "decide_quality",
                 "判定入库质量", "Decide inbound quality", DecideInboundQualityUseCase.PERMISSION,
-                InboundDocumentPageOperations.QUALITY.entry("POST","/api/bulk-inbound-quality-orders/{id}:decide"));
+                InboundDocumentPageOperations.QUALITY.entry("POST","/api/bulk-inbound-quality-orders/{id}:decide"),
+                InboundDocumentPageOperations.QUALITY.entry("GET","/api/bulk-inbound-quality-orders/{id}:decide"));
         var inspect = DedicatedOperations.operation("BulkInboundQualityOrder", "inspect_steel",
                 "核验钢铁实物和质保书", "Inspect inbound steel", InspectInboundSteelUseCase.PERMISSION,
                 InboundDocumentPageOperations.QUALITY.entry("POST","/api/bulk-inbound-quality-orders:inspect-steel"),

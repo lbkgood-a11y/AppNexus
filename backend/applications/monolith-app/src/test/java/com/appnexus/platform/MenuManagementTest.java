@@ -30,7 +30,6 @@ class MenuManagementTest extends DatabaseTestSupport {
  @Autowired JdbcTemplate jdbc;
  @Autowired MockMvc mvc;
  @Autowired NavigationQuery navigation;
- @Autowired com.appnexus.platform.authorization.OrganizationGrantManagement organizationGrants;
  UUID actor;
  /** 通过真实 MVC 转换器验证审计投影，避免仅直接调用 Advice 漏掉泛型集合序列化故障。 */
  @Test void menuListSerializesAuditProjection() throws Exception {
@@ -188,12 +187,13 @@ class MenuManagementTest extends DatabaseTestSupport {
     .containsExactly("master-data/warehouse","master-data/storage");
   assertThat(ownerItems.stream().filter(item->warehousing.id().equals(item.parentId()) && item.component()!=null)
       .map(MenuManagement.Menu::component))
-    .containsExactly("warehousing/inventory-overview");
+    .containsExactly("warehousing/inventory-overview","warehousing/personnel-authorization");
   assertWarehouseDocuments(ownerItems,warehousing,"inbound","inbound-notices","inbound-workbench",
-      "inbound-quality-orders","inbound-metering-orders","inbound-receipt-orders");
+      "inbound-quality-orders","inbound-tasks","inbound-metering-orders","inbound-receipt-orders","inbound-templates");
   assertThat(jdbc.queryForList("SELECT code FROM access_permission WHERE code LIKE 'warehousing.%'",String.class))
       .containsExactlyInAnyOrder("warehousing.inbound:issue","warehousing.inbound:update","warehousing.coil.stockbalance:read",
           "warehousing.coil.stockbalance:read_overview","warehousing.inboundtask:read_workbench_queue",
+          "warehousing.inboundtask:read_task_list",
           "warehousing.inboundquality:register_sample","warehousing.inboundquality:decide_quality",
           "warehousing.inboundmetering:register_external","warehousing.receipt:create_bulk_draft","warehousing.receipt:post",
           "warehousing.receipt:reverse","warehousing.inboundmetering:record_gross",
@@ -203,22 +203,22 @@ class MenuManagementTest extends DatabaseTestSupport {
           "warehousing.inboundtask:read_workbench_identity","warehousing.inboundquality:read_workbench_quality",
           "warehousing.inboundmetering:read_workbench_meter","warehousing.receipt:read_workbench_receipt",
           "warehousing.inboundtask:create_from_notice","warehousing.receipt:open_draft",
+          "warehousing.inboundtask:raise_site_gate","warehousing.inboundtask:call_site_number","warehousing.inboundtask:print_site_ticket",
+          "warehousing.commoditytemplate:list","warehousing.commoditytemplate:save","warehousing.commoditytemplate:publish",
           "warehousing.inboundquality:list_documents","warehousing.inboundquality:read_document",
           "warehousing.inboundmetering:list_documents","warehousing.inboundmetering:read_document",
           "warehousing.receipt:list_documents","warehousing.receipt:read_document");
   assertThat(ownerItems).noneMatch(item->item.component()!=null && item.component().startsWith("warehousing/")
-      && !java.util.Set.of("warehousing/inventory-overview","warehousing/inbound-notices","warehousing/inbound-workbench",
-          "warehousing/inbound-quality-orders","warehousing/inbound-metering-orders","warehousing/inbound-receipt-orders").contains(item.component()));
+      && !java.util.Set.of("warehousing/inventory-overview","warehousing/personnel-authorization","warehousing/inbound-notices","warehousing/inbound-workbench",
+          "warehousing/inbound-quality-orders","warehousing/inbound-metering-orders","warehousing/inbound-receipt-orders",
+          "warehousing/inbound-templates","warehousing/inbound-tasks").contains(item.component()));
   assertThat(navigation.current(account,tenant.id(),member,1).items()).extracting(MenuManagement.Menu::id)
     .doesNotContain(products.id(),warehouses.id(),warehousing.id());
   // 待办及本人单据入口可存在；不能把公共导航存在误判为获得组织或配置管理权。
   assertThat(navigation.current(account,tenant.id(),member,1).items()).extracting(MenuManagement.Menu::component)
-    .doesNotContain("organization/index","roles/index","business-objects/index","platform/business-objects");
-  organizationGrants.grant(tenant.id(),member,ownerMember,com.appnexus.platform.authorization.OrganizationCapability.READ,null);
-  assertThat(navigation.current(account,tenant.id(),member,1).items()).extracting(MenuManagement.Menu::component).contains("organization/index").doesNotContain("roles/index");
-  organizationGrants.revoke(tenant.id(),member,ownerMember,com.appnexus.platform.authorization.OrganizationCapability.READ);
-  assertThat(navigation.current(account,tenant.id(),member,1).items()).extracting(MenuManagement.Menu::component)
-    .doesNotContain("organization/index","roles/index","business-objects/index","platform/business-objects");
+    .doesNotContain("organization/index","roles/index","business-objects/index","platform/business-objects",
+        "warehousing/personnel-authorization");
+
  }
 
  /** 核对实际可用的内置单据分组、顺序及构建内页面契约。 */

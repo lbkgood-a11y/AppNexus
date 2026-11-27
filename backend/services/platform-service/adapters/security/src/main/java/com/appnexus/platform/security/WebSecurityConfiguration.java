@@ -99,8 +99,7 @@ public class WebSecurityConfiguration {
             org.springframework.security.oauth2.server.resource.introspection.OpaqueTokenIntrospector introspection,
             com.appnexus.platform.identity.port.AccountRepository accounts,SessionLifetime lifetime,
             com.appnexus.platform.tenant.TenantAccess tenants,
-            com.appnexus.platform.organization.PersonnelExecution personnel,
-            com.appnexus.platform.authorization.OrganizationAuthorization organizationAuthorization)throws Exception{
+            com.appnexus.platform.tenant.TenantRequestIdentity requestIdentity)throws Exception{
         http.securityMatcher(request->request.getRequestURI().startsWith(request.getContextPath()+"/api/")&&request.getHeader("Authorization")!=null)
             .sessionManagement(session->session.sessionCreationPolicy(org.springframework.security.config.http.SessionCreationPolicy.STATELESS))
             // 此链仅接受 Authorization Bearer，Cookie 不参与认证，因此不使用 Cookie CSRF 模型。
@@ -108,7 +107,7 @@ public class WebSecurityConfiguration {
             .oauth2ResourceServer(resource->resource.opaqueToken(token->token.introspector(introspection)))
             .authorizeHttpRequests(auth->auth.anyRequest().authenticated())
             .addFilterAfter(new AccountStatusFilter(accounts,lifetime),org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter.class)
-            .addFilterAfter(new TenantExecutionFilter(tenants,organizationAuthorization,personnel),AccountStatusFilter.class);
+            .addFilterAfter(new TenantExecutionFilter(tenants,requestIdentity),AccountStatusFilter.class);
         return http.build();
     }
     @Bean
@@ -118,8 +117,7 @@ public class WebSecurityConfiguration {
             ClientRegistrationRepository registrations,
             com.appnexus.platform.audit.port.SecurityLogRepository logs,
             com.appnexus.platform.tenant.TenantAccess tenantAccess,
-            com.appnexus.platform.organization.PersonnelExecution personnel,
-            com.appnexus.platform.authorization.OrganizationAuthorization organizationAuthorization,
+            com.appnexus.platform.tenant.TenantRequestIdentity requestIdentity,
             org.springframework.data.redis.core.StringRedisTemplate redis,
             com.appnexus.platform.identity.port.AccountRepository accounts,
             SessionLifetime lifetime,
@@ -134,7 +132,7 @@ public class WebSecurityConfiguration {
                 org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter.class)
             .addFilterAfter(new AccountStatusFilter(accounts, lifetime),
                 org.springframework.security.web.authentication.AnonymousAuthenticationFilter.class)
-            .addFilterAfter(new TenantExecutionFilter(tenantAccess, organizationAuthorization,personnel), AccountStatusFilter.class)
+            .addFilterAfter(new TenantExecutionFilter(tenantAccess, requestIdentity), AccountStatusFilter.class)
             .addFilterAfter(new PlatformMfaFilter(requirePlatformMfa,mfa),AccountStatusFilter.class)
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/login", "/login/csrf", "/login/recovery", "/login/recovery/completion", "/error", "/oauth2/authorization/**", "/login/oauth2/code/**").permitAll()

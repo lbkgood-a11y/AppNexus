@@ -47,6 +47,74 @@ class ProductV1IntegrationTest extends DatabaseTestSupport {
  @Autowired InboundReceiving inboundReceiving;
  @Autowired WarehouseBalances warehouseBalances;
  @Autowired com.appnexus.platform.authorization.RolePermissionManagement rolePermissions;
+ @Autowired com.appnexus.platform.authorization.RoleManagement publicRoles;
+ @Autowired com.appnexus.platform.authorization.SubjectRoleManagement publicSubjects;
+ @Autowired com.appnexus.platform.persistence.platformscope.MyBatisPlatformAdministration publicAdministration;
+ @Autowired com.appnexus.platform.businessobject.BusinessObjectManagement objectConfiguration;
+ @Autowired com.appnexus.contracts.businessobject.BusinessObjectExecution publicExecution;
+ @Autowired List<com.appnexus.contracts.businessobject.BusinessObjects.Provider> objectProviders;
+
+ /** 从实际商品记录、租户成员及角色策略执行公共读取，复核不同商品和旧配置的拒绝。 */
+ @Test void publicProductUsesSpecifiedRecordScope(){
+  UUID admin=UUID.fromString(jdbc.queryForObject("SELECT BIN_TO_UUID(id) FROM identity_account WHERE username='admin-test'",String.class));
+  publicAdministration.initializeAdministrator("admin-test");
+  UUID tenant=UUID.randomUUID(), owner=UUID.randomUUID(), user=UUID.randomUUID(), ownerMember=UUID.randomUUID(), userMember=UUID.randomUUID();
+  jdbc.update("INSERT INTO platform_tenant(id,name) VALUES(UUID_TO_BIN(?),'公共商品范围验收')",tenant.toString());
+  for(var member:Map.of(owner,ownerMember,user,userMember).entrySet()){
+   var principal=member.getKey().toString();
+   jdbc.update("INSERT INTO identity_account(id,username,display_name,password_hash) VALUES(UUID_TO_BIN(?),?,'公共商品范围','unused')",principal,"product-runtime-"+principal);
+   jdbc.update("INSERT INTO tenant_member(id,tenant_id,account_id) VALUES(UUID_TO_BIN(?),UUID_TO_BIN(?),UUID_TO_BIN(?))",member.getValue().toString(),tenant.toString(),principal);
+  }
+  bootstrap.initialize(tenant,ownerMember);
+  var ownerContext=new VerifiedTenantContext(owner,tenant,ownerMember,1);
+  bindReferenceContext(ownerContext);
+  String organization=ProductOrganizationFixture.create(jdbc,tenant);
+  var unit=catalog.createUnit(ownerContext,new ProductCatalogData.UnitInput("RUNTIME-EA","件","COUNT",0,0));
+  var category=catalog.createCategory(ownerContext,new ProductCatalogData.CategoryInput("RUNTIME","公共商品",null,0));
+  var slots=new LinkedHashMap<String,String>();
+  for(String purpose:List.of("BASIC","SPEC","QUALITY","EXTENSION"))slots.put(purpose,null);
+  var config=catalog.publish(ownerContext,category.id(),new ProductCatalogData.Publish(slots,false,0));
+  UUID granted=UUID.randomUUID(),denied=UUID.randomUUID();
+  for(var id:List.of(granted,denied)){
+   jdbc.update("""
+       INSERT INTO md_product_v1(id,tenant_id,code,name,product_form,base_unit_id,category_id,category_config_id,
+           specification_mode,status,structure_state,organization_id)
+       VALUES(UUID_TO_BIN(?),UUID_TO_BIN(?),?,'公共商品','PHYSICAL',UUID_TO_BIN(?),UUID_TO_BIN(?),UUID_TO_BIN(?),
+           'CUSTOM','ENABLED','COMPLETE',UUID_TO_BIN(?))
+       """,id.toString(),tenant.toString(),id.toString(),unit.id(),category.id(),config.id(),organization);
+  }
+  var roles=new com.appnexus.platform.authorization.RoleManagement.Context(admin,tenant,null);
+  var role=publicRoles.create(roles,new com.appnexus.platform.authorization.RoleManagement.Create("rt_"+UUID.randomUUID().toString().replace("-",""),"公共商品读取",null,100));
+  UUID read=UUID.fromString(jdbc.queryForObject("SELECT BIN_TO_UUID(id) FROM access_permission WHERE code='masterdata.product:read'",String.class));
+  var grant=new com.appnexus.platform.authorization.DataGrantRules.Rule(com.appnexus.platform.authorization.DataGrantRules.SubjectType.ROLE_MEMBERS,Set.of(),Set.of(granted),List.of(),false);
+  var policy=new com.appnexus.platform.authorization.RolePermissionManagement.DataPolicy(read,com.appnexus.platform.authorization.DataScopeAuthorization.ScopeType.RULES,"masterdata.product",Set.of(),List.of(grant));
+  rolePermissions.replaceAuthorization(roles,role.id(),role.version(),Set.of(read),Set.of(policy),"指定商品");
+  var memberState=publicSubjects.memberRoles(roles,userMember);
+  publicSubjects.replaceMemberRoles(roles,userMember,memberState.authorityVersion(),Set.of(role.id()),"公共商品读取");
+  var root=new com.appnexus.contracts.businessobject.BusinessObjects.Context(null,admin.toString(),UUID.randomUUID().toString());
+  var configOwner=new com.appnexus.contracts.businessobject.BusinessObjects.Context(tenant.toString(),owner.toString(),UUID.randomUUID().toString());
+  objectConfiguration.activate(root,"Product",0,true);
+  objectConfiguration.grant(root,"Product",tenant.toString(),true);
+  var binding=new com.appnexus.contracts.businessobject.BusinessObjects.Binding(UUID.randomUUID().toString(),"公共商品读取",null,0,List.of(),"read","BUSINESS","Product.read",null);
+  objectConfiguration.save(configOwner,"Product",-1,List.of(binding));
+  objectConfiguration.publish(configOwner,"Product",0);
+  bindReferenceContext(new VerifiedTenantContext(user,tenant,userMember,1));
+  var reader=new com.appnexus.contracts.businessobject.BusinessObjects.Context(tenant.toString(),user.toString(),UUID.randomUUID().toString());
+  assertThat(publicExecution.execute(reader,new com.appnexus.contracts.businessobject.BusinessObjectExecution.Request("Product",granted.toString(),"read","Product.read",0)).resolution().objectId())
+      .isEqualTo(granted.toString());
+  var blockedReader=new com.appnexus.contracts.businessobject.BusinessObjects.Context(tenant.toString(),user.toString(),UUID.randomUUID().toString());
+  assertThatThrownBy(()->publicExecution.execute(blockedReader,new com.appnexus.contracts.businessobject.BusinessObjectExecution.Request("Product",denied.toString(),"read","Product.read",0)))
+      .isInstanceOf(MasterData.Rejection.class).hasMessage("MASTER_DATA_DENIED");
+  var apiOnly=Set.of("BusinessPartner","OrganizationUnit","PersonDirectory","Account","TenantMember","CodingEncoder","CodingRule");
+  assertThat(objectProviders.stream().filter(p->apiOnly.contains(p.descriptor().objectType())).toList()).hasSize(apiOnly.size())
+      .allSatisfy(p->assertThat(p.descriptor().operations()).allSatisfy(op->assertThat(op.interaction().capabilities()).isEmpty()));
+  var invalid=new com.appnexus.contracts.businessobject.BusinessObjects.Binding(UUID.randomUUID().toString(),"旧客商虚假绑定",null,0,List.of(),"list","BUSINESS","BusinessPartner.list",null);
+  objectConfiguration.grant(root,"BusinessPartner",tenant.toString(),true);
+  assertThatThrownBy(()->objectConfiguration.save(configOwner,"BusinessPartner",-1,List.of(invalid)))
+      .isInstanceOf(com.appnexus.contracts.businessobject.BusinessObjects.Rejection.class)
+      .hasMessage("BUSINESS_OBJECT_ACTION_INVALID");
+ }
+
 
  /** 通过组合应用的公开契约验证规格归属、停用、可信租户和换算版本。 */
  @Test void warehouseReferencesUseExistingProductAndConversionReadBoundary() throws Exception {
@@ -275,8 +343,8 @@ class ProductV1IntegrationTest extends DatabaseTestSupport {
   assertThat(modified.header().version()).isEqualTo(found.header().version()+1);
   assertThat(modified.header().driver()).isEqualTo(new InboundReceiving.Driver("司机测试","555-0100","TEST-DRIVER-ID"));
   jdbc.update("""
-      INSERT INTO access_role_field_security(role_id,resource_type,field_code,display_mode)
-      SELECT id,'warehousing.inbound','driverIdNumber','HIDDEN'
+      INSERT INTO access_role_field_security(role_id,resource_type,field_code,display_mode,tenant_id)
+      SELECT id,'warehousing.inbound','driverIdNumber','HIDDEN',tenant_id
       FROM access_role WHERE tenant_id=UUID_TO_BIN(?) AND code='sys_tenant_admin'
       """,c.tenantId().toString());
   var hidden=warehouseBalances.document(c,WarehouseBalances.DocumentKind.INBOUND_NOTICE,notice);

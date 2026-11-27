@@ -15,7 +15,24 @@ import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandl
 
 /** 通用装配校验测试真实路径模式与权限目录，不以某一业务调用成功代替集成声明校验。 */
 class BusinessObjectIntegrationValidationTest {
-  private Provider provider(Operation action){return ()->new Descriptor("LeaveRequest","请假","Leave","leave",1,Category.TRANSACTION,List.of(),List.of(action));}
+  private Provider provider(Operation action){
+    return new Provider(){
+      @Override public Descriptor descriptor(){return new Descriptor("LeaveRequest","请假","Leave","leave",1,Category.TRANSACTION,List.of(),List.of(action));}
+      @Override public com.appnexus.contracts.businessobject.BusinessObjectRuntime runtime(){
+        return mock(com.appnexus.contracts.businessobject.BusinessObjectRuntime.class);
+      }
+    };
+  }
+
+  /** 已声明公共能力的对象缺少实际运行端口时，连启动目录也不得暴露该能力。 */
+  @Test void unassembledCapabilityFailsClosed(){
+    var action=com.appnexus.leave.api.LeaveOperations.SUBMIT_OPERATION;
+    Provider declaration=()->provider(action).descriptor();
+    assertThatThrownBy(()->new BusinessObjectIntegrationValidation()
+        .validateDocumentIntegration(List.of(declaration),mock(RequestMappingHandlerMapping.class))
+        .afterSingletonsInstantiated())
+        .hasMessage("BUSINESS_OBJECT_RUNTIME_REQUIRED:"+action.operationId());
+  }
   @Test void registeredPageAndHandlerPass() throws Exception {
     var mappings=mock(RequestMappingHandlerMapping.class);
     when(mappings.getHandlerMethods()).thenReturn(Collections.singletonMap(RequestMappingInfo.paths("/api/leave-poc/{id}/submit").methods(RequestMethod.POST).build(),new org.springframework.web.method.HandlerMethod(mock(com.appnexus.leave.adapter.web.LeavePocController.class),com.appnexus.leave.adapter.web.LeavePocController.class.getMethod("submit",jakarta.servlet.http.HttpServletRequest.class,String.class,com.appnexus.leave.adapter.web.LeavePocController.SubmitOperation.class))));
@@ -48,4 +65,17 @@ class BusinessObjectIntegrationValidationTest {
         "leavePoc","approval",List.of(),Set.of("APPROVED"), "leavePoc.data", 1))
         .hasMessage("INTERACTION_COMPLETION_UNSUPPORTED");
   }
+
+  /** 已声明的类型化操作漏接运行端口时阻止装配。 */
+  @Test void typedCommandWithoutRuntimeFailsAtStartup(){
+    Provider declaration=new Provider(){
+      @Override public Descriptor descriptor(){return provider(com.appnexus.leave.api.LeaveOperations.SUBMIT_OPERATION).descriptor();}
+      @Override public Set<String> commandOperations(){return Set.of("submit");}
+    };
+    assertThatThrownBy(()->new BusinessObjectIntegrationValidation()
+        .validateDocumentIntegration(List.of(declaration),mock(RequestMappingHandlerMapping.class))
+        .afterSingletonsInstantiated())
+        .hasMessage("BUSINESS_OBJECT_COMMAND_REGISTRATION_INVALID:LeaveRequest");
+  }
+
 }

@@ -32,7 +32,7 @@ class TenantInvitationTest extends DatabaseTestSupport {
             .extracting(TenantInvitations.View::accountId).isEqualTo(target);
         jdbc.update("INSERT INTO access_role(id,scope_type,role_type,code,name,status) VALUES(UUID_TO_BIN(?),'PLATFORM','CUSTOM',?,'Invitation field test','ENABLED')",role.toString(),"invitation_"+role.toString().replace("-",""));
         jdbc.update("INSERT INTO access_account_role(account_id,role_id,scope_type,assigned_by) VALUES(UUID_TO_BIN(?),UUID_TO_BIN(?),'PLATFORM',UUID_TO_BIN(?))",actor.toString(),role.toString(),actor.toString());
-        jdbc.update("INSERT INTO access_role_field_security(role_id,resource_type,field_code,display_mode) VALUES(UUID_TO_BIN(?),'tenant.invitation','accountId','HIDDEN')",role.toString());
+        jdbc.update("INSERT INTO access_role_field_security(role_id,resource_type,field_code,display_mode,tenant_id) SELECT id,'tenant.invitation','accountId','HIDDEN',tenant_id FROM access_role WHERE id=UUID_TO_BIN(?)",role.toString());
         try{
             assertThat(invitations.list(actor,tenant)).singleElement()
                 .satisfies(row->{assertThat(row.id()).isEqualTo(original.id());assertThat(row.accountId()).isNull();});

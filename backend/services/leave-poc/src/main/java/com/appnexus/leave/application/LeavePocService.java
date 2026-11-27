@@ -65,7 +65,7 @@ public final class LeavePocService implements com.appnexus.leave.api.LeaveManage
     var events=new ArrayList<Map<String,Object>>();
     events.add(Map.of("kind","BUSINESS_OBJECT_CREATED","at",eventTime(row.get("created_at")),"reference",id,"state",row.get("state")));
     for(var cycle:cycles(c,id))events.add(Map.of("kind","APPROVAL_STARTED","at",eventTime(cycle.get("created_at")),"reference",cycle.get("instance_id"),"state","BASIS_"+cycle.get("basis_version")));
-    for(var result:statements.appliedApprovals(c.tenantId(),id))events.add(Map.of("kind","APPROVAL_APPLIED","at","","reference",result.get("instance_id"),"state",result.get("result")));
+    for(var result:statements.appliedApprovals(c.tenantId(),id,c.actorId()))events.add(Map.of("kind","APPROVAL_APPLIED","at","","reference",result.get("instance_id"),"state",result.get("result")));
     if(printing!=null&&platform.allowed(c,"print.job:read"))for(var output:printing.get().history(new com.appnexus.contracts.printing.PrintContext(c.tenantId(),c.actorId(),c.requestId()),id)){
       events.add(Map.of("kind","PRINT_OUTPUT","at",eventTime(output.get("created_at")),"reference",output.get("id"),"state",output.get("state")));
       if(output.get("confirmedJobId")!=null)events.add(Map.of("kind","PRINT_DEVICE","at",eventTime(output.get("deliveryUpdatedAt")),"reference",output.get("confirmedJobId"),"state",Objects.toString(output.get("deliveryState"),"UNKNOWN")));
@@ -217,7 +217,7 @@ public final class LeavePocService implements com.appnexus.leave.api.LeaveManage
   /** 本人审批轮次历史，不返回历史原因原文，避免把公共关联查询变成数据泄露入口。 */
   public List<Map<String,Object>> cycles(WorkflowContext c,String id) {
     active(c);var row=row(c,id,false);if(!c.actorId().equals(row.get("applicant")))throw new SecurityException("LEAVE_ACCESS_DENIED");
-    return statements.approvalCycles(c.tenantId(),id);
+    return statements.approvalCycles(c.tenantId(),id,c.actorId());
   }
 
   private boolean permitted(WorkflowContext c, Map<String, Object> row, String taskId) {

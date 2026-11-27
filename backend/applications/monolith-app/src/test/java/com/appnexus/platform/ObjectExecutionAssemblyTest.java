@@ -28,7 +28,7 @@ class ObjectExecutionAssemblyTest extends WorkflowDatabaseTestSupport {
         .containsExactlyInAnyOrder(
             "Account","AuditEvent","AuthorizationTemplate","BusinessDictionary","BusinessObject","BusinessPartner",
             "CodingEncoder","CodingRule","CountryRegion","DictionaryItemReference","IntegrationClient","LeaveRequest",
-            "NavigationMenu","OrganizationAuthorization","OrganizationRelation","OrganizationType","OrganizationUnit",
+            "NavigationMenu","OrganizationRelation","OrganizationType","OrganizationUnit",
             "PermissionCatalog","Person","PersonDirectory","PlatformRole","PlatformTask","Position","PositionAssignment",
             "PrintDataContract","PrintDevice","PrintDocument","PrintJob","PrintOutput","PrintScene","PrintTemplate",
             "Product","ProductApproval","ProductAttribute","ProductCategory","ProductTemplate","ProductUnit",
@@ -42,7 +42,7 @@ class ObjectExecutionAssemblyTest extends WorkflowDatabaseTestSupport {
   /** 本轮全部资源从唯一 Provider 派生；跨管理域对象分别进入平台和租户目录。 */
   @Test void allMigratedObjectsDeclareExecutedDataResources() {
     var expected=Set.of("TenantInvitation","TenantParameter","NavigationMenu","BusinessObject","AuditEvent",
-        "PlatformRole","TenantRole","AuthorizationTemplate","OrganizationAuthorization","PermissionCatalog",
+        "PlatformRole","TenantRole","AuthorizationTemplate","PermissionCatalog",
         "Person","OrganizationType","OrganizationRelation","Position","PositionAssignment","BusinessDictionary",
         "Warehouse","ProductCategory","ProductAttribute","ProductTemplate","ProductUnit",
         "WorkflowDefinition","WorkflowInstance","WorkflowTask","WorkflowJob",

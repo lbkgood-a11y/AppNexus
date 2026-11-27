@@ -30,13 +30,29 @@ public interface ScopedWriteGate {
     /** 仅接受目录发布许可，禁止替代范围受控单据的操作许可。 */
     void requireCatalogPublication(UUID tenant,String permission);
     /**
-     * 在技术资源事务中核验可信服务/人员主体的既有功能权限，并绑定固定目标键。
-     * @param tenant 权威租户
+     * 在技术资源事务中核验可信服务或人员的既有功能权限，并绑定固定目标键。
+     * @param tenant 权威租户或平台管理域固定标识
      * @param permission 已登记的实际技术操作
      * @param keys 可信主体及业务固定的目标键，按 Mapper 声明顺序
      * @param allowed 宿主权威权限检查，必须逐次执行
      */
     void authorizeServiceOperation(UUID tenant,String permission,List<String> keys,java.util.function.BooleanSupplier allowed);
+    /**
+     * 将通过权威复核的只读技术操作绑定到当前事务和固定目标键。
+     * @param tenant 权威租户
+     * @param permission 固定技术操作标识
+     * @param keys 按 Mapper 声明顺序排列的可信主体、目标和操作
+     * @param allowed 宿主权威检查；失败时不签发许可
+     */
+    void authorizeServiceRead(UUID tenant,String permission,List<String> keys,java.util.function.BooleanSupplier allowed);
+    /**
+     * 验证同一事务的只读技术操作许可。
+     * @param tenant SQL 使用的可信租户
+     * @param permission Mapper 声明的技术操作标识
+     * @param keys SQL 参数映射中的固定目标键
+     * @throws SecurityException 许可缺失、已结束或与查询不符
+     */
+    void requireServiceRead(UUID tenant,String permission,List<String> keys);
     /** 同事务校验技术操作的完整目标键，不能用普通业务许可代替。 */
     void requireServiceOperation(UUID tenant,String permission,List<String> keys);
     /** 校验批次语句所接受的真实单据操作，空集合必须拒绝。 */

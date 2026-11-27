@@ -48,7 +48,11 @@ const props = withDefaults(defineProps<{
   closeOnPressEscape: true
 });
 const emit = defineEmits<{ "update:modelValue": [value: boolean]; opened: []; closed: [] }>();
-defineSlots<{ title?: () => unknown; default: () => unknown; footer?: () => unknown }>();
+defineSlots<{
+  title?: () => unknown;
+  /** 标题栏辅助操作，位于最大化和关闭按钮之前，点击不会触发拖动。 */
+  headerActions?: () => unknown;
+  default: () => unknown; footer?: () => unknown }>();
 const { t } = useI18n();
 const maximized = ref(false);
 const dialogStyle = computed(() => props.height && !maximized.value ? { height: typeof props.height === "number" ? `${props.height}px` : props.height } : undefined);
@@ -145,6 +149,7 @@ onBeforeUnmount(()=>{stopPointer?.();stopMaximizeObserver?.();});
       <div class="app-dialog-header" :class="{ 'is-dialog-draggable': draggable&&!maximized }" @pointerdown="startMove">
         <div :id="titleId" :class="['app-dialog-title', titleClass]"><slot name="title">{{ title }}</slot></div>
         <div class="app-dialog-actions">
+          <div v-if="$slots.headerActions" class="app-dialog-extra-actions"><slot name="headerActions" /></div>
           <el-tooltip v-if="maximizable" :content="t(maximized ? 'management.restoreDialog' : 'management.maximizeDialog')">
             <el-button text :aria-label="t(maximized ? 'management.restoreDialog' : 'management.maximizeDialog')" :disabled="busy" @click="toggleMaximize">
               <AppIcon :name="maximized ? 'fullscreenExit' : 'fullscreen'" :size="18" />
@@ -171,8 +176,8 @@ onBeforeUnmount(()=>{stopPointer?.();stopMaximizeObserver?.();});
 .app-dialog-title { min-width: 0; overflow: hidden; color: var(--el-text-color-primary); font-size: var(--el-font-size-large); font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
 .app-dialog-actions { display: flex; flex: none; align-items: center; gap: 2px; }
 /* 标题工具紧凑排列，清除 Element Plus 相邻按钮默认外边距；移动端仍保留触控尺寸。 */
-.app-dialog-actions .el-button { width: 32px; height: 32px; margin: 0; padding: 0; }
-.app-dialog-actions .el-button + .el-button { margin-left: 0; }
+.app-dialog-actions > .el-button { width: 32px; height: 32px; margin: 0; padding: 0; }
+.app-dialog-actions > .el-button + .el-button { margin-left: 0; }
 .app-managed-dialog .el-dialog__body { flex: 1; min-height: 0; overflow: auto; padding: 20px 24px; }
 .app-managed-dialog .el-dialog__footer { flex: none; padding: 16px 24px; border-top: 1px solid var(--el-border-color-lighter); }
 .app-managed-dialog.is-dialog-maximized { max-width: none; max-height: none; resize: none; border-radius: 0; }
@@ -181,7 +186,7 @@ onBeforeUnmount(()=>{stopPointer?.();stopMaximizeObserver?.();});
 @media (max-width: 760px) {
   .app-managed-dialog.el-dialog:not(.is-dialog-maximized) { width: calc(100vw - 32px) !important; max-height: calc(100dvh - 32px); margin: 16px auto; resize: none; }
   .app-dialog-header { min-height: 56px; padding-left: 16px; }
-  .app-dialog-actions .el-button { width: 44px; height: 44px; }
+  .app-dialog-actions > .el-button { width: 44px; height: 44px; }
   .app-managed-dialog .el-dialog__body { padding: 16px; }
   .app-dialog-resize-handle { display: none; }
 }

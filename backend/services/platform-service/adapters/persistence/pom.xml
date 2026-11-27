@@ -8,6 +8,8 @@
   </parent>
   <artifactId>platform-persistence-adapter</artifactId>
   <dependencies>
+    <!-- 持久化审计投影使用公共记录审计操作契约。 -->
+    <dependency><groupId>com.appnexus</groupId><artifactId>operation-contracts</artifactId><version>${project.version}</version></dependency>
     <!-- PDF 格式解析及主动内容检测。 -->
     <dependency><groupId>org.apache.pdfbox</groupId><artifactId>pdfbox</artifactId><version>3.0.8</version></dependency>
     <!-- 附件使用 S3 和 OBS 官方 Java 客户端访问部署侧私有桶。 -->
@@ -29,11 +31,6 @@
     <dependency>
       <groupId>com.appnexus</groupId>
       <artifactId>platform-identity</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>com.appnexus</groupId>
-      <artifactId>platform-organization</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>

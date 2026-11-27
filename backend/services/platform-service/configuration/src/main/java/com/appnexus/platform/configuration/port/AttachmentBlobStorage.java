@@ -1,5 +1,6 @@
 package com.appnexus.platform.configuration.port;
 
+import java.io.InputStream;
 import java.util.UUID;
 
 /** 附件原件私有存储端口。生产适配器由部署配置装配。 */
@@ -20,4 +21,12 @@ public interface AttachmentBlobStorage {
      * @param contentType 已识别的标准媒体类型
      */
     void put(String path, byte[] data, String contentType);
+
+    /**
+     * 打开私有原件，使用资料中固定的存储连接。
+     * @param path 已授权资料记录持有的对象键
+     * @return 原件流，由调用方关闭
+     * @throws IllegalStateException 私有存储或原件不可用
+     */
+    InputStream open(String path);
 }

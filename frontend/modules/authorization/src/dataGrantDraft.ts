@@ -1,4 +1,4 @@
-import type {DataPolicy,DataGrantRule,DataDimension,DataScopeType,ScopeSupport} from "./index";
+import type {DataPolicy,DataGrantRule,DataDimension,DataScopeType,ScopeSupport,ObjectScope} from "./index";
 
 const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 /**
@@ -30,19 +30,19 @@ export function ruleDraftErrors(rule:DataGrantRule,dimensions?:DataDimension[]):
 /** 授权草稿仅用于阻止明显缺项提交；服务端仍独立验证类型、主体、目录与复杂度。 */
 export function incompleteDataPolicy(policy:DataPolicy|undefined,dimensions?:DataDimension[]):boolean {
  if(!policy)return true;
- if(policy.scopeType==="ORGANIZATION"||policy.scopeType==="ORGANIZATION_SUBTREE")return !policy.organizationIds.length;
- if(policy.scopeType!=="RULES")return false;
+ if(policy.scopeType!=="RULES")return policy.scopeType!=="ALL";
  return !policy.rules?.length||policy.rules.length>20||policy.rules.some(rule=>ruleDraftErrors(rule,dimensions).length>0);
 }
 
 
 /** 仅用于选择器；指定记录继续保存为单条 ROLE_MEMBERS 规则。 */
-export type ScopeChoice=DataScopeType|"RECORDS";
+type ConfigurableScope=Extract<DataScopeType,"ALL"|"RULES">;
+export type ScopeChoice=ConfigurableScope|"RECORDS";
 type RuleEditorChoice="RULES"|"RECORDS";
 
 /** 公开目录已支持 RULES 时才可按记录授权；新增没有既存记录。 */
 export function scopeChoices(support:ScopeSupport[],permissionCode:string,hasDimensions:boolean):ScopeChoice[]{
- const result:ScopeChoice[]=support.map(item=>item.scopeType);
+ const result:ScopeChoice[]=support.flatMap(item=>item.scopeType==="ALL"||item.scopeType==="RULES"?[item.scopeType]:[]);
  if(!permissionCode.endsWith(":create")&&result.includes("RULES")){
   const ruleIndex=result.indexOf("RULES");
   result.splice(ruleIndex,hasDimensions?0:1,"RECORDS");
@@ -52,7 +52,7 @@ export function scopeChoices(support:ScopeSupport[],permissionCode:string,hasDim
 
 /** 只将精确的原记录策略回显为快捷项，保留原有条件、主体和多分支规则。 */
 export function shownScope(policy:DataPolicy|undefined,preferred?:RuleEditorChoice):ScopeChoice|undefined{
- if(policy?.scopeType!=="RULES")return policy?.scopeType;
+ if(policy?.scopeType!=="RULES")return policy?.scopeType==="ALL"?"ALL":undefined;
  if(preferred)return preferred;
  const [rule]=policy.rules??[];
  return policy.rules?.length===1&&rule.subjectType==="ROLE_MEMBERS"&&!rule.subjectIds.length&&
@@ -60,6 +60,14 @@ export function shownScope(policy:DataPolicy|undefined,preferred?:RuleEditorChoi
 }
 
 /** 选择器快捷项从不作为服务端 scopeType 提交。 */
-export function persistedScope(choice:ScopeChoice):DataScopeType{
+export function persistedScope(choice:ScopeChoice):ConfigurableScope{
  return choice==="RECORDS"?"RULES":choice;
+}
+
+
+/** 从统一范围元数据投影对象默认。服务端仍校验规则和实际操作是否匹配。 */
+export function objectDefaultPolicy(permissionId: string, metadata: ScopeSupport[], defaults: Record<string,ObjectScope>): DataPolicy|undefined {
+ const match=metadata.find(item=>item.permissionId===permissionId&&defaults[item.resourceType]?.scopeType===item.scopeType);
+ if(!match)return undefined;
+ return {...defaults[match.resourceType],permissionId,resourceType:match.resourceType,organizationIds:[]};
 }

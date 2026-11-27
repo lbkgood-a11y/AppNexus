@@ -5,13 +5,15 @@ import CodingInput from "@appnexus/business-object/coding-input";
 import { ref } from "vue";
 import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
+import { inboundEvidenceApi } from "@/api/inboundEvidence";
+import AttachmentPanel from "@/components/Attachments/AttachmentPanel.vue";
 import { executeObjectCommand, issueObjectCode, listCodingOptions } from "@/api/objectExecution";
 import { http, requestErrorMessage } from "@/utils/http";
 
 const queue = "/api/bulk-inbound-workbench/queue";
 const task = "/api/bulk-inbound-workbench/tasks";
 const receipts = "/api/bulk-inbound-receipt-orders";
-const props = defineProps<{ taskId?: string; stockGranularity?: string }>();
+const props = defineProps<{ taskId?: string; stockGranularity?: string; meteringStrategy?: string; qualityStrategy?: string }>();
 const emit = defineEmits<{ changed: [] }>();
 const router = useRouter();
 const { locale } = useI18n();
@@ -41,6 +43,12 @@ const numberFields: Record<WorkbenchNumberOperation, { object: string; field: st
 
 /** 应用宿主通过现有会话和 CSRF 客户端组装队列、详情与独立单据命令。 */
 const api: InboundWorkbenchApi = {
+  site: id => http.request("get", `${task}/${encodeURIComponent(id)}/site`),
+  siteCommand: (id, action, commandId, retry) => executeObjectCommand(
+    `${task}/${encodeURIComponent(id)}/site-commands/${action}`, { commandId, retry }),
+  siteCommandStatus: (id, commandId) => http.request("get",
+    `${task}/${encodeURIComponent(id)}/site-commands/${encodeURIComponent(commandId)}`),
+  ...inboundEvidenceApi,
   executeDocument: (kind, path, input) => executeObjectCommand(`/api/bulk-inbound-${kind}-orders${path}`,input),
   queue: (stage, afterId, unopened) => http.request("get", queue, { params: { stage, afterId, unopened } }),
   detail: id => http.request("get", `${task}/${encodeURIComponent(id)}`),
@@ -55,10 +63,14 @@ const api: InboundWorkbenchApi = {
 
 <template>
   <InboundWorkbench :api="api" :task-id="props.taskId" :stock-granularity="props.stockGranularity"
+    :metering-strategy="props.meteringStrategy" :quality-strategy="props.qualityStrategy"
     :error-text="requestErrorMessage" @changed="emit('changed')">
+    <template #inspection-upload="{ taskId, refresh }">
+      <AttachmentPanel :business-id="`inbound-task:${taskId}`" @uploaded="refresh" />
+    </template>
     <template #open-receipt="{ detail, can }">
       <el-alert v-if="openError" :title="openError" type="error" :closable="false" show-icon />
-      <el-button v-if="can('BulkWarehouseReceiptOrder.read_document') && (detail.receipt.id ||
+      <el-button v-operation="detail.receipt.id ? 'BulkWarehouseReceiptOrder.read_document' : 'BulkWarehouseReceiptOrder.open_draft'" v-if="can('BulkWarehouseReceiptOrder.read_document') && (detail.receipt.id ||
         (can('BulkWarehouseReceiptOrder.open_draft') && ['ARRIVED','WORKING','READY_TO_RECEIVE'].includes(detail.status)))"
         type="primary" :loading="opening" @click="openReceipt(detail)">
         {{ locale.startsWith("zh") ? (detail.receipt.id ? "进入入库单" : "生成入库单草稿") :

@@ -85,7 +85,7 @@ class PureHttp {
     if(business&&tenant&&tenantChanged())throw new Axios.CanceledError("Stale tenant response");
     config?.beforeResponseCallback?.(response);
     // 管理写入后立即复核按钮能力；不能把成功前的授权快照继续用于撤权后的交互。
-    if(!['get','head','options'].includes(method)&&(url.startsWith('/bff/platform/')||url.startsWith('/api/access/')||url.startsWith('/api/organization/grants')))
+    if(!['get','head','options'].includes(method)&&(url.startsWith('/bff/platform/')||url.startsWith('/api/access/')))
       window.dispatchEvent(new Event('appnexus:authority-changed'));
     return response.data;
   }

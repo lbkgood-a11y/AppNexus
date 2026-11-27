@@ -1,7 +1,7 @@
 package com.appnexus.platform.appapi.operation;
 import com.appnexus.platform.security.operation.OperationRegistry;
 import com.appnexus.platform.authorization.AccessAuthorization;
-import com.appnexus.platform.security.EndpointPolicy;
+import com.appnexus.contracts.operation.EndpointPolicy;
 import com.appnexus.platform.tenant.VerifiedTenantContext;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.*;

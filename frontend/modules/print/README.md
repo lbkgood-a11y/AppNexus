@@ -16,7 +16,7 @@
 
 通过公开入口 createPrintDesigner(container, options) 创建，options.template 必填且仅允许应用内受信任模板，language 缺省 cn、可选 en。createBlankTemplate() 返回 A4 空白模板。调用 snapshot() 获取副本、preview(authorizedData) 预览、design() 返回设计；页面离开必须 destroy()。
 
-资源经 Vite ?url 由本站托管；上游在 sandbox="allow-scripts" 的独立 iframe 执行，不授予同源、弹窗、导航或下载权限。全局 jQuery、CSS 和快捷键随 iframe 销毁，不污染应用壳。加载前锁定 autoConnect=false，初始化再调用 disAutoConnect；CSP 禁止网络连接和外部图片/字体。
+引擎资源经 Vite ?url 由本站托管。生产构建将 iframe 桥接编译为独立 IIFE，转译辅助函数随脚本加载；开发服务使用同一桥接源码的未降级函数。上游在 sandbox="allow-scripts" 的独立 iframe 执行，不授予同源、弹窗、导航或下载权限。全局 jQuery、CSS 和快捷键随 iframe 销毁，不污染应用壳。加载前锁定 autoConnect=false，初始化再调用 disAutoConnect；CSP 禁止网络连接和外部图片/字体。
 
 上游在 iframe 内仍需要 eval；模板基础检查不是完整恶意输入安全验证，不能开放客户任意模板上传。暂不暴露设备连接、Token、print2 和原始引擎，不将此次接入称为生产安全加固完成。
 

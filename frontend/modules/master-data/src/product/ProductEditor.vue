@@ -187,7 +187,7 @@ onMounted(load);
 </script>
 <template>
 <div class="product-editor"><TabbedDetailTemplate master-data>
-<template #header><PageHeader :title="record?.name||t('productV1.create')">
+<template #header><PageHeader :back-label="t('productV1.back')" @back="close" :back-disabled="busy" :title="record?.name||t('productV1.create')">
 <template #meta>
  <el-tag v-if="props.mode==='view'" type="info">{{t('partner.view')}}</el-tag>
  <el-tag v-if="id&&draft.code" effect="plain">{{draft.code}}</el-tag>
@@ -196,22 +196,22 @@ onMounted(load);
  <el-tag class="app-status-tag" v-if="record?.approvalPending" type="warning">{{t('productApproval.SUBMITTED')}}</el-tag>
  <el-tag class="app-status-tag" v-if="record?.archivedAt" type="info">{{t('productV1.archived')}}</el-tag>
 </template>
-<template #actions>
-<el-button :disabled="busy" @click="close">{{t('productV1.back')}}</el-button>
-<el-button v-if="props.mode!=='view'&&!migrationMode&&editing" v-operation="saveOperation" type="primary" :loading="busy" @click="save">{{t('masterData.save')}}</el-button>
+<template #actions><template v-if="canReadHistory">
+<ProductHistoryButton :id="id" :api="api" :error-text="errorText" :disabled="loading||busy" />
+</template>
+
 <el-button v-if="id&&!migrationMode&&canStructure" v-operation="'Product.previewStructure'" :disabled="busy" @click="startMigration">{{t('productV1.migrate')}}</el-button>
 <el-button v-if="migrationMode" :disabled="busy" @click="cancelMigration">{{t('masterData.cancel')}}</el-button>
-<el-button v-if="migrationMode" v-operation="'Product.previewStructure'" type="primary" :loading="busy" @click="previewMigration">{{t('productV1.preview')}}</el-button>
 <template v-if="props.mode!=='view'&&record&&!record.approvalPending&&!migrationMode&&!dirty">
 <el-button v-if="record.status!=='ENABLED'&&!record.archivedAt" v-operation="'Product.setStatus'" :disabled="busy" @click="status('ENABLED')">{{t('masterData.enable')}}</el-button>
 <el-button v-if="record.status==='ENABLED'" v-operation="'Product.setStatus'" type="danger" :disabled="busy" @click="status('DISABLED')">{{t('masterData.disable')}}</el-button>
 <el-button v-if="record.status==='DRAFT'&&!record.archivedAt" v-operation="'Product.archiveDraft'" :disabled="busy" @click="archive(false)">{{t('productV1.archive')}}</el-button>
 <el-button v-if="record.status==='DRAFT'&&record.archivedAt" v-operation="'Product.restoreDraft'" :disabled="busy" @click="archive(true)">{{t('productV1.restore')}}</el-button>
 </template>
+<el-button v-if="props.mode!=='view'&&!migrationMode&&editing" v-operation="saveOperation" type="primary" :loading="busy" @click="save">{{t('masterData.save')}}</el-button>
+<el-button v-if="migrationMode" v-operation="'Product.previewStructure'" type="primary" :loading="busy" @click="previewMigration">{{t('productV1.preview')}}</el-button>
 </template>
-<template v-if="canReadHistory" #trailing>
-<ProductHistoryButton :id="id" :api="api" :error-text="errorText" :disabled="loading||busy" />
-</template></PageHeader></template>
+</PageHeader></template>
 <template #content>
 <FloatingError :title="error"><el-button v-if="props.mode!=='view'" v-operation="'Product.read'" :disabled="busy" @click="load">{{t('masterData.retry')}}</el-button></FloatingError>
 <el-skeleton v-if="loading" :rows="6" animated/>

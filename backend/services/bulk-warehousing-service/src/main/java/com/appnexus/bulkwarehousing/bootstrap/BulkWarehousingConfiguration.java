@@ -1,5 +1,21 @@
 package com.appnexus.bulkwarehousing.bootstrap;
 
+import com.appnexus.bulkwarehousing.api.inboundexecution.InboundSiteCommands;
+import com.appnexus.bulkwarehousing.application.inboundexecution.InboundSiteCommandService;
+import com.appnexus.bulkwarehousing.adapter.integration.inboundexecution.DirectoryInboundSiteCommands;
+import com.appnexus.bulkwarehousing.adapter.web.inboundexecution.InboundSiteCommandController;
+
+import com.appnexus.bulkwarehousing.api.inboundexecution.ReadInboundSiteTelemetry;
+import com.appnexus.bulkwarehousing.application.inboundexecution.ReadInboundSiteTelemetryService;
+import com.appnexus.bulkwarehousing.adapter.integration.inboundexecution.DirectoryInboundSiteTelemetry;
+
+import com.appnexus.bulkwarehousing.api.inboundexecution.CommodityTemplates;
+import com.appnexus.bulkwarehousing.adapter.integration.inboundexecution.CommodityTemplateDeclaration;
+import com.appnexus.bulkwarehousing.adapter.persistence.inboundexecution.CommodityTemplateMapper;
+import com.appnexus.bulkwarehousing.adapter.persistence.inboundexecution.MyBatisCommodityTemplateStore;
+import com.appnexus.bulkwarehousing.adapter.web.inboundexecution.CommodityTemplateController;
+import com.appnexus.bulkwarehousing.application.inboundexecution.CommodityTemplateService;
+
 import com.appnexus.bulkwarehousing.api.inboundexecution.OpenInboundReceiptUseCase;
 import com.appnexus.bulkwarehousing.application.inboundexecution.OpenInboundReceiptService;
 
@@ -196,6 +212,17 @@ public class BulkWarehousingConfiguration {
       OpenInboundReceiptUseCase opening) {
     return new InboundReceiptOrderController(drafts, posting, reversal,steelDrafts,opening);
   }
+  @Bean InboundSiteCommandService inboundSiteCommands(InboundWorkbenchDetailMapper mapper,
+      PlatformTransactionManager manager,ScopedWriteGate gate,AccessPlanning access,org.springframework.core.env.Environment environment) {
+    var channel=new DirectoryInboundSiteCommands(environment.getProperty("app.inbound.site.command-directory",""),
+        environment.getProperty("app.inbound.site.simulated",Boolean.class,false));
+    return new InboundSiteCommandService(new MyBatisInboundWorkbenchDetailQueries(mapper,gate,manager),access,channel,
+        java.time.Clock.systemUTC(),java.time.Duration.ofSeconds(8));
+  }
+  @Bean InboundSiteCommandController inboundSiteCommandController(InboundSiteCommands commands) {
+    return new InboundSiteCommandController(commands);
+  }
+
   /** @return 计量单唯一对象声明 */
   @Bean public InboundMeteringOrderDeclaration inboundMeteringOrderDeclaration() {
     return new InboundMeteringOrderDeclaration();
@@ -273,8 +300,22 @@ public class BulkWarehousingConfiguration {
     return new InboundTaskRegistrationController(useCase);
   }
 
-  @Bean public InboundTaskDeclaration inboundTaskDeclaration() {
-    return new InboundTaskDeclaration();
+  @Bean CommodityTemplateService commodityTemplates(AccessPlanning access,CommodityTemplateMapper mapper,
+      ScopedWriteGate gate,PlatformTransactionManager manager,MasterDataInboundReceiptReferences references) {
+    return new CommodityTemplateService(access,new MyBatisCommodityTemplateStore(mapper,gate,manager),references);
+  }
+
+  @Bean CommodityTemplateDeclaration commodityTemplateDeclaration() {return new CommodityTemplateDeclaration();}
+  @Bean CommodityTemplateController commodityTemplateController(CommodityTemplates templates) {
+    return new CommodityTemplateController(templates);
+  }
+
+  /** @param site 原现场权限与作业状态入口 @param tenants 权威成员目录 @return 入库作业唯一声明 */
+  @Bean public InboundTaskDeclaration inboundTaskDeclaration(
+      org.springframework.beans.factory.ObjectProvider<InboundSiteCommandService> site,
+      org.springframework.beans.factory.ObjectProvider<com.appnexus.platform.tenant.TenantAccess> tenants) {
+    return new InboundTaskDeclaration(new com.appnexus.bulkwarehousing.adapter.integration.inboundexecution.InboundTaskPrintRuntime(
+        site::getIfAvailable,tenants::getIfAvailable));
   }
 
   /**
@@ -298,8 +339,14 @@ public class BulkWarehousingConfiguration {
 
   /** @param useCase 授权队列 @param detail 授权详情 @return 第一方工作台只读入口 */
   @Bean public InboundWorkbenchController inboundWorkbenchController(ReadInboundWorkbenchUseCase useCase,
-      ReadInboundWorkbenchDetailUseCase detail) {
-    return new InboundWorkbenchController(useCase,detail);
+      ReadInboundWorkbenchDetailUseCase detail,ReadInboundSiteTelemetry site) {
+    return new InboundWorkbenchController(useCase,detail,site);
+  }
+  @Bean ReadInboundSiteTelemetry inboundSiteTelemetry(ReadInboundWorkbenchDetailUseCase detail,AccessPlanning access,
+      com.appnexus.platform.authorization.FieldProtection fields,org.springframework.core.env.Environment environment) {
+    var source=new DirectoryInboundSiteTelemetry(environment.getProperty("app.inbound.site.directory",""),
+        environment.getProperty("app.inbound.site.simulated",Boolean.class,false));
+    return new ReadInboundSiteTelemetryService(detail,access,fields,source,java.time.Clock.systemUTC());
   }
   /** @param balances 授权仓储读取用例 @return 入仓通知与库存总览查询入口 */
   @Bean public WarehouseQueryController warehouseQueryController(WarehouseBalances balances) {

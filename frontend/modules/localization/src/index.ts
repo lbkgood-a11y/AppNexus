@@ -5,13 +5,18 @@ export const LOCALIZATION_MODULE = "localization" as const;
  * @param value 含 Z 或偏移的 ISO 时间点；无效输入统一显示破折号
  * @param language 当前界面语言，zh/zh-CN 为中文，其他回退英文
  * @param timeZone IANA 展示时区，缺省 Asia/Shanghai，无效值回退 UTC
+ * @param part 展示日期、时间或两者，缺省显示完整时间点
  */
-export function formatInstant(value: string, language: string, timeZone = "Asia/Shanghai"): string {
+export function formatInstant(value: string, language: string, timeZone = "Asia/Shanghai", part: "date" | "time" | "datetime" = "datetime"): string {
   if (!/(?:Z|[+-]\d{2}:\d{2})$/.test(value)) return "—";
   const date = new Date(value); if (!Number.isFinite(date.getTime())) return "—";
   const locale = language.startsWith("zh") ? "zh-CN" : "en";
-  try { return new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeStyle: "medium", timeZone }).format(date); }
-  catch { return new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeStyle: "medium", timeZone: "UTC" }).format(date); }
+  const style: Intl.DateTimeFormatOptions = {
+    dateStyle: part === "time" ? undefined : "medium",
+    timeStyle: part === "date" ? undefined : "medium"
+  };
+  try { return new Intl.DateTimeFormat(locale, { ...style, timeZone }).format(date); }
+  catch { return new Intl.DateTimeFormat(locale, { ...style, timeZone: "UTC" }).format(date); }
 }
 
 /**

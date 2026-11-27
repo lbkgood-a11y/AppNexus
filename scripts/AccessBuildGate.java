@@ -308,6 +308,8 @@ class AccessBuildGate {
         if(routes.isEmpty())return;
         var binding=annotations.stream().filter(a->name(a).equals("OperationBinding")).toList();
         var signature=owner+"#"+method.getName();
+        if(annotations.stream().anyMatch(annotation->name(annotation).equals("EndpointOperation")))
+            add(issues,"HTTP_PERMISSION_SOURCE",signature,method.toString(),"端点前置权限须引用 Provider 声明");
         if(binding.isEmpty()){
             add(issues,"HTTP",signature,method.toString(),"HTTP 入口缺少唯一操作引用");
             return;
@@ -339,15 +341,17 @@ class AccessBuildGate {
         }
         if(guards.isEmpty()||guards.stream().anyMatch(a->!validGuard(a,parameters))
                 ||guards.stream().noneMatch(a->value(a,"when").isEmpty())
-                ||guards.stream().anyMatch(a->(!value(a,"predicate").isEmpty()||!value(a,"readFallback").isEmpty())&&!usesPublicBinder(entry,sqlAnnotations,statement,sourcesByType)))
+                ||guards.stream().anyMatch(a->(!value(a,"predicate").isEmpty()||!value(a,"readFallback").isEmpty()||!value(a,"ownerRead").isEmpty())&&!usesPublicBinder(entry,sqlAnnotations,statement,sourcesByType,value(a,"predicate")+value(a,"readFallback")+value(a,"ownerRead"))))
             add(issues,"SQL",key,fingerprint,"真实 Mapper 语句缺少完整的统一权限门禁");
     }
 
     /** 检查真实 SQL 声明是否接入公共绑定；精确参数出现位置继续由运行时复核。 */
     private static boolean usesPublicBinder(MapperMethod entry,List<? extends AnnotationTree> annotations,String xml,
-            Map<String,String> sourcesByType){
-        if(xml!=null&&xml.contains("ScopedSql@bind")&&xml.contains("${"))return true;
+            Map<String,String> sourcesByType,String path){
+        String marker="/*appnexus-bind:"+path+"*/";
+        if(xml!=null&&(xml.contains(marker)||xml.contains("ScopedSql@bind")&&xml.contains("${")))return true;
         for(var annotation:annotations){
+            if(annotation.toString().contains(marker))return true;
             if(annotation.toString().contains("ScopedSql@bind")&&annotation.toString().contains("${"))return true;
             if(!name(annotation).endsWith("Provider"))continue;
             String type=raw(annotation,"type");
@@ -361,7 +365,7 @@ class AccessBuildGate {
                 if(match!=null){provider=match;break;}
                 if(!candidate.contains("."))break;
             }
-            if(provider.contains("ScopedSql.bind("))return true;
+            if(provider.contains("ScopedSql.bind(")||provider.contains(marker))return true;
         }
         return false;
     }
@@ -372,11 +376,15 @@ class AccessBuildGate {
             if(!boundPath(value(annotation,"platformActor"),parameters)||value(annotation,"platformPermission").isEmpty()
                     ||!value(annotation,"tenant").isEmpty())return false;
         }else if(!boundPath(value(annotation,"tenant"),parameters)||!value(annotation,"platformPermission").isEmpty())return false;
-        for(String key:List.of("predicate","readFallback","recordId","target","when")){
+        for(String key:List.of("predicate","readFallback","ownerRead","recordId","target","when")){
             var path=value(annotation,key);
             if(!path.isEmpty()&&!boundPath(path,parameters))return false;
         }
         int modes=platform?1:0;
+        if(!value(annotation,"ownerRead").isEmpty()){
+            if(value(annotation,"resource").isEmpty()||raw(annotation,"actions").isEmpty())return false;
+            modes++;
+        }
         if(!value(annotation,"predicate").isEmpty()){
             if(!validPath(value(annotation,"predicate"))||value(annotation,"resource").isEmpty())return false;
             modes++;

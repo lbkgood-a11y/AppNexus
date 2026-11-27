@@ -7,6 +7,10 @@ import static com.appnexus.contracts.businessobject.BusinessObjects.*;
 public interface BusinessObjectBindings {
   /** 页面入口在业务执行前验证平台维护的显式关系；历史异步结果不调用此入口以免中断已运行实例。 */
   void verifyPageOperation(Context context,String objectType,String operationCode,String operationId);
+  /** 在平台直达命令校验原平台权限后，再检查对应入口关联。 */
+  default void verifyPlatformCommandEntry(Context context,String objectType,String operationCode,String operationId){
+    throw new BusinessObjects.Rejection(403,"BUSINESS_OBJECT_COMMAND_UNAVAILABLE");
+  }
   /** 可用性查询只用于界面，业务写入口必须再次 verify；仅把关系禁用转换为 false。 */
   default boolean pageOperationAllowed(Context context,String objectType,String operationCode,String operationId){
     try{verifyPageOperation(context,objectType,operationCode,operationId);return true;}

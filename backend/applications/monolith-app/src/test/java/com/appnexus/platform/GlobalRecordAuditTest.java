@@ -18,7 +18,7 @@ class GlobalRecordAuditTest extends DatabaseTestSupport {
     @Autowired com.appnexus.masterdata.adapter.persistence.MasterStatusHistoryMapper statusHistory;
     @Autowired com.appnexus.platform.authorization.AccessAuthorization authorization;
     @Autowired org.springframework.transaction.PlatformTransactionManager manager;
-    @Autowired com.appnexus.platform.organization.PersonnelDirectory directory;
+    @Autowired com.appnexus.masterdata.organization.PersonnelDirectory directory;
     @Autowired @org.springframework.beans.factory.annotation.Qualifier("requestMappingHandlerMapping")
     org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping mappings;
 
@@ -95,6 +95,59 @@ class GlobalRecordAuditTest extends DatabaseTestSupport {
         });
         assertThat(jdbc.queryForList(history, String.class, tenant, id)).containsExactly("10:2:" + actor);
         assertThat(jdbc.queryForList(history, String.class, UUID.randomUUID().toString(), id)).isEmpty();
+    }
+
+    /** 检查真实迁移后的自有基础表。复合业务键由独立唯一约束保留。 */
+    @Test void ownedTablesHaveSingleIdPrimaryKey() {
+        var invalidTables = jdbc.queryForList("""
+            SELECT t.table_name
+            FROM information_schema.tables t
+            LEFT JOIN information_schema.key_column_usage k
+              ON k.table_schema=t.table_schema AND k.table_name=t.table_name
+              AND k.constraint_name='PRIMARY'
+            WHERE t.table_schema=DATABASE() AND t.table_type='BASE TABLE'
+              AND LOWER(t.table_name) NOT REGEXP '^(act_|flw_|oauth2_|flyway_)'
+            GROUP BY t.table_name
+            HAVING COUNT(k.column_name) <> 1
+                OR SUM(CASE WHEN BINARY k.column_name='id' THEN 1 ELSE 0 END) <> 1
+            ORDER BY t.table_name
+            """, String.class);
+        assertThat(invalidTables).as("未使用单列 id 主键的自有表").isEmpty();
+    }
+
+    /** 租户子记录必须与父角色归属一致，平台角色的子记录保持空归属。 */
+    @Test void roleFieldRestrictionPreservesParentScopeAndBusinessKey() {
+        var tenant = UUID.randomUUID().toString();
+        var otherTenant = UUID.randomUUID().toString();
+        var role = UUID.randomUUID().toString();
+        var platformRole = UUID.randomUUID().toString();
+        var transaction = new org.springframework.transaction.support.TransactionTemplate(manager);
+        transaction.executeWithoutResult(status -> {
+            status.setRollbackOnly();
+            jdbc.update("""
+                INSERT INTO access_role(id,scope_type,tenant_id,role_type,code,name)
+                VALUES(UUID_TO_BIN(?),'TENANT',UUID_TO_BIN(?),'CUSTOM','key_review','主键复核'),
+                      (UUID_TO_BIN(?),'PLATFORM',NULL,'CUSTOM','key_review','主键复核')
+                """, role, tenant, platformRole);
+            var insert = """
+                INSERT INTO access_role_field_security(role_id,tenant_id,resource_type,field_code,display_mode)
+                VALUES(UUID_TO_BIN(?),UUID_TO_BIN(?),'key_review','field','HIDDEN')
+                """;
+            assertThat(jdbc.update(insert, role, tenant)).isEqualTo(1);
+            assertThat(jdbc.update(insert, platformRole, null)).isEqualTo(1);
+            assertThat(jdbc.queryForObject("""
+                SELECT COUNT(DISTINCT id) FROM access_role_field_security
+                WHERE role_id IN (UUID_TO_BIN(?),UUID_TO_BIN(?))
+                """, Integer.class, role, platformRole)).isEqualTo(2);
+            assertThatThrownBy(() -> jdbc.update(insert, role, tenant))
+                .isInstanceOf(org.springframework.dao.DuplicateKeyException.class);
+            assertThatThrownBy(() -> jdbc.update("""
+                UPDATE access_role_field_security SET tenant_id=UUID_TO_BIN(?) WHERE role_id=UUID_TO_BIN(?)
+                """, otherTenant, role)).isInstanceOf(org.springframework.dao.DataIntegrityViolationException.class);
+            assertThatThrownBy(() -> jdbc.update("""
+                UPDATE access_role_field_security SET tenant_id=NULL WHERE role_id=UUID_TO_BIN(?)
+                """, role)).isInstanceOf(org.springframework.dao.DataIntegrityViolationException.class);
+        });
     }
 
     @Test void ownedTablesHaveAllFourColumns(){

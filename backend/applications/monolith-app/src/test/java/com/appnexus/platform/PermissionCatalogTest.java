@@ -57,15 +57,13 @@ class PermissionCatalogTest extends DatabaseTestSupport {
         assertThat(metadata).allSatisfy(item->{
             assertThat(dataAccess.supports(item.permissionCode(),item.resourceType(),item.scopeType())).isTrue();
             assertThat(item.permissionCode()).startsWith(item.resourceType()+":");
-            assertThat(item.scopeType()).isNotEqualTo(com.appnexus.platform.authorization.DataScopeAuthorization.ScopeType.DENY);
+            assertThat(item.scopeType().configurable()).isTrue();
         });
         assertThat(metadata).extracting(com.appnexus.platform.authorization.DataPolicyMetadataCatalog.ScopeSupport::permissionCode)
             .contains("masterdata.partner:read","masterdata.partner:create","masterdata.partner:update","masterdata.partner:set_status");
         assertThat(metadata.stream().filter(item->item.permissionCode().equals("organization.unit:create"))
             .map(com.appnexus.platform.authorization.DataPolicyMetadataCatalog.ScopeSupport::scopeType))
             .containsExactlyInAnyOrder(com.appnexus.platform.authorization.DataScopeAuthorization.ScopeType.ALL,
-                com.appnexus.platform.authorization.DataScopeAuthorization.ScopeType.ORGANIZATION,
-                com.appnexus.platform.authorization.DataScopeAuthorization.ScopeType.ORGANIZATION_SUBTREE,
                 com.appnexus.platform.authorization.DataScopeAuthorization.ScopeType.RULES);
         assertThat(dataPolicyMetadata.list(PermissionCatalog.ScopeType.PLATFORM)).isEmpty();
     }

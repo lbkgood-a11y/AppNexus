@@ -118,6 +118,7 @@ onMounted(() => void load({}));
         </el-result>
         <ManagementTable v-else embedded :title="t('inventoryOverview.title')" :columns="columns"
           :rows="page.rows" :loading="loading" :empty-text="t('inventoryOverview.empty')" @refresh="search">
+          <template v-if="$slots.actions" #actions><slot name="actions" /></template>
           <template #specification="{ row }">{{ row.specification || "—" }}</template>
           <template #skuCode="{ row }">{{ row.skuCode || "—" }}</template>
           <template #receiptBatchNo="{ row }">{{ row.receiptBatchNo || "—" }}</template>

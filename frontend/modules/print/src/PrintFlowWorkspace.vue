@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { createPrintId } from "./identifier";
 import { ManagementTable, VxeTable, VxeColumn } from "@appnexus/ui";
 import { setErrorFeedback } from "@appnexus/ui";
 import { FloatingError } from "@appnexus/ui";
@@ -35,7 +36,7 @@ const designAfterSave=ref(false);
 const contractOpen=ref(false),contractForm=ref<DesignContract>({code:"",nameZh:"",nameEn:"",designOnly:false,fields:[]});
 const printMode=ref<"SILENT"|"PREVIEW">("PREVIEW");
 const output=ref<{deviceId:string;outputType:"PDF"|"PRINTER";copies:number}>({deviceId:"",outputType:"PDF",copies:1});
-let requestId=crypto.randomUUID();
+let requestId=createPrintId();
 let submittedOptions:{deviceId:string|null;outputType:"PDF"|"PRINTER";copies:number}|undefined;
 const can=(value:string)=>props.capabilities.includes(value);
 const english=computed(()=>locale.value.startsWith("en"));
@@ -59,8 +60,8 @@ async function load(){loading.value=true;error.value="";try{
 onMounted(async()=>{await load();if(props.section==="scenes"&&props.initialTemplateId&&sceneReady.value)editScene()});
 defineExpose({refresh:load});
 async function run(action:()=>Promise<void>){if(busy.value)return;busy.value=true;error.value="";try{await action()}catch(e){await setErrorFeedback(error, props.errorText(e))}finally{busy.value=false}}
-function editScene(row?:Record<string,unknown>){error.value="";if(!row&&!sceneReady.value)return;sceneForm.value=row?{...row,contract:row.data_contract,templateId:row.template_id}:{code:"scene_"+crypto.randomUUID(),name:"",contract:"",templateId:props.initialTemplateId??"",copies:1,enabled:true,revision:-1};selectTemplate();sceneOpen.value=true}
-function newContract(){designAfterSave.value=false;contractForm.value={code:"custom_"+crypto.randomUUID().replaceAll("-","")+".v1",nameZh:"",nameEn:"",designOnly:false,fields:[]};contractOpen.value=true}
+function editScene(row?:Record<string,unknown>){error.value="";if(!row&&!sceneReady.value)return;sceneForm.value=row?{...row,contract:row.data_contract,templateId:row.template_id}:{code:"scene_"+createPrintId(),name:"",contract:"",templateId:props.initialTemplateId??"",copies:1,enabled:true,revision:-1};selectTemplate();sceneOpen.value=true}
+function newContract(){designAfterSave.value=false;contractForm.value={code:"custom_"+createPrintId().replaceAll("-","")+".v1",nameZh:"",nameEn:"",designOnly:false,fields:[]};contractOpen.value=true}
 function addContractField(){const index=contractForm.value.fields.length+1;contractForm.value.fields.push({key:"field"+index,labelZh:"",labelEn:"",sample:""})}
 function setFieldType(row:Record<string,unknown>,table:boolean){const field=row as unknown as DesignContract["fields"][number];if(table)field.columns=[{key:"item",labelZh:"名称",labelEn:"Item",sample:""}];else delete field.columns}
 function addColumn(row:Record<string,unknown>){const field=row as unknown as DesignContract["fields"][number];field.columns!.push({key:"column"+(field.columns!.length+1),labelZh:"",labelEn:"",sample:""})}
@@ -70,7 +71,7 @@ function resetData(){data.value=Object.fromEntries((contract.value?.fields??[]).
 function newDocument(){documentScene.value=String(scenes.value.find(value=>value.enabled)?.id??"");number.value="";resetData();documentOpen.value=true}
 function addLine(key:string){if(data.value[key].length>=500)return;const field=contract.value!.fields.find(value=>value.key===key)!;data.value[key].push(Object.fromEntries(field.columns!.map(column=>[column.key,""])))}
 async function saveDocument(){if(!number.value.trim()||!documentScene.value){error.value=t("printing.flow.required");return}await run(async()=>{if(contract.value?.fields.some(field=>field.key==="documentNumber"))data.value.documentNumber=number.value.trim();documents.value=await props.api.saveDocument({sceneId:documentScene.value,number:number.value,data:data.value});documentOpen.value=false;ElMessage.success(t("printing.saved"))})}
-function openOutput(row:Record<string,unknown>){error.value="";target.value=row as PrintRow;output.value={deviceId:String(devices.value.find(value=>value.enabled)?.id??""),outputType:"PDF",copies:Number(scenes.value.find(value=>value.id===row.scene_id)?.copies??1)};requestId=crypto.randomUUID();submittedOptions=undefined;outputOpen.value=true}
+function openOutput(row:Record<string,unknown>){error.value="";target.value=row as PrintRow;output.value={deviceId:String(devices.value.find(value=>value.enabled)?.id??""),outputType:"PDF",copies:Number(scenes.value.find(value=>value.id===row.scene_id)?.copies??1)};requestId=createPrintId();submittedOptions=undefined;outputOpen.value=true}
 /** 同一次提交保留幂等键，网络错误重试不会重复出纸；变更选项时由用户重新打开提交窗口。 */
 async function submit(){if(output.value.outputType==="PRINTER"&&printMode.value==="SILENT"&&!output.value.deviceId){error.value=t("printing.flow.noDevices");return}await run(async()=>{submittedOptions??={...output.value,deviceId:output.value.outputType==="PDF"?null:output.value.deviceId,copies:output.value.outputType==="PDF"?1:output.value.copies};if(output.value.outputType==="PDF")await props.api.printDocument(target.value!.id,submittedOptions,requestId);else{const result=await props.api.createOutput(target.value!.id,{mode:printMode.value,deviceId:output.value.deviceId||null,copies:output.value.copies},requestId);if(printMode.value==="PREVIEW")emit("preview",result.id)}outputOpen.value=false;ElMessage.success(t("printing.flow.queued"));emit("submitted")})}
 /** 每次选项变更废弃旧预检；离线提示不悄悄改写输出方式或创建任务。 */
@@ -85,7 +86,7 @@ watch(()=>[outputOpen.value,target.value?.id,output.value.outputType,output.valu
  finally{if(version===targetCheckVersion)checkingTarget.value=false;}
 });
 const emit=defineEmits<{submitted:[];preview:[id:string];contractsChanged:[contracts:DesignContract[],code:string];createTemplate:[code?:string]}>();
-async function registerQueue(row:Record<string,unknown>){await run(async()=>{await props.api.saveDevice(undefined,{code:"device_"+crypto.randomUUID(),name:String(row.queue_name),siteCode:String(row.site_code),systemName:String(row.queue_name),enabled:true,capabilities:{}});devices.value=can("submit")?await props.api.devices():[];ElMessage.success(t("printing.saved"))})}
+async function registerQueue(row:Record<string,unknown>){await run(async()=>{await props.api.saveDevice(undefined,{code:"device_"+createPrintId(),name:String(row.queue_name),siteCode:String(row.site_code),systemName:String(row.queue_name),enabled:true,capabilities:{}});devices.value=can("submit")?await props.api.devices():[];ElMessage.success(t("printing.saved"))})}
 </script>
 
 <template>

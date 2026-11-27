@@ -1,4 +1,5 @@
 package com.appnexus.platform.managementapi.administration;
+import com.appnexus.contracts.operation.EndpointPolicy;
 import com.appnexus.platform.tenant.TenantInvitations;
 import com.appnexus.platform.security.*;
 
@@ -19,17 +20,17 @@ public class TenantInvitationController {
     public record Acceptance(UUID invitationId,String token){@Override public String toString(){return "Acceptance[redacted]";}}
     /** 操作契约关联下方真实接口；仅供展示与一致性校验，主体、权限及业务约束仍由原用例执行。 */
 
- @com.appnexus.contracts.operation.OperationBinding(id="TenantInvitation.list", reference=true)
- @EndpointOperation("tenant.invitation:read") @com.appnexus.contracts.operation.RecordAuditSource(table="tenant_invitation",managedTenant="tenant")
+ @com.appnexus.contracts.operation.OperationBinding(id="TenantInvitation.list", reference=true, enforceDeclaredPermission=true)
+  @com.appnexus.contracts.operation.RecordAuditSource(table="tenant_invitation",managedTenant="tenant")
  @GetMapping("/bff/platform/tenants/{tenant}/invitations")
     ResponseEntity<List<TenantInvitations.View>> list(Authentication auth,@PathVariable UUID tenant){return ok(invitations.list(UUID.fromString(auth.getName()),tenant));}
     /** 操作契约关联下方真实接口；仅供展示与一致性校验，主体、权限及业务约束仍由原用例执行。 */
-    @com.appnexus.contracts.operation.OperationBinding(id="TenantInvitation.invite", reference=true)
- @EndpointOperation("tenant.invitation:create") @PostMapping("/bff/platform/tenants/{tenant}/invitations")
+    @com.appnexus.contracts.operation.OperationBinding(id="TenantInvitation.invite", reference=true, enforceDeclaredPermission=true)
+  @PostMapping("/bff/platform/tenants/{tenant}/invitations")
     ResponseEntity<TenantInvitations.Created> invite(Authentication auth,@PathVariable UUID tenant,@RequestBody Invite input){return ok(invitations.invite(UUID.fromString(auth.getName()),tenant,input.accountId()));}
     /** 操作契约关联下方真实接口；仅供展示与一致性校验，主体、权限及业务约束仍由原用例执行。 */
-    @com.appnexus.contracts.operation.OperationBinding(id="TenantInvitation.revoke", reference=true)
- @EndpointOperation("tenant.invitation:revoke") @DeleteMapping("/bff/platform/tenants/{tenant}/invitations/{id}")
+    @com.appnexus.contracts.operation.OperationBinding(id="TenantInvitation.revoke", reference=true, enforceDeclaredPermission=true)
+  @DeleteMapping("/bff/platform/tenants/{tenant}/invitations/{id}")
     ResponseEntity<Void> revoke(Authentication auth,@PathVariable UUID tenant,@PathVariable UUID id){invitations.revoke(UUID.fromString(auth.getName()),tenant,id);return ResponseEntity.noContent().build();}
     /** 本人激活只创建成员身份，租户选择/业务授权仍分别执行。 */
     @com.appnexus.contracts.operation.OperationBinding(id="TenantInvitation.accept", reference=true, eligibility=com.appnexus.contracts.operation.OperationBinding.Eligibility.SELF)

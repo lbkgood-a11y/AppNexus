@@ -16,5 +16,7 @@ export async function refreshDisplayFormat() {
     timeZone.value = values.find(value => value.key === "display.time-zone")?.value ?? "Asia/Shanghai";
   } catch { /* 展示设置读取失败采用明确默认值，不改变认证或业务时间。 */ }
 }
-/** ISO 时间点按当前租户展示时区与语言格式化，不处理无偏移业务日期。 */
-export function displayInstant(value: string, language: string) { return formatInstant(value, language, timeZone.value); }
+/** ISO 时间点按当前租户展示时区与语言格式化，不处理无偏移业务日期。part 缺省时显示完整时间点。 */
+export function displayInstant(value: string, language: string, part?: Parameters<typeof formatInstant>[3]) {
+  return formatInstant(value, language, timeZone.value, part);
+}

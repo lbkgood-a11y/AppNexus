@@ -45,26 +45,22 @@ public interface ProductImageMapper {
   private ReadSql(){}
   /** @param params 可信租户、父商品及权限计划 @return 固定有范围查询 */
   public static String list(Map<String,Object> params){
-   var access=(com.appnexus.platform.authorization.RowAccessControl.Predicate)params.get("access");
    return "SELECT BIN_TO_UUID(id) id,width_px width,height_px height,media_type mediaType FROM md_product_image WHERE tenant_id=UUID_TO_BIN(#{p0}) AND product_id=UUID_TO_BIN(#{p1}) AND deleted_at IS NULL"+ " AND EXISTS (SELECT 1 FROM md_product_v1 WHERE tenant_id=UUID_TO_BIN(#{p0}) AND id=UUID_TO_BIN(#{p1})"
-       +com.appnexus.persistence.mybatis.ScopedSql.bind(access.sql(),access.parameters(),"access")+")"+" ORDER BY created_at,id";
+       +" /*appnexus-bind:access*/ "+")"+" ORDER BY created_at,id";
   }
   /** @param params 可信租户、父商品及权限计划 @return 固定有范围查询 */
   public static String count(Map<String,Object> params){
-   var access=(com.appnexus.platform.authorization.RowAccessControl.Predicate)params.get("access");
    return "SELECT COUNT(*) FROM md_product_image WHERE tenant_id=UUID_TO_BIN(#{p0}) AND product_id=UUID_TO_BIN(#{p1}) AND deleted_at IS NULL"+ " AND EXISTS (SELECT 1 FROM md_product_v1 WHERE tenant_id=UUID_TO_BIN(#{p0}) AND id=UUID_TO_BIN(#{p1})"
-       +com.appnexus.persistence.mybatis.ScopedSql.bind(access.sql(),access.parameters(),"access")+")";
+       +" /*appnexus-bind:access*/ "+")";
   }
   /** @param params 可信租户、父商品及权限计划 @return 固定有范围查询 */
   public static String content(Map<String,Object> params){
-   var access=(com.appnexus.platform.authorization.RowAccessControl.Predicate)params.get("access");
    return "SELECT media_type mediaType,image_data bytes FROM md_product_image WHERE tenant_id=UUID_TO_BIN(#{tenant}) AND product_id=UUID_TO_BIN(#{product}) AND id=UUID_TO_BIN(#{id}) AND deleted_at IS NULL"+ " AND EXISTS (SELECT 1 FROM md_product_v1 WHERE tenant_id=UUID_TO_BIN(#{tenant}) AND id=UUID_TO_BIN(#{product})"
-       +com.appnexus.persistence.mybatis.ScopedSql.bind(access.sql(),access.parameters(),"access")+")";
+       +" /*appnexus-bind:access*/ "+")";
   }
   /** @param params 可信租户、父商品及权限计划 @return 固定有范围查询 */
   public static String parent(Map<String,Object> params){
-   var access=(com.appnexus.platform.authorization.RowAccessControl.Predicate)params.get("access");
-   return "SELECT status,draft_archived_at archived,structure_state structure,version FROM md_product_v1 WHERE tenant_id=UUID_TO_BIN(#{tenant}) AND id=UUID_TO_BIN(#{id})"+com.appnexus.persistence.mybatis.ScopedSql.bind(access.sql(),access.parameters(),"access")+(Boolean.TRUE.equals(params.get("lock"))?" FOR UPDATE":"");
+   return "SELECT status,draft_archived_at archived,structure_state structure,version FROM md_product_v1 WHERE tenant_id=UUID_TO_BIN(#{tenant}) AND id=UUID_TO_BIN(#{id})"+" /*appnexus-bind:access*/ "+(Boolean.TRUE.equals(params.get("lock"))?" FOR UPDATE":"");
   }
  }
 }

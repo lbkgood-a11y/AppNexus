@@ -1,9 +1,8 @@
 package com.appnexus.platform.managementapi.administration;
 
 import com.appnexus.contracts.operation.OperationBinding;
-import com.appnexus.platform.security.EndpointOperation;
 import com.appnexus.platform.security.AccountSettingsController;
-import com.appnexus.platform.security.EndpointPolicy;
+import com.appnexus.contracts.operation.EndpointPolicy;
 import com.appnexus.platform.tenant.TaskManagement;
 import java.time.Instant;
 import java.util.UUID;
@@ -27,8 +26,8 @@ public class EventWorkbenchController {
     }
 
     /** 平台事件分页。时间为 UTC，页码从 1 起，固定每页 20 条。 */
-    @OperationBinding(id="PlatformTask.listEvents",reference=true)
-    @EndpointOperation("platform.task:read")
+    @OperationBinding(id="PlatformTask.listEvents",reference=true, enforceDeclaredPermission=true)
+
     @GetMapping("/events")
     public ResponseEntity<TaskManagement.EventPage> listPlatformEvents(Authentication auth,
             @RequestParam(required=false) UUID tenant,@RequestParam(required=false) String type,
@@ -45,8 +44,8 @@ public class EventWorkbenchController {
     }
 
     /** @param eventId 事件 UUID @return 事件详情、消费者投递及最近尝试摘要 */
-    @OperationBinding(id="PlatformTask.readEvent",reference=true)
-    @EndpointOperation("platform.task:read")
+    @OperationBinding(id="PlatformTask.readEvent",reference=true, enforceDeclaredPermission=true)
+
     @GetMapping("/events/{eventId}")
     public ResponseEntity<TaskManagement.EventDetails> readPlatformEvent(Authentication auth,@PathVariable UUID eventId) {
         try {
@@ -58,12 +57,44 @@ public class EventWorkbenchController {
         }
     }
 
+    /** @return 实际注册的订阅链路及执行状态，禁止共享缓存 */
+    @OperationBinding(id="PlatformTask.listSubscriptions",reference=true, enforceDeclaredPermission=true)
+    @GetMapping("/event-subscriptions")
+    public ResponseEntity<java.util.List<TaskManagement.Subscription>> listSubscriptions(Authentication auth) {
+        try {
+            return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(events.subscriptions(actor(auth)));
+        } catch(SecurityException denied) {
+            throw problem(HttpStatus.FORBIDDEN,"PLATFORM_DENIED","无平台管理权限");
+        }
+    }
+
+    /** 订阅的目标执行状态及操作原因；原因去除首尾空白后为 1–200 字符。 */
+    public record SubscriptionStateRequest(Boolean paused,String reason) {}
+
+    /** 管理已登记的业务订阅，已领取的投递可继续执行。 */
+    @OperationBinding(id="PlatformTask.setSubscriptionState",reference=true, enforceDeclaredPermission=true)
+    @PutMapping("/event-subscriptions/{type}/{consumer}/state")
+    public ResponseEntity<Void> setSubscriptionState(Authentication auth,@PathVariable String type,
+            @PathVariable String consumer,@RequestBody SubscriptionStateRequest request) {
+        try {
+            if(request.paused()==null) throw new IllegalArgumentException();
+            events.setSubscriptionPaused(actor(auth),type,consumer,request.paused(),request.reason());
+            return ResponseEntity.noContent().cacheControl(CacheControl.noStore()).build();
+        } catch(SecurityException denied) {
+            throw problem(HttpStatus.FORBIDDEN,"PLATFORM_DENIED","无平台管理权限");
+        } catch(IllegalArgumentException invalid) {
+            throw problem(HttpStatus.BAD_REQUEST,"INVALID_SUBSCRIPTION_STATE","目标状态和 1–200 字符的操作原因必填");
+        } catch(java.util.NoSuchElementException missing) {
+            throw problem(HttpStatus.NOT_FOUND,"SUBSCRIPTION_NOT_MANAGEABLE","订阅不存在或不可暂停");
+        }
+    }
+
     /** 人工恢复理由，去除首尾空白后为 1–200 个字符，随管理操作审计。 */
     public record RetryRequest(String reason) {}
 
     /** 恢复唯一投递，冲突保留原状态及审计。 */
-    @OperationBinding(id="PlatformTask.retryDelivery",reference=true)
-    @EndpointOperation("platform.task:retry")
+    @OperationBinding(id="PlatformTask.retryDelivery",reference=true, enforceDeclaredPermission=true)
+
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @PostMapping("/event-deliveries/{deliveryId}/retry")
     public ResponseEntity<Void> retryPlatformEventDelivery(Authentication auth,@PathVariable UUID deliveryId,@RequestBody RetryRequest request) {

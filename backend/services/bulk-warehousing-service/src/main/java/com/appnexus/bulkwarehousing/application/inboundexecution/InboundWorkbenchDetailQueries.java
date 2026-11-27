@@ -7,8 +7,15 @@ import java.util.function.Supplier;
 
 /** 聚合读取的只读查询端口。每个卡片使用自己的授权计划。 */
 public interface InboundWorkbenchDetailQueries {
+    /** 公共作业票读取的最小授权快照；不含车牌、司机或货主信息。 */
+    record Ticket(long version,String status,String taskNo) {}
+
+    /** @param plan 原打印操作的可信计划 @param task 受控作业 UUID
+     * @return 同事务已锁定的作业票字段，记录不可见时为空 */
+    Ticket lockTicket(AccessPlan plan,UUID task);
+
     /** 基础作业和盲检状态。 */
-    record Task(long version,String stage,String status,boolean blind,String unload) {}
+    record Task(long version,String stage,String status,boolean blind,String unload,String taskNo) {}
     /** @param work 统一一致性快照内执行的只读工作 @param <T> 结果类型 @return 聚合结果 */
     <T>T read(Supplier<T> work);
     /** @param plan 作业详情权限 @param task 作业 UUID @return 基础记录 */

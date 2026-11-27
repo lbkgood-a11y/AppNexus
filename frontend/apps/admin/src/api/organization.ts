@@ -1,6 +1,6 @@
 import {operationGroups} from "./operationGroups";
 import { http } from "@/utils/http";
-import type { OrganizationApi, OrganizationCapability, OrganizationType, OrganizationTreeUnit, OrganizationImpact, OrganizationRelation, OrganizationPosition, OrganizationAssignment, OrganizationLeader, OrganizationDirectoryPerson, BusinessOption } from "@appnexus/organization";
+import type { OrganizationApi, OrganizationCapability, OrganizationType, OrganizationTreeUnit, OrganizationImpact, OrganizationRelation, OrganizationPosition, OrganizationAssignment, OrganizationLeader, OrganizationDirectoryPerson, BusinessOption } from "@appnexus/master-data/organization";
 
 /** 所有写操作取当前会话 CSRF，不缓存凭据；租户和操作者不进入客户端参数。 */
 async function mutate(method: "post" | "put" | "delete", path: string, data?: object) {
@@ -9,7 +9,7 @@ async function mutate(method: "post" | "put" | "delete", path: string, data?: ob
 }
 /** 组织页面的真实后端适配；ID 路径编码，服务端仍复核权限和租户边界。 */
 export const organizationApi: OrganizationApi = {
-  capabilities: () => operationGroups<OrganizationCapability>("tenant",{READ:"OrganizationUnit.listFlat",CREATE:"OrganizationUnit.create",UPDATE:"OrganizationUnit.update",DELETE:"OrganizationUnit.delete",GRANT:"OrganizationAuthorization.grant"}),
+  capabilities: () => operationGroups<OrganizationCapability>("tenant",{READ:"OrganizationUnit.listFlat",CREATE:"OrganizationUnit.create",UPDATE:"OrganizationUnit.update",DELETE:"OrganizationUnit.delete"}),
   types: () => http.request<OrganizationType[]>("get", "/api/organization/domain/types")
   ,treeUnits: () => http.request<OrganizationTreeUnit[]>("get", "/api/organization/domain/units")
   ,createType: (code,name) => mutate("post", "/domain/types", { code, name }) as Promise<OrganizationType>

@@ -8,7 +8,7 @@ public interface LeaveRepository {
   * @param id 当前租户原记录或服务端新资源UUID
   * @return 原固定投影或影响行数，无匹配不得跨租户回退
   */
- List<Map<String,Object>> appliedApprovals(String tenant,String id);
+ List<Map<String,Object>> appliedApprovals(String tenant,String id,String actor);
  /** createDraft固定存取，业务依据、成员资格、审批轮次与审计受原完整事务约束。
   * @param tenant 可信租户标识，不接受请求体指定
   * @param id 当前租户原记录或服务端新资源UUID
@@ -94,7 +94,7 @@ public interface LeaveRepository {
   * @param id 当前租户原记录或服务端新资源UUID
   * @return 原固定投影或影响行数，无匹配不得跨租户回退
   */
- List<Map<String,Object>> approvalCycles(String tenant,String id);
+ List<Map<String,Object>> approvalCycles(String tenant,String id,String actor);
  /** request固定存取，业务依据、成员资格、审批轮次与审计受原完整事务约束。
   * @param tenant 可信租户标识，不接受请求体指定
   * @param id 当前租户原记录或服务端新资源UUID

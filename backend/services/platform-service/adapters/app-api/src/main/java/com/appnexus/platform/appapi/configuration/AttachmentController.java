@@ -4,8 +4,7 @@ import com.appnexus.contracts.operation.OperationBinding;
 import com.appnexus.platform.configuration.AttachmentPolicies;
 import com.appnexus.platform.configuration.AttachmentRecords;
 import com.appnexus.platform.security.AccountSettingsController;
-import com.appnexus.platform.security.EndpointOperation;
-import com.appnexus.platform.security.EndpointPolicy;
+import com.appnexus.contracts.operation.EndpointPolicy;
 import com.appnexus.platform.tenant.VerifiedTenantContext;
 import jakarta.servlet.http.HttpServletRequest;
 import java.io.IOException;
@@ -16,7 +15,6 @@ import java.util.List;
 import java.util.UUID;
 import java.util.function.Supplier;
 import org.springframework.http.*;
-import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 /** 可信租户内的附件查询与上传。HTTP 范围和权限由统一入口执行。 */
@@ -34,21 +32,21 @@ public final class AttachmentController {
     }
 
     /** @return 当前可用的上传格式与限制，停用项不会返回 */
-    @OperationBinding(id="ManagedAttachment.rules", reference = true)
-    @EndpointOperation("configuration.attachment:upload")
+    @OperationBinding(id="ManagedAttachment.rules", reference = true, enforceDeclaredPermission=true)
+
     @GetMapping("/rules")
-    ResponseEntity<List<AttachmentPolicies.Rule>> rules(Authentication actor, HttpServletRequest request) {
-        return response(() -> policies.uploadRules(owner(actor, request)));
+    ResponseEntity<List<AttachmentPolicies.Rule>> rules(HttpServletRequest request) {
+        return response(() -> policies.uploadRules(owner(request)));
     }
 
     /** 分页获取当前租户内本账号上传的关联附件。 */
-    @OperationBinding(id="ManagedAttachment.list", reference = true)
-    @EndpointOperation("configuration.attachment:read")
+    @OperationBinding(id="ManagedAttachment.list", reference = true, enforceDeclaredPermission=true)
+
     @GetMapping
-    ResponseEntity<AttachmentRecords.Page> list(Authentication actor, HttpServletRequest request,
+    ResponseEntity<AttachmentRecords.Page> list(HttpServletRequest request,
             @RequestParam String businessId, @RequestParam(defaultValue = "0") int offset,
             @RequestParam(defaultValue = "20") int limit) {
-        return response(() -> records.list(owner(actor, request), businessId, offset, limit));
+        return response(() -> records.list(owner(request), businessId, offset, limit));
     }
 
     /**
@@ -56,21 +54,22 @@ public final class AttachmentController {
      * @param encodedName UTF-8 百分号编码的展示文件名
      * @param key 同一文件重试使用的 UUID
      */
-    @OperationBinding(id="ManagedAttachment.upload", reference = true)
-    @EndpointOperation("configuration.attachment:upload")
+    @OperationBinding(id="ManagedAttachment.upload", reference = true, enforceDeclaredPermission=true)
+
     @PostMapping(consumes = MediaType.APPLICATION_OCTET_STREAM_VALUE)
-    ResponseEntity<AttachmentRecords.Item> upload(Authentication actor, HttpServletRequest request,
+    ResponseEntity<AttachmentRecords.Item> upload(HttpServletRequest request,
             @RequestHeader("X-Attachment-Business-Id") String encodedBusinessId,
             @RequestHeader("X-Attachment-Name") String encodedName,
             @RequestHeader("Idempotency-Key") UUID key) throws IOException {
-        var owner = owner(actor, request);
+        var owner = owner(request);
         try (var stream = request.getInputStream()) {
             return response(() -> records.upload(owner, URLDecoder.decode(encodedBusinessId, StandardCharsets.UTF_8),
                     URLDecoder.decode(encodedName, StandardCharsets.UTF_8), key, stream));
         }
     }
 
-    private static AttachmentRecords.Owner owner(Authentication actor, HttpServletRequest request) {
+    /** @return 供本包附件入口共享的可信租户与账号，缺少租户上下文时拒绝请求 */
+    static AttachmentRecords.Owner owner(HttpServletRequest request) {
         if (!(request.getAttribute(VerifiedTenantContext.class.getName()) instanceof VerifiedTenantContext tenant)) {
             throw AccountSettingsController.problem(HttpStatus.CONFLICT, "TENANT_REQUIRED", "请选择有效租户");
         }

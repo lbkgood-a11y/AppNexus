@@ -9,12 +9,17 @@ import java.util.UUID;
  */
 public interface DataScopeAuthorization {
     /** 数据范围类型；DENY 是失败关闭结果，不可由管理员保存。 */
-    enum ScopeType { DENY, SELF, ORGANIZATION, ORGANIZATION_SUBTREE, ALL, RULES }
+    enum ScopeType {
+        DENY, SELF, ORGANIZATION, ORGANIZATION_SUBTREE, ALL, RULES;
+
+        /** @return 是否为授权中心开放配置的顶层范围；历史值只用于识别既有数据。 */
+        public boolean configurable() { return this == ALL || this == RULES; }
+    }
     /**
      * 已解析数据范围。
      * @param type 范围类型
-     * @param organizationIds 当前租户内组织 UUID；SELF、ALL、DENY 时为空
-     * @param rules 已匹配主体的组合规则；RULES 时与 organizationIds 对应的旧范围取 OR，其他范围必须为空
+     * @param organizationIds 历史诊断接口预留；查询执行不把此集合解释为授权
+     * @param rules 已匹配主体的组合规则；仅 RULES 可携带
      */
     record DataScope(ScopeType type, Set<UUID> organizationIds, java.util.List<DataGrantRules.Rule> rules) {
         /** 既有组织范围不包含组合规则。 */

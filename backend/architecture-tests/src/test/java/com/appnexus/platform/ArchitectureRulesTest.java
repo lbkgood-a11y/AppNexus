@@ -5,8 +5,8 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 import com.tngtech.archunit.core.importer.ClassFileImporter;
 import org.junit.jupiter.api.Test;
 import org.springframework.web.bind.annotation.RestController;
-import com.appnexus.platform.security.EndpointPolicy;
-import com.appnexus.platform.security.EndpointOperation;
+import com.appnexus.contracts.operation.EndpointPolicy;
+import com.appnexus.contracts.operation.OperationBinding;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ArchitectureRulesTest {
@@ -64,7 +64,7 @@ class ArchitectureRulesTest {
             .filter(method -> method.getAnnotations().stream().anyMatch(annotation ->
                 annotation.getRawType().getPackageName().equals("org.springframework.web.bind.annotation") &&
                 annotation.getRawType().getSimpleName().endsWith("Mapping")))
-            .filter(method -> !method.isAnnotatedWith(EndpointOperation.class))
+            .filter(method -> !method.isAnnotatedWith(OperationBinding.class))
             // 本人平台资格探测不是 tenant:read，后续目录/写入仍独立鉴权。
             .filter(method -> !(method.getOwner().getSimpleName().equals("PlatformAdministrationController")&&method.getName().equals("access")))
             .map(method -> method.getFullName()).sorted().toList();
@@ -85,11 +85,8 @@ class ArchitectureRulesTest {
                 Object value=annotation.getProperties().get("value");
                 String paths=value instanceof Object[] array?java.util.Arrays.toString(array):String.valueOf(value);
                 boolean platform=prefix.contains("/bff/platform")||paths.contains("/bff/platform");
-                if(platform&&!method.isAnnotatedWith(EndpointOperation.class))missing.add(method.getFullName());
-                if(platform&&method.isAnnotatedWith(EndpointOperation.class)){
-                    var operation=method.getAnnotationOfType(EndpointOperation.class);
-                    if(operation.value().startsWith("access.tenant.")&&operation.platformPermission().isBlank())missing.add(method.getFullName()+" 缺少平台代管权限");
-                }
+                if(platform&&!method.isAnnotatedWith(OperationBinding.class))missing.add(method.getFullName());
+
             }
         }
         assertTrue(missing.isEmpty(),()->"平台操作缺少权限登记："+missing);

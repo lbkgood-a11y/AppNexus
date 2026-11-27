@@ -6,7 +6,7 @@ import java.util.UUID;
 /**
  * 行范围公共执行边界，仅供业务存储适配器消费本次可信权限计划。
  * <p>不执行 SQL、不解析客户端表达式、不代替功能授权和租户隔离；实现由平台持久化适配器提供。
- * 支持已解析组织集合、ALL及声明接通的组合规则；不支持的范围失败关闭，新增维度必须接通声明与执行。
+ * 支持 ALL 和声明接通的组合规则，可投影为已解析的组织集合；不支持的范围失败关闭，新增维度必须接通声明与执行。
  */
 public interface RowAccessControl {
     /**
@@ -17,15 +17,13 @@ public interface RowAccessControl {
     default OrganizationRange organizationRange(AccessPlan plan){
         if(plan==null)return new OrganizationRange(false,List.of());
         if(plan.rows().type()==DataScopeAuthorization.ScopeType.ALL)return new OrganizationRange(true,List.of());
-        if(plan.rows().type()==DataScopeAuthorization.ScopeType.ORGANIZATION)
-            return new OrganizationRange(false,plan.rows().organizationIds().stream().sorted().map(UUID::toString).toList());
         return new OrganizationRange(false,List.of());
     }
     /**
      * 组织自身是授权对象时，以同一组织 UUID 表达记录及条件键，供既有固定组织 Mapper 消费。
      * @param plan 当前操作已解析的可信权限计划
      * @param organizationField 唯一可映射到当前组织 UUID 的声明字段，不能由请求指定
-     * @return 规则内交集、规则与既有授权分支之间并集；未知条件拒绝
+     * @return 规则内交集、规则之间并集；未知条件拒绝
      */
     default OrganizationRange organizationRange(AccessPlan plan,String organizationField){
         return organizationRange(plan,organizationField,null,true);
@@ -42,7 +40,7 @@ public interface RowAccessControl {
     }
     private OrganizationRange organizationRange(AccessPlan plan,String organizationField,UUID recordId,boolean organizationRecord){
         if(plan==null||plan.rows().type()!=DataScopeAuthorization.ScopeType.RULES)return organizationRange(plan);
-        var allowed=new java.util.TreeSet<>(plan.rows().organizationIds().stream().map(UUID::toString).toList());
+        var allowed=new java.util.TreeSet<String>();
         for(var rule:plan.rows().rules()){
             if(rule.allRecords())return new OrganizationRange(true,List.of());
             if(!organizationRecord&&recordId!=null&&!rule.recordIds().isEmpty()&&!rule.recordIds().contains(recordId))continue;
@@ -73,6 +71,19 @@ public interface RowAccessControl {
      */
     Predicate predicate(AccessPlan plan, Mapping mapping);
 
+    /**
+     * 在已重读的业务记录上复核无需字段比较的组合规则。
+     * @param plan 当前可信成员和对象操作的公共权限计划
+     * @param recordId 实际重读的记录 UUID，缺失时拒绝
+     * @return 命中显式全部规则或一条无字段条件的指定记录规则时为真
+     */
+    default boolean allowsRecordId(AccessPlan plan,UUID recordId){
+        if(plan==null||recordId==null||plan.rows().type()!=DataScopeAuthorization.ScopeType.RULES)return false;
+        // 带字段条件的分支必须完整验证，不能只因记录键命中而放行。
+        return plan.rows().rules().stream().anyMatch(rule->rule.allRecords()
+            ||rule.conditions().isEmpty()&&rule.recordIds().contains(recordId));
+    }
+
     /** @param column 固定 SQL 标识符，可带单层别名 @param type UUID/TEXT 决定参数绑定方式 */
     record Column(String column,DataGrantRules.ValueType type) {
         public Column {
@@ -83,7 +94,7 @@ public interface RowAccessControl {
      * 固定业务资源映射，避免权限计划跨资源使用。
      * @param resource 与 AccessPlan 精确一致的资源键
      * @param recordId 主记录 UUID 列
-     * @param organization 旧组织范围匹配列
+     * @param organization 业务固定的组织列
      * @param dimensions 统一声明业务维度到固定列的映射；不接收任意属性路径
      */
     record Mapping(String resource,Column recordId,Column organization,java.util.Map<String,Column> dimensions) {
@@ -106,7 +117,7 @@ public interface RowAccessControl {
      * 判断目标组织是否在本次操作范围，不能替代组织属于租户及启用状态的校验。
      * @param plan 当前操作的可信计划
      * @param organizationId 目标组织 UUID；null 返回 false，历史空归属由业务显式处理
-     * @return 仅 ALL 或已解析的组织集合命中时为 true
+     * @return 只有可信 ALL 计划允许直接通过；RULES 由具体资源的规则映射执行
      */
     boolean allowsOrganization(AccessPlan plan, UUID organizationId);
 

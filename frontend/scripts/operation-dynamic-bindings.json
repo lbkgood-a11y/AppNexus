@@ -60,7 +60,7 @@
     "reason": "依固定路由选择实际读取操作，服务端按原接口逐次准入及核对范围。"
   },
   {
-    "file": "frontend/modules/organization/src/Management.vue",
+    "file": "frontend/modules/master-data/src/organization/Management.vue",
     "expression": "saveOperation",
     "operations": [
       "OrganizationType.create",
@@ -76,7 +76,7 @@
       "OrganizationRelation.create"
     ],
     "sources": [
-      "frontend/modules/organization/src/operationBinding.ts"
+      "frontend/modules/master-data/src/organization/operationBinding.ts"
     ],
     "reason": "按当前表单对象、创建/更新及固定管理域选择真实操作；已核对各分支，不允许权限码或未知操作兜底"
   },
@@ -362,59 +362,59 @@
     "reason": "五类固定档案通过构建内映射选择对应真实操作，保存按创建或编辑分支执行；后端逐请求鉴权和校验版本。"
   },
   {
-    "file": "frontend/modules/organization/src/personnel/PersonnelEditor.vue",
+    "file": "frontend/modules/master-data/src/organization/personnel/PersonnelEditor.vue",
     "expression": "saveOperation",
     "operations": [
       "Person.create",
       "Person.update"
     ],
     "sources": [
-      "frontend/modules/organization/src/personnel/PersonnelEditor.vue",
-      "frontend/modules/organization/src/personnel/personnel.ts"
+      "frontend/modules/master-data/src/organization/personnel/PersonnelEditor.vue",
+      "frontend/modules/master-data/src/organization/personnel/personnel.ts"
     ],
     "reason": "人员基础表单按创建/编辑选择；固定明细和组织用户关联分别调用真实端点；后端独立校验分类、租户、权限与人员版本。"
   },
   {
-    "file": "frontend/modules/organization/src/personnel/PersonnelEditor.vue",
+    "file": "frontend/modules/master-data/src/organization/personnel/PersonnelEditor.vue",
     "expression": "isAssignment?'Person.assign':'Person.createDetail'",
     "operations": [
       "Person.assign",
       "Person.createDetail"
     ],
     "sources": [
-      "frontend/modules/organization/src/personnel/PersonnelEditor.vue",
-      "frontend/modules/organization/src/personnel/personnel.ts"
+      "frontend/modules/master-data/src/organization/personnel/PersonnelEditor.vue",
+      "frontend/modules/master-data/src/organization/personnel/personnel.ts"
     ],
     "reason": "人员基础表单按创建/编辑选择；固定明细和组织用户关联分别调用真实端点；后端独立校验分类、租户、权限与人员版本。"
   },
   {
-    "file": "frontend/modules/organization/src/personnel/PersonnelEditor.vue",
+    "file": "frontend/modules/master-data/src/organization/personnel/PersonnelEditor.vue",
     "expression": "isAssignment?'Person.updateAssignment':'Person.updateDetail'",
     "operations": [
       "Person.updateAssignment",
       "Person.updateDetail"
     ],
     "sources": [
-      "frontend/modules/organization/src/personnel/PersonnelEditor.vue",
-      "frontend/modules/organization/src/personnel/personnel.ts"
+      "frontend/modules/master-data/src/organization/personnel/PersonnelEditor.vue",
+      "frontend/modules/master-data/src/organization/personnel/personnel.ts"
     ],
     "reason": "人员基础表单按创建/编辑选择；固定明细和组织用户关联分别调用真实端点；后端独立校验分类、租户、权限与人员版本。"
   },
   {
-    "file": "frontend/modules/organization/src/personnel/PersonnelEditor.vue",
+    "file": "frontend/modules/master-data/src/organization/personnel/PersonnelEditor.vue",
     "expression": "isAssignment?'Person.unassign':'Person.deleteDetail'",
     "operations": [
       "Person.unassign",
       "Person.deleteDetail"
     ],
     "sources": [
-      "frontend/modules/organization/src/personnel/PersonnelEditor.vue",
-      "frontend/modules/organization/src/personnel/personnel.ts"
+      "frontend/modules/master-data/src/organization/personnel/PersonnelEditor.vue",
+      "frontend/modules/master-data/src/organization/personnel/personnel.ts"
     ],
     "reason": "人员基础表单按创建/编辑选择；固定明细和组织用户关联分别调用真实端点；后端独立校验分类、租户、权限与人员版本。"
   },
   {
-    "file": "frontend/modules/organization/src/personnel/PersonnelEditor.vue",
+    "file": "frontend/modules/master-data/src/organization/personnel/PersonnelEditor.vue",
     "expression": "detailOperation",
     "operations": [
       "Person.assign",
@@ -423,8 +423,8 @@
       "Person.updateDetail"
     ],
     "sources": [
-      "frontend/modules/organization/src/personnel/PersonnelEditor.vue",
-      "frontend/modules/organization/src/personnel/personnel.ts"
+      "frontend/modules/master-data/src/organization/personnel/PersonnelEditor.vue",
+      "frontend/modules/master-data/src/organization/personnel/personnel.ts"
     ],
     "reason": "人员基础表单按创建/编辑选择；固定明细和组织用户关联分别调用真实端点；后端独立校验分类、租户、权限与人员版本。"
   },
@@ -702,5 +702,130 @@
       "frontend/modules/authorization/src/RoleUsers.vue"
     ],
     "reason": "平台账号与租户成员分别复用真实主体角色覆盖接口；加入前重读完整快照并追加角色，保留版本校验及其他角色。"
+  },
+  {
+    "file": "frontend/modules/warehousing/src/InboundDocumentWorkspace.vue",
+    "expression": "operation(item.operation)",
+    "operations": [
+      "BulkInboundQualityOrder.register_sample",
+      "BulkInboundQualityOrder.decide_quality",
+      "BulkInboundQualityOrder.inspect_steel",
+      "BulkInboundMeteringOrder.record_gross",
+      "BulkInboundMeteringOrder.record_tare",
+      "BulkInboundMeteringOrder.register_external",
+      "BulkInboundMeteringOrder.confirm_steel",
+      "BulkWarehouseReceiptOrder.create_bulk_draft",
+      "BulkWarehouseReceiptOrder.create_steel_draft",
+      "BulkWarehouseReceiptOrder.post",
+      "BulkWarehouseReceiptOrder.reverse",
+      "BulkInboundTask.confirm_unloading"
+    ],
+    "sources": [
+      "frontend/modules/warehousing/src/InboundDocumentWorkspace.vue",
+      "frontend/modules/warehousing/src/inboundDocuments.ts"
+    ],
+    "reason": "按已定义的入库三单对象与动作选择器解析操作；卸车动作使用入库任务完整标识。"
+  },
+  {
+    "file": "frontend/modules/warehousing/src/InboundDocumentWorkspace.vue",
+    "expression": "action && operation(action.operation)",
+    "operations": [
+      "BulkInboundQualityOrder.register_sample",
+      "BulkInboundQualityOrder.decide_quality",
+      "BulkInboundQualityOrder.inspect_steel",
+      "BulkInboundMeteringOrder.record_gross",
+      "BulkInboundMeteringOrder.record_tare",
+      "BulkInboundMeteringOrder.register_external",
+      "BulkInboundMeteringOrder.confirm_steel",
+      "BulkWarehouseReceiptOrder.create_bulk_draft",
+      "BulkWarehouseReceiptOrder.create_steel_draft",
+      "BulkWarehouseReceiptOrder.post",
+      "BulkWarehouseReceiptOrder.reverse",
+      "BulkInboundTask.confirm_unloading"
+    ],
+    "sources": [
+      "frontend/modules/warehousing/src/InboundDocumentWorkspace.vue",
+      "frontend/modules/warehousing/src/inboundDocuments.ts"
+    ],
+    "reason": "按已定义的入库三单对象与动作选择器解析操作；卸车动作使用入库任务完整标识。"
+  },
+  {
+    "file": "frontend/modules/warehousing/src/InboundDocumentWorkspace.vue",
+    "expression": "operation('list_documents')",
+    "operations": [
+      "BulkInboundQualityOrder.list_documents",
+      "BulkInboundMeteringOrder.list_documents",
+      "BulkWarehouseReceiptOrder.list_documents"
+    ],
+    "sources": [
+      "frontend/modules/warehousing/src/InboundDocumentWorkspace.vue",
+      "frontend/modules/warehousing/src/inboundDocuments.ts"
+    ],
+    "reason": "按当前三单对象选择已绑定的列表或详情读取操作。"
+  },
+  {
+    "file": "frontend/modules/warehousing/src/InboundDocumentWorkspace.vue",
+    "expression": "operation('read_document')",
+    "operations": [
+      "BulkInboundQualityOrder.read_document",
+      "BulkInboundMeteringOrder.read_document",
+      "BulkWarehouseReceiptOrder.read_document"
+    ],
+    "sources": [
+      "frontend/modules/warehousing/src/InboundDocumentWorkspace.vue",
+      "frontend/modules/warehousing/src/inboundDocuments.ts"
+    ],
+    "reason": "按当前三单对象选择已绑定的列表或详情读取操作。"
+  },
+  {
+    "file": "frontend/modules/warehousing/src/InboundWorkbench.vue",
+    "expression": "action === 'gross' ? 'BulkInboundMeteringOrder.record_gross' : 'BulkInboundMeteringOrder.record_tare'",
+    "operations": [
+      "BulkInboundMeteringOrder.record_gross",
+      "BulkInboundMeteringOrder.record_tare"
+    ],
+    "sources": [
+      "frontend/modules/warehousing/src/InboundWorkbench.vue"
+    ],
+    "reason": "同一磅单表单根据当前动作提交毛重或皮重。"
+  },
+  {
+    "file": "frontend/modules/warehousing/src/InboundWorkbench.vue",
+    "expression": "documentOperation",
+    "operations": [
+      "BulkInboundQualityOrder.inspect_steel",
+      "BulkInboundQualityOrder.decide_quality",
+      "BulkInboundMeteringOrder.confirm_steel"
+    ],
+    "sources": [
+      "frontend/modules/warehousing/src/InboundWorkbench.vue",
+      "frontend/modules/warehousing/src/inboundDocuments.ts"
+    ],
+    "reason": "工作台三条单据对话框打开路径及其确认提交共用对应操作。"
+  },
+  {
+    "file": "frontend/modules/warehousing/src/InboundSiteCommands.vue",
+    "expression": "action.operation",
+    "operations": [
+      "BulkInboundTask.raise_site_gate",
+      "BulkInboundTask.call_site_number",
+      "BulkInboundTask.print_site_ticket"
+    ],
+    "sources": [
+      "frontend/modules/warehousing/src/InboundSiteCommands.vue"
+    ],
+    "reason": "设备按钮和可用性检查复用固定操作定义。"
+  },
+  {
+    "file": "frontend/apps/admin/src/views/warehousing/inbound-workbench.vue",
+    "expression": "detail.receipt.id ? 'BulkWarehouseReceiptOrder.read_document' : 'BulkWarehouseReceiptOrder.open_draft'",
+    "operations": [
+      "BulkWarehouseReceiptOrder.read_document",
+      "BulkWarehouseReceiptOrder.open_draft"
+    ],
+    "sources": [
+      "frontend/apps/admin/src/views/warehousing/inbound-workbench.vue"
+    ],
+    "reason": "已有入库单走详情读取，缺少入库单时执行工作台草稿生成。"
   }
 ]

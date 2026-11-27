@@ -1,4 +1,5 @@
 package com.appnexus.platform.appapi.configuration;
+import com.appnexus.contracts.operation.EndpointPolicy;
 import com.appnexus.platform.security.*;
 
 import com.appnexus.platform.configuration.DictionaryManagement;
@@ -32,35 +33,35 @@ public class DictionaryManagementController {
 
  /** 操作契约关联下方真实接口；仅供展示与一致性校验，主体、权限及业务约束仍由原用例执行。 */
 
- @com.appnexus.contracts.operation.OperationBinding(id="BusinessDictionary.list", reference=true)
- @EndpointOperation("configuration.dictionary:read") @com.appnexus.contracts.operation.RecordAuditSource(table="tenant_dictionary")
+ @com.appnexus.contracts.operation.OperationBinding(id="BusinessDictionary.list", reference=true, enforceDeclaredPermission=true)
+  @com.appnexus.contracts.operation.RecordAuditSource(table="tenant_dictionary")
  @GetMapping ResponseEntity<List<DictionaryManagement.Dictionary>> list(Authentication a,HttpServletRequest r){return ok(()->dictionaries.dictionaries(context(a,r)));}
  /** 操作契约关联下方真实接口；仅供展示与一致性校验，主体、权限及业务约束仍由原用例执行。 */
- @com.appnexus.contracts.operation.OperationBinding(id="BusinessDictionary.create", reference=true)
- @EndpointOperation("configuration.dictionary:create") @PostMapping ResponseEntity<DictionaryManagement.Dictionary> create(Authentication a,HttpServletRequest r,@RequestBody DictionaryCreate input){return ok(()->dictionaries.createDictionary(context(a,r),Objects.requireNonNull(input).command()));}
+ @com.appnexus.contracts.operation.OperationBinding(id="BusinessDictionary.create", reference=true, enforceDeclaredPermission=true)
+  @PostMapping ResponseEntity<DictionaryManagement.Dictionary> create(Authentication a,HttpServletRequest r,@RequestBody DictionaryCreate input){return ok(()->dictionaries.createDictionary(context(a,r),Objects.requireNonNull(input).command()));}
  /** 操作契约关联下方真实接口；仅供展示与一致性校验，主体、权限及业务约束仍由原用例执行。 */
- @com.appnexus.contracts.operation.OperationBinding(id="BusinessDictionary.update", reference=true)
- @EndpointOperation("configuration.dictionary:update") @PutMapping("/{dictionaryId}") ResponseEntity<DictionaryManagement.Dictionary> update(Authentication a,HttpServletRequest r,@PathVariable UUID dictionaryId,@RequestBody DictionaryUpdate input){return ok(()->dictionaries.updateDictionary(context(a,r),dictionaryId,Objects.requireNonNull(input).command()));}
+ @com.appnexus.contracts.operation.OperationBinding(id="BusinessDictionary.update", reference=true, enforceDeclaredPermission=true)
+  @PutMapping("/{dictionaryId}") ResponseEntity<DictionaryManagement.Dictionary> update(Authentication a,HttpServletRequest r,@PathVariable UUID dictionaryId,@RequestBody DictionaryUpdate input){return ok(()->dictionaries.updateDictionary(context(a,r),dictionaryId,Objects.requireNonNull(input).command()));}
  /** 操作契约关联下方真实接口；仅供展示与一致性校验，主体、权限及业务约束仍由原用例执行。 */
- @com.appnexus.contracts.operation.OperationBinding(id="BusinessDictionary.delete", reference=true)
- @EndpointOperation("configuration.dictionary:delete") @DeleteMapping("/{dictionaryId}") ResponseEntity<Void> delete(Authentication a,HttpServletRequest r,@PathVariable UUID dictionaryId,@RequestParam long version){return empty(()->dictionaries.deleteDictionary(context(a,r),dictionaryId,version));}
+ @com.appnexus.contracts.operation.OperationBinding(id="BusinessDictionary.delete", reference=true, enforceDeclaredPermission=true)
+  @DeleteMapping("/{dictionaryId}") ResponseEntity<Void> delete(Authentication a,HttpServletRequest r,@PathVariable UUID dictionaryId,@RequestParam long version){return empty(()->dictionaries.deleteDictionary(context(a,r),dictionaryId,version));}
  /** 操作契约关联下方真实接口；仅供展示与一致性校验，主体、权限及业务约束仍由原用例执行。 */
- @com.appnexus.contracts.operation.OperationBinding(id="BusinessDictionary.items", reference=true)
- @EndpointOperation("configuration.dictionary:read") @com.appnexus.contracts.operation.RecordAuditSource(table="tenant_dictionary_item")
+ @com.appnexus.contracts.operation.OperationBinding(id="BusinessDictionary.items", reference=true, enforceDeclaredPermission=true)
+  @com.appnexus.contracts.operation.RecordAuditSource(table="tenant_dictionary_item")
  @GetMapping("/{dictionaryId}/items") ResponseEntity<List<DictionaryManagement.Item>> items(Authentication a,HttpServletRequest r,@PathVariable UUID dictionaryId){return ok(()->dictionaries.items(context(a,r),dictionaryId));}
  /** 操作契约关联下方真实接口；仅供展示与一致性校验，主体、权限及业务约束仍由原用例执行。 */
- @com.appnexus.contracts.operation.OperationBinding(id="BusinessDictionary.lookup", reference=true)
- @EndpointOperation("configuration.dictionary:read") @GetMapping("/lookup/{code}") ResponseEntity<List<DictionaryManagement.Item>> lookup(Authentication a,HttpServletRequest r,@PathVariable String code){return ResponseEntity.ok().cacheControl(org.springframework.http.CacheControl.noStore()).body(dictionaries.enabledItems(context(a,r),code));}
+ @com.appnexus.contracts.operation.OperationBinding(id="BusinessDictionary.lookup", reference=true, enforceDeclaredPermission=true)
+  @GetMapping("/lookup/{code}") ResponseEntity<List<DictionaryManagement.Item>> lookup(Authentication a,HttpServletRequest r,@PathVariable String code){return ResponseEntity.ok().cacheControl(org.springframework.http.CacheControl.noStore()).body(dictionaries.enabledItems(context(a,r),code));}
  /** 操作契约关联下方真实接口；仅供展示与一致性校验，主体、权限及业务约束仍由原用例执行。 */
 
- @com.appnexus.contracts.operation.OperationBinding(id="BusinessDictionary.createItem", reference=true)
- @EndpointOperation("configuration.dictionary:item_create") @PostMapping("/{dictionaryId}/items") ResponseEntity<DictionaryManagement.Item> createItem(Authentication a,HttpServletRequest r,@PathVariable UUID dictionaryId,@RequestBody ItemCreate input){return ok(()->dictionaries.createItem(context(a,r),dictionaryId,Objects.requireNonNull(input).command()));}
+ @com.appnexus.contracts.operation.OperationBinding(id="BusinessDictionary.createItem", reference=true, enforceDeclaredPermission=true)
+  @PostMapping("/{dictionaryId}/items") ResponseEntity<DictionaryManagement.Item> createItem(Authentication a,HttpServletRequest r,@PathVariable UUID dictionaryId,@RequestBody ItemCreate input){return ok(()->dictionaries.createItem(context(a,r),dictionaryId,Objects.requireNonNull(input).command()));}
  /** 操作契约关联下方真实接口；仅供展示与一致性校验，主体、权限及业务约束仍由原用例执行。 */
- @com.appnexus.contracts.operation.OperationBinding(id="BusinessDictionary.updateItem", reference=true)
- @EndpointOperation("configuration.dictionary:item_update") @PutMapping("/{dictionaryId}/items/{itemId}") ResponseEntity<DictionaryManagement.Item> updateItem(Authentication a,HttpServletRequest r,@PathVariable UUID dictionaryId,@PathVariable UUID itemId,@RequestBody ItemUpdate input){return ok(()->dictionaries.updateItem(context(a,r),dictionaryId,itemId,Objects.requireNonNull(input).command()));}
+ @com.appnexus.contracts.operation.OperationBinding(id="BusinessDictionary.updateItem", reference=true, enforceDeclaredPermission=true)
+  @PutMapping("/{dictionaryId}/items/{itemId}") ResponseEntity<DictionaryManagement.Item> updateItem(Authentication a,HttpServletRequest r,@PathVariable UUID dictionaryId,@PathVariable UUID itemId,@RequestBody ItemUpdate input){return ok(()->dictionaries.updateItem(context(a,r),dictionaryId,itemId,Objects.requireNonNull(input).command()));}
  /** 操作契约关联下方真实接口；仅供展示与一致性校验，主体、权限及业务约束仍由原用例执行。 */
- @com.appnexus.contracts.operation.OperationBinding(id="BusinessDictionary.deleteItem", reference=true)
- @EndpointOperation("configuration.dictionary:item_delete") @DeleteMapping("/{dictionaryId}/items/{itemId}") ResponseEntity<Void> deleteItem(Authentication a,HttpServletRequest r,@PathVariable UUID dictionaryId,@PathVariable UUID itemId,@RequestParam long version){return empty(()->dictionaries.deleteItem(context(a,r),dictionaryId,itemId,version));}
+ @com.appnexus.contracts.operation.OperationBinding(id="BusinessDictionary.deleteItem", reference=true, enforceDeclaredPermission=true)
+  @DeleteMapping("/{dictionaryId}/items/{itemId}") ResponseEntity<Void> deleteItem(Authentication a,HttpServletRequest r,@PathVariable UUID dictionaryId,@PathVariable UUID itemId,@RequestParam long version){return empty(()->dictionaries.deleteItem(context(a,r),dictionaryId,itemId,version));}
 
  /** 构造可信上下文；缺少租户选择时返回稳定冲突码而不是查询任意租户。 */
  private DictionaryManagement.Context context(Authentication a,HttpServletRequest request){if(!(request.getAttribute(com.appnexus.platform.tenant.VerifiedTenantContext.class.getName()) instanceof VerifiedTenantContext c))throw AccountSettingsController.problem(HttpStatus.CONFLICT,"TENANT_REQUIRED","请选择有效租户");return new DictionaryManagement.Context(UUID.fromString(a.getName()),c.tenantId(),c.memberId());}

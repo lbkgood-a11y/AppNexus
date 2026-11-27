@@ -451,6 +451,11 @@ account:
     MFA_FAILED: 第二因子认证失败
     REFRESH_TOKEN_REPLAY: 检测到刷新凭证重放，已撤销设备授权
 management:
+  excelExport: 导出 Excel
+  exportCurrentPageExcel: 导出本页
+  exportSelectedRowsExcel: 导出选中行
+  selectExportRow: 选择第 {row} 行导出
+  excelExportFailed: 本页 Excel 导出失败，请重试。
   queryFor: "{name}查询"
   queryConditions: 查询条件
   refresh: 刷新
@@ -872,6 +877,17 @@ roleManagement:
     ROLE_DATA_CONFLICT: 角色数据约束已变化
     INVALID_ROLE_INPUT: 角色参数不符合要求
 authorizationCenter:
+  scopeSources:
+    ROLE_DEFAULT: 角色对象默认
+    ROLE_OVERRIDE: 角色操作覆盖
+    MEMBER_DEFAULT: 成员对象默认
+    MEMBER_OVERRIDE: 成员操作覆盖
+  createObjectOverride: 添加操作覆盖
+  objectDefault: 对象默认范围
+  clearObjectDefault: 清除默认范围
+  inheritsObjectDefault: 继承对象默认范围
+  setObjectDefault: 设为对象默认范围
+  restoreObjectDefault: 恢复继承
   rules:
     parameter: 参数来源
     parameters:
@@ -1679,7 +1695,8 @@ businessWorkflow:
   removeConfirm: 移除此审批步骤及其独立条件（如有）？发布后影响新提交单据。
 businessObject:
   capabilityOverview: 通用能力
-  capabilityOverviewHint: 能力来自业务对象契约。关联配置选择已发布流程、打印场景或编码规则；字段与操作无需重复定义。
+  capabilityOverviewHint: 查看可关联流程、打印场景或编码规则的能力。直接执行业务的能力可在交互契约展开行查看。
+  noConfigurableCapabilities: 此对象未声明可配置的通用能力
   contractReference: 契约引用
   configureCapability: 维护关联配置
   partnerOperations:
@@ -1733,6 +1750,8 @@ businessObject:
   noCodingDeclaration: "此对象未声明可编码字段"
   catalogBoundary: 这里展示平台登记的业务对象及其操作、数据权限声明和已接入的能力。
   category: 对象分类
+  allCategories: 全部分类
+  allStatuses: 全部状态
   categories:
     MASTER_DATA: 主数据
     TRANSACTION: 业务单据
@@ -1833,7 +1852,7 @@ businessObject:
   enableEntry: 启用入口
   disableEntry: 禁用入口
   controlReason: 请填写管控原因（1—200 字，不含敏感信息）
-  pageRelations: 已接入操作
+  pageRelations: 已接入页面入口
   addPageRelation: 添加页面关联
   savePageRelations: 保存页面关联
   pageRelationHint: 页面与行为由代码自动登记；入口禁用仅阻止新操作，不影响历史流程结果交付。
@@ -2663,6 +2682,14 @@ inboundNotice: {"driverName": "司机姓名", "driverPhone": "联系电话", "dr
 attachments:
   policies: 附件配置
   ledger: 附件管理
+  upload: 上传附件
+  download: 下载
+  downloadFailed: 下载附件失败，请重试
+  preview: 预览
+  previewFailed: 预览附件失败，请重试
+  previewUnsupported: 此格式暂不支持在线预览，请下载后打开
+  uploadTenant: 当前租户
+  closeUpload: 关闭
   type: 文件类型
   extensions: 扩展名
   enabled: 启用状态
@@ -2691,6 +2718,89 @@ attachments:
     FAILED: 写入失败
 
 eventWorkbench:
+  noDeliveries: 尚无投递记录
+  overview: 事件概况
+  systemInfo: 系统信息
+  technicalDetails: 技术信息
+  recordedAt: 事件记录时间
+  eventScope: 归属范围
+  platformScope: 平台级事件
+  tenantScope: 租户级事件
+  unknownEvent: 未登记显示名称的事件
+  unknownConsumer: 未登记显示名称的订阅
+  unknownExecutor: 未登记显示名称的执行器
+  unknownFailure: 执行异常，详情见技术信息
+  typeCode: 事件类型编码
+  consumerCode: 消费者编码
+  executorCode: 执行器标识
+  deliveryId: 投递标识
+  failureCode: 失败码
+  eventNames:
+    INBOUND_RECEIPT_POSTED: 入库收货已过账
+    INBOUND_QUALITY_DECIDED: 入库质检已判定
+    AUTHORITY_INVALIDATED: 权限变更已生效
+    INTEGRATION_AUTHORITY_CHANGED: 接口客户端权限已变更
+  consumerNames:
+    inbound-batch-quality: 入库批次质检
+    authority-invalidation: 权限变更回执
+  executorNames:
+    inbound-batch-quality: 批次质检更新
+    authority-invalidation: 权限事件处理
+  failureNames:
+    PERMANENT: 无法自动恢复，需人工处理
+    TRANSIENT: 执行暂时失败
+    LEASE_EXPIRED: 执行超时
+    LEGACY_RECEIPT_MISSING: 历史消费回执缺失，需对账
+    LEGACY_UNMAPPED: 历史投递未映射，需对账
+  subscriptionReason: 请输入本次订阅状态变更原因
+  subscriptionReasonLength: 变更原因须为 1–200 个字符
+  subscriptionAudit: 订阅状态审计
+  topology: 生产与消费链路
+  allEvents: 全部事件
+  allStatuses: 全部状态
+  searchTypes: 搜索事件类型
+  collapseTopology: 收起链路
+  expandTopology: 展开链路
+  records: 事件记录
+  eventGroups:
+    INBOUND_RECEIPT_POSTED: 仓储管理
+    INBOUND_QUALITY_DECIDED: 仓储管理
+    AUTHORITY_INVALIDATED: 权限管理
+    INTEGRATION_AUTHORITY_CHANGED: 权限管理
+  readMessages: 查看该类型消息
+  refreshTopology: 刷新订阅
+  noSubscriptions: 暂无已注册订阅
+  producer: 生产操作
+  subscription: 订阅
+  executor: 执行器
+  expectedEffect: 预期业务效果
+  unknownEffect: 未声明业务效果
+  pause: 暂停执行
+  resume: 恢复执行
+  paused: 执行已暂停
+  active: 执行已启用
+  subscriptionSaved: 订阅状态已保存
+  pauseBehavior: 暂停后继续生成投递，执行器停止领取新投递，已领取的投递可继续运行。
+  filterDelivery: 按消费者筛选时间线
+  postReceipt: 入库收货过账
+  decideQuality: 确认入库质检判定
+  batchQualityProjection: 更新入库批次质检投影
+  authorityChanges: 权限配置变更
+  integrationChanges: 接口客户端权限变更
+  authorityReceipt: 记录权限事件消费回执
+  refreshDetail: 刷新详情
+  lifecycle: 事件生命周期
+  historyLimit: 展示最近最多 200 次执行尝试及已记录的创建节点，历史明细可能缺失。
+  noHistory: 暂无生命周期记录
+  recorded: 事件已入库
+  deliveryCreated: 已创建投递
+  attemptStarted: 开始消费尝试
+  attemptSucceeded: 消费成功
+  attemptSummary: "{consumer} · 第 {number} 次尝试"
+  retryWaiting: 等待自动重试
+  FAILED: 消费失败
+  LEASE_EXPIRED: 执行租约过期
+  ALREADY_CONSUMED: 已有消费回执
   title: 事件工作台
   eventId: 事件标识
   tenant: 租户标识
@@ -2702,18 +2812,30 @@ eventWorkbench:
   updatedBy: 更新账号
   search: 查询
   progress: 投递进度
+  deliveryResult: 投递结果
+  deliveryCounts:
+    done: "{count} 成功"
+    manual: "{count} 待人工"
+    pending: "{count} 待处理"
+    processing: "{count} 处理中"
   counts: "{done} 成功 · {manual} 待人工 · {pending} 待处理 · {processing} 处理中"
   detail: 事件详情
   subject: 业务引用
   consumer: 消费者
   attempts: 本轮次数
+  attemptRatio: 本轮 / 累计
+  deliveryActions: 操作
+  deliveryDetails: 查看明细
+  collapseDeliveryDetails: 收起明细
+  consumedBy: 消费人
+  consumedAt: 消费时间
   totalAttempts: 累计次数
   nextAt: 下次执行时间
-  failure: 失败码
+  failure: 失败原因
   retry: 重试投递
   reason: 请输入本次重试原因
   reasonLength: 重试原因须为 1–200 个字符
-  retried: 已提交重试
+  retried: 投递已重新排队，可刷新详情查看执行结果
   deliveries: 消费者投递
   history: 最近执行记录
   attemptNo: 尝试序号
@@ -2721,3 +2843,9 @@ eventWorkbench:
   PROCESSING: 处理中
   DONE: 已完成
   MANUAL: 待人工
+
+loginWarehouse:
+  title: 选择登录仓库
+  empty: 没有可选的启用仓库
+  confirm: 确认仓库
+  authorizePersonnel: 仓库人员授权

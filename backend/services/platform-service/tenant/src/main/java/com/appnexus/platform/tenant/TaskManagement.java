@@ -28,6 +28,13 @@ public interface TaskManagement {
  EventPage events(UUID actor,EventFilter filter);
  /** 在平台管理域读取事件，缺失时返回空。 */
  Optional<EventDetails> event(UUID actor,UUID eventId);
+ /** 代码注册的订阅及数据库中的执行开关。业务效果编码描述处理器职责。 */
+ record Subscription(String type,String consumer,String producer,String executor,String effect,boolean paused,
+     boolean manageable,Map<String,Object> audit) {}
+ /** @return 平台管理域当前实际注册的订阅 */
+ List<Subscription> subscriptions(UUID actor);
+ /** 对已注册的业务订阅设置执行开关，原因去除首尾空白后为 1–200 字符。 */
+ void setSubscriptionPaused(UUID actor,String type,String consumer,boolean paused,String reason);
  /** 以可信账号和明确原因恢复当前投递，失败时抛出状态冲突。 */
  void retryDelivery(UUID actor,UUID deliveryId,String reason);
 }

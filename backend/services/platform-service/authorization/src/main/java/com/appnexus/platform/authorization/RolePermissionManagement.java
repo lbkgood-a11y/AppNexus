@@ -18,7 +18,7 @@ public interface RolePermissionManagement {
     /**
      * 单项结构化数据策略。
      * @param permissionId 本次完整权限集合中的权限 UUID
-     * @param scopeType 目录实际支持的 ORGANIZATION、ORGANIZATION_SUBTREE、ALL 或 RULES，禁止 DENY
+     * @param scopeType 目录实际支持的 ALL 或 RULES，其他类型禁止保存
      * @param resourceType 后端登记的资源类型
      * @param organizationIds 组织范围值；仅组织类范围必填，其他类型必须为空
      * @param rules RULES时必填1–20条；同条记录与条件AND，多条OR，其他类型必须为空
@@ -35,8 +35,33 @@ public interface RolePermissionManagement {
         }
     }
 
+    /**
+     * 一个对象的默认记录范围。只有已具备功能权限且未配置覆盖的操作才继承。
+     * @param scopeType 支持 ALL 或 RULES
+     * @param rules RULES 的完整分支；ALL 取空列表
+     */
+    record ObjectScope(DataScopeAuthorization.ScopeType scopeType, java.util.List<DataGrantRules.Rule> rules) {
+        public ObjectScope {
+            java.util.Objects.requireNonNull(scopeType);
+            rules = rules == null ? java.util.List.of() : java.util.List.copyOf(rules);
+            if (!scopeType.configurable() || (scopeType != DataScopeAuthorization.ScopeType.RULES && !rules.isEmpty())) {
+                throw new IllegalArgumentException("DATA_SCOPE_UNSUPPORTED");
+            }
+            if (scopeType == DataScopeAuthorization.ScopeType.RULES) rules = DataGrantRules.checked(rules);
+        }
+    }
+
     /** @param permissionIds 完整功能权限集合 @param dataPolicies 完整数据策略集合 @param roleVersion 角色乐观锁版本 @param fieldPolicies 强制字段展示限制，与普通授权合并后收口 @param dataAccessVersion 代码声明目录版本，Web保存时原样回传，过期拒绝覆盖 @param inheritingMemberCount 当前未到期且启用的继承成员数量，单位人；仅用于保存影响提示，不作为授权依据 */
-    record AuthorizationAssignment(Set<UUID> permissionIds, Set<DataPolicy> dataPolicies, long roleVersion, Set<FieldSecurity.Policy> fieldPolicies, long inheritingMemberCount,String dataAccessVersion) {
+    record AuthorizationAssignment(Set<UUID> permissionIds, Set<DataPolicy> dataPolicies, long roleVersion, Set<FieldSecurity.Policy> fieldPolicies, long inheritingMemberCount,String dataAccessVersion, java.util.Map<String,ObjectScope> objectScopes, Set<UUID> inheritedPermissionIds) {
+        /** 旧授权模板缺省为仅含显式操作策略。 */
+        public AuthorizationAssignment {
+            objectScopes = objectScopes == null ? java.util.Map.of() : java.util.Map.copyOf(objectScopes);
+            inheritedPermissionIds = inheritedPermissionIds == null ? Set.of() : Set.copyOf(inheritedPermissionIds);
+        }
+        /** 兼容仅包含显式操作策略的快照。 */
+        public AuthorizationAssignment(Set<UUID> permissionIds, Set<DataPolicy> dataPolicies, long roleVersion, Set<FieldSecurity.Policy> fieldPolicies, long inheritingMemberCount, String dataAccessVersion) {
+            this(permissionIds,dataPolicies,roleVersion,fieldPolicies,inheritingMemberCount,dataAccessVersion,java.util.Map.of(),Set.of());
+        }
         /** 内部调用可省略目录版本；Web读取由目录实现填充。 */
         public AuthorizationAssignment(Set<UUID> permissionIds,Set<DataPolicy> dataPolicies,long roleVersion,Set<FieldSecurity.Policy> fieldPolicies,long inheritingMemberCount){this(permissionIds,dataPolicies,roleVersion,fieldPolicies,inheritingMemberCount,null);}
         /** 未查询影响人数的内部结果使用零；对外读取由持久化实现返回实际人数。 */
@@ -85,4 +110,20 @@ public interface RolePermissionManagement {
     /** 原子保存功能、角色数据范围与强制字段限制；字段列表为 NULL 时保留旧限制以兼容旧客户端。 */
     AuthorizationAssignment replaceAuthorization(RoleManagement.Context context,UUID roleId,long expectedRoleVersion,
         Set<UUID> permissionIds,Set<DataPolicy> dataPolicies,Set<FieldSecurity.Policy> fieldPolicies,String reason);
+
+    /**
+     * 在同一角色版本事务内替换操作覆盖和对象默认。
+     * @param context 可信管理上下文
+     * @param roleId 管理域内目标角色
+     * @param expectedRoleVersion 页面读取的角色版本
+     * @param permissionIds 完整功能权限集合
+     * @param overrides 显式操作策略
+     * @param fieldPolicies 字段限制，null 沿用原设置
+     * @param objectScopes 以统一目录主资源键标识的对象默认，空集合清除，null 保留角色原默认并使用旧逐操作快照契约
+     * @param reason 授权变更原因
+     * @return 包含生效操作、继承来源及默认策略的完整快照
+     */
+    AuthorizationAssignment replaceAuthorization(RoleManagement.Context context, UUID roleId,
+        long expectedRoleVersion, Set<UUID> permissionIds, Set<DataPolicy> overrides,
+        Set<FieldSecurity.Policy> fieldPolicies, java.util.Map<String,ObjectScope> objectScopes, String reason);
 }

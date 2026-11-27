@@ -137,23 +137,20 @@ public interface ProductMainMapper {
   private LegacyReadSql(){}
   /** @param params 已验证租户、账号、请求键与真实迁移谓词 @return 仅在原商品仍可操作时返回回执 */
   public static String migrationReplay(Map<String,Object> params){
-   var access=(com.appnexus.platform.authorization.RowAccessControl.Predicate)params.get("access");
    return "SELECT HEX(payload_digest) digest,result_product_version version,result_structure_revision revision,BIN_TO_UUID(change_id) changeId,expires_at,expires_at>CURRENT_TIMESTAMP(6) valid FROM md_product_structure_request WHERE tenant_id=UUID_TO_BIN(#{tenant}) AND account_id=UUID_TO_BIN(#{actor}) AND product_id=UUID_TO_BIN(#{id}) AND operation_code='migrateStructure' AND request_key=UUID_TO_BIN(#{key})"
        +" AND EXISTS (SELECT 1 FROM md_product_v1 WHERE tenant_id=UUID_TO_BIN(#{tenant}) AND id=UUID_TO_BIN(#{id})"
-       +com.appnexus.persistence.mybatis.ScopedSql.bind(access.sql(),access.parameters(),"access")+")"
+       +" /*appnexus-bind:access*/ "+")"
        +(Boolean.TRUE.equals(params.get("lock"))?" FOR UPDATE":"");
   }
   /** @param params 可信租户及已授权范围 @return 固定对账 SQL */
   public static String legacyReconciliation(Map<String,Object> params){
-   var access=(com.appnexus.platform.authorization.RowAccessControl.Predicate)params.get("access");
    return "SELECT BIN_TO_UUID(o.id) id,o.code,CASE WHEN p.id IS NULL THEN 'MISSING' WHEN p.legacy_source_version<>o.version OR NOT(HEX(p.code)<=>HEX(o.code)) OR NOT(HEX(p.legacy_name_original)<=>HEX(o.name)) OR NOT(HEX(p.barcode)<=>HEX(o.barcode)) OR NOT(HEX(p.legacy_specification_original)<=>HEX(o.specification)) OR NOT(HEX(p.legacy_unit_original)<=>HEX(o.unit)) OR NOT(p.legacy_enabled_snapshot<=>o.enabled) OR NOT(p.created_by<=>o.created_by) OR NOT(p.created_at<=>o.created_at) OR NOT(p.legacy_updated_by_original<=>o.updated_by) OR NOT(p.legacy_updated_at_original<=>o.updated_at) THEN 'SOURCE_CHANGED' ELSE 'MATCHED' END result FROM md_product o LEFT JOIN md_product_v1 p ON p.tenant_id=o.tenant_id AND p.id=o.id WHERE o.tenant_id=UUID_TO_BIN(#{p0})"
-       +com.appnexus.persistence.mybatis.ScopedSql.bind(access.sql(),access.parameters(),"access")+" ORDER BY o.code,o.id LIMIT #{p1} OFFSET #{p2}";
+       +" /*appnexus-bind:access*/ "+" ORDER BY o.code,o.id LIMIT #{p1} OFFSET #{p2}";
   }
   /** @param params 可信租户及已授权范围 @return 固定对账 SQL */
   public static String legacyCount(Map<String,Object> params){
-   var access=(com.appnexus.platform.authorization.RowAccessControl.Predicate)params.get("access");
    return "SELECT COUNT(*) FROM md_product WHERE tenant_id=UUID_TO_BIN(#{p0})"
-       +com.appnexus.persistence.mybatis.ScopedSql.bind(access.sql(),access.parameters(),"access");
+       +" /*appnexus-bind:access*/ ";
   }
  }
 }

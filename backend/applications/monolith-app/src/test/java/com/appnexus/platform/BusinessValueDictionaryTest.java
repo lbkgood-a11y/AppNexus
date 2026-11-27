@@ -20,7 +20,7 @@ class BusinessValueDictionaryTest extends DatabaseTestSupport {
  @Autowired JdbcTemplate jdbc;
  @Autowired BusinessValueCatalog catalog;
  @Autowired GeographyCatalog geography;
- @Autowired com.appnexus.platform.organization.PersonnelDirectory directory;
+ @Autowired com.appnexus.masterdata.organization.PersonnelDirectory directory;
  @Autowired DictionaryManagement management;
  @Autowired MasterDataService master;
  @Autowired com.appnexus.masterdata.application.product.ProductCatalogService productCatalog;
@@ -49,7 +49,7 @@ class BusinessValueDictionaryTest extends DatabaseTestSupport {
   var positionRecords=new ArrayList<Object[]>();
   var dictionaryKeys=new ArrayList<BusinessValueCatalog.NameKey>();
   var geographyKeys=new ArrayList<String>();
-  var organizationKeys=new ArrayList<com.appnexus.platform.organization.PersonnelDirectory.OrganizationNameKey>();
+  var organizationKeys=new ArrayList<com.appnexus.masterdata.organization.PersonnelDirectory.OrganizationNameKey>();
   for(int i=0;i<200;i++){
     String id=UUID.randomUUID().toString(),code="NAME_"+i,lower="name_"+i;
     dictionaryRecords.add(new Object[]{UUID.randomUUID().toString(),tenant,dictionaryId,lower,code,code,actor,actor});
@@ -58,10 +58,10 @@ class BusinessValueDictionaryTest extends DatabaseTestSupport {
     geographyKeys.add(code);
     if(i<100){
       organizationRecords.add(new Object[]{tenant,id,code,organizationType,code});
-      organizationKeys.add(new com.appnexus.platform.organization.PersonnelDirectory.OrganizationNameKey("organization",id));
+      organizationKeys.add(new com.appnexus.masterdata.organization.PersonnelDirectory.OrganizationNameKey("organization",id));
     }else{
       positionRecords.add(new Object[]{tenant,id,org,code,code});
-      organizationKeys.add(new com.appnexus.platform.organization.PersonnelDirectory.OrganizationNameKey("position",id));
+      organizationKeys.add(new com.appnexus.masterdata.organization.PersonnelDirectory.OrganizationNameKey("position",id));
     }
   }
   jdbc.batchUpdate("""

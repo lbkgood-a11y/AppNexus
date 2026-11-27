@@ -122,7 +122,7 @@ defineExpose({ canLeave: async () => true });
           <p v-for="page in item.pages" :key="page.page">{{ page.path }}：{{ t(page.accessible ? 'operationDiagnostics.pageAllowed' : 'operationDiagnostics.pageDenied') }} / {{ t(page.visible ? 'operationDiagnostics.menuVisible' : 'operationDiagnostics.menuHidden') }}<span v-for="reason in page.reasons" :key="reason"> · {{ t('operationDiagnostics.reasons.'+reason) }}</span></p>
           <p v-for="data in item.data" :key="data.permission">{{data.permission}} · {{t('operationDiagnostics.dataScope')}}：{{data.scope==='NOT_APPLICABLE'?t('operationDiagnostics.notApplicable'):t('authorizationCenter.scopes.'+data.scope)}}<span v-if="data.organizations.length"> · {{t('authorizationCenter.organizationCount',{count:data.organizations.length})}}</span><span v-for="(mode,field) in data.fields" :key="field"> · {{field}}: {{mode}}</span></p>
           <p>{{t('operationDiagnostics.objectHint')}}</p>
-          <p v-for="permission in item.permissions" :key="permission.permissionCode">{{ permission.permissionCode }}：{{ permission.effective ? t('authorizationCenter.effective') : t('operationDiagnostics.missing') }}<span v-for="source in permission.sources" :key="source.roleId"> · {{ source.roleName }} / {{ source.effective ? t('authorizationCenter.effective') : inactiveReason(source.inactiveReason) }}</span></p>
+          <p v-for="permission in item.permissions" :key="permission.permissionCode">{{ permission.permissionCode }}：{{ permission.effective ? t('authorizationCenter.effective') : t('operationDiagnostics.missing') }}<span v-for="source in permission.sources" :key="source.roleId"> · {{ source.roleName }} / {{ source.effective ? t('authorizationCenter.effective') : inactiveReason(source.inactiveReason) }}{{ source.scopeSource ? ' / '+t('authorizationCenter.scopeSources.'+source.scopeSource) : '' }}</span></p>
         </el-collapse-item></el-collapse>
         </div>
         <div v-show="detailTab==='effective'" class="subject-analysis-scroll">
@@ -136,6 +136,7 @@ defineExpose({ canLeave: async () => true });
               <strong>{{ source.roleName }}</strong>
               <span>{{ source.effective ? t('authorizationCenter.effective') : inactiveReason(source.inactiveReason) }}</span>
               <span v-if="source.scopeType">{{ t('authorizationCenter.scopes.' + source.scopeType) }}</span>
+              <span v-if="source.scopeSource">{{ t('authorizationCenter.scopeSources.'+source.scopeSource) }}</span>
               <span v-if="source.organizationIds.length">{{ t('authorizationCenter.organizationCount', { count: source.organizationIds.length }) }}</span>
             </div>
           </el-collapse-item>

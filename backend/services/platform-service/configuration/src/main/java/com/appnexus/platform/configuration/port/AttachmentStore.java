@@ -15,8 +15,11 @@ public interface AttachmentStore {
     /** @return 当前主体的可用资料及同范围总数 */
     Page list(Owner owner, String businessId, int offset, int limit);
 
-    /** @return 已获平台准入的台账资料及同筛选总数 */
-    Page ledger(UUID actor, Filter filter, int offset, int limit);
+    /** @return 当前租户已获台账准入的资料及同范围总数 */
+    Page ledger(Owner owner, Filter filter, int offset, int limit);
+
+    /** @return 当前租户台账中按附件 UUID 查询的可用资料，未找到返回空 */
+    Item findAvailableInLedger(Owner owner, UUID id);
 
     /** @return 本人的幂等写入资料，未登记返回空 */
     Item find(Owner owner, String idempotencyKey);

@@ -99,11 +99,11 @@ public interface ReceiptPostingMapper {
             JOIN bw_commodity_template c ON c.tenant_id=t.tenant_id AND c.id=t.template_id
             WHERE r.tenant_id=#{__verifiedTenant} AND r.task_id=UUID_TO_BIN(#{task}) AND r.id=UUID_TO_BIN(#{id})
               AND t.status='READY_TO_RECEIVE' AND r.status='DRAFT' AND n.status IN ('ISSUED','RECEIVING')
-              AND c.status IN ('PUBLISHED','DISABLED') AND c.deduction_strategy='ZERO'
-              AND COALESCE(t.unload_deduction_kg,0)=0 AND COALESCE(t.unload_disposition,'')<>'RETURN'
-              AND q.is_active=1 AND m.status='CONFIRMED' AND r.deduction_kg=0 AND l.unit_id=nl.base_unit_id
+              AND c.status IN ('PUBLISHED','DISABLED') AND COALESCE(t.unload_disposition,'')<>'RETURN'
+              AND q.is_active=1 AND m.status='CONFIRMED' AND l.unit_id=nl.base_unit_id
               AND r.physical_net_kg <=> m.actual_net_kg
-              AND ((c.stock_granularity='BULK' AND c.quality_gate_strategy='SAMPLED' AND q.sampled_at IS NOT NULL
+              AND ((c.stock_granularity='BULK' AND c.deduction_strategy='ZERO' AND r.deduction_kg=0
+                AND COALESCE(t.unload_deduction_kg,0)=0 AND c.quality_gate_strategy='SAMPLED' AND q.sampled_at IS NOT NULL
                 AND ((q.status='DECIDED' AND q.decision='PASS' AND q.result_snapshot IS NOT NULL)
                   OR (q.status='REGISTERED' AND q.decision IS NULL))
                 AND ((m.method='EXTERNAL_NET' AND m.external_source IS NOT NULL
@@ -113,7 +113,21 @@ public interface ReceiptPostingMapper {
                     AND (SELECT COUNT(*) FROM bw_ground_weigh_ticket g WHERE g.tenant_id=m.tenant_id
                       AND g.task_id=m.task_id AND g.metering_id=m.id)=2))
                 AND r.accounting_weight_kg=m.actual_net_kg AND l.lpn IS NULL)
-              OR (c.stock_granularity='LPN' AND c.metering_strategy='DUAL'
+              OR (c.stock_granularity='BULK' AND c.deduction_strategy='QUALITY_LINEAR'
+                AND c.quality_gate_strategy='QUALIFIED_AND_UNLOADED' AND c.metering_strategy IN ('SCALE','SCALE_DIFFERENCE')
+                AND q.status='DECIDED' AND q.decision='PASS' AND q.is_active=1 AND m.tare_gate_quality_id=q.id
+                AND t.unload_disposition IN ('ACCEPTED','ACCEPTED_WITH_DEDUCTION') AND t.unload_evidence_id IS NOT NULL
+                AND m.method='SCALE_DIFFERENCE' AND m.actual_net_kg=m.gross_kg-m.tare_kg AND l.lpn IS NULL
+                AND (SELECT COUNT(*) FROM bw_ground_weigh_ticket g WHERE g.tenant_id=m.tenant_id
+                  AND g.task_id=m.task_id AND g.metering_id=m.id)=2
+                AND JSON_EXTRACT(r.posting_snapshot,'$.quality')=q.result_snapshot
+                AND JSON_EXTRACT(r.posting_snapshot,'$.deductionFormula')=JSON_EXTRACT(c.definition,'$.deductionFormula')
+                AND UUID_TO_BIN(JSON_UNQUOTE(JSON_EXTRACT(r.posting_snapshot,'$.unloadingEvidenceId')))=t.unload_evidence_id
+                AND CAST(JSON_UNQUOTE(JSON_EXTRACT(r.posting_snapshot,'$.deduction.onSiteKg')) AS DECIMAL(18,4))=COALESCE(t.unload_deduction_kg,0)
+                AND CAST(JSON_UNQUOTE(JSON_EXTRACT(r.posting_snapshot,'$.deduction.totalKg')) AS DECIMAL(18,4))=r.deduction_kg
+                AND r.accounting_weight_kg=m.actual_net_kg-r.deduction_kg AND r.accounting_weight_kg>0)
+              OR (c.stock_granularity='LPN' AND c.metering_strategy='DUAL' AND c.deduction_strategy='ZERO'
+                AND r.deduction_kg=0 AND COALESCE(t.unload_deduction_kg,0)=0
                 AND c.quality_gate_strategy='DOCUMENT_AND_APPEARANCE' AND q.status='DECIDED' AND q.decision='PASS'
                 AND JSON_UNQUOTE(JSON_EXTRACT(q.result_snapshot,'$.appearanceVerified'))='true'
                 AND JSON_UNQUOTE(JSON_EXTRACT(q.result_snapshot,'$.mtcVerified'))='true'

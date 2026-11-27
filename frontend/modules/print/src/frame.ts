@@ -1,5 +1,5 @@
 /**
- * iframe 内执行的桥接入口；必须保持自包含，运行在无同源权限的 sandbox 内。
+ * iframe 内执行的桥接入口；由独立脚本打包，运行在无同源权限的 sandbox 内。
  * 上游直接修改 window、document 和 jQuery，独立文档可避免污染应用壳和遗留全局事件。
  */
 export function frameBootstrap(): void {

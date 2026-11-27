@@ -70,6 +70,7 @@ class ProductCatalogMySqlTest {
    var mapperConfig=new org.apache.ibatis.session.Configuration();
       mapperConfig.setLocalCacheScope(org.apache.ibatis.session.LocalCacheScope.STATEMENT);
       mapperConfig.setCacheEnabled(false);
+      mapperConfig.setDefaultScriptingLanguage(com.appnexus.platform.persistence.ScopedQueryLanguageDriver.class);
       mapperConfig.setCallSettersOnNulls(true);
    mapperConfig.addMapper(com.appnexus.masterdata.adapter.persistence.MasterStatusHistoryMapper.class);
    mapperConfig.addMapper(com.appnexus.masterdata.adapter.persistence.UnitConversionMapper.class);

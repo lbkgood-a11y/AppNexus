@@ -10,14 +10,26 @@ import com.appnexus.bulkwarehousing.api.inboundexecution.*;
 /** 固定投影。三单均不选择司机、车辆、供应商、附件原文或身份引用，质检可盲检使用。 */
 @Mapper
 @TenantAggregateScoped(requireTenantMatch=true,tables={"bw_inbound_task","bw_quality_order","bw_metering_order",
-        "bw_receipt_order","bw_receipt_order_line","bw_commodity_template","bw_inbound_notice"},statements={"listQuality","countQuality","readQuality","listMetering","countMetering","readMetering","listReceipt","countReceipt","readReceipt","receiptLines","optionsSAMPLE","optionsINSPECT","optionsGROSS","optionsEXTERNAL","optionsDUAL","optionsBULK","optionsLPN"})
+        "bw_receipt_order","bw_receipt_order_line","bw_commodity_template","bw_inbound_notice"},statements={"listQuality","countQuality","readQuality","listMetering","countMetering","readMetering","listReceipt","countReceipt","readReceipt","receiptLines","labMetrics","optionsSAMPLE","optionsINSPECT","optionsGROSS","optionsEXTERNAL","optionsDUAL","optionsBULK","optionsLPN"})
 public interface InboundDocumentMapper {
+    /** 只为本次化验读取现行样品绑定的规则，公开适配器只投影代码及单位。 */
+    @GuardedScope(tenant="__verifiedTenant",operationPermissions=DecideInboundQualityUseCase.PERMISSION)
+    @Select("""
+            SELECT CAST(JSON_EXTRACT(c.definition,'$.qualityMetrics') AS CHAR)
+            FROM bw_quality_order q JOIN bw_inbound_task t ON t.tenant_id=q.tenant_id AND t.id=q.task_id
+            JOIN bw_commodity_template c ON c.tenant_id=t.tenant_id AND c.id=t.template_id
+            WHERE q.tenant_id=#{__verifiedTenant} AND q.id=UUID_TO_BIN(#{id})
+            AND q.is_active=1 AND q.status='REGISTERED' AND c.status IN ('PUBLISHED','DISABLED')
+              AND c.quality_gate_strategy IN ('QUALIFIED_AND_UNLOADED','SAMPLED')
+            """)
+    String labMetrics(@Param("__verifiedTenant") byte[] tenant,@Param("id") String id);
 
     /** 候选的安全字段投影，禁止带出物流身份或质检值。 */
-    record TaskOptionRow(String taskId, String taskNo, long taskVersion, Long meteringVersion) {}
+    record TaskOptionRow(String taskId, String taskNo, long taskVersion, Long meteringVersion, String noticeId) {}
 
     String TASK_OPTIONS = """
-            SELECT BIN_TO_UUID(t.id) taskId,t.task_no taskNo,t.row_version taskVersion,m.row_version meteringVersion
+            SELECT BIN_TO_UUID(t.id) taskId,t.task_no taskNo,t.row_version taskVersion,m.row_version meteringVersion,
+              BIN_TO_UUID(t.notice_id) noticeId
             FROM bw_inbound_task t
             JOIN bw_inbound_notice n ON n.tenant_id=t.tenant_id AND n.id=t.notice_id
             JOIN bw_commodity_template c ON c.tenant_id=t.tenant_id AND c.id=t.template_id
@@ -129,8 +141,12 @@ public interface InboundDocumentMapper {
 
     /** 以单据标识定位详情，包括同作业历史版本。 */
     @GuardedScope(tenant="__verifiedTenant",operationPermissions="warehousing.receipt:read_document")
-    @Select("SELECT "+RECEIPT_COLUMNS+",m.row_version meteringVersion,c.stock_granularity stockGranularity,"
-            +"t.status taskStatus,d.metering_id IS NULL collecting"
+    @Select("SELECT "+RECEIPT_COLUMNS+",BIN_TO_UUID(d.notice_id) noticeId,m.row_version meteringVersion,c.stock_granularity stockGranularity,"
+            +"c.metering_strategy meteringStrategy,c.quality_gate_strategy qualityStrategy,"
+            +"t.status taskStatus,d.metering_id IS NULL collecting,"
+            +"JSON_UNQUOTE(JSON_EXTRACT(d.posting_snapshot,'$.deduction.moistureKg')) moistureKg,"
+            +"JSON_UNQUOTE(JSON_EXTRACT(d.posting_snapshot,'$.deduction.impurityKg')) impurityKg,"
+            +"JSON_UNQUOTE(JSON_EXTRACT(d.posting_snapshot,'$.deduction.onSiteKg')) onSiteKg"
             + " FROM bw_receipt_order d JOIN bw_inbound_task t ON t.tenant_id=d.tenant_id AND t.id=d.task_id"
             + " JOIN bw_commodity_template c ON c.tenant_id=t.tenant_id AND c.id=t.template_id"
             + " LEFT JOIN bw_metering_order m ON m.tenant_id=t.tenant_id AND m.task_id=t.id AND m.status='CONFIRMED'"

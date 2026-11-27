@@ -3,10 +3,11 @@ import { VxeTable, VxeColumn } from "vxe-table";
 import AppPagination from "./AppPagination.vue";
 import ManagedDialog from "./ManagedDialog.vue";
 import RecordAuditDetails, { type RecordAudit } from "./RecordAuditDetails.vue";
-import { useSlots, computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
+import { useSlots, computed, nextTick, onBeforeUnmount, onMounted, ref, shallowRef, toRaw, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { AppIcon } from "@appnexus/icons";
-import type { ManagementColumn } from "./types";
+import type { ManagementColumn, ManagementTableExcelExport } from "./types";
+import { reportError } from "./errorFeedback";
 
 /**
  * 管理列表面板：统一工具栏、列配置、密度与全屏；分页与业务操作交由调用者注入。
@@ -19,6 +20,10 @@ const props = withDefaults(defineProps<{
   rows: Row[];
   /** 当前可用列定义，权限变化时必须同步剔除不可见字段。 */
   columns: ManagementColumn[];
+  /** 当前页 Excel 配置；缺省启用，false 显式关闭。只使用已授权展示值。 */
+  excelExport?: false | ManagementTableExcelExport<Row>;
+  /** 启用默认本地分页，缺省 true；关闭时展示传入的全部数据，不影响显式分页插槽。 */
+  paginateLocally?: boolean;
   /** 读取中，默认 false；阻止重复刷新并显示表体加载状态。 */
   loading?: boolean;
   /** 业务写入中，默认 false；阻止刷新与在途写入交错。 */
@@ -33,7 +38,7 @@ const props = withDefaults(defineProps<{
   headingLevel?: "h1" | "h2";
   /** 嵌入业务工作区时移除重复卡片边界；全屏模式仍生成独立表面。 */
   embedded?: boolean;
-  /** 查看详情中的附属表格省略工具栏操作，默认 false；分页及表格数据照常显示。 */
+  /** 查看详情中的附属表格省略业务操作及表格设置，默认 false；本页导出仍由 excelExport 控制。 */
   readonlyView?: boolean;
   /** 树形表格稳定行标识字段；缺省为普通列表，业务方保证整树唯一。 */
   rowKey?: string;
@@ -43,9 +48,16 @@ const props = withDefaults(defineProps<{
   expandedRowKeys?: string[];
   /** 当前高亮行标识；缺省不启用行选中，须与 rowKey 配合使用。 */
   currentRowKey?: string;
-}>(), { loading: false, busy: false, refreshable: true, headingLevel: "h1", embedded: false, fitHeight: false });
+}>(), { excelExport: undefined, paginateLocally: true, loading: false, busy: false, refreshable: true, headingLevel: "h1", embedded: false, fitHeight: false });
 /** 异步树数据渲染后同步展开与首行高亮；不依赖组件首次挂载时的数据快照。 */
-const tableRef = ref<{ setTreeExpand: (row: Row, expanded: boolean) => void; setCurrentRow: (row?: Row) => void }>();
+const tableRef = ref<{
+  setTreeExpand: (row: Row, expanded: boolean) => void;
+  setCurrentRow: (row?: Row) => void;
+  isTreeExpandByRow: (row: Row) => boolean;
+  getCheckboxRecords: () => Row[];
+  setCheckboxRow: (row: Row, checked: boolean) => Promise<void>;
+  clearCheckboxRow: () => Promise<void>;
+}>();
 watch(() => [props.rows, props.expandedRowKeys, props.currentRowKey, tableRef.value], async () => {
   await nextTick();
   if (!props.rowKey || !tableRef.value) return;
@@ -62,7 +74,7 @@ watch(() => [props.rows, props.expandedRowKeys, props.currentRowKey, tableRef.va
 const slots = useSlots();
 const localPage = ref(1);
 const localPageSize = ref(20);
-const localPagination = computed(() => !slots.pagination && !props.expandedRowKeys
+const localPagination = computed(() => props.paginateLocally && !slots.pagination && !props.expandedRowKeys
   && !props.rows.some(row => Array.isArray((row as Record<string, unknown>).children))
   && (props.total === undefined || props.total === props.rows.length));
 const displayedRows = computed(() => localPagination.value
@@ -74,6 +86,7 @@ watch(localPageSize, () => { localPage.value = 1; });
 const emit = defineEmits<{ refresh: []; expandChange: [row: Row, expanded: boolean] }>();
 /** VxeTable 树展开事件统一转为业务行和展开状态，不改变服务端树数据。 */
 function handleExpandChange({ row, expanded }: { row: Row; expanded: boolean }) {
+  syncCheckedRows();
   emit('expandChange', row, expanded);
 }
 
@@ -109,6 +122,109 @@ const fixed = ref<Record<string, "left" | "right" | undefined>>({});
 const dragged = ref("");
 const configured = computed(() => order.value.map(key => props.columns.find(column => column.key === key)).filter((column): column is ManagementColumn => Boolean(column)));
 const visible = computed(() => configured.value.filter(column => !hidden.value.includes(column.key)));
+const exporting = ref(false);
+const checkedRows = shallowRef<ReadonlySet<Row | string>>(new Set());
+let disposed = false;
+/** 选择仅属于当前页；分页、换结果和关闭导出后，同时清理界面和本地快照。 */
+watch([displayedRows, () => props.excelExport === false], () => {
+  checkedRows.value = new Set();
+  void tableRef.value?.clearCheckboxRow();
+}, { flush: "post" });
+
+/** 复用 VxeTable 的多选状态，不写入业务记录或跨页保留选中项。 */
+function syncCheckedRows() {
+  checkedRows.value = new Set((tableRef.value?.getCheckboxRecords() ?? []).map(exportRowKey));
+}
+/** 树节点使用业务配置的稳定键；平面行统一为原始对象，消除 Vue 代理引用差异。 */
+function exportRowKey(row: Row) {
+  const key = props.rowKey && (row as Record<string, unknown>)[props.rowKey];
+  return typeof key === "string" || typeof key === "number" ? String(key) : toRaw(row);
+}
+/** 使用可聚焦复选框操作 VxeTable 选中状态，支持键盘与辅助技术。 */
+async function setExportRowChecked(row: Row, checked: boolean) {
+  await tableRef.value?.setCheckboxRow(row, checked);
+  syncCheckedRows();
+}
+/** 插槽可能格式化或遮盖原值，未显式配置时不能回退读取该列的底层字段。 */
+function currentExportColumns() {
+  const config = props.excelExport || undefined;
+  return visible.value.filter(({ key, prop }) => {
+    const format = config?.columns && Object.prototype.hasOwnProperty.call(config.columns, key)
+      ? config.columns[key] : undefined;
+    return key !== "operations" && format !== false && (typeof format === "function" || (!!prop && !slots[key]));
+  });
+}
+
+/** 以实际展开状态遍历当前页；折叠子节点即使已加载也不能写进文件。 */
+function currentExportRows(): Row[] {
+  if (!props.rowKey) return displayedRows.value;
+  const rows: Row[] = [];
+  const visit = (entries: Row[]) => {
+    for (const row of entries) {
+      rows.push(row);
+      const children = (row as Record<string, unknown>).children;
+      if (Array.isArray(children) && tableRef.value?.isTreeExpandByRow(row)) visit(children as Row[]);
+    }
+  };
+  visit(displayedRows.value);
+  return rows;
+}
+
+/** @return 当前已展开的可见行，选中模式还须与 VxeTable 勾选记录相交。 */
+function rowsForExport(scope: "page" | "selected") {
+  const rows = currentExportRows();
+  return scope === "selected" ? rows.filter(row => checkedRows.value.has(exportRowKey(row))) : rows;
+}
+/** 只有当前页存在数据和可导出列时才开放菜单；导出期间禁止重复触发。 */
+function exportUnavailable() {
+  return props.loading || props.busy || exporting.value || !displayedRows.value.length || !currentExportColumns().length;
+}
+
+/** 冻结点击时的行列与展示值，仅在浏览器生成工作簿，不查询额外数据。
+ * @param scope page 导出当前页；selected 仅导出当前页已勾选的可见行。
+ */
+async function exportRows(scope: "page" | "selected") {
+  const config = props.excelExport;
+  const pageRows = displayedRows.value;
+  const rows = rowsForExport(scope);
+  const columns = currentExportColumns();
+  if (config === false || props.loading || props.busy ||
+      exporting.value || !rows.length || !columns.length) return;
+  exporting.value = true;
+  try {
+    const fileName = (config?.fileName?.trim() || props.title.trim() || "export").replace(/[<>:"/\\|?*\u0000-\u001f]/g, "_");
+    const sheet = [columns.map(column => column.label), ...rows.map(row => columns.map(({ key, prop }) => {
+      const format = config?.columns && Object.prototype.hasOwnProperty.call(config.columns, key) ? config.columns[key] : undefined;
+      const value = typeof format === "function" ? format(row) : (row as Record<string, unknown>)[prop!] ?? "—";
+      // 仅允许标量，避免把对象、公式定义或不可表示的数字写入文件。
+      if (typeof value === "string" || typeof value === "boolean" ||
+          (typeof value === "number" && Number.isFinite(value))) return value;
+      return null;
+    }))];
+    const { default: writeExcelFile } = await import("write-excel-file/browser");
+    const workbook = await writeExcelFile(sheet).toBlob();
+    // 切页、换列或折叠行后，异步生成的旧快照不能下载。
+    const currentRows = rowsForExport(scope);
+    const currentColumns = currentExportColumns();
+    if (disposed || config !== props.excelExport || pageRows !== displayedRows.value || props.loading || props.busy ||
+        rows.length !== currentRows.length || rows.some((row, index) => row !== currentRows[index]) ||
+        columns.length !== currentColumns.length || columns.some((column, index) => column !== currentColumns[index])) return;
+    const url = URL.createObjectURL(workbook);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = /\.xlsx$/i.test(fileName) ? fileName : `${fileName}.xlsx`;
+    try {
+      link.click();
+    } finally {
+      // 延迟回收，给浏览器读取下载地址的时间。
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }
+  } catch {
+    if (!disposed && config === props.excelExport) reportError(t("management.excelExportFailed"));
+  } finally {
+    exporting.value = false;
+  }
+}
 
 /** 重置为当前业务列定义；不存入浏览器，避免不同账号或租户共享字段展示状态。 */
 function resetColumns() {
@@ -160,7 +276,16 @@ onMounted(() => {
   observer = new ResizeObserver(measure);
   if (tableRegion.value) observer.observe(tableRegion.value);
 });
-onBeforeUnmount(() => observer?.disconnect());
+// 嵌入表格切换全屏时会替换表面节点，重新观察当前表体才能在还原后响应视口变化。
+watch(tableRegion, (region, previous) => {
+  if (previous) observer?.unobserve(previous);
+  if (region) observer?.observe(region);
+  measure();
+}, { flush: "post" });
+onBeforeUnmount(() => {
+  disposed = true;
+  observer?.disconnect();
+});
 </script>
 
 <template>
@@ -175,9 +300,10 @@ onBeforeUnmount(() => observer?.disconnect());
           <slot name="titleHelp" />
           <span v-if="total !== undefined" class="management-table-total">{{ t('management.totalRecords', { total }) }}</span>
         </div>
-        <div v-if="!readonlyView" class="management-toolbar-actions">
-          <slot name="actions" />
+        <div v-if="!readonlyView || excelExport !== false" class="management-toolbar-actions">
+          <slot v-if="!readonlyView" name="actions" />
           <div class="management-table-tools">
+            <template v-if="!readonlyView">
             <el-tooltip v-if="refreshable" :teleported="!fullscreen" :content="t('management.refresh')"><el-button text :aria-label="t('management.refresh')" :disabled="loading || busy" @click="emit('refresh')"><AppIcon name="refresh" :size="18" /></el-button></el-tooltip>
             <el-dropdown trigger="click" :teleported="!fullscreen" @command="value => size = value">
               <el-button text :aria-label="t('management.density')"><AppIcon name="density" :size="18" /></el-button>
@@ -197,13 +323,38 @@ onBeforeUnmount(() => observer?.disconnect());
                 </el-dropdown>
               </div>
             </el-popover>
+            </template>
+            <!-- 两项均保存当前页已授权的展示投影；菜单不发起取数或业务操作。 -->
+            <el-dropdown v-if="excelExport !== false" trigger="click" :teleported="!fullscreen"
+              :disabled="exportUnavailable()" @visible-change="syncCheckedRows" @command="exportRows">
+              <el-button text :loading="exporting" :disabled="exportUnavailable()" :aria-label="t('management.excelExport')" :title="t('management.excelExport')">
+                <AppIcon name="fileDownload" :size="18" />
+              </el-button>
+              <template #dropdown>
+                <el-dropdown-menu>
+                  <el-dropdown-item command="page">{{ t('management.exportCurrentPageExcel') }}</el-dropdown-item>
+                  <el-dropdown-item command="selected" :disabled="!rowsForExport('selected').length">{{ t('management.exportSelectedRowsExcel') }}</el-dropdown-item>
+                </el-dropdown-menu>
+              </template>
+            </el-dropdown>
+            <template v-if="!readonlyView">
             <el-tooltip :teleported="!fullscreen" :content="t(fullscreen ? 'management.exitFullscreen' : 'management.fullscreen')"><el-button text :aria-label="t(fullscreen ? 'management.exitFullscreen' : 'management.fullscreen')" @click="toggleFullscreen"><AppIcon :name="fullscreen ? 'fullscreenExit' : 'fullscreen'" :size="18" /></el-button></el-tooltip>
+            </template>
           </div>
         </div>
       </div>
       <slot name="before" />
       <div ref="tableRegion" class="management-table-region">
-        <vxe-table :column-config="{ resizable: true }" ref="tableRef" @toggle-tree-expand="handleExpandChange" :row-config="{ keyField: rowKey, isCurrent: currentRowKey !== undefined }" :tree-config="rowKey ? { childrenField: 'children' } : undefined" :loading="loading" :data="displayedRows" :size="size === 'default' ? 'medium' : size" :height="tableHeight" :empty-text="emptyText || t('management.empty')" border="inner">
+        <vxe-table :column-config="{ resizable: true }" ref="tableRef" @toggle-tree-expand="handleExpandChange"
+          :checkbox-config="{ checkStrictly: Boolean(rowKey), reserve: false }" @checkbox-change="syncCheckedRows" @checkbox-all="syncCheckedRows"
+          :row-config="{ keyField: rowKey, isCurrent: currentRowKey !== undefined }" :tree-config="rowKey ? { childrenField: 'children' } : undefined" :loading="loading" :data="displayedRows" :size="size === 'default' ? 'medium' : size" :height="tableHeight" :empty-text="emptyText || t('management.empty')" border="inner">
+          <vxe-column v-if="excelExport !== false" type="checkbox" width="44">
+            <template #checkbox="{ row, checked, rowIndex }">
+              <el-checkbox :model-value="checked" :disabled="busy || loading || exporting"
+                :aria-label="t('management.selectExportRow', { row: rowIndex + 1 })"
+                @update:model-value="value => setExportRowChecked(row, value === true)" />
+            </template>
+          </vxe-column>
           <vxe-column v-if="$slots.expandContent" type="expand" width="48"><template #content="{ row }"><slot name="expandContent" :row="row" /></template></vxe-column>
           <vxe-column v-for="column in visible" :key="column.key" :field="column.prop" :title="column.label" :width="column.width" :min-width="column.minWidth || 140" :fixed="fixed[column.key]" :tree-node="!!rowKey && column.key === visible[0]?.key" :show-overflow="column.showOverflow ?? (column.key !== 'operations')">
             <template #default="{ row }"><slot :name="column.key" :row="row">{{ column.prop ? (row[column.prop] ?? '—') : '—' }}</slot></template>
@@ -217,7 +368,9 @@ onBeforeUnmount(() => observer?.disconnect());
     </component>
   </section>
   </Teleport>
-  <ManagedDialog v-model="auditOpen" :title="t('recordAudit.title')"><RecordAuditDetails v-if="selectedAudit" :audit="selectedAudit" /></ManagedDialog>
+  <ManagedDialog v-model="auditOpen" :title="t('recordAudit.title')" :width="520">
+    <RecordAuditDetails v-if="selectedAudit" :audit="selectedAudit" dialog />
+  </ManagedDialog>
 </template>
 
 <style scoped>
